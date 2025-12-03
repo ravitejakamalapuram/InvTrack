@@ -29,6 +29,9 @@ class Investments extends Table {
   /// Whether this record has been synced to Google Sheets.
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 
+  /// Whether this record is soft-deleted.
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

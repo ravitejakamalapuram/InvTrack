@@ -1,12 +1,18 @@
 import 'package:inv_tracker/domain/entities/entry.dart';
 
 /// Abstract repository interface for Entry (ledger) operations.
-/// 
+///
 /// This defines the contract that data layer implementations
 /// must fulfill for managing investment entries/transactions.
 abstract class EntryRepository {
   /// Get all entries for a specific investment.
   Future<List<Entry>> getByInvestmentId(String investmentId);
+
+  /// Watch entries for an investment (reactive stream).
+  Stream<List<Entry>> watchByInvestmentId(String investmentId);
+
+  /// Get all entries.
+  Future<List<Entry>> getAll();
 
   /// Get a single entry by ID.
   Future<Entry?> getById(String id);
@@ -30,13 +36,22 @@ abstract class EntryRepository {
     DateTime endDate,
   );
 
+  /// Get entries by type.
+  Future<List<Entry>> getByType(EntryType type);
+
   /// Get the count of entries for an investment.
   Future<int> countByInvestmentId(String investmentId);
 
-  /// Get the total invested amount for an investment.
+  /// Get the total invested amount for an investment (sum of inflows).
   Future<double> getTotalInvested(String investmentId);
 
-  /// Get the total withdrawn amount for an investment.
+  /// Get the total withdrawn amount for an investment (sum of outflows).
   Future<double> getTotalWithdrawn(String investmentId);
+
+  /// Get unsynced entries.
+  Future<List<Entry>> getUnsynced();
+
+  /// Mark entry as synced.
+  Future<void> markSynced(String id);
 }
 

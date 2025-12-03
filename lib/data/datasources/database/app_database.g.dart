@@ -99,6 +99,21 @@ class $InvestmentsTable extends Investments
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -109,6 +124,7 @@ class $InvestmentsTable extends Investments
     createdAt,
     updatedAt,
     isSynced,
+    isDeleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -179,6 +195,12 @@ class $InvestmentsTable extends Investments
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
       );
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
     return context;
   }
 
@@ -220,6 +242,10 @@ class $InvestmentsTable extends Investments
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
     );
   }
 
@@ -253,6 +279,9 @@ class Investment extends DataClass implements Insertable<Investment> {
 
   /// Whether this record has been synced to Google Sheets.
   final bool isSynced;
+
+  /// Whether this record is soft-deleted.
+  final bool isDeleted;
   const Investment({
     required this.id,
     required this.name,
@@ -262,6 +291,7 @@ class Investment extends DataClass implements Insertable<Investment> {
     required this.createdAt,
     required this.updatedAt,
     required this.isSynced,
+    required this.isDeleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -276,6 +306,7 @@ class Investment extends DataClass implements Insertable<Investment> {
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_synced'] = Variable<bool>(isSynced);
+    map['is_deleted'] = Variable<bool>(isDeleted);
     return map;
   }
 
@@ -291,6 +322,7 @@ class Investment extends DataClass implements Insertable<Investment> {
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isSynced: Value(isSynced),
+      isDeleted: Value(isDeleted),
     );
   }
 
@@ -308,6 +340,7 @@ class Investment extends DataClass implements Insertable<Investment> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
     );
   }
   @override
@@ -322,6 +355,7 @@ class Investment extends DataClass implements Insertable<Investment> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
     };
   }
 
@@ -334,6 +368,7 @@ class Investment extends DataClass implements Insertable<Investment> {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isSynced,
+    bool? isDeleted,
   }) => Investment(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -343,6 +378,7 @@ class Investment extends DataClass implements Insertable<Investment> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
+    isDeleted: isDeleted ?? this.isDeleted,
   );
   Investment copyWithCompanion(InvestmentsCompanion data) {
     return Investment(
@@ -354,6 +390,7 @@ class Investment extends DataClass implements Insertable<Investment> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
     );
   }
 
@@ -367,7 +404,8 @@ class Investment extends DataClass implements Insertable<Investment> {
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -382,6 +420,7 @@ class Investment extends DataClass implements Insertable<Investment> {
     createdAt,
     updatedAt,
     isSynced,
+    isDeleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -394,7 +433,8 @@ class Investment extends DataClass implements Insertable<Investment> {
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.isSynced == this.isSynced);
+          other.isSynced == this.isSynced &&
+          other.isDeleted == this.isDeleted);
 }
 
 class InvestmentsCompanion extends UpdateCompanion<Investment> {
@@ -406,6 +446,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isSynced;
+  final Value<bool> isDeleted;
   final Value<int> rowid;
   const InvestmentsCompanion({
     this.id = const Value.absent(),
@@ -416,6 +457,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvestmentsCompanion.insert({
@@ -427,6 +469,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.isSynced = const Value.absent(),
+    this.isDeleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -443,6 +486,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
+    Expression<bool>? isDeleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -454,6 +498,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
+      if (isDeleted != null) 'is_deleted': isDeleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -467,6 +512,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<bool>? isSynced,
+    Value<bool>? isDeleted,
     Value<int>? rowid,
   }) {
     return InvestmentsCompanion(
@@ -478,6 +524,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
+      isDeleted: isDeleted ?? this.isDeleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -509,6 +556,9 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -526,6 +576,7 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
+          ..write('isDeleted: $isDeleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1712,6 +1763,7 @@ typedef $$InvestmentsTableCreateCompanionBuilder =
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<bool> isSynced,
+      Value<bool> isDeleted,
       Value<int> rowid,
     });
 typedef $$InvestmentsTableUpdateCompanionBuilder =
@@ -1724,6 +1776,7 @@ typedef $$InvestmentsTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<bool> isSynced,
+      Value<bool> isDeleted,
       Value<int> rowid,
     });
 
@@ -1797,6 +1850,11 @@ class $$InvestmentsTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1874,6 +1932,11 @@ class $$InvestmentsTableOrderingComposer
     column: $table.isSynced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InvestmentsTableAnnotationComposer
@@ -1908,6 +1971,9 @@ class $$InvestmentsTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 
   Expression<T> entriesRefs<T extends Object>(
     Expression<T> Function($$EntriesTableAnnotationComposer a) f,
@@ -1971,6 +2037,7 @@ class $$InvestmentsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentsCompanion(
                 id: id,
@@ -1981,6 +2048,7 @@ class $$InvestmentsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
+                isDeleted: isDeleted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1993,6 +2061,7 @@ class $$InvestmentsTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<bool> isSynced = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentsCompanion.insert(
                 id: id,
@@ -2003,6 +2072,7 @@ class $$InvestmentsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
+                isDeleted: isDeleted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

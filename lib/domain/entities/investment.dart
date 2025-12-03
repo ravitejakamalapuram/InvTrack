@@ -1,39 +1,51 @@
 /// Represents an investment entity in the domain layer.
-/// 
+///
 /// This is a pure domain object with no dependencies on
 /// external frameworks or data sources.
 class Investment {
   final String id;
   final String name;
-  final String type;
+  final String category;
+  final DateTime startDate;
   final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isSynced;
+  final bool isDeleted;
 
   const Investment({
     required this.id,
     required this.name,
-    required this.type,
+    required this.category,
+    required this.startDate,
     this.notes,
     required this.createdAt,
     required this.updatedAt,
+    this.isSynced = false,
+    this.isDeleted = false,
   });
 
   Investment copyWith({
     String? id,
     String? name,
-    String? type,
+    String? category,
+    DateTime? startDate,
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isSynced,
+    bool? isDeleted,
   }) {
     return Investment(
       id: id ?? this.id,
       name: name ?? this.name,
-      type: type ?? this.type,
+      category: category ?? this.category,
+      startDate: startDate ?? this.startDate,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
@@ -48,7 +60,7 @@ class Investment {
 
   @override
   String toString() {
-    return 'Investment(id: $id, name: $name, type: $type)';
+    return 'Investment(id: $id, name: $name, category: $category)';
   }
 }
 
