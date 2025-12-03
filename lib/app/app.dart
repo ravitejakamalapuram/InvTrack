@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/domain/entities/auth_state.dart';
+import 'package:inv_tracker/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/presentation/screens/home_screen.dart';
+import 'package:inv_tracker/presentation/screens/login_screen.dart';
 
 /// The root widget of the InvTracker application.
-/// 
+///
 /// This widget sets up the MaterialApp with the app's theme,
 /// routing configuration, and global providers.
-class InvTrackerApp extends StatelessWidget {
+class InvTrackerApp extends ConsumerWidget {
   const InvTrackerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
     return MaterialApp(
       title: 'InvTracker',
       debugShowCheckedModeBanner: false,
@@ -35,22 +42,31 @@ class InvTrackerApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const PlaceholderHomeScreen(),
+      home: _buildHomeBasedOnAuthState(authState),
     );
+  }
+
+  Widget _buildHomeBasedOnAuthState(AuthState authState) {
+    switch (authState.status) {
+      case AuthStatus.initial:
+      case AuthStatus.loading:
+        return const _LoadingScreen();
+      case AuthStatus.authenticated:
+        return const HomeScreen();
+      case AuthStatus.unauthenticated:
+      case AuthStatus.error:
+        return const LoginScreen();
+    }
   }
 }
 
-/// Temporary placeholder home screen.
-/// Will be replaced with proper routing in Issue #2.
-class PlaceholderHomeScreen extends StatelessWidget {
-  const PlaceholderHomeScreen({super.key});
+/// Loading screen shown during initial auth check.
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('InvTracker'),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -67,18 +83,8 @@ class PlaceholderHomeScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Your Personal Investment Tracker',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
             const SizedBox(height: 32),
-            Text(
-              'v1.0.0 - Foundation Setup Complete',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            const CircularProgressIndicator(),
           ],
         ),
       ),
