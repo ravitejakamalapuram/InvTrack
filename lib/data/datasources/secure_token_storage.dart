@@ -10,6 +10,8 @@ class SecureTokenStorage {
   static const String _idTokenKey = 'inv_tracker_id_token';
   static const String _userIdKey = 'inv_tracker_user_id';
   static const String _dbEncryptionKey = 'inv_tracker_db_key';
+  static const String _spreadsheetIdKey = 'inv_tracker_spreadsheet_id';
+  static const String _lastSyncKey = 'inv_tracker_last_sync';
 
   final FlutterSecureStorage _storage;
 
@@ -135,6 +137,31 @@ class SecureTokenStorage {
   /// Use with caution - this will make the database unreadable.
   Future<void> clearAll() async {
     await _storage.deleteAll();
+  }
+
+  // ============ Spreadsheet ID ============
+
+  /// Saves the Google Sheets spreadsheet ID.
+  Future<void> saveSpreadsheetId(String id) async {
+    await _storage.write(key: _spreadsheetIdKey, value: id);
+  }
+
+  /// Retrieves the spreadsheet ID.
+  Future<String?> getSpreadsheetId() async {
+    return _storage.read(key: _spreadsheetIdKey);
+  }
+
+  // ============ Last Sync ============
+
+  /// Saves the last sync timestamp.
+  Future<void> saveLastSync(DateTime timestamp) async {
+    await _storage.write(key: _lastSyncKey, value: timestamp.toIso8601String());
+  }
+
+  /// Retrieves the last sync timestamp.
+  Future<DateTime?> getLastSync() async {
+    final value = await _storage.read(key: _lastSyncKey);
+    return value != null ? DateTime.tryParse(value) : null;
   }
 }
 

@@ -5,9 +5,11 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/utils/financial_calculators.dart';
 import 'package:inv_tracker/domain/entities/entry.dart';
 import 'package:inv_tracker/domain/entities/investment.dart';
 import 'package:inv_tracker/presentation/providers/repository_providers.dart';
+import 'package:inv_tracker/presentation/screens/entry_form_modal.dart';
 
 /// Investment detail screen.
 class InvestmentDetailScreen extends ConsumerWidget {
@@ -109,6 +111,10 @@ class InvestmentDetailScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            AppSpacing.gapVerticalMd,
+
+            // Financial metrics
+            _buildMetricsCard(context, entriesAsync),
             AppSpacing.gapVerticalXl,
 
             // Entries section
@@ -116,7 +122,7 @@ class InvestmentDetailScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Transactions', style: Theme.of(context).textTheme.titleMedium),
-                TextButton.icon(icon: const Icon(Icons.add, size: 18), label: const Text('Add'), onPressed: () {}),
+                TextButton.icon(icon: const Icon(Icons.add, size: 18), label: const Text('Add'), onPressed: () => showEntryFormModal(context, investmentId)),
               ],
             ),
             AppSpacing.gapVerticalSm,
@@ -140,7 +146,75 @@ class InvestmentDetailScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildMetricsCard(BuildContext context, AsyncValue<List<Entry>> entriesAsync) {
+    return entriesAsync.when(
+      data: (entries) {
+        if (entries.isEmpty) return const SizedBox.shrink();
+        final invested = FinancialCalculators.calculateTotalInvested(entries);
+        final currentValue = FinancialCalculators.getCurrentValue(entries);
+        final dividends = FinancialCalculators.calculateTotalDividends(entries);
+        if (currentValue == null) {
+          return Card(
+            child: Padding(
+              padding: AppSpacing.cardPadding,
+              child: Column(
+                children: [
+                  _MetricRow(label: 'Total Invested', value: '₹${invested.toStringAsFixed(0)}'),
+                  if (dividends > 0) _MetricRow(label: 'Dividends', value: '₹${dividends.toStringAsFixed(0)}', color: AppColors.success),
+                  const Divider(),
+                  Text('Add a valuation entry to see returns', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                ],
+              ),
+            ),
+          );
+        }
+        final pl = FinancialCalculators.calculateAbsolutePL(currentValue, invested);
+        final plPercent = FinancialCalculators.calculatePercentagePL(currentValue, invested);
+        final moic = FinancialCalculators.calculateMOIC(currentValue, invested);
+        final isProfit = pl >= 0;
+        return Card(
+          child: Padding(
+            padding: AppSpacing.cardPadding,
+            child: Column(
+              children: [
+                _MetricRow(label: 'Current Value', value: '₹${currentValue.toStringAsFixed(0)}', isBold: true),
+                _MetricRow(label: 'Total Invested', value: '₹${invested.toStringAsFixed(0)}'),
+                _MetricRow(label: 'P/L', value: '${isProfit ? '+' : ''}₹${pl.toStringAsFixed(0)} (${plPercent.toStringAsFixed(1)}%)', color: isProfit ? AppColors.profit : AppColors.loss),
+                _MetricRow(label: 'MOIC', value: '${moic.toStringAsFixed(2)}x'),
+                if (dividends > 0) _MetricRow(label: 'Dividends', value: '₹${dividends.toStringAsFixed(0)}', color: AppColors.success),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
   String _formatCategory(String category) => category.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m.group(1)}').trim();
+}
+
+class _MetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? color;
+  final bool isBold;
+  const _MetricRow({required this.label, required this.value, this.color, this.isBold = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(value, style: TextStyle(color: color, fontWeight: isBold ? FontWeight.bold : FontWeight.w500, fontSize: isBold ? 18 : 14)),
+        ],
+      ),
+    );
+  }
 }
 
 class _EntryTile extends StatelessWidget {
