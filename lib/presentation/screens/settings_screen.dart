@@ -90,7 +90,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 );
                 if (confirm == true) {
-                  await ref.read(authNotifierProvider.notifier).signOut();
+                  await ref.read(authStateProvider.notifier).signOut();
                 }
               },
               icon: const Icon(Icons.logout, color: AppColors.error),

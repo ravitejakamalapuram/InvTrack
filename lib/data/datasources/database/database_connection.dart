@@ -1,17 +1,17 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:inv_tracker/data/datasources/database/app_database.dart';
 import 'package:inv_tracker/data/datasources/secure_token_storage.dart';
+
+// Conditional imports for platform-specific implementations
+import 'database_connection_stub.dart'
+    if (dart.library.io) 'database_connection_native.dart'
+    if (dart.library.html) 'database_connection_web.dart' as platform;
 
 /// Creates a database connection with optional encryption.
 ///
 /// On mobile platforms (iOS/Android), uses SQLCipher for encryption.
-/// On web, uses an in-memory database (data persisted via IndexedDB by drift).
+/// On web, uses sqflite_common_ffi_web with IndexedDB persistence.
 class DatabaseConnection {
   static AppDatabase? _instance;
   static final SecureTokenStorage _tokenStorage = SecureTokenStorage();
@@ -27,38 +27,7 @@ class DatabaseConnection {
 
   /// Create the appropriate query executor for the platform.
   static Future<QueryExecutor> _createExecutor() async {
-    if (kIsWeb) {
-      // For web, use driftDatabase with IndexedDB
-      // This requires additional setup with drift_dev
-      return _createWebExecutor();
-    } else {
-      return await _createNativeExecutor();
-    }
-  }
-
-  /// Create executor for web platform.
-  static QueryExecutor _createWebExecutor() {
-    // For now, use in-memory database on web
-    // TODO: Configure IndexedDB persistence with drift_dev
-    return NativeDatabase.memory();
-  }
-
-  /// Create executor for native platforms (iOS, Android, macOS).
-  static Future<QueryExecutor> _createNativeExecutor() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'inv_tracker.db'));
-
-    // Get or create encryption key
-    final encryptionKey = await _tokenStorage.getOrCreateDbEncryptionKey();
-
-    // Use SQLCipher for encryption on native platforms
-    return NativeDatabase.createInBackground(
-      file,
-      setup: (db) {
-        // Set the encryption key using SQLCipher pragma
-        db.execute("PRAGMA key = '$encryptionKey'");
-      },
-    );
+    return platform.createDatabaseExecutor(_tokenStorage);
   }
 
   /// Close the database connection.
@@ -71,13 +40,8 @@ class DatabaseConnection {
   /// Use with caution - all data will be lost.
   static Future<void> deleteDatabase() async {
     await close();
-
     if (!kIsWeb) {
-      final dbFolder = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dbFolder.path, 'inv_tracker.db'));
-      if (await file.exists()) {
-        await file.delete();
-      }
+      await platform.deleteDatabaseFile();
     }
   }
 }

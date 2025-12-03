@@ -5,6 +5,15 @@ import 'package:google_sign_in_web/web_only.dart' as web;
 import 'package:inv_tracker/domain/entities/auth_state.dart';
 import 'package:inv_tracker/presentation/providers/auth_provider.dart';
 
+/// Provider to track if Google Sign-In is initialized on web.
+final _googleSignInInitializedProvider = FutureProvider<bool>((ref) async {
+  if (!kIsWeb) return true;
+  // Wait for auth service to initialize
+  final authService = ref.watch(authServiceProvider);
+  await authService.initialize();
+  return true;
+});
+
 /// Login screen with Google Sign-In button.
 ///
 /// This is the entry point for unauthenticated users.
@@ -14,6 +23,7 @@ class LoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final isInitialized = ref.watch(_googleSignInInitializedProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -91,7 +101,14 @@ class LoginScreen extends ConsumerWidget {
               ],
               // Sign-in button - use Google's renderButton for web
               if (kIsWeb)
-                web.renderButton()
+                isInitialized.when(
+                  data: (_) => web.renderButton(),
+                  loading: () => const SizedBox(
+                    height: 44,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, _) => Text('Error: $e'),
+                )
               else
                 SizedBox(
                   width: double.infinity,

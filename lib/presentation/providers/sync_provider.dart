@@ -5,18 +5,18 @@ import 'package:inv_tracker/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/presentation/providers/database_provider.dart';
 
 /// Provider for Google Sheets service.
-final googleSheetsServiceProvider = Provider<GoogleSheetsService?>((ref) {
-  final tokenStorage = ref.watch(tokenStorageProvider);
-  if (tokenStorage == null) return null;
+final googleSheetsServiceProvider = Provider<GoogleSheetsService>((ref) {
+  final tokenStorage = ref.watch(secureTokenStorageProvider);
   return GoogleSheetsService(tokenStorage);
 });
 
 /// Provider for sync service.
 final syncServiceProvider = Provider<SyncService?>((ref) {
-  final database = ref.watch(databaseProvider);
+  final dbAsync = ref.watch(databaseProvider);
+  final database = dbAsync.whenData((d) => d).value;
   final sheetsService = ref.watch(googleSheetsServiceProvider);
-  final tokenStorage = ref.watch(tokenStorageProvider);
-  if (database == null || sheetsService == null || tokenStorage == null) return null;
+  final tokenStorage = ref.watch(secureTokenStorageProvider);
+  if (database == null) return null;
   return SyncService(database, sheetsService, tokenStorage);
 });
 

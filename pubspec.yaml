@@ -51,6 +51,7 @@ dependencies:
   go_router: ^17.0.0
   google_sign_in_web: ^1.1.0
   http: ^1.6.0
+  drift_sqflite: ^2.0.1
 
 dev_dependencies:
   flutter_test:

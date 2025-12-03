@@ -16,12 +16,3 @@ final databaseProvider = FutureProvider<AppDatabase>((ref) async {
   return db;
 });
 
-/// Provider for watching all investments.
-final investmentsStreamProvider = StreamProvider<List<Investment>>((ref) async* {
-  final dbAsync = ref.watch(databaseProvider);
-  final db = dbAsync.valueOrNull;
-  if (db == null) return;
-
-  yield* db.watchAllInvestments();
-});
-

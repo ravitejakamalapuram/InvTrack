@@ -77,7 +77,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildKpiCards(BuildContext context, WidgetRef ref, AsyncValue investments) {
-    final count = investments.valueOrNull?.length ?? 0;
+    final count = investments.whenData((d) => d).value?.length ?? 0;
 
     return Row(
       children: [
