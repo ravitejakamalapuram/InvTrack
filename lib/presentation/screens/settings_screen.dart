@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/data/datasources/sync_service.dart';
 import 'package:inv_tracker/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/presentation/providers/sync_provider.dart';
 
 /// Settings screen.
 class SettingsScreen extends ConsumerWidget {
@@ -47,7 +50,7 @@ class SettingsScreen extends ConsumerWidget {
           _SettingsSection(
             title: 'Data',
             children: [
-              _SettingsTile(icon: Icons.cloud_sync, title: 'Google Sheets Sync', subtitle: 'Not connected', onTap: () {}),
+              _SyncTile(),
               _SettingsTile(icon: Icons.backup, title: 'Backup & Restore', subtitle: 'Manage your data', onTap: () {}),
             ],
           ),
@@ -140,6 +143,41 @@ class _SettingsTile extends StatelessWidget {
       subtitle: subtitle != null ? Text(subtitle!) : null,
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+  }
+}
+
+class _SyncTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncState = ref.watch(syncNotifierProvider);
+    final isSyncing = syncState.status == SyncStatus.syncing;
+
+    String subtitle;
+    if (isSyncing) {
+      subtitle = 'Syncing...';
+    } else if (syncState.lastSyncTime != null) {
+      subtitle = 'Last synced: ${DateFormat.yMMMd().add_jm().format(syncState.lastSyncTime!)}';
+    } else {
+      subtitle = 'Not synced yet';
+    }
+
+    return ListTile(
+      leading: isSyncing
+          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+          : Icon(Icons.cloud_sync, color: Colors.grey[600]),
+      title: const Text('Google Sheets Sync'),
+      subtitle: Text(subtitle),
+      trailing: isSyncing ? null : const Icon(Icons.chevron_right),
+      onTap: isSyncing ? null : () async {
+        final success = await ref.read(syncNotifierProvider.notifier).sync();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(success ? 'Sync completed!' : 'Sync failed: ${syncState.error ?? "Unknown error"}'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ));
+        }
+      },
     );
   }
 }
