@@ -1,15 +1,15 @@
-# InvTracker — Project Execution Plan
+# InvTracker — Solo Developer Execution Plan
 
-> **Version 1.0** | Project Manager: [PM Name]  
-> **Project Start Date:** 2025-12-09 (Monday)  
-> **Target MVP Launch:** 2026-02-28 (12 weeks)  
-> **Target Full Launch:** 2026-05-29 (24 weeks)
+> **Version 2.0** | Developer: You + AI Assistant (Augment)
+> **Project Start Date:** 2025-12-09 (Monday)
+> **Target MVP Launch:** 8-10 weeks (working evenings/weekends)
+> **Approach:** Iterative, feature-by-feature with working code after each session
 
 ---
 
 ## Executive Summary
 
-**InvTracker** is an offline-first mobile investment tracking application targeting retail investors who need transparency into their portfolio performance with complete data ownership. The app stores data locally (SQLite) and syncs to the user's own Google Drive/Sheets—no backend server required.
+**InvTracker** is an offline-first mobile investment tracking application. This plan is optimized for a **solo developer working with AI assistance**.
 
 ### Key Value Propositions
 - 🔐 **Privacy-first**: No backend, user owns all data
@@ -17,35 +17,39 @@
 - 📊 **Powerful Analytics**: XIRR, TWRR, CAGR, MOIC, P/L
 - 📱 **Cross-platform**: iOS & Android via Flutter
 
-### Success Criteria
-| Metric | Target |
-|--------|--------|
-| Time-to-first-entry | < 30 seconds |
-| App cold start | < 2 seconds |
-| Sync success rate | > 99.5% |
-| Calculation accuracy | < 0.01% variance vs Excel |
-| Crash-free sessions | > 99.9% |
+### Development Approach
+| Principle | Implementation |
+|-----------|----------------|
+| **AI-Assisted** | I write code, tests, docs; you review & run |
+| **Vertical Slices** | Complete features end-to-end, not layers |
+| **Test-First** | Every feature has tests before moving on |
+| **Incremental** | Working app after each session |
+| **GitHub Issues** | Track every task, never lose context |
 
 ---
 
-## Team Structure & Resource Allocation
+## How We'll Work Together
 
-### Core Team (Recommended)
-| Role | Count | Allocation | Responsibilities |
-|------|-------|------------|------------------|
-| **Product Manager** | 1 | 50% | Roadmap, priorities, stakeholder mgmt |
-| **Tech Lead / Architect** | 1 | 100% | Architecture, code reviews, critical paths |
-| **Flutter Developer** | 2 | 100% | UI, core features, sync engine |
-| **UI/UX Designer** | 1 | 75% | Hi-fi mocks, design system, assets |
-| **QA Engineer** | 1 | 75% | Test automation, regression, device testing |
-| **DevOps/Release** | 0.5 | 25% | CI/CD, app store submissions |
+```
+┌─────────────────────────────────────────────────────────┐
+│                   WORKFLOW PER SESSION                   │
+└─────────────────────────────────────────────────────────┘
 
-### Extended Team (Part-time)
-| Role | Involvement |
-|------|-------------|
-| Security Consultant | Phases 1 & 3 review |
-| Legal/Compliance | Privacy policy, ToS |
-| Finance Advisor | Calculation validation |
+1. You pick an issue from GitHub Projects board
+2. We discuss approach (if complex)
+3. I write the code + tests
+4. You run tests, verify on device/simulator
+5. We fix any issues
+6. You commit & close the issue
+7. Repeat!
+```
+
+### Session Types
+| Type | Duration | Goal |
+|------|----------|------|
+| **Quick Fix** | 30 min | Bug fix, small enhancement |
+| **Feature Build** | 1-2 hrs | Complete one feature slice |
+| **Deep Dive** | 2-4 hrs | Complex feature (sync, calculations) |
 
 ---
 
