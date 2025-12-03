@@ -43,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google Services credentials (KEEP PRIVATE - DO NOT COMMIT)
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Firebase config (if used later)
+firebase_options.dart
