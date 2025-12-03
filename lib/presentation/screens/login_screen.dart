@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in_web/web_only.dart' as web;
 import 'package:inv_tracker/domain/entities/auth_state.dart';
 import 'package:inv_tracker/presentation/providers/auth_provider.dart';
 
@@ -87,17 +89,20 @@ class LoginScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-              // Sign-in button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: _GoogleSignInButton(
-                  isLoading: authState.isLoading,
-                  onPressed: authState.isLoading
-                      ? null
-                      : () => ref.read(authStateProvider.notifier).signIn(),
+              // Sign-in button - use Google's renderButton for web
+              if (kIsWeb)
+                web.renderButton()
+              else
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: _GoogleSignInButton(
+                    isLoading: authState.isLoading,
+                    onPressed: authState.isLoading
+                        ? null
+                        : () => ref.read(authStateProvider.notifier).signIn(),
+                  ),
                 ),
-              ),
               const SizedBox(height: 24),
               // Privacy note
               Text(
