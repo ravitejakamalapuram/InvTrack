@@ -1,0 +1,1 @@
+id,user_id,investment_id,investment_name,category,date,type,amount,currency,units,price_per_unit,running_value,transaction_id,note,created_at,updated_at,source,sync_status,meta
