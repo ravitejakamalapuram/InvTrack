@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/core/constants/app_constants.dart';
+import 'package:inv_tracker/data/datasources/secure_token_storage.dart';
 import 'package:inv_tracker/domain/entities/user.dart';
 
 /// Service responsible for Google Sign-In authentication.
@@ -10,11 +11,15 @@ import 'package:inv_tracker/domain/entities/user.dart';
 /// a clean interface for authentication operations.
 class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  final SecureTokenStorage _tokenStorage;
   final StreamController<User?> _authStateController =
       StreamController<User?>.broadcast();
 
   GoogleSignInAccount? _currentAccount;
   bool _initialized = false;
+
+  AuthService({SecureTokenStorage? tokenStorage})
+      : _tokenStorage = tokenStorage ?? SecureTokenStorage();
 
   /// Initialize the auth service.
   Future<void> initialize() async {
@@ -25,18 +30,35 @@ class AuthService {
     );
 
     // Listen to authentication events
-    _googleSignIn.authenticationEvents.listen((event) {
+    _googleSignIn.authenticationEvents.listen((event) async {
       switch (event) {
         case GoogleSignInAuthenticationEventSignIn():
           _currentAccount = event.user;
+          // Store tokens securely
+          await _storeTokens(event.user);
           _authStateController.add(_mapGoogleUserToUser(event.user));
         case GoogleSignInAuthenticationEventSignOut():
           _currentAccount = null;
+          // Clear stored tokens
+          await _tokenStorage.clearAllTokens();
           _authStateController.add(null);
       }
     });
 
     _initialized = true;
+  }
+
+  /// Store tokens from the signed-in user.
+  Future<void> _storeTokens(GoogleSignInAccount user) async {
+    try {
+      final idToken = user.authentication.idToken;
+      if (idToken != null) {
+        await _tokenStorage.saveIdToken(idToken);
+      }
+      await _tokenStorage.saveUserId(user.id);
+    } catch (e) {
+      // Token storage failure shouldn't block sign-in
+    }
   }
 
   /// Stream of authentication state changes.
@@ -87,6 +109,7 @@ class AuthService {
   /// Signs out the current user.
   Future<void> signOut() async {
     await _googleSignIn.signOut();
+    await _tokenStorage.clearAllTokens();
     _currentAccount = null;
     _authStateController.add(null);
   }
@@ -94,6 +117,7 @@ class AuthService {
   /// Disconnects the user's Google account from the app.
   Future<void> disconnect() async {
     await _googleSignIn.disconnect();
+    await _tokenStorage.clearAllTokens();
     _currentAccount = null;
     _authStateController.add(null);
   }

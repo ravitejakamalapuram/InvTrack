@@ -2,12 +2,19 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/data/datasources/auth_service.dart';
+import 'package:inv_tracker/data/datasources/secure_token_storage.dart';
 import 'package:inv_tracker/domain/entities/auth_state.dart';
 import 'package:inv_tracker/domain/entities/user.dart';
 
+/// Provider for the SecureTokenStorage singleton.
+final secureTokenStorageProvider = Provider<SecureTokenStorage>((ref) {
+  return SecureTokenStorage();
+});
+
 /// Provider for the AuthService singleton.
 final authServiceProvider = Provider<AuthService>((ref) {
-  final service = AuthService();
+  final tokenStorage = ref.watch(secureTokenStorageProvider);
+  final service = AuthService(tokenStorage: tokenStorage);
   ref.onDispose(() => service.dispose());
   return service;
 });
