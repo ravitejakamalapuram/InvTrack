@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
@@ -15,10 +16,16 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
   );
 });
 
+/// Provider for FlutterSecureStorage.
+final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
+  return const FlutterSecureStorage();
+});
+
 /// Provider for the AuthRepository.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final googleSignIn = ref.watch(googleSignInProvider);
-  return AuthRepositoryImpl(googleSignIn);
+  final secureStorage = ref.watch(secureStorageProvider);
+  return AuthRepositoryImpl(googleSignIn, secureStorage);
 });
 
 /// Stream provider for the current user state.

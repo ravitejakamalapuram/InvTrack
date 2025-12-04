@@ -8,15 +8,16 @@ import 'package:uuid/uuid.dart';
 import 'package:inv_tracker/core/database/tables/portfolios.dart';
 import 'package:inv_tracker/core/database/tables/investments.dart';
 import 'package:inv_tracker/core/database/tables/transactions.dart';
+import 'package:inv_tracker/core/database/tables/sync_queue.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Portfolios, Investments, Transactions])
+@DriftDatabase(tables: [Portfolios, Investments, Transactions, SyncQueue])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2; // Incrementing schema version
 }
 
 LazyDatabase _openConnection() {

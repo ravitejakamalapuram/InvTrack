@@ -4,8 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
 
+import 'package:inv_tracker/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:inv_tracker/features/home/presentation/screens/home_shell_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
+import 'package:inv_tracker/features/portfolio/presentation/screens/portfolio_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
+
 // Private navigator keys
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -32,11 +39,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Home Screen (Placeholder)')),
-        ),
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) {
+          return HomeShellScreen(navigationShell: child as StatefulNavigationShell);
+        },
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/investments',
+            builder: (context, state) => const InvestmentListScreen(),
+          ),
+          GoRoute(
+            path: '/portfolio',
+            builder: (context, state) => const PortfolioScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/auth/signin',

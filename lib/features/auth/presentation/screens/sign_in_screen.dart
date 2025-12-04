@@ -73,7 +73,26 @@ class SignInScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  try {
+                    await ref.read(authRepositoryProvider).signInAsGuest();
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.person_outline),
+                label: const Text('Continue as Guest'),
+              ),
+            ),
             ],
           ),
         ),
