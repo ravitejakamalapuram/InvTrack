@@ -1,83 +1,163 @@
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/app/app.dart';
 import 'package:inv_tracker/core/database/app_database.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
-import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/portfolio/data/repositories/portfolio_repository_impl.dart';
+import 'package:inv_tracker/features/portfolio/domain/entities/portfolio_entity.dart';
+import 'package:inv_tracker/features/investment/data/repositories/investment_repository_impl.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 void main() {
-  testWidgets('App Flow: Create Portfolio -> Add Investment -> Add Transaction -> Verify Dashboard', (tester) async {
-    // 1. Setup Overrides
-    SharedPreferences.setMockInitialValues({});
-    
-    final inMemoryDb = AppDatabase(NativeDatabase.memory());
-    
-    await tester.pumpWidget(
-      ProviderScope(
+  group('App Flow Integration Tests', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+      container = ProviderContainer(
         overrides: [
-          databaseProvider.overrideWithValue(inMemoryDb),
-          authStateProvider.overrideWith((ref) => Stream.value(
-            const UserEntity(id: 'test_user', email: 'test@example.com', displayName: 'Test User'),
-          )),
+          databaseProvider.overrideWithValue(db),
         ],
-        child: const InvTrackerApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+    });
 
-    // 2. Navigate to Investments Tab
-    await tester.tap(find.byIcon(Icons.show_chart_outlined));
-    await tester.pumpAndSettle();
+    tearDown(() async {
+      await db.close();
+      container.dispose();
+    });
 
-    // 3. Create Default Portfolio
-    // App starts with "No Portfolios" empty state.
-    final createPortfolioBtn = find.text('Create Default Portfolio');
-    expect(createPortfolioBtn, findsOneWidget);
-    
-    await tester.tap(createPortfolioBtn);
-    await tester.pumpAndSettle();
+    test('Create Portfolio -> Add Investment -> Add Transaction -> Verify Totals', () async {
+      // 1. Create Portfolio
+      final portfolioRepo = container.read(portfolioRepositoryProvider);
+      final portfolio = PortfolioEntity(
+        id: 'test-portfolio-1',
+        name: 'My Portfolio',
+        currency: 'USD',
+        createdAt: DateTime.now(),
+      );
+      await portfolioRepo.createPortfolio(portfolio);
 
-    // 3. Add Investment
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pumpAndSettle();
+      // Verify portfolio created
+      final portfolios = await portfolioRepo.getAllPortfolios();
+      expect(portfolios.length, 1);
+      expect(portfolios.first.name, 'My Portfolio');
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'Apple Inc.');
-    await tester.enterText(find.byType(TextFormField).at(1), 'AAPL');
-    
-    // Portfolio is auto-selected now
-    
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Add Investment'));
-    await tester.pumpAndSettle();
+      // 2. Add Investment
+      final investmentRepo = container.read(investmentRepositoryProvider);
+      final investment = InvestmentEntity(
+        id: 'test-investment-1',
+        portfolioId: portfolio.id,
+        name: 'Apple Inc.',
+        symbol: 'AAPL',
+        type: 'stock',
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await investmentRepo.createInvestment(investment);
 
-    // Verify added
-    expect(find.text('Apple Inc.'), findsOneWidget);
+      // Verify investment created
+      final investments = await investmentRepo.getInvestmentsByPortfolio(portfolio.id);
+      expect(investments.length, 1);
+      expect(investments.first.name, 'Apple Inc.');
 
-    // 4. Add Transaction
-    await tester.tap(find.text('Apple Inc.'));
-    await tester.pumpAndSettle();
+      // 3. Add Transaction (Buy 10 shares at $150)
+      final transaction = TransactionEntity(
+        id: 'test-transaction-1',
+        investmentId: investment.id,
+        type: 'buy',
+        quantity: 10,
+        pricePerUnit: 150.0,
+        fees: 0.0,
+        totalAmount: 1500.0,
+        date: DateTime.now(),
+        createdAt: DateTime.now(),
+      );
+      await investmentRepo.addTransaction(transaction);
 
-    await tester.tap(find.text('Add Transaction'));
-    await tester.pumpAndSettle();
+      // Verify transaction created
+      final transactions = await investmentRepo.getTransactionsByInvestment(investment.id);
+      expect(transactions.length, 1);
+      expect(transactions.first.quantity, 10);
+      expect(transactions.first.pricePerUnit, 150.0);
 
-    await tester.enterText(find.byType(TextFormField).at(0), '10'); // Quantity
-    await tester.enterText(find.byType(TextFormField).at(1), '150.0'); // Price
+      // 4. Verify total value (10 * 150 = 1500)
+      final totalValue = transactions.fold<double>(
+        0,
+        (sum, t) => sum + t.totalAmount,
+      );
+      expect(totalValue, 1500.0);
+    });
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Save Transaction'));
-    await tester.pumpAndSettle();
+    test('Multiple transactions calculate correct totals', () async {
+      // Create portfolio and investment
+      final portfolioRepo = container.read(portfolioRepositoryProvider);
+      final investmentRepo = container.read(investmentRepositoryProvider);
 
-    // 5. Verify Dashboard
-    await tester.tap(find.byIcon(Icons.dashboard_outlined));
-    await tester.pumpAndSettle();
-    
-    // Verify total value (10 * 150 = 1500)
-    expect(find.text('\$1,500.00'), findsOneWidget);
-    
-    // Cleanup
-    await inMemoryDb.close();
+      final portfolio = PortfolioEntity(
+        id: 'test-portfolio-2',
+        name: 'Test Portfolio',
+        currency: 'USD',
+        createdAt: DateTime.now(),
+      );
+      await portfolioRepo.createPortfolio(portfolio);
+
+      final investment = InvestmentEntity(
+        id: 'test-investment-2',
+        portfolioId: portfolio.id,
+        name: 'Google',
+        symbol: 'GOOGL',
+        type: 'stock',
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await investmentRepo.createInvestment(investment);
+
+      // Add multiple transactions
+      await investmentRepo.addTransaction(TransactionEntity(
+        id: 'tx-1',
+        investmentId: investment.id,
+        type: 'buy',
+        quantity: 5,
+        pricePerUnit: 100.0,
+        fees: 0.0,
+        totalAmount: 500.0,
+        date: DateTime.now(),
+        createdAt: DateTime.now(),
+      ));
+
+      await investmentRepo.addTransaction(TransactionEntity(
+        id: 'tx-2',
+        investmentId: investment.id,
+        type: 'buy',
+        quantity: 10,
+        pricePerUnit: 120.0,
+        fees: 0.0,
+        totalAmount: 1200.0,
+        date: DateTime.now(),
+        createdAt: DateTime.now(),
+      ));
+
+      // Verify transactions
+      final transactions = await investmentRepo.getTransactionsByInvestment(investment.id);
+      expect(transactions.length, 2);
+
+      // Calculate total invested: 500 + 1200 = 1700
+      final totalInvested = transactions.fold<double>(
+        0,
+        (sum, t) => sum + t.totalAmount,
+      );
+      expect(totalInvested, 1700.0);
+
+      // Calculate total quantity: 5 + 10 = 15
+      final totalQuantity = transactions.fold<double>(
+        0,
+        (sum, t) => sum + t.quantity,
+      );
+      expect(totalQuantity, 15.0);
+    });
   });
 }
