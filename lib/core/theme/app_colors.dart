@@ -1,67 +1,34 @@
 import 'package:flutter/material.dart';
 
-/// App color palette.
 class AppColors {
-  AppColors._();
+  // Light Mode
+  static const Color primaryLight = Color(0xFF2563EB);
+  static const Color primaryDarkLight = Color(0xFF1D4ED8);
+  static const Color successLight = Color(0xFF10B981);
+  static const Color dangerLight = Color(0xFFEF4444);
+  static const Color warningLight = Color(0xFFF59E0B);
+  static const Color neutral900Light = Color(0xFF111827);
+  static const Color neutral600Light = Color(0xFF4B5563);
+  static const Color neutral400Light = Color(0xFF9CA3AF);
+  static const Color neutral100Light = Color(0xFFF3F4F6);
+  static const Color whiteLight = Color(0xFFFFFFFF);
 
-  // Primary Colors
-  static const primary = Color(0xFF2E7D32);
-  static const primaryLight = Color(0xFF60AD5E);
-  static const primaryDark = Color(0xFF005005);
+  // Dark Mode
+  static const Color primaryDark = Color(0xFF3B82F6);
+  static const Color successDark = Color(0xFF34D399);
+  static const Color dangerDark = Color(0xFFF87171);
+  static const Color neutral50Dark = Color(0xFFF9FAFB);
+  static const Color neutral400Dark = Color(0xFF9CA3AF);
+  static const Color neutral800Dark = Color(0xFF1F2937);
+  static const Color neutral900Dark = Color(0xFF111827);
 
-  // Secondary Colors
-  static const secondary = Color(0xFF1976D2);
-  static const secondaryLight = Color(0xFF63A4FF);
-  static const secondaryDark = Color(0xFF004BA0);
-
-  // Semantic Colors
-  static const success = Color(0xFF4CAF50);
-  static const warning = Color(0xFFFF9800);
-  static const error = Color(0xFFF44336);
-  static const info = Color(0xFF2196F3);
-
-  // Finance Colors
-  static const profit = Color(0xFF4CAF50);
-  static const loss = Color(0xFFF44336);
-  static const neutral = Color(0xFF9E9E9E);
-
-  // Surface Colors (Light)
-  static const surfaceLight = Color(0xFFFAFAFA);
-  static const backgroundLight = Color(0xFFFFFFFF);
-  static const cardLight = Color(0xFFFFFFFF);
-
-  // Surface Colors (Dark)
-  static const surfaceDark = Color(0xFF121212);
-  static const backgroundDark = Color(0xFF1E1E1E);
-  static const cardDark = Color(0xFF2C2C2C);
-
-  // Text Colors (Light)
-  static const textPrimaryLight = Color(0xFF212121);
-  static const textSecondaryLight = Color(0xFF757575);
-  static const textDisabledLight = Color(0xFFBDBDBD);
-
-  // Text Colors (Dark)
-  static const textPrimaryDark = Color(0xFFFFFFFF);
-  static const textSecondaryDark = Color(0xFFB3B3B3);
-  static const textDisabledDark = Color(0xFF757575);
-
-  // Category Colors for investments
-  static const Map<String, Color> categoryColors = {
-    'mutualFund': Color(0xFF4CAF50),
-    'stock': Color(0xFF2196F3),
-    'fixedDeposit': Color(0xFFFF9800),
-    'gold': Color(0xFFFFD700),
-    'realEstate': Color(0xFF795548),
-    'crypto': Color(0xFF9C27B0),
-    'bond': Color(0xFF607D8B),
-    'ppf': Color(0xFF00BCD4),
-    'nps': Color(0xFFE91E63),
-    'other': Color(0xFF9E9E9E),
-  };
-
-  /// Get color for a category.
-  static Color getCategoryColor(String category) {
-    return categoryColors[category] ?? neutral;
-  }
+  // Graph Colors
+  static const Color graphBlue = Color(0xFF2563EB);
+  static const Color graphPurple = Color(0xFF7C3AED);
+  static const Color graphPink = Color(0xFFEC4899);
+  static const Color graphAmber = Color(0xFFF59E0B);
+  static const Color graphEmerald = Color(0xFF10B981);
+  static const Color graphCyan = Color(0xFF06B6D4);
+  static const Color graphOrange = Color(0xFFF97316);
+  static const Color graphViolet = Color(0xFF8B5CF6);
 }
-
