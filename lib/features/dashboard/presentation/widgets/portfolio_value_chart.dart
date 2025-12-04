@@ -25,12 +25,18 @@ class PortfolioValueChart extends StatelessWidget {
       return const Center(child: Text('No data available'));
     }
 
+    // Ensure intervals are never zero (fl_chart assertion fails otherwise)
+    final yRange = maxY - minY;
+    final xRange = maxX - minX;
+    final horizontalInterval = yRange > 0 ? yRange / 5 : 1.0;
+    final verticalInterval = xRange > 0 ? xRange / 5 : 1.0;
+
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: (maxY - minY) / 5,
+          horizontalInterval: horizontalInterval,
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.neutral400Light.withValues(alpha: 0.1),
@@ -46,7 +52,7 @@ class PortfolioValueChart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 30,
-              interval: (maxX - minX) / 5,
+              interval: verticalInterval,
               getTitlesWidget: (value, meta) {
                 final date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
                 return Padding(
@@ -65,7 +71,7 @@ class PortfolioValueChart extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: (maxY - minY) / 5,
+              interval: horizontalInterval,
               getTitlesWidget: (value, meta) {
                 return Text(
                   NumberFormat.compact().format(value),
