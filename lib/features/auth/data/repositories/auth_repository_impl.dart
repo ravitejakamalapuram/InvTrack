@@ -7,7 +7,9 @@ import 'package:rxdart/rxdart.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final GoogleSignIn _googleSignIn;
   final FlutterSecureStorage _secureStorage;
-  final _authStateController = BehaviorSubject<UserEntity?>();
+  // Initialize with null to ensure stream emits immediately
+  final _authStateController = BehaviorSubject<UserEntity?>.seeded(null);
+  bool _isInitialized = false;
 
   static const _guestKey = 'is_guest';
 
@@ -15,7 +17,10 @@ class AuthRepositoryImpl implements AuthRepository {
     _init();
   }
 
-  void _init() async {
+  Future<void> _init() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
+
     // Check for guest session
     final isGuest = await _secureStorage.read(key: _guestKey);
     if (isGuest == 'true') {
@@ -30,15 +35,16 @@ class AuthRepositoryImpl implements AuthRepository {
       _googleSignIn.onCurrentUserChanged.listen((googleUser) {
         _authStateController.add(_mapGoogleUserToEntity(googleUser));
       });
-      // Initial check
-      final currentUser = _googleSignIn.currentUser;
-      if (currentUser != null) {
-        _authStateController.add(_mapGoogleUserToEntity(currentUser));
-      } else {
-         // If not guest and not google signed in, emit null (only if we haven't emitted already)
-         if (!_authStateController.hasValue) {
-            _authStateController.add(null);
-         }
+      // Initial check - try silent sign in first
+      try {
+        final currentUser = await _googleSignIn.signInSilently();
+        if (currentUser != null) {
+          _authStateController.add(_mapGoogleUserToEntity(currentUser));
+        }
+        // If null, the seeded null value is already correct
+      } catch (e) {
+        // Silent sign-in failed, user needs to sign in manually
+        // The seeded null value is already correct
       }
     }
   }

@@ -92,7 +92,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             children: [
               // Transaction Type
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(labelText: 'Type'),
                 items: _transactionTypes.map((type) {
                   return DropdownMenuItem(

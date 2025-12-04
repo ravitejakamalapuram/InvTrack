@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
-import 'package:inv_tracker/features/portfolio/domain/entities/portfolio_entity.dart';
 import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
 
 class AddInvestmentScreen extends ConsumerStatefulWidget {
@@ -102,7 +101,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(labelText: 'Type'),
                 items: _investmentTypes.map((type) {
                   return DropdownMenuItem(
@@ -124,12 +123,17 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
                   }
                   // Auto-select first if none selected
                   if (_selectedPortfolioId == null && portfolios.isNotEmpty) {
-                     // We don't set state here to avoid rebuild loops, usually handled better
-                     // For now, let user select or handle in init
+                     WidgetsBinding.instance.addPostFrameCallback((_) {
+                       if (mounted && _selectedPortfolioId == null) {
+                         setState(() {
+                           _selectedPortfolioId = portfolios.first.id;
+                         });
+                       }
+                     });
                   }
                   
                   return DropdownButtonFormField<String>(
-                    value: _selectedPortfolioId,
+                    initialValue: _selectedPortfolioId,
                     decoration: const InputDecoration(labelText: 'Portfolio'),
                     items: portfolios.map((p) {
                       return DropdownMenuItem(

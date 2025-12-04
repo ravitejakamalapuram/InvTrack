@@ -7,13 +7,36 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:inv_tracker/features/dashboard/presentation/widgets/asset_allocation_chart.dart';
 import 'package:inv_tracker/features/dashboard/presentation/widgets/portfolio_value_chart.dart';
+import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
 import 'package:inv_tracker/features/sync/presentation/widgets/sync_status_icon.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _hasCheckedPortfolio = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-create default portfolio on first load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureDefaultPortfolio();
+    });
+  }
+
+  Future<void> _ensureDefaultPortfolio() async {
+    if (_hasCheckedPortfolio) return;
+    _hasCheckedPortfolio = true;
+    await ref.read(portfolioProvider.notifier).createDefaultPortfolioIfNone();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final metricsAsync = ref.watch(dashboardMetricsProvider);
 
     return Scaffold(
@@ -59,7 +82,7 @@ class DashboardScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.neutral400Light.withOpacity(0.1)),
+                border: Border.all(color: AppColors.neutral400Light.withValues(alpha: 0.1)),
               ),
               child: metricsAsync.when(
                 data: (m) {
@@ -103,7 +126,7 @@ class DashboardScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.neutral400Light.withOpacity(0.1)),
+                border: Border.all(color: AppColors.neutral400Light.withValues(alpha: 0.1)),
               ),
               child: metricsAsync.when(
                 data: (m) => AssetAllocationChart(allocation: m.allocation),
@@ -137,7 +160,7 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           Text(
             title,
-            style: AppTypography.body.copyWith(color: Colors.white.withOpacity(0.8)),
+            style: AppTypography.body.copyWith(color: Colors.white.withValues(alpha: 0.8)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -150,7 +173,7 @@ class DashboardScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(

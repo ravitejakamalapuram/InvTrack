@@ -33,7 +33,7 @@ class PortfolioValueChart extends StatelessWidget {
           horizontalInterval: (maxY - minY) / 5,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppColors.neutral400Light.withOpacity(0.1),
+              color: AppColors.neutral400Light.withValues(alpha: 0.1),
               strokeWidth: 1,
             );
           },
@@ -97,7 +97,7 @@ class PortfolioValueChart extends StatelessWidget {
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: AppColors.primaryLight.withOpacity(0.1),
+              color: AppColors.primaryLight.withValues(alpha: 0.1),
             ),
           ),
         ],
