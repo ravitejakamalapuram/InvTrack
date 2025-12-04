@@ -1,8 +1,12 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:inv_tracker/features/dashboard/presentation/widgets/asset_allocation_chart.dart';
+import 'package:inv_tracker/features/dashboard/presentation/widgets/portfolio_value_chart.dart';
 import 'package:inv_tracker/features/sync/presentation/widgets/sync_status_icon.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -122,7 +126,7 @@ class DashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryLight.withOpacity(0.3),
+            color: AppColors.primaryLight.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

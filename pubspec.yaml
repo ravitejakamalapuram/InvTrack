@@ -58,6 +58,8 @@ dependencies:
   rxdart: ^0.28.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.13
   shared_preferences: ^2.5.3
+  integration_test:
+    sdk: flutter
 
 
 dev_dependencies:

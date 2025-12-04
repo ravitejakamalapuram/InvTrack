@@ -14,7 +14,7 @@ part 'app_database.g.dart';
 
 @DriftDatabase(tables: [Portfolios, Investments, Transactions, SyncQueue])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   @override
   int get schemaVersion => 2; // Incrementing schema version

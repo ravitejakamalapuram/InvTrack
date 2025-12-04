@@ -33,10 +33,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen> {
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedPortfolioId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a portfolio')),
-        );
-        return;
+        final portfolios = ref.read(allPortfoliosProvider).valueOrNull;
+        if (portfolios != null && portfolios.isNotEmpty) {
+          _selectedPortfolioId = portfolios.first.id;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a portfolio')),
+          );
+          return;
+        }
       }
 
       try {

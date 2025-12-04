@@ -47,7 +47,7 @@ class HomeShellScreen extends StatelessWidget {
           ),
         ],
         backgroundColor: AppColors.whiteLight,
-        indicatorColor: AppColors.primaryLight.withOpacity(0.1),
+        indicatorColor: AppColors.primaryLight.withValues(alpha: 0.1),
         surfaceTintColor: Colors.transparent,
       ),
     );

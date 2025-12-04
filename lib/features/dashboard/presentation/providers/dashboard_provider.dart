@@ -1,34 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/portfolio/domain/entities/portfolio_entity.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/portfolio/domain/entities/portfolio_entity.dart';
 import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
-
-  // Calculate Allocation
-  final Map<String, double> allocation = {};
-  for (final investment in allTransactions.map((e) => e.investmentId).toSet()) {
-    // We need investment details (type) which we don't have easily here without fetching again or restructuring.
-    // Optimization: We fetched investments earlier. We should map them.
-  }
-  
-  // Re-fetching or restructuring for allocation
-  // Let's do a simpler approach: iterate portfolios -> investments again or store them.
-  // Better: Create a map of investmentId -> InvestmentEntity during the first loop.
-  
-  final Map<String, InvestmentEntity> investmentMap = {};
-  
-  // Refactored loop to populate investmentMap
-  // We need to restart the logic slightly to be efficient.
-  
-  // Let's rewrite the provider body to be cleaner.
-  return _calculateMetrics(ref, portfolios);
-});
-
-import 'package:flutter/foundation.dart';
-
-// ...
 
 final dashboardMetricsProvider = FutureProvider<DashboardMetrics>((ref) async {
   final portfolios = await ref.watch(allPortfoliosProvider.future);
@@ -91,9 +68,6 @@ Future<DashboardMetrics> _calculateMetricsIsolated(_CalculationData data) async 
       
       double currentPrice = 0;
       if (investmentTransactions.isNotEmpty) {
-        // Sort only if needed, but here we need latest price.
-        // Optimization: If transactions are already sorted or we just find max date.
-        // Let's assume we need to sort.
         investmentTransactions.sort((a, b) => b.date.compareTo(a.date));
         currentPrice = investmentTransactions.first.pricePerUnit;
       }
@@ -115,21 +89,15 @@ Future<DashboardMetrics> _calculateMetricsIsolated(_CalculationData data) async 
 
   // Historical Data (Invested Capital Over Time)
   final now = DateTime.now();
-  // Optimization: Sort all transactions by date once
   final sortedTransactions = List<TransactionEntity>.from(data.transactions);
   sortedTransactions.sort((a, b) => a.date.compareTo(b.date));
 
   for (int i = 30; i >= 0; i--) {
     final date = now.subtract(Duration(days: i));
     
-    // Calculate cumulative invested amount up to this date
-    // Since transactions are sorted, we can optimize this loop if we want, 
-    // but for 30 points and 10k transactions, O(30*N) is acceptable in isolate.
-    // Better: Iterate transactions once and fill buckets.
-    
     double investedAtDate = 0;
     for (final t in sortedTransactions) {
-      if (t.date.isAfter(date)) break; // Optimization since sorted
+      if (t.date.isAfter(date)) break;
       
       if (t.type == 'BUY') {
         investedAtDate += t.totalAmount;

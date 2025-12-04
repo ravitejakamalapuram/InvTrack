@@ -43,6 +43,7 @@ class SeedService {
         type: _random.nextBool() ? 'Stock' : 'Crypto',
         isActive: true,
         createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
       await investmentRepo.createInvestment(investment);
       investments.add(investment);

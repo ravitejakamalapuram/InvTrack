@@ -39,27 +39,43 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      ShellRoute(
-        navigatorKey: _shellNavigatorKey,
-        builder: (context, state, child) {
-          return HomeShellScreen(navigationShell: child as StatefulNavigationShell);
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return HomeShellScreen(navigationShell: navigationShell);
         },
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const DashboardScreen(),
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _shellNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/investments',
-            builder: (context, state) => const InvestmentListScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/investments',
+                builder: (context, state) => const InvestmentListScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/portfolio',
-            builder: (context, state) => const PortfolioScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/portfolio',
+                builder: (context, state) => const PortfolioScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: '/settings',
-            builder: (context, state) => const SettingsScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                builder: (context, state) => const SettingsScreen(),
+              ),
+            ],
           ),
         ],
       ),

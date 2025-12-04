@@ -60,7 +60,7 @@ class InvestmentListScreen extends ConsumerWidget {
                   final investment = investments[index];
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppColors.primaryLight.withOpacity(0.1),
+                      backgroundColor: AppColors.primaryLight.withValues(alpha: 0.1),
                       child: Text(investment.symbol?.substring(0, 1) ?? investment.name.substring(0, 1)),
                     ),
                     title: Text(investment.name, style: AppTypography.body),
