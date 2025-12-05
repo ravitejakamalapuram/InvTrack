@@ -9,13 +9,15 @@ import 'package:inv_tracker/features/home/presentation/screens/home_shell_screen
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
 import 'package:inv_tracker/features/portfolio/presentation/screens/portfolio_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 
-// Private navigator keys
+// Private navigator key - only root needs one
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final securityState = ref.watch(securityProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -36,6 +38,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/';
       }
 
+      // Security Lock Check
+      final isLocked = securityState.isLocked;
+      final isLockScreen = state.uri.toString() == '/lock';
+
+      if (isLoggedIn && isLocked && !isLockScreen) {
+        return '/lock';
+      }
+
+      if (isLoggedIn && !isLocked && isLockScreen) {
+        return '/';
+      }
+
       return null;
     },
     routes: [
@@ -45,7 +59,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
         branches: [
           StatefulShellBranch(
-            navigatorKey: _shellNavigatorKey,
             routes: [
               GoRoute(
                 path: '/',
@@ -82,6 +95,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/signin',
         builder: (context, state) => const SignInScreen(),
+      ),
+      GoRoute(
+        path: '/lock',
+        builder: (context, state) => const PasscodeScreen(mode: PasscodeMode.unlock),
       ),
     ],
   );

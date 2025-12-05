@@ -1,23 +1,18 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/app/app.dart';
-import 'package:sqlite3/open.dart';
-import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/core/database/database_init.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize SQLCipher for Android
-  // Must be done BEFORE any database operations
-  if (Platform.isAndroid) {
-    // Apply workaround for older Android versions first
-    await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
-    // Override sqlite3 to use sqlcipher
-    open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+  // Initialize platform-specific database (SQLCipher for mobile, in-memory for web)
+  if (!kIsWeb) {
+    await initializeMobileDatabase();
   }
 
   final sharedPreferences = await SharedPreferences.getInstance();

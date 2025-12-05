@@ -8,10 +8,13 @@ class AppColors {
   static const Color dangerLight = Color(0xFFEF4444);
   static const Color warningLight = Color(0xFFF59E0B);
   static const Color neutral900Light = Color(0xFF111827);
+  static const Color textPrimaryLight = neutral900Light;
   static const Color neutral600Light = Color(0xFF4B5563);
   static const Color neutral400Light = Color(0xFF9CA3AF);
+  static const Color neutral300Light = Color(0xFFD1D5DB);
   static const Color neutral100Light = Color(0xFFF3F4F6);
   static const Color whiteLight = Color(0xFFFFFFFF);
+  static const Color backgroundLight = Color(0xFFF9FAFB);
 
   // Dark Mode
   static const Color primaryDark = Color(0xFF3B82F6);

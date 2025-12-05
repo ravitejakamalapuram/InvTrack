@@ -91,6 +91,7 @@ class InvestmentListScreen extends ConsumerWidget {
           );
         },
         backgroundColor: AppColors.primaryLight,
+        tooltip: 'Add Investment',
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

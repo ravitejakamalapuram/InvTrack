@@ -57,6 +57,7 @@ class PortfolioScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddPortfolioDialog(context, ref),
+        tooltip: 'Add Portfolio',
         child: const Icon(Icons.add),
       ),
     );
