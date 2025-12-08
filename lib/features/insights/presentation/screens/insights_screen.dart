@@ -1,12 +1,15 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/insights/presentation/providers/insights_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 
 class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
@@ -16,7 +19,7 @@ class InsightsScreen extends ConsumerWidget {
     final insightsAsync = ref.watch(insightsDataProvider);
     final selectedPeriod = ref.watch(insightsPeriodProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
+    final currencyFormat = ref.watch(currencyFormatProvider);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -73,7 +76,7 @@ class InsightsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: StaggeredFadeIn(
                         index: entry.key,
-                        child: _buildInvestmentRow(entry.value, currencyFormat, isDark),
+                        child: _buildInvestmentRow(context, entry.value, currencyFormat, isDark),
                       ),
                     ),
                   ),
@@ -306,77 +309,93 @@ class InsightsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInvestmentRow(InvestmentInsight insight, NumberFormat fmt, bool isDark) {
+  Widget _buildInvestmentRow(BuildContext context, InvestmentInsight insight, NumberFormat fmt, bool isDark) {
     final isPositive = insight.profitLoss >= 0;
 
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                insight.investment.name.substring(0, 1).toUpperCase(),
-                style: AppTypography.h4.copyWith(
-                  color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => InvestmentDetailScreen(investment: insight.investment),
+          ),
+        );
+      },
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Icon
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  insight.investment.name.substring(0, 1).toUpperCase(),
+                  style: AppTypography.h4.copyWith(
+                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Name & Type
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 12),
+            // Name & Type
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    insight.investment.name,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${insight.investment.type} • ${insight.allocationPercent.toStringAsFixed(1)}%',
+                    style: AppTypography.caption.copyWith(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Value & Return
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  insight.investment.name,
+                  fmt.format(insight.currentValue),
                   style: AppTypography.bodyMedium.copyWith(
                     color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                     fontWeight: FontWeight.w600,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${insight.investment.type} • ${insight.allocationPercent.toStringAsFixed(1)}%',
+                  '${isPositive ? '+' : ''}${insight.profitLossPercent.toStringAsFixed(1)}%',
                   style: AppTypography.caption.copyWith(
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isPositive ? AppColors.successLight : AppColors.dangerLight,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-          ),
-          // Value & Return
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                fmt.format(insight.currentValue),
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${isPositive ? '+' : ''}${insight.profitLossPercent.toStringAsFixed(1)}%',
-                style: AppTypography.caption.copyWith(
-                  color: isPositive ? AppColors.successLight : AppColors.dangerLight,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }

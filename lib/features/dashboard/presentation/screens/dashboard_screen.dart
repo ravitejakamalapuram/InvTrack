@@ -1,13 +1,16 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/gradient_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:inv_tracker/features/dashboard/presentation/widgets/portfolio_value_chart.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
 import 'package:inv_tracker/features/sync/presentation/widgets/sync_status_icon.dart';
 
@@ -58,6 +61,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   Widget build(BuildContext context) {
     final metricsAsync = ref.watch(dashboardMetricsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyFormat = ref.watch(currencyFormatProvider);
+    final currencyFormatCompact = ref.watch(currencyFormatCompactProvider);
 
     return Scaffold(
       body: CustomScrollView(
@@ -98,23 +104,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Hero Card - Total Portfolio Value
-                _buildHeroCard(metricsAsync, isDark),
+                _buildHeroCard(metricsAsync, isDark, currencySymbol, currencyFormatCompact),
                 const SizedBox(height: 24),
 
                 // Quick Stats Row
-                _buildQuickStatsRow(metricsAsync, isDark),
+                _buildQuickStatsRow(metricsAsync, isDark, currencySymbol),
                 const SizedBox(height: 28),
 
                 // Portfolio Performance Section
                 _buildSectionHeader('Performance', 'Last 30 days', isDark),
                 const SizedBox(height: 16),
                 _buildChartCard(metricsAsync, isDark),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
+
+                // Recent Activity Section
+                _buildSectionHeader('Recent Activity', 'Last 5 transactions', isDark),
+                const SizedBox(height: 16),
+                _buildRecentActivitySection(isDark, currencyFormat),
+                const SizedBox(height: 80), // Space for FAB
               ]),
             ),
           ),
         ],
       ),
+      floatingActionButton: _buildFAB(isDark),
     );
   }
 
@@ -125,7 +138,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return 'evening';
   }
 
-  Widget _buildHeroCard(AsyncValue metricsAsync, bool isDark) {
+  Widget _buildHeroCard(AsyncValue metricsAsync, bool isDark, String currencySymbol, NumberFormat currencyFormatCompact) {
     return AnimatedBuilder(
       animation: _glowAnimation,
       builder: (context, child) {
@@ -198,7 +211,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 metricsAsync.when(
                   data: (m) => AnimatedCounter(
                     value: m.totalValue,
-                    prefix: '\$',
+                    prefix: currencySymbol,
                     decimals: 0,
                     duration: const Duration(milliseconds: 1200),
                     style: AppTypography.numberLarge.copyWith(
@@ -210,7 +223,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                   loading: () => _buildShimmer(width: 200, height: 52),
                   error: (_, __) => Text(
-                    '\$0',
+                    '${currencySymbol}0',
                     style: AppTypography.numberLarge.copyWith(color: Colors.white),
                   ),
                 ),
@@ -236,7 +249,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${m.dayChange >= 0 ? '+' : ''}${NumberFormat.compactCurrency(symbol: '\$').format(m.dayChange)}',
+                              '${m.dayChange >= 0 ? '+' : ''}${currencyFormatCompact.format(m.dayChange)}',
                               style: AppTypography.label.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -312,7 +325,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildQuickStatsRow(AsyncValue metricsAsync, bool isDark) {
+  Widget _buildQuickStatsRow(AsyncValue metricsAsync, bool isDark, String currencySymbol) {
     return metricsAsync.when(
       data: (m) => Row(
         children: [
@@ -325,6 +338,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 icon: Icons.arrow_circle_down_rounded,
                 iconColor: AppColors.accentLight,
                 isDark: isDark,
+                currencySymbol: currencySymbol,
               ),
             ),
           ),
@@ -339,6 +353,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 icon: Icons.arrow_circle_up_rounded,
                 iconColor: m.totalReturnPercent >= 0 ? AppColors.successLight : AppColors.dangerLight,
                 isDark: isDark,
+                currencySymbol: currencySymbol,
               ),
             ),
           ),
@@ -362,6 +377,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     required IconData icon,
     required Color iconColor,
     required bool isDark,
+    required String currencySymbol,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -425,7 +441,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           const SizedBox(height: 4),
           AnimatedCounter(
             value: value,
-            prefix: '\$',
+            prefix: currencySymbol,
             decimals: 0,
             duration: const Duration(milliseconds: 1000),
             style: AppTypography.h3.copyWith(
@@ -582,6 +598,181 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecentActivitySection(bool isDark, NumberFormat currencyFormat) {
+    final recentAsync = ref.watch(recentTransactionsProvider);
+
+    return recentAsync.when(
+      data: (transactions) {
+        if (transactions.isEmpty) {
+          return GlassCard(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.receipt_long_rounded,
+                    size: 48,
+                    color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No transactions yet',
+                    style: AppTypography.body.copyWith(
+                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Add your first investment to get started',
+                    style: AppTypography.small.copyWith(
+                      color: isDark ? AppColors.neutral500Dark : AppColors.neutral500Light,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return GlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: transactions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final isLast = index == transactions.length - 1;
+
+              return StaggeredFadeIn(
+                index: index,
+                child: _buildTransactionRow(item, currencyFormat, isDark, isLast),
+              );
+            }).toList(),
+          ),
+        );
+      },
+      loading: () => GlassCard(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+          ),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildTransactionRow(
+    RecentTransaction item,
+    NumberFormat currencyFormat,
+    bool isDark,
+    bool isLast,
+  ) {
+    final transaction = item.transaction;
+    final typeColor = switch (transaction.type) {
+      'BUY' => AppColors.successLight,
+      'SELL' => AppColors.dangerLight,
+      'DIVIDEND' => AppColors.graphAmber,
+      _ => AppColors.neutral500Light,
+    };
+    final typeIcon = switch (transaction.type) {
+      'BUY' => Icons.arrow_downward_rounded,
+      'SELL' => Icons.arrow_upward_rounded,
+      'DIVIDEND' => Icons.payments_rounded,
+      _ => Icons.swap_horiz_rounded,
+    };
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(typeIcon, color: typeColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.investmentName,
+                      style: AppTypography.body.copyWith(
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${transaction.type} • ${DateFormat.MMMd().format(transaction.date)}',
+                      style: AppTypography.small.copyWith(
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                currencyFormat.format(transaction.totalAmount),
+                style: AppTypography.body.copyWith(
+                  color: typeColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            indent: 68,
+            color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFAB(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryLight.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddInvestmentScreen()),
+          );
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: Text(
+          'Add Investment',
+          style: AppTypography.button.copyWith(color: Colors.white),
+        ),
       ),
     );
   }

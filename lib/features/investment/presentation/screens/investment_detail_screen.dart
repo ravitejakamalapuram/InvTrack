@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
-import 'package:intl/intl.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/edit_investment_screen.dart';
 
 class InvestmentDetailScreen extends ConsumerStatefulWidget {
   final InvestmentEntity investment;
@@ -65,6 +68,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   Widget build(BuildContext context) {
     final transactionsAsync = ref.watch(transactionsByInvestmentProvider(widget.investment.id));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencyFormat = ref.watch(currencyFormatPreciseProvider);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -195,7 +199,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: transactionsAsync.when(
-                  data: (transactions) => _buildStatsSection(transactions, isDark),
+                  data: (transactions) => _buildStatsSection(transactions, isDark, currencyFormat),
                   loading: () => _buildStatsLoading(isDark),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
@@ -253,7 +257,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     (context, index) {
                       return StaggeredFadeIn(
                         index: index,
-                        child: _buildTransactionCard(transactions[index], isDark),
+                        child: _buildTransactionCard(transactions[index], isDark, currencyFormat),
                       );
                     },
                     childCount: transactions.length,
@@ -305,56 +309,163 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildStatsSection(List<TransactionEntity> transactions, bool isDark) {
+  Widget _buildStatsSection(List<TransactionEntity> transactions, bool isDark, NumberFormat currencyFormat) {
     // Calculate stats from transactions
     double totalInvested = 0;
     double totalUnits = 0;
+    double lastPrice = 0;
 
-    for (final t in transactions) {
+    // Sort by date to get last price
+    final sortedTx = List<TransactionEntity>.from(transactions)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    for (final t in sortedTx) {
       if (t.type == 'BUY') {
         totalInvested += t.totalAmount;
         totalUnits += t.quantity;
-      } else {
+        lastPrice = t.pricePerUnit;
+      } else if (t.type == 'SELL') {
         totalInvested -= t.totalAmount;
         totalUnits -= t.quantity;
+        lastPrice = t.pricePerUnit;
+      } else if (t.type == 'DIVIDEND') {
+        if (t.pricePerUnit > 0) lastPrice = t.pricePerUnit;
       }
     }
 
     final avgPrice = totalUnits > 0 ? totalInvested / totalUnits : 0.0;
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final currentValue = totalUnits * lastPrice;
+    final profitLoss = currentValue - totalInvested;
+    final profitLossPercent = totalInvested > 0 ? (profitLoss / totalInvested) * 100 : 0.0;
+    final xirr = FinancialCalculator.calculateXirr(transactions, currentValue);
+    final isPositive = profitLoss >= 0;
 
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            'Total Invested',
-            currencyFormat.format(totalInvested),
-            Icons.account_balance_wallet_rounded,
-            AppColors.graphBlue,
-            isDark,
-          ),
+        // First row: Current Value and P/L
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCardLarge(
+                'Current Value',
+                currencyFormat.format(currentValue),
+                Icons.account_balance_rounded,
+                AppColors.primaryLight,
+                isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCardLarge(
+                'P/L',
+                '${isPositive ? '+' : ''}${currencyFormat.format(profitLoss)}',
+                isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                isPositive ? AppColors.successLight : AppColors.errorLight,
+                isDark,
+                subtitle: '${isPositive ? '+' : ''}${profitLossPercent.toStringAsFixed(1)}%',
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Units Held',
-            totalUnits.toStringAsFixed(2),
-            Icons.inventory_2_rounded,
-            AppColors.graphEmerald,
-            isDark,
-          ),
+        const SizedBox(height: 12),
+        // Second row: Invested, Units, Avg Price
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Invested',
+                currencyFormat.format(totalInvested),
+                Icons.account_balance_wallet_rounded,
+                AppColors.graphBlue,
+                isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                'Units',
+                totalUnits.toStringAsFixed(2),
+                Icons.inventory_2_rounded,
+                AppColors.graphEmerald,
+                isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                'Avg Price',
+                currencyFormat.format(avgPrice),
+                Icons.price_change_rounded,
+                AppColors.graphPurple,
+                isDark,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Avg. Price',
-            currencyFormat.format(avgPrice),
-            Icons.trending_up_rounded,
-            AppColors.graphPurple,
-            isDark,
-          ),
+        const SizedBox(height: 12),
+        // Third row: XIRR
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'XIRR',
+                '${xirr >= 0 ? '+' : ''}${(xirr * 100).toStringAsFixed(1)}%',
+                Icons.show_chart_rounded,
+                xirr >= 0 ? AppColors.graphCyan : AppColors.errorLight,
+                isDark,
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildStatCardLarge(String label, String value, IconData icon, Color color, bool isDark, {String? subtitle}) {
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: AppTypography.h3.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: AppTypography.bodyMedium.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -480,10 +591,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildTransactionCard(TransactionEntity transaction, bool isDark) {
+  Widget _buildTransactionCard(TransactionEntity transaction, bool isDark, NumberFormat currencyFormat) {
     final isBuy = transaction.type == 'BUY';
     final color = isBuy ? AppColors.successLight : AppColors.errorLight;
-    final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -637,6 +747,61 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
+  Future<void> _confirmDeleteInvestment(BuildContext context, bool isDark) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Delete Investment?',
+          style: AppTypography.h4.copyWith(
+            color: isDark ? Colors.white : AppColors.neutral900Light,
+          ),
+        ),
+        content: Text(
+          'This will permanently delete this investment and all its transactions. This action cannot be undone.',
+          style: AppTypography.body.copyWith(
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTypography.button.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              'Delete',
+              style: AppTypography.button.copyWith(color: AppColors.errorLight),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      HapticFeedback.mediumImpact();
+      await ref.read(investmentProvider.notifier).deleteInvestment(widget.investment.id);
+      if (mounted) {
+        Navigator.of(context).pop(); // Go back to investment list
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Investment deleted'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
+  }
+
   void _showOptionsSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -670,7 +835,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to edit screen
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => EditInvestmentScreen(investment: widget.investment),
+                    ),
+                  ).then((result) {
+                    if (result == true && mounted) {
+                      // Investment was updated, pop this screen to refresh the list
+                      Navigator.of(context).pop();
+                    }
+                  });
                 },
               ),
               ListTile(
@@ -681,7 +855,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Confirm and delete
+                  _confirmDeleteInvestment(context, isDark);
                 },
               ),
               const SizedBox(height: 16),

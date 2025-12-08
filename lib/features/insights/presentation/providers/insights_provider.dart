@@ -111,8 +111,28 @@ Future<InsightsData> _calculateInsights(_InsightsInput input) async {
     if (txns.isEmpty) continue;
 
     allTransactionsForXirr.addAll(txns);
+
+    // Calculate quantity and current value from transactions
+    double quantity = 0;
+    double lastPrice = 0;
+    final sortedTxns = List<TransactionEntity>.from(txns)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    for (final t in txns) {
+      if (t.type == 'BUY') {
+        quantity += t.quantity;
+      } else if (t.type == 'SELL') {
+        quantity -= t.quantity;
+      }
+    }
+
+    // Use the most recent transaction's price as current price
+    if (sortedTxns.isNotEmpty) {
+      lastPrice = sortedTxns.first.pricePerUnit;
+    }
+
+    final currentVal = quantity * lastPrice;
     final invested = FinancialCalculator.calculateTotalInvested(txns);
-    final currentVal = invested; // Placeholder - would need current price
     final pnl = FinancialCalculator.calculateProfitLoss(invested, currentVal);
     final pnlPercent = invested > 0 ? (pnl / invested) * 100 : 0.0;
     final xirr = FinancialCalculator.calculateXirr(txns, currentVal);

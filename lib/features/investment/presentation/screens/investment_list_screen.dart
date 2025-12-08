@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/empty_state_widget.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
@@ -25,6 +27,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   late AnimationController _fabController;
   late Animation<double> _fabScale;
 
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -40,7 +47,32 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   @override
   void dispose() {
     _fabController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchQuery = '';
+        _searchController.clear();
+      } else {
+        _searchFocusNode.requestFocus();
+      }
+    });
+  }
+
+  List<InvestmentEntity> _filterInvestments(List<InvestmentEntity> investments) {
+    if (_searchQuery.isEmpty) return investments;
+    final query = _searchQuery.toLowerCase();
+    return investments.where((inv) {
+      return inv.name.toLowerCase().contains(query) ||
+          (inv.symbol?.toLowerCase().contains(query) ?? false) ||
+          inv.type.toLowerCase().contains(query);
+    }).toList();
   }
 
   void _showAddInvestmentSheet() {
@@ -58,21 +90,23 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: CustomScrollView(
         slivers: [
-          // Premium App Bar
+          // Premium App Bar with Search
           SliverAppBar(
-            expandedHeight: 120,
+            expandedHeight: _isSearching ? 80 : 120,
             floating: true,
             pinned: true,
             backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Text(
-                'Investments',
-                style: AppTypography.h2.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                  fontSize: 24,
-                ),
-              ),
+              titlePadding: const EdgeInsets.only(left: 20, bottom: 16, right: 60),
+              title: _isSearching
+                  ? _buildSearchField(isDark)
+                  : Text(
+                      'Investments',
+                      style: AppTypography.h2.copyWith(
+                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        fontSize: 24,
+                      ),
+                    ),
             ),
             actions: [
               IconButton(
@@ -83,13 +117,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    Icons.search_rounded,
+                    _isSearching ? Icons.close_rounded : Icons.search_rounded,
                     color: isDark ? Colors.white : AppColors.neutral700Light,
                   ),
                 ),
-                onPressed: () {
-                  // TODO: Implement search
-                },
+                onPressed: _toggleSearch,
               ),
               const SizedBox(width: 8),
             ],
@@ -117,11 +149,20 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
               return investmentsAsync.when(
                 data: (investments) {
+                  final filteredInvestments = _filterInvestments(investments);
+
                   if (investments.isEmpty) {
                     return SliverFillRemaining(
                       child: _buildEmptyState(isDark),
                     );
                   }
+
+                  if (filteredInvestments.isEmpty && _searchQuery.isNotEmpty) {
+                    return SliverFillRemaining(
+                      child: _buildNoResultsState(isDark),
+                    );
+                  }
+
                   return SliverPadding(
                     padding: const EdgeInsets.all(16),
                     sliver: SliverList(
@@ -129,10 +170,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                         (context, index) {
                           return StaggeredFadeIn(
                             index: index,
-                            child: _buildInvestmentCard(investments[index], isDark),
+                            child: _buildInvestmentCard(filteredInvestments[index], isDark),
                           );
                         },
-                        childCount: investments.length,
+                        childCount: filteredInvestments.length,
                       ),
                     ),
                   );
@@ -178,6 +219,73 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               style: AppTypography.button.copyWith(color: Colors.white),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchField(bool isDark) {
+    return SizedBox(
+      height: 36,
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        style: AppTypography.body.copyWith(
+          color: isDark ? Colors.white : AppColors.neutral900Light,
+          fontSize: 16,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Search investments...',
+          hintStyle: AppTypography.body.copyWith(
+            color: isDark ? AppColors.neutral500Dark : AppColors.neutral500Light,
+            fontSize: 16,
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          isDense: true,
+        ),
+        onChanged: (value) {
+          setState(() => _searchQuery = value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState(bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.search_off_rounded,
+                size: 64,
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Results Found',
+              style: AppTypography.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try searching with a different term',
+              textAlign: TextAlign.center,
+              style: AppTypography.body.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -318,6 +426,8 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white : AppColors.neutral900Light,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -350,11 +460,8 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       ],
                     ),
                   ),
-                  // Arrow
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
-                  ),
+                  // Value and P/L
+                  _buildValueColumn(investment.id, isDark),
                 ],
               ),
             ),
@@ -389,6 +496,65 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildValueColumn(String investmentId, bool isDark) {
+    final statsAsync = ref.watch(investmentStatsProvider(investmentId));
+    final currencyFormat = ref.watch(currencyFormatProvider);
+
+    return statsAsync.when(
+      data: (stats) {
+        if (stats == null || stats.quantity <= 0) {
+          return Icon(
+            Icons.chevron_right_rounded,
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
+          );
+        }
+
+        final isPositive = stats.profitLoss >= 0;
+        final plColor = isPositive ? AppColors.graphEmerald : AppColors.errorLight;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              currencyFormat.format(stats.currentValue),
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                  color: plColor,
+                  size: 18,
+                ),
+                Text(
+                  '${stats.profitLossPercent.abs().toStringAsFixed(1)}%',
+                  style: AppTypography.small.copyWith(
+                    color: plColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+      error: (_, __) => Icon(
+        Icons.chevron_right_rounded,
+        color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
       ),
     );
   }

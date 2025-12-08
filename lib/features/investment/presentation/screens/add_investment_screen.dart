@@ -116,7 +116,18 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Auto-select the first portfolio if not already selected
     final portfoliosAsync = ref.watch(allPortfoliosProvider);
+    portfoliosAsync.whenData((portfolios) {
+      if (_selectedPortfolioId == null && portfolios.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _selectedPortfolioId == null) {
+            setState(() => _selectedPortfolioId = portfolios.first.id);
+          }
+        });
+      }
+    });
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -200,42 +211,6 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     icon: Icons.code_rounded,
                     isDark: isDark,
                     textCapitalization: TextCapitalization.characters,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Portfolio Selector
-                  portfoliosAsync.when(
-                    data: (portfolios) {
-                      if (portfolios.isEmpty) {
-                        return _buildWarningCard(
-                          'No portfolios found',
-                          'Please create a portfolio first',
-                          isDark,
-                        );
-                      }
-
-                      if (_selectedPortfolioId == null && portfolios.isNotEmpty) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted && _selectedPortfolioId == null) {
-                            setState(() => _selectedPortfolioId = portfolios.first.id);
-                          }
-                        });
-                      }
-
-                      return _buildPortfolioSelector(portfolios, isDark);
-                    },
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    error: (err, _) => _buildWarningCard(
-                      'Error loading portfolios',
-                      err.toString(),
-                      isDark,
-                    ),
                   ),
 
                   const SizedBox(height: 40),
@@ -386,94 +361,6 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           onFieldSubmitted: onSubmitted,
         ),
       ],
-    );
-  }
-
-  Widget _buildPortfolioSelector(List portfolios, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Portfolio',
-          style: AppTypography.bodyLarge.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-            ),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: _selectedPortfolioId,
-            decoration: InputDecoration(
-              prefixIcon: Icon(
-                Icons.folder_outlined,
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            ),
-            dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            items: portfolios.map<DropdownMenuItem<String>>((p) {
-              return DropdownMenuItem(
-                value: p.id,
-                child: Text(
-                  p.name,
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() => _selectedPortfolioId = value);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWarningCard(String title, String message, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.warningLight.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.warningLight.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_rounded, color: AppColors.warningLight),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
-                ),
-                Text(
-                  message,
-                  style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
