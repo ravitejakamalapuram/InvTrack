@@ -1,9 +1,7 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
-import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {

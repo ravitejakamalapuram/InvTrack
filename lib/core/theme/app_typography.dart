@@ -86,6 +86,13 @@ class AppTypography {
     letterSpacing: 0.1,
   );
 
+  static TextStyle labelMedium = GoogleFonts.inter(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.4,
+    letterSpacing: 0.1,
+  );
+
   static TextStyle caption = GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w400,

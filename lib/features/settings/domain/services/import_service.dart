@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
@@ -44,9 +43,9 @@ class ImportService {
         return ImportResult(0, 0, 'Empty or invalid CSV file');
       }
 
-      // 2. Parse Headers
-      final headers = rows.first.map((e) => e.toString().trim().toLowerCase()).toList();
+      // 2. Parse Headers (currently unused - using fixed column positions)
       // Expected: date, portfolio, symbol, name, type, quantity, price, fees, total amount, notes
+      // final headers = rows.first.map((e) => e.toString().trim().toLowerCase()).toList();
       
       int successCount = 0;
       int failureCount = 0;

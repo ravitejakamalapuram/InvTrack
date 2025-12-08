@@ -138,3 +138,38 @@ class DashboardMetrics {
     this.historicalData = const {},
   });
 }
+
+/// Recent transaction with investment name for display
+class RecentTransaction {
+  final TransactionEntity transaction;
+  final String investmentName;
+
+  const RecentTransaction({
+    required this.transaction,
+    required this.investmentName,
+  });
+}
+
+/// Provider for recent transactions (last 5)
+final recentTransactionsProvider = FutureProvider<List<RecentTransaction>>((ref) async {
+  final investments = await ref.read(investmentRepositoryProvider).getAllInvestments();
+  final transactions = await ref.read(investmentRepositoryProvider).getAllTransactions();
+
+  if (transactions.isEmpty) return [];
+
+  // Create investment name lookup
+  final investmentNames = <String, String>{};
+  for (final inv in investments) {
+    investmentNames[inv.id] = inv.name;
+  }
+
+  // Sort by date descending and take last 5
+  final sorted = List<TransactionEntity>.from(transactions);
+  sorted.sort((a, b) => b.date.compareTo(a.date));
+  final recent = sorted.take(5).toList();
+
+  return recent.map((t) => RecentTransaction(
+    transaction: t,
+    investmentName: investmentNames[t.investmentId] ?? 'Unknown',
+  )).toList();
+});
