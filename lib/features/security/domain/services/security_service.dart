@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,7 +79,7 @@ class SecurityService {
         persistAcrossBackgrounding: true,
       );
     } catch (e) {
-      print('Biometric auth error: $e');
+      debugPrint('Biometric auth error: $e');
       return false;
     }
   }

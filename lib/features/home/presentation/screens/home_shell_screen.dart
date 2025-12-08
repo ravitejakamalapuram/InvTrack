@@ -19,6 +19,8 @@ class HomeShellScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
@@ -26,19 +28,14 @@ class HomeShellScreen extends StatelessWidget {
         onDestinationSelected: _goBranch,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Home',
+            icon: Icon(Icons.pie_chart_outline),
+            selectedIcon: Icon(Icons.pie_chart),
+            label: 'Overview',
           ),
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),
             selectedIcon: Icon(Icons.account_balance_wallet),
-            label: 'Assets',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
-            label: 'Insights',
+            label: 'Investments',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -46,8 +43,8 @@ class HomeShellScreen extends StatelessWidget {
             label: 'Settings',
           ),
         ],
-        backgroundColor: AppColors.whiteLight,
-        indicatorColor: AppColors.primaryLight.withValues(alpha: 0.1),
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.whiteLight,
+        indicatorColor: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.15),
         surfaceTintColor: Colors.transparent,
       ),
     );

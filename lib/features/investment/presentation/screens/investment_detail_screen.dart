@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -46,29 +45,41 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   }
 
   Color get _typeColor {
-    switch (widget.investment.type.toLowerCase()) {
-      case 'stock':
+    switch (widget.investment.type) {
+      case InvestmentType.p2pLending:
         return AppColors.graphBlue;
-      case 'crypto':
-        return AppColors.graphPurple;
-      case 'mutual fund':
+      case InvestmentType.fixedDeposit:
         return AppColors.graphEmerald;
-      case 'etf':
-        return AppColors.graphCyan;
-      case 'bond':
+      case InvestmentType.bonds:
         return AppColors.graphAmber;
-      case 'real estate':
+      case InvestmentType.realEstate:
         return AppColors.graphPink;
-      default:
+      case InvestmentType.privateEquity:
+        return AppColors.graphPurple;
+      case InvestmentType.angelInvesting:
+        return AppColors.graphCyan;
+      case InvestmentType.chitFunds:
         return AppColors.graphOrange;
+      case InvestmentType.gold:
+        return const Color(0xFFFFD700);
+      case InvestmentType.crypto:
+        return AppColors.graphPurple;
+      case InvestmentType.mutualFunds:
+        return AppColors.graphBlue;
+      case InvestmentType.stocks:
+        return AppColors.graphEmerald;
+      case InvestmentType.other:
+        return AppColors.neutral500Light;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final transactionsAsync = ref.watch(transactionsByInvestmentProvider(widget.investment.id));
+    final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
+    final statsAsync = ref.watch(investmentStatsProvider(widget.investment.id));
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencyFormat = ref.watch(currencyFormatPreciseProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final isClosed = widget.investment.status == InvestmentStatus.closed;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -108,7 +119,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [_typeColor, _typeColor.withValues(alpha: 0.7)],
+                    colors: isClosed
+                        ? [Colors.grey, Colors.grey.withValues(alpha: 0.7)]
+                        : [_typeColor, _typeColor.withValues(alpha: 0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -129,13 +142,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Center(
-                                child: Text(
-                                  widget.investment.symbol?.substring(0, 1).toUpperCase() ??
-                                      widget.investment.name.substring(0, 1).toUpperCase(),
-                                  style: AppTypography.h2.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                child: Icon(
+                                  widget.investment.type.icon,
+                                  color: Colors.white,
+                                  size: 28,
                                 ),
                               ),
                             ),
@@ -144,40 +154,48 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    widget.investment.name,
-                                    style: AppTypography.h3.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
+                                      Expanded(
                                         child: Text(
-                                          widget.investment.type,
-                                          style: AppTypography.small.copyWith(
+                                          widget.investment.name,
+                                          style: AppTypography.h3.copyWith(
                                             color: Colors.white,
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
                                       ),
-                                      if (widget.investment.symbol != null) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          widget.investment.symbol!,
-                                          style: AppTypography.body.copyWith(
-                                            color: Colors.white.withValues(alpha: 0.8),
+                                      if (isClosed)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            'CLOSED',
+                                            style: AppTypography.small.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
-                                      ],
                                     ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      widget.investment.type.displayName,
+                                      style: AppTypography.small.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -198,8 +216,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               opacity: _fadeAnim,
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: transactionsAsync.when(
-                  data: (transactions) => _buildStatsSection(transactions, isDark, currencyFormat),
+                child: statsAsync.when(
+                  data: (stats) => _buildStatsSection(stats, isDark, currencySymbol),
                   loading: () => _buildStatsLoading(isDark),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
@@ -207,7 +225,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
 
-          // Transactions Header
+          // Cash Flows Header
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -215,41 +233,45 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Transactions',
+                    'Cash Flows',
                     style: AppTypography.h4.copyWith(
                       color: isDark ? Colors.white : AppColors.neutral900Light,
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => AddTransactionScreen(investmentId: widget.investment.id),
+                  if (!isClosed)
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => AddTransactionScreen(investmentId: widget.investment.id),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.add_rounded, size: 18, color: AppColors.primaryLight),
+                      label: Text(
+                        'Add',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.primaryLight,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    },
-                    icon: Icon(Icons.add_rounded, size: 18, color: AppColors.primaryLight),
-                    label: Text(
-                      'Add',
-                      style: AppTypography.body.copyWith(
-                        color: AppColors.primaryLight,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
           ),
 
-          // Transactions List
-          transactionsAsync.when(
-            data: (transactions) {
-              if (transactions.isEmpty) {
+          // Cash Flows List
+          cashFlowsAsync.when(
+            data: (cashFlows) {
+              if (cashFlows.isEmpty) {
                 return SliverFillRemaining(
-                  child: _buildEmptyTransactions(isDark),
+                  child: _buildEmptyCashFlows(isDark),
                 );
               }
+              // Sort by date descending
+              final sortedFlows = List<CashFlowEntity>.from(cashFlows)
+                ..sort((a, b) => b.date.compareTo(a.date));
               return SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList(
@@ -257,10 +279,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     (context, index) {
                       return StaggeredFadeIn(
                         index: index,
-                        child: _buildTransactionCard(transactions[index], isDark, currencyFormat),
+                        child: _buildCashFlowCard(sortedFlows[index], isDark, currencySymbol),
                       );
                     },
-                    childCount: transactions.length,
+                    childCount: sortedFlows.length,
                   ),
                 ),
               );
@@ -277,7 +299,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: Container(
+      floatingActionButton: isClosed ? null : Container(
         decoration: BoxDecoration(
           gradient: AppColors.heroGradient,
           borderRadius: BorderRadius.circular(16),
@@ -301,7 +323,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           elevation: 0,
           icon: const Icon(Icons.add_rounded, color: Colors.white),
           label: Text(
-            'Add Transaction',
+            'Add Cash Flow',
             style: AppTypography.button.copyWith(color: Colors.white),
           ),
         ),
@@ -309,109 +331,82 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildStatsSection(List<TransactionEntity> transactions, bool isDark, NumberFormat currencyFormat) {
-    // Calculate stats from transactions
-    double totalInvested = 0;
-    double totalUnits = 0;
-    double lastPrice = 0;
-
-    // Sort by date to get last price
-    final sortedTx = List<TransactionEntity>.from(transactions)
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    for (final t in sortedTx) {
-      if (t.type == 'BUY') {
-        totalInvested += t.totalAmount;
-        totalUnits += t.quantity;
-        lastPrice = t.pricePerUnit;
-      } else if (t.type == 'SELL') {
-        totalInvested -= t.totalAmount;
-        totalUnits -= t.quantity;
-        lastPrice = t.pricePerUnit;
-      } else if (t.type == 'DIVIDEND') {
-        if (t.pricePerUnit > 0) lastPrice = t.pricePerUnit;
-      }
-    }
-
-    final avgPrice = totalUnits > 0 ? totalInvested / totalUnits : 0.0;
-    final currentValue = totalUnits * lastPrice;
-    final profitLoss = currentValue - totalInvested;
-    final profitLossPercent = totalInvested > 0 ? (profitLoss / totalInvested) * 100 : 0.0;
-    final xirr = FinancialCalculator.calculateXirr(transactions, currentValue);
-    final isPositive = profitLoss >= 0;
+  Widget _buildStatsSection(InvestmentStats stats, bool isDark, String currencySymbol) {
+    final isPositive = stats.netCashFlow >= 0;
+    final xirrPercent = stats.xirr * 100;
 
     return Column(
       children: [
-        // First row: Current Value and P/L
+        // First row: Cash Out and Cash In
         Row(
           children: [
             Expanded(
               child: _buildStatCardLarge(
-                'Current Value',
-                currencyFormat.format(currentValue),
-                Icons.account_balance_rounded,
-                AppColors.primaryLight,
+                'Cash Out',
+                '$currencySymbol${stats.totalInvested.toStringAsFixed(0)}',
+                Icons.arrow_upward_rounded,
+                AppColors.errorLight,
                 isDark,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCardLarge(
-                'P/L',
-                '${isPositive ? '+' : ''}${currencyFormat.format(profitLoss)}',
+                'Cash In',
+                '$currencySymbol${stats.totalReturned.toStringAsFixed(0)}',
+                Icons.arrow_downward_rounded,
+                AppColors.successLight,
+                isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Second row: Net Position with Return %
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCardLarge(
+                'Net Position',
+                '${isPositive ? '+' : ''}$currencySymbol${stats.netCashFlow.toStringAsFixed(0)}',
                 isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
                 isPositive ? AppColors.successLight : AppColors.errorLight,
                 isDark,
-                subtitle: '${isPositive ? '+' : ''}${profitLossPercent.toStringAsFixed(1)}%',
+                subtitle: '${isPositive ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}% return',
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        // Second row: Invested, Units, Avg Price
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Invested',
-                currencyFormat.format(totalInvested),
-                Icons.account_balance_wallet_rounded,
-                AppColors.graphBlue,
-                isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Units',
-                totalUnits.toStringAsFixed(2),
-                Icons.inventory_2_rounded,
-                AppColors.graphEmerald,
-                isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Avg Price',
-                currencyFormat.format(avgPrice),
-                Icons.price_change_rounded,
-                AppColors.graphPurple,
-                isDark,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Third row: XIRR
+        // Third row: XIRR and MOIC
         Row(
           children: [
             Expanded(
               child: _buildStatCard(
                 'XIRR',
-                '${xirr >= 0 ? '+' : ''}${(xirr * 100).toStringAsFixed(1)}%',
+                '${xirrPercent >= 0 ? '+' : ''}${xirrPercent.toStringAsFixed(1)}%',
                 Icons.show_chart_rounded,
-                xirr >= 0 ? AppColors.graphCyan : AppColors.errorLight,
+                xirrPercent >= 0 ? AppColors.graphCyan : AppColors.errorLight,
+                isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                'MOIC',
+                '${stats.moic.toStringAsFixed(2)}x',
+                Icons.multiple_stop_rounded,
+                AppColors.graphPurple,
+                isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                'Cash Flows',
+                '${stats.cashFlowCount}',
+                Icons.receipt_long_rounded,
+                AppColors.graphBlue,
                 isDark,
               ),
             ),
@@ -551,7 +546,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildEmptyTransactions(bool isDark) {
+  Widget _buildEmptyCashFlows(bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -572,14 +567,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
             const SizedBox(height: 20),
             Text(
-              'No Transactions Yet',
+              'No Cash Flows Yet',
               style: AppTypography.h4.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add your first buy or sell transaction to start tracking',
+              'Add your first cash flow to start tracking',
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
@@ -591,14 +586,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildTransactionCard(TransactionEntity transaction, bool isDark, NumberFormat currencyFormat) {
-    final isBuy = transaction.type == 'BUY';
-    final color = isBuy ? AppColors.successLight : AppColors.errorLight;
+  Widget _buildCashFlowCard(CashFlowEntity cashFlow, bool isDark, String currencySymbol) {
+    final isOutflow = cashFlow.type.isOutflow;
+    final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Dismissible(
-        key: Key(transaction.id),
+        key: Key(cashFlow.id),
         direction: DismissDirection.endToStart,
         background: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -610,19 +605,30 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           padding: const EdgeInsets.only(right: 24),
           child: const Icon(Icons.delete_rounded, color: Colors.white),
         ),
-        confirmDismiss: (direction) => _confirmDelete(context, isDark),
+        confirmDismiss: (direction) => _confirmDeleteCashFlow(context, isDark),
         onDismissed: (direction) {
           HapticFeedback.mediumImpact();
-          ref.read(investmentProvider.notifier).deleteTransaction(transaction.id);
+          ref.read(investmentNotifierProvider.notifier).deleteCashFlow(cashFlow.id);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Transaction deleted'),
+              content: const Text('Cash flow deleted'),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           );
         },
         child: GlassCard(
+          onTap: () {
+            // Navigate to edit cash flow
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => AddTransactionScreen(
+                  investmentId: widget.investment.id,
+                  cashFlowToEdit: cashFlow,
+                ),
+              ),
+            );
+          },
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -635,7 +641,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isBuy ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                  isOutflow ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
                   color: color,
                 ),
               ),
@@ -645,60 +651,49 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            transaction.type,
-                            style: AppTypography.small.copyWith(
-                              color: color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        cashFlow.type.displayName,
+                        style: AppTypography.small.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${transaction.quantity} units',
-                          style: AppTypography.body.copyWith(
-                            color: isDark ? Colors.white : AppColors.neutral900Light,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('MMM d, yyyy').format(transaction.date),
+                      DateFormat('MMM d, yyyy').format(cashFlow.date),
                       style: AppTypography.small.copyWith(
                         color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                       ),
                     ),
+                    if (cashFlow.notes != null && cashFlow.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        cashFlow.notes!,
+                        style: AppTypography.small.copyWith(
+                          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
               // Amount
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    currencyFormat.format(transaction.totalAmount),
-                    style: AppTypography.bodyLarge.copyWith(
-                      color: isDark ? Colors.white : AppColors.neutral900Light,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    '@ ${currencyFormat.format(transaction.pricePerUnit)}',
-                    style: AppTypography.small.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                    ),
-                  ),
-                ],
+              Text(
+                '${isOutflow ? '-' : '+'}$currencySymbol${cashFlow.amount.toStringAsFixed(0)}',
+                style: AppTypography.bodyLarge.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -707,14 +702,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Future<bool?> _confirmDelete(BuildContext context, bool isDark) {
+  Future<bool?> _confirmDeleteCashFlow(BuildContext context, bool isDark) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Delete Transaction?',
+          'Delete Cash Flow?',
           style: AppTypography.h4.copyWith(
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
@@ -760,7 +755,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ),
         ),
         content: Text(
-          'This will permanently delete this investment and all its transactions. This action cannot be undone.',
+          'This will permanently delete this investment and all its cash flows. This action cannot be undone.',
           style: AppTypography.body.copyWith(
             color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
           ),
@@ -788,9 +783,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     if (confirmed == true && mounted) {
       HapticFeedback.mediumImpact();
-      await ref.read(investmentProvider.notifier).deleteInvestment(widget.investment.id);
+      await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
       if (mounted) {
-        Navigator.of(context).pop(); // Go back to investment list
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Investment deleted'),
@@ -802,7 +797,73 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     }
   }
 
+  void _toggleInvestmentStatus(BuildContext context, bool isDark) async {
+    final isClosed = widget.investment.status == InvestmentStatus.closed;
+    final action = isClosed ? 'reopen' : 'close';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '${isClosed ? 'Reopen' : 'Close'} Investment?',
+          style: AppTypography.h4.copyWith(
+            color: isDark ? Colors.white : AppColors.neutral900Light,
+          ),
+        ),
+        content: Text(
+          isClosed
+            ? 'This will reopen the investment and allow adding new cash flows.'
+            : 'This will mark the investment as closed. You can reopen it later if needed.',
+          style: AppTypography.body.copyWith(
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: AppTypography.button.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              isClosed ? 'Reopen' : 'Close',
+              style: AppTypography.button.copyWith(color: AppColors.primaryLight),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      HapticFeedback.mediumImpact();
+      if (isClosed) {
+        await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
+      } else {
+        await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Investment ${action}d'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
+  }
+
   void _showOptionsSheet(BuildContext context, bool isDark) {
+    final isClosed = widget.investment.status == InvestmentStatus.closed;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -841,10 +902,25 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     ),
                   ).then((result) {
                     if (result == true && mounted) {
-                      // Investment was updated, pop this screen to refresh the list
                       Navigator.of(context).pop();
                     }
                   });
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  isClosed ? Icons.lock_open_rounded : Icons.lock_rounded,
+                  color: AppColors.graphAmber,
+                ),
+                title: Text(
+                  isClosed ? 'Reopen Investment' : 'Close Investment',
+                  style: AppTypography.body.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleInvestmentStatus(context, isDark);
                 },
               ),
               ListTile(

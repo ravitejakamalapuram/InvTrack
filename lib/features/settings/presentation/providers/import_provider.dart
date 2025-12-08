@@ -5,7 +5,6 @@ import 'package:inv_tracker/features/settings/domain/services/import_service.dar
 final importServiceProvider = Provider<ImportService>((ref) {
   return ImportService(
     ref.watch(investmentRepositoryProvider),
-    ref.watch(portfolioRepositoryProvider),
   );
 });
 

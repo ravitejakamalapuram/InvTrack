@@ -1,75 +1,67 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
-import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockInvestmentRepository extends Mock implements InvestmentRepository {}
 
 void main() {
-  late MockInvestmentRepository mockInvestmentRepository;
+  group('InvestmentEntity', () {
+    test('creates investment with correct properties', () {
+      final investment = InvestmentEntity(
+        id: '1',
+        name: 'P2P Lending Investment',
+        type: InvestmentType.p2pLending,
+        status: InvestmentStatus.open,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-  setUp(() {
-    mockInvestmentRepository = MockInvestmentRepository();
+      expect(investment.id, '1');
+      expect(investment.name, 'P2P Lending Investment');
+      expect(investment.type, InvestmentType.p2pLending);
+      expect(investment.status, InvestmentStatus.open);
+    });
+
+    test('investment type has correct display name', () {
+      expect(InvestmentType.p2pLending.displayName, 'P2P Lending');
+      expect(InvestmentType.realEstate.displayName, 'Real Estate');
+      expect(InvestmentType.privateEquity.displayName, 'Private Equity');
+    });
+
+    test('investment status has correct display name', () {
+      expect(InvestmentStatus.open.displayName, 'Open');
+      expect(InvestmentStatus.closed.displayName, 'Closed');
+    });
   });
 
-  testWidgets('InvestmentDetailScreen shows transactions and allows adding new one', (tester) async {
-    final investment = InvestmentEntity(
-      id: '1',
-      portfolioId: 'p1',
-      name: 'Apple',
-      symbol: 'AAPL',
-      type: 'Stock',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+  group('CashFlowEntity', () {
+    test('creates cash flow with correct properties', () {
+      final cashFlow = CashFlowEntity(
+        id: 'cf1',
+        investmentId: '1',
+        date: DateTime.now(),
+        type: CashFlowType.invest,
+        amount: 1000,
+        createdAt: DateTime.now(),
+      );
 
-    final transaction = TransactionEntity(
-      id: 't1',
-      investmentId: '1',
-      date: DateTime.now(),
-      type: 'BUY',
-      quantity: 10,
-      pricePerUnit: 150,
-      fees: 5,
-      totalAmount: 1505,
-      createdAt: DateTime.now(),
-    );
+      expect(cashFlow.id, 'cf1');
+      expect(cashFlow.investmentId, '1');
+      expect(cashFlow.type, CashFlowType.invest);
+      expect(cashFlow.amount, 1000);
+    });
 
-    when(() => mockInvestmentRepository.watchTransactionsByInvestment('1'))
-        .thenAnswer((_) => Stream.value([transaction]));
+    test('cash flow type has correct display name', () {
+      expect(CashFlowType.invest.displayName, 'Invest');
+      expect(CashFlowType.returnFlow.displayName, 'Return');
+      expect(CashFlowType.income.displayName, 'Income');
+      expect(CashFlowType.fee.displayName, 'Fee');
+    });
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          investmentRepositoryProvider.overrideWithValue(mockInvestmentRepository),
-        ],
-        child: MaterialApp(
-          home: InvestmentDetailScreen(investment: investment),
-        ),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // Verify transaction is shown
-    expect(find.text('BUY 10.0 units'), findsOneWidget);
-    expect(find.text('\$1505.00'), findsOneWidget);
-
-    // Verify Add Transaction button
-    expect(find.text('Add Transaction'), findsOneWidget);
-
-    // Tap Add Transaction
-    await tester.tap(find.text('Add Transaction'));
-    await tester.pumpAndSettle();
-
-    // Verify Add Transaction Screen is shown
-    expect(find.text('Add Transaction'), findsOneWidget);
-    expect(find.text('Save Transaction'), findsOneWidget);
+    test('cash flow type correctly identifies inflow/outflow', () {
+      expect(CashFlowType.invest.isOutflow, true);
+      expect(CashFlowType.invest.isInflow, false);
+      expect(CashFlowType.fee.isOutflow, true);
+      expect(CashFlowType.returnFlow.isInflow, true);
+      expect(CashFlowType.income.isInflow, true);
+    });
   });
 }

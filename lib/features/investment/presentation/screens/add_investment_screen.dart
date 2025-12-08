@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
-import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
 
 class AddInvestmentScreen extends ConsumerStatefulWidget {
   const AddInvestmentScreen({super.key});
@@ -18,27 +18,16 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _symbolController = TextEditingController();
+  final _notesController = TextEditingController();
   final _nameFocusNode = FocusNode();
-  final _symbolFocusNode = FocusNode();
+  final _notesFocusNode = FocusNode();
 
-  String _selectedType = 'Stock';
-  String? _selectedPortfolioId;
+  InvestmentType _selectedType = InvestmentType.p2pLending;
   bool _isLoading = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
-
-  final List<InvestmentTypeOption> _investmentTypes = [
-    InvestmentTypeOption('Stock', Icons.trending_up_rounded, AppColors.graphBlue),
-    InvestmentTypeOption('Crypto', Icons.currency_bitcoin_rounded, AppColors.graphPurple),
-    InvestmentTypeOption('Mutual Fund', Icons.account_balance_rounded, AppColors.graphEmerald),
-    InvestmentTypeOption('ETF', Icons.pie_chart_rounded, AppColors.graphCyan),
-    InvestmentTypeOption('Bond', Icons.security_rounded, AppColors.graphAmber),
-    InvestmentTypeOption('Real Estate', Icons.home_rounded, AppColors.graphPink),
-    InvestmentTypeOption('Other', Icons.category_rounded, AppColors.graphOrange),
-  ];
 
   @override
   void initState() {
@@ -59,9 +48,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   @override
   void dispose() {
     _nameController.dispose();
-    _symbolController.dispose();
+    _notesController.dispose();
     _nameFocusNode.dispose();
-    _symbolFocusNode.dispose();
+    _notesFocusNode.dispose();
     _animController.dispose();
     super.dispose();
   }
@@ -69,25 +58,14 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedPortfolioId == null) {
-      final portfolios = ref.read(allPortfoliosProvider).valueOrNull;
-      if (portfolios != null && portfolios.isNotEmpty) {
-        _selectedPortfolioId = portfolios.first.id;
-      } else {
-        _showError('Please select a portfolio');
-        return;
-      }
-    }
-
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
 
     try {
-      await ref.read(investmentProvider.notifier).addInvestment(
+      await ref.read(investmentNotifierProvider.notifier).addInvestment(
         name: _nameController.text.trim(),
-        symbol: _symbolController.text.trim().isEmpty ? null : _symbolController.text.trim().toUpperCase(),
         type: _selectedType,
-        portfolioId: _selectedPortfolioId!,
+        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 
       HapticFeedback.mediumImpact();
@@ -116,18 +94,6 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Auto-select the first portfolio if not already selected
-    final portfoliosAsync = ref.watch(allPortfoliosProvider);
-    portfoliosAsync.whenData((portfolios) {
-      if (_selectedPortfolioId == null && portfolios.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _selectedPortfolioId == null) {
-            setState(() => _selectedPortfolioId = portfolios.first.id);
-          }
-        });
-      }
-    });
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -186,7 +152,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     controller: _nameController,
                     focusNode: _nameFocusNode,
                     label: 'Investment Name',
-                    hint: 'e.g. Apple Inc.',
+                    hint: 'e.g. LenDenClub, Grip Invest',
                     icon: Icons.label_outline_rounded,
                     isDark: isDark,
                     validator: (value) {
@@ -196,21 +162,22 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       return null;
                     },
                     onSubmitted: (_) {
-                      FocusScope.of(context).requestFocus(_symbolFocusNode);
+                      FocusScope.of(context).requestFocus(_notesFocusNode);
                     },
                   ),
 
                   const SizedBox(height: 20),
 
-                  // Symbol Field
+                  // Notes Field
                   _buildInputField(
-                    controller: _symbolController,
-                    focusNode: _symbolFocusNode,
-                    label: 'Symbol (Optional)',
-                    hint: 'e.g. AAPL',
-                    icon: Icons.code_rounded,
+                    controller: _notesController,
+                    focusNode: _notesFocusNode,
+                    label: 'Notes (Optional)',
+                    hint: 'e.g. Investment details, platform info',
+                    icon: Icons.notes_rounded,
                     isDark: isDark,
-                    textCapitalization: TextCapitalization.characters,
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLines: 3,
                   ),
 
                   const SizedBox(height: 40),
@@ -232,12 +199,13 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: _investmentTypes.map((type) {
-        final isSelected = _selectedType == type.name;
+      children: InvestmentType.values.map((type) {
+        final isSelected = _selectedType == type;
+        final color = type.color;
         return GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
-            setState(() => _selectedType = type.name);
+            setState(() => _selectedType = type);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -245,7 +213,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
-                      colors: [type.color, type.color.withValues(alpha: 0.8)],
+                      colors: [color, color.withValues(alpha: 0.8)],
                     )
                   : null,
               color: isSelected ? null : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
@@ -257,7 +225,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: type.color.withValues(alpha: 0.3),
+                        color: color.withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -276,7 +244,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  type.name,
+                  type.displayName,
                   style: AppTypography.body.copyWith(
                     color: isSelected
                         ? Colors.white
@@ -302,6 +270,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     String? Function(String?)? validator,
     void Function(String)? onSubmitted,
     TextCapitalization textCapitalization = TextCapitalization.words,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,6 +287,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           controller: controller,
           focusNode: focusNode,
           textCapitalization: textCapitalization,
+          maxLines: maxLines,
           style: AppTypography.body.copyWith(
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
@@ -326,9 +296,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             hintStyle: AppTypography.body.copyWith(
               color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
             ),
-            prefixIcon: Icon(
-              icon,
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            prefixIcon: Padding(
+              padding: EdgeInsets.only(bottom: maxLines > 1 ? (maxLines - 1) * 20.0 : 0),
+              child: Icon(
+                icon,
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
             ),
             filled: true,
             fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -419,12 +392,4 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       ),
     );
   }
-}
-
-class InvestmentTypeOption {
-  final String name;
-  final IconData icon;
-  final Color color;
-
-  InvestmentTypeOption(this.name, this.icon, this.color);
 }

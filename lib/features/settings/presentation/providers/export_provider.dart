@@ -5,7 +5,6 @@ import 'package:inv_tracker/features/settings/domain/services/export_service.dar
 final exportServiceProvider = Provider<ExportService>((ref) {
   return ExportService(
     ref.watch(investmentRepositoryProvider),
-    ref.watch(portfolioRepositoryProvider),
   );
 });
 

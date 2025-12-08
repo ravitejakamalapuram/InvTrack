@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
 
-import 'package:inv_tracker/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:inv_tracker/features/home/presentation/screens/home_shell_screen.dart';
-import 'package:inv_tracker/features/insights/presentation/screens/insights_screen.dart';
+import 'package:inv_tracker/features/overview/presentation/screens/overview_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
@@ -58,14 +57,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           return HomeShellScreen(navigationShell: navigationShell);
         },
         branches: [
+          // Tab 1: Overview (Home)
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/',
-                builder: (context, state) => const DashboardScreen(),
+                builder: (context, state) => const OverviewScreen(),
               ),
             ],
           ),
+          // Tab 2: Investments
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -74,14 +75,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/insights',
-                builder: (context, state) => const InsightsScreen(),
-              ),
-            ],
-          ),
+          // Tab 3: Settings
           StatefulShellBranch(
             routes: [
               GoRoute(

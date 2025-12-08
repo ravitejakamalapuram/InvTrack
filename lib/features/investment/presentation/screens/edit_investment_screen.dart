@@ -19,32 +19,22 @@ class EditInvestmentScreen extends ConsumerStatefulWidget {
 class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _symbolController;
-  late String _selectedType;
+  late TextEditingController _notesController;
+  late InvestmentType _selectedType;
   bool _isLoading = false;
-
-  final List<_InvestmentTypeOption> _investmentTypes = [
-    _InvestmentTypeOption('Stock', Icons.trending_up_rounded, AppColors.graphBlue),
-    _InvestmentTypeOption('Crypto', Icons.currency_bitcoin_rounded, AppColors.graphPurple),
-    _InvestmentTypeOption('Mutual Fund', Icons.account_balance_rounded, AppColors.graphEmerald),
-    _InvestmentTypeOption('ETF', Icons.pie_chart_rounded, AppColors.graphCyan),
-    _InvestmentTypeOption('Bond', Icons.security_rounded, AppColors.graphAmber),
-    _InvestmentTypeOption('Real Estate', Icons.home_rounded, AppColors.graphPink),
-    _InvestmentTypeOption('Other', Icons.category_rounded, AppColors.graphOrange),
-  ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.investment.name);
-    _symbolController = TextEditingController(text: widget.investment.symbol ?? '');
+    _notesController = TextEditingController(text: widget.investment.notes ?? '');
     _selectedType = widget.investment.type;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _symbolController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -55,14 +45,13 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
     HapticFeedback.lightImpact();
 
     try {
-      await ref.read(investmentProvider.notifier).updateInvestment(
+      await ref.read(investmentNotifierProvider.notifier).updateInvestment(
         id: widget.investment.id,
         name: _nameController.text.trim(),
-        symbol: _symbolController.text.trim().isEmpty 
-            ? null 
-            : _symbolController.text.trim().toUpperCase(),
         type: _selectedType,
-        portfolioId: widget.investment.portfolioId,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
 
       HapticFeedback.mediumImpact();
@@ -132,7 +121,7 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
         children: [
           _buildNameField(isDark),
           const SizedBox(height: 20),
-          _buildSymbolField(isDark),
+          _buildNotesField(isDark),
           const SizedBox(height: 24),
           _buildTypeSelector(isDark),
           const SizedBox(height: 32),
@@ -152,25 +141,25 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: _nameController,
-          decoration: _inputDecoration(isDark, 'e.g., Apple Inc.'),
+          decoration: _inputDecoration(isDark, 'e.g., P2P Lending - LendingClub'),
           validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
         ),
       ],
     );
   }
 
-  Widget _buildSymbolField(bool isDark) {
+  Widget _buildNotesField(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Symbol (Optional)', style: AppTypography.labelMedium.copyWith(
+        Text('Notes (Optional)', style: AppTypography.labelMedium.copyWith(
           color: isDark ? Colors.white70 : AppColors.neutral600Light,
         )),
         const SizedBox(height: 8),
         TextFormField(
-          controller: _symbolController,
-          decoration: _inputDecoration(isDark, 'e.g., AAPL'),
-          textCapitalization: TextCapitalization.characters,
+          controller: _notesController,
+          decoration: _inputDecoration(isDark, 'Add any notes about this investment...'),
+          maxLines: 3,
         ),
       ],
     );
@@ -187,12 +176,12 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _investmentTypes.map((type) {
-            final isSelected = _selectedType == type.name;
+          children: InvestmentType.values.map((type) {
+            final isSelected = _selectedType == type;
             return GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
-                setState(() => _selectedType = type.name);
+                setState(() => _selectedType = type);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -213,7 +202,7 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
                     Icon(type.icon, size: 18, color: isSelected ? type.color : (isDark ? Colors.white54 : Colors.grey)),
                     const SizedBox(width: 8),
                     Text(
-                      type.name,
+                      type.displayName,
                       style: AppTypography.small.copyWith(
                         color: isSelected ? type.color : (isDark ? Colors.white : AppColors.neutral700Light),
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -273,12 +262,4 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
-}
-
-class _InvestmentTypeOption {
-  final String name;
-  final IconData icon;
-  final Color color;
-
-  _InvestmentTypeOption(this.name, this.icon, this.color);
 }
