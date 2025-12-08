@@ -36,6 +36,16 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- sql.js for Drift web database support -->
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.js"></script>
+  <script>
+    // Initialize sql.js and make it available globally
+    initSqlJs({
+      locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/${file}`
+    }).then(function(SQL) {
+      window.SQL = SQL;
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
