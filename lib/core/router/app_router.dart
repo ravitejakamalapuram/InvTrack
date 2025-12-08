@@ -6,8 +6,8 @@ import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.da
 
 import 'package:inv_tracker/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:inv_tracker/features/home/presentation/screens/home_shell_screen.dart';
+import 'package:inv_tracker/features/insights/presentation/screens/insights_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
-import 'package:inv_tracker/features/portfolio/presentation/screens/portfolio_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -77,8 +77,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/portfolio',
-                builder: (context, state) => const PortfolioScreen(),
+                path: '/insights',
+                builder: (context, state) => const InsightsScreen(),
               ),
             ],
           ),

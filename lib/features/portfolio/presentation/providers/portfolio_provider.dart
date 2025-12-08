@@ -19,11 +19,11 @@ class PortfolioNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> createDefaultPortfolioIfNone() async {
     final portfolios = await _ref.read(portfolioRepositoryProvider).getAllPortfolios();
     if (portfolios.isEmpty) {
-      await createPortfolio(name: 'Main Portfolio', currency: 'USD');
+      await createPortfolio('Main Portfolio', currency: 'USD');
     }
   }
 
-  Future<void> createPortfolio({required String name, required String currency}) async {
+  Future<void> createPortfolio(String name, {String currency = 'USD'}) async {
     state = const AsyncValue.loading();
     try {
       final portfolio = PortfolioEntity(
@@ -33,6 +33,38 @@ class PortfolioNotifier extends StateNotifier<AsyncValue<void>> {
         createdAt: DateTime.now(),
       );
       await _ref.read(portfolioRepositoryProvider).createPortfolio(portfolio);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> renamePortfolio(String id, String newName) async {
+    state = const AsyncValue.loading();
+    try {
+      final repo = _ref.read(portfolioRepositoryProvider);
+      final existing = await repo.getPortfolioById(id);
+      if (existing != null) {
+        final updated = PortfolioEntity(
+          id: existing.id,
+          name: newName,
+          currency: existing.currency,
+          createdAt: existing.createdAt,
+        );
+        await repo.updatePortfolio(updated);
+      }
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> deletePortfolio(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      await _ref.read(portfolioRepositoryProvider).deletePortfolio(id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

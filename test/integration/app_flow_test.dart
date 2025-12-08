@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/database/app_database.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/features/portfolio/data/repositories/portfolio_repository_impl.dart';
 import 'package:inv_tracker/features/portfolio/domain/entities/portfolio_entity.dart';
-import 'package:inv_tracker/features/investment/data/repositories/investment_repository_impl.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 

@@ -5,11 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/gradient_card.dart';
-import 'package:inv_tracker/core/widgets/change_badge.dart';
-import 'package:inv_tracker/core/widgets/metric_tile.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/dashboard/presentation/providers/dashboard_provider.dart';
-import 'package:inv_tracker/features/dashboard/presentation/widgets/asset_allocation_chart.dart';
 import 'package:inv_tracker/features/dashboard/presentation/widgets/portfolio_value_chart.dart';
 import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
 import 'package:inv_tracker/features/sync/presentation/widgets/sync_status_icon.dart';
@@ -112,12 +109,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 _buildSectionHeader('Performance', 'Last 30 days', isDark),
                 const SizedBox(height: 16),
                 _buildChartCard(metricsAsync, isDark),
-                const SizedBox(height: 28),
-
-                // Asset Allocation Section
-                _buildSectionHeader('Allocation', 'By category', isDark),
-                const SizedBox(height: 16),
-                _buildAllocationCard(metricsAsync, isDark),
                 const SizedBox(height: 24),
               ]),
             ),
@@ -534,24 +525,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               maxY: maxY + yPadding,
             );
           },
-          loading: () => const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          error: (e, _) => Center(
-            child: Text('Error: $e', style: AppTypography.caption),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAllocationCard(AsyncValue<DashboardMetrics> metricsAsync, bool isDark) {
-    return GlassCard(
-      padding: const EdgeInsets.all(20),
-      child: SizedBox(
-        height: 220,
-        child: metricsAsync.when(
-          data: (m) => AssetAllocationChart(allocation: m.allocation),
           loading: () => const Center(
             child: CircularProgressIndicator(strokeWidth: 2),
           ),

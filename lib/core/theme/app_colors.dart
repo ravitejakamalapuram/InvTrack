@@ -79,6 +79,11 @@ class AppColors {
   static const Color neutral900Dark = Color(0xFF0C0A09);
   static const Color neutral950Dark = Color(0xFF0A0A0A);
 
+  // Text colors - Semantic aliases
+  static const Color textPrimaryDark = neutral50Dark;
+  static const Color textSecondaryLight = neutral500Light;
+  static const Color textSecondaryDark = neutral400Dark;
+
   // Card & Surface - Deep, rich blacks
   static const Color cardDark = Color(0xFF171717);
   static const Color surfaceDark = Color(0xFF0A0A0A);

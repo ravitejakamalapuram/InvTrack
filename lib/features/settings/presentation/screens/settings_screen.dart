@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/seed_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
@@ -15,7 +16,6 @@ import 'package:inv_tracker/features/settings/presentation/providers/import_prov
 import 'package:inv_tracker/features/premium/presentation/widgets/premium_gate.dart';
 import 'package:inv_tracker/features/premium/presentation/providers/premium_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
-import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -104,6 +104,9 @@ class SettingsScreen extends ConsumerWidget {
                ref.read(syncStatusProvider.notifier).sync();
             },
           ),
+          const Divider(),
+          _buildSectionHeader('Portfolio'),
+          _buildPortfolioSection(context, ref),
           const Divider(),
           _buildSectionHeader('Account'),
           ListTile(
@@ -367,6 +370,148 @@ Last updated: December 05, 2025
             ),
         ],
       ],
+    );
+  }
+
+  Widget _buildPortfolioSection(BuildContext context, WidgetRef ref) {
+    final portfoliosAsync = ref.watch(allPortfoliosProvider);
+
+    return portfoliosAsync.when(
+      data: (portfolios) {
+        if (portfolios.isEmpty) {
+          return ListTile(
+            title: const Text('No portfolios'),
+            subtitle: const Text('Create your first portfolio'),
+            leading: const Icon(Icons.folder_outlined, color: Colors.grey),
+            trailing: IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => _showCreatePortfolioDialog(context, ref),
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            ...portfolios.map((portfolio) => ListTile(
+              title: Text(portfolio.name),
+              subtitle: Text('Created ${DateFormat.yMMMd().format(portfolio.createdAt)}'),
+              leading: const Icon(Icons.folder, color: Colors.blue),
+              trailing: portfolios.length > 1
+                  ? IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => _confirmDeletePortfolio(context, ref, portfolio.id, portfolio.name),
+                    )
+                  : null,
+              onTap: () => _showRenamePortfolioDialog(context, ref, portfolio.id, portfolio.name),
+            )),
+            ListTile(
+              title: const Text('Add Portfolio'),
+              leading: const Icon(Icons.add, color: Colors.green),
+              onTap: () => _showCreatePortfolioDialog(context, ref),
+            ),
+          ],
+        );
+      },
+      loading: () => const ListTile(
+        title: Text('Loading portfolios...'),
+        leading: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (e, _) => ListTile(
+        title: const Text('Error loading portfolios'),
+        subtitle: Text('$e'),
+        leading: const Icon(Icons.error, color: Colors.red),
+      ),
+    );
+  }
+
+  void _showCreatePortfolioDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Portfolio'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Portfolio Name',
+            hintText: 'e.g., My Investments',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (controller.text.trim().isNotEmpty) {
+                await ref.read(portfolioProvider.notifier).createPortfolio(controller.text.trim());
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenamePortfolioDialog(BuildContext context, WidgetRef ref, String id, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Portfolio'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Portfolio Name'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (controller.text.trim().isNotEmpty) {
+                await ref.read(portfolioProvider.notifier).renamePortfolio(id, controller.text.trim());
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeletePortfolio(BuildContext context, WidgetRef ref, String id, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Portfolio?'),
+        content: Text('Are you sure you want to delete "$name"? This will also delete all investments and transactions in this portfolio.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await ref.read(portfolioProvider.notifier).deletePortfolio(id);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

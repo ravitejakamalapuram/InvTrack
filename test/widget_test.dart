@@ -8,11 +8,7 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:local_auth_android/local_auth_android.dart';
-import 'package:local_auth_darwin/local_auth_darwin.dart';
-import 'package:local_auth_windows/local_auth_windows.dart';
-import 'package:local_auth_platform_interface/local_auth_platform_interface.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
   final Map<String, String> _storage = {};
@@ -37,30 +33,7 @@ class FakeFlutterSecureStorage extends FlutterSecureStorage {
   }
 }
 
-class MockLocalAuthentication extends Mock implements LocalAuthentication {
-  @override
-  Future<bool> canCheckBiometrics = Future.value(false);
-  @override
-  Future<bool> isDeviceSupported() async => false;
-  @override
-  Future<bool> authenticate({
-    required String localizedReason,
-    Iterable<AuthMessages> authMessages = const <AuthMessages>[
-      IOSAuthMessages(),
-      AndroidAuthMessages(),
-      WindowsAuthMessages(),
-    ],
-    bool biometricOnly = false,
-    bool sensitiveTransaction = true,
-    bool persistAcrossBackgrounding = false,
-  }) async => false;
-  
-  @override
-  Future<bool> stopAuthentication() async => true;
-  
-  @override
-  Future<List<BiometricType>> getAvailableBiometrics() async => [];
-}
+class MockLocalAuthentication extends Mock implements LocalAuthentication {}
 
 void main() {
   testWidgets('App renders correctly', (WidgetTester tester) async {
