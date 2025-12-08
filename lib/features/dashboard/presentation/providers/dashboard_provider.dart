@@ -110,7 +110,9 @@ Future<DashboardMetrics> _calculateMetricsIsolated(_CalculationData data) async 
 
   return DashboardMetrics(
     totalValue: totalValue,
-    dayChange: profitLoss, 
+    totalInvested: totalInvested,
+    totalReturnPercent: profitLossPercent,
+    dayChange: profitLoss,
     dayChangePercent: profitLossPercent,
     allocation: allocation,
     historicalData: historicalData,
@@ -119,6 +121,8 @@ Future<DashboardMetrics> _calculateMetricsIsolated(_CalculationData data) async 
 
 class DashboardMetrics {
   final double totalValue;
+  final double totalInvested;
+  final double totalReturnPercent;
   final double dayChange;
   final double dayChangePercent;
   final Map<String, double> allocation;
@@ -126,6 +130,8 @@ class DashboardMetrics {
 
   const DashboardMetrics({
     required this.totalValue,
+    this.totalInvested = 0,
+    this.totalReturnPercent = 0,
     required this.dayChange,
     required this.dayChangePercent,
     this.allocation = const {},
