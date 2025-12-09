@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -10,8 +11,6 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 import 'package:inv_tracker/features/sync/data/datasources/google_drive_datasource.dart';
 import 'package:inv_tracker/features/sync/data/datasources/google_sheets_datasource.dart';
 
-
-
 final syncServiceProvider = Provider<SyncService>((ref) {
   return SyncService(ref);
 });
@@ -19,13 +18,15 @@ final syncServiceProvider = Provider<SyncService>((ref) {
 class SyncService {
   final Ref _ref;
   static const String _spreadsheetName = 'InvTracker_Data';
+  static const String _spreadsheetIdKey = 'invtracker_spreadsheet_id';
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   SyncService(this._ref);
 
   Future<void> sync() async {
     final googleSignIn = _ref.read(googleSignInProvider);
     final currentUser = googleSignIn.currentUser;
-    
+
     if (currentUser == null) {
       // Not signed in, cannot sync
       return;
@@ -40,8 +41,8 @@ class SyncService {
       final driveDataSource = GoogleDriveDataSource(client);
       final sheetsDataSource = GoogleSheetsDataSource(client);
 
-      // 1. Get or Create Spreadsheet
-      final spreadsheetId = await driveDataSource.getOrCreateSpreadsheet(_spreadsheetName);
+      // 1. Get or Create Spreadsheet (with local caching to avoid duplicates)
+      final spreadsheetId = await _getOrCreateSpreadsheetWithCache(driveDataSource);
 
       // 2. Ensure Sheets Exist
       await sheetsDataSource.createSheetIfNotExists(spreadsheetId, 'Investments');
@@ -65,6 +66,37 @@ class SyncService {
     sync();
   }
 
+  /// Gets the spreadsheet ID from local cache, or searches Drive, or creates new.
+  /// This prevents duplicate spreadsheets from being created on each sync.
+  Future<String> _getOrCreateSpreadsheetWithCache(GoogleDriveDataSource driveDataSource) async {
+    // 1. Check local cache first
+    final cachedId = await _secureStorage.read(key: _spreadsheetIdKey);
+    if (cachedId != null && cachedId.isNotEmpty) {
+      // Verify the file still exists and is accessible
+      final exists = await driveDataSource.verifySpreadsheetExists(cachedId);
+      if (exists) {
+        debugPrint('Using cached spreadsheet ID: $cachedId');
+        return cachedId;
+      }
+      // File no longer exists, clear cache
+      await _secureStorage.delete(key: _spreadsheetIdKey);
+    }
+
+    // 2. Search for existing spreadsheet by name
+    final existingId = await driveDataSource.findSpreadsheetByName(_spreadsheetName);
+    if (existingId != null) {
+      debugPrint('Found existing spreadsheet: $existingId');
+      await _secureStorage.write(key: _spreadsheetIdKey, value: existingId);
+      return existingId;
+    }
+
+    // 3. Create new spreadsheet
+    final newId = await driveDataSource.createSpreadsheet(_spreadsheetName);
+    debugPrint('Created new spreadsheet: $newId');
+    await _secureStorage.write(key: _spreadsheetIdKey, value: newId);
+    return newId;
+  }
+
   Future<void> _pushLocalChanges(String spreadsheetId, GoogleSheetsDataSource sheetsDataSource) async {
     final syncRepo = _ref.read(syncRepositoryProvider);
     final pendingItems = await syncRepo.getPendingItems();
@@ -72,19 +104,70 @@ class SyncService {
     for (final item in pendingItems) {
       try {
         final sheetName = _getSheetName(item.entityType);
-        
-        if (item.operation == 'CREATE') {
-          final payload = jsonDecode(item.payload) as Map<String, dynamic>;
-          final values = _mapPayloadToRow(item.entityType, payload);
-          await sheetsDataSource.appendRows(spreadsheetId, '$sheetName!A:A', [values]);
+        final payload = jsonDecode(item.payload) as Map<String, dynamic>;
+        final numColumns = _getNumColumns(item.entityType);
+
+        switch (item.operation) {
+          case 'CREATE':
+            final values = _mapPayloadToRow(item.entityType, payload);
+            await sheetsDataSource.appendRows(spreadsheetId, '$sheetName!A:A', [values]);
+            debugPrint('Synced CREATE: ${item.entityType} ${payload['id']}');
+            break;
+
+          case 'UPDATE':
+            final id = payload['id'] as String?;
+            if (id != null) {
+              final values = _mapPayloadToRow(item.entityType, payload);
+              final updated = await sheetsDataSource.updateRowById(
+                spreadsheetId,
+                sheetName,
+                id,
+                values,
+                numColumns,
+              );
+              if (updated) {
+                debugPrint('Synced UPDATE: ${item.entityType} $id');
+              } else {
+                // Row not found, create it instead
+                await sheetsDataSource.appendRows(spreadsheetId, '$sheetName!A:A', [values]);
+                debugPrint('Synced UPDATE (created): ${item.entityType} $id');
+              }
+            }
+            break;
+
+          case 'DELETE':
+            final id = payload['id'] as String?;
+            if (id != null) {
+              final deleted = await sheetsDataSource.deleteRowById(
+                spreadsheetId,
+                sheetName,
+                id,
+              );
+              if (deleted) {
+                debugPrint('Synced DELETE: ${item.entityType} $id');
+              } else {
+                debugPrint('DELETE: Row not found, skipping: ${item.entityType} $id');
+              }
+            }
+            break;
         }
-        // TODO: Handle UPDATE and DELETE
 
         await syncRepo.deleteItem(item.id);
       } catch (e) {
         debugPrint('Error syncing item ${item.id}: $e');
         await syncRepo.markAsFailed(item.id);
       }
+    }
+  }
+
+  int _getNumColumns(String entityType) {
+    switch (entityType) {
+      case 'INVESTMENT':
+        return 7; // id, name, type, status, notes, createdAt, updatedAt
+      case 'CASHFLOW':
+        return 7; // id, investmentId, type, date, amount, notes, createdAt
+      default:
+        return 7;
     }
   }
 

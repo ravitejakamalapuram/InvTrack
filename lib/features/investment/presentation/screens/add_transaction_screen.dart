@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -131,20 +132,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         );
       }
 
-      HapticFeedback.mediumImpact();
       if (mounted) {
+        final message = widget.isEditing
+            ? 'Transaction updated successfully'
+            : 'Transaction added successfully';
+        AppFeedback.showSuccess(context, message);
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.errorLight,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        final message = widget.isEditing
+            ? 'Failed to update transaction'
+            : 'Failed to add transaction';
+        AppFeedback.showError(context, message);
       }
     } finally {
       if (mounted) {

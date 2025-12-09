@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
@@ -607,15 +608,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         ),
         confirmDismiss: (direction) => _confirmDeleteCashFlow(context, isDark),
         onDismissed: (direction) {
-          HapticFeedback.mediumImpact();
           ref.read(investmentNotifierProvider.notifier).deleteCashFlow(cashFlow.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Cash flow deleted'),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
+          AppFeedback.showSuccess(context, 'Transaction deleted');
         },
         child: GlassCard(
           onTap: () {
@@ -702,147 +696,47 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Future<bool?> _confirmDeleteCashFlow(BuildContext context, bool isDark) {
-    return showDialog<bool>(
+  Future<bool?> _confirmDeleteCashFlow(BuildContext context, bool isDark) async {
+    final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete Cash Flow?',
-          style: AppTypography.h4.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-        ),
-        content: Text(
-          'This action cannot be undone.',
-          style: AppTypography.body.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: AppTypography.button.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'Delete',
-              style: AppTypography.button.copyWith(color: AppColors.errorLight),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete Transaction?',
+      message: 'This action cannot be undone.',
+      confirmText: 'Delete',
     );
+    return confirmed;
   }
 
   Future<void> _confirmDeleteInvestment(BuildContext context, bool isDark) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Delete Investment?',
-          style: AppTypography.h4.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-        ),
-        content: Text(
-          'This will permanently delete this investment and all its cash flows. This action cannot be undone.',
-          style: AppTypography.body.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: AppTypography.button.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'Delete',
-              style: AppTypography.button.copyWith(color: AppColors.errorLight),
-            ),
-          ),
-        ],
-      ),
+      title: 'Delete Investment?',
+      message: 'This will permanently delete this investment and all its transactions. This action cannot be undone.',
+      confirmText: 'Delete',
     );
 
-    if (confirmed == true && mounted) {
-      HapticFeedback.mediumImpact();
+    if (confirmed && mounted) {
       await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Investment deleted'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        AppFeedback.showSuccess(context, 'Investment deleted');
       }
     }
   }
 
   void _toggleInvestmentStatus(BuildContext context, bool isDark) async {
     final isClosed = widget.investment.status == InvestmentStatus.closed;
-    final action = isClosed ? 'reopen' : 'close';
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '${isClosed ? 'Reopen' : 'Close'} Investment?',
-          style: AppTypography.h4.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-        ),
-        content: Text(
-          isClosed
-            ? 'This will reopen the investment and allow adding new cash flows.'
-            : 'This will mark the investment as closed. You can reopen it later if needed.',
-          style: AppTypography.body.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: AppTypography.button.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              isClosed ? 'Reopen' : 'Close',
-              style: AppTypography.button.copyWith(color: AppColors.primaryLight),
-            ),
-          ),
-        ],
-      ),
+      title: '${isClosed ? 'Reopen' : 'Close'} Investment?',
+      message: isClosed
+          ? 'This will reopen the investment and allow adding new transactions.'
+          : 'This will mark the investment as closed. You can reopen it later if needed.',
+      confirmText: isClosed ? 'Reopen' : 'Close',
+      isDestructive: false,
     );
 
-    if (confirmed == true && mounted) {
-      HapticFeedback.mediumImpact();
+    if (confirmed && mounted) {
       if (isClosed) {
         await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
       } else {
@@ -850,13 +744,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       }
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Investment ${action}d'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
       }
     }
   }

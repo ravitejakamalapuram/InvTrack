@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 
@@ -68,12 +69,14 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 
-      HapticFeedback.mediumImpact();
       if (mounted) {
+        AppFeedback.showSuccess(context, 'Investment created successfully');
         context.pop();
       }
     } catch (e) {
-      _showError('Error: $e');
+      if (mounted) {
+        AppFeedback.showError(context, 'Failed to create investment');
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

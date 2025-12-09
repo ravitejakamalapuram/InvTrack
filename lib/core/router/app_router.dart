@@ -10,6 +10,7 @@ import 'package:inv_tracker/features/investment/presentation/screens/investment_
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
+import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
 
 // Private navigator key - only root needs one
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -17,19 +18,29 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final securityState = ref.watch(securityProvider);
+  final onboardingComplete = ref.watch(onboardingCompleteProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      // If auth state is loading, we don't redirect yet
+      // If auth or onboarding state is loading, we don't redirect yet
       if (authState.isLoading || authState.hasError) return null;
+      if (onboardingComplete.isLoading) return null;
+
+      final hasCompletedOnboarding = onboardingComplete.value ?? false;
+      final isOnboardingRoute = state.uri.toString() == '/onboarding';
+
+      // Show onboarding for first-time users (before sign-in)
+      if (!hasCompletedOnboarding && !isOnboardingRoute) {
+        return '/onboarding';
+      }
 
       final isLoggedIn = authState.value != null;
       final isLoggingIn = state.uri.toString() == '/auth/signin';
 
-      if (!isLoggedIn && !isLoggingIn) {
+      if (!isLoggedIn && !isLoggingIn && hasCompletedOnboarding) {
         return '/auth/signin';
       }
 
@@ -93,6 +104,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/lock',
         builder: (context, state) => const PasscodeScreen(mode: PasscodeMode.unlock),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => OnboardingScreen(
+          onComplete: () {
+            // Invalidate the provider so it re-checks
+            // Then navigate to sign-in
+            ref.invalidate(onboardingCompleteProvider);
+          },
+        ),
       ),
     ],
   );

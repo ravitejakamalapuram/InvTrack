@@ -73,36 +73,6 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionHeader('Security'),
           _buildSecuritySection(context, ref),
           const Divider(),
-          _buildSectionHeader('Sync'),
-          ListTile(
-            title: const Text('Sync Issues'),
-            leading: const Icon(Icons.sync_problem, color: Colors.orange),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SyncIssuesScreen()),
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Sync Now'),
-            leading: const Icon(Icons.sync, color: Colors.blue),
-            trailing: ref.watch(syncStatusProvider).when(
-              data: (lastSynced) => lastSynced != null 
-                  ? Text(DateFormat.Hm().format(lastSynced), style: AppTypography.caption)
-                  : const SizedBox(),
-              loading: () => const SizedBox(
-                width: 20, 
-                height: 20, 
-                child: CircularProgressIndicator(strokeWidth: 2)
-              ),
-              error: (err, stack) => const Icon(Icons.error, color: Colors.red),
-            ),
-            onTap: () {
-               ref.read(syncStatusProvider.notifier).sync();
-            },
-          ),
-          const Divider(),
           _buildSectionHeader('Account'),
           ListTile(
             title: const Text('Sign Out'),
@@ -111,70 +81,103 @@ class SettingsScreen extends ConsumerWidget {
               ref.read(authRepositoryProvider).signOut();
             },
           ),
-          const Divider(),
-          _buildSectionHeader('Data Management'),
-          PremiumGate(
-            child: ListTile(
-              title: const Text('Export to CSV'),
-              leading: const Icon(Icons.download, color: Colors.green),
-              trailing: ref.watch(exportStateProvider).isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.chevron_right),
-              onTap: () async {
-                await ref.read(exportStateProvider.notifier).exportCsv();
-                final state = ref.read(exportStateProvider);
-                if (state.hasError && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Export failed: ${state.error}')),
-                  );
-                }
+          // Sync section - only show in debug mode for troubleshooting
+          if (kDebugMode) ...[
+            const Divider(),
+            _buildSectionHeader('Sync (Debug)'),
+            ListTile(
+              title: const Text('Sync Issues'),
+              leading: const Icon(Icons.sync_problem, color: Colors.orange),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SyncIssuesScreen()),
+                );
               },
             ),
-          ),
-          PremiumGate(
-            child: ListTile(
-              title: const Text('Import from CSV'),
-              leading: const Icon(Icons.upload_file, color: Colors.blue),
-              trailing: ref.watch(importStateProvider).isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.chevron_right),
-              onTap: () async {
-                await ref.read(importStateProvider.notifier).importCsv();
-                final state = ref.read(importStateProvider);
-                
-                if (context.mounted) {
-                   state.when(
-                    data: (result) {
-                      if (result != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Imported: ${result.successCount} success, ${result.failureCount} failed.\n${result.message}',
+            ListTile(
+              title: const Text('Sync Now'),
+              leading: const Icon(Icons.sync, color: Colors.blue),
+              trailing: ref.watch(syncStatusProvider).when(
+                data: (lastSynced) => lastSynced != null
+                    ? Text(DateFormat.Hm().format(lastSynced), style: AppTypography.caption)
+                    : const SizedBox(),
+                loading: () => const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2)
+                ),
+                error: (err, stack) => const Icon(Icons.error, color: Colors.red),
+              ),
+              onTap: () {
+                 ref.read(syncStatusProvider.notifier).sync();
+              },
+            ),
+            const Divider(),
+            _buildSectionHeader('Data Management (Debug)'),
+            PremiumGate(
+              child: ListTile(
+                title: const Text('Export to CSV'),
+                leading: const Icon(Icons.download, color: Colors.green),
+                trailing: ref.watch(exportStateProvider).isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await ref.read(exportStateProvider.notifier).exportCsv();
+                  final state = ref.read(exportStateProvider);
+                  if (state.hasError && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Export failed: ${state.error}')),
+                    );
+                  }
+                },
+              ),
+            ),
+            PremiumGate(
+              child: ListTile(
+                title: const Text('Import from CSV'),
+                leading: const Icon(Icons.upload_file, color: Colors.blue),
+                trailing: ref.watch(importStateProvider).isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await ref.read(importStateProvider.notifier).importCsv();
+                  final state = ref.read(importStateProvider);
+
+                  if (context.mounted) {
+                     state.when(
+                      data: (result) {
+                        if (result != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Imported: ${result.successCount} success, ${result.failureCount} failed.\n${result.message}',
+                              ),
+                              backgroundColor: result.failureCount > 0 ? Colors.orange : Colors.green,
                             ),
-                            backgroundColor: result.failureCount > 0 ? Colors.orange : Colors.green,
-                          ),
+                          );
+                        }
+                      },
+                      error: (err, stack) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Import failed: $err'), backgroundColor: Colors.red),
                         );
-                      }
-                    },
-                    error: (err, stack) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Import failed: $err'), backgroundColor: Colors.red),
-                      );
-                    },
-                    loading: () {},
-                  );
-                }
-              },
+                      },
+                      loading: () {},
+                    );
+                  }
+                },
+              ),
             ),
-          ),
+          ],
           if (kDebugMode) ...[
             const Divider(),
             _buildSectionHeader('Developer Options'),

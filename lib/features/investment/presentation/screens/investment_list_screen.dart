@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
@@ -401,19 +402,37 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   Widget _buildInvestmentCard(InvestmentEntity investment, bool isDark) {
     final typeColor = _getTypeColor(investment.type);
     final isClosed = investment.status == InvestmentStatus.closed;
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => InvestmentDetailScreen(investment: investment),
-            ),
-          );
-        },
-        padding: EdgeInsets.zero,
-        child: Column(
+    // Build accessibility label
+    final semanticLabel = statsAsync.maybeWhen(
+      data: (stats) => AccessibilityUtils.investmentCardLabel(
+        name: investment.name,
+        type: investment.type.displayName,
+        currentValue: stats.netCashFlow,
+        returnPercent: stats.hasData ? stats.xirr * 100 : null,
+        currencySymbol: currencySymbol,
+        isClosed: isClosed,
+      ),
+      orElse: () => '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
+    );
+
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: GlassCard(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => InvestmentDetailScreen(investment: investment),
+              ),
+            );
+          },
+          padding: EdgeInsets.zero,
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
@@ -539,6 +558,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               ),
             ),
           ],
+        ),
         ),
       ),
     );

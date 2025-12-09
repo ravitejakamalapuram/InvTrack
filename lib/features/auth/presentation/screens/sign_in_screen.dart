@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/sync/domain/services/sync_service.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -79,7 +81,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).signInWithGoogle();
+      final user = await ref.read(authRepositoryProvider).signInWithGoogle();
+
+      // If sign-in was successful, initialize/sync the spreadsheet
+      if (user != null && !user.isGuest) {
+        try {
+          debugPrint('SignIn: Initializing sync after Google Sign-In...');
+          await ref.read(syncServiceProvider).sync();
+          debugPrint('SignIn: Initial sync completed successfully');
+        } catch (syncError) {
+          // Log sync error but don't fail the login
+          debugPrint('SignIn: Initial sync failed (will retry later): $syncError');
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

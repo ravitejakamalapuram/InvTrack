@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 
@@ -54,12 +55,14 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
             : _notesController.text.trim(),
       );
 
-      HapticFeedback.mediumImpact();
       if (mounted) {
+        AppFeedback.showSuccess(context, 'Investment updated successfully');
         context.pop(true); // Return true to indicate success
       }
     } catch (e) {
-      _showError('Error: $e');
+      if (mounted) {
+        AppFeedback.showError(context, 'Failed to update investment');
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

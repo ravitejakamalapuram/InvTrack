@@ -43,4 +43,25 @@ class GoogleDriveDataSource {
     }
     return createdFile.id!;
   }
+
+  /// Verifies that a spreadsheet with the given ID exists and is accessible.
+  /// Returns false if the file is trashed or doesn't exist.
+  Future<bool> verifySpreadsheetExists(String fileId) async {
+    try {
+      // Request the 'trashed' field to check if file is in trash
+      final file = await _driveApi.files.get(
+        fileId,
+        $fields: 'id,name,trashed',
+      ) as drive.File;
+
+      // Return false if file is trashed
+      if (file.trashed == true) {
+        return false;
+      }
+      return true;
+    } catch (e) {
+      // File not found or not accessible (404 error)
+      return false;
+    }
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
@@ -693,7 +694,17 @@ class OverviewScreen extends ConsumerWidget {
     final netPosition = stats.netCashFlow;
     final isPositive = netPosition >= 0;
 
-    return GlassHeroCard(
+    final semanticLabel = AccessibilityUtils.statCardLabel(
+      title: showRealizedOnly ? 'Realized Net Position' : 'Net Position All Investments',
+      value: AccessibilityUtils.formatCurrencyForScreenReader(netPosition, currency),
+      subtitle: stats.hasData
+          ? 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}'
+          : null,
+    );
+
+    return Semantics(
+      label: semanticLabel,
+      child: GlassHeroCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -808,6 +819,7 @@ class OverviewScreen extends ConsumerWidget {
             ),
           ],
         ],
+      ),
       ),
     );
   }

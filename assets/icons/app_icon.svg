@@ -1,0 +1,45 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6C63FF"/>
+      <stop offset="100%" style="stop-color:#5B4CDB"/>
+    </linearGradient>
+    <linearGradient id="chartGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.7"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded Rectangle Background -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bgGradient)"/>
+  
+  <!-- Chart/Graph Icon -->
+  <g transform="translate(200, 250)">
+    <!-- Trending Up Arrow -->
+    <path 
+      d="M50 450 L200 280 L350 350 L550 100" 
+      stroke="white" 
+      stroke-width="60" 
+      stroke-linecap="round" 
+      stroke-linejoin="round"
+      fill="none"
+    />
+    
+    <!-- Arrow Head -->
+    <polygon 
+      points="550,100 450,100 550,200" 
+      fill="white"
+    />
+    
+    <!-- Bar Chart Bars -->
+    <rect x="50" y="380" width="80" height="120" rx="15" fill="url(#chartGradient)" opacity="0.6"/>
+    <rect x="180" y="300" width="80" height="200" rx="15" fill="url(#chartGradient)" opacity="0.7"/>
+    <rect x="310" y="250" width="80" height="250" rx="15" fill="url(#chartGradient)" opacity="0.8"/>
+    <rect x="440" y="180" width="80" height="320" rx="15" fill="url(#chartGradient)" opacity="0.9"/>
+  </g>
+  
+  <!-- Subtle shine overlay -->
+  <ellipse cx="350" cy="300" rx="400" ry="300" fill="white" opacity="0.05"/>
+</svg>
+
