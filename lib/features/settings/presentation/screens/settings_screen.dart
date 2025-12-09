@@ -11,6 +11,7 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/import_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/premium/presentation/widgets/premium_gate.dart';
 import 'package:inv_tracker/features/premium/presentation/providers/premium_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
@@ -190,6 +191,52 @@ class SettingsScreen extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Premium status reset to FREE')),
                   );
+                }
+              },
+            ),
+            ListTile(
+              title: const Text('Seed Demo Data'),
+              subtitle: const Text('Add sample investments for screenshots'),
+              leading: const Icon(Icons.dataset, color: Colors.teal),
+              trailing: ref.watch(seedDataStateProvider).isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.chevron_right),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Seed Demo Data?'),
+                    content: const Text(
+                      'This will add 8 sample investments with realistic cash flows. '
+                      'Use this for app store screenshots.\n\n'
+                      'Note: Existing data will NOT be deleted.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text('Seed Data'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await ref.read(seedDataStateProvider.notifier).seedData();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Demo data seeded successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 }
               },
             ),

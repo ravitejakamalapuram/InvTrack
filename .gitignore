@@ -53,5 +53,11 @@ app.*.map.json
 .env.*
 *.env
 
+# Signing keys
+key.properties
+**/*.jks
+**/*.keystore
+
 # Firebase config (if used later)
 firebase_options.dart
+key.properties
