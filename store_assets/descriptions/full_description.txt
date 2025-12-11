@@ -1,0 +1,73 @@
+📊 InvTracker - Your Personal Alternative Investment Tracker
+
+Track all your alternative investments in one place with professional-grade metrics. Perfect for P2P lending, fixed deposits, bonds, real estate, private equity, angel investing, chit funds, gold, crypto, and more.
+
+🎯 KEY FEATURES
+
+✅ Complete Cash Flow Tracking
+• Record investments, returns, income, and fees
+• Track multiple investments across different asset classes
+• Mark investments as open or closed
+
+📈 Professional Metrics
+• XIRR (Extended Internal Rate of Return) - True annualized returns
+• MOIC (Multiple on Invested Capital) - Total return multiple
+• Absolute returns and net position tracking
+• Year-over-year comparisons
+
+☁️ Google Sheets Sync
+• Backup your data to Google Sheets automatically
+• Access your portfolio data from anywhere
+• Full sync with create, update, and delete operations
+
+🔒 Security First
+• Optional PIN/biometric lock
+• Data stays on your device
+• Google Sign-In for secure cloud sync
+
+📊 Beautiful Dashboard
+• Net position overview (all investments or realized only)
+• Monthly cash flow trends
+• Top performers by XIRR
+• Investment type distribution
+• Recently closed investments
+
+💼 12 Investment Types Supported
+• P2P Lending
+• Fixed Deposits
+• Bonds
+• Real Estate
+• Private Equity
+• Angel Investing
+• Chit Funds
+• Gold
+• Crypto
+• Mutual Funds
+• Stocks
+• Other
+
+🌙 Dark Mode
+Beautiful dark theme that's easy on the eyes.
+
+📱 Modern Design
+Clean, intuitive interface with smooth animations and haptic feedback.
+
+---
+
+Why InvTracker?
+
+Traditional portfolio trackers focus on stocks and mutual funds. InvTracker is built specifically for alternative investments where cash flows happen at irregular intervals.
+
+XIRR (Extended Internal Rate of Return) is the gold standard for measuring returns on investments with irregular cash flows - exactly what you need for P2P lending, real estate, or any investment where you invest and receive money at different times.
+
+---
+
+Perfect for:
+• P2P lending investors tracking multiple loans
+• Real estate investors with rental income
+• Angel investors tracking startup investments
+• Fixed deposit holders managing multiple FDs
+• Anyone with alternative investments
+
+Download InvTracker today and take control of your investment tracking!
+

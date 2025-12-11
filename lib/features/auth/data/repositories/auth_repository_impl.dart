@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
@@ -60,12 +61,22 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       // Clear guest session if exists
       await _secureStorage.delete(key: _guestKey);
-      
+
+      debugPrint('GoogleSignIn: Starting sign-in...');
       final googleUser = await _googleSignIn.signIn();
+      debugPrint('GoogleSignIn: Result - ${googleUser?.email ?? 'null (user cancelled or error)'}');
+
+      if (googleUser == null) {
+        debugPrint('GoogleSignIn: User cancelled sign-in or an error occurred');
+        return null;
+      }
+
       final user = _mapGoogleUserToEntity(googleUser);
       _authStateController.add(user);
       return user;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('GoogleSignIn: Error - $e');
+      debugPrint('GoogleSignIn: StackTrace - $stackTrace');
       rethrow;
     }
   }

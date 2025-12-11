@@ -4,35 +4,42 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 
+/// Repository implementation for Cash Flow Investment Tracker
 class InvestmentRepositoryImpl implements InvestmentRepository {
   final AppDatabase _db;
 
   InvestmentRepositoryImpl(this._db);
 
-  // Investments
+  // ============ INVESTMENTS ============
 
   @override
-  Stream<List<InvestmentEntity>> watchInvestmentsByPortfolio(String portfolioId) {
-    return (_db.select(_db.investments)..where((tbl) => tbl.portfolioId.equals(portfolioId)))
-        .watch()
-        .map((rows) => rows.map(_mapInvestmentRowToEntity).toList());
+  Stream<List<InvestmentEntity>> watchAllInvestments() {
+    final query = _db.select(_db.investments)
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+    return query.watch().map((rows) => rows.map(_mapInvestmentRowToEntity).toList());
   }
 
   @override
-  Future<List<InvestmentEntity>> getInvestmentsByPortfolio(String portfolioId) async {
-    final rows = await (_db.select(_db.investments)..where((tbl) => tbl.portfolioId.equals(portfolioId))).get();
-    return rows.map(_mapInvestmentRowToEntity).toList();
+  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(InvestmentStatus status) {
+    final query = _db.select(_db.investments)
+      ..where((tbl) => tbl.status.equals(status.name.toUpperCase()))
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+    return query.watch().map((rows) => rows.map(_mapInvestmentRowToEntity).toList());
   }
 
   @override
   Future<List<InvestmentEntity>> getAllInvestments() async {
-    final rows = await _db.select(_db.investments).get();
+    final query = _db.select(_db.investments)
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]);
+    final rows = await query.get();
     return rows.map(_mapInvestmentRowToEntity).toList();
   }
 
   @override
   Future<InvestmentEntity?> getInvestmentById(String id) async {
-    final row = await (_db.select(_db.investments)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    final row = await (_db.select(_db.investments)
+          ..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
     return row != null ? _mapInvestmentRowToEntity(row) : null;
   }
 
@@ -41,12 +48,12 @@ class InvestmentRepositoryImpl implements InvestmentRepository {
     await _db.into(_db.investments).insert(
           InvestmentsCompanion(
             id: Value(investment.id),
-            portfolioId: Value(investment.portfolioId),
             name: Value(investment.name),
-            symbol: Value(investment.symbol),
-            type: Value(investment.type),
-            isActive: Value(investment.isActive),
+            type: Value(investment.type.name),
+            status: Value(investment.status.name.toUpperCase()),
+            notes: Value(investment.notes),
             createdAt: Value(investment.createdAt),
+            closedAt: Value(investment.closedAt),
             updatedAt: Value(investment.updatedAt),
           ),
         );
@@ -57,9 +64,32 @@ class InvestmentRepositoryImpl implements InvestmentRepository {
     await (_db.update(_db.investments)..where((tbl) => tbl.id.equals(investment.id))).write(
       InvestmentsCompanion(
         name: Value(investment.name),
-        symbol: Value(investment.symbol),
-        type: Value(investment.type),
-        isActive: Value(investment.isActive),
+        type: Value(investment.type.name),
+        status: Value(investment.status.name.toUpperCase()),
+        notes: Value(investment.notes),
+        closedAt: Value(investment.closedAt),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  @override
+  Future<void> closeInvestment(String id) async {
+    await (_db.update(_db.investments)..where((tbl) => tbl.id.equals(id))).write(
+      InvestmentsCompanion(
+        status: const Value('CLOSED'),
+        closedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  @override
+  Future<void> reopenInvestment(String id) async {
+    await (_db.update(_db.investments)..where((tbl) => tbl.id.equals(id))).write(
+      InvestmentsCompanion(
+        status: const Value('OPEN'),
+        closedAt: const Value(null),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -67,91 +97,93 @@ class InvestmentRepositoryImpl implements InvestmentRepository {
 
   @override
   Future<void> deleteInvestment(String id) async {
+    // Delete all cash flows first
+    await (_db.delete(_db.cashFlows)..where((tbl) => tbl.investmentId.equals(id))).go();
+    // Then delete the investment
     await (_db.delete(_db.investments)..where((tbl) => tbl.id.equals(id))).go();
   }
 
-  // Transactions
+  // ============ CASH FLOWS ============
 
   @override
-  Stream<List<TransactionEntity>> watchTransactionsByInvestment(String investmentId) {
-    return (_db.select(_db.transactions)..where((tbl) => tbl.investmentId.equals(investmentId)))
-        .watch()
-        .map((rows) => rows.map(_mapTransactionRowToEntity).toList());
+  Stream<List<CashFlowEntity>> watchCashFlowsByInvestment(String investmentId) {
+    final query = _db.select(_db.cashFlows)
+      ..where((tbl) => tbl.investmentId.equals(investmentId))
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.date)]);
+    return query.watch().map((rows) => rows.map(_mapCashFlowRowToEntity).toList());
   }
 
   @override
-  Future<List<TransactionEntity>> getTransactionsByInvestment(String investmentId) async {
-    final rows = await (_db.select(_db.transactions)..where((tbl) => tbl.investmentId.equals(investmentId))).get();
-    return rows.map(_mapTransactionRowToEntity).toList();
+  Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId) async {
+    final query = _db.select(_db.cashFlows)
+      ..where((tbl) => tbl.investmentId.equals(investmentId))
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.date)]);
+    final rows = await query.get();
+    return rows.map(_mapCashFlowRowToEntity).toList();
   }
 
   @override
-  Future<List<TransactionEntity>> getAllTransactions() async {
-    final rows = await _db.select(_db.transactions).get();
-    return rows.map(_mapTransactionRowToEntity).toList();
+  Future<List<CashFlowEntity>> getAllCashFlows() async {
+    final query = _db.select(_db.cashFlows)
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.date)]);
+    final rows = await query.get();
+    return rows.map(_mapCashFlowRowToEntity).toList();
   }
 
   @override
-  Future<void> addTransaction(TransactionEntity transaction) async {
-    await _db.into(_db.transactions).insert(
-          TransactionsCompanion(
-            id: Value(transaction.id),
-            investmentId: Value(transaction.investmentId),
-            date: Value(transaction.date),
-            type: Value(transaction.type),
-            quantity: Value(transaction.quantity),
-            pricePerUnit: Value(transaction.pricePerUnit),
-            fees: Value(transaction.fees),
-            totalAmount: Value(transaction.totalAmount),
-            notes: Value(transaction.notes),
-            createdAt: Value(transaction.createdAt),
+  Future<void> addCashFlow(CashFlowEntity cashFlow) async {
+    await _db.into(_db.cashFlows).insert(
+          CashFlowsCompanion(
+            id: Value(cashFlow.id),
+            investmentId: Value(cashFlow.investmentId),
+            date: Value(cashFlow.date),
+            type: Value(cashFlow.type.toDbString()),
+            amount: Value(cashFlow.amount),
+            notes: Value(cashFlow.notes),
+            createdAt: Value(cashFlow.createdAt),
           ),
         );
   }
 
   @override
-  Future<void> updateTransaction(TransactionEntity transaction) async {
-    await (_db.update(_db.transactions)..where((tbl) => tbl.id.equals(transaction.id))).write(
-      TransactionsCompanion(
-        date: Value(transaction.date),
-        type: Value(transaction.type),
-        quantity: Value(transaction.quantity),
-        pricePerUnit: Value(transaction.pricePerUnit),
-        fees: Value(transaction.fees),
-        totalAmount: Value(transaction.totalAmount),
-        notes: Value(transaction.notes),
+  Future<void> updateCashFlow(CashFlowEntity cashFlow) async {
+    await (_db.update(_db.cashFlows)..where((tbl) => tbl.id.equals(cashFlow.id))).write(
+      CashFlowsCompanion(
+        date: Value(cashFlow.date),
+        type: Value(cashFlow.type.toDbString()),
+        amount: Value(cashFlow.amount),
+        notes: Value(cashFlow.notes),
       ),
     );
   }
 
   @override
-  Future<void> deleteTransaction(String id) async {
-    await (_db.delete(_db.transactions)..where((tbl) => tbl.id.equals(id))).go();
+  Future<void> deleteCashFlow(String id) async {
+    await (_db.delete(_db.cashFlows)..where((tbl) => tbl.id.equals(id))).go();
   }
+
+  // ============ MAPPERS ============
 
   InvestmentEntity _mapInvestmentRowToEntity(Investment row) {
     return InvestmentEntity(
       id: row.id,
-      portfolioId: row.portfolioId,
       name: row.name,
-      symbol: row.symbol,
-      type: row.type,
-      isActive: row.isActive,
+      type: InvestmentType.fromString(row.type),
+      status: InvestmentStatus.fromString(row.status),
+      notes: row.notes,
       createdAt: row.createdAt,
+      closedAt: row.closedAt,
       updatedAt: row.updatedAt,
     );
   }
 
-  TransactionEntity _mapTransactionRowToEntity(Transaction row) {
-    return TransactionEntity(
+  CashFlowEntity _mapCashFlowRowToEntity(CashFlow row) {
+    return CashFlowEntity(
       id: row.id,
       investmentId: row.investmentId,
       date: row.date,
-      type: row.type,
-      quantity: row.quantity,
-      pricePerUnit: row.pricePerUnit,
-      fees: row.fees,
-      totalAmount: row.totalAmount,
+      type: CashFlowType.fromString(row.type),
+      amount: row.amount,
       notes: row.notes,
       createdAt: row.createdAt,
     );

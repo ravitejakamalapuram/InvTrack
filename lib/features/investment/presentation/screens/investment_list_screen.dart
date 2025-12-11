@@ -5,15 +5,17 @@ import 'package:intl/intl.dart';
 
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/core/widgets/empty_state_widget.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
-import 'package:inv_tracker/features/portfolio/presentation/providers/portfolio_provider.dart';
+
+/// Filter state for investment list
+enum InvestmentFilter { all, open, closed }
 
 class InvestmentListScreen extends ConsumerStatefulWidget {
   const InvestmentListScreen({super.key});
@@ -29,6 +31,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   bool _isSearching = false;
   String _searchQuery = '';
+  InvestmentFilter _filter = InvestmentFilter.all;
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
 
@@ -66,13 +69,25 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   }
 
   List<InvestmentEntity> _filterInvestments(List<InvestmentEntity> investments) {
-    if (_searchQuery.isEmpty) return investments;
-    final query = _searchQuery.toLowerCase();
-    return investments.where((inv) {
-      return inv.name.toLowerCase().contains(query) ||
-          (inv.symbol?.toLowerCase().contains(query) ?? false) ||
-          inv.type.toLowerCase().contains(query);
-    }).toList();
+    var filtered = investments;
+
+    // Apply status filter
+    if (_filter == InvestmentFilter.open) {
+      filtered = filtered.where((inv) => inv.status == InvestmentStatus.open).toList();
+    } else if (_filter == InvestmentFilter.closed) {
+      filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((inv) {
+        return inv.name.toLowerCase().contains(query) ||
+            inv.type.displayName.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    return filtered;
   }
 
   void _showAddInvestmentSheet() {
@@ -83,7 +98,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final portfoliosAsync = ref.watch(allPortfoliosProvider);
+    final investmentsAsync = ref.watch(allInvestmentsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -127,62 +142,43 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             ],
           ),
 
+          // Filter Tabs
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _buildFilterTabs(isDark),
+            ),
+          ),
+
           // Content
-          portfoliosAsync.when(
-            data: (portfolios) {
-              if (portfolios.isEmpty) {
+          investmentsAsync.when(
+            data: (investments) {
+              final filteredInvestments = _filterInvestments(investments);
+
+              if (investments.isEmpty) {
                 return SliverFillRemaining(
-                  child: EmptyStateWidget(
-                    title: 'No Portfolios',
-                    message: 'Create a portfolio to start tracking your investments.',
-                    icon: Icons.pie_chart_outline,
-                    actionLabel: 'Create Default Portfolio',
-                    onAction: () {
-                      ref.read(portfolioProvider.notifier).createDefaultPortfolioIfNone();
-                    },
-                  ),
+                  child: _buildEmptyState(isDark),
                 );
               }
 
-              final portfolioId = portfolios.first.id;
-              final investmentsAsync = ref.watch(investmentsByPortfolioProvider(portfolioId));
+              if (filteredInvestments.isEmpty) {
+                return SliverFillRemaining(
+                  child: _buildNoResultsState(isDark),
+                );
+              }
 
-              return investmentsAsync.when(
-                data: (investments) {
-                  final filteredInvestments = _filterInvestments(investments);
-
-                  if (investments.isEmpty) {
-                    return SliverFillRemaining(
-                      child: _buildEmptyState(isDark),
-                    );
-                  }
-
-                  if (filteredInvestments.isEmpty && _searchQuery.isNotEmpty) {
-                    return SliverFillRemaining(
-                      child: _buildNoResultsState(isDark),
-                    );
-                  }
-
-                  return SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return StaggeredFadeIn(
-                            index: index,
-                            child: _buildInvestmentCard(filteredInvestments[index], isDark),
-                          );
-                        },
-                        childCount: filteredInvestments.length,
-                      ),
-                    ),
-                  );
-                },
-                loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (err, stack) => SliverFillRemaining(
-                  child: Center(child: Text('Error: $err')),
+              return SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      return StaggeredFadeIn(
+                        index: index,
+                        child: _buildInvestmentCard(filteredInvestments[index], isDark),
+                      );
+                    },
+                    childCount: filteredInvestments.length,
+                  ),
                 ),
               );
             },
@@ -190,7 +186,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (err, stack) => SliverFillRemaining(
-              child: Center(child: Text('Error loading portfolios: $err')),
+              child: Center(child: Text('Error: $err')),
             ),
           ),
         ],
@@ -363,54 +359,111 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     );
   }
 
-  Widget _buildInvestmentCard(InvestmentEntity investment, bool isDark) {
-    // Get a color based on investment type
-    final typeColor = _getTypeColor(investment.type);
+  Widget _buildFilterTabs(bool isDark) {
+    return Row(
+      children: [
+        _buildFilterChip('All', InvestmentFilter.all, isDark),
+        const SizedBox(width: 8),
+        _buildFilterChip('Open', InvestmentFilter.open, isDark),
+        const SizedBox(width: 8),
+        _buildFilterChip('Closed', InvestmentFilter.closed, isDark),
+      ],
+    );
+  }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => InvestmentDetailScreen(investment: investment),
-            ),
-          );
-        },
-        padding: EdgeInsets.zero,
-        child: Column(
+  Widget _buildFilterChip(String label, InvestmentFilter filter, bool isDark) {
+    final isSelected = _filter == filter;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _filter = filter);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryLight
+              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.small.copyWith(
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.white70 : AppColors.neutral700Light),
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInvestmentCard(InvestmentEntity investment, bool isDark) {
+    final typeColor = _getTypeColor(investment.type);
+    final isClosed = investment.status == InvestmentStatus.closed;
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+
+    // Build accessibility label
+    final semanticLabel = statsAsync.maybeWhen(
+      data: (stats) => AccessibilityUtils.investmentCardLabel(
+        name: investment.name,
+        type: investment.type.displayName,
+        currentValue: stats.netCashFlow,
+        returnPercent: stats.hasData ? stats.xirr * 100 : null,
+        currencySymbol: currencySymbol,
+        isClosed: isClosed,
+      ),
+      orElse: () => '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
+    );
+
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: GlassCard(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => InvestmentDetailScreen(investment: investment),
+              ),
+            );
+          },
+          padding: EdgeInsets.zero,
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  // Icon with gradient background
+                  // Icon with type icon
                   Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [typeColor, typeColor.withValues(alpha: 0.7)],
+                        colors: isClosed
+                            ? [Colors.grey, Colors.grey.withValues(alpha: 0.7)]
+                            : [typeColor, typeColor.withValues(alpha: 0.7)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: typeColor.withValues(alpha: 0.3),
+                          color: (isClosed ? Colors.grey : typeColor).withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Center(
-                      child: Text(
-                        investment.symbol?.substring(0, 1).toUpperCase() ??
-                            investment.name.substring(0, 1).toUpperCase(),
-                        style: AppTypography.h3.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      child: Icon(
+                        investment.type.icon,
+                        color: Colors.white,
+                        size: 24,
                       ),
                     ),
                   ),
@@ -420,47 +473,57 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          investment.name,
-                          style: AppTypography.bodyLarge.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : AppColors.neutral900Light,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: typeColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
+                            Expanded(
                               child: Text(
-                                investment.type,
-                                style: AppTypography.small.copyWith(
-                                  color: typeColor,
-                                  fontWeight: FontWeight.w500,
+                                investment.name,
+                                style: AppTypography.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : AppColors.neutral900Light,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (investment.symbol != null) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                investment.symbol!,
-                                style: AppTypography.small.copyWith(
-                                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                            if (isClosed)
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'CLOSED',
+                                  style: AppTypography.small.copyWith(
+                                    color: Colors.grey,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ],
                           ],
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: typeColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            investment.type.displayName,
+                            style: AppTypography.small.copyWith(
+                              color: typeColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  // Value and P/L
+                  // Stats
                   _buildValueColumn(investment.id, isDark),
                 ],
               ),
@@ -496,54 +559,57 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             ),
           ],
         ),
+        ),
       ),
     );
   }
 
   Widget _buildValueColumn(String investmentId, bool isDark) {
     final statsAsync = ref.watch(investmentStatsProvider(investmentId));
-    final currencyFormat = ref.watch(currencyFormatProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     return statsAsync.when(
       data: (stats) {
-        if (stats == null || stats.quantity <= 0) {
+        if (!stats.hasData) {
           return Icon(
             Icons.chevron_right_rounded,
             color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
           );
         }
 
-        final isPositive = stats.profitLoss >= 0;
+        final isPositive = stats.netCashFlow >= 0;
         final plColor = isPositive ? AppColors.graphEmerald : AppColors.errorLight;
+        final xirrColor = stats.xirr >= 0 ? AppColors.graphEmerald : AppColors.errorLight;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            // Net Position (cash in - cash out)
             Text(
-              currencyFormat.format(stats.currentValue),
+              '${isPositive ? '+' : ''}$currencySymbol${stats.netCashFlow.toStringAsFixed(0)}',
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.neutral900Light,
+                color: plColor,
               ),
             ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                  color: plColor,
-                  size: 18,
+            const SizedBox(height: 4),
+            // XIRR
+            if (stats.xirr != 0 && !stats.xirr.isNaN && !stats.xirr.isInfinite)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: xirrColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                Text(
-                  '${stats.profitLossPercent.abs().toStringAsFixed(1)}%',
+                child: Text(
+                  '${stats.xirr >= 0 ? '+' : ''}${(stats.xirr * 100).toStringAsFixed(1)}% IRR',
                   style: AppTypography.small.copyWith(
-                    color: plColor,
+                    color: xirrColor,
                     fontWeight: FontWeight.w600,
+                    fontSize: 10,
                   ),
                 ),
-              ],
-            ),
+              ),
           ],
         );
       },
@@ -559,22 +625,32 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     );
   }
 
-  Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'stock':
+  Color _getTypeColor(InvestmentType type) {
+    switch (type) {
+      case InvestmentType.p2pLending:
         return AppColors.graphBlue;
-      case 'crypto':
-        return AppColors.graphPurple;
-      case 'mutual fund':
+      case InvestmentType.fixedDeposit:
         return AppColors.graphEmerald;
-      case 'etf':
-        return AppColors.graphCyan;
-      case 'bond':
+      case InvestmentType.bonds:
         return AppColors.graphAmber;
-      case 'real estate':
+      case InvestmentType.realEstate:
         return AppColors.graphPink;
-      default:
+      case InvestmentType.privateEquity:
+        return AppColors.graphPurple;
+      case InvestmentType.angelInvesting:
+        return AppColors.graphCyan;
+      case InvestmentType.chitFunds:
         return AppColors.graphOrange;
+      case InvestmentType.gold:
+        return const Color(0xFFFFD700);
+      case InvestmentType.crypto:
+        return AppColors.graphPurple;
+      case InvestmentType.mutualFunds:
+        return AppColors.graphBlue;
+      case InvestmentType.stocks:
+        return AppColors.graphEmerald;
+      case InvestmentType.other:
+        return AppColors.neutral500Light;
     }
   }
 

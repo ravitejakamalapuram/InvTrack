@@ -53,38 +53,32 @@ void main() {
       expect(moic, 2.0);
     });
 
-    test('calculateProfitLoss', () {
-      final pl = FinancialCalculator.calculateProfitLoss(100, 150);
-      expect(pl, 50.0);
+    test('calculateAbsoluteReturn', () {
+      final absReturn = FinancialCalculator.calculateAbsoluteReturn(100, 150);
+      expect(absReturn, closeTo(50.0, 0.0001)); // 50% return
     });
 
     test('calculateTotalInvested', () {
-      final transactions = [
-        TransactionEntity(
+      final cashFlows = [
+        CashFlowEntity(
           id: '1',
           investmentId: '1',
           date: DateTime.now(),
-          type: 'BUY',
-          quantity: 1,
-          pricePerUnit: 100,
-          fees: 0,
-          totalAmount: 100,
+          type: CashFlowType.invest,
+          amount: 100,
           createdAt: DateTime.now(),
         ),
-        TransactionEntity(
+        CashFlowEntity(
           id: '2',
           investmentId: '1',
           date: DateTime.now(),
-          type: 'SELL',
-          quantity: 1,
-          pricePerUnit: 50,
-          fees: 0,
-          totalAmount: 50,
+          type: CashFlowType.returnFlow,
+          amount: 50,
           createdAt: DateTime.now(),
         ),
       ];
-      final total = FinancialCalculator.calculateTotalInvested(transactions);
-      expect(total, 50.0); // 100 - 50
+      final total = FinancialCalculator.calculateTotalInvested(cashFlows);
+      expect(total, 100.0); // Only invest type counts
     });
   });
 }

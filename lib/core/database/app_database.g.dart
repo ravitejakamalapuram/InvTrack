@@ -3,310 +3,6 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
-class $PortfoliosTable extends Portfolios
-    with TableInfo<$PortfoliosTable, Portfolio> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $PortfoliosTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _currencyMeta = const VerificationMeta(
-    'currency',
-  );
-  @override
-  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
-    'currency',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('USD'),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [id, name, currency, createdAt];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'portfolios';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Portfolio> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('currency')) {
-      context.handle(
-        _currencyMeta,
-        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Portfolio map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Portfolio(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      currency: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}currency'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-    );
-  }
-
-  @override
-  $PortfoliosTable createAlias(String alias) {
-    return $PortfoliosTable(attachedDatabase, alias);
-  }
-}
-
-class Portfolio extends DataClass implements Insertable<Portfolio> {
-  final String id;
-  final String name;
-  final String currency;
-  final DateTime createdAt;
-  const Portfolio({
-    required this.id,
-    required this.name,
-    required this.currency,
-    required this.createdAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['name'] = Variable<String>(name);
-    map['currency'] = Variable<String>(currency);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    return map;
-  }
-
-  PortfoliosCompanion toCompanion(bool nullToAbsent) {
-    return PortfoliosCompanion(
-      id: Value(id),
-      name: Value(name),
-      currency: Value(currency),
-      createdAt: Value(createdAt),
-    );
-  }
-
-  factory Portfolio.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Portfolio(
-      id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String>(json['name']),
-      currency: serializer.fromJson<String>(json['currency']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String>(name),
-      'currency': serializer.toJson<String>(currency),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-    };
-  }
-
-  Portfolio copyWith({
-    String? id,
-    String? name,
-    String? currency,
-    DateTime? createdAt,
-  }) => Portfolio(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    currency: currency ?? this.currency,
-    createdAt: createdAt ?? this.createdAt,
-  );
-  Portfolio copyWithCompanion(PortfoliosCompanion data) {
-    return Portfolio(
-      id: data.id.present ? data.id.value : this.id,
-      name: data.name.present ? data.name.value : this.name,
-      currency: data.currency.present ? data.currency.value : this.currency,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Portfolio(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('currency: $currency, ')
-          ..write('createdAt: $createdAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, name, currency, createdAt);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Portfolio &&
-          other.id == this.id &&
-          other.name == this.name &&
-          other.currency == this.currency &&
-          other.createdAt == this.createdAt);
-}
-
-class PortfoliosCompanion extends UpdateCompanion<Portfolio> {
-  final Value<String> id;
-  final Value<String> name;
-  final Value<String> currency;
-  final Value<DateTime> createdAt;
-  final Value<int> rowid;
-  const PortfoliosCompanion({
-    this.id = const Value.absent(),
-    this.name = const Value.absent(),
-    this.currency = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  PortfoliosCompanion.insert({
-    required String id,
-    required String name,
-    this.currency = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       name = Value(name);
-  static Insertable<Portfolio> custom({
-    Expression<String>? id,
-    Expression<String>? name,
-    Expression<String>? currency,
-    Expression<DateTime>? createdAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (name != null) 'name': name,
-      if (currency != null) 'currency': currency,
-      if (createdAt != null) 'created_at': createdAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  PortfoliosCompanion copyWith({
-    Value<String>? id,
-    Value<String>? name,
-    Value<String>? currency,
-    Value<DateTime>? createdAt,
-    Value<int>? rowid,
-  }) {
-    return PortfoliosCompanion(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      currency: currency ?? this.currency,
-      createdAt: createdAt ?? this.createdAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (currency.present) {
-      map['currency'] = Variable<String>(currency.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('PortfoliosCompanion(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('currency: $currency, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $InvestmentsTable extends Investments
     with TableInfo<$InvestmentsTable, Investment> {
   @override
@@ -322,20 +18,6 @@ class $InvestmentsTable extends Investments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _portfolioIdMeta = const VerificationMeta(
-    'portfolioId',
-  );
-  @override
-  late final GeneratedColumn<String> portfolioId = GeneratedColumn<String>(
-    'portfolio_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES portfolios (id)',
-    ),
-  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -344,15 +26,6 @@ class $InvestmentsTable extends Investments
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-  );
-  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
-  @override
-  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
-    'symbol',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
   );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
@@ -363,20 +36,24 @@ class $InvestmentsTable extends Investments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _isActiveMeta = const VerificationMeta(
-    'isActive',
-  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
-  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
-    'is_active',
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_active" IN (0, 1))',
-    ),
-    defaultValue: const Constant(true),
+    defaultValue: const Constant('OPEN'),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -389,6 +66,17 @@ class $InvestmentsTable extends Investments
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _closedAtMeta = const VerificationMeta(
+    'closedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> closedAt = GeneratedColumn<DateTime>(
+    'closed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -405,12 +93,12 @@ class $InvestmentsTable extends Investments
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    portfolioId,
     name,
-    symbol,
     type,
-    isActive,
+    status,
+    notes,
     createdAt,
+    closedAt,
     updatedAt,
   ];
   @override
@@ -430,17 +118,6 @@ class $InvestmentsTable extends Investments
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('portfolio_id')) {
-      context.handle(
-        _portfolioIdMeta,
-        portfolioId.isAcceptableOrUnknown(
-          data['portfolio_id']!,
-          _portfolioIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_portfolioIdMeta);
-    }
     if (data.containsKey('name')) {
       context.handle(
         _nameMeta,
@@ -448,12 +125,6 @@ class $InvestmentsTable extends Investments
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
-    }
-    if (data.containsKey('symbol')) {
-      context.handle(
-        _symbolMeta,
-        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
-      );
     }
     if (data.containsKey('type')) {
       context.handle(
@@ -463,16 +134,28 @@ class $InvestmentsTable extends Investments
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
-    if (data.containsKey('is_active')) {
+    if (data.containsKey('status')) {
       context.handle(
-        _isActiveMeta,
-        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('closed_at')) {
+      context.handle(
+        _closedAtMeta,
+        closedAt.isAcceptableOrUnknown(data['closed_at']!, _closedAtMeta),
       );
     }
     if (data.containsKey('updated_at')) {
@@ -494,30 +177,30 @@ class $InvestmentsTable extends Investments
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      portfolioId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}portfolio_id'],
-      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
-      symbol: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}symbol'],
-      ),
       type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
-      isActive: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_active'],
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
       )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      closedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}closed_at'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -533,35 +216,37 @@ class $InvestmentsTable extends Investments
 
 class Investment extends DataClass implements Insertable<Investment> {
   final String id;
-  final String portfolioId;
   final String name;
-  final String? symbol;
   final String type;
-  final bool isActive;
+  final String status;
+  final String? notes;
   final DateTime createdAt;
+  final DateTime? closedAt;
   final DateTime updatedAt;
   const Investment({
     required this.id,
-    required this.portfolioId,
     required this.name,
-    this.symbol,
     required this.type,
-    required this.isActive,
+    required this.status,
+    this.notes,
     required this.createdAt,
+    this.closedAt,
     required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['portfolio_id'] = Variable<String>(portfolioId);
     map['name'] = Variable<String>(name);
-    if (!nullToAbsent || symbol != null) {
-      map['symbol'] = Variable<String>(symbol);
-    }
     map['type'] = Variable<String>(type);
-    map['is_active'] = Variable<bool>(isActive);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || closedAt != null) {
+      map['closed_at'] = Variable<DateTime>(closedAt);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -569,14 +254,16 @@ class Investment extends DataClass implements Insertable<Investment> {
   InvestmentsCompanion toCompanion(bool nullToAbsent) {
     return InvestmentsCompanion(
       id: Value(id),
-      portfolioId: Value(portfolioId),
       name: Value(name),
-      symbol: symbol == null && nullToAbsent
-          ? const Value.absent()
-          : Value(symbol),
       type: Value(type),
-      isActive: Value(isActive),
+      status: Value(status),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       createdAt: Value(createdAt),
+      closedAt: closedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(closedAt),
       updatedAt: Value(updatedAt),
     );
   }
@@ -588,12 +275,12 @@ class Investment extends DataClass implements Insertable<Investment> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Investment(
       id: serializer.fromJson<String>(json['id']),
-      portfolioId: serializer.fromJson<String>(json['portfolioId']),
       name: serializer.fromJson<String>(json['name']),
-      symbol: serializer.fromJson<String?>(json['symbol']),
       type: serializer.fromJson<String>(json['type']),
-      isActive: serializer.fromJson<bool>(json['isActive']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -602,46 +289,44 @@ class Investment extends DataClass implements Insertable<Investment> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'portfolioId': serializer.toJson<String>(portfolioId),
       'name': serializer.toJson<String>(name),
-      'symbol': serializer.toJson<String?>(symbol),
       'type': serializer.toJson<String>(type),
-      'isActive': serializer.toJson<bool>(isActive),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'closedAt': serializer.toJson<DateTime?>(closedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
   Investment copyWith({
     String? id,
-    String? portfolioId,
     String? name,
-    Value<String?> symbol = const Value.absent(),
     String? type,
-    bool? isActive,
+    String? status,
+    Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> closedAt = const Value.absent(),
     DateTime? updatedAt,
   }) => Investment(
     id: id ?? this.id,
-    portfolioId: portfolioId ?? this.portfolioId,
     name: name ?? this.name,
-    symbol: symbol.present ? symbol.value : this.symbol,
     type: type ?? this.type,
-    isActive: isActive ?? this.isActive,
+    status: status ?? this.status,
+    notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
+    closedAt: closedAt.present ? closedAt.value : this.closedAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   Investment copyWithCompanion(InvestmentsCompanion data) {
     return Investment(
       id: data.id.present ? data.id.value : this.id,
-      portfolioId: data.portfolioId.present
-          ? data.portfolioId.value
-          : this.portfolioId,
       name: data.name.present ? data.name.value : this.name,
-      symbol: data.symbol.present ? data.symbol.value : this.symbol,
       type: data.type.present ? data.type.value : this.type,
-      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -650,12 +335,12 @@ class Investment extends DataClass implements Insertable<Investment> {
   String toString() {
     return (StringBuffer('Investment(')
           ..write('id: $id, ')
-          ..write('portfolioId: $portfolioId, ')
           ..write('name: $name, ')
-          ..write('symbol: $symbol, ')
           ..write('type: $type, ')
-          ..write('isActive: $isActive, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
+          ..write('closedAt: $closedAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -664,12 +349,12 @@ class Investment extends DataClass implements Insertable<Investment> {
   @override
   int get hashCode => Object.hash(
     id,
-    portfolioId,
     name,
-    symbol,
     type,
-    isActive,
+    status,
+    notes,
     createdAt,
+    closedAt,
     updatedAt,
   );
   @override
@@ -677,69 +362,68 @@ class Investment extends DataClass implements Insertable<Investment> {
       identical(this, other) ||
       (other is Investment &&
           other.id == this.id &&
-          other.portfolioId == this.portfolioId &&
           other.name == this.name &&
-          other.symbol == this.symbol &&
           other.type == this.type &&
-          other.isActive == this.isActive &&
+          other.status == this.status &&
+          other.notes == this.notes &&
           other.createdAt == this.createdAt &&
+          other.closedAt == this.closedAt &&
           other.updatedAt == this.updatedAt);
 }
 
 class InvestmentsCompanion extends UpdateCompanion<Investment> {
   final Value<String> id;
-  final Value<String> portfolioId;
   final Value<String> name;
-  final Value<String?> symbol;
   final Value<String> type;
-  final Value<bool> isActive;
+  final Value<String> status;
+  final Value<String?> notes;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> closedAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const InvestmentsCompanion({
     this.id = const Value.absent(),
-    this.portfolioId = const Value.absent(),
     this.name = const Value.absent(),
-    this.symbol = const Value.absent(),
     this.type = const Value.absent(),
-    this.isActive = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.closedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvestmentsCompanion.insert({
     required String id,
-    required String portfolioId,
     required String name,
-    this.symbol = const Value.absent(),
     required String type,
-    this.isActive = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.closedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       portfolioId = Value(portfolioId),
        name = Value(name),
        type = Value(type);
   static Insertable<Investment> custom({
     Expression<String>? id,
-    Expression<String>? portfolioId,
     Expression<String>? name,
-    Expression<String>? symbol,
     Expression<String>? type,
-    Expression<bool>? isActive,
+    Expression<String>? status,
+    Expression<String>? notes,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? closedAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (portfolioId != null) 'portfolio_id': portfolioId,
       if (name != null) 'name': name,
-      if (symbol != null) 'symbol': symbol,
       if (type != null) 'type': type,
-      if (isActive != null) 'is_active': isActive,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
+      if (closedAt != null) 'closed_at': closedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -747,23 +431,23 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
 
   InvestmentsCompanion copyWith({
     Value<String>? id,
-    Value<String>? portfolioId,
     Value<String>? name,
-    Value<String?>? symbol,
     Value<String>? type,
-    Value<bool>? isActive,
+    Value<String>? status,
+    Value<String?>? notes,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? closedAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
     return InvestmentsCompanion(
       id: id ?? this.id,
-      portfolioId: portfolioId ?? this.portfolioId,
       name: name ?? this.name,
-      symbol: symbol ?? this.symbol,
       type: type ?? this.type,
-      isActive: isActive ?? this.isActive,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      closedAt: closedAt ?? this.closedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -775,23 +459,23 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (portfolioId.present) {
-      map['portfolio_id'] = Variable<String>(portfolioId.value);
-    }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
-    }
-    if (symbol.present) {
-      map['symbol'] = Variable<String>(symbol.value);
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (isActive.present) {
-      map['is_active'] = Variable<bool>(isActive.value);
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (closedAt.present) {
+      map['closed_at'] = Variable<DateTime>(closedAt.value);
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
@@ -806,12 +490,12 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
   String toString() {
     return (StringBuffer('InvestmentsCompanion(')
           ..write('id: $id, ')
-          ..write('portfolioId: $portfolioId, ')
           ..write('name: $name, ')
-          ..write('symbol: $symbol, ')
           ..write('type: $type, ')
-          ..write('isActive: $isActive, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
+          ..write('closedAt: $closedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -819,12 +503,12 @@ class InvestmentsCompanion extends UpdateCompanion<Investment> {
   }
 }
 
-class $TransactionsTable extends Transactions
-    with TableInfo<$TransactionsTable, Transaction> {
+class $CashFlowsTable extends CashFlows
+    with TableInfo<$CashFlowsTable, CashFlow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $TransactionsTable(this.attachedDatabase, [this._alias]);
+  $CashFlowsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -866,44 +550,10 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _quantityMeta = const VerificationMeta(
-    'quantity',
-  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
   @override
-  late final GeneratedColumn<double> quantity = GeneratedColumn<double>(
-    'quantity',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _pricePerUnitMeta = const VerificationMeta(
-    'pricePerUnit',
-  );
-  @override
-  late final GeneratedColumn<double> pricePerUnit = GeneratedColumn<double>(
-    'price_per_unit',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _feesMeta = const VerificationMeta('fees');
-  @override
-  late final GeneratedColumn<double> fees = GeneratedColumn<double>(
-    'fees',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _totalAmountMeta = const VerificationMeta(
-    'totalAmount',
-  );
-  @override
-  late final GeneratedColumn<double> totalAmount = GeneratedColumn<double>(
-    'total_amount',
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
     aliasedName,
     false,
     type: DriftSqlType.double,
@@ -936,10 +586,7 @@ class $TransactionsTable extends Transactions
     investmentId,
     date,
     type,
-    quantity,
-    pricePerUnit,
-    fees,
-    totalAmount,
+    amount,
     notes,
     createdAt,
   ];
@@ -947,10 +594,10 @@ class $TransactionsTable extends Transactions
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'transactions';
+  static const String $name = 'cash_flows';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Transaction> instance, {
+    Insertable<CashFlow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -987,41 +634,13 @@ class $TransactionsTable extends Transactions
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
-    if (data.containsKey('quantity')) {
+    if (data.containsKey('amount')) {
       context.handle(
-        _quantityMeta,
-        quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
       );
     } else if (isInserting) {
-      context.missing(_quantityMeta);
-    }
-    if (data.containsKey('price_per_unit')) {
-      context.handle(
-        _pricePerUnitMeta,
-        pricePerUnit.isAcceptableOrUnknown(
-          data['price_per_unit']!,
-          _pricePerUnitMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_pricePerUnitMeta);
-    }
-    if (data.containsKey('fees')) {
-      context.handle(
-        _feesMeta,
-        fees.isAcceptableOrUnknown(data['fees']!, _feesMeta),
-      );
-    }
-    if (data.containsKey('total_amount')) {
-      context.handle(
-        _totalAmountMeta,
-        totalAmount.isAcceptableOrUnknown(
-          data['total_amount']!,
-          _totalAmountMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_totalAmountMeta);
+      context.missing(_amountMeta);
     }
     if (data.containsKey('notes')) {
       context.handle(
@@ -1041,9 +660,9 @@ class $TransactionsTable extends Transactions
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Transaction map(Map<String, dynamic> data, {String? tablePrefix}) {
+  CashFlow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Transaction(
+    return CashFlow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1060,21 +679,9 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
-      quantity: attachedDatabase.typeMapping.read(
+      amount: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
-        data['${effectivePrefix}quantity'],
-      )!,
-      pricePerUnit: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}price_per_unit'],
-      )!,
-      fees: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}fees'],
-      )!,
-      totalAmount: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}total_amount'],
+        data['${effectivePrefix}amount'],
       )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1088,31 +695,25 @@ class $TransactionsTable extends Transactions
   }
 
   @override
-  $TransactionsTable createAlias(String alias) {
-    return $TransactionsTable(attachedDatabase, alias);
+  $CashFlowsTable createAlias(String alias) {
+    return $CashFlowsTable(attachedDatabase, alias);
   }
 }
 
-class Transaction extends DataClass implements Insertable<Transaction> {
+class CashFlow extends DataClass implements Insertable<CashFlow> {
   final String id;
   final String investmentId;
   final DateTime date;
   final String type;
-  final double quantity;
-  final double pricePerUnit;
-  final double fees;
-  final double totalAmount;
+  final double amount;
   final String? notes;
   final DateTime createdAt;
-  const Transaction({
+  const CashFlow({
     required this.id,
     required this.investmentId,
     required this.date,
     required this.type,
-    required this.quantity,
-    required this.pricePerUnit,
-    required this.fees,
-    required this.totalAmount,
+    required this.amount,
     this.notes,
     required this.createdAt,
   });
@@ -1123,10 +724,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     map['investment_id'] = Variable<String>(investmentId);
     map['date'] = Variable<DateTime>(date);
     map['type'] = Variable<String>(type);
-    map['quantity'] = Variable<double>(quantity);
-    map['price_per_unit'] = Variable<double>(pricePerUnit);
-    map['fees'] = Variable<double>(fees);
-    map['total_amount'] = Variable<double>(totalAmount);
+    map['amount'] = Variable<double>(amount);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -1134,16 +732,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     return map;
   }
 
-  TransactionsCompanion toCompanion(bool nullToAbsent) {
-    return TransactionsCompanion(
+  CashFlowsCompanion toCompanion(bool nullToAbsent) {
+    return CashFlowsCompanion(
       id: Value(id),
       investmentId: Value(investmentId),
       date: Value(date),
       type: Value(type),
-      quantity: Value(quantity),
-      pricePerUnit: Value(pricePerUnit),
-      fees: Value(fees),
-      totalAmount: Value(totalAmount),
+      amount: Value(amount),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -1151,20 +746,17 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     );
   }
 
-  factory Transaction.fromJson(
+  factory CashFlow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Transaction(
+    return CashFlow(
       id: serializer.fromJson<String>(json['id']),
       investmentId: serializer.fromJson<String>(json['investmentId']),
       date: serializer.fromJson<DateTime>(json['date']),
       type: serializer.fromJson<String>(json['type']),
-      quantity: serializer.fromJson<double>(json['quantity']),
-      pricePerUnit: serializer.fromJson<double>(json['pricePerUnit']),
-      fees: serializer.fromJson<double>(json['fees']),
-      totalAmount: serializer.fromJson<double>(json['totalAmount']),
+      amount: serializer.fromJson<double>(json['amount']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -1177,54 +769,38 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'investmentId': serializer.toJson<String>(investmentId),
       'date': serializer.toJson<DateTime>(date),
       'type': serializer.toJson<String>(type),
-      'quantity': serializer.toJson<double>(quantity),
-      'pricePerUnit': serializer.toJson<double>(pricePerUnit),
-      'fees': serializer.toJson<double>(fees),
-      'totalAmount': serializer.toJson<double>(totalAmount),
+      'amount': serializer.toJson<double>(amount),
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
-  Transaction copyWith({
+  CashFlow copyWith({
     String? id,
     String? investmentId,
     DateTime? date,
     String? type,
-    double? quantity,
-    double? pricePerUnit,
-    double? fees,
-    double? totalAmount,
+    double? amount,
     Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
-  }) => Transaction(
+  }) => CashFlow(
     id: id ?? this.id,
     investmentId: investmentId ?? this.investmentId,
     date: date ?? this.date,
     type: type ?? this.type,
-    quantity: quantity ?? this.quantity,
-    pricePerUnit: pricePerUnit ?? this.pricePerUnit,
-    fees: fees ?? this.fees,
-    totalAmount: totalAmount ?? this.totalAmount,
+    amount: amount ?? this.amount,
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
   );
-  Transaction copyWithCompanion(TransactionsCompanion data) {
-    return Transaction(
+  CashFlow copyWithCompanion(CashFlowsCompanion data) {
+    return CashFlow(
       id: data.id.present ? data.id.value : this.id,
       investmentId: data.investmentId.present
           ? data.investmentId.value
           : this.investmentId,
       date: data.date.present ? data.date.value : this.date,
       type: data.type.present ? data.type.value : this.type,
-      quantity: data.quantity.present ? data.quantity.value : this.quantity,
-      pricePerUnit: data.pricePerUnit.present
-          ? data.pricePerUnit.value
-          : this.pricePerUnit,
-      fees: data.fees.present ? data.fees.value : this.fees,
-      totalAmount: data.totalAmount.present
-          ? data.totalAmount.value
-          : this.totalAmount,
+      amount: data.amount.present ? data.amount.value : this.amount,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -1232,15 +808,12 @@ class Transaction extends DataClass implements Insertable<Transaction> {
 
   @override
   String toString() {
-    return (StringBuffer('Transaction(')
+    return (StringBuffer('CashFlow(')
           ..write('id: $id, ')
           ..write('investmentId: $investmentId, ')
           ..write('date: $date, ')
           ..write('type: $type, ')
-          ..write('quantity: $quantity, ')
-          ..write('pricePerUnit: $pricePerUnit, ')
-          ..write('fees: $fees, ')
-          ..write('totalAmount: $totalAmount, ')
+          ..write('amount: $amount, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -1248,68 +821,46 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    investmentId,
-    date,
-    type,
-    quantity,
-    pricePerUnit,
-    fees,
-    totalAmount,
-    notes,
-    createdAt,
-  );
+  int get hashCode =>
+      Object.hash(id, investmentId, date, type, amount, notes, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Transaction &&
+      (other is CashFlow &&
           other.id == this.id &&
           other.investmentId == this.investmentId &&
           other.date == this.date &&
           other.type == this.type &&
-          other.quantity == this.quantity &&
-          other.pricePerUnit == this.pricePerUnit &&
-          other.fees == this.fees &&
-          other.totalAmount == this.totalAmount &&
+          other.amount == this.amount &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt);
 }
 
-class TransactionsCompanion extends UpdateCompanion<Transaction> {
+class CashFlowsCompanion extends UpdateCompanion<CashFlow> {
   final Value<String> id;
   final Value<String> investmentId;
   final Value<DateTime> date;
   final Value<String> type;
-  final Value<double> quantity;
-  final Value<double> pricePerUnit;
-  final Value<double> fees;
-  final Value<double> totalAmount;
+  final Value<double> amount;
   final Value<String?> notes;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
-  const TransactionsCompanion({
+  const CashFlowsCompanion({
     this.id = const Value.absent(),
     this.investmentId = const Value.absent(),
     this.date = const Value.absent(),
     this.type = const Value.absent(),
-    this.quantity = const Value.absent(),
-    this.pricePerUnit = const Value.absent(),
-    this.fees = const Value.absent(),
-    this.totalAmount = const Value.absent(),
+    this.amount = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  TransactionsCompanion.insert({
+  CashFlowsCompanion.insert({
     required String id,
     required String investmentId,
     required DateTime date,
     required String type,
-    required double quantity,
-    required double pricePerUnit,
-    this.fees = const Value.absent(),
-    required double totalAmount,
+    required double amount,
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1317,18 +868,13 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
        investmentId = Value(investmentId),
        date = Value(date),
        type = Value(type),
-       quantity = Value(quantity),
-       pricePerUnit = Value(pricePerUnit),
-       totalAmount = Value(totalAmount);
-  static Insertable<Transaction> custom({
+       amount = Value(amount);
+  static Insertable<CashFlow> custom({
     Expression<String>? id,
     Expression<String>? investmentId,
     Expression<DateTime>? date,
     Expression<String>? type,
-    Expression<double>? quantity,
-    Expression<double>? pricePerUnit,
-    Expression<double>? fees,
-    Expression<double>? totalAmount,
+    Expression<double>? amount,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -1338,38 +884,29 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (investmentId != null) 'investment_id': investmentId,
       if (date != null) 'date': date,
       if (type != null) 'type': type,
-      if (quantity != null) 'quantity': quantity,
-      if (pricePerUnit != null) 'price_per_unit': pricePerUnit,
-      if (fees != null) 'fees': fees,
-      if (totalAmount != null) 'total_amount': totalAmount,
+      if (amount != null) 'amount': amount,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  TransactionsCompanion copyWith({
+  CashFlowsCompanion copyWith({
     Value<String>? id,
     Value<String>? investmentId,
     Value<DateTime>? date,
     Value<String>? type,
-    Value<double>? quantity,
-    Value<double>? pricePerUnit,
-    Value<double>? fees,
-    Value<double>? totalAmount,
+    Value<double>? amount,
     Value<String?>? notes,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
-    return TransactionsCompanion(
+    return CashFlowsCompanion(
       id: id ?? this.id,
       investmentId: investmentId ?? this.investmentId,
       date: date ?? this.date,
       type: type ?? this.type,
-      quantity: quantity ?? this.quantity,
-      pricePerUnit: pricePerUnit ?? this.pricePerUnit,
-      fees: fees ?? this.fees,
-      totalAmount: totalAmount ?? this.totalAmount,
+      amount: amount ?? this.amount,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -1391,17 +928,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (quantity.present) {
-      map['quantity'] = Variable<double>(quantity.value);
-    }
-    if (pricePerUnit.present) {
-      map['price_per_unit'] = Variable<double>(pricePerUnit.value);
-    }
-    if (fees.present) {
-      map['fees'] = Variable<double>(fees.value);
-    }
-    if (totalAmount.present) {
-      map['total_amount'] = Variable<double>(totalAmount.value);
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -1417,15 +945,12 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
 
   @override
   String toString() {
-    return (StringBuffer('TransactionsCompanion(')
+    return (StringBuffer('CashFlowsCompanion(')
           ..write('id: $id, ')
           ..write('investmentId: $investmentId, ')
           ..write('date: $date, ')
           ..write('type: $type, ')
-          ..write('quantity: $quantity, ')
-          ..write('pricePerUnit: $pricePerUnit, ')
-          ..write('fees: $fees, ')
-          ..write('totalAmount: $totalAmount, ')
+          ..write('amount: $amount, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -1935,330 +1460,41 @@ class SyncQueueCompanion extends UpdateCompanion<SyncQueueData> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $PortfoliosTable portfolios = $PortfoliosTable(this);
   late final $InvestmentsTable investments = $InvestmentsTable(this);
-  late final $TransactionsTable transactions = $TransactionsTable(this);
+  late final $CashFlowsTable cashFlows = $CashFlowsTable(this);
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    portfolios,
     investments,
-    transactions,
+    cashFlows,
     syncQueue,
   ];
 }
 
-typedef $$PortfoliosTableCreateCompanionBuilder =
-    PortfoliosCompanion Function({
-      required String id,
-      required String name,
-      Value<String> currency,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
-    });
-typedef $$PortfoliosTableUpdateCompanionBuilder =
-    PortfoliosCompanion Function({
-      Value<String> id,
-      Value<String> name,
-      Value<String> currency,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
-    });
-
-final class $$PortfoliosTableReferences
-    extends BaseReferences<_$AppDatabase, $PortfoliosTable, Portfolio> {
-  $$PortfoliosTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$InvestmentsTable, List<Investment>>
-  _investmentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.investments,
-    aliasName: $_aliasNameGenerator(
-      db.portfolios.id,
-      db.investments.portfolioId,
-    ),
-  );
-
-  $$InvestmentsTableProcessedTableManager get investmentsRefs {
-    final manager = $$InvestmentsTableTableManager(
-      $_db,
-      $_db.investments,
-    ).filter((f) => f.portfolioId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_investmentsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$PortfoliosTableFilterComposer
-    extends Composer<_$AppDatabase, $PortfoliosTable> {
-  $$PortfoliosTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get currency => $composableBuilder(
-    column: $table.currency,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  Expression<bool> investmentsRefs(
-    Expression<bool> Function($$InvestmentsTableFilterComposer f) f,
-  ) {
-    final $$InvestmentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.investments,
-      getReferencedColumn: (t) => t.portfolioId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$InvestmentsTableFilterComposer(
-            $db: $db,
-            $table: $db.investments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$PortfoliosTableOrderingComposer
-    extends Composer<_$AppDatabase, $PortfoliosTable> {
-  $$PortfoliosTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get currency => $composableBuilder(
-    column: $table.currency,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$PortfoliosTableAnnotationComposer
-    extends Composer<_$AppDatabase, $PortfoliosTable> {
-  $$PortfoliosTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get currency =>
-      $composableBuilder(column: $table.currency, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  Expression<T> investmentsRefs<T extends Object>(
-    Expression<T> Function($$InvestmentsTableAnnotationComposer a) f,
-  ) {
-    final $$InvestmentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.investments,
-      getReferencedColumn: (t) => t.portfolioId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$InvestmentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.investments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$PortfoliosTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $PortfoliosTable,
-          Portfolio,
-          $$PortfoliosTableFilterComposer,
-          $$PortfoliosTableOrderingComposer,
-          $$PortfoliosTableAnnotationComposer,
-          $$PortfoliosTableCreateCompanionBuilder,
-          $$PortfoliosTableUpdateCompanionBuilder,
-          (Portfolio, $$PortfoliosTableReferences),
-          Portfolio,
-          PrefetchHooks Function({bool investmentsRefs})
-        > {
-  $$PortfoliosTableTableManager(_$AppDatabase db, $PortfoliosTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$PortfoliosTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$PortfoliosTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$PortfoliosTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String> currency = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => PortfoliosCompanion(
-                id: id,
-                name: name,
-                currency: currency,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String name,
-                Value<String> currency = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => PortfoliosCompanion.insert(
-                id: id,
-                name: name,
-                currency: currency,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$PortfoliosTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({investmentsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (investmentsRefs) db.investments],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (investmentsRefs)
-                    await $_getPrefetchedData<
-                      Portfolio,
-                      $PortfoliosTable,
-                      Investment
-                    >(
-                      currentTable: table,
-                      referencedTable: $$PortfoliosTableReferences
-                          ._investmentsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$PortfoliosTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).investmentsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.portfolioId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$PortfoliosTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $PortfoliosTable,
-      Portfolio,
-      $$PortfoliosTableFilterComposer,
-      $$PortfoliosTableOrderingComposer,
-      $$PortfoliosTableAnnotationComposer,
-      $$PortfoliosTableCreateCompanionBuilder,
-      $$PortfoliosTableUpdateCompanionBuilder,
-      (Portfolio, $$PortfoliosTableReferences),
-      Portfolio,
-      PrefetchHooks Function({bool investmentsRefs})
-    >;
 typedef $$InvestmentsTableCreateCompanionBuilder =
     InvestmentsCompanion Function({
       required String id,
-      required String portfolioId,
       required String name,
-      Value<String?> symbol,
       required String type,
-      Value<bool> isActive,
+      Value<String> status,
+      Value<String?> notes,
       Value<DateTime> createdAt,
+      Value<DateTime?> closedAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 typedef $$InvestmentsTableUpdateCompanionBuilder =
     InvestmentsCompanion Function({
       Value<String> id,
-      Value<String> portfolioId,
       Value<String> name,
-      Value<String?> symbol,
       Value<String> type,
-      Value<bool> isActive,
+      Value<String> status,
+      Value<String?> notes,
       Value<DateTime> createdAt,
+      Value<DateTime?> closedAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -2267,41 +1503,22 @@ final class $$InvestmentsTableReferences
     extends BaseReferences<_$AppDatabase, $InvestmentsTable, Investment> {
   $$InvestmentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $PortfoliosTable _portfolioIdTable(_$AppDatabase db) =>
-      db.portfolios.createAlias(
-        $_aliasNameGenerator(db.investments.portfolioId, db.portfolios.id),
-      );
-
-  $$PortfoliosTableProcessedTableManager get portfolioId {
-    final $_column = $_itemColumn<String>('portfolio_id')!;
-
-    final manager = $$PortfoliosTableTableManager(
-      $_db,
-      $_db.portfolios,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_portfolioIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
-  _transactionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.transactions,
+  static MultiTypedResultKey<$CashFlowsTable, List<CashFlow>>
+  _cashFlowsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.cashFlows,
     aliasName: $_aliasNameGenerator(
       db.investments.id,
-      db.transactions.investmentId,
+      db.cashFlows.investmentId,
     ),
   );
 
-  $$TransactionsTableProcessedTableManager get transactionsRefs {
-    final manager = $$TransactionsTableTableManager(
+  $$CashFlowsTableProcessedTableManager get cashFlowsRefs {
+    final manager = $$CashFlowsTableTableManager(
       $_db,
-      $_db.transactions,
+      $_db.cashFlows,
     ).filter((f) => f.investmentId.id.sqlEquals($_itemColumn<String>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_transactionsRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(_cashFlowsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2327,18 +1544,18 @@ class $$InvestmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get symbol => $composableBuilder(
-    column: $table.symbol,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2347,50 +1564,32 @@ class $$InvestmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
-  $$PortfoliosTableFilterComposer get portfolioId {
-    final $$PortfoliosTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.portfolioId,
-      referencedTable: $db.portfolios,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PortfoliosTableFilterComposer(
-            $db: $db,
-            $table: $db.portfolios,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> transactionsRefs(
-    Expression<bool> Function($$TransactionsTableFilterComposer f) f,
+  Expression<bool> cashFlowsRefs(
+    Expression<bool> Function($$CashFlowsTableFilterComposer f) f,
   ) {
-    final $$TransactionsTableFilterComposer composer = $composerBuilder(
+    final $$CashFlowsTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.transactions,
+      referencedTable: $db.cashFlows,
       getReferencedColumn: (t) => t.investmentId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableFilterComposer(
+          }) => $$CashFlowsTableFilterComposer(
             $db: $db,
-            $table: $db.transactions,
+            $table: $db.cashFlows,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2420,18 +1619,18 @@ class $$InvestmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get symbol => $composableBuilder(
-    column: $table.symbol,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isActive => $composableBuilder(
-    column: $table.isActive,
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2440,33 +1639,15 @@ class $$InvestmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get closedAt => $composableBuilder(
+    column: $table.closedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$PortfoliosTableOrderingComposer get portfolioId {
-    final $$PortfoliosTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.portfolioId,
-      referencedTable: $db.portfolios,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PortfoliosTableOrderingComposer(
-            $db: $db,
-            $table: $db.portfolios,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$InvestmentsTableAnnotationComposer
@@ -2484,60 +1665,40 @@ class $$InvestmentsTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumn<String> get symbol =>
-      $composableBuilder(column: $table.symbol, builder: (column) => column);
-
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<bool> get isActive =>
-      $composableBuilder(column: $table.isActive, builder: (column) => column);
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get closedAt =>
+      $composableBuilder(column: $table.closedAt, builder: (column) => column);
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  $$PortfoliosTableAnnotationComposer get portfolioId {
-    final $$PortfoliosTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.portfolioId,
-      referencedTable: $db.portfolios,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PortfoliosTableAnnotationComposer(
-            $db: $db,
-            $table: $db.portfolios,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> transactionsRefs<T extends Object>(
-    Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
+  Expression<T> cashFlowsRefs<T extends Object>(
+    Expression<T> Function($$CashFlowsTableAnnotationComposer a) f,
   ) {
-    final $$TransactionsTableAnnotationComposer composer = $composerBuilder(
+    final $$CashFlowsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.transactions,
+      referencedTable: $db.cashFlows,
       getReferencedColumn: (t) => t.investmentId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TransactionsTableAnnotationComposer(
+          }) => $$CashFlowsTableAnnotationComposer(
             $db: $db,
-            $table: $db.transactions,
+            $table: $db.cashFlows,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2561,7 +1722,7 @@ class $$InvestmentsTableTableManager
           $$InvestmentsTableUpdateCompanionBuilder,
           (Investment, $$InvestmentsTableReferences),
           Investment,
-          PrefetchHooks Function({bool portfolioId, bool transactionsRefs})
+          PrefetchHooks Function({bool cashFlowsRefs})
         > {
   $$InvestmentsTableTableManager(_$AppDatabase db, $InvestmentsTable table)
     : super(
@@ -2577,44 +1738,44 @@ class $$InvestmentsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> portfolioId = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<String?> symbol = const Value.absent(),
                 Value<String> type = const Value.absent(),
-                Value<bool> isActive = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> closedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentsCompanion(
                 id: id,
-                portfolioId: portfolioId,
                 name: name,
-                symbol: symbol,
                 type: type,
-                isActive: isActive,
+                status: status,
+                notes: notes,
                 createdAt: createdAt,
+                closedAt: closedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String id,
-                required String portfolioId,
                 required String name,
-                Value<String?> symbol = const Value.absent(),
                 required String type,
-                Value<bool> isActive = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> closedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentsCompanion.insert(
                 id: id,
-                portfolioId: portfolioId,
                 name: name,
-                symbol: symbol,
                 type: type,
-                isActive: isActive,
+                status: status,
+                notes: notes,
                 createdAt: createdAt,
+                closedAt: closedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -2626,74 +1787,38 @@ class $$InvestmentsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback:
-              ({portfolioId = false, transactionsRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (transactionsRefs) db.transactions,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (portfolioId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.portfolioId,
-                                    referencedTable:
-                                        $$InvestmentsTableReferences
-                                            ._portfolioIdTable(db),
-                                    referencedColumn:
-                                        $$InvestmentsTableReferences
-                                            ._portfolioIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (transactionsRefs)
-                        await $_getPrefetchedData<
-                          Investment,
-                          $InvestmentsTable,
-                          Transaction
-                        >(
-                          currentTable: table,
-                          referencedTable: $$InvestmentsTableReferences
-                              ._transactionsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$InvestmentsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).transactionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.investmentId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
+          prefetchHooksCallback: ({cashFlowsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (cashFlowsRefs) db.cashFlows],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (cashFlowsRefs)
+                    await $_getPrefetchedData<
+                      Investment,
+                      $InvestmentsTable,
+                      CashFlow
+                    >(
+                      currentTable: table,
+                      referencedTable: $$InvestmentsTableReferences
+                          ._cashFlowsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$InvestmentsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).cashFlowsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.investmentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
               },
+            );
+          },
         ),
       );
 }
@@ -2710,44 +1835,38 @@ typedef $$InvestmentsTableProcessedTableManager =
       $$InvestmentsTableUpdateCompanionBuilder,
       (Investment, $$InvestmentsTableReferences),
       Investment,
-      PrefetchHooks Function({bool portfolioId, bool transactionsRefs})
+      PrefetchHooks Function({bool cashFlowsRefs})
     >;
-typedef $$TransactionsTableCreateCompanionBuilder =
-    TransactionsCompanion Function({
+typedef $$CashFlowsTableCreateCompanionBuilder =
+    CashFlowsCompanion Function({
       required String id,
       required String investmentId,
       required DateTime date,
       required String type,
-      required double quantity,
-      required double pricePerUnit,
-      Value<double> fees,
-      required double totalAmount,
+      required double amount,
       Value<String?> notes,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
-typedef $$TransactionsTableUpdateCompanionBuilder =
-    TransactionsCompanion Function({
+typedef $$CashFlowsTableUpdateCompanionBuilder =
+    CashFlowsCompanion Function({
       Value<String> id,
       Value<String> investmentId,
       Value<DateTime> date,
       Value<String> type,
-      Value<double> quantity,
-      Value<double> pricePerUnit,
-      Value<double> fees,
-      Value<double> totalAmount,
+      Value<double> amount,
       Value<String?> notes,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
 
-final class $$TransactionsTableReferences
-    extends BaseReferences<_$AppDatabase, $TransactionsTable, Transaction> {
-  $$TransactionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$CashFlowsTableReferences
+    extends BaseReferences<_$AppDatabase, $CashFlowsTable, CashFlow> {
+  $$CashFlowsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $InvestmentsTable _investmentIdTable(_$AppDatabase db) =>
       db.investments.createAlias(
-        $_aliasNameGenerator(db.transactions.investmentId, db.investments.id),
+        $_aliasNameGenerator(db.cashFlows.investmentId, db.investments.id),
       );
 
   $$InvestmentsTableProcessedTableManager get investmentId {
@@ -2765,9 +1884,9 @@ final class $$TransactionsTableReferences
   }
 }
 
-class $$TransactionsTableFilterComposer
-    extends Composer<_$AppDatabase, $TransactionsTable> {
-  $$TransactionsTableFilterComposer({
+class $$CashFlowsTableFilterComposer
+    extends Composer<_$AppDatabase, $CashFlowsTable> {
+  $$CashFlowsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -2789,23 +1908,8 @@ class $$TransactionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get quantity => $composableBuilder(
-    column: $table.quantity,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get pricePerUnit => $composableBuilder(
-    column: $table.pricePerUnit,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get fees => $composableBuilder(
-    column: $table.fees,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get totalAmount => $composableBuilder(
-    column: $table.totalAmount,
+  ColumnFilters<double> get amount => $composableBuilder(
+    column: $table.amount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2843,9 +1947,9 @@ class $$TransactionsTableFilterComposer
   }
 }
 
-class $$TransactionsTableOrderingComposer
-    extends Composer<_$AppDatabase, $TransactionsTable> {
-  $$TransactionsTableOrderingComposer({
+class $$CashFlowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CashFlowsTable> {
+  $$CashFlowsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -2867,23 +1971,8 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get quantity => $composableBuilder(
-    column: $table.quantity,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get pricePerUnit => $composableBuilder(
-    column: $table.pricePerUnit,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get fees => $composableBuilder(
-    column: $table.fees,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get totalAmount => $composableBuilder(
-    column: $table.totalAmount,
+  ColumnOrderings<double> get amount => $composableBuilder(
+    column: $table.amount,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2921,9 +2010,9 @@ class $$TransactionsTableOrderingComposer
   }
 }
 
-class $$TransactionsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $TransactionsTable> {
-  $$TransactionsTableAnnotationComposer({
+class $$CashFlowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CashFlowsTable> {
+  $$CashFlowsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -2939,21 +2028,8 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<double> get quantity =>
-      $composableBuilder(column: $table.quantity, builder: (column) => column);
-
-  GeneratedColumn<double> get pricePerUnit => $composableBuilder(
-    column: $table.pricePerUnit,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get fees =>
-      $composableBuilder(column: $table.fees, builder: (column) => column);
-
-  GeneratedColumn<double> get totalAmount => $composableBuilder(
-    column: $table.totalAmount,
-    builder: (column) => column,
-  );
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -2985,54 +2061,48 @@ class $$TransactionsTableAnnotationComposer
   }
 }
 
-class $$TransactionsTableTableManager
+class $$CashFlowsTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $TransactionsTable,
-          Transaction,
-          $$TransactionsTableFilterComposer,
-          $$TransactionsTableOrderingComposer,
-          $$TransactionsTableAnnotationComposer,
-          $$TransactionsTableCreateCompanionBuilder,
-          $$TransactionsTableUpdateCompanionBuilder,
-          (Transaction, $$TransactionsTableReferences),
-          Transaction,
+          $CashFlowsTable,
+          CashFlow,
+          $$CashFlowsTableFilterComposer,
+          $$CashFlowsTableOrderingComposer,
+          $$CashFlowsTableAnnotationComposer,
+          $$CashFlowsTableCreateCompanionBuilder,
+          $$CashFlowsTableUpdateCompanionBuilder,
+          (CashFlow, $$CashFlowsTableReferences),
+          CashFlow,
           PrefetchHooks Function({bool investmentId})
         > {
-  $$TransactionsTableTableManager(_$AppDatabase db, $TransactionsTable table)
+  $$CashFlowsTableTableManager(_$AppDatabase db, $CashFlowsTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$TransactionsTableFilterComposer($db: db, $table: table),
+              $$CashFlowsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$TransactionsTableOrderingComposer($db: db, $table: table),
+              $$CashFlowsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$TransactionsTableAnnotationComposer($db: db, $table: table),
+              $$CashFlowsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> investmentId = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<String> type = const Value.absent(),
-                Value<double> quantity = const Value.absent(),
-                Value<double> pricePerUnit = const Value.absent(),
-                Value<double> fees = const Value.absent(),
-                Value<double> totalAmount = const Value.absent(),
+                Value<double> amount = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => TransactionsCompanion(
+              }) => CashFlowsCompanion(
                 id: id,
                 investmentId: investmentId,
                 date: date,
                 type: type,
-                quantity: quantity,
-                pricePerUnit: pricePerUnit,
-                fees: fees,
-                totalAmount: totalAmount,
+                amount: amount,
                 notes: notes,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -3043,22 +2113,16 @@ class $$TransactionsTableTableManager
                 required String investmentId,
                 required DateTime date,
                 required String type,
-                required double quantity,
-                required double pricePerUnit,
-                Value<double> fees = const Value.absent(),
-                required double totalAmount,
+                required double amount,
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => TransactionsCompanion.insert(
+              }) => CashFlowsCompanion.insert(
                 id: id,
                 investmentId: investmentId,
                 date: date,
                 type: type,
-                quantity: quantity,
-                pricePerUnit: pricePerUnit,
-                fees: fees,
-                totalAmount: totalAmount,
+                amount: amount,
                 notes: notes,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -3067,7 +2131,7 @@ class $$TransactionsTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$TransactionsTableReferences(db, table, e),
+                  $$CashFlowsTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -3096,9 +2160,9 @@ class $$TransactionsTableTableManager
                           state.withJoin(
                                 currentTable: table,
                                 currentColumn: table.investmentId,
-                                referencedTable: $$TransactionsTableReferences
+                                referencedTable: $$CashFlowsTableReferences
                                     ._investmentIdTable(db),
-                                referencedColumn: $$TransactionsTableReferences
+                                referencedColumn: $$CashFlowsTableReferences
                                     ._investmentIdTable(db)
                                     .id,
                               )
@@ -3116,18 +2180,18 @@ class $$TransactionsTableTableManager
       );
 }
 
-typedef $$TransactionsTableProcessedTableManager =
+typedef $$CashFlowsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $TransactionsTable,
-      Transaction,
-      $$TransactionsTableFilterComposer,
-      $$TransactionsTableOrderingComposer,
-      $$TransactionsTableAnnotationComposer,
-      $$TransactionsTableCreateCompanionBuilder,
-      $$TransactionsTableUpdateCompanionBuilder,
-      (Transaction, $$TransactionsTableReferences),
-      Transaction,
+      $CashFlowsTable,
+      CashFlow,
+      $$CashFlowsTableFilterComposer,
+      $$CashFlowsTableOrderingComposer,
+      $$CashFlowsTableAnnotationComposer,
+      $$CashFlowsTableCreateCompanionBuilder,
+      $$CashFlowsTableUpdateCompanionBuilder,
+      (CashFlow, $$CashFlowsTableReferences),
+      CashFlow,
       PrefetchHooks Function({bool investmentId})
     >;
 typedef $$SyncQueueTableCreateCompanionBuilder =
@@ -3389,12 +2453,10 @@ typedef $$SyncQueueTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$PortfoliosTableTableManager get portfolios =>
-      $$PortfoliosTableTableManager(_db, _db.portfolios);
   $$InvestmentsTableTableManager get investments =>
       $$InvestmentsTableTableManager(_db, _db.investments);
-  $$TransactionsTableTableManager get transactions =>
-      $$TransactionsTableTableManager(_db, _db.transactions);
+  $$CashFlowsTableTableManager get cashFlows =>
+      $$CashFlowsTableTableManager(_db, _db.cashFlows);
   $$SyncQueueTableTableManager get syncQueue =>
       $$SyncQueueTableTableManager(_db, _db.syncQueue);
 }

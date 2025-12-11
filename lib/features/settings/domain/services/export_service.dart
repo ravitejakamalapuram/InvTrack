@@ -1,25 +1,33 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
-import 'package:inv_tracker/features/portfolio/domain/repositories/portfolio_repository.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   final InvestmentRepository _investmentRepository;
-  final PortfolioRepository _portfolioRepository;
 
-  ExportService(this._investmentRepository, this._portfolioRepository);
+  ExportService(this._investmentRepository);
 
   Future<void> exportToCsv() async {
     // 1. Fetch Data
-    final transactions = await _investmentRepository.getAllTransactions();
     final investments = await _investmentRepository.getAllInvestments();
-    final portfolios = await _portfolioRepository.getAllPortfolios();
+    final allCashFlows = <Map<String, dynamic>>[];
 
-    // Create Lookups
-    final investmentMap = {for (var i in investments) i.id: i};
-    final portfolioMap = {for (var p in portfolios) p.id: p};
+    // Collect all cash flows with investment info
+    for (final investment in investments) {
+      final cashFlows = await _investmentRepository.getCashFlowsByInvestment(investment.id);
+      for (final cf in cashFlows) {
+        allCashFlows.add({
+          'cashFlow': cf,
+          'investment': investment,
+        });
+      }
+    }
+
+    // Sort by date
+    allCashFlows.sort((a, b) =>
+      (a['cashFlow'].date as DateTime).compareTo(b['cashFlow'].date as DateTime));
 
     // 2. Prepare CSV Data
     final List<List<dynamic>> rows = [];
@@ -27,33 +35,27 @@ class ExportService {
     // Header Row
     rows.add([
       'Date',
-      'Portfolio',
-      'Symbol',
-      'Name',
-      'Type',
-      'Quantity',
-      'Price',
-      'Fees',
-      'Total Amount',
+      'Investment Name',
+      'Investment Type',
+      'Cash Flow Type',
+      'Amount',
       'Notes',
+      'Investment Status',
     ]);
 
     // Data Rows
-    for (final tx in transactions) {
-      final investment = investmentMap[tx.investmentId];
-      final portfolio = investment != null ? portfolioMap[investment.portfolioId] : null;
+    for (final item in allCashFlows) {
+      final cf = item['cashFlow'];
+      final investment = item['investment'];
 
       rows.add([
-        tx.date.toIso8601String().split('T').first,
-        portfolio?.name ?? 'Unknown',
-        investment?.symbol ?? '',
-        investment?.name ?? 'Unknown',
-        tx.type,
-        tx.quantity,
-        tx.pricePerUnit,
-        tx.fees,
-        tx.totalAmount,
-        tx.notes ?? '',
+        cf.date.toIso8601String().split('T').first,
+        investment.name,
+        investment.type.name,
+        cf.type.name,
+        cf.amount,
+        cf.notes ?? '',
+        investment.status.name,
       ]);
     }
 
@@ -62,15 +64,15 @@ class ExportService {
 
     // 4. Save to Temp File
     final directory = await getTemporaryDirectory();
-    final path = '${directory.path}/invtracker_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+    final path = '${directory.path}/cashflow_export_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File(path);
     await file.writeAsString(csvData);
 
     // 5. Share File
     await Share.shareXFiles(
       [XFile(path)],
-      text: 'Here is your InvTracker transaction history.',
-      subject: 'InvTracker Export',
+      text: 'Here is your Cash Flow Tracker export.',
+      subject: 'Cash Flow Tracker Export',
     );
   }
 }

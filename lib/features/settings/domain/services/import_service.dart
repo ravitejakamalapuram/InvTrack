@@ -1,11 +1,10 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
-import 'package:inv_tracker/features/portfolio/domain/entities/portfolio_entity.dart';
-import 'package:inv_tracker/features/portfolio/domain/repositories/portfolio_repository.dart';
 import 'package:uuid/uuid.dart';
 
 class ImportResult {
@@ -18,10 +17,9 @@ class ImportResult {
 
 class ImportService {
   final InvestmentRepository _investmentRepository;
-  final PortfolioRepository _portfolioRepository;
   final Uuid _uuid = const Uuid();
 
-  ImportService(this._investmentRepository, this._portfolioRepository);
+  ImportService(this._investmentRepository);
 
   Future<ImportResult> importFromCsv() async {
     try {
@@ -43,108 +41,91 @@ class ImportService {
         return ImportResult(0, 0, 'Empty or invalid CSV file');
       }
 
-      // 2. Parse Headers (currently unused - using fixed column positions)
-      // Expected: date, portfolio, symbol, name, type, quantity, price, fees, total amount, notes
-      // final headers = rows.first.map((e) => e.toString().trim().toLowerCase()).toList();
-      
+      // Expected CSV format (matching ExportService):
+      // Date, Investment Name, Investment Type, Cash Flow Type, Amount, Notes, Investment Status
+
       int successCount = 0;
       int failureCount = 0;
 
-      // Cache for lookups to avoid DB calls per row
-      final portfolios = await _portfolioRepository.getAllPortfolios();
-      final portfolioMap = {for (var p in portfolios) p.name.toLowerCase(): p};
+      // Cache for lookups
+      final investments = await _investmentRepository.getAllInvestments();
+      final investmentMap = {for (var i in investments) i.name.toLowerCase(): i};
 
-      // 3. Process Rows
-      // Skip header
+      // 3. Process Rows (skip header)
       for (int i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
           if (row.isEmpty) continue;
 
-          // Extract Data (Assuming fixed order based on ExportService, but ideally should use headers)
-          // For simplicity/robustness matching ExportService:
-          // 0: Date, 1: Portfolio, 2: Symbol, 3: Name, 4: Type, 5: Qty, 6: Price, 7: Fees, 8: Total, 9: Notes
-          
-          if (row.length < 9) {
+          if (row.length < 5) {
             failureCount++;
             continue;
           }
 
           final dateStr = row[0].toString();
-          final portfolioName = row[1].toString().trim();
-          final symbol = row[2].toString().trim();
-          final name = row[3].toString().trim();
-          final type = row[4].toString().trim().toUpperCase(); // BUY/SELL
-          final quantity = double.tryParse(row[5].toString()) ?? 0.0;
-          final price = double.tryParse(row[6].toString()) ?? 0.0;
-          final fees = double.tryParse(row[7].toString()) ?? 0.0;
-          final totalAmount = double.tryParse(row[8].toString()) ?? 0.0;
-          final notes = row.length > 9 ? row[9].toString() : null;
+          final investmentName = row[1].toString().trim();
+          final investmentTypeStr = row[2].toString().trim().toLowerCase();
+          final cashFlowTypeStr = row[3].toString().trim().toLowerCase();
+          final amount = double.tryParse(row[4].toString()) ?? 0.0;
+          final notes = row.length > 5 ? row[5].toString() : null;
+          final statusStr = row.length > 6 ? row[6].toString().trim().toLowerCase() : 'open';
 
-          // Find or Create Portfolio
-          PortfolioEntity? portfolioNullable = portfolioMap[portfolioName.toLowerCase()];
-          PortfolioEntity portfolio;
-          
-          if (portfolioNullable == null) {
-            portfolio = PortfolioEntity(
-              id: _uuid.v4(),
-              name: portfolioName,
-              currency: 'USD', // Default
-              createdAt: DateTime.now(),
-            );
-            await _portfolioRepository.createPortfolio(portfolio);
-            portfolioMap[portfolioName.toLowerCase()] = portfolio;
-          } else {
-            portfolio = portfolioNullable;
+          // Parse investment type
+          InvestmentType investmentType = InvestmentType.other;
+          for (final t in InvestmentType.values) {
+            if (t.name.toLowerCase() == investmentTypeStr) {
+              investmentType = t;
+              break;
+            }
           }
+
+          // Parse cash flow type
+          CashFlowType cashFlowType = CashFlowType.invest;
+          for (final t in CashFlowType.values) {
+            if (t.name.toLowerCase() == cashFlowTypeStr) {
+              cashFlowType = t;
+              break;
+            }
+          }
+
+          // Parse status
+          InvestmentStatus status = statusStr == 'closed'
+              ? InvestmentStatus.closed
+              : InvestmentStatus.open;
 
           // Find or Create Investment
-          // We need to check if investment exists in this portfolio
-          final investments = await _investmentRepository.getInvestmentsByPortfolio(portfolio.id);
-          InvestmentEntity? investment;
-          
-          try {
-            investment = investments.firstWhere(
-              (inv) => (inv.symbol?.toLowerCase() == symbol.toLowerCase() && symbol.isNotEmpty) || 
-                       (inv.name.toLowerCase() == name.toLowerCase()),
-            );
-          } catch (_) {
-            // Not found
-          }
+          InvestmentEntity? investment = investmentMap[investmentName.toLowerCase()];
 
           if (investment == null) {
             investment = InvestmentEntity(
               id: _uuid.v4(),
-              portfolioId: portfolio.id,
-              name: name.isNotEmpty ? name : (symbol.isNotEmpty ? symbol : 'Unknown'),
-              symbol: symbol.isNotEmpty ? symbol : null,
-              type: 'Stock', // Default
-              isActive: true,
+              name: investmentName.isNotEmpty ? investmentName : 'Unknown',
+              type: investmentType,
+              status: status,
+              notes: null,
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             );
             await _investmentRepository.createInvestment(investment);
+            investmentMap[investmentName.toLowerCase()] = investment;
           }
 
-          // Create Transaction
-          final transaction = TransactionEntity(
+          // Create Cash Flow
+          final cashFlow = CashFlowEntity(
             id: _uuid.v4(),
             investmentId: investment.id,
+            type: cashFlowType,
             date: DateTime.tryParse(dateStr) ?? DateTime.now(),
-            type: type,
-            quantity: quantity,
-            pricePerUnit: price,
-            fees: fees,
-            totalAmount: totalAmount,
-            notes: notes,
+            amount: amount,
+            notes: notes?.isNotEmpty == true ? notes : null,
             createdAt: DateTime.now(),
           );
 
-          await _investmentRepository.addTransaction(transaction);
+          await _investmentRepository.addCashFlow(cashFlow);
           successCount++;
 
         } catch (e) {
-          print('Error importing row $i: $e');
+          debugPrint('Error importing row $i: $e');
           failureCount++;
         }
       }

@@ -3,27 +3,18 @@ import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 class FinancialCalculator {
-  /// Calculates XIRR from a list of transactions and the current value of the investment.
-  /// The current value is treated as a "sell" at the current date.
-  static double calculateXirr(List<TransactionEntity> transactions, double currentValue) {
-    if (transactions.isEmpty) return 0.0;
+  /// Calculates XIRR from a list of cash flows.
+  /// Uses the signedAmount property: negative for outflows, positive for inflows.
+  static double calculateXirrFromCashFlows(List<CashFlowEntity> cashFlows) {
+    if (cashFlows.isEmpty) return 0.0;
 
     final dates = <DateTime>[];
     final amounts = <double>[];
 
-    for (final t in transactions) {
-      dates.add(t.date);
-      // Outflows (BUY) are negative, Inflows (SELL, DIVIDEND) are positive
-      if (t.type == 'BUY') {
-        amounts.add(-(t.totalAmount));
-      } else {
-        amounts.add(t.totalAmount);
-      }
+    for (final cf in cashFlows) {
+      dates.add(cf.date);
+      amounts.add(cf.signedAmount);
     }
-
-    // Add current value as a positive cash flow at today's date
-    dates.add(DateTime.now());
-    amounts.add(currentValue);
 
     return XirrSolver.calculateXirr(dates, amounts);
   }
@@ -35,30 +26,42 @@ class FinancialCalculator {
   }
 
   /// Calculates MOIC (Multiple on Invested Capital).
-  static double calculateMOIC(double invested, double current) {
+  /// MOIC = Total Value / Total Invested
+  static double calculateMOIC(double invested, double returned) {
     if (invested == 0) return 0.0;
-    return current / invested;
+    return returned / invested;
   }
 
-  /// Calculates Absolute Profit/Loss.
-  static double calculateProfitLoss(double invested, double current) {
-    return current - invested;
+  /// Calculates Net Cash Flow (Total Returned - Total Invested).
+  static double calculateNetCashFlow(double invested, double returned) {
+    return returned - invested;
   }
 
-  /// Calculates Total Invested Amount from transactions.
-  static double calculateTotalInvested(List<TransactionEntity> transactions) {
+  /// Calculates Total Invested (outflows) from cash flows.
+  static double calculateTotalInvested(List<CashFlowEntity> cashFlows) {
     double total = 0.0;
-    for (final t in transactions) {
-      if (t.type == 'BUY') {
-        total += t.totalAmount;
-      } else if (t.type == 'SELL') {
-        // Selling reduces the "net invested" if we consider it that way,
-        // but typically "Total Invested" means total capital deployed.
-        // For P&L, we usually compare Net Invested (Buy - Sell) vs Current Value.
-        // Let's return Net Invested here.
-        total -= t.totalAmount;
+    for (final cf in cashFlows) {
+      if (cf.type.isOutflow) {
+        total += cf.amount;
       }
     }
     return total;
+  }
+
+  /// Calculates Total Returned (inflows) from cash flows.
+  static double calculateTotalReturned(List<CashFlowEntity> cashFlows) {
+    double total = 0.0;
+    for (final cf in cashFlows) {
+      if (cf.type.isInflow) {
+        total += cf.amount;
+      }
+    }
+    return total;
+  }
+
+  /// Calculates Absolute Return percentage.
+  static double calculateAbsoluteReturn(double invested, double returned) {
+    if (invested == 0) return 0.0;
+    return ((returned - invested) / invested) * 100;
   }
 }

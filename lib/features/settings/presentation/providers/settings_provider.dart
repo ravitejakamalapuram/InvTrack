@@ -8,7 +8,7 @@ class SettingsState {
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
-    this.currency = 'USD',
+    this.currency = 'INR',
   });
 
   SettingsState copyWith({
@@ -40,7 +40,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   void _loadSettings() {
     final themeIndex = _prefs.getInt('themeMode');
-    final currency = _prefs.getString('currency') ?? 'USD';
+    final currency = _prefs.getString('currency') ?? 'INR';
 
     ThemeMode themeMode = ThemeMode.system;
     if (themeIndex != null) {
