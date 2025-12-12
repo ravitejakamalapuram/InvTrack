@@ -8,7 +8,8 @@ abstract class AuthRepository {
   UserEntity? get currentUser;
 
   /// Signs in with Google.
-  Future<UserEntity?> signInWithGoogle();
+  /// [keepCurrentDbId] - if true, keeps the current database ID (used for connecting guest to Google)
+  Future<UserEntity?> signInWithGoogle({bool keepCurrentDbId = false});
 
   /// Signs in as a guest.
   Future<UserEntity?> signInAsGuest();

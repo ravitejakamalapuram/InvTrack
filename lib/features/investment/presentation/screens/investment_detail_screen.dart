@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -715,9 +714,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
 
     if (confirmed && mounted) {
+      final navigator = Navigator.of(context);
       await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
       if (mounted) {
-        Navigator.of(context).pop();
+        navigator.pop();
         AppFeedback.showSuccess(context, 'Investment deleted');
       }
     }
@@ -737,13 +737,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
 
     if (confirmed && mounted) {
+      final navigator = Navigator.of(context);
       if (isClosed) {
         await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
       } else {
         await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
       }
       if (mounted) {
-        Navigator.of(context).pop();
+        navigator.pop();
         AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
       }
     }
@@ -783,14 +784,15 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   ),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  navigator.push(
                     MaterialPageRoute(
                       builder: (context) => EditInvestmentScreen(investment: widget.investment),
                     ),
                   ).then((result) {
                     if (result == true && mounted) {
-                      Navigator.of(context).pop();
+                      navigator.pop();
                     }
                   });
                 },

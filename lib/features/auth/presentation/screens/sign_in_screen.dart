@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
-import 'package:inv_tracker/features/sync/domain/services/sync_service.dart';
+import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -23,6 +23,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   late Animation<double> _floatAnimation;
   late Animation<double> _glowAnimation;
   bool _isLoading = false;
+  String _loadingMessage = '';
 
   @override
   void initState() {
@@ -79,20 +80,119 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   }
 
   Future<void> _signInWithGoogle() async {
-    setState(() => _isLoading = true);
-    try {
-      final user = await ref.read(authRepositoryProvider).signInWithGoogle();
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = 'Checking local data...';
+    });
 
-      // If sign-in was successful, initialize/sync the spreadsheet
-      if (user != null && !user.isGuest) {
-        try {
-          debugPrint('SignIn: Initializing sync after Google Sign-In...');
-          await ref.read(syncServiceProvider).sync();
-          debugPrint('SignIn: Initial sync completed successfully');
-        } catch (syncError) {
-          // Log sync error but don't fail the login
-          debugPrint('SignIn: Initial sync failed (will retry later): $syncError');
+    try {
+      // Check if there's existing local data BEFORE signing in
+      final db = ref.read(databaseProvider);
+      final investments = await db.select(db.investments).get();
+      final cashFlows = await db.select(db.cashFlows).get();
+      final hasLocalData = investments.isNotEmpty || cashFlows.isNotEmpty;
+      debugPrint('SignIn: Has local data: $hasLocalData (${investments.length} investments, ${cashFlows.length} cashflows)');
+
+      if (mounted) {
+        setState(() => _loadingMessage = 'Signing in...');
+      }
+
+      // Sign in with Google - keep same database if we have local data
+      final user = await ref.read(authRepositoryProvider).signInWithGoogle(
+        keepCurrentDbId: hasLocalData,
+      );
+
+      if (user == null) {
+        debugPrint('SignIn: User cancelled or error');
+        return;
+      }
+
+      if (user.isGuest) {
+        debugPrint('SignIn: Unexpected guest user returned');
+        return;
+      }
+
+      // Set the user ID for database
+      ref.read(currentUserIdProvider.notifier).state = user.id;
+      debugPrint('SignIn: Set database user ID: ${user.id}');
+
+      try {
+        final syncNotifier = ref.read(syncStatusProvider.notifier);
+
+        // Check cloud data count (without importing yet)
+        if (mounted) {
+          setState(() => _loadingMessage = 'Checking cloud data...');
         }
+        final cloudCount = await syncNotifier.getCloudDataCount();
+        debugPrint('SignIn: Cloud has $cloudCount investments');
+
+        if (cloudCount > 0 && hasLocalData && mounted) {
+          // Both local AND cloud have data - ask user what to do
+          final choice = await showDialog<String>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Data Conflict'),
+              content: Text(
+                'You have ${investments.length} local investment(s) and '
+                '$cloudCount investment(s) in Google Cloud.\n\n'
+                'Which data would you like to keep?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop('cancel'),
+                  child: const Text('Cancel'),
+                ),
+                OutlinedButton(
+                  onPressed: () => Navigator.of(ctx).pop('cloud'),
+                  child: const Text('Use Cloud Data'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop('local'),
+                  child: const Text('Keep Local Data'),
+                ),
+              ],
+            ),
+          );
+
+          if (choice == 'cancel' || !mounted) {
+            // User cancelled - sign out
+            await ref.read(authRepositoryProvider).signOut();
+            return;
+          }
+
+          if (choice == 'cloud') {
+            // Clear local and import from cloud
+            setState(() => _loadingMessage = 'Importing cloud data...');
+            await db.clearAllData();
+            final imported = await syncNotifier.importCloudData();
+            debugPrint('SignIn: Imported $imported items from cloud');
+          } else if (choice == 'local') {
+            // Push local data to cloud
+            setState(() => _loadingMessage = 'Syncing local data to cloud...');
+            await syncNotifier.sync(force: true);
+            debugPrint('SignIn: Pushed local data to cloud');
+          }
+        } else if (cloudCount > 0) {
+          // Only cloud has data - import it
+          if (mounted) {
+            setState(() => _loadingMessage = 'Importing cloud data...');
+          }
+          final imported = await syncNotifier.importCloudData();
+          debugPrint('SignIn: Imported $imported items from cloud');
+        } else if (hasLocalData) {
+          // Only local has data - push to cloud
+          if (mounted) {
+            setState(() => _loadingMessage = 'Syncing to cloud...');
+          }
+          await syncNotifier.sync(force: true);
+          debugPrint('SignIn: Pushed local data to cloud');
+        } else {
+          // Neither has data - fresh start
+          debugPrint('SignIn: Fresh start (no data anywhere)');
+        }
+      } catch (syncError) {
+        debugPrint('SignIn: Sync failed (will retry later): $syncError');
       }
     } catch (e) {
       if (mounted) {
@@ -105,14 +205,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadingMessage = '';
+        });
+      }
     }
   }
 
   Future<void> _signInAsGuest() async {
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).signInAsGuest();
+      // Sign in as guest - auth repository generates a new UUID for each guest session
+      final user = await ref.read(authRepositoryProvider).signInAsGuest();
+
+      // Set the user ID to switch to guest's new isolated database
+      if (user != null) {
+        ref.read(currentUserIdProvider.notifier).state = user.id;
+        debugPrint('SignIn: Set database user ID for guest: ${user.id}');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -350,13 +462,27 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
           borderRadius: BorderRadius.circular(16),
           child: Center(
             child: _isLoading
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: isDark ? AppColors.primaryLight : Colors.white,
-                    ),
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: isDark ? AppColors.primaryLight : Colors.white,
+                        ),
+                      ),
+                      if (_loadingMessage.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Text(
+                          _loadingMessage,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: isDark ? AppColors.neutral900Light : Colors.white,
+                          ),
+                        ),
+                      ],
+                    ],
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,

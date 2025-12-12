@@ -28,16 +28,16 @@ void main() {
   });
 
   // Note: Testing SyncService fully requires mocking GoogleDriveDataSource and GoogleSheetsDataSource
-  // which are instantiated inside the service. 
+  // which are instantiated inside the service.
   // For a proper unit test, we should inject these datasources or factories.
   // Given the current implementation, we can't easily mock them without refactoring.
-  // 
+  //
   // However, we can verify that the service handles the "not signed in" case.
-  
-  test('sync returns early if user is not signed in', () async {
+
+  test('pushToSheet returns early if user is not signed in', () async {
     when(() => mockGoogleSignIn.currentUser).thenReturn(null);
 
-    await syncService.sync();
+    await syncService.pushToSheet();
 
     verify(() => mockGoogleSignIn.currentUser).called(1);
     // Cannot verify extension method calls easily with Mocktail

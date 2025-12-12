@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:uuid/uuid.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final GoogleSignIn _googleSignIn;
@@ -13,6 +14,7 @@ class AuthRepositoryImpl implements AuthRepository {
   bool _isInitialized = false;
 
   static const _guestKey = 'is_guest';
+  static const _guestIdKey = 'guest_user_id';
 
   AuthRepositoryImpl(this._googleSignIn, this._secureStorage) {
     _init();
@@ -25,24 +27,32 @@ class AuthRepositoryImpl implements AuthRepository {
     // Check for guest session
     final isGuest = await _secureStorage.read(key: _guestKey);
     if (isGuest == 'true') {
-      _authStateController.add(const UserEntity(
-        id: 'guest',
-        email: 'guest@local',
-        displayName: 'Guest User',
-        isGuest: true,
-      ));
+      // Retrieve the stored guest ID
+      final guestId = await _secureStorage.read(key: _guestIdKey);
+      if (guestId != null) {
+        _authStateController.add(UserEntity(
+          id: guestId,
+          email: 'guest@local',
+          displayName: 'Guest User',
+          isGuest: true,
+        ));
+      } else {
+        // Guest flag exists but no ID - this shouldn't happen, clear and require re-login
+        await _secureStorage.delete(key: _guestKey);
+        debugPrint('[Auth] Guest flag without ID, clearing session');
+      }
     } else {
-      // Listen to Google Sign-In changes
-      _googleSignIn.onCurrentUserChanged.listen((googleUser) {
-        _authStateController.add(_mapGoogleUserToEntity(googleUser));
-      });
+      // Check if we have a stored database ID (returning Google user)
+      final storedDbId = await _secureStorage.read(key: _guestIdKey);
+
       // Initial check - try silent sign in first
       try {
         final currentUser = await _googleSignIn.signInSilently();
-        if (currentUser != null) {
-          _authStateController.add(_mapGoogleUserToEntity(currentUser));
+        if (currentUser != null && storedDbId != null) {
+          // Returning user with stored database ID
+          _authStateController.add(_mapGoogleUserToEntity(currentUser, storedDbId));
         }
-        // If null, the seeded null value is already correct
+        // If null or no stored ID, the seeded null value is correct (require fresh login)
       } catch (e) {
         // Silent sign-in failed, user needs to sign in manually
         // The seeded null value is already correct
@@ -57,7 +67,7 @@ class AuthRepositoryImpl implements AuthRepository {
   UserEntity? get currentUser => _authStateController.valueOrNull;
 
   @override
-  Future<UserEntity?> signInWithGoogle() async {
+  Future<UserEntity?> signInWithGoogle({bool keepCurrentDbId = false}) async {
     try {
       // Clear guest session if exists
       await _secureStorage.delete(key: _guestKey);
@@ -71,7 +81,22 @@ class AuthRepositoryImpl implements AuthRepository {
         return null;
       }
 
-      final user = _mapGoogleUserToEntity(googleUser);
+      // Generate new UUID for database isolation (fresh start)
+      // Unless keepCurrentDbId is true (connecting guest to Google - keep same DB)
+      String dbId;
+      if (keepCurrentDbId) {
+        // Keep existing database ID (used when connecting guest to Google)
+        final existingId = await _secureStorage.read(key: _guestIdKey);
+        dbId = existingId ?? 'user_${const Uuid().v4()}';
+        debugPrint('GoogleSignIn: Keeping existing database ID: $dbId');
+      } else {
+        // Fresh sign-in = new database
+        dbId = 'user_${const Uuid().v4()}';
+        debugPrint('GoogleSignIn: Generated new database ID: $dbId');
+      }
+      await _secureStorage.write(key: _guestIdKey, value: dbId);
+
+      final user = _mapGoogleUserToEntity(googleUser, dbId);
       _authStateController.add(user);
       return user;
     } catch (e, stackTrace) {
@@ -84,10 +109,17 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserEntity?> signInAsGuest() async {
     await _googleSignIn.signOut(); // Ensure google is signed out
+
+    // Generate a NEW unique ID for this guest session
+    // This ensures each "Continue as Guest" gets a fresh, isolated database
+    final guestId = 'guest_${const Uuid().v4()}';
+    debugPrint('[Auth] Creating new guest session with ID: $guestId');
+
     await _secureStorage.write(key: _guestKey, value: 'true');
-    
-    const guestUser = UserEntity(
-      id: 'guest',
+    await _secureStorage.write(key: _guestIdKey, value: guestId);
+
+    final guestUser = UserEntity(
+      id: guestId,
       email: 'guest@local',
       displayName: 'Guest User',
       isGuest: true,
@@ -99,6 +131,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> signOut() async {
     await _secureStorage.delete(key: _guestKey);
+    await _secureStorage.delete(key: _guestIdKey);
     await _googleSignIn.signOut();
     _authStateController.add(null);
   }
@@ -113,10 +146,12 @@ class AuthRepositoryImpl implements AuthRepository {
     return auth.accessToken;
   }
 
-  UserEntity? _mapGoogleUserToEntity(GoogleSignInAccount? googleUser) {
+  /// Maps Google user to UserEntity.
+  /// [dbId] is the database ID (UUID) for this user session.
+  UserEntity? _mapGoogleUserToEntity(GoogleSignInAccount? googleUser, String dbId) {
     if (googleUser == null) return null;
     return UserEntity(
-      id: googleUser.id,
+      id: dbId, // Use dbId instead of googleUser.id for database isolation
       email: googleUser.email,
       displayName: googleUser.displayName,
       photoUrl: googleUser.photoUrl,

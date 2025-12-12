@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT PROVIDERS ============
@@ -440,23 +440,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
       );
       await _ref.read(investmentRepositoryProvider).createInvestment(investment);
 
-      // Add to sync queue
-      await _ref.read(syncRepositoryProvider).addToQueue(
-        'CREATE',
-        'INVESTMENT',
-        investment.id,
-        jsonEncode({
-          'id': investment.id,
-          'name': investment.name,
-          'type': investment.type.name,
-          'status': investment.status.name,
-          'notes': investment.notes,
-          'createdAt': investment.createdAt.toIso8601String(),
-          'updatedAt': investment.updatedAt.toIso8601String(),
-        }),
-      );
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
       return investment;
     } catch (e, st) {
@@ -485,23 +470,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
       );
       await _ref.read(investmentRepositoryProvider).updateInvestment(updated);
 
-      // Add to sync queue
-      await _ref.read(syncRepositoryProvider).addToQueue(
-        'UPDATE',
-        'INVESTMENT',
-        updated.id,
-        jsonEncode({
-          'id': updated.id,
-          'name': updated.name,
-          'type': updated.type.name,
-          'status': updated.status.name,
-          'notes': updated.notes,
-          'createdAt': updated.createdAt.toIso8601String(),
-          'updatedAt': updated.updatedAt.toIso8601String(),
-        }),
-      );
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -515,26 +485,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _ref.read(investmentRepositoryProvider).closeInvestment(id);
 
-      // Add to sync queue (get updated investment for full payload)
-      final updated = await _ref.read(investmentRepositoryProvider).getInvestmentById(id);
-      if (updated != null) {
-        await _ref.read(syncRepositoryProvider).addToQueue(
-          'UPDATE',
-          'INVESTMENT',
-          updated.id,
-          jsonEncode({
-            'id': updated.id,
-            'name': updated.name,
-            'type': updated.type.name,
-            'status': updated.status.name,
-            'notes': updated.notes,
-            'createdAt': updated.createdAt.toIso8601String(),
-            'updatedAt': updated.updatedAt.toIso8601String(),
-          }),
-        );
-      }
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -548,26 +500,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _ref.read(investmentRepositoryProvider).reopenInvestment(id);
 
-      // Add to sync queue (get updated investment for full payload)
-      final updated = await _ref.read(investmentRepositoryProvider).getInvestmentById(id);
-      if (updated != null) {
-        await _ref.read(syncRepositoryProvider).addToQueue(
-          'UPDATE',
-          'INVESTMENT',
-          updated.id,
-          jsonEncode({
-            'id': updated.id,
-            'name': updated.name,
-            'type': updated.type.name,
-            'status': updated.status.name,
-            'notes': updated.notes,
-            'createdAt': updated.createdAt.toIso8601String(),
-            'updatedAt': updated.updatedAt.toIso8601String(),
-          }),
-        );
-      }
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -581,15 +515,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _ref.read(investmentRepositoryProvider).deleteInvestment(id);
 
-      // Add to sync queue
-      await _ref.read(syncRepositoryProvider).addToQueue(
-        'DELETE',
-        'INVESTMENT',
-        id,
-        jsonEncode({'id': id}),
-      );
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -618,23 +545,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
       );
       await _ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
-      // Add to sync queue
-      await _ref.read(syncRepositoryProvider).addToQueue(
-        'CREATE',
-        'CASHFLOW',
-        cashFlow.id,
-        jsonEncode({
-          'id': cashFlow.id,
-          'investmentId': cashFlow.investmentId,
-          'type': cashFlow.type.name,
-          'date': cashFlow.date.toIso8601String(),
-          'amount': cashFlow.amount,
-          'notes': cashFlow.notes,
-          'createdAt': cashFlow.createdAt.toIso8601String(),
-        }),
-      );
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -665,23 +577,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
       );
       await _ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
-      // Add to sync queue
-      await _ref.read(syncRepositoryProvider).addToQueue(
-        'UPDATE',
-        'CASHFLOW',
-        cashFlow.id,
-        jsonEncode({
-          'id': cashFlow.id,
-          'investmentId': cashFlow.investmentId,
-          'type': cashFlow.type.name,
-          'date': cashFlow.date.toIso8601String(),
-          'amount': cashFlow.amount,
-          'notes': cashFlow.notes,
-          'createdAt': cashFlow.createdAt.toIso8601String(),
-        }),
-      );
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -695,15 +592,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _ref.read(investmentRepositoryProvider).deleteCashFlow(id);
 
-      // Add to sync queue
-      await _ref.read(syncRepositoryProvider).addToQueue(
-        'DELETE',
-        'CASHFLOW',
-        id,
-        jsonEncode({'id': id}),
-      );
-
       _invalidateAll();
+      _triggerSync();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -720,5 +610,11 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     _ref.invalidate(openInvestmentsStatsProvider);
     _ref.invalidate(topPerformersProvider);
     _ref.invalidate(recentlyClosedInvestmentsProvider);
+  }
+
+  /// Trigger sync to Google Sheets.
+  /// Marks data as modified which schedules a debounced sync.
+  void _triggerSync() {
+    _ref.read(syncStatusProvider.notifier).markDataModified();
   }
 }

@@ -93,10 +93,10 @@ class SecurityNotifier extends StateNotifier<SecurityState> with WidgetsBindingO
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
-    if (lifecycleState == AppLifecycleState.paused) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
       _lastPausedTime = DateTime.now();
-    } else if (lifecycleState == AppLifecycleState.resumed) {
+    } else if (state == AppLifecycleState.resumed) {
       _checkAutoLock();
     }
   }

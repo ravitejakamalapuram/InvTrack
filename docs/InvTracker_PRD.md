@@ -569,27 +569,44 @@ Return_% = Return / Contribution × 100
 
 ## 16. Roadmap
 
-### Phase 1 (MVP)
+### Phase 1 (MVP) ✅ Complete
 - [x] Local encrypted database
 - [x] Investment CRUD
 - [x] Transaction ledger
 - [x] XIRR/CAGR/MOIC calculations
 - [x] Dashboard with charts
 - [x] Insights/Analytics screen
-- [ ] Google Sign-In
-- [ ] Google Sheets sync
+- [x] Google Sign-In
+- [x] Google Sheets sync (one-way: app → sheet)
 
-### Phase 2
+### Phase 2 (Next Release)
+- [ ] **Investment Projections & Analytics**
+  - [ ] Capture rate of interest for investments
+  - [ ] Investment type classification:
+    - Fixed monthly return (e.g., FD, P2P with fixed interest)
+    - Dynamic monthly return (e.g., MF SIPs)
+    - One-time invest & close (e.g., bonds, debentures)
+  - [ ] Expected close date projection
+  - [ ] Expected XIRR projection for dynamic investments
+  - [ ] Visual projection charts (waterfall, trajectory)
+- [ ] **Two-way Google Sheets Sync**
+  - [ ] Pull changes from Google Sheets back to app
+  - [ ] Conflict detection and resolution UI
+  - [ ] Last-write-wins vs manual merge options
 - [ ] TWRR calculation
-- [ ] Multi-currency support
 - [ ] Export to CSV/PDF
-- [ ] Benchmark comparison
-- [ ] Price alerts
+- [ ] Multi-currency support
 
 ### Phase 3
-- [ ] Auto-import from brokers
-- [ ] Tax reports
-- [ ] Premium subscription
+- [ ] Benchmark comparison (Nifty, S&P, Gold, etc.)
+- [ ] Price alerts & notifications
+- [ ] Auto-import from brokers (Zerodha, Groww, etc.)
+- [ ] Tax reports (capital gains summary)
+
+### Phase 4
+- [ ] Premium subscription tier
+- [ ] Family/shared portfolios
+- [ ] Goal-based tracking (retirement, house, education)
 
 ---
 
@@ -636,3 +653,4 @@ Return_% = Return / Contribution × 100
 | 1.0 | - | Initial AI-generated draft |
 | 2.0 | - | Added detailed specs |
 | 3.0 | 2024-12 | Simplified & focused - new 4-tab navigation (Home, Assets, Insights, Settings) |
+| 3.1 | 2024-12 | Updated roadmap: Phase 1 complete, added investment projections & two-way sync to Phase 2 |

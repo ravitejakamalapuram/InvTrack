@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
+import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
 
 /// Toggle state for showing realized-only net position
 final showRealizedOnlyProvider = StateProvider<bool>((ref) => false);
@@ -39,9 +40,12 @@ class OverviewScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
+            // Refresh local data
             ref.invalidate(globalStatsProvider);
             ref.invalidate(openInvestmentsStatsProvider);
             ref.invalidate(closedInvestmentsStatsProvider);
+            // Sync to Google Sheets (only if data changed since last sync)
+            await ref.read(syncStatusProvider.notifier).sync();
           },
           child: CustomScrollView(
             slivers: [
@@ -647,11 +651,14 @@ class OverviewScreen extends ConsumerWidget {
                   label: 'Refresh',
                   color: AppColors.graphBlue,
                   onTap: () {
+                    // Refresh local data
                     ref.invalidate(globalStatsProvider);
                     ref.invalidate(openInvestmentsStatsProvider);
                     ref.invalidate(closedInvestmentsStatsProvider);
                     ref.invalidate(topPerformersProvider);
                     ref.invalidate(monthlyCashFlowTrendProvider);
+                    // Sync to Google Sheets (only if data changed since last sync)
+                    ref.read(syncStatusProvider.notifier).sync();
                   },
                 ),
               ),

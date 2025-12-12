@@ -12,6 +12,7 @@ class SyncStatusIcon extends ConsumerWidget {
 
     return IconButton(
       onPressed: () {
+        // Sync only if data changed (not forced - force is only for debug settings)
         ref.read(syncStatusProvider.notifier).sync();
       },
       icon: syncState.when(

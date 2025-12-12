@@ -32,15 +32,15 @@ void main() {
 
     // Debug: Print widget tree if needed
     // debugDumpApp();
-    
+
     expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
   });
 
   testWidgets('SyncStatusIcon shows loading when syncing', (tester) async {
     // We need to mock the provider to return loading state
     // Or mock the service and trigger sync.
-    
-    when(() => mockSyncService.sync()).thenAnswer((_) async {
+
+    when(() => mockSyncService.pushToSheet()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
     });
 
@@ -63,10 +63,10 @@ void main() {
 
     // Should show loading
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    
+
     await tester.pump(const Duration(seconds: 1)); // Finish
     await tester.pumpAndSettle();
-    
+
     // Should show done
     expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
   });

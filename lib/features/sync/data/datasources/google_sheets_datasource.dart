@@ -9,11 +9,24 @@ class GoogleSheetsDataSource {
     _sheetsApi = sheets.SheetsApi(_client);
   }
 
-  /// Appends rows to a sheet.
+  /// Appends rows to a sheet (single API call for multiple rows).
   /// [spreadsheetId] is the ID of the spreadsheet.
   /// [range] is the A1 notation of the range (e.g., 'Sheet1!A1').
   /// [values] is a list of rows, where each row is a list of values.
   Future<void> appendRows(String spreadsheetId, String range, List<List<dynamic>> values) async {
+    final valueRange = sheets.ValueRange()..values = values;
+    await _sheetsApi.spreadsheets.values.append(
+      valueRange,
+      spreadsheetId,
+      range,
+      valueInputOption: 'USER_ENTERED',
+    );
+  }
+
+  /// Batch append rows - same as appendRows but named explicitly for clarity.
+  /// All rows are written in a single API call for efficiency.
+  Future<void> batchAppendRows(String spreadsheetId, String range, List<List<dynamic>> values) async {
+    if (values.isEmpty) return;
     final valueRange = sheets.ValueRange()..values = values;
     await _sheetsApi.spreadsheets.values.append(
       valueRange,
