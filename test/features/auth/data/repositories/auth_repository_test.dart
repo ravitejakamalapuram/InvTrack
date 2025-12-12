@@ -42,9 +42,9 @@ void main() {
 
       verify(() => mockGoogleSignIn.signOut()).called(1);
       verify(() => mockSecureStorage.write(key: 'is_guest', value: 'true')).called(1);
-      
+
       expect(user?.isGuest, true);
-      expect(user?.id, 'guest');
+      expect(user?.id, startsWith('guest_'));
     });
 
     test('signOut should clear guest flag and sign out google', () async {

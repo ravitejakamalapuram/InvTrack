@@ -1,12 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
-import 'package:intl/intl.dart';
-import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/features/data/presentation/providers/data_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
@@ -237,39 +236,37 @@ Last updated: December 05, 2025
   }
 
   Widget _buildSyncSection(BuildContext context, WidgetRef ref) {
-    final syncState = ref.watch(syncStatusProvider);
+    final isOfflineAsync = ref.watch(isOfflineProvider);
     final authState = ref.watch(authStateProvider);
+
+    // Default to online if still loading
+    final isOffline = isOfflineAsync.maybeWhen(
+      data: (offline) => offline,
+      orElse: () => false,
+    );
 
     return Column(
       children: [
         ListTile(
-          title: const Text('Sync to Google Sheets'),
-          subtitle: syncState.when(
-            data: (lastSynced) => lastSynced != null
-                ? Text('Last synced: ${DateFormat.yMd().add_Hm().format(lastSynced)}')
-                : const Text('Tap to sync your cashflows'),
-            loading: () => const Text('Syncing...'),
-            error: (err, stack) => Text(
-              'Sync failed: ${err.toString().split(':').last.trim()}',
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
-          leading: syncState.when(
-            data: (_) => const Icon(Icons.cloud_done, color: Colors.green),
-            loading: () => const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (_, __) => const Icon(Icons.cloud_off, color: Colors.red),
+          title: const Text('Cloud Sync Status'),
+          subtitle: Text(isOffline ? 'Offline - changes will sync when online' : 'Connected to Google Sheets'),
+          leading: Icon(
+            isOffline ? Icons.cloud_off : Icons.cloud_done,
+            color: isOffline ? Colors.orange : Colors.green,
           ),
           trailing: authState.when(
-            data: (user) => user != null
+            data: (user) => user != null && !user.isGuest
                 ? TextButton(
-                    onPressed: syncState.isLoading
-                        ? null
-                        : () => ref.read(syncStatusProvider.notifier).sync(force: true),
-                    child: const Text('Sync Now'),
+                    onPressed: () async {
+                      final result = await ref.read(dataControllerProvider).refreshFromCloud();
+                      if (context.mounted) {
+                        result.when(
+                          success: (_) => AppFeedback.showSuccess(context, 'Synced with cloud'),
+                          failure: (error) => AppFeedback.showError(context, error),
+                        );
+                      }
+                    },
+                    child: const Text('Refresh'),
                   )
                 : const Text('Sign in required', style: TextStyle(color: Colors.grey)),
             loading: () => const SizedBox(),
@@ -327,10 +324,14 @@ Last updated: December 05, 2025
               title: const Text('Sign Out'),
               leading: const Icon(Icons.logout, color: Colors.red),
               onTap: () async {
-                // Clear local database to ensure user data isolation
-                await ref.read(databaseProvider).clearAllData();
-                // Then sign out
-                await ref.read(authRepositoryProvider).signOut();
+                // Use DataController to handle sign out (clears local data and signs out)
+                final result = await ref.read(dataControllerProvider).signOut();
+                if (context.mounted) {
+                  result.when(
+                    success: (_) => AppFeedback.showSuccess(context, 'Signed out successfully'),
+                    failure: (error) => AppFeedback.showError(context, error),
+                  );
+                }
               },
             ),
           ],
@@ -358,7 +359,7 @@ Last updated: December 05, 2025
       builder: (context) => AlertDialog(
         title: const Text('Connect Google Account?'),
         content: const Text(
-          'Your local data will be synced to Google Sheets. '
+          'Your local data will be uploaded to Google Sheets. '
           'You can access your investments from any device.',
         ),
         actions: [
@@ -376,114 +377,19 @@ Last updated: December 05, 2025
 
     if (confirmed != true || !context.mounted) return;
 
-    // Attempt Google sign-in (keeping local data)
-    await _connectToGoogle(context, ref);
-  }
+    // Use DataController to handle the connection
+    final result = await ref.read(dataControllerProvider).connectToGoogle();
 
-  Future<void> _connectToGoogle(BuildContext context, WidgetRef ref) async {
-    try {
-      // Check if guest has local data
-      final db = ref.read(databaseProvider);
-      final investments = await db.select(db.investments).get();
-      final cashFlows = await db.select(db.cashFlows).get();
-      final hasLocalData = investments.isNotEmpty || cashFlows.isNotEmpty;
-      debugPrint('[ConnectGoogle] Guest has local data: $hasLocalData (${investments.length} investments, ${cashFlows.length} cash flows)');
+    if (!context.mounted) return;
 
-      // Sign in with Google, keeping the SAME database ID
-      // This way we don't switch databases - just connect Google to existing data
-      final user = await ref.read(authRepositoryProvider).signInWithGoogle(keepCurrentDbId: true);
-
-      if (user == null || user.isGuest) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Google sign-in was cancelled')),
-          );
-        }
-        return;
-      }
-
-      debugPrint('[ConnectGoogle] Connected to Google, keeping database ID: ${user.id}');
-
-      if (!context.mounted) return;
-
-      // Check cloud data count (without importing yet)
-      final syncNotifier = ref.read(syncStatusProvider.notifier);
-      final cloudCount = await syncNotifier.getCloudDataCount();
-      debugPrint('[ConnectGoogle] Cloud has $cloudCount investments');
-
-      if (cloudCount > 0 && context.mounted) {
-        // Cloud has data - ask user what to do BEFORE importing
-        final choice = await showDialog<String>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('Existing Data Found'),
-            content: Text(
-              'Your Google account has $cloudCount investment(s) in the cloud.'
-              '${hasLocalData ? '\n\nYou also have local data.' : ''}\n\n'
-              'How would you like to proceed?\n\n'
-              '• Use Google Data: Import cloud data (replaces local)\n'
-              '${hasLocalData ? '• Keep Local Data: Push local to cloud (replaces cloud)' : ''}',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop('cancel'),
-                child: const Text('Cancel'),
-              ),
-              OutlinedButton(
-                onPressed: () => Navigator.of(context).pop('google'),
-                child: const Text('Use Google Data'),
-              ),
-              if (hasLocalData)
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop('local'),
-                  child: const Text('Keep Local Data'),
-                ),
-            ],
-          ),
-        );
-
-        if (choice == 'cancel' || !context.mounted) {
-          // User cancelled - sign out and revert to guest
-          await ref.read(authRepositoryProvider).signOut();
-          final guestUser = await ref.read(authRepositoryProvider).signInAsGuest();
-          if (guestUser != null) {
-            ref.read(currentUserIdProvider.notifier).state = guestUser.id;
-          }
-          return;
-        }
-
-        if (choice == 'google') {
-          // Clear local and import from cloud
-          await db.clearAllData();
-          final imported = await syncNotifier.importCloudData();
-          debugPrint('[ConnectGoogle] Imported $imported items from cloud');
-        } else if (choice == 'local') {
-          // Push local data to cloud (overwrites cloud)
-          await syncNotifier.sync(force: true);
-        }
-      } else {
-        // No cloud data - just push local data to cloud
-        debugPrint('[ConnectGoogle] No cloud data, pushing local to cloud');
-        await syncNotifier.sync(force: true);
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully connected to Google!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('[ConnectGoogle] Error: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to connect: $e')),
-        );
-      }
-    }
+    result.when(
+      success: (_) {
+        AppFeedback.showSuccess(context, 'Successfully connected to Google!');
+      },
+      failure: (error) {
+        AppFeedback.showError(context, error);
+      },
+    );
   }
 
   List<Widget> _buildDebugSections(BuildContext context, WidgetRef ref) {

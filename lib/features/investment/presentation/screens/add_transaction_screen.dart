@@ -106,50 +106,46 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
 
-    try {
-      final amount = double.parse(_amountController.text);
-      final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final amount = double.parse(_amountController.text);
+    final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
 
-      if (widget.isEditing) {
-        // Update existing cash flow
-        await ref.read(investmentNotifierProvider.notifier).updateCashFlow(
-          id: widget.cashFlowToEdit!.id,
-          investmentId: widget.investmentId,
-          type: _selectedType,
-          date: _selectedDate,
-          amount: amount,
-          notes: notes,
-          createdAt: widget.cashFlowToEdit!.createdAt,
-        );
-      } else {
-        // Add new cash flow
-        await ref.read(investmentNotifierProvider.notifier).addCashFlow(
-          investmentId: widget.investmentId,
-          type: _selectedType,
-          date: _selectedDate,
-          amount: amount,
-          notes: notes,
-        );
-      }
+    bool success;
+    if (widget.isEditing) {
+      // Update existing cash flow
+      success = await ref.read(investmentNotifierProvider.notifier).updateCashFlow(
+        id: widget.cashFlowToEdit!.id,
+        investmentId: widget.investmentId,
+        type: _selectedType,
+        date: _selectedDate,
+        amount: amount,
+        notes: notes,
+        createdAt: widget.cashFlowToEdit!.createdAt,
+      );
+    } else {
+      // Add new cash flow
+      success = await ref.read(investmentNotifierProvider.notifier).addCashFlow(
+        investmentId: widget.investmentId,
+        type: _selectedType,
+        date: _selectedDate,
+        amount: amount,
+        notes: notes,
+      );
+    }
 
-      if (mounted) {
-        final message = widget.isEditing
-            ? 'Transaction updated successfully'
-            : 'Transaction added successfully';
-        AppFeedback.showSuccess(context, message);
-        context.pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        final message = widget.isEditing
-            ? 'Failed to update transaction'
-            : 'Failed to add transaction';
-        AppFeedback.showError(context, message);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      final message = widget.isEditing
+          ? 'Transaction updated successfully'
+          : 'Transaction added successfully';
+      AppFeedback.showSuccess(context, message);
+      context.pop();
+    } else {
+      final errorMessage = ref.read(investmentNotifierProvider).errorMessage ??
+          (widget.isEditing ? 'Failed to update transaction' : 'Failed to add transaction');
+      AppFeedback.showError(context, errorMessage);
     }
   }
 

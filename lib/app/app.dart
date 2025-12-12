@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/data/presentation/providers/data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 class InvTrackerApp extends ConsumerWidget {
@@ -25,6 +26,17 @@ class InvTrackerApp extends ConsumerWidget {
       if (userId != currentUserId) {
         debugPrint('[App] Auth state changed, updating user ID: $currentUserId -> $userId');
         ref.read(currentUserIdProvider.notifier).state = userId;
+
+        // Initialize data from cloud for Google users
+        // This is done asynchronously - the UI will show cached data while loading
+        if (userId != null) {
+          Future.microtask(() async {
+            final result = await ref.read(dataControllerProvider).initialize();
+            if (result.isFailure) {
+              debugPrint('[App] Data initialization failed: ${result.error}');
+            }
+          });
+        }
       }
     });
 

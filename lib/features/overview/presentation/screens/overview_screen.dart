@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/features/data/presentation/providers/data_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
-import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
 
 /// Toggle state for showing realized-only net position
 final showRealizedOnlyProvider = StateProvider<bool>((ref) => false);
@@ -40,12 +41,22 @@ class OverviewScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            // Refresh local data
-            ref.invalidate(globalStatsProvider);
-            ref.invalidate(openInvestmentsStatsProvider);
-            ref.invalidate(closedInvestmentsStatsProvider);
-            // Sync to Google Sheets (only if data changed since last sync)
-            await ref.read(syncStatusProvider.notifier).sync();
+            // Refresh from cloud (for Google users) or just invalidate local data (for guests)
+            final result = await ref.read(dataControllerProvider).refreshFromCloud();
+            result.when(
+              success: (_) {
+                // Invalidate providers to refresh UI
+                ref.invalidate(globalStatsProvider);
+                ref.invalidate(openInvestmentsStatsProvider);
+                ref.invalidate(closedInvestmentsStatsProvider);
+              },
+              failure: (error) {
+                // Show error toast if refresh failed
+                if (context.mounted) {
+                  AppFeedback.showError(context, error);
+                }
+              },
+            );
           },
           child: CustomScrollView(
             slivers: [
@@ -650,15 +661,27 @@ class OverviewScreen extends ConsumerWidget {
                   icon: Icons.refresh,
                   label: 'Refresh',
                   color: AppColors.graphBlue,
-                  onTap: () {
-                    // Refresh local data
-                    ref.invalidate(globalStatsProvider);
-                    ref.invalidate(openInvestmentsStatsProvider);
-                    ref.invalidate(closedInvestmentsStatsProvider);
-                    ref.invalidate(topPerformersProvider);
-                    ref.invalidate(monthlyCashFlowTrendProvider);
-                    // Sync to Google Sheets (only if data changed since last sync)
-                    ref.read(syncStatusProvider.notifier).sync();
+                  onTap: () async {
+                    // Refresh from cloud (for Google users) or just invalidate local providers
+                    final result = await ref.read(dataControllerProvider).refreshFromCloud();
+                    result.when(
+                      success: (_) {
+                        // Invalidate local providers to refresh UI
+                        ref.invalidate(globalStatsProvider);
+                        ref.invalidate(openInvestmentsStatsProvider);
+                        ref.invalidate(closedInvestmentsStatsProvider);
+                        ref.invalidate(topPerformersProvider);
+                        ref.invalidate(monthlyCashFlowTrendProvider);
+                      },
+                      failure: (error) {
+                        // Still invalidate to show cached data
+                        ref.invalidate(globalStatsProvider);
+                        ref.invalidate(openInvestmentsStatsProvider);
+                        ref.invalidate(closedInvestmentsStatsProvider);
+                        ref.invalidate(topPerformersProvider);
+                        ref.invalidate(monthlyCashFlowTrendProvider);
+                      },
+                    );
                   },
                 ),
               ),

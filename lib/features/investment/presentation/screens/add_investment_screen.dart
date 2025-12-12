@@ -62,25 +62,22 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
 
-    try {
-      await ref.read(investmentNotifierProvider.notifier).addInvestment(
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      );
+    final result = await ref.read(investmentNotifierProvider.notifier).addInvestment(
+      name: _nameController.text.trim(),
+      type: _selectedType,
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+    );
 
-      if (mounted) {
-        AppFeedback.showSuccess(context, 'Investment created successfully');
-        context.pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        AppFeedback.showError(context, 'Failed to create investment');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (result != null) {
+      AppFeedback.showSuccess(context, 'Investment created successfully');
+      context.pop();
+    } else {
+      final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to create investment';
+      AppFeedback.showError(context, errorMessage);
     }
   }
 

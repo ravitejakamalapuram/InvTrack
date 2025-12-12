@@ -605,11 +605,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           padding: const EdgeInsets.only(right: 24),
           child: const Icon(Icons.delete_rounded, color: Colors.white),
         ),
-        confirmDismiss: (direction) => _confirmDeleteCashFlow(context, isDark),
-        onDismissed: (direction) {
-          ref.read(investmentNotifierProvider.notifier).deleteCashFlow(cashFlow.id);
-          AppFeedback.showSuccess(context, 'Transaction deleted');
-        },
+        confirmDismiss: (direction) => _confirmAndDeleteCashFlow(context, isDark, cashFlow.id),
         child: GlassCard(
           onTap: () {
             // Navigate to edit cash flow
@@ -695,14 +691,29 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Future<bool?> _confirmDeleteCashFlow(BuildContext context, bool isDark) async {
+  /// Confirms and deletes a cash flow. Returns true if deleted successfully.
+  Future<bool> _confirmAndDeleteCashFlow(BuildContext context, bool isDark, String cashFlowId) async {
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Transaction?',
       message: 'This action cannot be undone.',
       confirmText: 'Delete',
     );
-    return confirmed;
+
+    if (!confirmed) return false;
+
+    final success = await ref.read(investmentNotifierProvider.notifier).deleteCashFlow(cashFlowId);
+
+    if (mounted) {
+      if (success) {
+        AppFeedback.showSuccess(context, 'Transaction deleted');
+      } else {
+        final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to delete transaction';
+        AppFeedback.showError(context, errorMessage);
+      }
+    }
+
+    return success;
   }
 
   Future<void> _confirmDeleteInvestment(BuildContext context, bool isDark) async {
@@ -715,10 +726,15 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     if (confirmed && mounted) {
       final navigator = Navigator.of(context);
-      await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
+      final success = await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
       if (mounted) {
-        navigator.pop();
-        AppFeedback.showSuccess(context, 'Investment deleted');
+        if (success) {
+          navigator.pop();
+          AppFeedback.showSuccess(context, 'Investment deleted');
+        } else {
+          final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to delete investment';
+          AppFeedback.showError(context, errorMessage);
+        }
       }
     }
   }
@@ -738,14 +754,20 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     if (confirmed && mounted) {
       final navigator = Navigator.of(context);
+      bool success;
       if (isClosed) {
-        await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
+        success = await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
       } else {
-        await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
+        success = await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
       }
       if (mounted) {
-        navigator.pop();
-        AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
+        if (success) {
+          navigator.pop();
+          AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
+        } else {
+          final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to ${isClosed ? 'reopen' : 'close'} investment';
+          AppFeedback.showError(context, errorMessage);
+        }
       }
     }
   }

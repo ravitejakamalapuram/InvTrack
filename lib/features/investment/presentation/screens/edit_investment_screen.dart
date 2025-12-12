@@ -45,28 +45,25 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
 
-    try {
-      await ref.read(investmentNotifierProvider.notifier).updateInvestment(
-        id: widget.investment.id,
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
+    final success = await ref.read(investmentNotifierProvider.notifier).updateInvestment(
+      id: widget.investment.id,
+      name: _nameController.text.trim(),
+      type: _selectedType,
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
+    );
 
-      if (mounted) {
-        AppFeedback.showSuccess(context, 'Investment updated successfully');
-        context.pop(true); // Return true to indicate success
-      }
-    } catch (e) {
-      if (mounted) {
-        AppFeedback.showError(context, 'Failed to update investment');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      AppFeedback.showSuccess(context, 'Investment updated successfully');
+      context.pop(true); // Return true to indicate success
+    } else {
+      final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to update investment';
+      AppFeedback.showError(context, errorMessage);
     }
   }
 

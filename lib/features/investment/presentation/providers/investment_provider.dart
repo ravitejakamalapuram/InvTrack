@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/features/data/presentation/providers/data_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/features/sync/presentation/providers/sync_provider.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT PROVIDERS ============
@@ -411,151 +411,196 @@ InvestmentStats _calculateStats(List<CashFlowEntity> cashFlows) {
 
 // ============ INVESTMENT NOTIFIER (ACTIONS) ============
 
+/// State for investment operations that includes error message for UI display.
+class InvestmentOperationState {
+  final bool isLoading;
+  final String? errorMessage;
+
+  const InvestmentOperationState({this.isLoading = false, this.errorMessage});
+
+  factory InvestmentOperationState.initial() => const InvestmentOperationState();
+  factory InvestmentOperationState.loading() => const InvestmentOperationState(isLoading: true);
+  factory InvestmentOperationState.success() => const InvestmentOperationState();
+  factory InvestmentOperationState.error(String message) => InvestmentOperationState(errorMessage: message);
+}
+
 final investmentNotifierProvider =
-    StateNotifierProvider<InvestmentNotifier, AsyncValue<void>>((ref) {
+    StateNotifierProvider<InvestmentNotifier, InvestmentOperationState>((ref) {
   return InvestmentNotifier(ref);
 });
 
-class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
+class InvestmentNotifier extends StateNotifier<InvestmentOperationState> {
   final Ref _ref;
 
-  InvestmentNotifier(this._ref) : super(const AsyncValue.data(null));
+  InvestmentNotifier(this._ref) : super(InvestmentOperationState.initial());
 
-  /// Create a new investment
-  Future<InvestmentEntity> addInvestment({
+  /// Create a new investment.
+  /// Returns the created investment on success, null on failure.
+  /// Check state.errorMessage for error details.
+  Future<InvestmentEntity?> addInvestment({
     required String name,
     required InvestmentType type,
     String? notes,
   }) async {
-    state = const AsyncValue.loading();
-    try {
-      final investment = InvestmentEntity(
-        id: const Uuid().v4(),
-        name: name,
-        type: type,
-        status: InvestmentStatus.open,
-        notes: notes,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      await _ref.read(investmentRepositoryProvider).createInvestment(investment);
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-      return investment;
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final investment = InvestmentEntity(
+      id: const Uuid().v4(),
+      name: name,
+      type: type,
+      status: InvestmentStatus.open,
+      notes: notes,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    final result = await _ref.read(dataControllerProvider).addInvestment(investment);
+
+    return result.when(
+      success: (inv) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return inv;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return null;
+      },
+    );
   }
 
-  /// Update an existing investment
-  Future<void> updateInvestment({
+  /// Update an existing investment.
+  /// Returns true on success, false on failure.
+  Future<bool> updateInvestment({
     required String id,
     required String name,
     required InvestmentType type,
     String? notes,
   }) async {
-    state = const AsyncValue.loading();
-    try {
-      final existing = await _ref.read(investmentRepositoryProvider).getInvestmentById(id);
-      if (existing == null) throw Exception('Investment not found');
+    state = InvestmentOperationState.loading();
 
-      final updated = existing.copyWith(
-        name: name,
-        type: type,
-        notes: notes,
-        updatedAt: DateTime.now(),
-      );
-      await _ref.read(investmentRepositoryProvider).updateInvestment(updated);
-
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
+    final existing = await _ref.read(dataControllerProvider).getInvestmentById(id);
+    if (existing == null) {
+      state = InvestmentOperationState.error('Investment not found');
+      return false;
     }
+
+    final updated = existing.copyWith(
+      name: name,
+      type: type,
+      notes: notes,
+      updatedAt: DateTime.now(),
+    );
+
+    final result = await _ref.read(dataControllerProvider).updateInvestment(updated);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
-  /// Close an investment
-  Future<void> closeInvestment(String id) async {
-    state = const AsyncValue.loading();
-    try {
-      await _ref.read(investmentRepositoryProvider).closeInvestment(id);
+  /// Close an investment.
+  Future<bool> closeInvestment(String id) async {
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final result = await _ref.read(dataControllerProvider).closeInvestment(id);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
-  /// Reopen a closed investment
-  Future<void> reopenInvestment(String id) async {
-    state = const AsyncValue.loading();
-    try {
-      await _ref.read(investmentRepositoryProvider).reopenInvestment(id);
+  /// Reopen a closed investment.
+  Future<bool> reopenInvestment(String id) async {
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final result = await _ref.read(dataControllerProvider).reopenInvestment(id);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
-  /// Delete an investment
-  Future<void> deleteInvestment(String id) async {
-    state = const AsyncValue.loading();
-    try {
-      await _ref.read(investmentRepositoryProvider).deleteInvestment(id);
+  /// Delete an investment.
+  Future<bool> deleteInvestment(String id) async {
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final result = await _ref.read(dataControllerProvider).deleteInvestment(id);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
-  /// Add a cash flow to an investment
-  Future<void> addCashFlow({
+  /// Add a cash flow to an investment.
+  Future<bool> addCashFlow({
     required String investmentId,
     required CashFlowType type,
     required double amount,
     required DateTime date,
     String? notes,
   }) async {
-    state = const AsyncValue.loading();
-    try {
-      final cashFlow = CashFlowEntity(
-        id: const Uuid().v4(),
-        investmentId: investmentId,
-        type: type,
-        amount: amount,
-        date: date,
-        notes: notes,
-        createdAt: DateTime.now(),
-      );
-      await _ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final cashFlow = CashFlowEntity(
+      id: const Uuid().v4(),
+      investmentId: investmentId,
+      type: type,
+      amount: amount,
+      date: date,
+      notes: notes,
+      createdAt: DateTime.now(),
+    );
+
+    final result = await _ref.read(dataControllerProvider).addCashFlow(cashFlow);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
-  /// Update a cash flow
-  Future<void> updateCashFlow({
+  /// Update a cash flow.
+  Future<bool> updateCashFlow({
     required String id,
     required String investmentId,
     required CashFlowType type,
@@ -564,41 +609,50 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     String? notes,
     required DateTime createdAt,
   }) async {
-    state = const AsyncValue.loading();
-    try {
-      final cashFlow = CashFlowEntity(
-        id: id,
-        investmentId: investmentId,
-        type: type,
-        amount: amount,
-        date: date,
-        notes: notes,
-        createdAt: createdAt,
-      );
-      await _ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final cashFlow = CashFlowEntity(
+      id: id,
+      investmentId: investmentId,
+      type: type,
+      amount: amount,
+      date: date,
+      notes: notes,
+      createdAt: createdAt,
+    );
+
+    final result = await _ref.read(dataControllerProvider).updateCashFlow(cashFlow);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
-  /// Delete a cash flow
-  Future<void> deleteCashFlow(String id) async {
-    state = const AsyncValue.loading();
-    try {
-      await _ref.read(investmentRepositoryProvider).deleteCashFlow(id);
+  /// Delete a cash flow.
+  Future<bool> deleteCashFlow(String id) async {
+    state = InvestmentOperationState.loading();
 
-      _invalidateAll();
-      _triggerSync();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final result = await _ref.read(dataControllerProvider).deleteCashFlow(id);
+
+    return result.when(
+      success: (_) {
+        _invalidateAll();
+        state = InvestmentOperationState.success();
+        return true;
+      },
+      failure: (error) {
+        state = InvestmentOperationState.error(error);
+        return false;
+      },
+    );
   }
 
   void _invalidateAll() {
@@ -610,11 +664,5 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     _ref.invalidate(openInvestmentsStatsProvider);
     _ref.invalidate(topPerformersProvider);
     _ref.invalidate(recentlyClosedInvestmentsProvider);
-  }
-
-  /// Trigger sync to Google Sheets.
-  /// Marks data as modified which schedules a debounced sync.
-  void _triggerSync() {
-    _ref.read(syncStatusProvider.notifier).markDataModified();
   }
 }
