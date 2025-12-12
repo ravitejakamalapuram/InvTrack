@@ -51,4 +51,22 @@ abstract class InvestmentRepository {
 
   /// Delete a cash flow
   Future<void> deleteCashFlow(String id);
+
+  // ============ BULK CACHE OPERATIONS ============
+
+  /// Replace all local data with the provided data (for cloud sync).
+  /// Clears existing data and inserts new data in a single transaction.
+  Future<void> replaceAllData(
+    List<InvestmentEntity> investments,
+    List<CashFlowEntity> cashFlows,
+  );
+
+  /// Clear all local data (investments and cash flows).
+  Future<void> clearAllData();
+
+  /// Check if there is any local data.
+  Future<bool> hasData();
+
+  /// Get the count of investments.
+  Future<int> getInvestmentCount();
 }

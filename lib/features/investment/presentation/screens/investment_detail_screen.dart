@@ -693,6 +693,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   /// Confirms and deletes a cash flow. Returns true if deleted successfully.
   Future<bool> _confirmAndDeleteCashFlow(BuildContext context, bool isDark, String cashFlowId) async {
+    // Capture messenger before async gap
+    final messenger = ScaffoldMessenger.of(context);
+
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Transaction?',
@@ -706,10 +709,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     if (mounted) {
       if (success) {
-        AppFeedback.showSuccess(context, 'Transaction deleted');
+        AppFeedback.showSuccessWithMessenger(messenger, 'Transaction deleted');
       } else {
         final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to delete transaction';
-        AppFeedback.showError(context, errorMessage);
+        AppFeedback.showErrorWithMessenger(messenger, errorMessage);
       }
     }
 
@@ -717,6 +720,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   }
 
   Future<void> _confirmDeleteInvestment(BuildContext context, bool isDark) async {
+    // Capture before async gap
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Investment?',
@@ -725,15 +732,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
 
     if (confirmed && mounted) {
-      final navigator = Navigator.of(context);
       final success = await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
       if (mounted) {
         if (success) {
           navigator.pop();
-          AppFeedback.showSuccess(context, 'Investment deleted');
+          AppFeedback.showSuccessWithMessenger(messenger, 'Investment deleted');
         } else {
           final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to delete investment';
-          AppFeedback.showError(context, errorMessage);
+          AppFeedback.showErrorWithMessenger(messenger, errorMessage);
         }
       }
     }
@@ -741,6 +747,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   void _toggleInvestmentStatus(BuildContext context, bool isDark) async {
     final isClosed = widget.investment.status == InvestmentStatus.closed;
+
+    // Capture before async gap
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
@@ -753,7 +763,6 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
 
     if (confirmed && mounted) {
-      final navigator = Navigator.of(context);
       bool success;
       if (isClosed) {
         success = await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
@@ -763,10 +772,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       if (mounted) {
         if (success) {
           navigator.pop();
-          AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
+          AppFeedback.showSuccessWithMessenger(messenger, 'Investment ${isClosed ? 'reopened' : 'closed'}');
         } else {
           final errorMessage = ref.read(investmentNotifierProvider).errorMessage ?? 'Failed to ${isClosed ? 'reopen' : 'close'} investment';
-          AppFeedback.showError(context, errorMessage);
+          AppFeedback.showErrorWithMessenger(messenger, errorMessage);
         }
       }
     }

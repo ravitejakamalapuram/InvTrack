@@ -354,37 +354,88 @@ Last updated: December 05, 2025
 
   Future<void> _showConnectToGoogleDialog(
       BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final dataController = ref.read(dataControllerProvider);
+
+    // Check if local has data
+    final hasLocalData = await dataController.hasLocalData();
+
+    if (!context.mounted) return;
+
+    if (!hasLocalData) {
+      // No local data - just connect and download cloud data
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Connect Google Account?'),
+          content: const Text(
+            'Your investments will sync with Google Sheets. '
+            'You can access them from any device.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Connect'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !context.mounted) return;
+
+      final result = await dataController.connectToGoogle(uploadLocalData: false);
+      if (!context.mounted) return;
+      result.when(
+        success: (_) => AppFeedback.showSuccess(context, 'Successfully connected to Google!'),
+        failure: (error) => AppFeedback.showError(context, error),
+      );
+      return;
+    }
+
+    // Has local data - show three-option dialog
+    // Returns: 'upload', 'download', or null (cancel)
+    final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Connect Google Account?'),
+        title: const Text('Connect Google Account'),
         content: const Text(
-          'Your local data will be uploaded to Google Sheets. '
-          'You can access your investments from any device.',
+          'You have local data. What would you like to do?\n\n'
+          '• Upload: Your local data will be saved to Google Sheets\n'
+          '• Use Cloud: Replace local data with data from Google Sheets',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).pop(null),
             child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('download'),
+            child: const Text('Use Cloud'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Connect'),
+            onPressed: () => Navigator.of(context).pop('upload'),
+            child: const Text('Upload'),
           ),
         ],
       ),
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (choice == null || !context.mounted) return;
 
-    // Use DataController to handle the connection
-    final result = await ref.read(dataControllerProvider).connectToGoogle();
+    final uploadLocalData = choice == 'upload';
+    final result = await dataController.connectToGoogle(uploadLocalData: uploadLocalData);
 
     if (!context.mounted) return;
 
     result.when(
       success: (_) {
-        AppFeedback.showSuccess(context, 'Successfully connected to Google!');
+        final message = uploadLocalData
+            ? 'Connected! Your data was uploaded to Google Sheets.'
+            : 'Connected! Your local data was replaced with cloud data.';
+        AppFeedback.showSuccess(context, message);
       },
       failure: (error) {
         AppFeedback.showError(context, error);

@@ -94,34 +94,12 @@ class DataControllerImpl implements DataController {
   }
 
   /// Replace all local data with the provided data.
+  /// Uses efficient bulk operation in a single transaction.
   Future<void> _replaceLocalData(
     List<InvestmentEntity> investments,
     List<CashFlowEntity> cashFlows,
   ) async {
-    // Get existing data to delete
-    final existingInvestments = await _localRepository.getAllInvestments();
-    final existingCashFlows = await _localRepository.getAllCashFlows();
-
-    // Delete all existing cash flows first (due to foreign key)
-    for (final cf in existingCashFlows) {
-      await _localRepository.deleteCashFlow(cf.id);
-    }
-
-    // Delete all existing investments
-    for (final inv in existingInvestments) {
-      // Use direct delete to avoid cascade (already deleted cash flows)
-      await _localRepository.deleteInvestment(inv.id);
-    }
-
-    // Insert new investments
-    for (final inv in investments) {
-      await _localRepository.createInvestment(inv);
-    }
-
-    // Insert new cash flows
-    for (final cf in cashFlows) {
-      await _localRepository.addCashFlow(cf);
-    }
+    await _localRepository.replaceAllData(investments, cashFlows);
   }
 
   // ============ INVESTMENTS - READ ============
@@ -369,29 +347,47 @@ class DataControllerImpl implements DataController {
   // ============ ACCOUNT OPERATIONS ============
 
   @override
-  Future<Result<void>> connectToGoogle() async {
+  Future<Result<void>> connectToGoogle({required bool uploadLocalData}) async {
     final hasInternet = await _connectivityService.hasInternetConnection();
     if (!hasInternet) {
       return Result.failure('No internet connection');
     }
 
     try {
+      // Store local data before sign-in (in case we need to upload)
+      // IMPORTANT: Capture data BEFORE sign-in because _localRepository
+      // points to the guest's database, which will become stale after sign-in
+      final localInvestments = await _localRepository.getAllInvestments();
+      final localCashFlows = await _localRepository.getAllCashFlows();
+
       // Sign in with Google
+      // This creates a new user with a new database ID and emits to auth stream.
+      // app.dart will catch the auth change and update currentUserIdProvider,
+      // which triggers creation of a NEW database for the new user.
       final user = await _authRepository.signInWithGoogle();
 
       if (user == null || user.isGuest) {
         return Result.failure('Google sign-in was cancelled');
       }
 
-      // Upload local data to cloud
-      final investments = await _localRepository.getAllInvestments();
-      final cashFlows = await _localRepository.getAllCashFlows();
-
-      if (investments.isNotEmpty || cashFlows.isNotEmpty) {
-        await _cloudRepository.uploadAll(investments, cashFlows);
-        debugPrint('[DataController] Uploaded ${investments.length} investments to cloud');
+      if (uploadLocalData) {
+        // Upload local data to cloud
+        // NOTE: We do NOT write to _localRepository here because it still points
+        // to the OLD guest database. The app.dart auth listener will call
+        // initialize() -> refreshFromCloud() which will fetch from cloud and
+        // write to the NEW user's database.
+        if (localInvestments.isNotEmpty || localCashFlows.isNotEmpty) {
+          await _cloudRepository.uploadAll(localInvestments, localCashFlows);
+          debugPrint('[DataController] Uploaded ${localInvestments.length} investments to cloud');
+        }
       }
+      // For both upload and download cases:
+      // - app.dart's auth listener will update currentUserIdProvider
+      // - This triggers creation of new database and new DataController instance
+      // - app.dart then calls initialize() which calls refreshFromCloud()
+      // - Cloud data (including just-uploaded data) will be synced to new local DB
 
+      debugPrint('[DataController] Google sign-in complete. App will sync data on auth change.');
       return Result.success(null);
     } catch (e) {
       debugPrint('[DataController] Failed to connect to Google: $e');
@@ -402,11 +398,8 @@ class DataControllerImpl implements DataController {
   @override
   Future<Result<void>> signOut() async {
     try {
-      // Clear local data on sign out
-      final investments = await _localRepository.getAllInvestments();
-      for (final inv in investments) {
-        await _localRepository.deleteInvestment(inv.id);
-      }
+      // Clear local data on sign out using bulk operation
+      await _localRepository.clearAllData();
       debugPrint('[DataController] Cleared local data on sign out');
 
       // Sign out from auth
@@ -421,8 +414,21 @@ class DataControllerImpl implements DataController {
 
   @override
   Future<bool> hasLocalData() async {
-    final investments = await _localRepository.getAllInvestments();
-    return investments.isNotEmpty;
+    return await _localRepository.hasData();
+  }
+
+  @override
+  Future<bool> hasCloudData() async {
+    final hasInternet = await _connectivityService.hasInternetConnection();
+    if (!hasInternet) return false;
+
+    try {
+      final count = await _cloudRepository.getInvestmentCount();
+      return count > 0;
+    } catch (e) {
+      debugPrint('[DataController] Failed to check cloud data: $e');
+      return false;
+    }
   }
 
   @override

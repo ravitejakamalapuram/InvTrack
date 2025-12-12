@@ -75,14 +75,19 @@ abstract class DataController {
   // ============ ACCOUNT OPERATIONS ============
 
   /// Connect guest account to Google.
-  /// Uploads local data to cloud after successful sign-in.
-  Future<Result<void>> connectToGoogle();
+  /// [uploadLocalData] - If true, uploads local data to cloud.
+  ///                     If false, replaces local data with cloud data.
+  Future<Result<void>> connectToGoogle({required bool uploadLocalData});
 
   /// Sign out and clear local data.
   Future<Result<void>> signOut();
 
   /// Check if local database has any data.
   Future<bool> hasLocalData();
+
+  /// Check if cloud has any data (for the current signed-in user).
+  /// Must be called after Google sign-in is initiated but before connect completes.
+  Future<bool> hasCloudData();
 
   /// Get count of investments in cloud (without importing).
   /// Returns 0 for guest users.

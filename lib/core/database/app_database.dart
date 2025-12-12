@@ -9,7 +9,7 @@ part 'app_database.g.dart';
 /// Schema v4: Removed SyncQueue table (using full sync strategy)
 ///
 /// Each user gets their own database file for complete data isolation.
-/// Database file naming: inv_tracker_<userId>.sqlite
+/// Database file naming: `inv_tracker_{userId}.sqlite`
 @DriftDatabase(tables: [Investments, CashFlows])
 class AppDatabase extends _$AppDatabase {
   /// Creates a database for a specific user.

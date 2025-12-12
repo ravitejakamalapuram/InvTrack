@@ -62,6 +62,8 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeInvestmentEntity());
     registerFallbackValue(FakeCashFlowEntity());
+    registerFallbackValue(<InvestmentEntity>[]);
+    registerFallbackValue(<CashFlowEntity>[]);
   });
 
   setUp(() {
@@ -91,6 +93,15 @@ void main() {
         .thenAnswer((_) async => {});
     when(() => mockLocalRepository.deleteCashFlow(any()))
         .thenAnswer((_) async => {});
+    // Bulk cache operations
+    when(() => mockLocalRepository.replaceAllData(any(), any()))
+        .thenAnswer((_) async => {});
+    when(() => mockLocalRepository.clearAllData())
+        .thenAnswer((_) async => {});
+    when(() => mockLocalRepository.hasData())
+        .thenAnswer((_) async => false);
+    when(() => mockLocalRepository.getInvestmentCount())
+        .thenAnswer((_) async => 0);
 
     // Default behaviors for connectivity
     when(() => mockConnectivityService.hasInternetConnection())
@@ -373,9 +384,7 @@ void main() {
 
   group('DataController - signOut', () {
     test('should clear local data and sign out', () async {
-      when(() => mockLocalRepository.getAllInvestments())
-          .thenAnswer((_) async => [testInvestment]);
-      when(() => mockLocalRepository.deleteInvestment(any()))
+      when(() => mockLocalRepository.clearAllData())
           .thenAnswer((_) async => {});
       when(() => mockAuthRepository.signOut())
           .thenAnswer((_) async => {});
@@ -384,15 +393,15 @@ void main() {
       final result = await dataController.signOut();
 
       expect(result.isSuccess, true);
-      verify(() => mockLocalRepository.deleteInvestment('inv-1')).called(1);
+      verify(() => mockLocalRepository.clearAllData()).called(1);
       verify(() => mockAuthRepository.signOut()).called(1);
     });
   });
 
   group('DataController - hasLocalData', () {
     test('should return true when investments exist', () async {
-      when(() => mockLocalRepository.getAllInvestments())
-          .thenAnswer((_) async => [testInvestment]);
+      when(() => mockLocalRepository.hasData())
+          .thenAnswer((_) async => true);
 
       dataController = createController(guestUser);
       final hasData = await dataController.hasLocalData();
@@ -401,8 +410,8 @@ void main() {
     });
 
     test('should return false when no investments', () async {
-      when(() => mockLocalRepository.getAllInvestments())
-          .thenAnswer((_) async => []);
+      when(() => mockLocalRepository.hasData())
+          .thenAnswer((_) async => false);
 
       dataController = createController(guestUser);
       final hasData = await dataController.hasLocalData();

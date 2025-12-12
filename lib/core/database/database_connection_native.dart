@@ -14,7 +14,7 @@ import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 const String _dbKeyPrefix = 'db_encryption_key_';
 
 /// Opens a native database connection with SQLCipher encryption for a specific user.
-/// Each user gets their own database file: inv_tracker_<userId>.sqlite
+/// Each user gets their own database file: `inv_tracker_{userId}.sqlite`
 ///
 /// [userId] is the unique identifier for the user:
 /// - For Google users: their Google account ID

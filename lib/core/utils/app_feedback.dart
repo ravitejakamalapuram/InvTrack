@@ -47,6 +47,46 @@ class AppFeedback {
     );
   }
 
+  /// Show a success snackbar using pre-captured ScaffoldMessengerState (for async safety)
+  static void showSuccessWithMessenger(ScaffoldMessengerState messenger, String message) {
+    HapticFeedback.mediumImpact();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.successLight,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Show an error snackbar using pre-captured ScaffoldMessengerState (for async safety)
+  static void showErrorWithMessenger(ScaffoldMessengerState messenger, String message) {
+    HapticFeedback.heavyImpact();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.errorLight,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   /// Show an info snackbar
   static void showInfo(BuildContext context, String message) {
     HapticFeedback.selectionClick();

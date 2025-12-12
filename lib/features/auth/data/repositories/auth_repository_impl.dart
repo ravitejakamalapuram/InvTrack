@@ -67,7 +67,7 @@ class AuthRepositoryImpl implements AuthRepository {
   UserEntity? get currentUser => _authStateController.valueOrNull;
 
   @override
-  Future<UserEntity?> signInWithGoogle({bool keepCurrentDbId = false}) async {
+  Future<UserEntity?> signInWithGoogle() async {
     try {
       // Clear guest session if exists
       await _secureStorage.delete(key: _guestKey);
@@ -82,18 +82,9 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       // Generate new UUID for database isolation (fresh start)
-      // Unless keepCurrentDbId is true (connecting guest to Google - keep same DB)
-      String dbId;
-      if (keepCurrentDbId) {
-        // Keep existing database ID (used when connecting guest to Google)
-        final existingId = await _secureStorage.read(key: _guestIdKey);
-        dbId = existingId ?? 'user_${const Uuid().v4()}';
-        debugPrint('GoogleSignIn: Keeping existing database ID: $dbId');
-      } else {
-        // Fresh sign-in = new database
-        dbId = 'user_${const Uuid().v4()}';
-        debugPrint('GoogleSignIn: Generated new database ID: $dbId');
-      }
+      // Each Google sign-in gets a new database - cloud is source of truth
+      final dbId = 'user_${const Uuid().v4()}';
+      debugPrint('GoogleSignIn: Generated new database ID: $dbId');
       await _secureStorage.write(key: _guestIdKey, value: dbId);
 
       final user = _mapGoogleUserToEntity(googleUser, dbId);

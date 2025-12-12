@@ -162,6 +162,73 @@ class InvestmentRepositoryImpl implements InvestmentRepository {
     await (_db.delete(_db.cashFlows)..where((tbl) => tbl.id.equals(id))).go();
   }
 
+  // ============ BULK CACHE OPERATIONS ============
+
+  @override
+  Future<void> replaceAllData(
+    List<InvestmentEntity> investments,
+    List<CashFlowEntity> cashFlows,
+  ) async {
+    await _db.transaction(() async {
+      // Clear existing data
+      await _db.delete(_db.cashFlows).go();
+      await _db.delete(_db.investments).go();
+
+      // Insert new investments
+      for (final investment in investments) {
+        await _db.into(_db.investments).insert(
+              InvestmentsCompanion(
+                id: Value(investment.id),
+                name: Value(investment.name),
+                type: Value(investment.type.name),
+                status: Value(investment.status.name.toUpperCase()),
+                notes: Value(investment.notes),
+                createdAt: Value(investment.createdAt),
+                closedAt: Value(investment.closedAt),
+                updatedAt: Value(investment.updatedAt),
+              ),
+            );
+      }
+
+      // Insert new cash flows
+      for (final cashFlow in cashFlows) {
+        await _db.into(_db.cashFlows).insert(
+              CashFlowsCompanion(
+                id: Value(cashFlow.id),
+                investmentId: Value(cashFlow.investmentId),
+                date: Value(cashFlow.date),
+                type: Value(cashFlow.type.toDbString()),
+                amount: Value(cashFlow.amount),
+                notes: Value(cashFlow.notes),
+                createdAt: Value(cashFlow.createdAt),
+              ),
+            );
+      }
+    });
+  }
+
+  @override
+  Future<void> clearAllData() async {
+    await _db.transaction(() async {
+      await _db.delete(_db.cashFlows).go();
+      await _db.delete(_db.investments).go();
+    });
+  }
+
+  @override
+  Future<bool> hasData() async {
+    final count = await getInvestmentCount();
+    return count > 0;
+  }
+
+  @override
+  Future<int> getInvestmentCount() async {
+    final query = _db.selectOnly(_db.investments)
+      ..addColumns([_db.investments.id.count()]);
+    final result = await query.getSingle();
+    return result.read(_db.investments.id.count()) ?? 0;
+  }
+
   // ============ MAPPERS ============
 
   InvestmentEntity _mapInvestmentRowToEntity(Investment row) {
