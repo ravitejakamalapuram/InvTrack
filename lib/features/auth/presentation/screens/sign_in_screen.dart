@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
-import 'package:inv_tracker/features/sync/domain/services/sync_service.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -81,20 +80,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
+      debugPrint('SignInScreen: Starting Google Sign-In...');
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-
-      // If sign-in was successful, initialize/sync the spreadsheet
-      if (user != null && !user.isGuest) {
-        try {
-          debugPrint('SignIn: Initializing sync after Google Sign-In...');
-          await ref.read(syncServiceProvider).sync();
-          debugPrint('SignIn: Initial sync completed successfully');
-        } catch (syncError) {
-          // Log sync error but don't fail the login
-          debugPrint('SignIn: Initial sync failed (will retry later): $syncError');
-        }
-      }
-    } catch (e) {
+      debugPrint('SignInScreen: Sign-in result: $user');
+      // Firestore sync happens automatically via listeners - no manual sync needed
+    } catch (e, st) {
+      debugPrint('SignInScreen: Error - $e');
+      debugPrint('SignInScreen: Stack trace - $st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -109,24 +101,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     }
   }
 
-  Future<void> _signInAsGuest() async {
-    setState(() => _isLoading = true);
-    try {
-      await ref.read(authRepositoryProvider).signInAsGuest();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.dangerLight,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -265,10 +240,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                       children: [
                         // Google Sign In Button
                         _buildGoogleButton(isDark),
-                        const SizedBox(height: 16),
-
-                        // Guest Button
-                        _buildGuestButton(isDark),
                         const SizedBox(height: 24),
 
                         // Terms text
@@ -391,53 +362,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                       ),
                     ],
                   ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGuestButton(bool isDark) {
-    return Container(
-      width: double.infinity,
-      height: 60,
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : AppColors.neutral100Light,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.15)
-              : AppColors.neutral300Light,
-          width: 1.5,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : _signInAsGuest,
-          borderRadius: BorderRadius.circular(16),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.person_outline_rounded,
-                  color: isDark ? Colors.white : AppColors.neutral700Light,
-                  size: 22,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Continue as Guest',
-                  style: AppTypography.buttonLarge.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral700Light,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

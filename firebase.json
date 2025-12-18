@@ -1,0 +1,44 @@
+{
+  "firestore": {
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "invtracker-b19d1",
+          "appId": "1:784857267556:android:5ba7e064263d78f61dce71",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "invtracker-b19d1",
+          "appId": "1:784857267556:ios:c81b06c6f4a60a001dce71",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "invtracker-b19d1",
+          "appId": "1:784857267556:ios:c81b06c6f4a60a001dce71",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "invtracker-b19d1",
+          "configurations": {
+            "android": "1:784857267556:android:5ba7e064263d78f61dce71",
+            "ios": "1:784857267556:ios:c81b06c6f4a60a001dce71",
+            "macos": "1:784857267556:ios:c81b06c6f4a60a001dce71",
+            "web": "1:784857267556:web:0998b5a7447df5301dce71",
+            "windows": "1:784857267556:web:537476d9eb80e5491dce71"
+          }
+        }
+      }
+    }
+  }
+}
