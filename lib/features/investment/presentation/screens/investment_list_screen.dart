@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
@@ -448,7 +448,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   }
 
   Widget _buildInvestmentCard(InvestmentEntity investment, bool isDark) {
-    final typeColor = _getTypeColor(investment.type);
+    final typeColor = investment.type.color;
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final statsAsync = ref.watch(investmentStatsProvider(investment.id));
@@ -590,7 +590,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Added ${_formatDate(investment.createdAt)}',
+                    'Added ${AppDateUtils.formatRelative(investment.createdAt)}',
                     style: AppTypography.small.copyWith(
                       color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                     ),
@@ -671,49 +671,5 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
       ),
     );
-  }
-
-  Color _getTypeColor(InvestmentType type) {
-    switch (type) {
-      case InvestmentType.p2pLending:
-        return AppColors.graphBlue;
-      case InvestmentType.fixedDeposit:
-        return AppColors.graphEmerald;
-      case InvestmentType.bonds:
-        return AppColors.graphAmber;
-      case InvestmentType.realEstate:
-        return AppColors.graphPink;
-      case InvestmentType.privateEquity:
-        return AppColors.graphPurple;
-      case InvestmentType.angelInvesting:
-        return AppColors.graphCyan;
-      case InvestmentType.chitFunds:
-        return AppColors.graphOrange;
-      case InvestmentType.gold:
-        return const Color(0xFFFFD700);
-      case InvestmentType.crypto:
-        return AppColors.graphPurple;
-      case InvestmentType.mutualFunds:
-        return AppColors.graphBlue;
-      case InvestmentType.stocks:
-        return AppColors.graphEmerald;
-      case InvestmentType.other:
-        return AppColors.neutral500Light;
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inDays == 0) {
-      return 'today';
-    } else if (diff.inDays == 1) {
-      return 'yesterday';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays} days ago';
-    } else {
-      return DateFormat('MMM d, y').format(date);
-    }
   }
 }

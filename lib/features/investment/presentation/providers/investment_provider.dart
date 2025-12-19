@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:uuid/uuid.dart';
+
+export 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 
 // ============ INVESTMENT PROVIDERS ============
 
@@ -43,45 +46,6 @@ final allCashFlowsProvider = FutureProvider<List<CashFlowEntity>>((ref) async {
 });
 
 // ============ INVESTMENT STATS ============
-
-/// Investment statistics for display
-class InvestmentStats {
-  final double totalInvested;   // Sum of INVEST + FEE
-  final double totalReturned;   // Sum of RETURN + INCOME
-  final double netCashFlow;     // Returned - Invested
-  final double absoluteReturn;  // Percentage return
-  final double moic;            // Multiple on Invested Capital
-  final double xirr;            // Annualized return
-  final int cashFlowCount;
-  final DateTime? firstCashFlowDate;
-  final DateTime? lastCashFlowDate;
-
-  InvestmentStats({
-    required this.totalInvested,
-    required this.totalReturned,
-    required this.netCashFlow,
-    required this.absoluteReturn,
-    required this.moic,
-    required this.xirr,
-    required this.cashFlowCount,
-    this.firstCashFlowDate,
-    this.lastCashFlowDate,
-  });
-
-  factory InvestmentStats.empty() => InvestmentStats(
-        totalInvested: 0,
-        totalReturned: 0,
-        netCashFlow: 0,
-        absoluteReturn: 0,
-        moic: 0,
-        xirr: 0,
-        cashFlowCount: 0,
-      );
-
-  bool get hasData => cashFlowCount > 0;
-  bool get isProfit => netCashFlow > 0;
-  bool get isLoss => netCashFlow < 0;
-}
 
 /// Calculate stats for a single investment (reactive - watches the stream)
 final investmentStatsProvider =
@@ -184,17 +148,6 @@ final recentlyClosedInvestmentsProvider = FutureProvider<List<InvestmentWithStat
   return result;
 });
 
-/// Monthly cash flow data for trends
-class MonthlyCashFlowData {
-  final DateTime month;
-  final double inflows;
-  final double outflows;
-
-  MonthlyCashFlowData({required this.month, required this.inflows, required this.outflows});
-
-  double get net => inflows - outflows;
-}
-
 /// Monthly cash flow trend (last 6 months)
 final monthlyCashFlowTrendProvider = FutureProvider<List<MonthlyCashFlowData>>((ref) async {
   final cashFlows = await ref.watch(allCashFlowsProvider.future);
@@ -230,15 +183,6 @@ final monthlyCashFlowTrendProvider = FutureProvider<List<MonthlyCashFlowData>>((
   return result;
 });
 
-/// Investment type distribution
-class TypeDistribution {
-  final InvestmentType type;
-  final double totalInvested;
-  final int count;
-
-  TypeDistribution({required this.type, required this.totalInvested, required this.count});
-}
-
 /// Distribution by investment type
 final investmentTypeDistributionProvider = FutureProvider<List<TypeDistribution>>((ref) async {
   final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
@@ -269,28 +213,6 @@ final investmentTypeDistributionProvider = FutureProvider<List<TypeDistribution>
 
   return result;
 });
-
-/// YoY comparison stats
-class YoYComparison {
-  final double thisYearNet;
-  final double lastYearNet;
-  final double thisYearInvested;
-  final double lastYearInvested;
-  final double thisYearReturned;
-  final double lastYearReturned;
-
-  YoYComparison({
-    required this.thisYearNet,
-    required this.lastYearNet,
-    required this.thisYearInvested,
-    required this.lastYearInvested,
-    required this.thisYearReturned,
-    required this.lastYearReturned,
-  });
-
-  double get netChange => lastYearNet != 0 ? ((thisYearNet - lastYearNet) / lastYearNet.abs()) * 100 : 0;
-  bool get isImproved => thisYearNet > lastYearNet;
-}
 
 /// Year over Year comparison
 final yoyComparisonProvider = FutureProvider<YoYComparison>((ref) async {

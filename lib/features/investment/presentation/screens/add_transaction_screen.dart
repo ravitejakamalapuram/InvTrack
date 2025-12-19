@@ -3,11 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/gradient_button.dart';
+import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 
@@ -28,17 +32,13 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
 }
 
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, SingleTickerScreenAnimationMixin {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   CashFlowType _selectedType = CashFlowType.invest;
   bool _isLoading = false;
-
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
@@ -53,24 +53,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _selectedType = cf.type;
     }
 
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
-
-    _animController.forward();
+    initScreenAnimation();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
-    _animController.dispose();
+    disposeScreenAnimation();
     super.dispose();
   }
 
@@ -185,303 +175,185 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         ),
         centerTitle: true,
       ),
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                // Cash Flow Type Selector
-                Text(
-                  'Cash Flow Type',
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
+      body: buildAnimatedContent(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              // Cash Flow Type Selector
+              TypeSelector<CashFlowType>(
+                label: 'Cash Flow Type',
+                values: CashFlowType.values,
+                selectedValue: _selectedType,
+                onSelected: (type) => setState(() => _selectedType = type),
+                colorBuilder: (type) => type.color,
+                iconBuilder: (type) => type.iconData,
+                labelBuilder: (type) => type.displayName,
+              ),
+
+              const SizedBox(height: 28),
+
+              // Date Picker
+              Text(
+                'Date',
+                style: AppTypography.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
                 ),
-                const SizedBox(height: 12),
-                _buildTypeSelector(isDark),
-
-                const SizedBox(height: 28),
-
-                // Date Picker
-                Text(
-                  'Date',
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => _selectDate(context, isDark),
-                  child: GlassCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.calendar_today_rounded,
-                            color: AppColors.primaryLight,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                DateFormat('EEEE').format(_selectedDate),
-                                style: AppTypography.small.copyWith(
-                                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                                ),
-                              ),
-                              Text(
-                                DateFormat('MMMM d, yyyy').format(_selectedDate),
-                                style: AppTypography.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // Amount Field
-                _buildNumberField(
-                  controller: _amountController,
-                  label: 'Amount',
-                  hint: '0.00',
-                  icon: Icons.attach_money_rounded,
-                  isDark: isDark,
-                  prefix: currencySymbol,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Required';
-                    final parsed = double.tryParse(value);
-                    if (parsed == null) return 'Invalid amount';
-                    if (parsed <= 0) return 'Must be greater than 0';
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                // Notes Field
-                Text(
-                  'Notes (Optional)',
-                  style: AppTypography.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _notesController,
-                  maxLines: 3,
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Add any notes about this transaction...',
-                    hintStyle: AppTypography.body.copyWith(
-                      color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
-                    ),
-                    filled: true,
-                    fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(
-                        color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: AppColors.primaryLight, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // Amount Preview
-                GlassCard(
-                  padding: const EdgeInsets.all(20),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => _selectDate(context, isDark),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(16),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _selectedType.isOutflow ? 'Cash Out' : 'Cash In',
-                            style: AppTypography.body.copyWith(
-                              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          ListenableBuilder(
-                            listenable: _amountController,
-                            builder: (context, _) {
-                              final amount = double.tryParse(_amountController.text) ?? 0;
-                              return Text(
-                                '$currencySymbol${amount.toStringAsFixed(2)}',
-                                style: AppTypography.numberLarge.copyWith(
-                                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          gradient: _selectedType.isOutflow
-                              ? AppColors.dangerGradient
-                              : AppColors.successGradient,
-                          borderRadius: BorderRadius.circular(14),
+                          color: AppColors.primaryLight.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          _selectedType.isOutflow
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          color: Colors.white,
-                          size: 24,
+                          Icons.calendar_today_rounded,
+                          color: AppColors.primaryLight,
+                          size: 20,
                         ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('EEEE').format(_selectedDate),
+                              style: AppTypography.small.copyWith(
+                                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('MMMM d, yyyy').format(_selectedDate),
+                              style: AppTypography.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.neutral900Light,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
                       ),
                     ],
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
-                // Submit Button
-                _buildSubmitButton(isDark, currencySymbol),
+              // Amount Field
+              _buildNumberField(
+                controller: _amountController,
+                label: 'Amount',
+                hint: '0.00',
+                icon: Icons.attach_money_rounded,
+                isDark: isDark,
+                prefix: currencySymbol,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Required';
+                  final parsed = double.tryParse(value);
+                  if (parsed == null) return 'Invalid amount';
+                  if (parsed <= 0) return 'Must be greater than 0';
+                  return null;
+                },
+              ),
 
-                const SizedBox(height: 20),
-              ],
-            ),
+              const SizedBox(height: 20),
+
+              // Notes Field
+              AppTextField(
+                controller: _notesController,
+                label: 'Notes (Optional)',
+                hint: 'Add any notes about this transaction...',
+                prefixIcon: Icons.notes_rounded,
+                textCapitalization: TextCapitalization.sentences,
+                maxLines: 3,
+              ),
+
+              const SizedBox(height: 28),
+
+              // Amount Preview
+              GlassCard(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedType.isOutflow ? 'Cash Out' : 'Cash In',
+                          style: AppTypography.body.copyWith(
+                            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        ListenableBuilder(
+                          listenable: _amountController,
+                          builder: (context, _) {
+                            final amount = double.tryParse(_amountController.text) ?? 0;
+                            return Text(
+                              '$currencySymbol${amount.toStringAsFixed(2)}',
+                              style: AppTypography.numberLarge.copyWith(
+                                color: isDark ? Colors.white : AppColors.neutral900Light,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: _selectedType.isOutflow
+                            ? AppColors.dangerGradient
+                            : AppColors.successGradient,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        _selectedType.isOutflow
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Submit Button
+              GradientButton(
+                onPressed: _submit,
+                isLoading: _isLoading,
+                icon: _selectedType.iconData,
+                label: widget.isEditing
+                    ? 'Update ${_selectedType.displayName}'
+                    : 'Add ${_selectedType.displayName}',
+                color: _selectedType.color,
+              ),
+
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildTypeSelector(bool isDark) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: CashFlowType.values.map((type) {
-        final isSelected = _selectedType == type;
-        final color = _getTypeColor(type);
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _selectedType = type);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: isSelected
-                  ? LinearGradient(
-                      colors: [color, color.withValues(alpha: 0.8)],
-                    )
-                  : null,
-              color: isSelected ? null : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isSelected ? Colors.transparent : (isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _getTypeIcon(type),
-                  size: 18,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? AppColors.neutral400Dark : AppColors.neutral600Light),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  type.displayName,
-                  style: AppTypography.body.copyWith(
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? AppColors.neutral300Dark : AppColors.neutral700Light),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Color _getTypeColor(CashFlowType type) {
-    switch (type) {
-      case CashFlowType.invest:
-        return AppColors.graphBlue;
-      case CashFlowType.returnFlow:
-        return AppColors.graphEmerald;
-      case CashFlowType.income:
-        return AppColors.graphAmber;
-      case CashFlowType.fee:
-        return AppColors.graphPink;
-    }
-  }
-
-  IconData _getTypeIcon(CashFlowType type) {
-    switch (type) {
-      case CashFlowType.invest:
-        return Icons.arrow_upward_rounded;
-      case CashFlowType.returnFlow:
-        return Icons.arrow_downward_rounded;
-      case CashFlowType.income:
-        return Icons.payments_rounded;
-      case CashFlowType.fee:
-        return Icons.receipt_long_rounded;
-    }
   }
 
   Widget _buildNumberField({
@@ -554,67 +426,4 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
   }
 
-  Widget _buildSubmitButton(bool isDark, String currencySymbol) {
-    final color = _getTypeColor(_selectedType);
-
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        gradient: _isLoading
-            ? null
-            : LinearGradient(
-                colors: [color, color.withValues(alpha: 0.8)],
-              ),
-        color: _isLoading ? (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light) : null,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: _isLoading
-            ? null
-            : [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-      ),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: _isLoading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isDark ? Colors.white : AppColors.neutral700Light,
-                  ),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(_getTypeIcon(_selectedType), color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.isEditing
-                        ? 'Update ${_selectedType.displayName}'
-                        : 'Add ${_selectedType.displayName}',
-                    style: AppTypography.button.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
 }

@@ -69,10 +69,12 @@ class ExportService {
     await file.writeAsString(csvData);
 
     // 5. Share File
-    await Share.shareXFiles(
-      [XFile(path)],
-      text: 'Here is your Cash Flow Tracker export.',
-      subject: 'Cash Flow Tracker Export',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path)],
+        text: 'Here is your Cash Flow Tracker export.',
+        subject: 'Cash Flow Tracker Export',
+      ),
     );
   }
 }

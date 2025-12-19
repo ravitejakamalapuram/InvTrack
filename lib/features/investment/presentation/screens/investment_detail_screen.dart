@@ -46,35 +46,6 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     super.dispose();
   }
 
-  Color get _typeColor {
-    switch (widget.investment.type) {
-      case InvestmentType.p2pLending:
-        return AppColors.graphBlue;
-      case InvestmentType.fixedDeposit:
-        return AppColors.graphEmerald;
-      case InvestmentType.bonds:
-        return AppColors.graphAmber;
-      case InvestmentType.realEstate:
-        return AppColors.graphPink;
-      case InvestmentType.privateEquity:
-        return AppColors.graphPurple;
-      case InvestmentType.angelInvesting:
-        return AppColors.graphCyan;
-      case InvestmentType.chitFunds:
-        return AppColors.graphOrange;
-      case InvestmentType.gold:
-        return const Color(0xFFFFD700);
-      case InvestmentType.crypto:
-        return AppColors.graphPurple;
-      case InvestmentType.mutualFunds:
-        return AppColors.graphBlue;
-      case InvestmentType.stocks:
-        return AppColors.graphEmerald;
-      case InvestmentType.other:
-        return AppColors.neutral500Light;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
@@ -123,7 +94,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   gradient: LinearGradient(
                     colors: isClosed
                         ? [Colors.grey, Colors.grey.withValues(alpha: 0.7)]
-                        : [_typeColor, _typeColor.withValues(alpha: 0.7)],
+                        : [widget.investment.type.color, widget.investment.type.color.withValues(alpha: 0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -569,7 +540,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Icon(
               Icons.receipt_long_rounded,
               size: 40,
-              color: _typeColor,
+              color: widget.investment.type.color,
             ),
             const SizedBox(height: 12),
             Text(
@@ -912,13 +883,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  Navigator.of(screenContext).push(
+                  final navigator = Navigator.of(screenContext);
+                  navigator.push(
                     MaterialPageRoute(
                       builder: (_) => EditInvestmentScreen(investment: widget.investment),
                     ),
                   ).then((result) {
                     if (result == true && mounted) {
-                      Navigator.of(screenContext).pop();
+                      navigator.pop();
                     }
                   });
                 },
