@@ -110,12 +110,16 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         slivers: [
           // Premium App Bar with Search
           SliverAppBar(
-            expandedHeight: _isSearching ? 80 : 120,
+            expandedHeight: _isSearching ? 100 : 120,
             floating: true,
             pinned: true,
             backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: EdgeInsets.only(left: AppSpacing.lg, bottom: AppSpacing.md, right: 60),
+              titlePadding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                bottom: AppSpacing.md,
+                right: AppSpacing.lg,
+              ),
               title: _isSearching
                   ? _buildSearchField(isDark)
                   : Text(
@@ -126,23 +130,26 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       ),
                     ),
             ),
-            actions: [
-              IconButton(
-                icon: Container(
-                  padding: EdgeInsets.all(AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
-                    borderRadius: AppSizes.borderRadiusMd,
-                  ),
-                  child: Icon(
-                    _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                    color: isDark ? Colors.white : AppColors.neutral700Light,
-                  ),
-                ),
-                onPressed: _toggleSearch,
-              ),
-              SizedBox(width: AppSpacing.xs),
-            ],
+            actions: _isSearching
+                ? null
+                : [
+                    IconButton(
+                      icon: Container(
+                        padding: EdgeInsets.all(AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : AppColors.primaryLight)
+                              .withValues(alpha: 0.1),
+                          borderRadius: AppSizes.borderRadiusMd,
+                        ),
+                        child: Icon(
+                          Icons.search_rounded,
+                          color: isDark ? Colors.white : AppColors.neutral700Light,
+                        ),
+                      ),
+                      onPressed: _toggleSearch,
+                    ),
+                    SizedBox(width: AppSpacing.xs),
+                  ],
           ),
 
           // Filter Tabs
@@ -225,29 +232,65 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   }
 
   Widget _buildSearchField(bool isDark) {
-    return SizedBox(
-      height: AppSizes.buttonHeightSm,
-      child: TextField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
-        style: AppTypography.body.copyWith(
-          color: isDark ? Colors.white : AppColors.neutral900Light,
-          fontSize: AppSizes.iconXs,
+    return Row(
+      children: [
+        // Search icon
+        Icon(
+          Icons.search_rounded,
+          size: 20,
+          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
         ),
-        decoration: InputDecoration(
-          hintText: 'Search investments...',
-          hintStyle: AppTypography.body.copyWith(
-            color: isDark ? AppColors.neutral500Dark : AppColors.neutral500Light,
-            fontSize: AppSizes.iconXs,
+        SizedBox(width: AppSpacing.sm),
+        // Text field
+        Expanded(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: const InputDecorationTheme(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+              ),
+            ),
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              cursorColor: isDark ? Colors.white70 : AppColors.primaryLight,
+              style: AppTypography.body.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+                fontSize: 16,
+                height: 1.2,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                hintStyle: AppTypography.body.copyWith(
+                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral500Light,
+                  fontSize: 16,
+                  height: 1.2,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+              },
+            ),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
         ),
-        onChanged: (value) {
-          setState(() => _searchQuery = value);
-        },
-      ),
+        // Close button
+        GestureDetector(
+          onTap: _toggleSearch,
+          child: Icon(
+            Icons.close_rounded,
+            size: 20,
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          ),
+        ),
+      ],
     );
   }
 
@@ -523,56 +566,55 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          investment.name,
+                          style: AppTypography.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : AppColors.neutral900Light,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: AppSpacing.xxs),
                         Row(
                           children: [
-                            Expanded(
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: typeColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
                               child: Text(
-                                investment.name,
-                                style: AppTypography.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                                investment.type.displayName,
+                                style: AppTypography.small.copyWith(
+                                  color: typeColor,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (isClosed)
+                            if (isClosed) ...[
+                              SizedBox(width: AppSpacing.xs),
                               Container(
-                                margin: EdgeInsets.only(left: AppSpacing.xs),
-                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(AppSpacing.xxs),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   'CLOSED',
                                   style: AppTypography.small.copyWith(
                                     color: Colors.grey,
-                                    fontSize: 10,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
+                            ],
                           ],
-                        ),
-                        SizedBox(height: AppSpacing.xxs),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: typeColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            investment.type.displayName,
-                            style: AppTypography.small.copyWith(
-                              color: typeColor,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
                         ),
                       ],
                     ),
                   ),
+                  SizedBox(width: AppSpacing.sm),
                   // Stats
                   _buildValueColumn(investment.id, isDark),
                 ],
