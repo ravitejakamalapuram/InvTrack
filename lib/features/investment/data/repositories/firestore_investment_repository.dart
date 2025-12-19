@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -9,11 +11,26 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   final FirebaseFirestore _firestore;
   final String _userId;
 
+  /// Timeout for write operations - allows offline writes to complete quickly
+  static const Duration _writeTimeout = Duration(seconds: 3);
+
   FirestoreInvestmentRepository({
     required FirebaseFirestore firestore,
     required String userId,
   })  : _firestore = firestore,
         _userId = userId;
+
+  /// Execute a write operation with timeout
+  /// If the operation times out (likely offline), we consider it successful
+  /// since Firestore will sync when back online
+  Future<void> _executeWrite(Future<void> Function() writeOperation) async {
+    try {
+      await writeOperation().timeout(_writeTimeout);
+    } on TimeoutException {
+      // Write is cached locally, will sync when online
+      // This is expected behavior for offline-first apps
+    }
+  }
 
   // Collection references
   CollectionReference<Map<String, dynamic>> get _investmentsRef =>
@@ -62,42 +79,60 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> createInvestment(InvestmentEntity investment) async {
-    await _investmentsRef.doc(investment.id).set(_investmentToFirestore(investment));
+    await _executeWrite(() =>
+        _investmentsRef.doc(investment.id).set(_investmentToFirestore(investment)));
   }
 
   @override
   Future<void> updateInvestment(InvestmentEntity investment) async {
-    await _investmentsRef.doc(investment.id).update(_investmentToFirestore(investment));
+    await _executeWrite(() =>
+        _investmentsRef.doc(investment.id).update(_investmentToFirestore(investment)));
   }
 
   @override
   Future<void> closeInvestment(String id) async {
-    await _investmentsRef.doc(id).update({
-      'status': 'CLOSED',
-      'closedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _executeWrite(() => _investmentsRef.doc(id).update({
+          'status': 'CLOSED',
+          'closedAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }));
   }
 
   @override
   Future<void> reopenInvestment(String id) async {
-    await _investmentsRef.doc(id).update({
-      'status': 'OPEN',
-      'closedAt': null,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _executeWrite(() => _investmentsRef.doc(id).update({
+          'status': 'OPEN',
+          'closedAt': null,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }));
   }
 
   @override
   Future<void> deleteInvestment(String id) async {
     // Delete all cash flows for this investment first
-    final cashFlows = await _cashFlowsRef.where('investmentId', isEqualTo: id).get();
-    final batch = _firestore.batch();
-    for (final doc in cashFlows.docs) {
-      batch.delete(doc.reference);
+    // Use timeout to handle offline scenario - Firestore will sync when back online
+    try {
+      final cashFlows = await _cashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get(const GetOptions(source: Source.cache))
+          .timeout(_writeTimeout, onTimeout: () async {
+        // If cache query times out, try server with timeout
+        return await _cashFlowsRef
+            .where('investmentId', isEqualTo: id)
+            .get()
+            .timeout(_writeTimeout);
+      });
+      final batch = _firestore.batch();
+      for (final doc in cashFlows.docs) {
+        batch.delete(doc.reference);
+      }
+      batch.delete(_investmentsRef.doc(id));
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - just delete the investment document, cash flows will be orphaned
+      // but they're filtered out in the providers anyway
+      await _executeWrite(() => _investmentsRef.doc(id).delete());
     }
-    batch.delete(_investmentsRef.doc(id));
-    await batch.commit();
   }
 
   // ============ CASH FLOWS ============
@@ -134,17 +169,19 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> addCashFlow(CashFlowEntity cashFlow) async {
-    await _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow));
+    await _executeWrite(() =>
+        _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow)));
   }
 
   @override
   Future<void> updateCashFlow(CashFlowEntity cashFlow) async {
-    await _cashFlowsRef.doc(cashFlow.id).update(_cashFlowToFirestore(cashFlow));
+    await _executeWrite(() =>
+        _cashFlowsRef.doc(cashFlow.id).update(_cashFlowToFirestore(cashFlow)));
   }
 
   @override
   Future<void> deleteCashFlow(String id) async {
-    await _cashFlowsRef.doc(id).delete();
+    await _executeWrite(() => _cashFlowsRef.doc(id).delete());
   }
 
   // ============ FIRESTORE MAPPERS ============

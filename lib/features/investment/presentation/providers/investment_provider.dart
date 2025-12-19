@@ -31,36 +31,16 @@ final cashFlowsByInvestmentProvider =
   return ref.watch(investmentRepositoryProvider).watchCashFlowsByInvestment(investmentId);
 });
 
-/// Get all cash flows (for global calculations)
+/// Get all cash flows (for global calculations) - only for existing investments
 final allCashFlowsProvider = FutureProvider<List<CashFlowEntity>>((ref) async {
-  return ref.watch(investmentRepositoryProvider).getAllCashFlows();
-});
-
-/// Get recent cash flows (last 5)
-final recentCashFlowsProvider = FutureProvider<List<CashFlowWithInvestment>>((ref) async {
-  final cashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
   final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
+  final validInvestmentIds = investments.map((i) => i.id).toSet();
 
-  // Create a map of investment ID to investment
-  final investmentMap = {for (var inv in investments) inv.id: inv};
+  final allCashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
 
-  // Sort by date descending and take last 5
-  final sorted = List<CashFlowEntity>.from(cashFlows)
-    ..sort((a, b) => b.date.compareTo(a.date));
-
-  return sorted.take(5).map((cf) => CashFlowWithInvestment(
-    cashFlow: cf,
-    investment: investmentMap[cf.investmentId],
-  )).toList();
+  // Filter to only include cash flows for existing investments
+  return allCashFlows.where((cf) => validInvestmentIds.contains(cf.investmentId)).toList();
 });
-
-/// Cash flow with associated investment info
-class CashFlowWithInvestment {
-  final CashFlowEntity cashFlow;
-  final InvestmentEntity? investment;
-
-  CashFlowWithInvestment({required this.cashFlow, this.investment});
-}
 
 // ============ INVESTMENT STATS ============
 
@@ -120,9 +100,10 @@ final investmentStatsProvider =
   );
 });
 
-/// Calculate global stats across all investments
+/// Calculate global stats across all investments (only existing investments)
 final globalStatsProvider = FutureProvider<InvestmentStats>((ref) async {
-  final cashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
+  // Use allCashFlowsProvider which already filters for existing investments
+  final cashFlows = await ref.watch(allCashFlowsProvider.future);
 
   if (cashFlows.isEmpty) {
     return InvestmentStats.empty();
@@ -143,7 +124,7 @@ final closedInvestmentsStatsProvider = FutureProvider<InvestmentStats>((ref) asy
     return InvestmentStats.empty();
   }
 
-  final allCashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
+  final allCashFlows = await ref.watch(allCashFlowsProvider.future);
   final closedCashFlows = allCashFlows.where((cf) => closedIds.contains(cf.investmentId)).toList();
 
   if (closedCashFlows.isEmpty) {
@@ -165,7 +146,7 @@ final openInvestmentsStatsProvider = FutureProvider<InvestmentStats>((ref) async
     return InvestmentStats.empty();
   }
 
-  final allCashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
+  final allCashFlows = await ref.watch(allCashFlowsProvider.future);
   final openCashFlows = allCashFlows.where((cf) => openIds.contains(cf.investmentId)).toList();
 
   if (openCashFlows.isEmpty) {
@@ -203,25 +184,6 @@ final recentlyClosedInvestmentsProvider = FutureProvider<List<InvestmentWithStat
   return result;
 });
 
-/// Top performers by XIRR (top 3 with positive XIRR)
-final topPerformersProvider = FutureProvider<List<InvestmentWithStats>>((ref) async {
-  final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
-  final result = <InvestmentWithStats>[];
-
-  for (final inv in investments) {
-    final cashFlows = await ref.watch(investmentRepositoryProvider).getCashFlowsByInvestment(inv.id);
-    if (cashFlows.isEmpty) continue;
-    final stats = _calculateStats(cashFlows);
-    if (stats.xirr > 0 && !stats.xirr.isNaN && !stats.xirr.isInfinite) {
-      result.add(InvestmentWithStats(investment: inv, stats: stats));
-    }
-  }
-
-  // Sort by XIRR descending and take top 3
-  result.sort((a, b) => b.stats.xirr.compareTo(a.stats.xirr));
-  return result.take(3).toList();
-});
-
 /// Monthly cash flow data for trends
 class MonthlyCashFlowData {
   final DateTime month;
@@ -235,7 +197,7 @@ class MonthlyCashFlowData {
 
 /// Monthly cash flow trend (last 6 months)
 final monthlyCashFlowTrendProvider = FutureProvider<List<MonthlyCashFlowData>>((ref) async {
-  final cashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
+  final cashFlows = await ref.watch(allCashFlowsProvider.future);
 
   // Get last 6 months
   final now = DateTime.now();
@@ -332,7 +294,7 @@ class YoYComparison {
 
 /// Year over Year comparison
 final yoyComparisonProvider = FutureProvider<YoYComparison>((ref) async {
-  final cashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
+  final cashFlows = await ref.watch(allCashFlowsProvider.future);
 
   final now = DateTime.now();
   final thisYearStart = DateTime(now.year, 1, 1);
@@ -592,10 +554,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     _ref.invalidate(allInvestmentsProvider);
     _ref.invalidate(globalStatsProvider);
     _ref.invalidate(allCashFlowsProvider);
-    _ref.invalidate(recentCashFlowsProvider);
     _ref.invalidate(closedInvestmentsStatsProvider);
     _ref.invalidate(openInvestmentsStatsProvider);
-    _ref.invalidate(topPerformersProvider);
     _ref.invalidate(recentlyClosedInvestmentsProvider);
   }
 }

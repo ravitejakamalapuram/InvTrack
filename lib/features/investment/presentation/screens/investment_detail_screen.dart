@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -267,6 +269,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             data: (cashFlows) {
               if (cashFlows.isEmpty) {
                 return SliverFillRemaining(
+                  hasScrollBody: false,
                   child: _buildEmptyCashFlows(isDark),
                 );
               }
@@ -288,11 +291,21 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
               );
             },
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+            loading: () => SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: const CashFlowCardSkeleton(),
+                  ),
+                  childCount: 4,
+                ),
+              ),
             ),
             error: (err, _) => SliverFillRemaining(
-              child: Center(child: Text('Error: $err')),
+              hasScrollBody: false,
+              child: _buildErrorState(isDark, err.toString()),
             ),
           ),
 
@@ -550,36 +563,77 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   Widget _buildEmptyCashFlows(bool isDark) {
     return Center(
       child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.receipt_long_rounded,
+              size: 40,
+              color: _typeColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No Cash Flows Yet',
+              style: AppTypography.body.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap + Add to start tracking',
+              textAlign: TextAlign.center,
+              style: AppTypography.caption.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isDark, String error) {
+    return Center(
+      child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _typeColor.withValues(alpha: 0.1),
+                color: AppColors.errorLight.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.receipt_long_rounded,
-                size: 48,
-                color: _typeColor,
+                Icons.cloud_off_rounded,
+                size: 40,
+                color: AppColors.errorLight,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              'No Cash Flows Yet',
-              style: AppTypography.h4.copyWith(
+              'Unable to load data',
+              style: AppTypography.body.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add your first cash flow to start tracking',
+              'Check your connection and try again',
               textAlign: TextAlign.center,
-              style: AppTypography.body.copyWith(
+              style: AppTypography.caption.copyWith(
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () => ref.invalidate(cashFlowsByInvestmentProvider(widget.investment.id)),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
             ),
           ],
         ),
@@ -715,10 +769,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
 
     if (confirmed && mounted) {
-      await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
-      if (mounted) {
-        Navigator.of(context).pop();
-        AppFeedback.showSuccess(context, 'Investment deleted');
+      try {
+        await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
+        if (mounted) {
+          AppFeedback.showSuccess(context, 'Investment deleted');
+          context.go('/investments');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppFeedback.showError(context, 'Failed to delete investment');
+        }
       }
     }
   }
@@ -737,14 +797,23 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
 
     if (confirmed && mounted) {
-      if (isClosed) {
-        await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
-      } else {
-        await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
-      }
-      if (mounted) {
-        Navigator.of(context).pop();
-        AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
+      try {
+        if (isClosed) {
+          await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
+        } else {
+          await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
+        }
+        if (mounted) {
+          AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
+        }
+        // Navigate after showing feedback to avoid deactivated widget error
+        if (mounted) {
+          context.go('/investments');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppFeedback.showError(context, 'Failed to ${isClosed ? 'reopen' : 'close'} investment');
+        }
       }
     }
   }

@@ -1,22 +1,22 @@
 # InvTracker — Product Requirements Document (PRD)
 
-> **Version 3.0** — Simplified & Focused Edition
+> **Version 4.0** — Firebase Edition
 
 ---
 
 ## 1. Overview
 
-**InvTracker** is a mobile app for tracking personal investments with powerful return metrics (XIRR, CAGR, MOIC) and beautiful analytics — all without a backend server.
+**InvTracker** is a mobile app for tracking personal investments with powerful return metrics (XIRR, CAGR, MOIC) and beautiful analytics.
 
 ### Core Principles
-- **Offline-first**: Works 100% without internet
-- **Privacy-first**: Your data stays on your device + your Google Drive
+- **Offline-first**: Works 100% without internet (Firestore offline persistence)
+- **Privacy-first**: Your data stays in your own Firebase account
 - **Simple**: Minimal input, maximum insights
 - **Beautiful**: Premium UI/UX inspired by apps like CRED
 
 ### Data Storage
-- **Primary**: Local encrypted SQLite database (SQLCipher)
-- **Backup**: User's own Google Sheet in Google Drive
+- **Primary**: Firebase Firestore (cloud with offline persistence)
+- **Authentication**: Google Sign-In via Firebase Auth
 
 ---
 
@@ -45,61 +45,51 @@ Retail investors track investments in fragmented ways — spreadsheets, notes, r
 
 ---
 
-## 4. App Navigation (4 Tabs)
+## 4. App Navigation (3 Tabs)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       INVTRACKER                            │
-├──────────┬──────────┬──────────────┬────────────────────────┤
-│   Home   │  Assets  │   Insights   │       Settings         │
-│    🏠    │    📈    │      📊      │          ⚙️            │
-└──────────┴──────────┴──────────────┴────────────────────────┘
+├──────────────────┬──────────────────┬───────────────────────┤
+│     Overview     │    Investments   │       Settings        │
+│        🏠       │        �        │          ⚙️           │
+└──────────────────┴──────────────────┴───────────────────────┘
 ```
 
-### Tab 1: Home (Dashboard)
-**Purpose**: At-a-glance portfolio health
+### Tab 1: Overview (Dashboard + Analytics)
+**Purpose**: At-a-glance portfolio health and analytics
 
 | Section | Content |
 |---------|---------|
-| Hero Card | Total portfolio value + daily/overall change |
-| Quick Stats | 3 tiles: Invested, Returns, XIRR |
-| Sparkline | 7-day mini chart (tap for full) |
-| Recent Activity | Last 5 transactions |
-| FAB | Quick add transaction |
+| Hero Card | Net Position + Realized/All toggle |
+| Quick Stats | 4 tiles: Invested, Returns, XIRR, Investments count |
+| Net Position Breakdown | Open vs Closed investments comparison |
+| Monthly Cash Flow Trend | Bar chart showing inflows/outflows by month |
+| Investment Distribution | Type breakdown (pie chart) |
+| YoY Comparison | Year-over-year performance |
+| Recently Closed | Recent closed investments |
+| FAB | Add new investment |
 
-### Tab 2: Assets (Investments)
+### Tab 2: Investments (Assets)
 **Purpose**: Manage individual investments
 
 | Section | Content |
 |---------|---------|
-| Search/Filter | By type, performance, alphabetical |
-| Asset Cards | Each investment with current value + return % |
-| Tap → Detail | Full history, chart, transactions |
+| Status Tabs | Open / Closed investments |
+| Investment Cards | Each investment with current value + return % |
+| Tap → Detail | Full history, chart, cash flows |
 | FAB | Add new investment |
 
-### Tab 3: Insights (Analytics)
-**Purpose**: Deep portfolio analysis
-
-| Section | Content |
-|---------|---------|
-| Period Selector | 1M, 3M, 6M, 1Y, ALL |
-| Performance Card | XIRR, TWRR, CAGR, MOIC |
-| Allocation Chart | Interactive donut/pie |
-| Contribution vs Returns | Visual comparison |
-| Investment Ranking | Sorted by performance |
-| Top Movers | Best & worst performers |
-
-### Tab 4: Settings
+### Tab 3: Settings
 **Purpose**: App configuration
 
 | Section | Content |
 |---------|---------|
 | Account | Profile, sign out |
-| Portfolios | Create/manage portfolios |
-| Data | Sync, export CSV, import |
-| Security | Passcode, biometrics, auto-lock |
 | Appearance | Theme (light/dark/system), currency |
-| About | Version, privacy policy, terms |
+| Security | Passcode, biometrics, auto-lock |
+| Developer | Seed demo data (debug mode) |
+| About | Version info |
 
 ---
 
@@ -141,23 +131,21 @@ Retail investors track investments in fragmented ways — spreadsheets, notes, r
 
 ### 5.4 Offline-First
 
-All operations work offline:
+All operations work offline via Firestore offline persistence:
 - ✓ Add/edit investments
-- ✓ Add/edit transactions
+- ✓ Add/edit cash flows
 - ✓ View all analytics
-- ✓ Sync queues when online
+- ✓ Auto-sync when online
 
-### 5.5 Google Sheets Sync
-- Auto-creates sheet on first sync
-- Background sync when online
-- Conflict detection with resolution UI
-- Manual sync trigger in Settings
+### 5.5 Firebase Firestore Sync
+- Real-time sync across devices
+- Automatic offline persistence
+- Data stored in user's subcollection (`users/{userId}/investments`)
 
 ### 5.6 Security
-- Google OAuth sign-in (or guest mode)
+- Google Sign-In via Firebase Auth (required)
 - Optional 6-digit passcode
 - Biometric unlock (Face ID / Touch ID)
-- Encrypted local database (SQLCipher)
 
 ---
 
@@ -569,27 +557,26 @@ Return_% = Return / Contribution × 100
 
 ## 16. Roadmap
 
-### Phase 1 (MVP)
-- [x] Local encrypted database
+### Phase 1 (MVP) ✅ Complete
+- [x] Firebase Firestore database with offline persistence
 - [x] Investment CRUD
-- [x] Transaction ledger
+- [x] Cash flow ledger (INVEST, RETURN, INCOME, FEE)
 - [x] XIRR/CAGR/MOIC calculations
-- [x] Dashboard with charts
-- [x] Insights/Analytics screen
-- [ ] Google Sign-In
-- [ ] Google Sheets sync
+- [x] Dashboard with analytics
+- [x] Google Sign-In via Firebase Auth
+- [x] Real-time multi-device sync
 
-### Phase 2
-- [ ] TWRR calculation
+### Phase 2 (AI Integration)
+- [ ] AI-powered document parsing (Excel, CSV, PDFs)
+- [ ] Investment data inference from uploaded files
+- [ ] User verification flow before saving
+- [ ] Google Gemini integration
+
+### Phase 3 (Enhancements)
 - [ ] Multi-currency support
 - [ ] Export to CSV/PDF
 - [ ] Benchmark comparison
-- [ ] Price alerts
-
-### Phase 3
 - [ ] Auto-import from brokers
-- [ ] Tax reports
-- [ ] Premium subscription
 
 ---
 
@@ -597,10 +584,10 @@ Return_% = Return / Contribution × 100
 
 | Risk | Mitigation |
 |------|------------|
-| Sheet manually edited | Conflict detection + resolution UI |
-| Token expiry | Silent refresh + re-auth prompt |
-| Large dataset | DB indexes + pagination |
-| Offline usage | Queue operations + sync on reconnect |
+| Network unavailable | Firestore offline persistence |
+| Token expiry | Firebase Auth auto-refresh |
+| Large dataset | Firestore indexes + pagination |
+| Data privacy | User-scoped Firestore rules |
 
 ---
 
@@ -635,4 +622,5 @@ Return_% = Return / Contribution × 100
 |---------|------|---------|
 | 1.0 | - | Initial AI-generated draft |
 | 2.0 | - | Added detailed specs |
-| 3.0 | 2024-12 | Simplified & focused - new 4-tab navigation (Home, Assets, Insights, Settings) |
+| 3.0 | 2024-12 | Simplified & focused - 4-tab navigation |
+| 4.0 | 2024-12 | Firebase migration - 3-tab navigation (Overview, Investments, Settings). Removed: Recent Activity, Top Performers, Quick Actions. Added: Firebase Firestore, Google Sign-In. |

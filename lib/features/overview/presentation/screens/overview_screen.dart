@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 
@@ -58,80 +59,146 @@ class OverviewScreen extends ConsumerWidget {
               // Content
               SliverPadding(
                 padding: const EdgeInsets.all(16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Hero Card - Global Summary with toggle
-                    _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencySymbol),
-
-                    const SizedBox(height: 24),
-
-                    // Quick Stats Grid
-                    globalStats.when(
-                      data: (stats) => _buildQuickStats(context, stats, currencySymbol),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Net Position Breakdown (Open vs Closed)
-                    _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencySymbol, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // Monthly Cash Flow Trend
-                    _buildMonthlyCashFlowTrend(context, ref, currencySymbol, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // Top Performers
-                    _buildTopPerformers(context, ref, currencySymbol, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // Investment Type Distribution
-                    _buildTypeDistribution(context, ref, currencySymbol, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // YoY Comparison
-                    _buildYoYComparison(context, ref, currencySymbol, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // Recently Closed
-                    _buildRecentlyClosed(context, ref, currencySymbol, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // Quick Actions
-                    _buildQuickActions(context, ref, isDark),
-
-                    const SizedBox(height: 24),
-
-                    // Empty state or Investment Period summary
-                    globalStats.when(
-                      data: (stats) => stats.hasData
-                          ? _buildSummarySection(context, stats)
-                          : _buildEmptyState(context),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Recent Activity
-                    _buildRecentActivity(context, ref, currencySymbol),
-
-                    // Bottom padding for FAB
-                    const SizedBox(height: 80),
-                  ]),
+                sliver: globalStats.when(
+                  data: (stats) => stats.hasData
+                      ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencySymbol, isDark)
+                      : _buildEmptyStateContent(context, ref, globalStats, closedStats, currencySymbol, isDark),
+                  loading: () => _buildLoadingContent(context, ref, globalStats, closedStats, currencySymbol),
+                  error: (_, __) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencySymbol, isDark),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Build content when there is data
+  SliverList _buildDataContent(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<InvestmentStats> globalStats,
+    AsyncValue<InvestmentStats> openStats,
+    AsyncValue<InvestmentStats> closedStats,
+    String currencySymbol,
+    bool isDark,
+  ) {
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        // Hero Card - Global Summary with toggle
+        _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencySymbol),
+
+        const SizedBox(height: 24),
+
+        // Quick Stats Grid
+        globalStats.when(
+          data: (stats) => _buildQuickStats(context, stats, currencySymbol),
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Net Position Breakdown (Open vs Closed)
+        _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencySymbol, isDark),
+
+        const SizedBox(height: 24),
+
+        // Monthly Cash Flow Trend
+        _buildMonthlyCashFlowTrend(context, ref, currencySymbol, isDark),
+
+        const SizedBox(height: 24),
+
+        // Investment Type Distribution
+        _buildTypeDistribution(context, ref, currencySymbol, isDark),
+
+        const SizedBox(height: 24),
+
+        // YoY Comparison
+        _buildYoYComparison(context, ref, currencySymbol, isDark),
+
+        const SizedBox(height: 24),
+
+        // Recently Closed
+        _buildRecentlyClosed(context, ref, currencySymbol, isDark),
+
+        const SizedBox(height: 24),
+
+        // Investment Period summary
+        globalStats.when(
+          data: (stats) => _buildSummarySection(context, stats),
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+
+        // Bottom padding for FAB
+        const SizedBox(height: 80),
+      ]),
+    );
+  }
+
+  /// Build content for empty state (no data)
+  SliverList _buildEmptyStateContent(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<InvestmentStats> globalStats,
+    AsyncValue<InvestmentStats> closedStats,
+    String currencySymbol,
+    bool isDark,
+  ) {
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        // Hero Card - shows zeros
+        _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencySymbol),
+
+        const SizedBox(height: 32),
+
+        // Beautiful empty state
+        _buildEmptyState(context, isDark),
+
+        // Bottom padding for FAB
+        const SizedBox(height: 80),
+      ]),
+    );
+  }
+
+  /// Build loading state content with shimmer skeletons
+  SliverList _buildLoadingContent(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<InvestmentStats> globalStats,
+    AsyncValue<InvestmentStats> closedStats,
+    String currencySymbol,
+  ) {
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        // Hero Card Skeleton
+        const HeroCardSkeleton(),
+
+        const SizedBox(height: 24),
+
+        // Quick Stats Skeleton
+        const QuickStatsSkeleton(),
+
+        const SizedBox(height: 24),
+
+        // Net Position Breakdown Skeleton
+        const SectionCardSkeleton(height: 120),
+
+        const SizedBox(height: 24),
+
+        // Monthly Trend Skeleton
+        const SectionCardSkeleton(height: 180),
+
+        const SizedBox(height: 24),
+
+        // Type Distribution Skeleton
+        const SectionCardSkeleton(height: 160),
+
+        // Bottom padding for FAB
+        const SizedBox(height: 80),
+      ]),
     );
   }
 
@@ -349,69 +416,6 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopPerformers(BuildContext context, WidgetRef ref, String currency, bool isDark) {
-    final topAsync = ref.watch(topPerformersProvider);
-
-    return topAsync.when(
-      data: (data) {
-        if (data.isEmpty) return const SizedBox.shrink();
-
-        return GlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.emoji_events, color: Colors.amber, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('Top Performers', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ...data.asMap().entries.map((e) {
-                final rank = e.key + 1;
-                final item = e.value;
-                final xirrPercent = (item.stats.xirr * 100).toStringAsFixed(1);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 24, height: 24,
-                        decoration: BoxDecoration(
-                          color: rank == 1 ? Colors.amber : (rank == 2 ? Colors.grey[400] : Colors.brown[300]),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(child: Text('$rank', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.investment.name, style: const TextStyle(fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Text(item.investment.type.displayName, style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: AppColors.successLight.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                        child: Text('+$xirrPercent% IRR', style: TextStyle(color: AppColors.successLight, fontWeight: FontWeight.w600, fontSize: 12)),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
   Widget _buildTypeDistribution(BuildContext context, WidgetRef ref, String currency, bool isDark) {
     final distAsync = ref.watch(investmentTypeDistributionProvider);
 
@@ -620,45 +624,6 @@ class OverviewScreen extends ConsumerWidget {
       },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context, WidgetRef ref, bool isDark) {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Quick Actions', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickActionButton(
-                  icon: Icons.add_circle,
-                  label: 'New Investment',
-                  color: AppColors.primaryLight,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddInvestmentScreen())),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickActionButton(
-                  icon: Icons.refresh,
-                  label: 'Refresh',
-                  color: AppColors.graphBlue,
-                  onTap: () {
-                    ref.invalidate(globalStatsProvider);
-                    ref.invalidate(openInvestmentsStatsProvider);
-                    ref.invalidate(closedInvestmentsStatsProvider);
-                    ref.invalidate(topPerformersProvider);
-                    ref.invalidate(monthlyCashFlowTrendProvider);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -921,33 +886,173 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return GlassCard(
-      child: Column(
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: Colors.grey[400],
+  Widget _buildEmptyState(BuildContext context, bool isDark) {
+    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primaryLight;
+
+    return Column(
+      children: [
+        // Welcome section
+        GlassCard(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      primaryColor.withValues(alpha: 0.2),
+                      primaryColor.withValues(alpha: 0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.rocket_launch_rounded,
+                  size: 48,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Welcome to Cash Flow Tracker!',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Track your investments, monitor cash flows, and analyze returns with powerful insights.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  height: 1.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'No investments yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+        ),
+
+        const SizedBox(height: 16),
+
+        // Getting started steps
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Get Started',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildStep(1, 'Add Investment', 'Create your first investment entry', Icons.add_circle_outline, isDark),
+              const SizedBox(height: 12),
+              _buildStep(2, 'Record Cash Flows', 'Track money in and out over time', Icons.swap_vert_rounded, isDark),
+              const SizedBox(height: 12),
+              _buildStep(3, 'View Insights', 'Analyze returns, XIRR, and trends', Icons.insights_rounded, isDark),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Call to action hint
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: primaryColor.withValues(alpha: 0.3),
+              width: 1,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Add your first investment to start tracking cash flows',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey[600],
+          child: Row(
+            children: [
+              Icon(
+                Icons.touch_app_rounded,
+                color: primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Tap the "Add Investment" button below to begin!',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white : AppColors.neutral800Light,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep(int number, String title, String subtitle, IconData icon, bool isDark) {
+    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primaryLight;
+
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: primaryColor.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              '$number',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Icon(
+          icon,
+          size: 20,
+          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+        ),
+      ],
     );
   }
 
@@ -959,105 +1064,6 @@ class OverviewScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text('Error: $error'),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRecentActivity(BuildContext context, WidgetRef ref, String currency) {
-    final recentActivity = ref.watch(recentCashFlowsProvider);
-
-    return recentActivity.when(
-      data: (cashFlows) {
-        if (cashFlows.isEmpty) return const SizedBox.shrink();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recent Activity',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  '${cashFlows.length} items',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...cashFlows.map((item) => _buildRecentActivityItem(context, item, currency)),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildRecentActivityItem(BuildContext context, CashFlowWithInvestment item, String currency) {
-    final cf = item.cashFlow;
-    final isInflow = cf.type.isInflow;
-    final color = isInflow ? AppColors.successLight : AppColors.errorLight;
-    final icon = isInflow ? Icons.arrow_downward : Icons.arrow_upward;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.investment?.name ?? 'Unknown Investment',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${cf.type.displayName} • ${cf.date.day}/${cf.date.month}/${cf.date.year}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${isInflow ? '+' : '-'}$currency${cf.amount.toStringAsFixed(0)}',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ],
-        ),
       ),
     );
   }
@@ -1143,43 +1149,6 @@ class _QuickStatCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
-          ],
-        ),
       ),
     );
   }

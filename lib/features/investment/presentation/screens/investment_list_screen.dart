@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
@@ -157,12 +158,14 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
               if (investments.isEmpty) {
                 return SliverFillRemaining(
+                  hasScrollBody: false,
                   child: _buildEmptyState(isDark),
                 );
               }
 
               if (filteredInvestments.isEmpty) {
                 return SliverFillRemaining(
+                  hasScrollBody: false,
                   child: _buildNoResultsState(isDark),
                 );
               }
@@ -182,11 +185,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 ),
               );
             },
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            loading: () => const InvestmentListSkeleton(),
             error: (err, stack) => SliverFillRemaining(
-              child: Center(child: Text('Error: $err')),
+              hasScrollBody: false,
+              child: _buildErrorState(isDark, err.toString()),
             ),
           ),
         ],
@@ -352,6 +354,52 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                   style: AppTypography.button.copyWith(color: Colors.white),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isDark, String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: 48,
+                color: AppColors.errorLight,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Connection Error',
+              style: AppTypography.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Unable to load investments.\nPlease check your connection and try again.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: () => ref.invalidate(allInvestmentsProvider),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
             ),
           ],
         ),
