@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 
 /// Provider to track if onboarding has been completed
@@ -73,7 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
@@ -83,7 +85,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: TextButton(
                   onPressed: _completeOnboarding,
                   child: Text(
@@ -95,7 +97,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ),
             ),
-            
+
             // Page content
             Expanded(
               child: PageView.builder(
@@ -110,10 +112,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
               ),
             ),
-            
+
             // Page indicator
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -122,10 +124,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ),
             ),
-            
-            // Next/Get Started button
+
+            // Next/Get Started button - using consistent horizontal padding
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              padding: AppSpacing.buttonAreaPadding,
               child: _buildNextButton(isDark),
             ),
           ],
@@ -136,21 +138,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildPage(OnboardingPage page, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Icon with gradient background
           Container(
-            width: 140,
-            height: 140,
+            width: AppSizes.onboardingIconSize,
+            height: AppSizes.onboardingIconSize,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: page.gradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(35),
+              borderRadius: BorderRadius.circular(AppSizes.onboardingIconRadius),
               boxShadow: [
                 BoxShadow(
                   color: page.gradient[0].withValues(alpha: 0.4),
@@ -159,9 +161,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ],
             ),
-            child: Icon(page.icon, size: 64, color: Colors.white),
+            child: Icon(page.icon, size: AppSizes.iconDisplay, color: Colors.white),
           ),
-          const SizedBox(height: 48),
+          SizedBox(height: AppSpacing.huge),
           // Title
           Text(
             page.title,
@@ -171,7 +173,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.md),
           // Subtitle
           Text(
             page.subtitle,
@@ -190,14 +192,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isActive = index == _currentPage;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 24 : 8,
-      height: 8,
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+      width: isActive ? AppSpacing.xl : AppSpacing.xs,
+      height: AppSpacing.xs,
       decoration: BoxDecoration(
         color: isActive
             ? AppColors.primaryLight
             : (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXs),
       ),
     );
   }
@@ -207,14 +209,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: AppSizes.buttonHeightXl,
       child: ElevatedButton(
         onPressed: _nextPage,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryLight,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSizes.borderRadiusLg,
           ),
           elevation: 0,
         ),
@@ -229,8 +231,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
             if (!isLastPage) ...[
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_rounded, size: 20),
+              SizedBox(width: AppSpacing.xs),
+              Icon(Icons.arrow_forward_rounded, size: AppSizes.iconSm),
             ],
           ],
         ),

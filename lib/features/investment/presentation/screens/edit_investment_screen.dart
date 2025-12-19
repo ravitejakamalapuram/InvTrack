@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
@@ -112,7 +113,7 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: AppSpacing.screenPadding,
         children: [
           // Name Field
           AppTextField(
@@ -123,7 +124,7 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
             validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
           ),
 
-          const SizedBox(height: 20),
+          SizedBox(height: AppSpacing.formFieldSpacing),
 
           // Notes Field
           AppTextField(
@@ -135,7 +136,7 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
             maxLines: 3,
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: AppSpacing.sectionSpacing),
 
           // Type Selector
           TypeSelector<InvestmentType>(
@@ -148,7 +149,7 @@ class _EditInvestmentScreenState extends ConsumerState<EditInvestmentScreen> {
             labelBuilder: (type) => type.displayName,
           ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
 
           // Submit Button
           GradientButton(

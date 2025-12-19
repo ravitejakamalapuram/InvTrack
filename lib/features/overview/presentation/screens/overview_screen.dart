@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -58,7 +59,7 @@ class OverviewScreen extends ConsumerWidget {
 
               // Content
               SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
                   data: (stats) => stats.hasData
                       ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencySymbol, isDark)
@@ -89,7 +90,7 @@ class OverviewScreen extends ConsumerWidget {
         // Hero Card - Global Summary with toggle
         _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencySymbol),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Quick Stats Grid
         globalStats.when(
@@ -98,32 +99,32 @@ class OverviewScreen extends ConsumerWidget {
           error: (_, __) => const SizedBox.shrink(),
         ),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Net Position Breakdown (Open vs Closed)
         _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencySymbol, isDark),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Monthly Cash Flow Trend
         _buildMonthlyCashFlowTrend(context, ref, currencySymbol, isDark),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Investment Type Distribution
         _buildTypeDistribution(context, ref, currencySymbol, isDark),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // YoY Comparison
         _buildYoYComparison(context, ref, currencySymbol, isDark),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Recently Closed
         _buildRecentlyClosed(context, ref, currencySymbol, isDark),
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Investment Period summary
         globalStats.when(
@@ -133,7 +134,7 @@ class OverviewScreen extends ConsumerWidget {
         ),
 
         // Bottom padding for FAB
-        const SizedBox(height: 80),
+        SizedBox(height: AppSpacing.fabBottomPadding),
       ]),
     );
   }

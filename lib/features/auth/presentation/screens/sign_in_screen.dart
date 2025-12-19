@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 
@@ -119,7 +121,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingHorizontal),
             child: Column(
               children: [
                 const Spacer(flex: 2),
@@ -138,11 +140,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                             return Transform.translate(
                               offset: Offset(0, _floatAnimation.value),
                               child: Container(
-                                width: 110,
-                                height: 110,
+                                width: AppSizes.signInLogoSize,
+                                height: AppSizes.signInLogoSize,
                                 decoration: BoxDecoration(
                                   gradient: AppColors.heroGradient,
-                                  borderRadius: BorderRadius.circular(32),
+                                  borderRadius: BorderRadius.circular(AppSizes.signInLogoRadius),
                                   boxShadow: [
                                     BoxShadow(
                                       color: AppColors.primaryLight.withValues(alpha: _glowAnimation.value),
@@ -180,7 +182,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                             );
                           },
                         ),
-                        const SizedBox(height: 36),
+                        SizedBox(height: AppSpacing.xxxl),
 
                         // App Name with gradient
                         ShaderMask(
@@ -193,7 +195,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: AppSpacing.sm),
 
                         // Tagline with subtle animation
                         Text(
@@ -218,8 +220,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                   opacity: _fadeAnimation,
                   child: Wrap(
                     alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
                     children: [
                       _buildFeaturePill('📊', 'XIRR & CAGR', isDark),
                       _buildFeaturePill('🔒', 'Offline-first', isDark),
@@ -239,7 +241,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                       children: [
                         // Google Sign In Button
                         _buildGoogleButton(isDark),
-                        const SizedBox(height: 24),
+                        SizedBox(height: AppSpacing.xl),
 
                         // Terms text
                         Text(
@@ -256,7 +258,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ),
@@ -267,12 +269,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
   Widget _buildFeaturePill(String emoji, String text, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.1)
             : AppColors.primaryLight.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXxl),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.15)
@@ -282,8 +284,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
+          Text(emoji, style: TextStyle(fontSize: AppSizes.iconXs)),
+          SizedBox(width: AppSpacing.xs),
           Text(
             text,
             style: AppTypography.label.copyWith(
@@ -300,11 +302,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Widget _buildGoogleButton(bool isDark) {
     return Container(
       width: double.infinity,
-      height: 60,
+      height: AppSizes.buttonHeightXl + 4, // 60px for extra prominence
       decoration: BoxDecoration(
         gradient: isDark ? null : AppColors.heroGradient,
         color: isDark ? Colors.white : null,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppSizes.borderRadiusLg,
         boxShadow: [
           BoxShadow(
             color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.3),
@@ -317,12 +319,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: _isLoading ? null : _signInWithGoogle,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppSizes.borderRadiusLg,
           child: Center(
             child: _isLoading
                 ? SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: AppSizes.iconMd,
+                    height: AppSizes.iconMd,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
                       color: isDark ? AppColors.primaryLight : Colors.white,
@@ -333,11 +335,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                     children: [
                       // Google "G" icon
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: AppSizes.iconLg,
+                        height: AppSizes.iconLg,
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.primaryLight : Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusSm - 2),
                         ),
                         child: Center(
                           child: Text(
@@ -345,12 +347,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                             style: AppTypography.buttonLarge.copyWith(
                               color: isDark ? Colors.white : AppColors.primaryLight,
                               fontWeight: FontWeight.w800,
-                              fontSize: 16,
+                              fontSize: AppSizes.iconXs,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      SizedBox(width: AppSpacing.sm + 2),
                       Text(
                         'Continue with Google',
                         style: AppTypography.buttonLarge.copyWith(

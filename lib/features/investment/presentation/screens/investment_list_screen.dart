@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -113,7 +115,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             pinned: true,
             backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 16, right: 60),
+              titlePadding: EdgeInsets.only(left: AppSpacing.lg, bottom: AppSpacing.md, right: 60),
               title: _isSearching
                   ? _buildSearchField(isDark)
                   : Text(
@@ -127,10 +129,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             actions: [
               IconButton(
                 icon: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppSizes.borderRadiusMd,
                   ),
                   child: Icon(
                     _isSearching ? Icons.close_rounded : Icons.search_rounded,
@@ -139,14 +141,14 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 ),
                 onPressed: _toggleSearch,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppSpacing.xs),
             ],
           ),
 
           // Filter Tabs
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
               child: _buildFilterTabs(isDark),
             ),
           ),
@@ -171,7 +173,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               }
 
               return SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.md),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -198,11 +200,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         child: Container(
           decoration: BoxDecoration(
             gradient: AppColors.heroGradient,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppSizes.borderRadiusLg,
             boxShadow: [
               BoxShadow(
                 color: AppColors.primaryLight.withValues(alpha: 0.4),
-                blurRadius: 16,
+                blurRadius: AppSpacing.md,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -224,19 +226,19 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   Widget _buildSearchField(bool isDark) {
     return SizedBox(
-      height: 36,
+      height: AppSizes.buttonHeightSm,
       child: TextField(
         controller: _searchController,
         focusNode: _searchFocusNode,
         style: AppTypography.body.copyWith(
           color: isDark ? Colors.white : AppColors.neutral900Light,
-          fontSize: 16,
+          fontSize: AppSizes.iconXs,
         ),
         decoration: InputDecoration(
           hintText: 'Search investments...',
           hintStyle: AppTypography.body.copyWith(
             color: isDark ? AppColors.neutral500Dark : AppColors.neutral500Light,
-            fontSize: 16,
+            fontSize: AppSizes.iconXs,
           ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
@@ -252,30 +254,30 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   Widget _buildNoResultsState(bool isDark) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
                 color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.search_off_rounded,
-                size: 64,
+                size: AppSizes.iconDisplay,
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
             Text(
               'No Results Found',
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.xs),
             Text(
               'Try searching with a different term',
               textAlign: TextAlign.center,
@@ -292,12 +294,12 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -309,18 +311,18 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               ),
               child: Icon(
                 Icons.show_chart_rounded,
-                size: 64,
+                size: AppSizes.iconDisplay,
                 color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
             Text(
               'No Investments Yet',
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.xs),
             Text(
               'Start building your portfolio by adding your first investment',
               textAlign: TextAlign.center,
@@ -328,15 +330,15 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: AppSpacing.xxl),
             Container(
               decoration: BoxDecoration(
                 gradient: AppColors.heroGradient,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppSizes.borderRadiusLg,
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.primaryLight.withValues(alpha: 0.3),
-                    blurRadius: 16,
+                    blurRadius: AppSpacing.md,
                     offset: const Offset(0, 6),
                   ),
                 ],
@@ -346,7 +348,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.md),
                 ),
                 icon: const Icon(Icons.add_rounded, color: Colors.white),
                 label: Text(
@@ -364,30 +366,30 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   Widget _buildErrorState(bool isDark, String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.errorLight.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.cloud_off_rounded,
-                size: 48,
+                size: AppSizes.iconXl,
                 color: AppColors.errorLight,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: AppSpacing.lg),
             Text(
               'Connection Error',
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.xs),
             Text(
               'Unable to load investments.\nPlease check your connection and try again.',
               textAlign: TextAlign.center,
@@ -395,7 +397,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
             TextButton.icon(
               onPressed: () => ref.invalidate(allInvestmentsProvider),
               icon: const Icon(Icons.refresh_rounded),
@@ -411,9 +413,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     return Row(
       children: [
         _buildFilterChip('All', InvestmentFilter.all, isDark),
-        const SizedBox(width: 8),
+        SizedBox(width: AppSpacing.xs),
         _buildFilterChip('Open', InvestmentFilter.open, isDark),
-        const SizedBox(width: 8),
+        SizedBox(width: AppSpacing.xs),
         _buildFilterChip('Closed', InvestmentFilter.closed, isDark),
       ],
     );
@@ -427,12 +429,12 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         setState(() => _filter = filter);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryLight
               : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
         ),
         child: Text(
           label,
@@ -470,7 +472,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       label: semanticLabel,
       button: true,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.only(bottom: AppSpacing.sm),
         child: GlassCard(
           onTap: () {
             Navigator.of(context).push(
@@ -483,13 +485,13 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   // Icon with type icon
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: AppSizes.iconXl,
+                    height: AppSizes.iconXl,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isClosed
@@ -498,11 +500,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd + 2),
                       boxShadow: [
                         BoxShadow(
                           color: (isClosed ? Colors.grey : typeColor).withValues(alpha: 0.3),
-                          blurRadius: 8,
+                          blurRadius: AppSpacing.xs,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -511,11 +513,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       child: Icon(
                         investment.type.icon,
                         color: Colors.white,
-                        size: 24,
+                        size: AppSizes.iconMd,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: AppSpacing.md),
                   // Name and type
                   Expanded(
                     child: Column(
@@ -536,11 +538,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                             ),
                             if (isClosed)
                               Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                margin: EdgeInsets.only(left: AppSpacing.xs),
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(AppSpacing.xxs),
                                 ),
                                 child: Text(
                                   'CLOSED',
@@ -553,9 +555,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                               ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: AppSpacing.xxs),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
                           decoration: BoxDecoration(
                             color: typeColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -578,12 +580,12 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             ),
             // Bottom info strip
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSizes.radiusXl),
+                  bottomRight: Radius.circular(AppSizes.radiusXl),
                 ),
               ),
               child: Row(
@@ -640,11 +642,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 color: plColor,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: AppSpacing.xxs),
             // XIRR
             if (stats.xirr != 0 && !stats.xirr.isNaN && !stats.xirr.isInfinite)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: xirrColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -661,9 +663,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           ],
         );
       },
-      loading: () => const SizedBox(
-        width: 16,
-        height: 16,
+      loading: () => SizedBox(
+        width: AppSpacing.md,
+        height: AppSpacing.md,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
       error: (_, __) => Icon(

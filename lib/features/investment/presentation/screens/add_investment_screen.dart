@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
@@ -107,7 +108,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       ),
       body: buildAnimatedContent(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: AppSpacing.screenPadding,
           child: Form(
             key: _formKey,
             child: Column(
@@ -124,7 +125,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   labelBuilder: (type) => type.displayName,
                 ),
 
-                const SizedBox(height: 28),
+                SizedBox(height: AppSpacing.sectionSpacing),
 
                 // Name Field
                 AppTextField(
@@ -144,7 +145,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   },
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: AppSpacing.formFieldSpacing),
 
                 // Notes Field
                 AppTextField(
@@ -157,7 +158,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   maxLines: 3,
                 ),
 
-                const SizedBox(height: 40),
+                SizedBox(height: AppSpacing.xxxl),
 
                 // Submit Button
                 GradientButton(
@@ -167,7 +168,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   label: 'Add Investment',
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: AppSpacing.formFieldSpacing),
               ],
             ),
           ),
@@ -175,5 +176,4 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       ),
     );
   }
-
 }

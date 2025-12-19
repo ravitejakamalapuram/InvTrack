@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -179,7 +181,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: AppSpacing.screenPadding,
             children: [
               // Cash Flow Type Selector
               TypeSelector<CashFlowType>(
@@ -192,7 +194,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 labelBuilder: (type) => type.displayName,
               ),
 
-              const SizedBox(height: 28),
+              SizedBox(height: AppSpacing.sectionSpacing),
 
               // Date Picker
               Text(
@@ -202,26 +204,26 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                   color: isDark ? Colors.white : AppColors.neutral900Light,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.xs),
               GestureDetector(
                 onTap: () => _selectDate(context, isDark),
                 child: GlassCard(
-                  padding: const EdgeInsets.all(16),
+                  padding: AppSpacing.cardPadding,
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.all(AppSpacing.sm),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppSizes.borderRadiusMd,
                         ),
                         child: Icon(
                           Icons.calendar_today_rounded,
                           color: AppColors.primaryLight,
-                          size: 20,
+                          size: AppSizes.iconSm,
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      SizedBox(width: AppSpacing.sm + 2),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +253,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 ),
               ),
 
-              const SizedBox(height: 28),
+              SizedBox(height: AppSpacing.sectionSpacing),
 
               // Amount Field
               _buildNumberField(
@@ -270,7 +272,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 },
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: AppSpacing.formFieldSpacing),
 
               // Notes Field
               AppTextField(
@@ -282,11 +284,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 maxLines: 3,
               ),
 
-              const SizedBox(height: 28),
+              SizedBox(height: AppSpacing.sectionSpacing),
 
               // Amount Preview
               GlassCard(
-                padding: const EdgeInsets.all(20),
+                padding: AppSpacing.cardPaddingLarge,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -299,7 +301,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: AppSpacing.xxs),
                         ListenableBuilder(
                           listenable: _amountController,
                           builder: (context, _) {
@@ -316,26 +318,26 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         gradient: _selectedType.isOutflow
                             ? AppColors.dangerGradient
                             : AppColors.successGradient,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd + 2),
                       ),
                       child: Icon(
                         _selectedType.isOutflow
                             ? Icons.arrow_upward_rounded
                             : Icons.arrow_downward_rounded,
                         color: Colors.white,
-                        size: 24,
+                        size: AppSizes.iconMd,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               // Submit Button
               GradientButton(
