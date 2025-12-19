@@ -1,8 +1,8 @@
 // This script generates the app icon programmatically.
 // Run with: dart run scripts/generate_icon.dart
+// ignore_for_file: avoid_print
 
 import 'dart:io';
-import 'dart:typed_data';
 
 // Creates a simple placeholder icon - for a real app, use a design tool.
 // The app_icon.png should be 1024x1024 for best results.

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Cash Flow Type - direction of money
 enum CashFlowType {
   invest,  // Cash going out (negative for XIRR)
@@ -41,6 +43,34 @@ enum CashFlowType {
         return '💵';
       case CashFlowType.fee:
         return '📋';
+    }
+  }
+
+  /// Returns the color associated with this cash flow type
+  Color get color {
+    switch (this) {
+      case CashFlowType.invest:
+        return const Color(0xFF3B82F6); // Blue
+      case CashFlowType.returnFlow:
+        return const Color(0xFF10B981); // Emerald
+      case CashFlowType.income:
+        return const Color(0xFFF59E0B); // Amber
+      case CashFlowType.fee:
+        return const Color(0xFFEC4899); // Pink
+    }
+  }
+
+  /// Returns the icon data for this cash flow type
+  IconData get iconData {
+    switch (this) {
+      case CashFlowType.invest:
+        return Icons.arrow_upward_rounded;
+      case CashFlowType.returnFlow:
+        return Icons.arrow_downward_rounded;
+      case CashFlowType.income:
+        return Icons.payments_rounded;
+      case CashFlowType.fee:
+        return Icons.receipt_long_rounded;
     }
   }
 
