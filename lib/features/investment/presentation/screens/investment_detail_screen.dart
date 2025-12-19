@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -761,6 +760,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   }
 
   Future<void> _confirmDeleteInvestment(BuildContext context, bool isDark) async {
+    // Capture navigator and messenger upfront before any async operations
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Investment?',
@@ -771,20 +774,51 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     if (confirmed && mounted) {
       try {
         await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
-        if (mounted) {
-          AppFeedback.showSuccess(context, 'Investment deleted');
-          context.go('/investments');
-        }
+        HapticFeedback.mediumImpact();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Investment deleted')),
+              ],
+            ),
+            backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        navigator.pop();
       } catch (e) {
-        if (mounted) {
-          AppFeedback.showError(context, 'Failed to delete investment');
-        }
+        HapticFeedback.heavyImpact();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Failed to delete investment')),
+              ],
+            ),
+            backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
 
   void _toggleInvestmentStatus(BuildContext context, bool isDark) async {
     final isClosed = widget.investment.status == InvestmentStatus.closed;
+    // Capture navigator and messenger upfront before any async operations
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final successMessage = 'Investment ${isClosed ? 'reopened' : 'closed'}';
+    final errorMessage = 'Failed to ${isClosed ? 'reopen' : 'close'} investment';
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
@@ -803,28 +837,53 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         } else {
           await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
         }
-        if (mounted) {
-          AppFeedback.showSuccess(context, 'Investment ${isClosed ? 'reopened' : 'closed'}');
-        }
-        // Navigate after showing feedback to avoid deactivated widget error
-        if (mounted) {
-          context.go('/investments');
-        }
+        HapticFeedback.mediumImpact();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text(successMessage)),
+              ],
+            ),
+            backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        navigator.pop();
       } catch (e) {
-        if (mounted) {
-          AppFeedback.showError(context, 'Failed to ${isClosed ? 'reopen' : 'close'} investment');
-        }
+        HapticFeedback.heavyImpact();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
+            backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
 
   void _showOptionsSheet(BuildContext context, bool isDark) {
     final isClosed = widget.investment.status == InvestmentStatus.closed;
+    // Store a reference to screen's context before entering the builder
+    final screenContext = context;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -852,14 +911,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   ),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
+                  Navigator.pop(sheetContext);
+                  Navigator.of(screenContext).push(
                     MaterialPageRoute(
-                      builder: (context) => EditInvestmentScreen(investment: widget.investment),
+                      builder: (_) => EditInvestmentScreen(investment: widget.investment),
                     ),
                   ).then((result) {
                     if (result == true && mounted) {
-                      Navigator.of(context).pop();
+                      Navigator.of(screenContext).pop();
                     }
                   });
                 },
@@ -876,8 +935,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   ),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
-                  _toggleInvestmentStatus(context, isDark);
+                  Navigator.pop(sheetContext);
+                  _toggleInvestmentStatus(screenContext, isDark);
                 },
               ),
               ListTile(
@@ -887,8 +946,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   style: AppTypography.body.copyWith(color: AppColors.errorLight),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
-                  _confirmDeleteInvestment(context, isDark);
+                  Navigator.pop(sheetContext);
+                  _confirmDeleteInvestment(screenContext, isDark);
                 },
               ),
               const SizedBox(height: 16),
