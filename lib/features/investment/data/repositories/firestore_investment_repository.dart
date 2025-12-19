@@ -138,6 +138,16 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   // ============ CASH FLOWS ============
 
   @override
+  Stream<List<CashFlowEntity>> watchAllCashFlows() {
+    return _cashFlowsRef
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+            .toList());
+  }
+
+  @override
   Stream<List<CashFlowEntity>> watchCashFlowsByInvestment(String investmentId) {
     return _cashFlowsRef
         .where('investmentId', isEqualTo: investmentId)

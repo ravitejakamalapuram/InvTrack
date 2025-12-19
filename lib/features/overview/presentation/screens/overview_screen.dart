@@ -41,9 +41,9 @@ class OverviewScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(globalStatsProvider);
-            ref.invalidate(openInvestmentsStatsProvider);
-            ref.invalidate(closedInvestmentsStatsProvider);
+            // Invalidate base stream providers - all derived stats auto-update
+            ref.invalidate(allInvestmentsProvider);
+            ref.invalidate(allCashFlowsStreamProvider);
           },
           child: CustomScrollView(
             slivers: [

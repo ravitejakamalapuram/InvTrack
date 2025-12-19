@@ -34,18 +34,36 @@ final cashFlowsByInvestmentProvider =
   return ref.watch(investmentRepositoryProvider).watchCashFlowsByInvestment(investmentId);
 });
 
-/// Get all cash flows (for global calculations) - only for existing investments
-final allCashFlowsProvider = FutureProvider<List<CashFlowEntity>>((ref) async {
-  final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
-  final validInvestmentIds = investments.map((i) => i.id).toSet();
+/// Watch all cash flows (reactive stream - single source of truth)
+final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
+  return ref.watch(investmentRepositoryProvider).watchAllCashFlows();
+});
 
-  final allCashFlows = await ref.watch(investmentRepositoryProvider).getAllCashFlows();
+/// Filtered cash flows for valid investments only (derived from streams)
+/// This is the SINGLE SOURCE OF TRUTH for all stats calculations
+final validCashFlowsProvider = Provider<AsyncValue<List<CashFlowEntity>>>((ref) {
+  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
 
-  // Filter to only include cash flows for existing investments
-  return allCashFlows.where((cf) => validInvestmentIds.contains(cf.investmentId)).toList();
+  return investmentsAsync.when(
+    data: (investments) {
+      final validIds = investments.map((i) => i.id).toSet();
+      return cashFlowsAsync.when(
+        data: (cashFlows) => AsyncValue.data(
+          cashFlows.where((cf) => validIds.contains(cf.investmentId)).toList(),
+        ),
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
 });
 
 // ============ INVESTMENT STATS ============
+// All stats providers derive from streams - ensuring single source of truth
+// and automatic updates across all screens
 
 /// Calculate stats for a single investment (reactive - watches the stream)
 final investmentStatsProvider =
@@ -64,60 +82,90 @@ final investmentStatsProvider =
   );
 });
 
-/// Calculate global stats across all investments (only existing investments)
-final globalStatsProvider = FutureProvider<InvestmentStats>((ref) async {
-  // Use allCashFlowsProvider which already filters for existing investments
-  final cashFlows = await ref.watch(allCashFlowsProvider.future);
+/// Global stats across all investments (derived from streams - auto-updates)
+final globalStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  if (cashFlows.isEmpty) {
-    return InvestmentStats.empty();
-  }
-
-  return _calculateStats(cashFlows);
+  return cashFlowsAsync.when(
+    data: (cashFlows) {
+      if (cashFlows.isEmpty) {
+        return AsyncValue.data(InvestmentStats.empty());
+      }
+      return AsyncValue.data(_calculateStats(cashFlows));
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
 });
 
-/// Stats for closed investments only (realized gains)
-final closedInvestmentsStatsProvider = FutureProvider<InvestmentStats>((ref) async {
-  final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
-  final closedIds = investments
-      .where((i) => i.status == InvestmentStatus.closed)
-      .map((i) => i.id)
-      .toSet();
+/// Stats for closed investments only (derived from streams - auto-updates)
+final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
+  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  if (closedIds.isEmpty) {
-    return InvestmentStats.empty();
-  }
+  return investmentsAsync.when(
+    data: (investments) {
+      final closedIds = investments
+          .where((i) => i.status == InvestmentStatus.closed)
+          .map((i) => i.id)
+          .toSet();
 
-  final allCashFlows = await ref.watch(allCashFlowsProvider.future);
-  final closedCashFlows = allCashFlows.where((cf) => closedIds.contains(cf.investmentId)).toList();
+      if (closedIds.isEmpty) {
+        return AsyncValue.data(InvestmentStats.empty());
+      }
 
-  if (closedCashFlows.isEmpty) {
-    return InvestmentStats.empty();
-  }
-
-  return _calculateStats(closedCashFlows);
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          final closedCashFlows = cashFlows
+              .where((cf) => closedIds.contains(cf.investmentId))
+              .toList();
+          if (closedCashFlows.isEmpty) {
+            return AsyncValue.data(InvestmentStats.empty());
+          }
+          return AsyncValue.data(_calculateStats(closedCashFlows));
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
 });
 
-/// Stats for open investments only (unrealized)
-final openInvestmentsStatsProvider = FutureProvider<InvestmentStats>((ref) async {
-  final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
-  final openIds = investments
-      .where((i) => i.status == InvestmentStatus.open)
-      .map((i) => i.id)
-      .toSet();
+/// Stats for open investments only (derived from streams - auto-updates)
+final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
+  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  if (openIds.isEmpty) {
-    return InvestmentStats.empty();
-  }
+  return investmentsAsync.when(
+    data: (investments) {
+      final openIds = investments
+          .where((i) => i.status == InvestmentStatus.open)
+          .map((i) => i.id)
+          .toSet();
 
-  final allCashFlows = await ref.watch(allCashFlowsProvider.future);
-  final openCashFlows = allCashFlows.where((cf) => openIds.contains(cf.investmentId)).toList();
+      if (openIds.isEmpty) {
+        return AsyncValue.data(InvestmentStats.empty());
+      }
 
-  if (openCashFlows.isEmpty) {
-    return InvestmentStats.empty();
-  }
-
-  return _calculateStats(openCashFlows);
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          final openCashFlows = cashFlows
+              .where((cf) => openIds.contains(cf.investmentId))
+              .toList();
+          if (openCashFlows.isEmpty) {
+            return AsyncValue.data(InvestmentStats.empty());
+          }
+          return AsyncValue.data(_calculateStats(openCashFlows));
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
 });
 
 /// Investment with its stats for display
@@ -128,130 +176,175 @@ class InvestmentWithStats {
   InvestmentWithStats({required this.investment, required this.stats});
 }
 
-/// Recently closed investments (last 5)
-final recentlyClosedInvestmentsProvider = FutureProvider<List<InvestmentWithStats>>((ref) async {
-  final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
-  final closed = investments
-      .where((i) => i.status == InvestmentStatus.closed)
-      .toList()
-    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+/// Recently closed investments (derived from streams - auto-updates)
+final recentlyClosedInvestmentsProvider = Provider<AsyncValue<List<InvestmentWithStats>>>((ref) {
+  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  final recentClosed = closed.take(3).toList();
-  final result = <InvestmentWithStats>[];
+  return investmentsAsync.when(
+    data: (investments) {
+      final closed = investments
+          .where((i) => i.status == InvestmentStatus.closed)
+          .toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
-  for (final inv in recentClosed) {
-    final cashFlows = await ref.watch(investmentRepositoryProvider).getCashFlowsByInvestment(inv.id);
-    final stats = cashFlows.isEmpty ? InvestmentStats.empty() : _calculateStats(cashFlows);
-    result.add(InvestmentWithStats(investment: inv, stats: stats));
-  }
+      final recentClosed = closed.take(3).toList();
 
-  return result;
+      return cashFlowsAsync.when(
+        data: (allCashFlows) {
+          final result = <InvestmentWithStats>[];
+          for (final inv in recentClosed) {
+            final invCashFlows = allCashFlows
+                .where((cf) => cf.investmentId == inv.id)
+                .toList();
+            final stats = invCashFlows.isEmpty
+                ? InvestmentStats.empty()
+                : _calculateStats(invCashFlows);
+            result.add(InvestmentWithStats(investment: inv, stats: stats));
+          }
+          return AsyncValue.data(result);
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
 });
 
-/// Monthly cash flow trend (last 6 months)
-final monthlyCashFlowTrendProvider = FutureProvider<List<MonthlyCashFlowData>>((ref) async {
-  final cashFlows = await ref.watch(allCashFlowsProvider.future);
+/// Monthly cash flow trend (derived from streams - auto-updates)
+final monthlyCashFlowTrendProvider = Provider<AsyncValue<List<MonthlyCashFlowData>>>((ref) {
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  // Get last 6 months
-  final now = DateTime.now();
-  final months = List.generate(6, (i) {
-    final date = DateTime(now.year, now.month - i, 1);
-    return DateTime(date.year, date.month, 1);
-  }).reversed.toList();
+  return cashFlowsAsync.when(
+    data: (cashFlows) {
+      // Get last 6 months
+      final now = DateTime.now();
+      final months = List.generate(6, (i) {
+        final date = DateTime(now.year, now.month - i, 1);
+        return DateTime(date.year, date.month, 1);
+      }).reversed.toList();
 
-  final result = <MonthlyCashFlowData>[];
+      final result = <MonthlyCashFlowData>[];
 
-  for (final month in months) {
-    final nextMonth = DateTime(month.year, month.month + 1, 1);
-    double inflows = 0;
-    double outflows = 0;
+      for (final month in months) {
+        final nextMonth = DateTime(month.year, month.month + 1, 1);
+        double inflows = 0;
+        double outflows = 0;
 
-    for (final cf in cashFlows) {
-      if (cf.date.isAfter(month.subtract(const Duration(days: 1))) &&
-          cf.date.isBefore(nextMonth)) {
-        if (cf.type.isOutflow) {
-          outflows += cf.amount;
-        } else {
-          inflows += cf.amount;
+        for (final cf in cashFlows) {
+          if (cf.date.isAfter(month.subtract(const Duration(days: 1))) &&
+              cf.date.isBefore(nextMonth)) {
+            if (cf.type.isOutflow) {
+              outflows += cf.amount;
+            } else {
+              inflows += cf.amount;
+            }
+          }
+        }
+
+        result.add(MonthlyCashFlowData(month: month, inflows: inflows, outflows: outflows));
+      }
+
+      return AsyncValue.data(result);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
+
+/// Distribution by investment type (derived from streams - auto-updates)
+final investmentTypeDistributionProvider = Provider<AsyncValue<List<TypeDistribution>>>((ref) {
+  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+  return investmentsAsync.when(
+    data: (investments) {
+      return cashFlowsAsync.when(
+        data: (allCashFlows) {
+          final distribution = <InvestmentType, TypeDistribution>{};
+
+          for (final inv in investments) {
+            final invCashFlows = allCashFlows.where((cf) => cf.investmentId == inv.id);
+            final invested = invCashFlows
+                .where((cf) => cf.type.isOutflow)
+                .fold<double>(0, (sum, cf) => sum + cf.amount);
+
+            if (distribution.containsKey(inv.type)) {
+              final existing = distribution[inv.type]!;
+              distribution[inv.type] = TypeDistribution(
+                type: inv.type,
+                totalInvested: existing.totalInvested + invested,
+                count: existing.count + 1,
+              );
+            } else {
+              distribution[inv.type] = TypeDistribution(
+                type: inv.type,
+                totalInvested: invested,
+                count: 1,
+              );
+            }
+          }
+
+          final result = distribution.values.toList()
+            ..sort((a, b) => b.totalInvested.compareTo(a.totalInvested));
+
+          return AsyncValue.data(result);
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
+
+/// Year over Year comparison (derived from streams - auto-updates)
+final yoyComparisonProvider = Provider<AsyncValue<YoYComparison>>((ref) {
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+  return cashFlowsAsync.when(
+    data: (cashFlows) {
+      final now = DateTime.now();
+      final thisYearStart = DateTime(now.year, 1, 1);
+      final lastYearStart = DateTime(now.year - 1, 1, 1);
+      final lastYearEnd = DateTime(now.year, 1, 1);
+
+      double thisYearInvested = 0, thisYearReturned = 0;
+      double lastYearInvested = 0, lastYearReturned = 0;
+
+      for (final cf in cashFlows) {
+        // This year
+        if (!cf.date.isBefore(thisYearStart)) {
+          if (cf.type.isOutflow) {
+            thisYearInvested += cf.amount;
+          } else {
+            thisYearReturned += cf.amount;
+          }
+        }
+        // Last year
+        else if (!cf.date.isBefore(lastYearStart) && cf.date.isBefore(lastYearEnd)) {
+          if (cf.type.isOutflow) {
+            lastYearInvested += cf.amount;
+          } else {
+            lastYearReturned += cf.amount;
+          }
         }
       }
-    }
 
-    result.add(MonthlyCashFlowData(month: month, inflows: inflows, outflows: outflows));
-  }
-
-  return result;
-});
-
-/// Distribution by investment type
-final investmentTypeDistributionProvider = FutureProvider<List<TypeDistribution>>((ref) async {
-  final investments = await ref.watch(investmentRepositoryProvider).getAllInvestments();
-  final distribution = <InvestmentType, TypeDistribution>{};
-
-  for (final inv in investments) {
-    final cashFlows = await ref.watch(investmentRepositoryProvider).getCashFlowsByInvestment(inv.id);
-    final invested = cashFlows.where((cf) => cf.type.isOutflow).fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    if (distribution.containsKey(inv.type)) {
-      final existing = distribution[inv.type]!;
-      distribution[inv.type] = TypeDistribution(
-        type: inv.type,
-        totalInvested: existing.totalInvested + invested,
-        count: existing.count + 1,
-      );
-    } else {
-      distribution[inv.type] = TypeDistribution(
-        type: inv.type,
-        totalInvested: invested,
-        count: 1,
-      );
-    }
-  }
-
-  final result = distribution.values.toList()
-    ..sort((a, b) => b.totalInvested.compareTo(a.totalInvested));
-
-  return result;
-});
-
-/// Year over Year comparison
-final yoyComparisonProvider = FutureProvider<YoYComparison>((ref) async {
-  final cashFlows = await ref.watch(allCashFlowsProvider.future);
-
-  final now = DateTime.now();
-  final thisYearStart = DateTime(now.year, 1, 1);
-  final lastYearStart = DateTime(now.year - 1, 1, 1);
-  final lastYearEnd = DateTime(now.year, 1, 1);
-
-  double thisYearInvested = 0, thisYearReturned = 0;
-  double lastYearInvested = 0, lastYearReturned = 0;
-
-  for (final cf in cashFlows) {
-    // This year
-    if (!cf.date.isBefore(thisYearStart)) {
-      if (cf.type.isOutflow) {
-        thisYearInvested += cf.amount;
-      } else {
-        thisYearReturned += cf.amount;
-      }
-    }
-    // Last year
-    else if (!cf.date.isBefore(lastYearStart) && cf.date.isBefore(lastYearEnd)) {
-      if (cf.type.isOutflow) {
-        lastYearInvested += cf.amount;
-      } else {
-        lastYearReturned += cf.amount;
-      }
-    }
-  }
-
-  return YoYComparison(
-    thisYearNet: thisYearReturned - thisYearInvested,
-    lastYearNet: lastYearReturned - lastYearInvested,
-    thisYearInvested: thisYearInvested,
-    lastYearInvested: lastYearInvested,
-    thisYearReturned: thisYearReturned,
-    lastYearReturned: lastYearReturned,
+      return AsyncValue.data(YoYComparison(
+        thisYearNet: thisYearReturned - thisYearInvested,
+        lastYearNet: lastYearReturned - lastYearInvested,
+        thisYearInvested: thisYearInvested,
+        lastYearInvested: lastYearInvested,
+        thisYearReturned: thisYearReturned,
+        lastYearReturned: lastYearReturned,
+      ));
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
   );
 });
 
@@ -472,12 +565,12 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  // Note: With stream-based architecture, manual invalidation is largely unnecessary.
+  // Firestore streams auto-update, and derived providers reactively recompute.
+  // This method is kept for edge cases (e.g., forcing refresh after error recovery).
   void _invalidateAll() {
+    // Only invalidate the base stream providers - derived providers auto-update
     _ref.invalidate(allInvestmentsProvider);
-    _ref.invalidate(globalStatsProvider);
-    _ref.invalidate(allCashFlowsProvider);
-    _ref.invalidate(closedInvestmentsStatsProvider);
-    _ref.invalidate(openInvestmentsStatsProvider);
-    _ref.invalidate(recentlyClosedInvestmentsProvider);
+    _ref.invalidate(allCashFlowsStreamProvider);
   }
 }

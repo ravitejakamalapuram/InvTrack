@@ -222,11 +222,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               isLastPage ? 'Get Started' : 'Next',
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
+              style: AppTypography.buttonLarge.copyWith(
                 color: Colors.white,
               ),
             ),

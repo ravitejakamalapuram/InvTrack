@@ -34,6 +34,9 @@ abstract class InvestmentRepository {
 
   // ============ CASH FLOWS ============
 
+  /// Watch all cash flows (reactive stream for global stats)
+  Stream<List<CashFlowEntity>> watchAllCashFlows();
+
   /// Watch cash flows for an investment (reactive stream)
   Stream<List<CashFlowEntity>> watchCashFlowsByInvestment(String investmentId);
 
