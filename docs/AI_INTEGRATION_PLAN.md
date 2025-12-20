@@ -75,35 +75,35 @@ This document outlines the plan to integrate AI-powered document parsing into In
 
 ## 4. Implementation Phases
 
-### Phase 1: Setup (1-2 days)
-- [ ] Enable Firebase AI Logic in Firebase Console
-- [ ] Add `firebase_ai` package to pubspec.yaml
-- [ ] Configure Gemini API provider (Developer API for free tier)
-- [ ] Set up Firebase App Check for security
+### Phase 1: Setup ✅ COMPLETED
+- [x] Enable Firebase AI Logic in Firebase Console
+- [x] Add `firebase_ai` package to pubspec.yaml
+- [x] Configure Gemini API provider (Developer API for free tier)
+- [ ] Set up Firebase App Check for security (optional enhancement)
 
-### Phase 2: File Upload (2-3 days)
-- [ ] Create document picker UI (file_picker package)
-- [ ] Support file types: CSV, XLSX, PDF, JPG/PNG
-- [ ] Upload files to Firebase Storage (temporary bucket)
-- [ ] Implement file size limits (max 10MB)
+### Phase 2: File Upload ✅ COMPLETED
+- [x] Create document picker UI (file_picker package)
+- [x] Support file types: CSV, XLSX, PDF, JPG/PNG
+- [x] Upload files to Firebase Storage (temporary bucket)
+- [x] Implement file size limits (max 10MB)
 
-### Phase 3: AI Extraction (3-4 days)
-- [ ] Create Gemini prompt for investment data extraction
-- [ ] Implement structured output (JSON schema)
-- [ ] Handle multimodal input (text for CSV, vision for PDF/images)
-- [ ] Parse Gemini response into CashFlow entities
+### Phase 3: AI Extraction ✅ COMPLETED
+- [x] Create Gemini prompt for investment data extraction
+- [x] Implement structured output (JSON schema)
+- [x] Handle multimodal input (text for CSV, vision for PDF/images)
+- [x] Parse Gemini response into CashFlow entities
 
-### Phase 4: User Verification (2-3 days)
-- [ ] Create review UI showing extracted cash flows
-- [ ] Allow user to edit/correct each entry
-- [ ] Implement confidence indicators
-- [ ] Add "Accept All" and "Accept Selected" actions
+### Phase 4: User Verification ✅ COMPLETED
+- [x] Create review UI showing extracted cash flows
+- [x] Allow user to edit/correct each entry (toggle selection)
+- [x] Implement confidence indicators
+- [x] Add "Accept All" and "Accept Selected" actions
 
-### Phase 5: Save & Cleanup (1-2 days)
-- [ ] Save confirmed cash flows to Firestore
-- [ ] Delete temporary files from Storage
-- [ ] Add success/error feedback
-- [ ] Implement retry logic for failures
+### Phase 5: Save & Cleanup ✅ COMPLETED
+- [x] Save confirmed cash flows to Firestore
+- [x] Delete temporary files from Storage
+- [x] Add success/error feedback
+- [ ] Implement retry logic for failures (optional enhancement)
 
 ---
 
@@ -191,12 +191,12 @@ If you cannot determine a field with confidence, set confidence to 0.5 or lower.
 
 ```yaml
 dependencies:
-  firebase_ai: ^0.3.0          # Firebase AI Logic SDK
-  file_picker: ^6.0.0          # Document selection
-  firebase_storage: ^11.0.0    # Temporary file storage
-  excel: ^4.0.0                # Excel parsing (fallback)
-  csv: ^6.0.0                  # CSV parsing (fallback)
+  firebase_ai: ^3.6.1          # Firebase AI Logic SDK (Gemini 2.0)
+  file_picker: ^10.3.7         # Document selection
+  firebase_storage: ^13.0.5    # Temporary file storage
 ```
+
+**Note**: Excel and CSV parsing packages are not needed as Gemini handles document parsing directly.
 
 ---
 
