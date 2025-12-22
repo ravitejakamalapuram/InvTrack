@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
@@ -16,7 +17,16 @@ class FinancialCalculator {
       amounts.add(cf.signedAmount);
     }
 
-    return XirrSolver.calculateXirr(dates, amounts);
+    // Debug logging
+    debugPrint('XIRR Calculation - ${cashFlows.length} cash flows:');
+    for (int i = 0; i < dates.length; i++) {
+      debugPrint('  ${dates[i].toIso8601String().substring(0, 10)}: ${amounts[i]}');
+    }
+
+    final result = XirrSolver.calculateXirr(dates, amounts);
+    debugPrint('  XIRR Result: ${(result * 100).toStringAsFixed(2)}%');
+
+    return result;
   }
 
   /// Calculates CAGR (Compound Annual Growth Rate).

@@ -26,16 +26,12 @@ class AIImportStateData {
   final PlatformFile? selectedFile;
   final AIExtractionResult? extractionResult;
   final String? errorMessage;
-  final String? selectedInvestmentId;
-  final String? newInvestmentName;
 
   const AIImportStateData({
     this.state = AIImportState.initial,
     this.selectedFile,
     this.extractionResult,
     this.errorMessage,
-    this.selectedInvestmentId,
-    this.newInvestmentName,
   });
 
   AIImportStateData copyWith({
@@ -43,8 +39,6 @@ class AIImportStateData {
     PlatformFile? selectedFile,
     AIExtractionResult? extractionResult,
     String? errorMessage,
-    String? selectedInvestmentId,
-    String? newInvestmentName,
     bool clearFile = false,
     bool clearResult = false,
     bool clearError = false,
@@ -54,8 +48,6 @@ class AIImportStateData {
       selectedFile: clearFile ? null : (selectedFile ?? this.selectedFile),
       extractionResult: clearResult ? null : (extractionResult ?? this.extractionResult),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      selectedInvestmentId: selectedInvestmentId ?? this.selectedInvestmentId,
-      newInvestmentName: newInvestmentName ?? this.newInvestmentName,
     );
   }
 }
@@ -102,7 +94,6 @@ class AIImportNotifier extends StateNotifier<AIImportStateData> {
       state = state.copyWith(
         state: AIImportState.reviewing,
         extractionResult: result,
-        newInvestmentName: result.suggestedInvestmentName,
       );
     } catch (e) {
       state = state.copyWith(
@@ -112,19 +103,60 @@ class AIImportNotifier extends StateNotifier<AIImportStateData> {
     }
   }
 
-  void toggleCashFlowSelection(String id) {
+  /// Toggle selection of a cash flow within an investment
+  void toggleCashFlowSelection(String investmentId, String cashFlowId) {
     final result = state.extractionResult;
     if (result == null) return;
 
-    final updatedCashFlows = result.cashFlows.map((cf) {
-      if (cf.id == id) {
-        return cf.copyWith(isSelected: !cf.isSelected);
+    final updatedInvestments = result.investments.map((inv) {
+      if (inv.id == investmentId) {
+        final updatedCashFlows = inv.cashFlows.map((cf) {
+          if (cf.id == cashFlowId) {
+            return cf.copyWith(isSelected: !cf.isSelected);
+          }
+          return cf;
+        }).toList();
+        return inv.copyWith(cashFlows: updatedCashFlows);
       }
-      return cf;
+      return inv;
     }).toList();
 
     state = state.copyWith(
-      extractionResult: result.copyWith(cashFlows: updatedCashFlows),
+      extractionResult: result.copyWith(investments: updatedInvestments),
+    );
+  }
+
+  /// Toggle selection of an entire investment
+  void toggleInvestmentSelection(String investmentId) {
+    final result = state.extractionResult;
+    if (result == null) return;
+
+    final updatedInvestments = result.investments.map((inv) {
+      if (inv.id == investmentId) {
+        return inv.copyWith(isSelected: !inv.isSelected);
+      }
+      return inv;
+    }).toList();
+
+    state = state.copyWith(
+      extractionResult: result.copyWith(investments: updatedInvestments),
+    );
+  }
+
+  /// Update the name of an investment
+  void updateInvestmentName(String investmentId, String name) {
+    final result = state.extractionResult;
+    if (result == null) return;
+
+    final updatedInvestments = result.investments.map((inv) {
+      if (inv.id == investmentId) {
+        return inv.copyWith(editedName: name);
+      }
+      return inv;
+    }).toList();
+
+    state = state.copyWith(
+      extractionResult: result.copyWith(investments: updatedInvestments),
     );
   }
 
@@ -132,12 +164,15 @@ class AIImportNotifier extends StateNotifier<AIImportStateData> {
     final result = state.extractionResult;
     if (result == null) return;
 
-    final updatedCashFlows = result.cashFlows.map((cf) {
-      return cf.copyWith(isSelected: true);
+    final updatedInvestments = result.investments.map((inv) {
+      final updatedCashFlows = inv.cashFlows.map((cf) {
+        return cf.copyWith(isSelected: true);
+      }).toList();
+      return inv.copyWith(isSelected: true, cashFlows: updatedCashFlows);
     }).toList();
 
     state = state.copyWith(
-      extractionResult: result.copyWith(cashFlows: updatedCashFlows),
+      extractionResult: result.copyWith(investments: updatedInvestments),
     );
   }
 
@@ -145,26 +180,29 @@ class AIImportNotifier extends StateNotifier<AIImportStateData> {
     final result = state.extractionResult;
     if (result == null) return;
 
-    final updatedCashFlows = result.cashFlows.map((cf) {
-      return cf.copyWith(isSelected: false);
+    final updatedInvestments = result.investments.map((inv) {
+      final updatedCashFlows = inv.cashFlows.map((cf) {
+        return cf.copyWith(isSelected: false);
+      }).toList();
+      return inv.copyWith(isSelected: false, cashFlows: updatedCashFlows);
     }).toList();
 
     state = state.copyWith(
-      extractionResult: result.copyWith(cashFlows: updatedCashFlows),
+      extractionResult: result.copyWith(investments: updatedInvestments),
     );
   }
 
-  void setNewInvestmentName(String name) {
-    state = state.copyWith(newInvestmentName: name);
-  }
-
-  /// Save selected cash flows to Firestore
+  /// Save selected investments and their cash flows to Firestore
   Future<int> saveSelectedCashFlows() async {
     final result = state.extractionResult;
     if (result == null) return 0;
 
-    final selectedCashFlows = result.selectedCashFlows;
-    if (selectedCashFlows.isEmpty) return 0;
+    // Filter to only selected investments with selected cash flows
+    final selectedInvestments = result.investments
+        .where((inv) => inv.isSelected && inv.selectedCashFlowCount > 0)
+        .toList();
+
+    if (selectedInvestments.isEmpty) return 0;
 
     state = state.copyWith(state: AIImportState.saving);
 
@@ -179,32 +217,36 @@ class AIImportNotifier extends StateNotifier<AIImportStateData> {
         return 0;
       }
 
-      // Create a new investment
-      final investmentName = state.newInvestmentName ?? 'Imported Investment';
+      int totalCashFlowsSaved = 0;
       final now = DateTime.now();
-      final investment = InvestmentEntity(
-        id: _uuid.v4(),
-        name: investmentName,
-        type: InvestmentType.other,
-        status: InvestmentStatus.open,
-        createdAt: now,
-        updatedAt: now,
-      );
 
-      await repository.createInvestment(investment);
-
-      // Add all selected cash flows
-      for (final extractedCf in selectedCashFlows) {
-        final cashFlow = CashFlowEntity(
+      // Create each investment and its cash flows
+      for (final extractedInv in selectedInvestments) {
+        final investment = InvestmentEntity(
           id: _uuid.v4(),
-          investmentId: investment.id,
-          date: extractedCf.date,
-          amount: extractedCf.amount,
-          type: extractedCf.type,
-          notes: extractedCf.notes,
+          name: extractedInv.name,
+          type: InvestmentType.other,
+          status: InvestmentStatus.open,
           createdAt: now,
+          updatedAt: now,
         );
-        await repository.addCashFlow(cashFlow);
+
+        await repository.createInvestment(investment);
+
+        // Add all selected cash flows for this investment
+        for (final extractedCf in extractedInv.selectedCashFlows) {
+          final cashFlow = CashFlowEntity(
+            id: _uuid.v4(),
+            investmentId: investment.id,
+            date: extractedCf.date,
+            amount: extractedCf.amount,
+            type: extractedCf.type,
+            notes: extractedCf.notes,
+            createdAt: now,
+          );
+          await repository.addCashFlow(cashFlow);
+          totalCashFlowsSaved++;
+        }
       }
 
       // Invalidate investment providers to refresh data
@@ -212,7 +254,7 @@ class AIImportNotifier extends StateNotifier<AIImportStateData> {
       _ref.invalidate(allCashFlowsStreamProvider);
 
       state = state.copyWith(state: AIImportState.completed);
-      return selectedCashFlows.length;
+      return totalCashFlowsSaved;
     } catch (e) {
       state = state.copyWith(
         state: AIImportState.error,

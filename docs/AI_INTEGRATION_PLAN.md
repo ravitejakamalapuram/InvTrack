@@ -109,25 +109,34 @@ This document outlines the plan to integrate AI-powered document parsing into In
 
 ## 5. Gemini Prompt Strategy
 
-### Structured Output Schema
+### Structured Output Schema (Multi-Investment Support)
 
 ```json
 {
   "type": "object",
   "properties": {
-    "investment_name": { "type": "string" },
-    "cash_flows": {
+    "investments": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "date": { "type": "string", "format": "date" },
-          "amount": { "type": "number" },
-          "type": { "type": "string", "enum": ["INVEST", "RETURN", "INCOME", "FEE"] },
-          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-          "notes": { "type": "string" }
+          "investment_name": { "type": "string" },
+          "cash_flows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string", "format": "date" },
+                "amount": { "type": "number" },
+                "type": { "type": "string", "enum": ["INVEST", "RETURN", "INCOME", "FEE"] },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+                "notes": { "type": "string" }
+              },
+              "required": ["date", "amount", "type", "confidence"]
+            }
+          }
         },
-        "required": ["date", "amount", "type", "confidence"]
+        "required": ["investment_name", "cash_flows"]
       }
     }
   }
@@ -137,10 +146,17 @@ This document outlines the plan to integrate AI-powered document parsing into In
 ### Sample Prompt Template
 
 ```
-You are an investment data extraction assistant. Analyze the provided document 
+You are an investment data extraction assistant. Analyze the provided document
 and extract all investment-related cash flows.
 
-For each transaction, determine:
+IMPORTANT: The document may contain ONE or MULTIPLE investments. Group cash flows
+by their corresponding investment. If you can identify different investment names,
+funds, stocks, or accounts, create separate entries for each.
+
+For each investment, extract:
+1. INVESTMENT_NAME: The name of the investment/fund/stock/account
+
+For each transaction within an investment, determine:
 1. DATE: The transaction date (format: YYYY-MM-DD)
 2. AMOUNT: The monetary value (positive number)
 3. TYPE: One of:
@@ -151,7 +167,9 @@ For each transaction, determine:
 4. CONFIDENCE: Your confidence in this extraction (0.0 to 1.0)
 5. NOTES: Any relevant notes about the transaction
 
-Return the data as JSON matching the provided schema.
+Return the data as JSON with an "investments" array containing each investment
+and its cash flows. If the document contains only one investment, still use
+the "investments" array with a single entry.
 If you cannot determine a field with confidence, set confidence to 0.5 or lower.
 ```
 

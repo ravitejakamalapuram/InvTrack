@@ -3,7 +3,7 @@ import 'package:inv_tracker/features/ai_import/domain/entities/extracted_cash_fl
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 void main() {
-  group('AIExtractionResult', () {
+  group('ExtractedInvestment', () {
     ExtractedCashFlow createCashFlow({
       required String id,
       bool isSelected = true,
@@ -19,28 +19,118 @@ void main() {
     }
 
     group('constructor', () {
+      test('should create investment with required parameters', () {
+        final investment = ExtractedInvestment(
+          id: 'inv-1',
+          suggestedName: 'Test Fund',
+        );
+
+        expect(investment.id, 'inv-1');
+        expect(investment.suggestedName, 'Test Fund');
+        expect(investment.name, 'Test Fund');
+        expect(investment.cashFlows, isEmpty);
+        expect(investment.isSelected, true);
+      });
+
+      test('should use editedName over suggestedName when set', () {
+        final investment = ExtractedInvestment(
+          id: 'inv-1',
+          suggestedName: 'Suggested Name',
+          editedName: 'Edited Name',
+        );
+
+        expect(investment.name, 'Edited Name');
+      });
+    });
+
+    group('selectedCashFlowCount', () {
+      test('should return count of selected cash flows', () {
+        final investment = ExtractedInvestment(
+          id: 'inv-1',
+          suggestedName: 'Test',
+          cashFlows: [
+            createCashFlow(id: '1', isSelected: true),
+            createCashFlow(id: '2', isSelected: false),
+            createCashFlow(id: '3', isSelected: true),
+          ],
+        );
+
+        expect(investment.selectedCashFlowCount, 2);
+      });
+    });
+
+    group('fromJson', () {
+      test('should parse valid JSON correctly', () {
+        int idCounter = 0;
+        final json = {
+          'investment_name': 'My Fund',
+          'cash_flows': [
+            {'date': '2024-01-15', 'amount': 1000.0, 'type': 'INVEST', 'confidence': 0.9},
+            {'date': '2024-02-15', 'amount': 500.0, 'type': 'INVEST', 'confidence': 0.85},
+          ],
+        };
+
+        final investment = ExtractedInvestment.fromJson(
+          json,
+          'inv-1',
+          () => 'cf-${idCounter++}',
+        );
+
+        expect(investment.suggestedName, 'My Fund');
+        expect(investment.cashFlows.length, 2);
+        expect(investment.cashFlows[0].id, 'cf-0');
+        expect(investment.cashFlows[1].id, 'cf-1');
+      });
+    });
+  });
+
+  group('AIExtractionResult', () {
+    ExtractedCashFlow createCashFlow({
+      required String id,
+      bool isSelected = true,
+    }) {
+      return ExtractedCashFlow(
+        id: id,
+        date: DateTime(2024, 1, 15),
+        amount: 1000.0,
+        type: CashFlowType.invest,
+        confidence: 0.95,
+        isSelected: isSelected,
+      );
+    }
+
+    ExtractedInvestment createInvestment({
+      required String id,
+      required String name,
+      List<ExtractedCashFlow>? cashFlows,
+      bool isSelected = true,
+    }) {
+      return ExtractedInvestment(
+        id: id,
+        suggestedName: name,
+        cashFlows: cashFlows ?? [createCashFlow(id: '$id-cf-1')],
+        isSelected: isSelected,
+      );
+    }
+
+    group('constructor', () {
       test('should create empty result by default', () {
         const result = AIExtractionResult();
 
-        expect(result.suggestedInvestmentName, isNull);
-        expect(result.cashFlows, isEmpty);
+        expect(result.investments, isEmpty);
         expect(result.errorMessage, isNull);
         expect(result.rawResponse, isNull);
       });
 
-      test('should create result with cash flows', () {
-        final cashFlows = [
-          createCashFlow(id: '1'),
-          createCashFlow(id: '2'),
-        ];
-
+      test('should create result with investments', () {
         final result = AIExtractionResult(
-          suggestedInvestmentName: 'Test Investment',
-          cashFlows: cashFlows,
+          investments: [
+            createInvestment(id: 'inv-1', name: 'Fund A'),
+            createInvestment(id: 'inv-2', name: 'Fund B'),
+          ],
         );
 
-        expect(result.suggestedInvestmentName, 'Test Investment');
-        expect(result.cashFlows.length, 2);
+        expect(result.investments.length, 2);
       });
 
       test('should create result with error', () {
@@ -54,14 +144,23 @@ void main() {
     });
 
     group('isEmpty', () {
-      test('should return true when no cash flows', () {
+      test('should return true when no investments', () {
         const result = AIExtractionResult();
         expect(result.isEmpty, true);
       });
 
-      test('should return false when has cash flows', () {
+      test('should return true when investments have no cash flows', () {
         final result = AIExtractionResult(
-          cashFlows: [createCashFlow(id: '1')],
+          investments: [
+            ExtractedInvestment(id: 'inv-1', suggestedName: 'Empty Fund'),
+          ],
+        );
+        expect(result.isEmpty, true);
+      });
+
+      test('should return false when has investments with cash flows', () {
+        final result = AIExtractionResult(
+          investments: [createInvestment(id: 'inv-1', name: 'Fund A')],
         );
         expect(result.isEmpty, false);
       });
@@ -80,72 +179,91 @@ void main() {
     });
 
     group('selectedCount', () {
-      test('should return count of selected cash flows', () {
+      test('should return total count of selected cash flows across investments', () {
         final result = AIExtractionResult(
-          cashFlows: [
-            createCashFlow(id: '1', isSelected: true),
-            createCashFlow(id: '2', isSelected: false),
-            createCashFlow(id: '3', isSelected: true),
+          investments: [
+            createInvestment(
+              id: 'inv-1',
+              name: 'Fund A',
+              cashFlows: [
+                createCashFlow(id: '1', isSelected: true),
+                createCashFlow(id: '2', isSelected: false),
+              ],
+            ),
+            createInvestment(
+              id: 'inv-2',
+              name: 'Fund B',
+              cashFlows: [
+                createCashFlow(id: '3', isSelected: true),
+                createCashFlow(id: '4', isSelected: true),
+              ],
+            ),
           ],
         );
 
-        expect(result.selectedCount, 2);
+        expect(result.selectedCount, 3);
       });
 
-      test('should return 0 when no cash flows selected', () {
+      test('should not count cash flows from deselected investments', () {
         final result = AIExtractionResult(
-          cashFlows: [
-            createCashFlow(id: '1', isSelected: false),
-            createCashFlow(id: '2', isSelected: false),
+          investments: [
+            createInvestment(
+              id: 'inv-1',
+              name: 'Fund A',
+              isSelected: false,
+              cashFlows: [createCashFlow(id: '1', isSelected: true)],
+            ),
+            createInvestment(
+              id: 'inv-2',
+              name: 'Fund B',
+              isSelected: true,
+              cashFlows: [createCashFlow(id: '2', isSelected: true)],
+            ),
           ],
         );
 
-        expect(result.selectedCount, 0);
+        expect(result.selectedCount, 1);
       });
     });
 
-    group('selectedCashFlows', () {
-      test('should return only selected cash flows', () {
+    group('selectedInvestmentCount', () {
+      test('should return count of selected investments', () {
         final result = AIExtractionResult(
-          cashFlows: [
-            createCashFlow(id: '1', isSelected: true),
-            createCashFlow(id: '2', isSelected: false),
-            createCashFlow(id: '3', isSelected: true),
+          investments: [
+            createInvestment(id: 'inv-1', name: 'Fund A', isSelected: true),
+            createInvestment(id: 'inv-2', name: 'Fund B', isSelected: false),
+            createInvestment(id: 'inv-3', name: 'Fund C', isSelected: true),
           ],
         );
 
-        final selected = result.selectedCashFlows;
-
-        expect(selected.length, 2);
-        expect(selected.map((cf) => cf.id).toList(), ['1', '3']);
+        expect(result.selectedInvestmentCount, 2);
       });
     });
 
     group('copyWith', () {
-      test('should create copy with updated investment name', () {
+      test('should create copy with updated investments', () {
         final original = AIExtractionResult(
-          suggestedInvestmentName: 'Original',
-          cashFlows: [createCashFlow(id: '1')],
+          investments: [createInvestment(id: 'inv-1', name: 'Original')],
         );
 
-        final copy = original.copyWith(suggestedInvestmentName: 'Updated');
+        final copy = original.copyWith(
+          investments: [createInvestment(id: 'inv-2', name: 'Updated')],
+        );
 
-        expect(copy.suggestedInvestmentName, 'Updated');
-        expect(copy.cashFlows.length, 1);
+        expect(copy.investments.first.suggestedName, 'Updated');
       });
 
-      test('should create copy with updated cash flows', () {
+      test('should preserve other fields when updating investments', () {
         final original = AIExtractionResult(
-          cashFlows: [createCashFlow(id: '1')],
+          investments: [createInvestment(id: 'inv-1', name: 'Test')],
+          rawResponse: '{"test": true}',
         );
 
-        final newCashFlows = [
-          createCashFlow(id: '1', isSelected: false),
-        ];
+        final copy = original.copyWith(errorMessage: 'New error');
 
-        final copy = original.copyWith(cashFlows: newCashFlows);
-
-        expect(copy.cashFlows.first.isSelected, false);
+        expect(copy.investments.length, 1);
+        expect(copy.rawResponse, '{"test": true}');
+        expect(copy.errorMessage, 'New error');
       });
     });
   });

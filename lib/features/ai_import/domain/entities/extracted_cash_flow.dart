@@ -85,37 +85,107 @@ class ExtractedCashFlow {
   }
 }
 
-/// Result of AI extraction containing all extracted cash flows
-class AIExtractionResult {
-  final String? suggestedInvestmentName;
+/// Represents an investment with its extracted cash flows
+class ExtractedInvestment {
+  final String id;
+  final String suggestedName;
+  final String editedName;
   final List<ExtractedCashFlow> cashFlows;
-  final String? errorMessage;
-  final String? rawResponse;
+  final bool isSelected;
 
-  const AIExtractionResult({
-    this.suggestedInvestmentName,
+  const ExtractedInvestment({
+    required this.id,
+    required this.suggestedName,
+    String? editedName,
     this.cashFlows = const [],
-    this.errorMessage,
-    this.rawResponse,
-  });
+    this.isSelected = true,
+  }) : editedName = editedName ?? suggestedName;
 
-  bool get isEmpty => cashFlows.isEmpty;
-  bool get hasError => errorMessage != null;
+  /// The name to use (edited or suggested)
+  String get name => editedName.isNotEmpty ? editedName : suggestedName;
 
-  int get selectedCount => cashFlows.where((cf) => cf.isSelected).length;
+  int get selectedCashFlowCount => cashFlows.where((cf) => cf.isSelected).length;
 
   List<ExtractedCashFlow> get selectedCashFlows =>
       cashFlows.where((cf) => cf.isSelected).toList();
 
-  AIExtractionResult copyWith({
-    String? suggestedInvestmentName,
+  ExtractedInvestment copyWith({
+    String? id,
+    String? suggestedName,
+    String? editedName,
     List<ExtractedCashFlow>? cashFlows,
+    bool? isSelected,
+  }) {
+    return ExtractedInvestment(
+      id: id ?? this.id,
+      suggestedName: suggestedName ?? this.suggestedName,
+      editedName: editedName ?? this.editedName,
+      cashFlows: cashFlows ?? this.cashFlows,
+      isSelected: isSelected ?? this.isSelected,
+    );
+  }
+
+  /// Factory to create from AI JSON response
+  factory ExtractedInvestment.fromJson(
+    Map<String, dynamic> json,
+    String id,
+    String Function() generateCashFlowId,
+  ) {
+    final name = json['investment_name'] as String? ?? 'Unknown Investment';
+    final cashFlowsList = json['cash_flows'] as List<dynamic>? ?? [];
+
+    final cashFlows = cashFlowsList.map((cfJson) {
+      return ExtractedCashFlow.fromJson(
+        cfJson as Map<String, dynamic>,
+        generateCashFlowId(),
+      );
+    }).toList();
+
+    return ExtractedInvestment(
+      id: id,
+      suggestedName: name,
+      cashFlows: cashFlows,
+    );
+  }
+}
+
+/// Result of AI extraction containing all extracted investments
+class AIExtractionResult {
+  final List<ExtractedInvestment> investments;
+  final String? errorMessage;
+  final String? rawResponse;
+
+  const AIExtractionResult({
+    this.investments = const [],
+    this.errorMessage,
+    this.rawResponse,
+  });
+
+  bool get isEmpty => investments.isEmpty || investments.every((inv) => inv.cashFlows.isEmpty);
+  bool get hasError => errorMessage != null;
+
+  /// Total selected cash flows across all investments
+  int get selectedCount => investments.fold(
+    0,
+    (sum, inv) => sum + (inv.isSelected ? inv.selectedCashFlowCount : 0),
+  );
+
+  /// Total cash flows across all investments
+  int get totalCashFlowCount => investments.fold(
+    0,
+    (sum, inv) => sum + inv.cashFlows.length,
+  );
+
+  /// Number of selected investments
+  int get selectedInvestmentCount => investments.where((inv) => inv.isSelected).length;
+
+  AIExtractionResult copyWith({
+    List<ExtractedInvestment>? investments,
     String? errorMessage,
     String? rawResponse,
   }) {
     return AIExtractionResult(
-      suggestedInvestmentName: suggestedInvestmentName ?? this.suggestedInvestmentName,
-      cashFlows: cashFlows ?? this.cashFlows,
+      investments: investments ?? this.investments,
       errorMessage: errorMessage ?? this.errorMessage,
       rawResponse: rawResponse ?? this.rawResponse,
     );

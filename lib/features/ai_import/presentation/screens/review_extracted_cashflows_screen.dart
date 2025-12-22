@@ -22,19 +22,21 @@ class ReviewExtractedCashflowsScreen extends ConsumerStatefulWidget {
 
 class _ReviewExtractedCashflowsScreenState
     extends ConsumerState<ReviewExtractedCashflowsScreen> {
-  late TextEditingController _nameController;
-
-  @override
-  void initState() {
-    super.initState();
-    final initialName = ref.read(aiImportProvider).newInvestmentName ?? '';
-    _nameController = TextEditingController(text: initialName);
-  }
+  final Map<String, TextEditingController> _nameControllers = {};
 
   @override
   void dispose() {
-    _nameController.dispose();
+    for (final controller in _nameControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  TextEditingController _getControllerForInvestment(ExtractedInvestment inv) {
+    if (!_nameControllers.containsKey(inv.id)) {
+      _nameControllers[inv.id] = TextEditingController(text: inv.name);
+    }
+    return _nameControllers[inv.id]!;
   }
 
   @override
@@ -54,7 +56,7 @@ class _ReviewExtractedCashflowsScreenState
     });
 
     final extractionResult = importState.extractionResult;
-    if (extractionResult == null) {
+    if (extractionResult == null || extractionResult.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Review')),
         body: const Center(child: Text('No data to review')),
@@ -78,25 +80,6 @@ class _ReviewExtractedCashflowsScreenState
       ),
       body: Column(
         children: [
-          // Investment name input
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Investment Name',
-                hintText: 'Enter investment name',
-                prefixIcon: const Icon(Icons.business_center),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (value) {
-                ref.read(aiImportProvider.notifier).setNewInvestmentName(value);
-              },
-            ),
-          ),
-
           // Info bar
           Container(
             padding: const EdgeInsets.symmetric(
@@ -106,30 +89,112 @@ class _ReviewExtractedCashflowsScreenState
             color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             child: Row(
               children: [
-                Text(
-                  '${extractionResult.selectedCount} of ${extractionResult.cashFlows.length} selected',
-                  style: AppTypography.body,
+                Expanded(
+                  child: Text(
+                    '${extractionResult.selectedInvestmentCount} investments, '
+                    '${extractionResult.selectedCount} cash flows',
+                    style: AppTypography.body,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: AppSpacing.sm),
                 _buildConfidenceLegend(isDark),
               ],
             ),
           ),
 
-          // Cash flows list
+          // Investments list with their cash flows
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: extractionResult.cashFlows.length,
+              itemCount: extractionResult.investments.length,
               itemBuilder: (context, index) {
-                final cf = extractionResult.cashFlows[index];
-                return _buildCashFlowCard(cf, isDark, currencySymbol);
+                final inv = extractionResult.investments[index];
+                return _buildInvestmentSection(inv, isDark, currencySymbol);
               },
             ),
           ),
 
           // Bottom save button
           _buildBottomBar(isDark, importState, extractionResult),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvestmentSection(
+    ExtractedInvestment inv,
+    bool isDark,
+    String currencySymbol,
+  ) {
+    final controller = _getControllerForInvestment(inv);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Investment header with checkbox and name input
+          GlassCard(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Checkbox(
+                      value: inv.isSelected,
+                      onChanged: (_) {
+                        HapticFeedback.selectionClick();
+                        ref.read(aiImportProvider.notifier)
+                            .toggleInvestmentSelection(inv.id);
+                      },
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        decoration: InputDecoration(
+                          labelText: 'Investment Name',
+                          hintText: 'Enter investment name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        onChanged: (value) {
+                          ref.read(aiImportProvider.notifier)
+                              .updateInvestmentName(inv.id, value);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Padding(
+                  padding: const EdgeInsets.only(left: 48),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${inv.selectedCashFlowCount} of ${inv.cashFlows.length} transactions',
+                        style: AppTypography.caption,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Cash flows for this investment
+          if (inv.isSelected)
+            ...inv.cashFlows.map((cf) => _buildCashFlowCard(
+              cf,
+              inv.id,
+              isDark,
+              currencySymbol,
+            )),
         ],
       ),
     );
@@ -162,7 +227,12 @@ class _ReviewExtractedCashflowsScreenState
     );
   }
 
-  Widget _buildCashFlowCard(ExtractedCashFlow cf, bool isDark, String currencySymbol) {
+  Widget _buildCashFlowCard(
+    ExtractedCashFlow cf,
+    String investmentId,
+    bool isDark,
+    String currencySymbol,
+  ) {
     final dateFormat = DateFormat('MMM d, yyyy');
     final confidenceColor = cf.confidence >= 0.9
         ? Colors.green
@@ -171,13 +241,14 @@ class _ReviewExtractedCashflowsScreenState
             : Colors.red;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm, left: AppSpacing.lg),
       child: GlassCard(
         child: CheckboxListTile(
           value: cf.isSelected,
           onChanged: (_) {
             HapticFeedback.selectionClick();
-            ref.read(aiImportProvider.notifier).toggleCashFlowSelection(cf.id);
+            ref.read(aiImportProvider.notifier)
+                .toggleCashFlowSelection(investmentId, cf.id);
           },
           title: Row(
             children: [
