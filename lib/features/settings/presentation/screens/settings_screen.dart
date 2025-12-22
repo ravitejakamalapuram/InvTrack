@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/ai_import/presentation/screens/ai_import_screen.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
@@ -143,6 +144,21 @@ class SettingsScreen extends ConsumerWidget {
                       loading: () {},
                     );
                   }
+                },
+              ),
+            ),
+            PremiumGate(
+              child: ListTile(
+                title: const Text('AI-Powered Import'),
+                subtitle: const Text('Smart document parsing with Gemini'),
+                leading: const Icon(Icons.auto_awesome, color: Colors.purple),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AIImportScreen(),
+                    ),
+                  );
                 },
               ),
             ),

@@ -18,7 +18,7 @@ repository: https://github.com/ravitejakamalapuram/InvTrack
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: ^3.10.1
@@ -65,6 +65,8 @@ dependencies:
   firebase_core: ^4.2.1
   cloud_firestore: ^6.1.0
   firebase_auth: ^6.1.2
+  firebase_ai: ^3.6.1
+  firebase_storage: ^13.0.5
 
 
 dev_dependencies:
