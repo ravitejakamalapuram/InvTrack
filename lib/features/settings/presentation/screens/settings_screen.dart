@@ -312,7 +312,16 @@ Last updated: December 05, 2025
     return Column(
       children: [
         SwitchListTile(
-          title: const Text('Enable Passcode'),
+          title: const Text('App Lock'),
+          subtitle: Text(
+            securityState.hasPin
+                ? 'Require PIN to open app'
+                : 'Protect your data with a PIN',
+          ),
+          secondary: Icon(
+            securityState.hasPin ? Icons.lock : Icons.lock_open,
+            color: securityState.hasPin ? Colors.green : null,
+          ),
           value: securityState.hasPin,
           onChanged: (bool value) {
             if (value) {
@@ -337,8 +346,19 @@ Last updated: December 05, 2025
           },
         ),
         if (securityState.hasPin) ...[
+          if (securityState.isBiometricAvailable)
+            SwitchListTile(
+              title: const Text('Face ID / Touch ID'),
+              subtitle: const Text('Unlock with biometrics'),
+              secondary: const Icon(Icons.fingerprint),
+              value: securityState.isBiometricEnabled,
+              onChanged: (bool value) {
+                securityNotifier.toggleBiometrics(value);
+              },
+            ),
           ListTile(
-            title: const Text('Change Passcode'),
+            title: const Text('Change PIN'),
+            leading: const Icon(Icons.pin),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.of(context).push(
@@ -357,15 +377,6 @@ Last updated: December 05, 2025
               );
             },
           ),
-          if (securityState.isBiometricAvailable)
-            SwitchListTile(
-              title: const Text('Enable Biometrics'),
-              subtitle: const Text('Face ID / Touch ID'),
-              value: securityState.isBiometricEnabled,
-              onChanged: (bool value) {
-                securityNotifier.toggleBiometrics(value);
-              },
-            ),
         ],
       ],
     );

@@ -41,10 +41,16 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
 
   void _updateMessage() {
     setState(() {
-      if (widget.mode == PasscodeMode.create) {
-        _message = _tempPin == null ? 'Create a PIN' : 'Confirm your PIN';
-      } else if (widget.mode == PasscodeMode.unlock) {
-        _message = 'Enter PIN to Unlock';
+      switch (widget.mode) {
+        case PasscodeMode.create:
+          _message = _tempPin == null ? 'Create your PIN' : 'Confirm PIN';
+          break;
+        case PasscodeMode.unlock:
+          _message = 'Enter PIN to unlock';
+          break;
+        case PasscodeMode.verify:
+          _message = 'Enter current PIN';
+          break;
       }
     });
   }
@@ -109,12 +115,12 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
             if (mounted) {
               context.pop(); // Close screen
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PIN Created Successfully')),
+                const SnackBar(content: Text('App Lock enabled')),
               );
             }
           } else {
             _tempPin = null;
-            _showError('PINs do not match. Try again.');
+            _showError('PINs don\'t match');
             _updateMessage();
           }
         }
