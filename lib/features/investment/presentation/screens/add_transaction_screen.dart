@@ -149,6 +149,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyFormat = ref.watch(currencyFormatPreciseProvider);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -307,7 +308,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           builder: (context, _) {
                             final amount = double.tryParse(_amountController.text) ?? 0;
                             return Text(
-                              '$currencySymbol${amount.toStringAsFixed(2)}',
+                              currencyFormat.format(amount),
                               style: AppTypography.numberLarge.copyWith(
                                 color: isDark ? Colors.white : AppColors.neutral900Light,
                                 fontWeight: FontWeight.w700,

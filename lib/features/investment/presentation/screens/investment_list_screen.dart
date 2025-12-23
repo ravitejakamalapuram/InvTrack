@@ -38,6 +38,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
 
+  // Multi-select state
+  bool _isSelectionMode = false;
+  final Set<String> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +94,18 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       }).toList();
     }
 
+    // Sort by last cash flow date (most recent first)
+    // Uses updatedAt as fallback if stats not available
+    filtered.sort((a, b) {
+      final statsA = ref.read(investmentStatsProvider(a.id));
+      final statsB = ref.read(investmentStatsProvider(b.id));
+
+      final dateA = statsA.valueOrNull?.lastCashFlowDate ?? a.updatedAt;
+      final dateB = statsB.valueOrNull?.lastCashFlowDate ?? b.updatedAt;
+
+      return dateB.compareTo(dateA); // Descending order
+    });
+
     return filtered;
   }
 
@@ -97,6 +113,38 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const AddInvestmentScreen()),
     );
+  }
+
+  void _toggleSelectionMode() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedIds.clear();
+      }
+    });
+  }
+
+  void _toggleSelection(String id) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+      // Exit selection mode if nothing selected
+      if (_selectedIds.isEmpty) {
+        _isSelectionMode = false;
+      }
+    });
+  }
+
+  void _selectAll(List<InvestmentEntity> investments) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedIds.addAll(investments.map((i) => i.id));
+    });
   }
 
   @override
@@ -110,29 +158,41 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         slivers: [
           // Premium App Bar with Search
           SliverAppBar(
-            expandedHeight: _isSearching ? 100 : 120,
+            expandedHeight: _isSearching ? 60 : 56,
             floating: true,
             pinned: true,
             backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                bottom: AppSpacing.md,
-                right: AppSpacing.lg,
-              ),
-              title: _isSearching
-                  ? _buildSearchField(isDark)
-                  : Text(
-                      'Investments',
-                      style: AppTypography.h2.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
-                        fontSize: 24,
-                      ),
+            titleSpacing: AppSpacing.md,
+            title: _isSearching
+                ? _buildSearchField(isDark)
+                : Text(
+                    'Investments',
+                    style: AppTypography.h2.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                      fontSize: 22,
                     ),
-            ),
+                  ),
             actions: _isSearching
                 ? null
                 : [
+                    // Selection mode toggle
+                    IconButton(
+                      icon: Container(
+                        padding: EdgeInsets.all(AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: _isSelectionMode
+                              ? AppColors.primaryLight
+                              : (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                          borderRadius: AppSizes.borderRadiusMd,
+                        ),
+                        child: Icon(
+                          _isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
+                          color: _isSelectionMode ? Colors.white : (isDark ? Colors.white : AppColors.neutral700Light),
+                          size: 20,
+                        ),
+                      ),
+                      onPressed: _toggleSelectionMode,
+                    ),
                     IconButton(
                       icon: Container(
                         padding: EdgeInsets.all(AppSpacing.xs),
@@ -144,6 +204,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                         child: Icon(
                           Icons.search_rounded,
                           color: isDark ? Colors.white : AppColors.neutral700Light,
+                          size: 20,
                         ),
                       ),
                       onPressed: _toggleSearch,
@@ -152,11 +213,13 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                   ],
           ),
 
-          // Filter Tabs
+          // Filter Tabs or Selection Controls
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-              child: _buildFilterTabs(isDark),
+              child: _isSelectionMode
+                  ? _buildSelectionControls(isDark, investmentsAsync.valueOrNull ?? [])
+                  : _buildFilterTabs(isDark, investmentsAsync.valueOrNull ?? []),
             ),
           ),
 
@@ -202,33 +265,165 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           ),
         ],
       ),
-      floatingActionButton: ScaleTransition(
-        scale: _fabScale,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.heroGradient,
-            borderRadius: AppSizes.borderRadiusLg,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryLight.withValues(alpha: 0.4),
-                blurRadius: AppSpacing.md,
-                offset: const Offset(0, 6),
+      floatingActionButton: _isSelectionMode
+          ? null
+          : ScaleTransition(
+              scale: _fabScale,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.heroGradient,
+                  borderRadius: AppSizes.borderRadiusLg,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryLight.withValues(alpha: 0.4),
+                      blurRadius: AppSpacing.md,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton.extended(
+                  onPressed: _showAddInvestmentSheet,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  icon: const Icon(Icons.add_rounded, color: Colors.white),
+                  label: Text(
+                    'Add Investment',
+                    style: AppTypography.button.copyWith(color: Colors.white),
+                  ),
+                ),
               ),
-            ],
-          ),
-          child: FloatingActionButton.extended(
-            onPressed: _showAddInvestmentSheet,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: Text(
-              'Add Investment',
-              style: AppTypography.button.copyWith(color: Colors.white),
             ),
+      bottomNavigationBar: _isSelectionMode ? _buildSelectionActionBar(isDark) : null,
+    );
+  }
+
+  Widget _buildSelectionActionBar(bool isDark) {
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Selection count
+            Expanded(
+              child: Text(
+                '${_selectedIds.length} selected',
+                style: AppTypography.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
+              ),
+            ),
+            // Merge button
+            if (_selectedIds.length >= 2)
+              TextButton.icon(
+                onPressed: () => _showMergeDialog(),
+                icon: const Icon(Icons.merge_rounded),
+                label: const Text('Merge'),
+              ),
+            SizedBox(width: AppSpacing.sm),
+            // Delete button
+            TextButton.icon(
+              onPressed: _selectedIds.isNotEmpty ? () => _showDeleteConfirmation() : null,
+              icon: Icon(Icons.delete_rounded, color: AppColors.errorLight),
+              label: Text('Delete', style: TextStyle(color: AppColors.errorLight)),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Investments'),
+        content: Text('Are you sure you want to delete ${_selectedIds.length} investment(s)? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.errorLight),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteSelectedInvestments();
+    }
+  }
+
+  Future<void> _deleteSelectedInvestments() async {
+    final notifier = ref.read(investmentNotifierProvider.notifier);
+    for (final id in _selectedIds) {
+      await notifier.deleteInvestment(id);
+    }
+    setState(() {
+      _selectedIds.clear();
+      _isSelectionMode = false;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Investments deleted')),
+      );
+    }
+  }
+
+  Future<void> _showMergeDialog() async {
+    // Get the investments being merged to determine default type
+    final allInvestments = ref.read(allInvestmentsProvider).valueOrNull ?? [];
+    final toMerge = allInvestments.where((i) => _selectedIds.contains(i.id)).toList();
+
+    // Find the most common type as default
+    final typeCount = <InvestmentType, int>{};
+    for (final inv in toMerge) {
+      typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
+    }
+    final defaultType = typeCount.isNotEmpty
+        ? typeCount.entries.reduce((a, b) => a.value > b.value ? a : b).key
+        : InvestmentType.other;
+
+    final result = await showDialog<({String name, InvestmentType type})?>(
+      context: context,
+      builder: (context) => _MergeInvestmentsDialog(
+        selectedCount: _selectedIds.length,
+        defaultType: defaultType,
+        investmentTypes: toMerge.map((i) => i.type).toSet().toList(),
+      ),
+    );
+
+    if (result != null && result.name.isNotEmpty) {
+      await _mergeSelectedInvestments(result.name, result.type);
+    }
+  }
+
+  Future<void> _mergeSelectedInvestments(String newName, InvestmentType type) async {
+    final notifier = ref.read(investmentNotifierProvider.notifier);
+    await notifier.mergeInvestments(_selectedIds.toList(), newName, type: type);
+    setState(() {
+      _selectedIds.clear();
+      _isSelectionMode = false;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Investments merged into "$newName"')),
+      );
+    }
   }
 
   Widget _buildSearchField(bool isDark) {
@@ -452,19 +647,23 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     );
   }
 
-  Widget _buildFilterTabs(bool isDark) {
+  Widget _buildFilterTabs(bool isDark, List<InvestmentEntity> investments) {
+    final allCount = investments.length;
+    final openCount = investments.where((i) => i.status == InvestmentStatus.open).length;
+    final closedCount = investments.where((i) => i.status == InvestmentStatus.closed).length;
+
     return Row(
       children: [
-        _buildFilterChip('All', InvestmentFilter.all, isDark),
+        _buildFilterChip('All', allCount, InvestmentFilter.all, isDark),
         SizedBox(width: AppSpacing.xs),
-        _buildFilterChip('Open', InvestmentFilter.open, isDark),
+        _buildFilterChip('Open', openCount, InvestmentFilter.open, isDark),
         SizedBox(width: AppSpacing.xs),
-        _buildFilterChip('Closed', InvestmentFilter.closed, isDark),
+        _buildFilterChip('Closed', closedCount, InvestmentFilter.closed, isDark),
       ],
     );
   }
 
-  Widget _buildFilterChip(String label, InvestmentFilter filter, bool isDark) {
+  Widget _buildFilterChip(String label, int count, InvestmentFilter filter, bool isDark) {
     final isSelected = _filter == filter;
     return GestureDetector(
       onTap: () {
@@ -479,16 +678,111 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(AppSizes.radiusXl),
         ),
-        child: Text(
-          label,
-          style: AppTypography.small.copyWith(
-            color: isSelected
-                ? Colors.white
-                : (isDark ? Colors.white70 : AppColors.neutral700Light),
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTypography.small.copyWith(
+                color: isSelected
+                    ? Colors.white
+                    : (isDark ? Colors.white70 : AppColors.neutral700Light),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+            if (count > 0) ...[
+              SizedBox(width: 4),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: AppTypography.small.copyWith(
+                    fontSize: 10,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? Colors.white70 : AppColors.primaryLight),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSelectionControls(bool isDark, List<InvestmentEntity> investments) {
+    final filteredInvestments = _filterInvestments(investments);
+    final allSelected = filteredInvestments.isNotEmpty &&
+        filteredInvestments.every((i) => _selectedIds.contains(i.id));
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            if (allSelected) {
+              setState(() => _selectedIds.clear());
+            } else {
+              _selectAll(filteredInvestments);
+            }
+          },
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: allSelected
+                  ? AppColors.primaryLight
+                  : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  allSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 18,
+                  color: allSelected
+                      ? Colors.white
+                      : (isDark ? Colors.white70 : AppColors.neutral700Light),
+                ),
+                SizedBox(width: AppSpacing.xs),
+                Text(
+                  allSelected ? 'Deselect All' : 'Select All',
+                  style: AppTypography.small.copyWith(
+                    color: allSelected
+                        ? Colors.white
+                        : (isDark ? Colors.white70 : AppColors.neutral700Light),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Spacer(),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+          ),
+          child: Text(
+            '${_selectedIds.length} of ${filteredInvestments.length}',
+            style: AppTypography.small.copyWith(
+              color: isDark ? Colors.white70 : AppColors.neutral600Light,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -511,19 +805,29 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       orElse: () => '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
     );
 
+    final isSelected = _selectedIds.contains(investment.id);
+
     return Semantics(
       label: semanticLabel,
       button: true,
       child: Padding(
         padding: EdgeInsets.only(bottom: AppSpacing.sm),
         child: GlassCard(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => InvestmentDetailScreen(investment: investment),
-              ),
-            );
-          },
+          onTap: _isSelectionMode
+              ? () => _toggleSelection(investment.id)
+              : () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => InvestmentDetailScreen(investment: investment),
+                    ),
+                  );
+                },
+          onLongPress: !_isSelectionMode
+              ? () {
+                  setState(() => _isSelectionMode = true);
+                  _toggleSelection(investment.id);
+                }
+              : null,
           padding: EdgeInsets.zero,
           child: Column(
           children: [
@@ -531,6 +835,15 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               padding: EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
+                  // Checkbox in selection mode
+                  if (_isSelectionMode) ...[
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (_) => _toggleSelection(investment.id),
+                      activeColor: AppColors.primaryLight,
+                    ),
+                    SizedBox(width: AppSpacing.xs),
+                  ],
                   // Icon with type icon
                   Container(
                     width: AppSizes.iconXl,
@@ -576,7 +889,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(height: AppSpacing.xxs),
-                        Row(
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
                           children: [
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
@@ -592,8 +907,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                                 ),
                               ),
                             ),
-                            if (isClosed) ...[
-                              SizedBox(width: AppSpacing.xs),
+                            if (isClosed)
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
                                 decoration: BoxDecoration(
@@ -608,7 +922,6 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                                   ),
                                 ),
                               ),
-                            ],
                           ],
                         ),
                       ],
@@ -620,35 +933,8 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 ],
               ),
             ),
-            // Bottom info strip
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppSizes.radiusXl),
-                  bottomRight: Radius.circular(AppSizes.radiusXl),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Added ${AppDateUtils.formatRelative(investment.createdAt)}',
-                    style: AppTypography.small.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                    ),
-                  ),
-                  Text(
-                    'View Details',
-                    style: AppTypography.small.copyWith(
-                      color: AppColors.primaryLight,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Bottom info strip with stats
+            _buildBottomInfoStrip(investment, isDark),
           ],
         ),
         ),
@@ -658,7 +944,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   Widget _buildValueColumn(String investmentId, bool isDark) {
     final statsAsync = ref.watch(investmentStatsProvider(investmentId));
-    final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyFormat = ref.watch(currencyFormatProvider);
 
     return statsAsync.when(
       data: (stats) {
@@ -678,7 +964,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           children: [
             // Net Position (cash in - cash out)
             Text(
-              '${isPositive ? '+' : ''}$currencySymbol${stats.netCashFlow.toStringAsFixed(0)}',
+              '${isPositive ? '+' : ''}${currencyFormat.format(stats.netCashFlow.abs())}',
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 color: plColor,
@@ -714,6 +1000,259 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         Icons.chevron_right_rounded,
         color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
       ),
+    );
+  }
+
+  Widget _buildBottomInfoStrip(InvestmentEntity investment, bool isDark) {
+    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+    final currencyFormat = ref.watch(currencyFormatProvider);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(AppSizes.radiusXl),
+          bottomRight: Radius.circular(AppSizes.radiusXl),
+        ),
+      ),
+      child: statsAsync.when(
+        data: (stats) {
+          final lastActivityDate = stats.lastCashFlowDate ?? investment.createdAt;
+          final cashFlowCount = stats.cashFlowCount;
+
+          return Row(
+            children: [
+              // Last activity
+              Icon(
+                Icons.update_rounded,
+                size: 12,
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+              SizedBox(width: 4),
+              Text(
+                AppDateUtils.formatRelative(lastActivityDate),
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+              SizedBox(width: AppSpacing.md),
+              // Cash flow count
+              Icon(
+                Icons.receipt_long_rounded,
+                size: 12,
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+              SizedBox(width: 4),
+              Text(
+                '$cashFlowCount ${cashFlowCount == 1 ? 'entry' : 'entries'}',
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+              Spacer(),
+              // Total invested
+              if (stats.totalInvested > 0) ...[
+                Text(
+                  'Invested: ${currencyFormat.format(stats.totalInvested)}',
+                  style: AppTypography.small.copyWith(
+                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  'View Details',
+                  style: AppTypography.small.copyWith(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+        loading: () => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Loading...',
+              style: AppTypography.small.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+          ],
+        ),
+        error: (_, __) => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Added ${AppDateUtils.formatRelative(investment.createdAt)}',
+              style: AppTypography.small.copyWith(
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              ),
+            ),
+            Text(
+              'View Details',
+              style: AppTypography.small.copyWith(
+                color: AppColors.primaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+/// Dialog for merging investments with name and type selection
+class _MergeInvestmentsDialog extends StatefulWidget {
+  final int selectedCount;
+  final InvestmentType defaultType;
+  final List<InvestmentType> investmentTypes;
+
+  const _MergeInvestmentsDialog({
+    required this.selectedCount,
+    required this.defaultType,
+    required this.investmentTypes,
+  });
+
+  @override
+  State<_MergeInvestmentsDialog> createState() => _MergeInvestmentsDialogState();
+}
+
+class _MergeInvestmentsDialogState extends State<_MergeInvestmentsDialog> {
+  final _nameController = TextEditingController();
+  late InvestmentType _selectedType;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedType = widget.defaultType;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasMultipleTypes = widget.investmentTypes.length > 1;
+
+    return AlertDialog(
+      title: const Text('Merge Investments'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Merge ${widget.selectedCount} investments into one.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'New Investment Name',
+                hintText: 'Enter name for merged investment',
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Investment Type',
+              style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+            ),
+            if (hasMultipleTypes) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Selected investments have different types',
+                style: AppTypography.caption.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: InvestmentType.values.map((type) {
+                final isSelected = type == _selectedType;
+                final isFromSelection = widget.investmentTypes.contains(type);
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedType = type);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? type.color.withValues(alpha: 0.2)
+                          : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected ? type.color : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          type.icon,
+                          size: 16,
+                          color: isSelected ? type.color : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          type.displayName,
+                          style: AppTypography.caption.copyWith(
+                            color: isSelected ? type.color : (isDark ? AppColors.neutral300Dark : AppColors.neutral600Light),
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                        if (isFromSelection) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.check_circle,
+                            size: 12,
+                            color: type.color.withValues(alpha: 0.7),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'All cash flows will be combined.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            if (_nameController.text.trim().isNotEmpty) {
+              Navigator.of(context).pop((name: _nameController.text.trim(), type: _selectedType));
+            }
+          },
+          child: const Text('Merge'),
+        ),
+      ],
     );
   }
 }

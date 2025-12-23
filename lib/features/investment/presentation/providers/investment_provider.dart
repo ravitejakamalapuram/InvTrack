@@ -565,6 +565,111 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Merge multiple investments into one
+  /// If [type] is provided, use it; otherwise fall back to most common type among merged investments
+  Future<void> mergeInvestments(List<String> investmentIds, String newName, {InvestmentType? type}) async {
+    if (investmentIds.length < 2) return;
+
+    state = const AsyncValue.loading();
+    try {
+      final repo = _ref.read(investmentRepositoryProvider);
+
+      // Get all investments to merge
+      final allInvestments = await _ref.read(allInvestmentsProvider.future);
+      final toMerge = allInvestments.where((i) => investmentIds.contains(i.id)).toList();
+
+      if (toMerge.isEmpty) {
+        state = const AsyncValue.data(null);
+        return;
+      }
+
+      // Use provided type, or fall back to first investment's type, or most common type
+      InvestmentType finalType;
+      if (type != null) {
+        finalType = type;
+      } else {
+        final typeCount = <InvestmentType, int>{};
+        for (final inv in toMerge) {
+          typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
+        }
+        finalType = typeCount.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+      }
+
+      // Create new merged investment
+      final now = DateTime.now();
+      final newInvestmentId = const Uuid().v4();
+      final newInvestment = InvestmentEntity(
+        id: newInvestmentId,
+        name: newName,
+        type: finalType,
+        status: toMerge.any((i) => i.status == InvestmentStatus.open)
+            ? InvestmentStatus.open
+            : InvestmentStatus.closed,
+        notes: 'Merged from: ${toMerge.map((i) => i.name).join(', ')}',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // Collect all cash flows from merged investments (prepare in memory first)
+      final newCashFlows = <CashFlowEntity>[];
+      for (final inv in toMerge) {
+        final cashFlows = await repo.getCashFlowsByInvestment(inv.id);
+        for (final cf in cashFlows) {
+          newCashFlows.add(CashFlowEntity(
+            id: const Uuid().v4(),
+            investmentId: newInvestmentId,
+            type: cf.type,
+            amount: cf.amount,
+            date: cf.date,
+            notes: cf.notes != null ? '${cf.notes} (from ${inv.name})' : 'From ${inv.name}',
+            createdAt: now,
+          ));
+        }
+      }
+
+      // Use bulk import for efficient batch writes
+      await repo.bulkImport(
+        investments: [newInvestment],
+        cashFlows: newCashFlows,
+      );
+
+      // Delete old investments
+      for (final id in investmentIds) {
+        await repo.deleteInvestment(id);
+      }
+
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Bulk import investments with their cash flows.
+  /// This is optimized for importing large amounts of data quickly.
+  /// Data is written in batches and providers are only invalidated once at the end.
+  Future<({int investments, int cashFlows})> bulkImport({
+    required List<InvestmentEntity> investments,
+    required List<CashFlowEntity> cashFlows,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final result = await _ref.read(investmentRepositoryProvider).bulkImport(
+        investments: investments,
+        cashFlows: cashFlows,
+      );
+
+      // Only invalidate once after all data is imported
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+      return result;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
   // Note: With stream-based architecture, manual invalidation is largely unnecessary.
   // Firestore streams auto-update, and derived providers reactively recompute.
   // This method is kept for edge cases (e.g., forcing refresh after error recovery).

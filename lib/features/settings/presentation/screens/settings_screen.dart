@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
-import 'package:inv_tracker/features/ai_import/presentation/screens/ai_import_screen.dart';
+import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/import_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/premium/presentation/widgets/premium_gate.dart';
 import 'package:inv_tracker/features/premium/presentation/providers/premium_provider.dart';
@@ -29,6 +28,9 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
+          // User Info Section
+          _buildUserInfoSection(context, ref),
+          const Divider(),
           _buildSectionHeader('Appearance'),
           ListTile(
             title: const Text('Theme'),
@@ -72,97 +74,47 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildSectionHeader('Security'),
           _buildSecuritySection(context, ref),
+          // Data Management section
           const Divider(),
-          _buildSectionHeader('Account'),
-          ListTile(
-            title: const Text('Sign Out'),
-            leading: const Icon(Icons.logout, color: Colors.red),
-            onTap: () {
-              ref.read(authRepositoryProvider).signOut();
-            },
-          ),
-          // Data Management section - only show in debug mode
-          if (kDebugMode) ...[
-            const Divider(),
-            _buildSectionHeader('Data Management (Debug)'),
-            PremiumGate(
-              child: ListTile(
-                title: const Text('Export to CSV'),
-                leading: const Icon(Icons.download, color: Colors.green),
-                trailing: ref.watch(exportStateProvider).isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.chevron_right),
-                onTap: () async {
-                  await ref.read(exportStateProvider.notifier).exportCsv();
-                  final state = ref.read(exportStateProvider);
-                  if (state.hasError && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Export failed: ${state.error}')),
-                    );
-                  }
-                },
-              ),
-            ),
-            PremiumGate(
-              child: ListTile(
-                title: const Text('Import from CSV'),
-                leading: const Icon(Icons.upload_file, color: Colors.blue),
-                trailing: ref.watch(importStateProvider).isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.chevron_right),
-                onTap: () async {
-                  await ref.read(importStateProvider.notifier).importCsv();
-                  final state = ref.read(importStateProvider);
-
-                  if (context.mounted) {
-                     state.when(
-                      data: (result) {
-                        if (result != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Imported: ${result.successCount} success, ${result.failureCount} failed.\n${result.message}',
-                              ),
-                              backgroundColor: result.failureCount > 0 ? Colors.orange : Colors.green,
-                            ),
-                          );
-                        }
-                      },
-                      error: (err, stack) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Import failed: $err'), backgroundColor: Colors.red),
-                        );
-                      },
-                      loading: () {},
-                    );
-                  }
-                },
-              ),
-            ),
-            PremiumGate(
-              child: ListTile(
-                title: const Text('AI-Powered Import'),
-                subtitle: const Text('Smart document parsing with Gemini'),
-                leading: const Icon(Icons.auto_awesome, color: Colors.purple),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const AIImportScreen(),
-                    ),
+          _buildSectionHeader('Data Management'),
+          PremiumGate(
+            child: ListTile(
+              title: const Text('Export Investments'),
+              subtitle: const Text('Download as CSV'),
+              leading: const Icon(Icons.download, color: Colors.green),
+              trailing: ref.watch(exportStateProvider).isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.chevron_right),
+              onTap: () async {
+                await ref.read(exportStateProvider.notifier).exportCsv();
+                final state = ref.read(exportStateProvider);
+                if (state.hasError && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Export failed: ${state.error}')),
                   );
-                },
-              ),
+                }
+              },
             ),
-          ],
+          ),
+          PremiumGate(
+            child: ListTile(
+              title: const Text('Import Investments'),
+              subtitle: const Text('Import from CSV template'),
+              leading: const Icon(Icons.upload_file, color: Colors.blue),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const BulkImportScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
           if (kDebugMode) ...[
             const Divider(),
             _buildSectionHeader('Developer Options'),
@@ -212,11 +164,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 );
                 if (confirmed == true) {
-                  await ref.read(seedDataStateProvider.notifier).seedData();
-                  if (context.mounted) {
+                  final result = await ref.read(seedDataStateProvider.notifier).seedData();
+                  if (context.mounted && result != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Demo data seeded successfully!'),
+                      SnackBar(
+                        content: Text('Seeded ${result.investments} investments with ${result.cashFlows} cash flows'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -303,6 +255,17 @@ Last updated: December 05, 2025
             subtitle: const Text('1.0.0 (Build 1)'),
             leading: const Icon(Icons.info, color: Colors.grey),
           ),
+          // Sign Out at the end
+          const Divider(),
+          _buildSectionHeader('Account'),
+          ListTile(
+            title: const Text('Sign Out'),
+            leading: const Icon(Icons.logout, color: Colors.red),
+            onTap: () {
+              ref.read(authRepositoryProvider).signOut();
+            },
+          ),
+          SizedBox(height: AppSpacing.xl),
         ],
       ),
     );
@@ -395,6 +358,79 @@ Last updated: December 05, 2025
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildUserInfoSection(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
+    return authState.when(
+      data: (user) {
+        if (user == null) return const SizedBox.shrink();
+
+        final displayName = user.displayName ?? 'User';
+        final email = user.email;
+        final photoUrl = user.photoUrl;
+        final isGuest = user.isGuest;
+
+        return Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.grey.shade300,
+                backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                child: photoUrl == null
+                    ? Icon(
+                        isGuest ? Icons.person_outline : Icons.person,
+                        size: 32,
+                        color: Colors.grey.shade600,
+                      )
+                    : null,
+              ),
+              SizedBox(width: AppSpacing.md),
+              // User info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isGuest ? 'Guest User' : displayName,
+                      style: AppTypography.h3.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (!isGuest) ...[
+                      SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        email,
+                        style: AppTypography.body.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ] else ...[
+                      SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        'Sign in to sync your data',
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

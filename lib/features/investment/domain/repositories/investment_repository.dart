@@ -54,4 +54,14 @@ abstract class InvestmentRepository {
 
   /// Delete a cash flow
   Future<void> deleteCashFlow(String id);
+
+  // ============ BULK OPERATIONS ============
+
+  /// Bulk import investments with their cash flows in a single batch operation.
+  /// This is optimized for importing large amounts of data quickly.
+  /// Returns the number of successfully imported items.
+  Future<({int investments, int cashFlows})> bulkImport({
+    required List<InvestmentEntity> investments,
+    required List<CashFlowEntity> cashFlows,
+  });
 }

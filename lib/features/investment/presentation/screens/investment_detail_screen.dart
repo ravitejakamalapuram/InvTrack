@@ -51,7 +51,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
     final statsAsync = ref.watch(investmentStatsProvider(widget.investment.id));
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;
 
     return Scaffold(
@@ -190,7 +190,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: statsAsync.when(
-                  data: (stats) => _buildStatsSection(stats, isDark, currencySymbol),
+                  data: (stats) => _buildStatsSection(stats, isDark, currencyFormat),
                   loading: () => _buildStatsLoading(isDark),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
@@ -253,7 +253,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     (context, index) {
                       return StaggeredFadeIn(
                         index: index,
-                        child: _buildCashFlowCard(sortedFlows[index], isDark, currencySymbol),
+                        child: _buildCashFlowCard(sortedFlows[index], isDark, currencyFormat),
                       );
                     },
                     childCount: sortedFlows.length,
@@ -315,7 +315,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildStatsSection(InvestmentStats stats, bool isDark, String currencySymbol) {
+  Widget _buildStatsSection(InvestmentStats stats, bool isDark, NumberFormat currencyFormat) {
     final isPositive = stats.netCashFlow >= 0;
     final xirrPercent = stats.xirr * 100;
 
@@ -327,7 +327,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Expanded(
               child: _buildStatCardLarge(
                 'Cash Out',
-                '$currencySymbol${stats.totalInvested.toStringAsFixed(0)}',
+                currencyFormat.format(stats.totalInvested),
                 Icons.arrow_upward_rounded,
                 AppColors.errorLight,
                 isDark,
@@ -337,7 +337,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Expanded(
               child: _buildStatCardLarge(
                 'Cash In',
-                '$currencySymbol${stats.totalReturned.toStringAsFixed(0)}',
+                currencyFormat.format(stats.totalReturned),
                 Icons.arrow_downward_rounded,
                 AppColors.successLight,
                 isDark,
@@ -352,7 +352,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Expanded(
               child: _buildStatCardLarge(
                 'Net Position',
-                '${isPositive ? '+' : ''}$currencySymbol${stats.netCashFlow.toStringAsFixed(0)}',
+                '${isPositive ? '+' : ''}${currencyFormat.format(stats.netCashFlow.abs())}',
                 isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
                 isPositive ? AppColors.successLight : AppColors.errorLight,
                 isDark,
@@ -611,7 +611,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildCashFlowCard(CashFlowEntity cashFlow, bool isDark, String currencySymbol) {
+  Widget _buildCashFlowCard(CashFlowEntity cashFlow, bool isDark, NumberFormat currencyFormat) {
     final isOutflow = cashFlow.type.isOutflow;
     final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
 
@@ -707,7 +707,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ),
               // Amount
               Text(
-                '${isOutflow ? '-' : '+'}$currencySymbol${cashFlow.amount.toStringAsFixed(0)}',
+                '${isOutflow ? '-' : '+'}${currencyFormat.format(cashFlow.amount)}',
                 style: AppTypography.bodyLarge.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,

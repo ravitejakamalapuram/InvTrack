@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
@@ -21,7 +22,7 @@ class OverviewScreen extends ConsumerWidget {
     final globalStats = ref.watch(globalStatsProvider);
     final openStats = ref.watch(openInvestmentsStatsProvider);
     final closedStats = ref.watch(closedInvestmentsStatsProvider);
-    final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -62,10 +63,10 @@ class OverviewScreen extends ConsumerWidget {
                 padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
                   data: (stats) => stats.hasData
-                      ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencySymbol, isDark)
-                      : _buildEmptyStateContent(context, ref, globalStats, closedStats, currencySymbol, isDark),
-                  loading: () => _buildLoadingContent(context, ref, globalStats, closedStats, currencySymbol),
-                  error: (_, __) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencySymbol, isDark),
+                      ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencyFormat, isDark)
+                      : _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
+                  loading: () => _buildLoadingContent(context, ref, globalStats, closedStats, currencyFormat),
+                  error: (_, __) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
                 ),
               ),
             ],
@@ -82,19 +83,19 @@ class OverviewScreen extends ConsumerWidget {
     AsyncValue<InvestmentStats> globalStats,
     AsyncValue<InvestmentStats> openStats,
     AsyncValue<InvestmentStats> closedStats,
-    String currencySymbol,
+    NumberFormat currencyFormat,
     bool isDark,
   ) {
     return SliverList(
       delegate: SliverChildListDelegate([
         // Hero Card - Global Summary with toggle
-        _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencySymbol),
+        _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencyFormat),
 
         SizedBox(height: AppSpacing.xl),
 
         // Quick Stats Grid
         globalStats.when(
-          data: (stats) => _buildQuickStats(context, stats, currencySymbol),
+          data: (stats) => _buildQuickStats(context, stats, currencyFormat),
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
         ),
@@ -102,27 +103,27 @@ class OverviewScreen extends ConsumerWidget {
         SizedBox(height: AppSpacing.xl),
 
         // Net Position Breakdown (Open vs Closed)
-        _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencySymbol, isDark),
+        _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencyFormat, isDark),
 
         SizedBox(height: AppSpacing.xl),
 
         // Monthly Cash Flow Trend
-        _buildMonthlyCashFlowTrend(context, ref, currencySymbol, isDark),
+        _buildMonthlyCashFlowTrend(context, ref, currencyFormat, isDark),
 
         SizedBox(height: AppSpacing.xl),
 
         // Investment Type Distribution
-        _buildTypeDistribution(context, ref, currencySymbol, isDark),
+        _buildTypeDistribution(context, ref, currencyFormat, isDark),
 
         SizedBox(height: AppSpacing.xl),
 
         // YoY Comparison
-        _buildYoYComparison(context, ref, currencySymbol, isDark),
+        _buildYoYComparison(context, ref, currencyFormat, isDark),
 
         SizedBox(height: AppSpacing.xl),
 
         // Recently Closed
-        _buildRecentlyClosed(context, ref, currencySymbol, isDark),
+        _buildRecentlyClosed(context, ref, currencyFormat, isDark),
 
         SizedBox(height: AppSpacing.xl),
 
@@ -145,13 +146,13 @@ class OverviewScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<InvestmentStats> globalStats,
     AsyncValue<InvestmentStats> closedStats,
-    String currencySymbol,
+    NumberFormat currencyFormat,
     bool isDark,
   ) {
     return SliverList(
       delegate: SliverChildListDelegate([
         // Hero Card - shows zeros
-        _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencySymbol),
+        _buildHeroCardWithToggle(context, ref, globalStats, closedStats, currencyFormat),
 
         const SizedBox(height: 32),
 
@@ -170,7 +171,7 @@ class OverviewScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<InvestmentStats> globalStats,
     AsyncValue<InvestmentStats> closedStats,
-    String currencySymbol,
+    NumberFormat currencyFormat,
   ) {
     return SliverList(
       delegate: SliverChildListDelegate([
@@ -208,7 +209,7 @@ class OverviewScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<InvestmentStats> openStats,
     AsyncValue<InvestmentStats> closedStats,
-    String currency,
+    NumberFormat currencyFormat,
     bool isDark,
   ) {
     return openStats.when(
@@ -237,7 +238,7 @@ class OverviewScreen extends ConsumerWidget {
                       child: _buildBreakdownItem(
                         'Open Investments',
                         open.netCashFlow,
-                        currency,
+                        currencyFormat,
                         AppColors.graphBlue,
                         Icons.hourglass_top,
                         isDark,
@@ -248,7 +249,7 @@ class OverviewScreen extends ConsumerWidget {
                       child: _buildBreakdownItem(
                         'Closed (Realized)',
                         closed.netCashFlow,
-                        currency,
+                        currencyFormat,
                         closed.netCashFlow >= 0 ? AppColors.successLight : AppColors.errorLight,
                         Icons.check_circle,
                         isDark,
@@ -271,7 +272,7 @@ class OverviewScreen extends ConsumerWidget {
   Widget _buildBreakdownItem(
     String label,
     double value,
-    String currency,
+    NumberFormat currencyFormat,
     Color color,
     IconData icon,
     bool isDark,
@@ -305,7 +306,7 @@ class OverviewScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${isPositive ? '+' : ''}$currency${value.toStringAsFixed(0)}',
+            '${isPositive ? '+' : ''}${currencyFormat.format(value.abs())}',
             style: TextStyle(
               color: isPositive ? AppColors.successLight : AppColors.errorLight,
               fontWeight: FontWeight.bold,
@@ -317,7 +318,7 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthlyCashFlowTrend(BuildContext context, WidgetRef ref, String currency, bool isDark) {
+  Widget _buildMonthlyCashFlowTrend(BuildContext context, WidgetRef ref, NumberFormat currencyFormat, bool isDark) {
     final trendAsync = ref.watch(monthlyCashFlowTrendProvider);
 
     return trendAsync.when(
@@ -417,7 +418,7 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTypeDistribution(BuildContext context, WidgetRef ref, String currency, bool isDark) {
+  Widget _buildTypeDistribution(BuildContext context, WidgetRef ref, NumberFormat currencyFormat, bool isDark) {
     final distAsync = ref.watch(investmentTypeDistributionProvider);
 
     return distAsync.when(
@@ -481,7 +482,7 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildYoYComparison(BuildContext context, WidgetRef ref, String currency, bool isDark) {
+  Widget _buildYoYComparison(BuildContext context, WidgetRef ref, NumberFormat currencyFormat, bool isDark) {
     final yoyAsync = ref.watch(yoyComparisonProvider);
 
     return yoyAsync.when(
@@ -509,9 +510,9 @@ class OverviewScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _buildYoYColumn(lastYear, data.lastYearNet, currency, isDark)),
+                  Expanded(child: _buildYoYColumn(lastYear, data.lastYearNet, currencyFormat, isDark)),
                   Container(width: 1, height: 60, color: isDark ? Colors.white24 : Colors.grey[300]),
-                  Expanded(child: _buildYoYColumn(thisYear, data.thisYearNet, currency, isDark)),
+                  Expanded(child: _buildYoYColumn(thisYear, data.thisYearNet, currencyFormat, isDark)),
                 ],
               ),
               if (data.lastYearNet != 0) ...[
@@ -552,14 +553,14 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildYoYColumn(String year, double net, String currency, bool isDark) {
+  Widget _buildYoYColumn(String year, double net, NumberFormat currencyFormat, bool isDark) {
     final isPositive = net >= 0;
     return Column(
       children: [
         Text(year, style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12)),
         const SizedBox(height: 4),
         Text(
-          '${isPositive ? '+' : ''}$currency${net.toStringAsFixed(0)}',
+          '${isPositive ? '+' : ''}${currencyFormat.format(net.abs())}',
           style: TextStyle(
             color: isPositive ? AppColors.successLight : AppColors.errorLight,
             fontWeight: FontWeight.bold,
@@ -570,7 +571,7 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentlyClosed(BuildContext context, WidgetRef ref, String currency, bool isDark) {
+  Widget _buildRecentlyClosed(BuildContext context, WidgetRef ref, NumberFormat currencyFormat, bool isDark) {
     final closedAsync = ref.watch(recentlyClosedInvestmentsProvider);
 
     return closedAsync.when(
@@ -608,7 +609,7 @@ class OverviewScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${isProfit ? '+' : ''}$currency${item.stats.netCashFlow.toStringAsFixed(0)}',
+                            '${isProfit ? '+' : ''}${currencyFormat.format(item.stats.netCashFlow.abs())}',
                             style: TextStyle(color: isProfit ? AppColors.successLight : AppColors.errorLight, fontWeight: FontWeight.w600),
                           ),
                           if (item.stats.xirr != 0 && !item.stats.xirr.isNaN)
@@ -633,7 +634,7 @@ class OverviewScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<InvestmentStats> globalStats,
     AsyncValue<InvestmentStats> closedStats,
-    String currency,
+    NumberFormat currencyFormat,
   ) {
     final showRealizedOnly = ref.watch(showRealizedOnlyProvider);
 
@@ -641,9 +642,9 @@ class OverviewScreen extends ConsumerWidget {
       loading: () => const _LoadingHeroCard(),
       error: (e, _) => _buildErrorCard(context, e.toString()),
       data: (global) => closedStats.when(
-        loading: () => _buildHeroCardContent(context, ref, global, global, currency, showRealizedOnly),
-        error: (_, __) => _buildHeroCardContent(context, ref, global, global, currency, showRealizedOnly),
-        data: (closed) => _buildHeroCardContent(context, ref, global, closed, currency, showRealizedOnly),
+        loading: () => _buildHeroCardContent(context, ref, global, global, currencyFormat, showRealizedOnly),
+        error: (_, __) => _buildHeroCardContent(context, ref, global, global, currencyFormat, showRealizedOnly),
+        data: (closed) => _buildHeroCardContent(context, ref, global, closed, currencyFormat, showRealizedOnly),
       ),
     );
   }
@@ -653,7 +654,7 @@ class OverviewScreen extends ConsumerWidget {
     WidgetRef ref,
     InvestmentStats globalStats,
     InvestmentStats closedStats,
-    String currency,
+    NumberFormat currencyFormat,
     bool showRealizedOnly,
   ) {
     final stats = showRealizedOnly ? closedStats : globalStats;
@@ -662,7 +663,7 @@ class OverviewScreen extends ConsumerWidget {
 
     final semanticLabel = AccessibilityUtils.statCardLabel(
       title: showRealizedOnly ? 'Realized Net Position' : 'Net Position All Investments',
-      value: AccessibilityUtils.formatCurrencyForScreenReader(netPosition, currency),
+      value: AccessibilityUtils.formatCurrencyForScreenReader(netPosition, currencyFormat.currencySymbol),
       subtitle: stats.hasData
           ? 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}'
           : null,
@@ -735,7 +736,7 @@ class OverviewScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isPositive ? '+' : ''}$currency${netPosition.abs().toStringAsFixed(0)}',
+                '${isPositive ? '+' : ''}${currencyFormat.format(netPosition.abs())}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 36,
@@ -765,9 +766,9 @@ class OverviewScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildHeroStat('Cash Out', '$currency${stats.totalInvested.toStringAsFixed(0)}'),
+              _buildHeroStat('Cash Out', currencyFormat.format(stats.totalInvested)),
               const SizedBox(width: 24),
-              _buildHeroStat('Cash In', '$currency${stats.totalReturned.toStringAsFixed(0)}'),
+              _buildHeroStat('Cash In', currencyFormat.format(stats.totalReturned)),
               const SizedBox(width: 24),
               _buildHeroStat('XIRR', '${(stats.xirr * 100).toStringAsFixed(1)}%'),
             ],
@@ -814,7 +815,7 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, InvestmentStats stats, String currency) {
+  Widget _buildQuickStats(BuildContext context, InvestmentStats stats, NumberFormat currencyFormat) {
     return Row(
       children: [
         Expanded(

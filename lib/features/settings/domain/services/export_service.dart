@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -8,6 +9,20 @@ class ExportService {
   final InvestmentRepository _investmentRepository;
 
   ExportService(this._investmentRepository);
+
+  /// Converts CashFlowType to the format expected by import template
+  String _typeToExportString(CashFlowType type) {
+    switch (type) {
+      case CashFlowType.invest:
+        return 'INVEST';
+      case CashFlowType.income:
+        return 'INCOME';
+      case CashFlowType.returnFlow:
+        return 'RETURN';
+      case CashFlowType.fee:
+        return 'FEE';
+    }
+  }
 
   Future<void> exportToCsv() async {
     // 1. Fetch Data
@@ -29,18 +44,17 @@ class ExportService {
     allCashFlows.sort((a, b) =>
       (a['cashFlow'].date as DateTime).compareTo(b['cashFlow'].date as DateTime));
 
-    // 2. Prepare CSV Data
+    // 2. Prepare CSV Data - matching import template format exactly
+    // Import template: Date, Investment Name, Type, Amount, Notes
     final List<List<dynamic>> rows = [];
 
-    // Header Row
+    // Header Row - matches CsvTemplateService.headers exactly
     rows.add([
       'Date',
       'Investment Name',
-      'Investment Type',
-      'Cash Flow Type',
+      'Type',
       'Amount',
       'Notes',
-      'Investment Status',
     ]);
 
     // Data Rows
@@ -49,13 +63,11 @@ class ExportService {
       final investment = item['investment'];
 
       rows.add([
-        cf.date.toIso8601String().split('T').first,
+        cf.date.toIso8601String().split('T').first, // yyyy-MM-dd format
         investment.name,
-        investment.type.name,
-        cf.type.name,
+        _typeToExportString(cf.type), // INVEST, INCOME, RETURN, FEE
         cf.amount,
         cf.notes ?? '',
-        investment.status.name,
       ]);
     }
 
@@ -64,7 +76,7 @@ class ExportService {
 
     // 4. Save to Temp File
     final directory = await getTemporaryDirectory();
-    final path = '${directory.path}/cashflow_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+    final path = '${directory.path}/investments_export_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File(path);
     await file.writeAsString(csvData);
 
@@ -72,8 +84,8 @@ class ExportService {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(path)],
-        text: 'Here is your Cash Flow Tracker export.',
-        subject: 'Cash Flow Tracker Export',
+        text: 'Your InvTrack investments export. This file can be re-imported into the app.',
+        subject: 'InvTrack Investments Export',
       ),
     );
   }

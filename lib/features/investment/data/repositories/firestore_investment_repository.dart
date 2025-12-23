@@ -194,6 +194,49 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     await _executeWrite(() => _cashFlowsRef.doc(id).delete());
   }
 
+  // ============ BULK OPERATIONS ============
+
+  @override
+  Future<({int investments, int cashFlows})> bulkImport({
+    required List<InvestmentEntity> investments,
+    required List<CashFlowEntity> cashFlows,
+  }) async {
+    // Firestore batch has a limit of 500 operations per batch
+    const batchLimit = 500;
+    var investmentCount = 0;
+    var cashFlowCount = 0;
+
+    // Process investments in batches
+    for (var i = 0; i < investments.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < investments.length) ? i + batchLimit : investments.length;
+
+      for (var j = i; j < end; j++) {
+        final inv = investments[j];
+        batch.set(_investmentsRef.doc(inv.id), _investmentToFirestore(inv));
+        investmentCount++;
+      }
+
+      await _executeWrite(() => batch.commit());
+    }
+
+    // Process cash flows in batches
+    for (var i = 0; i < cashFlows.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < cashFlows.length) ? i + batchLimit : cashFlows.length;
+
+      for (var j = i; j < end; j++) {
+        final cf = cashFlows[j];
+        batch.set(_cashFlowsRef.doc(cf.id), _cashFlowToFirestore(cf));
+        cashFlowCount++;
+      }
+
+      await _executeWrite(() => batch.commit());
+    }
+
+    return (investments: investmentCount, cashFlows: cashFlowCount);
+  }
+
   // ============ FIRESTORE MAPPERS ============
 
   Map<String, dynamic> _investmentToFirestore(InvestmentEntity investment) {
