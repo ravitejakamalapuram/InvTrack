@@ -20,6 +20,29 @@ import 'package:inv_tracker/features/investment/presentation/screens/investment_
 /// Filter state for investment list
 enum InvestmentFilter { all, open, closed }
 
+/// Sort options for investment list
+enum InvestmentSort {
+  lastActivity('Last Activity', Icons.schedule),
+  nameAsc('Name (A-Z)', Icons.sort_by_alpha),
+  nameDesc('Name (Z-A)', Icons.sort_by_alpha),
+  totalInvestedDesc('Total Invested (High)', Icons.payments),
+  totalInvestedAsc('Total Invested (Low)', Icons.payments_outlined),
+  totalReturnsDesc('Total Returns (High)', Icons.savings),
+  totalReturnsAsc('Total Returns (Low)', Icons.savings_outlined),
+  returnPercentDesc('Return % (High)', Icons.percent),
+  returnPercentAsc('Return % (Low)', Icons.percent),
+  xirrDesc('XIRR (High)', Icons.show_chart),
+  xirrAsc('XIRR (Low)', Icons.show_chart),
+  netPositionDesc('Net Position (High)', Icons.trending_up),
+  netPositionAsc('Net Position (Low)', Icons.trending_down),
+  createdDesc('Date Created (Newest)', Icons.calendar_today),
+  createdAsc('Date Created (Oldest)', Icons.calendar_today);
+
+  final String displayName;
+  final IconData icon;
+  const InvestmentSort(this.displayName, this.icon);
+}
+
 class InvestmentListScreen extends ConsumerStatefulWidget {
   const InvestmentListScreen({super.key});
 
@@ -35,6 +58,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   bool _isSearching = false;
   String _searchQuery = '';
   InvestmentFilter _filter = InvestmentFilter.all;
+  InvestmentSort _sort = InvestmentSort.lastActivity;
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
 
@@ -94,16 +118,106 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       }).toList();
     }
 
-    // Sort by last cash flow date (most recent first)
-    // Uses updatedAt as fallback if stats not available
+    // Apply sorting based on selected sort option
     filtered.sort((a, b) {
       final statsA = ref.read(investmentStatsProvider(a.id));
       final statsB = ref.read(investmentStatsProvider(b.id));
 
-      final dateA = statsA.valueOrNull?.lastCashFlowDate ?? a.updatedAt;
-      final dateB = statsB.valueOrNull?.lastCashFlowDate ?? b.updatedAt;
-
-      return dateB.compareTo(dateA); // Descending order
+      int comparison;
+      switch (_sort) {
+        case InvestmentSort.lastActivity:
+          final dateA = statsA.valueOrNull?.lastCashFlowDate ?? a.updatedAt;
+          final dateB = statsB.valueOrNull?.lastCashFlowDate ?? b.updatedAt;
+          comparison = dateB.compareTo(dateA); // Descending
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.nameAsc:
+          comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        case InvestmentSort.nameDesc:
+          comparison = b.name.toLowerCase().compareTo(a.name.toLowerCase());
+        case InvestmentSort.totalInvestedDesc:
+          final investedA = statsA.valueOrNull?.totalInvested ?? 0;
+          final investedB = statsB.valueOrNull?.totalInvested ?? 0;
+          comparison = investedB.compareTo(investedA);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.totalInvestedAsc:
+          final investedA = statsA.valueOrNull?.totalInvested ?? 0;
+          final investedB = statsB.valueOrNull?.totalInvested ?? 0;
+          comparison = investedA.compareTo(investedB);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.totalReturnsDesc:
+          final returnsA = statsA.valueOrNull?.totalReturned ?? 0;
+          final returnsB = statsB.valueOrNull?.totalReturned ?? 0;
+          comparison = returnsB.compareTo(returnsA);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.totalReturnsAsc:
+          final returnsA = statsA.valueOrNull?.totalReturned ?? 0;
+          final returnsB = statsB.valueOrNull?.totalReturned ?? 0;
+          comparison = returnsA.compareTo(returnsB);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.returnPercentDesc:
+          final returnA = statsA.valueOrNull?.absoluteReturn ?? 0;
+          final returnB = statsB.valueOrNull?.absoluteReturn ?? 0;
+          comparison = returnB.compareTo(returnA);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.returnPercentAsc:
+          final returnA = statsA.valueOrNull?.absoluteReturn ?? 0;
+          final returnB = statsB.valueOrNull?.absoluteReturn ?? 0;
+          comparison = returnA.compareTo(returnB);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.xirrDesc:
+          final xirrA = statsA.valueOrNull?.xirr ?? 0;
+          final xirrB = statsB.valueOrNull?.xirr ?? 0;
+          comparison = xirrB.compareTo(xirrA);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.xirrAsc:
+          final xirrA = statsA.valueOrNull?.xirr ?? 0;
+          final xirrB = statsB.valueOrNull?.xirr ?? 0;
+          comparison = xirrA.compareTo(xirrB);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.netPositionDesc:
+          final netA = statsA.valueOrNull?.netCashFlow ?? 0;
+          final netB = statsB.valueOrNull?.netCashFlow ?? 0;
+          comparison = netB.compareTo(netA);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.netPositionAsc:
+          final netA = statsA.valueOrNull?.netCashFlow ?? 0;
+          final netB = statsB.valueOrNull?.netCashFlow ?? 0;
+          comparison = netA.compareTo(netB);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.createdDesc:
+          comparison = b.createdAt.compareTo(a.createdAt);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+        case InvestmentSort.createdAsc:
+          comparison = a.createdAt.compareTo(b.createdAt);
+          if (comparison == 0) {
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+      }
+      return comparison;
     });
 
     return filtered;
@@ -145,6 +259,135 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     setState(() {
       _selectedIds.addAll(investments.map((i) => i.id));
     });
+  }
+
+  void _showSortOptions(bool isDark) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildSortOptionsSheet(isDark),
+    );
+  }
+
+  Widget _buildSortOptionsSheet(bool isDark) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: EdgeInsets.only(top: AppSpacing.sm),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.sort_rounded,
+                  color: isDark ? Colors.white : AppColors.neutral700Light,
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Sort By',
+                  style: AppTypography.h3.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                  ),
+                ),
+                const Spacer(),
+                if (_sort != InvestmentSort.lastActivity)
+                  TextButton(
+                    onPressed: () {
+                      setState(() => _sort = InvestmentSort.lastActivity);
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Reset',
+                      style: AppTypography.small.copyWith(
+                        color: AppColors.primaryLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+          // Sort options
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: InvestmentSort.values.map((sortOption) {
+                  final isSelected = _sort == sortOption;
+                  final isDefault = sortOption == InvestmentSort.lastActivity;
+                  return ListTile(
+                    leading: Icon(
+                      sortOption.icon,
+                      color: isSelected
+                          ? AppColors.primaryLight
+                          : (isDark ? Colors.white70 : AppColors.neutral600Light),
+                    ),
+                    title: Row(
+                      children: [
+                        Text(
+                          sortOption.displayName,
+                          style: AppTypography.body.copyWith(
+                            color: isSelected
+                                ? AppColors.primaryLight
+                                : (isDark ? Colors.white : AppColors.neutral800Light),
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          ),
+                        ),
+                        if (isDefault) ...[
+                          SizedBox(width: AppSpacing.xs),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (isDark ? Colors.white : AppColors.primaryLight)
+                                  .withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Default',
+                              style: AppTypography.caption.copyWith(
+                                color: isDark ? Colors.white70 : AppColors.neutral600Light,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    trailing: isSelected
+                        ? Icon(Icons.check_rounded, color: AppColors.primaryLight)
+                        : null,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _sort = sortOption);
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+        ],
+      ),
+    );
   }
 
   @override
@@ -192,6 +435,26 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                         ),
                       ),
                       onPressed: _toggleSelectionMode,
+                    ),
+                    // Sort button
+                    IconButton(
+                      icon: Container(
+                        padding: EdgeInsets.all(AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: _sort != InvestmentSort.lastActivity
+                              ? AppColors.primaryLight
+                              : (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                          borderRadius: AppSizes.borderRadiusMd,
+                        ),
+                        child: Icon(
+                          Icons.sort_rounded,
+                          color: _sort != InvestmentSort.lastActivity
+                              ? Colors.white
+                              : (isDark ? Colors.white : AppColors.neutral700Light),
+                          size: 20,
+                        ),
+                      ),
+                      onPressed: () => _showSortOptions(isDark),
                     ),
                     IconButton(
                       icon: Container(
