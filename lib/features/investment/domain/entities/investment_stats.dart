@@ -61,6 +61,48 @@ class InvestmentStats {
 
   /// Returns true if net cash flow is negative
   bool get isLoss => netCashFlow < 0;
+
+  /// Duration in years from first to last cash flow (or to now if ongoing)
+  double? get durationYears {
+    if (firstCashFlowDate == null) return null;
+    final endDate = lastCashFlowDate ?? DateTime.now();
+    final days = endDate.difference(firstCashFlowDate!).inDays;
+    return days / 365.0;
+  }
+
+  /// Formatted duration string (e.g., "2.3y" or "8mo")
+  String? get durationFormatted {
+    final years = durationYears;
+    if (years == null) return null;
+    if (years < 0.08) return '<1mo'; // Less than 1 month
+    if (years < 1) return '${(years * 12).round()}mo';
+    return '${years.toStringAsFixed(1)}y';
+  }
+
+  /// Creates a copy with the given fields replaced
+  InvestmentStats copyWith({
+    double? totalInvested,
+    double? totalReturned,
+    double? netCashFlow,
+    double? absoluteReturn,
+    double? moic,
+    double? xirr,
+    int? cashFlowCount,
+    DateTime? firstCashFlowDate,
+    DateTime? lastCashFlowDate,
+  }) {
+    return InvestmentStats(
+      totalInvested: totalInvested ?? this.totalInvested,
+      totalReturned: totalReturned ?? this.totalReturned,
+      netCashFlow: netCashFlow ?? this.netCashFlow,
+      absoluteReturn: absoluteReturn ?? this.absoluteReturn,
+      moic: moic ?? this.moic,
+      xirr: xirr ?? this.xirr,
+      cashFlowCount: cashFlowCount ?? this.cashFlowCount,
+      firstCashFlowDate: firstCashFlowDate ?? this.firstCashFlowDate,
+      lastCashFlowDate: lastCashFlowDate ?? this.lastCashFlowDate,
+    );
+  }
 }
 
 /// Monthly cash flow data for trend visualization.
@@ -77,6 +119,19 @@ class MonthlyCashFlowData {
 
   /// Net cash flow for the month (inflows - outflows)
   double get net => inflows - outflows;
+
+  /// Creates a copy with the given fields replaced
+  MonthlyCashFlowData copyWith({
+    DateTime? month,
+    double? inflows,
+    double? outflows,
+  }) {
+    return MonthlyCashFlowData(
+      month: month ?? this.month,
+      inflows: inflows ?? this.inflows,
+      outflows: outflows ?? this.outflows,
+    );
+  }
 }
 
 /// Investment type distribution for portfolio breakdown.
@@ -90,6 +145,19 @@ class TypeDistribution {
     required this.totalInvested,
     required this.count,
   });
+
+  /// Creates a copy with the given fields replaced
+  TypeDistribution copyWith({
+    InvestmentType? type,
+    double? totalInvested,
+    int? count,
+  }) {
+    return TypeDistribution(
+      type: type ?? this.type,
+      totalInvested: totalInvested ?? this.totalInvested,
+      count: count ?? this.count,
+    );
+  }
 }
 
 /// Year-over-Year comparison statistics.
@@ -116,5 +184,24 @@ class YoYComparison {
 
   /// Returns true if this year's net is better than last year's
   bool get isImproved => thisYearNet > lastYearNet;
+
+  /// Creates a copy with the given fields replaced
+  YoYComparison copyWith({
+    double? thisYearNet,
+    double? lastYearNet,
+    double? thisYearInvested,
+    double? lastYearInvested,
+    double? thisYearReturned,
+    double? lastYearReturned,
+  }) {
+    return YoYComparison(
+      thisYearNet: thisYearNet ?? this.thisYearNet,
+      lastYearNet: lastYearNet ?? this.lastYearNet,
+      thisYearInvested: thisYearInvested ?? this.thisYearInvested,
+      lastYearInvested: lastYearInvested ?? this.lastYearInvested,
+      thisYearReturned: thisYearReturned ?? this.thisYearReturned,
+      lastYearReturned: lastYearReturned ?? this.lastYearReturned,
+    );
+  }
 }
 

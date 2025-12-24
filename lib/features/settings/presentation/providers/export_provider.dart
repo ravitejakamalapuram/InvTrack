@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/features/settings/domain/services/export_service.dart';
+import 'package:inv_tracker/features/settings/data/services/export_service.dart';
 
 final exportServiceProvider = Provider<ExportService>((ref) {
   return ExportService(

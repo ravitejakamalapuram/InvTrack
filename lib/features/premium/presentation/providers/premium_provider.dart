@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
-import 'package:inv_tracker/features/premium/domain/services/premium_service.dart';
+import 'package:inv_tracker/features/premium/data/services/premium_service.dart';
 
 final premiumServiceProvider = Provider<PremiumService>((ref) {
   return PremiumService(ref.watch(sharedPreferencesProvider));

@@ -6,12 +6,11 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/edit_investment_screen.dart';
 
@@ -54,95 +53,123 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;
 
+    final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
+
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: CustomScrollView(
         slivers: [
-          // Hero App Bar
+          // Hero App Bar with pinned navigation
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 160,
             pinned: true,
-            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            backgroundColor: primaryColor,
+            surfaceTintColor: Colors.transparent,
             leading: IconButton(
               icon: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.black.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
               ),
               onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              widget.investment.name,
+              style: AppTypography.body.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             actions: [
               IconButton(
                 icon: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.more_vert_rounded, color: Colors.white),
+                  child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
                 ),
                 onPressed: () => _showOptionsSheet(context, isDark),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
             ],
             flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.pin,
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isClosed
-                        ? [Colors.grey, Colors.grey.withValues(alpha: 0.7)]
-                        : [widget.investment.type.color, widget.investment.type.color.withValues(alpha: 0.7)],
+                    colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 56, 20, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Row(
                           children: [
                             Container(
-                              width: 56,
-                              height: 56,
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Center(
                                 child: Icon(
                                   widget.investment.type.icon,
                                   color: Colors.white,
-                                  size: 28,
+                                  size: 24,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Text(
+                                    widget.investment.name,
+                                    style: AppTypography.h3.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      Expanded(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
                                         child: Text(
-                                          widget.investment.name,
-                                          style: AppTypography.h3.copyWith(
+                                          widget.investment.type.displayName,
+                                          style: AppTypography.small.copyWith(
                                             color: Colors.white,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ),
-                                      if (isClosed)
+                                      if (isClosed) ...[
+                                        const SizedBox(width: 8),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.2),
+                                            color: Colors.white.withValues(alpha: 0.3),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
@@ -153,22 +180,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                             ),
                                           ),
                                         ),
+                                      ],
                                     ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      widget.investment.type.displayName,
-                                      style: AppTypography.small.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
                                   ),
                                 ],
                               ),
@@ -321,77 +334,131 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     return Column(
       children: [
-        // First row: Cash Out and Cash In
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCardLarge(
-                'Cash Out',
+        // Net Position Hero Card
+        GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (isPositive ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                  size: 28,
+                  color: isPositive ? AppColors.successLight : AppColors.errorLight,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Net Position',
+                      style: AppTypography.small.copyWith(
+                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      currencyFormat.format(stats.netCashFlow),
+                      style: AppTypography.h2.copyWith(
+                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: (isPositive ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isPositive ? AppColors.successLight : AppColors.errorLight,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Cash Out and Cash In with labeled icons
+        GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              // Cash Out
+              Icon(Icons.arrow_upward_rounded, size: 16, color: AppColors.errorLight),
+              const SizedBox(width: 4),
+              Text(
                 currencyFormat.format(stats.totalInvested),
-                Icons.arrow_upward_rounded,
-                AppColors.errorLight,
-                isDark,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCardLarge(
-                'Cash In',
+              Text(
+                ' out',
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Cash In
+              Icon(Icons.arrow_downward_rounded, size: 16, color: AppColors.successLight),
+              const SizedBox(width: 4),
+              Text(
                 currencyFormat.format(stats.totalReturned),
-                Icons.arrow_downward_rounded,
-                AppColors.successLight,
-                isDark,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+              Text(
+                ' in',
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${stats.cashFlowCount} txns',
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        // Second row: Net Position with Return %
+        const SizedBox(height: 10),
+        // XIRR and MOIC row
         Row(
           children: [
             Expanded(
-              child: _buildStatCardLarge(
-                'Net Position',
-                '${isPositive ? '+' : ''}${currencyFormat.format(stats.netCashFlow.abs())}',
-                isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                isPositive ? AppColors.successLight : AppColors.errorLight,
-                isDark,
-                subtitle: '${isPositive ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}% return',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Third row: XIRR and MOIC
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
+              child: _buildMiniStatCard(
                 'XIRR',
                 '${xirrPercent >= 0 ? '+' : ''}${xirrPercent.toStringAsFixed(1)}%',
-                Icons.show_chart_rounded,
                 xirrPercent >= 0 ? AppColors.graphCyan : AppColors.errorLight,
                 isDark,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
-              child: _buildStatCard(
+              child: _buildMiniStatCard(
                 'MOIC',
                 '${stats.moic.toStringAsFixed(2)}x',
-                Icons.multiple_stop_rounded,
                 AppColors.graphPurple,
                 isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Cash Flows',
-                '${stats.cashFlowCount}',
-                Icons.receipt_long_rounded,
-                AppColors.graphBlue,
-                isDark,
+                subtitle: stats.durationFormatted,
               ),
             ),
           ],
@@ -400,83 +467,37 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildStatCardLarge(String label, String value, IconData icon, Color color, bool isDark, {String? subtitle}) {
+  Widget _buildMiniStatCard(String label, String value, Color color, bool isDark, {String? subtitle}) {
     return GlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: AppTypography.h3.copyWith(
-              color: isDark ? Colors.white : AppColors.neutral900Light,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: AppTypography.bodyMedium.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color, bool isDark) {
-    return GlassCard(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: AppTypography.numberSmall.copyWith(
-              color: isDark ? Colors.white : AppColors.neutral900Light,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
           Text(
             label,
             style: AppTypography.small.copyWith(
               color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              fontSize: 11,
             ),
           ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTypography.bodyMedium.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (subtitle != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                subtitle,
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                  fontSize: 10,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -685,7 +706,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('MMM d, yyyy').format(cashFlow.date),
+                      AppDateUtils.formatShort(cashFlow.date),
                       style: AppTypography.small.copyWith(
                         color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                       ),

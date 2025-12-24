@@ -140,11 +140,17 @@ class SimpleCsvParser {
     final map = <String, int>{};
     for (var i = 0; i < headers.length; i++) {
       final header = headers[i].toLowerCase().trim();
-      if (header.contains('date')) map['date'] = i;
-      else if (header.contains('investment') || header.contains('name')) map['investment'] = i;
-      else if (header.contains('type')) map['type'] = i;
-      else if (header.contains('amount')) map['amount'] = i;
-      else if (header.contains('note')) map['notes'] = i;
+      if (header.contains('date')) {
+        map['date'] = i;
+      } else if (header.contains('investment') || header.contains('name')) {
+        map['investment'] = i;
+      } else if (header.contains('type')) {
+        map['type'] = i;
+      } else if (header.contains('amount')) {
+        map['amount'] = i;
+      } else if (header.contains('note')) {
+        map['notes'] = i;
+      }
     }
     return map;
   }

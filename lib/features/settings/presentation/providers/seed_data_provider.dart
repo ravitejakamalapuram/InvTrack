@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/features/settings/domain/services/seed_data_service.dart';
+import 'package:inv_tracker/features/settings/data/services/seed_data_service.dart';
 
 final seedDataServiceProvider = Provider<SeedDataService>((ref) {
   return SeedDataService(ref.watch(investmentRepositoryProvider));

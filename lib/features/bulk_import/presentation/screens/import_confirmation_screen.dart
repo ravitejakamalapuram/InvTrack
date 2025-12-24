@@ -9,10 +9,8 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
-import 'package:inv_tracker/features/bulk_import/domain/services/simple_csv_parser.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
+import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:uuid/uuid.dart';
 
 class ImportConfirmationScreen extends ConsumerStatefulWidget {

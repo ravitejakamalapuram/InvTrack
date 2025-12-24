@@ -71,9 +71,11 @@ class CsvTemplateService {
     final file = File('${directory.path}/investment_import_template.csv');
     await file.writeAsString(content);
 
-    await Share.shareXFiles(
-      [XFile(file.path, mimeType: 'text/csv')],
-      subject: 'Investment Import Template',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: 'text/csv')],
+        subject: 'Investment Import Template',
+      ),
     );
   }
 

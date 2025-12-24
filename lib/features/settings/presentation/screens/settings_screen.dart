@@ -10,7 +10,6 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
-import 'package:inv_tracker/features/premium/presentation/widgets/premium_gate.dart';
 import 'package:inv_tracker/features/premium/presentation/providers/premium_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 
@@ -77,43 +76,39 @@ class SettingsScreen extends ConsumerWidget {
           // Data Management section
           const Divider(),
           _buildSectionHeader('Data Management'),
-          PremiumGate(
-            child: ListTile(
-              title: const Text('Export Investments'),
-              subtitle: const Text('Download as CSV'),
-              leading: const Icon(Icons.download, color: Colors.green),
-              trailing: ref.watch(exportStateProvider).isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.chevron_right),
-              onTap: () async {
-                await ref.read(exportStateProvider.notifier).exportCsv();
-                final state = ref.read(exportStateProvider);
-                if (state.hasError && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Export failed: ${state.error}')),
-                  );
-                }
-              },
-            ),
-          ),
-          PremiumGate(
-            child: ListTile(
-              title: const Text('Import Investments'),
-              subtitle: const Text('Import from CSV template'),
-              leading: const Icon(Icons.upload_file, color: Colors.blue),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const BulkImportScreen(),
-                  ),
+          ListTile(
+            title: const Text('Export Investments'),
+            subtitle: const Text('Download as CSV'),
+            leading: const Icon(Icons.download, color: Colors.green),
+            trailing: ref.watch(exportStateProvider).isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.chevron_right),
+            onTap: () async {
+              await ref.read(exportStateProvider.notifier).exportCsv();
+              final state = ref.read(exportStateProvider);
+              if (state.hasError && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Export failed: ${state.error}')),
                 );
-              },
-            ),
+              }
+            },
+          ),
+          ListTile(
+            title: const Text('Import Investments'),
+            subtitle: const Text('Import from CSV template'),
+            leading: const Icon(Icons.upload_file, color: Colors.blue),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const BulkImportScreen(),
+                ),
+              );
+            },
           ),
           if (kDebugMode) ...[
             const Divider(),
@@ -371,7 +366,6 @@ Last updated: December 05, 2025
         final displayName = user.displayName ?? 'User';
         final email = user.email;
         final photoUrl = user.photoUrl;
-        final isGuest = user.isGuest;
 
         return Padding(
           padding: EdgeInsets.all(AppSpacing.md),
@@ -384,7 +378,7 @@ Last updated: December 05, 2025
                 backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
                 child: photoUrl == null
                     ? Icon(
-                        isGuest ? Icons.person_outline : Icons.person,
+                        Icons.person,
                         size: 32,
                         color: Colors.grey.shade600,
                       )
@@ -397,28 +391,18 @@ Last updated: December 05, 2025
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isGuest ? 'Guest User' : displayName,
+                      displayName,
                       style: AppTypography.h3.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (!isGuest) ...[
-                      SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        email,
-                        style: AppTypography.body.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
+                    SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      email,
+                      style: AppTypography.body.copyWith(
+                        color: Colors.grey.shade600,
                       ),
-                    ] else ...[
-                      SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        'Sign in to sync your data',
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),

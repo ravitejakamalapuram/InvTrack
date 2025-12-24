@@ -10,8 +10,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 class AddInvestmentScreen extends ConsumerStatefulWidget {
   const AddInvestmentScreen({super.key});

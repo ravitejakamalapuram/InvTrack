@@ -64,4 +64,9 @@ abstract class InvestmentRepository {
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
   });
+
+  /// Bulk delete multiple investments and their cash flows.
+  /// This is optimized for deleting multiple items efficiently using batches.
+  /// Returns the number of successfully deleted investments.
+  Future<int> bulkDelete(List<String> investmentIds);
 }

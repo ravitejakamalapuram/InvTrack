@@ -10,9 +10,6 @@ abstract class AuthRepository {
   /// Signs in with Google.
   Future<UserEntity?> signInWithGoogle();
 
-  /// Signs in as a guest.
-  Future<UserEntity?> signInAsGuest();
-
   /// Signs out.
   Future<void> signOut();
 

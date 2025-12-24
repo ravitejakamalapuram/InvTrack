@@ -7,8 +7,8 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
-import 'package:inv_tracker/features/bulk_import/domain/services/csv_template_service.dart';
-import 'package:inv_tracker/features/bulk_import/domain/services/simple_csv_parser.dart';
+import 'package:inv_tracker/features/bulk_import/data/services/csv_template_service.dart';
+import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/import_confirmation_screen.dart';
 
 class BulkImportScreen extends ConsumerStatefulWidget {

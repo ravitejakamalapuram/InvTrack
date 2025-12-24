@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -10,12 +9,12 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;
@@ -230,13 +229,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              DateFormat('EEEE').format(_selectedDate),
+                              AppDateUtils.formatDayOfWeek(_selectedDate),
                               style: AppTypography.small.copyWith(
                                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                               ),
                             ),
                             Text(
-                              DateFormat('MMMM d, yyyy').format(_selectedDate),
+                              AppDateUtils.formatLong(_selectedDate),
                               style: AppTypography.bodyLarge.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: isDark ? Colors.white : AppColors.neutral900Light,

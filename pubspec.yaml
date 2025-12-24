@@ -38,9 +38,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
-  drift: ^2.24.2
-
-  sqlcipher_flutter_libs: ^0.6.8
   path_provider: ^2.1.5
   path: ^1.9.0
   flutter_secure_storage: ^9.2.4
@@ -61,7 +58,6 @@ dependencies:
   csv: ^6.0.0
   share_plus: ^12.0.1
   file_picker: ^10.3.7
-  sqlite3: ^2.9.4
   firebase_core: ^4.2.1
   cloud_firestore: ^6.1.0
   firebase_auth: ^6.1.2
@@ -80,7 +76,6 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   mocktail: ^1.0.4
-  drift_dev: ^2.24.2
   riverpod_generator: ^2.6.3
   build_runner: ^2.4.14
   flutter_launcher_icons: ^0.14.4
