@@ -194,6 +194,107 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     await _executeWrite(() => _cashFlowsRef.doc(id).delete());
   }
 
+  // ============ BULK OPERATIONS ============
+
+  @override
+  Future<({int investments, int cashFlows})> bulkImport({
+    required List<InvestmentEntity> investments,
+    required List<CashFlowEntity> cashFlows,
+  }) async {
+    // Firestore batch has a limit of 500 operations per batch
+    const batchLimit = 500;
+    var investmentCount = 0;
+    var cashFlowCount = 0;
+
+    // Process investments in batches
+    for (var i = 0; i < investments.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < investments.length) ? i + batchLimit : investments.length;
+
+      for (var j = i; j < end; j++) {
+        final inv = investments[j];
+        batch.set(_investmentsRef.doc(inv.id), _investmentToFirestore(inv));
+        investmentCount++;
+      }
+
+      await _executeWrite(() => batch.commit());
+    }
+
+    // Process cash flows in batches
+    for (var i = 0; i < cashFlows.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < cashFlows.length) ? i + batchLimit : cashFlows.length;
+
+      for (var j = i; j < end; j++) {
+        final cf = cashFlows[j];
+        batch.set(_cashFlowsRef.doc(cf.id), _cashFlowToFirestore(cf));
+        cashFlowCount++;
+      }
+
+      await _executeWrite(() => batch.commit());
+    }
+
+    return (investments: investmentCount, cashFlows: cashFlowCount);
+  }
+
+  @override
+  Future<int> bulkDelete(List<String> investmentIds) async {
+    if (investmentIds.isEmpty) return 0;
+
+    const batchLimit = 500;
+    var deletedCount = 0;
+
+    // First, collect all cash flows to delete
+    final cashFlowDocsToDelete = <DocumentReference>[];
+    for (final investmentId in investmentIds) {
+      try {
+        final cashFlows = await _cashFlowsRef
+            .where('investmentId', isEqualTo: investmentId)
+            .get(const GetOptions(source: Source.cache))
+            .timeout(_writeTimeout, onTimeout: () async {
+          return await _cashFlowsRef
+              .where('investmentId', isEqualTo: investmentId)
+              .get()
+              .timeout(_writeTimeout);
+        });
+        for (final doc in cashFlows.docs) {
+          cashFlowDocsToDelete.add(doc.reference);
+        }
+      } on TimeoutException {
+        // Continue without cash flows - they'll be orphaned but filtered out
+      }
+    }
+
+    // Delete cash flows in batches
+    for (var i = 0; i < cashFlowDocsToDelete.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < cashFlowDocsToDelete.length)
+          ? i + batchLimit
+          : cashFlowDocsToDelete.length;
+
+      for (var j = i; j < end; j++) {
+        batch.delete(cashFlowDocsToDelete[j]);
+      }
+      await _executeWrite(() => batch.commit());
+    }
+
+    // Delete investments in batches
+    for (var i = 0; i < investmentIds.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < investmentIds.length)
+          ? i + batchLimit
+          : investmentIds.length;
+
+      for (var j = i; j < end; j++) {
+        batch.delete(_investmentsRef.doc(investmentIds[j]));
+        deletedCount++;
+      }
+      await _executeWrite(() => batch.commit());
+    }
+
+    return deletedCount;
+  }
+
   // ============ FIRESTORE MAPPERS ============
 
   Map<String, dynamic> _investmentToFirestore(InvestmentEntity investment) {

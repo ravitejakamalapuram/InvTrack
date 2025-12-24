@@ -1,7 +1,5 @@
 import 'dart:math';
 
-/// XIRR (Extended Internal Rate of Return) solver using Newton-Raphson method
-/// with multiple initial guesses and bisection fallback for robust convergence.
 class XirrSolver {
   static const double _tolerance = 1e-7;
   static const int _maxIterations = 200;
@@ -9,10 +7,6 @@ class XirrSolver {
   /// Calculates XIRR for a series of cash flows.
   /// [dates] and [amounts] must be of the same length.
   /// Amounts should be negative for outflows (investments) and positive for inflows (returns/current value).
-  ///
-  /// Returns 0.0 if XIRR cannot be calculated (e.g., insufficient data).
-  /// For investments with total losses where XIRR mathematically doesn't exist,
-  /// returns an approximate annualized return.
   static double calculateXirr(List<DateTime> dates, List<double> amounts) {
     if (dates.length != amounts.length) {
       throw ArgumentError('Dates and amounts must have the same length');
@@ -24,7 +18,7 @@ class XirrSolver {
     final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
     final days = dates.map((d) => d.difference(firstDate).inDays / 365.0).toList();
 
-    // Calculate total inflows and outflows to determine initial guess strategy
+    // Calculate total inflows and outflows to determine initial guess direction
     double totalInflows = 0;
     double totalOutflows = 0;
     for (final amount in amounts) {
@@ -35,68 +29,72 @@ class XirrSolver {
       }
     }
 
-    // Try multiple initial guesses - prioritize based on expected return
-    final initialGuesses = <double>[0.1, -0.1, 0.0, 0.5, -0.5, -0.9, 1.0, 2.0];
+    // Try Newton-Raphson with multiple initial guesses
+    final initialGuesses = <double>[
+      0.1,   // 10% gain
+      -0.1,  // 10% loss
+      0.0,   // break even
+      0.5,   // 50% gain
+      -0.5,  // 50% loss
+      -0.9,  // 90% loss (near total loss)
+      1.0,   // 100% gain
+    ];
 
-    // If loss-making, prioritize negative guesses
+    // If it looks like a loss, try negative guesses first
     if (totalInflows < totalOutflows) {
       initialGuesses.insert(0, -0.3);
       initialGuesses.insert(0, -0.5);
-      initialGuesses.insert(0, -0.7);
     }
 
     for (final guess in initialGuesses) {
       final result = _newtonRaphson(guess, days, amounts);
-      if (result != null && result > -1.0 && result.isFinite && !result.isNaN) {
+      if (result != null && result > -1.0 && result.isFinite) {
         return result;
       }
     }
 
-    // Fallback to bisection method
+    // Fallback: bisection method for stubborn cases
     final bisectionResult = _bisection(days, amounts);
-    if (bisectionResult != null && bisectionResult.isFinite && !bisectionResult.isNaN) {
+    if (bisectionResult != null) {
       return bisectionResult;
     }
 
-    return 0.0;
+    return 0.0; // Failed to find solution
   }
 
-  /// Newton-Raphson iteration with a specific initial guess
-  static double? _newtonRaphson(double initialGuess, List<double> days, List<double> amounts) {
-    double x = initialGuess;
+  /// Newton-Raphson iteration
+  static double? _newtonRaphson(double x0, List<double> days, List<double> amounts) {
+    double x = x0;
 
     for (int i = 0; i < _maxIterations; i++) {
+      // Prevent x from going below -1 (which would cause pow issues)
+      if (x <= -1.0) x = -0.99;
+
       final fValue = _f(x, days, amounts);
       final dfValue = _df(x, days, amounts);
 
-      if (dfValue.abs() < 1e-12) {
-        // Derivative too small, try adjusting
-        x += 0.01;
-        continue;
-      }
+      if (dfValue.abs() < 1e-10) return null; // Derivative too small
 
-      final step = fValue / dfValue;
-      final x1 = x - step;
+      final x1 = x - fValue / dfValue;
 
-      // Prevent x from going below -1 (which would cause division issues)
-      if (x1 <= -1.0) {
-        x = -0.99;
-        continue;
-      }
-
-      if (step.abs() < _tolerance) {
-        // Verify this is actually a valid solution
-        if (_f(x1, days, amounts).abs() < 0.01) {
+      // Check for convergence
+      if ((x1 - x).abs() < _tolerance) {
+        // Verify the solution is valid
+        if (x1 > -1.0 && x1.isFinite && _f(x1, days, amounts).abs() < 0.01) {
           return x1;
         }
       }
 
-      x = x1;
-    }
+      // Dampen large jumps
+      if ((x1 - x).abs() > 1.0) {
+        x = x + (x1 - x).sign * 0.5;
+      } else {
+        x = x1;
+      }
 
-    // Check if we converged to a reasonable solution
-    if (_f(x, days, amounts).abs() < 0.1 && x > -1.0) {
-      return x;
+      // Bounds check
+      if (x <= -1.0) x = -0.99;
+      if (x > 10.0) x = 10.0; // 1000% return cap
     }
 
     return null;
@@ -139,9 +137,8 @@ class XirrSolver {
     return (low + high) / 2;
   }
 
-  /// Calculate approximate annualized return when XIRR doesn't converge.
+  /// Calculate approximate annualized return when XIRR doesn't converge
   /// This happens when there's a total loss or unusual cash flow patterns
-  /// where no discount rate makes NPV = 0.
   static double? _calculateApproximateReturn(List<double> days, List<double> amounts) {
     if (days.isEmpty || amounts.isEmpty) return null;
 
@@ -179,28 +176,30 @@ class XirrSolver {
     }
   }
 
-  /// NPV function: f(r) = sum of PV of all cash flows
+  /// XNPV function: sum of present values
   static double _f(double x, List<double> days, List<double> amounts) {
-    if (x <= -1) return double.infinity;
+    if (x <= -1.0) return double.infinity;
 
     double sum = 0.0;
     for (int i = 0; i < amounts.length; i++) {
-      final denominator = pow(1 + x, days[i]);
-      if (denominator == 0 || !denominator.isFinite) continue;
-      sum += amounts[i] / denominator;
+      final power = days[i];
+      final base = 1 + x;
+      if (base <= 0) return double.infinity;
+      sum += amounts[i] / pow(base, power);
     }
     return sum;
   }
 
-  /// Derivative of NPV function: f'(r)
+  /// Derivative of XNPV
   static double _df(double x, List<double> days, List<double> amounts) {
-    if (x <= -1) return double.infinity;
+    if (x <= -1.0) return double.infinity;
 
     double sum = 0.0;
     for (int i = 0; i < amounts.length; i++) {
-      final denominator = pow(1 + x, days[i] + 1);
-      if (denominator == 0 || !denominator.isFinite) continue;
-      sum += -days[i] * amounts[i] / denominator;
+      final power = days[i] + 1;
+      final base = 1 + x;
+      if (base <= 0) return double.infinity;
+      sum += -days[i] * amounts[i] / pow(base, power);
     }
     return sum;
   }
