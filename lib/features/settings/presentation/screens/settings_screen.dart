@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
@@ -94,6 +95,8 @@ class SettingsScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Export failed: ${state.error}')),
                 );
+              } else {
+                ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
               }
             },
           ),
@@ -257,6 +260,7 @@ Last updated: December 05, 2025
             title: const Text('Sign Out'),
             leading: const Icon(Icons.logout, color: Colors.red),
             onTap: () {
+              ref.read(analyticsServiceProvider).setUserId(null);
               ref.read(authRepositoryProvider).signOut();
             },
           ),
