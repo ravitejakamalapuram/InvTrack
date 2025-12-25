@@ -1,49 +1,69 @@
-# Future Plan
+# Future Plan - Quick Reference
 
-This document tracks planned improvements and features for the InvTrack app.
+> **📋 For comprehensive roadmap, see [docs/PRODUCT_ROADMAP.md](./docs/PRODUCT_ROADMAP.md)**
 
-## P1 - Important
-
-### Integration Tests for Critical User Flows
-Add integration tests covering:
-- User sign-in/sign-out flow
-- Creating an investment with initial cash flow
-- Adding/editing/deleting cash flows
-- Bulk import from CSV
-- Investment merge functionality
-
-### Architecture Documentation
-Create ARCHITECTURE.md documenting:
-- Feature-based folder structure
-- Data flow patterns (Riverpod providers)
-- Repository pattern implementation
-- Error handling strategy
-
-## P2 - Nice to Have
-
-### Localization Infrastructure
-- Add `flutter_localizations` dependency
-- Create ARB files for strings
-- Extract all hardcoded strings to localization
-- Support for multiple languages
-
-### Analytics/Event Tracking Layer
-- Create analytics abstraction layer
-- Track key user events (investment created, cash flow added, etc.)
-- Integrate with Firebase Analytics or similar
-
-### Firebase Performance Monitoring
-- Add Firebase Performance SDK
-- Track screen load times
-- Monitor network request performance
-- Custom traces for critical operations
-
-### Structured Logging
-- Replace `debugPrint` with proper logging framework
-- Add log levels (debug, info, warning, error)
-- Configure different outputs for debug/release
-- Consider integration with crash reporting
+This is a quick reference for immediate priorities. The full product roadmap contains:
+- Strategic vision and market analysis
+- Detailed feature specifications for 5 phases
+- Monetization strategy with pricing tiers
+- Go-to-market strategy
+- 90-day execution plan
+- Complete goal tracker with checkboxes
 
 ---
-*Last updated: 2025-12-23*
+
+## 🚀 Immediate Priorities (Next 2 Weeks)
+
+### P0 - Critical (Before Launch)
+
+- [ ] **Firebase Analytics** - Track user behavior
+- [ ] **Crashlytics** - Crash reporting for production
+- [ ] **Integration Tests** - Critical user flows
+  - [ ] Sign-in/sign-out
+  - [ ] Create investment + cash flow
+  - [ ] Bulk CSV import
+
+### P1 - High (Next 4 Weeks)
+
+- [ ] **AI Document Parser** - Upload PDF/Excel → auto-extract data
+- [ ] **Smart Notifications** - Maturity reminders, income alerts
+- [ ] **App Store Submission** - iOS + Android
+
+---
+
+## 📊 Phase Overview
+
+| Phase | Theme | Timeline | Status |
+|-------|-------|----------|--------|
+| Phase 1 | MVP | Complete | ✅ Done |
+| Phase 2 | Intelligence & Automation | Q1 2026 | 🔜 Next |
+| Phase 3 | Portfolio Intelligence | Q2 2026 | 📋 Planned |
+| Phase 4 | Connectivity | Q3 2026 | 📋 Planned |
+| Phase 5 | Community & Monetization | Q4 2026 | 📋 Planned |
+
+---
+
+## 🎯 Key Metrics Targets
+
+| Metric | 90-Day Target | Year 1 Target |
+|--------|---------------|---------------|
+| Total Users | 5,000 | 50,000 |
+| MAU | 2,000 | 20,000 |
+| Paid Subscribers | 100 | 2,000 |
+| MRR | ₹80K | ₹14L |
+
+---
+
+## 🛠️ Technical Debt
+
+- [ ] Structured logging (replace debugPrint)
+- [ ] Performance monitoring
+- [ ] Architecture documentation
+- [ ] Localization infrastructure
+
+---
+
+*Last updated: 2025-12-25*
+
+**👉 Full details: [docs/PRODUCT_ROADMAP.md](./docs/PRODUCT_ROADMAP.md)**
 
