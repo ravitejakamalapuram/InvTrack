@@ -36,7 +36,7 @@ class PaywallScreen extends ConsumerWidget {
             const SizedBox(height: 48),
             _buildFeatureRow(Icons.download, 'CSV Export & Import'),
             _buildFeatureRow(Icons.pie_chart, 'Advanced Analytics (Coming Soon)'),
-            _buildFeatureRow(Icons.cloud_sync, 'Unlimited Sync'),
+            _buildFeatureRow(Icons.cloud_sync, 'Cloud Backup & Sync'),
             const Spacer(),
             SizedBox(
               width: double.infinity,

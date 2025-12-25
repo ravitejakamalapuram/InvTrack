@@ -29,20 +29,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       icon: Icons.account_balance_wallet_rounded,
-      title: 'Track Your Investments',
-      subtitle: 'Keep all your investments in one place.\nStocks, mutual funds, FDs, real estate & more.',
+      title: 'Track Money In & Out',
+      subtitle: 'Record what you invested and what came back.\nFDs, P2P lending, bonds, real estate & more.',
       gradient: [AppColors.primaryLight, AppColors.accentLight],
     ),
     OnboardingPage(
       icon: Icons.trending_up_rounded,
-      title: 'Accurate Returns with XIRR',
-      subtitle: 'Get true annualized returns accounting for\nall your deposits and withdrawals over time.',
+      title: 'Know Your Real Returns',
+      subtitle: 'XIRR shows your true annual return.\nMOIC shows how much your money multiplied.',
       gradient: [AppColors.successLight, Color(0xFF059669)],
     ),
     OnboardingPage(
       icon: Icons.cloud_sync_rounded,
-      title: 'Sync with Google Sheets',
-      subtitle: 'Your data stays safe in your Google Drive.\nAccess it anytime, anywhere.',
+      title: 'Works Offline, Syncs Online',
+      subtitle: 'Use the app without internet.\nSign in to backup and sync across devices.',
       gradient: [Color(0xFF6366F1), AppColors.primaryLight],
     ),
   ];

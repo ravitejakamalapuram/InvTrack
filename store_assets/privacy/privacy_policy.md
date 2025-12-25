@@ -20,19 +20,19 @@ InvTracker ("we", "our", or "us") is committed to protecting your privacy. This 
 
 We use the information we collect to:
 - Provide and maintain the InvTracker app
-- Sync your data to Google Sheets (when you enable this feature)
+- Sync your data to the cloud (when you sign in with Google)
 - Improve our app and develop new features
 - Respond to your requests and support needs
 
 ## Data Storage
 
 ### Local Storage
-Your investment data is stored locally on your device using encrypted SQLite database.
+Your investment data is stored locally on your device with offline persistence.
 
 ### Cloud Storage (Optional)
-When you enable Google Sheets sync:
-- Your data is synced to a Google Sheet in your personal Google Drive
-- We do not store your data on our servers
+When you sign in with Google:
+- Your data is synced to secure cloud storage (Firebase)
+- Data syncs automatically across your devices
 - You maintain full control and ownership of your data
 
 ## Data Sharing
@@ -56,7 +56,7 @@ We implement appropriate security measures including:
 You have the right to:
 - Access your personal data
 - Delete your data (by uninstalling the app or clearing app data)
-- Opt out of Google Sheets sync at any time
+- Sign out to stop cloud sync at any time
 - Request information about data we hold
 
 ## Children's Privacy

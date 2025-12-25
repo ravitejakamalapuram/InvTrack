@@ -1,1 +1,1 @@
-Track alternative investments with XIRR, MOIC & sync to Google Sheets.
+Track your investments with XIRR & MOIC. Offline-first with cloud sync.
