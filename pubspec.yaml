@@ -65,6 +65,8 @@ dependencies:
   any_date: ^1.2.1
   firebase_analytics: ^12.1.0
   firebase_crashlytics: ^5.0.6
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.1
 
 
 dev_dependencies:

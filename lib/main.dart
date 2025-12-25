@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/app/app.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -25,10 +27,16 @@ void main() async {
 
     final sharedPreferences = await SharedPreferences.getInstance();
 
+    // Initialize Notifications
+    final notificationPlugin = FlutterLocalNotificationsPlugin();
+    final notificationService = NotificationService(notificationPlugin, sharedPreferences);
+    await notificationService.initialize();
+
     runApp(
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          notificationServiceProvider.overrideWithValue(notificationService),
         ],
         child: const InvTrackerApp(),
       ),

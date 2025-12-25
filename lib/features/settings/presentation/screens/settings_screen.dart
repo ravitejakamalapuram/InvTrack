@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
@@ -74,6 +75,10 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _buildSectionHeader('Security'),
           _buildSecuritySection(context, ref),
+          // Notifications section
+          const Divider(),
+          _buildSectionHeader('Notifications'),
+          _buildNotificationsSection(context, ref),
           // Data Management section
           const Divider(),
           _buildSectionHeader('Data Management'),
@@ -356,6 +361,43 @@ Last updated: December 05, 2025
             },
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildNotificationsSection(BuildContext context, WidgetRef ref) {
+    final notificationService = ref.watch(notificationServiceProvider);
+
+    return Column(
+      children: [
+        SwitchListTile(
+          title: const Text('Income Alerts'),
+          subtitle: const Text('Notify when income is recorded'),
+          secondary: const Icon(Icons.attach_money, color: Colors.green),
+          value: notificationService.incomeAlertsEnabled,
+          onChanged: (bool value) async {
+            if (value) {
+              // Request permissions when enabling
+              await notificationService.requestPermissions();
+            }
+            await notificationService.setIncomeAlertsEnabled(value);
+            // Trigger rebuild
+            ref.invalidate(notificationServiceProvider);
+          },
+        ),
+        SwitchListTile(
+          title: const Text('Weekly Summary'),
+          subtitle: const Text('Get a summary every Sunday'),
+          secondary: const Icon(Icons.calendar_today, color: Colors.blue),
+          value: notificationService.weeklySummaryEnabled,
+          onChanged: (bool value) async {
+            if (value) {
+              await notificationService.requestPermissions();
+            }
+            await notificationService.setWeeklySummaryEnabled(value);
+            ref.invalidate(notificationServiceProvider);
+          },
+        ),
       ],
     );
   }
