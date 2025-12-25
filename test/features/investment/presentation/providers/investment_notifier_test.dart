@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -7,16 +8,20 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import '../../data/repositories/mock_investment_repository.dart';
+import '../../../../mocks/mock_analytics_service.dart';
 
 void main() {
   late FakeInvestmentRepository fakeRepository;
+  late FakeAnalyticsService fakeAnalytics;
   late ProviderContainer container;
 
   setUp(() {
     fakeRepository = FakeInvestmentRepository();
+    fakeAnalytics = FakeAnalyticsService();
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(fakeRepository),
+        analyticsServiceProvider.overrideWithValue(fakeAnalytics),
       ],
     );
   });
@@ -24,6 +29,7 @@ void main() {
   tearDown(() {
     container.dispose();
     fakeRepository.reset();
+    fakeAnalytics.reset();
   });
 
   group('InvestmentNotifier - addInvestment', () {

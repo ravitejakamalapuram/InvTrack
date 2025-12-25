@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 
@@ -91,7 +92,7 @@ class ErrorHandler {
     }
   }
 
-  /// Log an error for debugging (and future crash reporting)
+  /// Log an error for debugging and crash reporting
   static void logError(AppException exception) {
     if (kDebugMode) {
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -105,10 +106,14 @@ class ErrorHandler {
         debugPrint('Stack Trace:\n${exception.stackTrace}');
       }
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } else {
+      // In production, send to Crashlytics
+      CrashlyticsService().recordError(
+        exception.cause ?? exception,
+        exception.stackTrace,
+        reason: '${exception.runtimeType}: ${exception.technicalMessage}',
+      );
     }
-
-    // Future enhancement: Add Firebase Crashlytics integration for production error reporting.
-    // See: https://firebase.google.com/docs/crashlytics/get-started?platform=flutter
   }
 
   /// Show error feedback to user via snackbar

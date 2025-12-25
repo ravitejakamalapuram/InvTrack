@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -44,6 +45,12 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         updatedAt: DateTime.now(),
       );
       await _ref.read(investmentRepositoryProvider).createInvestment(investment);
+
+      // Track analytics event
+      _ref.read(analyticsServiceProvider).logInvestmentCreated(
+        investmentType: type.name,
+        hasNotes: notes != null && notes.trim().isNotEmpty,
+      );
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -169,6 +176,12 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         createdAt: DateTime.now(),
       );
       await _ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
+
+      // Track analytics event
+      _ref.read(analyticsServiceProvider).logCashFlowAdded(
+        flowType: type.name,
+        amountRange: _getAmountRange(amount),
+      );
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -368,5 +381,16 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     if (notes != null && notes.trim().length > ValidationConstants.maxNotesLength) {
       throw ValidationException.tooLong('Notes', ValidationConstants.maxNotesLength);
     }
+  }
+
+  /// Get amount range bucket for analytics (privacy-preserving)
+  String _getAmountRange(double amount) {
+    if (amount < 1000) return 'under_1k';
+    if (amount < 10000) return '1k_10k';
+    if (amount < 50000) return '10k_50k';
+    if (amount < 100000) return '50k_1L';
+    if (amount < 500000) return '1L_5L';
+    if (amount < 1000000) return '5L_10L';
+    return 'over_10L';
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -93,6 +94,12 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
       final result = await notifier.bulkImport(
         investments: investments,
         cashFlows: cashFlows,
+      );
+
+      // Track successful import
+      ref.read(analyticsServiceProvider).logCsvImportCompleted(
+        rowCount: widget.parseResult.validRows,
+        successCount: result.investments,
       );
 
       if (mounted) {
