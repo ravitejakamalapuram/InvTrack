@@ -9,9 +9,9 @@ By downloading, installing, or using InvTracker ("the App"), you agree to be bou
 ## Description of Service
 
 InvTracker is a personal investment tracking application that allows users to:
-- Track alternative investments and cash flows
+- Track investments and cash flows
 - Calculate financial metrics (XIRR, MOIC, returns)
-- Optionally sync data to Google Sheets
+- Optionally sync data to the cloud with Google Sign-In
 
 ## User Responsibilities
 
@@ -44,9 +44,9 @@ Your use of the App is also governed by our Privacy Policy. By using the App, yo
 
 ## Google Services
 
-When using Google Sign-In or Google Sheets sync:
+When using Google Sign-In:
 - You agree to Google's Terms of Service
-- We access only the minimum permissions required
+- We access only the minimum permissions required for authentication
 - You can revoke access at any time through your Google Account
 
 ## Intellectual Property

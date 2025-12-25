@@ -1,73 +1,89 @@
-📊 InvTracker - Your Personal Alternative Investment Tracker
+📊 InvTracker - Simple Investment Tracker
 
-Track all your alternative investments in one place with professional-grade metrics. Perfect for P2P lending, fixed deposits, bonds, real estate, private equity, angel investing, chit funds, gold, crypto, and more.
+Finally, a simple way to track where your money went and what came back.
 
-🎯 KEY FEATURES
+No complicated charts. No stock tickers. Just record what you invested and what you got back. InvTracker calculates your real returns automatically.
 
-✅ Complete Cash Flow Tracking
-• Record investments, returns, income, and fees
-• Track multiple investments across different asset classes
-• Mark investments as open or closed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📈 Professional Metrics
-• XIRR (Extended Internal Rate of Return) - True annualized returns
-• MOIC (Multiple on Invested Capital) - Total return multiple
-• Absolute returns and net position tracking
-• Year-over-year comparisons
+🎯 WHAT IT DOES
 
-☁️ Google Sheets Sync
-• Backup your data to Google Sheets automatically
-• Access your portfolio data from anywhere
-• Full sync with create, update, and delete operations
+• Record money going out (investments, fees)
+• Record money coming back (returns, income)
+• See your actual profit or loss
+• Get professional return metrics (XIRR & MOIC)
 
-🔒 Security First
-• Optional PIN/biometric lock
-• Data stays on your device
-• Google Sign-In for secure cloud sync
+That's it. Simple.
 
-📊 Beautiful Dashboard
-• Net position overview (all investments or realized only)
-• Monthly cash flow trends
-• Top performers by XIRR
-• Investment type distribution
-• Recently closed investments
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💼 12 Investment Types Supported
-• P2P Lending
-• Fixed Deposits
-• Bonds
-• Real Estate
-• Private Equity
-• Angel Investing
-• Chit Funds
-• Gold
-• Crypto
-• Mutual Funds
-• Stocks
-• Other
+📈 SMART METRICS
+
+XIRR - Your True Annual Return
+Most apps show basic percentage returns. XIRR accounts for WHEN you invested and WHEN you got money back. This is what banks and professionals use.
+
+MOIC - Your Money Multiple
+Invested ₹1 lakh and got ₹1.5 lakh back? That's 1.5x MOIC. Simple way to see how much your money multiplied.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ KEY FEATURES
+
+✅ Works Offline
+Use the app without internet. Your data syncs automatically when you're back online.
+
+☁️ Cloud Backup
+Sign in with Google to backup your data. Access it from any device.
+
+🔒 Your Data, Your Control
+We don't store your financial data on our servers. It stays with you.
+
+📊 Clean Dashboard
+See your total position, monthly trends, and investment breakdown at a glance.
 
 🌙 Dark Mode
-Beautiful dark theme that's easy on the eyes.
+Easy on the eyes, especially at night.
 
-📱 Modern Design
-Clean, intuitive interface with smooth animations and haptic feedback.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
----
+💼 PERFECT FOR TRACKING
 
-Why InvTracker?
+• Fixed Deposits (FDs)
+• P2P Lending (LenDenClub, Faircent, etc.)
+• Bonds & NCDs
+• Real Estate investments
+• Chit Funds
+• Gold investments
+• Crypto holdings
+• Private investments
+• Angel investments
+• Or any investment with cash in and cash out
 
-Traditional portfolio trackers focus on stocks and mutual funds. InvTracker is built specifically for alternative investments where cash flows happen at irregular intervals.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-XIRR (Extended Internal Rate of Return) is the gold standard for measuring returns on investments with irregular cash flows - exactly what you need for P2P lending, real estate, or any investment where you invest and receive money at different times.
+🤔 WHY INVTRACKER?
 
----
+Regular portfolio apps track stocks and mutual funds with daily prices. But what about your FD? Your P2P loans? That property you invested in?
 
-Perfect for:
-• P2P lending investors tracking multiple loans
-• Real estate investors with rental income
-• Angel investors tracking startup investments
-• Fixed deposit holders managing multiple FDs
-• Anyone with alternative investments
+InvTracker is built for these "other" investments where you put money in today and get money back later - maybe in months or years.
 
-Download InvTracker today and take control of your investment tracking!
+Just record:
+1. What you invested and when
+2. What you got back and when
+
+We calculate the rest.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 SIMPLE TO USE
+
+1. Add an investment (give it a name)
+2. Record your cash flows (money out, money in)
+3. See your returns
+
+No learning curve. No confusing features.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Download InvTracker and finally know how your investments are really doing.
 

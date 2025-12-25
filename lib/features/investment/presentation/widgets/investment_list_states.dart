@@ -52,7 +52,7 @@ class InvestmentEmptyState extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.xs),
             Text(
-              'Start building your portfolio by adding your first investment',
+              'Add your first investment to start tracking',
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,

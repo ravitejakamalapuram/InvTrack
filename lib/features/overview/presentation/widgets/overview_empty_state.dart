@@ -41,7 +41,7 @@ class OverviewEmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Welcome to Investment Tracker!',
+                'Welcome to InvTracker!',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -50,7 +50,7 @@ class OverviewEmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Track your investments, monitor cash flows, and analyze returns with powerful insights.',
+                'Track what you invested and what came back. See your real returns.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -94,8 +94,8 @@ class OverviewEmptyState extends StatelessWidget {
               const SizedBox(height: 12),
               _GettingStartedStep(
                 number: 3,
-                title: 'View Insights',
-                subtitle: 'Analyze returns, XIRR, and trends',
+                title: 'See Your Returns',
+                subtitle: 'XIRR, MOIC, and net position',
                 icon: Icons.insights_rounded,
               ),
             ],

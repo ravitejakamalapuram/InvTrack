@@ -223,9 +223,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                     spacing: AppSpacing.xs,
                     runSpacing: AppSpacing.xs,
                     children: [
-                      _buildFeaturePill('📊', 'XIRR & CAGR', isDark),
+                      _buildFeaturePill('📊', 'XIRR & MOIC', isDark),
                       _buildFeaturePill('🔒', 'Offline-first', isDark),
-                      _buildFeaturePill('☁️', 'Google Sync', isDark),
+                      _buildFeaturePill('☁️', 'Cloud Sync', isDark),
                     ],
                   ),
                 ),

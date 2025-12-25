@@ -36,8 +36,8 @@
 - Add investment form
 - Shows the 12 investment types available
 
-### 6. google_sync.png - Cloud Backup
-- Settings screen showing Google Sheets sync
+### 6. settings.png - Cloud Backup
+- Settings screen showing user account and options
 - Demonstrates the cloud backup feature
 
 ## How to Take Screenshots
@@ -68,9 +68,9 @@
    - Or Android Studio Device Art Generator
 
 2. **Add captions** (recommended):
-   - "Track All Your Investments"
-   - "Professional XIRR Calculations"
-   - "Sync to Google Sheets"
+   - "Track What Goes In & Out"
+   - "Know Your Real Returns"
+   - "Works Offline, Syncs Online"
    - "Beautiful Dark Mode"
 
 3. **Consistent styling**:
