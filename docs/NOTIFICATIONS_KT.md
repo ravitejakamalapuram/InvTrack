@@ -433,6 +433,23 @@ SwitchListTile(
 
 ---
 
+## Future Enhancements
+
+### Goal Progress Notifications 🎯
+**Status:** Deferred - Requires user goals feature
+**Concept:** Notify users when they reach milestones toward their investment goals
+**Prerequisites:**
+1. Goals feature - Allow users to set target corpus (e.g., "₹10L emergency fund")
+2. Income goals - Allow users to set target passive income (e.g., "₹5K/month")
+3. Goal tracking - Calculate progress percentage
+
+**Proposed Notifications:**
+- 25%, 50%, 75%, 90%, 100% goal progress milestones
+- "On track" / "Behind schedule" alerts based on deadline
+- Goal completion celebration
+
+---
+
 ## Troubleshooting
 
 | Issue | Solution |

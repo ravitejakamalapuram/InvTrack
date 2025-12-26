@@ -208,18 +208,18 @@
 ### 🔷 PHASE 5: Advanced Features (Weeks 17-20)
 **Goal**: Multi-currency, benchmark, notifications
 
-| Task ID | Task | Owner | Est. | Priority |
-|---------|------|-------|------|----------|
-| P5-001 | Multi-currency support | Dev 1 | 4d | P1 |
-| P5-002 | Currency conversion (static rates) | Dev 2 | 2d | P1 |
-| P5-003 | Benchmark index comparison | Dev 1 | 3d | P1 |
-| P5-004 | Push notification framework | Dev 2 | 3d | P1 |
-| P5-005 | Weekly summary notifications | Dev 1 | 2d | P1 |
-| P5-006 | Milestone alerts | Dev 2 | 2d | P1 |
-| P5-007 | PDF report export | Dev 1 | 4d | P2 |
-| P5-008 | Investment comparison table | Dev 2 | 2d | P1 |
-| P5-009 | Top movers section | Dev 1 | 2d | P1 |
-| P5-010 | Dark mode implementation | Dev 2 | 2d | P1 |
+| Task ID | Task | Owner | Est. | Priority | Status |
+|---------|------|-------|------|----------|--------|
+| P5-001 | Multi-currency support | Dev 1 | 4d | P1 | [ ] |
+| P5-002 | Currency conversion (static rates) | Dev 2 | 2d | P1 | [ ] |
+| P5-003 | Benchmark index comparison | Dev 1 | 3d | P1 | [ ] |
+| P5-004 | Push notification framework | Dev 2 | 3d | P1 | [x] ✅ |
+| P5-005 | Weekly summary notifications | Dev 1 | 2d | P1 | [x] ✅ |
+| P5-006 | Milestone alerts | Dev 2 | 2d | P1 | [x] ✅ |
+| P5-007 | PDF report export | Dev 1 | 4d | P2 | [ ] |
+| P5-008 | Investment comparison table | Dev 2 | 2d | P1 | [ ] |
+| P5-009 | Top movers section | Dev 1 | 2d | P1 | [ ] |
+| P5-010 | Dark mode implementation | Dev 2 | 2d | P1 | [ ] |
 
 ---
 

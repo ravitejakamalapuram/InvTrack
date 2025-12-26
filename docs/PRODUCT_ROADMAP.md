@@ -257,17 +257,17 @@ User Flow:
 6. Confirm → Save to database
 ```
 
-#### Feature 2.2: Smart Notifications (P1 - High)
+#### Feature 2.2: Smart Notifications (P1 - High) ✅ COMPLETE
 
 | Attribute | Details |
 |-----------|---------|
 | **Description** | Proactive alerts for maturity dates, expected income, and portfolio events |
 | **User Story** | "As a user, I want to be reminded 7 days before my FD matures so I can plan reinvestment" |
-| **Technology** | Firebase Cloud Messaging + Cloud Functions |
-| **Notification Types** | • Maturity reminders (7d, 3d, 1d before)<br>• Monthly income summary<br>• Investment performance alerts<br>• Milestone celebrations |
+| **Technology** | flutter_local_notifications (local scheduling - FCM deferred) |
+| **Notification Types** | • Maturity reminders (7d, 1d before)<br>• Weekly/Monthly summary<br>• Income reminders<br>• Risk/concentration alerts<br>• Milestone celebrations<br>• Tax reminders<br>• Idle investment alerts |
 | **Success Metrics** | • 60% notification open rate<br>• 30% action rate on reminders |
 | **Effort** | 2-3 weeks |
-| **Status** | [ ] Not Started |
+| **Status** | [x] ✅ Complete (Dec 2024) |
 
 **Notification Schedule:**
 | Type | Trigger | Message Example |
@@ -304,7 +304,7 @@ User Flow:
 | Feature | Priority | Effort | Status | Target Date |
 |---------|----------|--------|--------|-------------|
 | AI Document Parser | P0 | 6 weeks | [ ] | Feb 2026 |
-| Smart Notifications | P1 | 3 weeks | [ ] | Mar 2026 |
+| Smart Notifications | P1 | 3 weeks | [x] ✅ | Dec 2024 |
 | Recurring Projections | P1 | 3 weeks | [ ] | Mar 2026 |
 | Investment Insights | P2 | 2 weeks | [ ] | Apr 2026 |
 
@@ -801,7 +801,7 @@ lib/
 |-----|------|-------|--------|
 | 31-35 | AI extraction logic + verification UI | Dev | [ ] |
 | 36-38 | Testing with real documents | QA | [ ] |
-| 39-42 | Smart notifications implementation | Dev | [ ] |
+| 39-42 | Smart notifications implementation | Dev | [x] ✅ Complete |
 
 ### Weeks 9-10: Premium Paywall
 
@@ -1031,15 +1031,21 @@ lib/
   - [ ] Error handling and fallbacks
   - [ ] Usage tracking (docs/month)
 
-- [ ] **Smart Notifications**
-  - [ ] Firebase Cloud Messaging setup
-  - [ ] Cloud Functions for scheduling
-  - [ ] Maturity reminder (7d, 3d, 1d)
-  - [ ] Monthly income summary
-  - [ ] Performance alerts
-  - [ ] Milestone celebrations
-  - [ ] Notification preferences UI
-  - [ ] Push notification permissions
+- [x] **Smart Notifications** ✅ COMPLETE (Local notifications - no FCM needed for MVP)
+  - [-] Firebase Cloud Messaging setup (Deferred - local notifications sufficient)
+  - [-] Cloud Functions for scheduling (Deferred - local scheduling works well)
+  - [x] Maturity reminder (7d, 1d)
+  - [x] Monthly income summary
+  - [x] Performance alerts (Risk/concentration alerts)
+  - [x] Milestone celebrations
+  - [x] Notification preferences UI
+  - [x] Push notification permissions
+  - [x] Weekly summary notifications
+  - [x] Income reminders
+  - [x] Tax deadline reminders (India-specific)
+  - [x] FY summary notifications
+  - [x] Idle investment alerts
+  - [ ] Goal notifications (Requires goals feature)
 
 - [ ] **Recurring Income Projections**
   - [ ] Pattern recognition algorithm
