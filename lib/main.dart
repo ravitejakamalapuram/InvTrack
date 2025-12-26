@@ -66,10 +66,37 @@ Future<void> _initializeNonCriticalServices(NotificationService notificationServ
     unawaited(crashlyticsService.initialize());
 
     // Initialize notifications in background
-    unawaited(notificationService.initialize());
+    await notificationService.initialize();
+
+    // Schedule recurring notifications (tax reminders, weekly check-in, FY summary)
+    // These are idempotent - safe to call on every app start
+    unawaited(_scheduleRecurringNotifications(notificationService));
   } catch (e) {
     if (kDebugMode) {
       debugPrint('🔴 Error initializing non-critical services: $e');
+    }
+  }
+}
+
+/// Schedule all recurring notifications.
+/// Called on every app start - methods are idempotent.
+Future<void> _scheduleRecurringNotifications(NotificationService notificationService) async {
+  try {
+    // Schedule tax deadline reminders (India-specific)
+    await notificationService.scheduleTaxReminders();
+
+    // Schedule weekly Sunday check-in prompt
+    await notificationService.scheduleWeeklyCheckIn();
+
+    // Schedule FY summary for April 1st
+    await notificationService.scheduleFYSummary();
+
+    if (kDebugMode) {
+      debugPrint('🔔 Recurring notifications scheduled');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('🔴 Error scheduling recurring notifications: $e');
     }
   }
 }

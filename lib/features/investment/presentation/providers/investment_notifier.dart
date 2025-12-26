@@ -235,6 +235,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         amountRange: _getAmountRange(amount),
       );
 
+      // Check for milestone achievements after adding return cash flows
+      if (type == CashFlowType.income || type == CashFlowType.returnFlow) {
+        await _checkMilestoneAfterCashFlow(investmentId);
+      }
+
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -510,6 +515,39 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       await ref.read(notificationServiceProvider).cancelMaturityReminders(investmentId);
     } catch (e) {
       // Don't fail the main operation if notification cancellation fails
+    }
+  }
+
+  // ============ Milestone Helpers ============
+
+  /// Check for milestone achievements after adding a cash flow
+  Future<void> _checkMilestoneAfterCashFlow(String investmentId) async {
+    try {
+      final investment = await ref.read(investmentRepositoryProvider).getInvestmentById(investmentId);
+      if (investment == null) return;
+
+      final cashFlows = await ref.read(investmentRepositoryProvider).getCashFlowsByInvestment(investmentId);
+
+      // Calculate totals
+      double totalInvested = 0;
+      double totalReturned = 0;
+      for (final cf in cashFlows) {
+        if (cf.type == CashFlowType.invest || cf.type == CashFlowType.fee) {
+          totalInvested += cf.amount;
+        } else {
+          totalReturned += cf.amount;
+        }
+      }
+
+      // Check for milestone notification
+      await ref.read(notificationServiceProvider).checkAndShowMilestone(
+        investmentId: investmentId,
+        investmentName: investment.name,
+        totalInvested: totalInvested,
+        totalReturned: totalReturned,
+      );
+    } catch (e) {
+      // Don't fail the main operation if milestone check fails
     }
   }
 }

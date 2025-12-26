@@ -181,7 +181,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             ListTile(
               title: const Text('Test Notification'),
-              subtitle: const Text('Send a test notification'),
+              subtitle: const Text('Send an immediate test notification'),
               leading: const Icon(Icons.notifications_active, color: Colors.blue),
               onTap: () async {
                 final notificationService = ref.read(notificationServiceProvider);
@@ -193,6 +193,25 @@ class SettingsScreen extends ConsumerWidget {
                           ? 'Test notification sent! Check your notification shade.'
                           : 'Permission denied. Please enable notifications in settings.'),
                       backgroundColor: success ? Colors.blue : Colors.orange,
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              title: const Text('Test Scheduled Notification'),
+              subtitle: const Text('Schedule a notification in 5 seconds'),
+              leading: const Icon(Icons.schedule, color: Colors.purple),
+              onTap: () async {
+                final notificationService = ref.read(notificationServiceProvider);
+                final success = await notificationService.scheduleTestNotification(delaySeconds: 5);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success
+                          ? 'Notification scheduled! It will appear in 5 seconds.'
+                          : 'Permission denied. Please enable notifications in settings.'),
+                      backgroundColor: success ? Colors.purple : Colors.orange,
                     ),
                   );
                 }
@@ -389,21 +408,6 @@ Last updated: December 05, 2025
 
     return Column(
       children: [
-        SwitchListTile(
-          title: const Text('Income Alerts'),
-          subtitle: const Text('Notify when income is recorded'),
-          secondary: const Icon(Icons.attach_money, color: Colors.green),
-          value: notificationService.incomeAlertsEnabled,
-          onChanged: (bool value) async {
-            if (value) {
-              // Request permissions when enabling
-              await notificationService.requestPermissions();
-            }
-            await notificationService.setIncomeAlertsEnabled(value);
-            // Trigger rebuild
-            ref.invalidate(notificationServiceProvider);
-          },
-        ),
         SwitchListTile(
           title: const Text('Weekly Summary'),
           subtitle: const Text('Get a summary every Sunday'),
