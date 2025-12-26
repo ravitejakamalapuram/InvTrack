@@ -1,5 +1,48 @@
 import 'package:flutter/material.dart';
 
+/// Income frequency for investments that pay regular income
+enum IncomeFrequency {
+  monthly,
+  quarterly,
+  semiAnnual,
+  annual;
+
+  String get displayName {
+    switch (this) {
+      case IncomeFrequency.monthly:
+        return 'Monthly';
+      case IncomeFrequency.quarterly:
+        return 'Quarterly';
+      case IncomeFrequency.semiAnnual:
+        return 'Semi-Annual';
+      case IncomeFrequency.annual:
+        return 'Annual';
+    }
+  }
+
+  /// Number of months between income payments
+  int get monthsBetweenPayments {
+    switch (this) {
+      case IncomeFrequency.monthly:
+        return 1;
+      case IncomeFrequency.quarterly:
+        return 3;
+      case IncomeFrequency.semiAnnual:
+        return 6;
+      case IncomeFrequency.annual:
+        return 12;
+    }
+  }
+
+  static IncomeFrequency? fromString(String? value) {
+    if (value == null) return null;
+    return IncomeFrequency.values.cast<IncomeFrequency?>().firstWhere(
+      (e) => e?.name == value,
+      orElse: () => null,
+    );
+  }
+}
+
 /// Investment Status - lifecycle states
 enum InvestmentStatus {
   open,
@@ -143,6 +186,12 @@ class InvestmentEntity {
   final DateTime? closedAt;
   final DateTime updatedAt;
 
+  /// Date when this investment matures (for FDs, bonds, etc.)
+  final DateTime? maturityDate;
+
+  /// Frequency of expected income (for income-generating investments)
+  final IncomeFrequency? incomeFrequency;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -152,10 +201,18 @@ class InvestmentEntity {
     required this.createdAt,
     this.closedAt,
     required this.updatedAt,
+    this.maturityDate,
+    this.incomeFrequency,
   });
 
   bool get isOpen => status == InvestmentStatus.open;
   bool get isClosed => status == InvestmentStatus.closed;
+
+  /// Whether this investment has a maturity date set
+  bool get hasMaturityDate => maturityDate != null;
+
+  /// Whether this investment pays regular income
+  bool get hasIncomeSchedule => incomeFrequency != null;
 
   InvestmentEntity copyWith({
     String? id,
@@ -166,6 +223,8 @@ class InvestmentEntity {
     DateTime? createdAt,
     DateTime? closedAt,
     DateTime? updatedAt,
+    DateTime? maturityDate,
+    IncomeFrequency? incomeFrequency,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -176,6 +235,8 @@ class InvestmentEntity {
       createdAt: createdAt ?? this.createdAt,
       closedAt: closedAt ?? this.closedAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      maturityDate: maturityDate ?? this.maturityDate,
+      incomeFrequency: incomeFrequency ?? this.incomeFrequency,
     );
   }
 
@@ -190,7 +251,9 @@ class InvestmentEntity {
         other.notes == notes &&
         other.createdAt == createdAt &&
         other.closedAt == closedAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.maturityDate == maturityDate &&
+        other.incomeFrequency == incomeFrequency;
   }
 
   @override
@@ -202,6 +265,8 @@ class InvestmentEntity {
         notes.hashCode ^
         createdAt.hashCode ^
         closedAt.hashCode ^
-        updatedAt.hashCode;
+        updatedAt.hashCode ^
+        maturityDate.hashCode ^
+        incomeFrequency.hashCode;
   }
 }

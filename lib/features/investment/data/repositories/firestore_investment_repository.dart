@@ -308,6 +308,10 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? Timestamp.fromDate(investment.closedAt!)
           : null,
       'updatedAt': FieldValue.serverTimestamp(),
+      'maturityDate': investment.maturityDate != null
+          ? Timestamp.fromDate(investment.maturityDate!)
+          : null,
+      'incomeFrequency': investment.incomeFrequency?.name,
     };
   }
 
@@ -325,6 +329,10 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
+      maturityDate: data['maturityDate'] != null
+          ? (data['maturityDate'] as Timestamp).toDate()
+          : null,
+      incomeFrequency: IncomeFrequency.fromString(data['incomeFrequency'] as String?),
     );
   }
 

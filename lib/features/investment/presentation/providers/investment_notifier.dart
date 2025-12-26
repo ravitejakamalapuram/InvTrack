@@ -7,9 +7,7 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
-import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT NOTIFIER (ACTIONS) ============
@@ -30,6 +28,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     required String name,
     required InvestmentType type,
     String? notes,
+    DateTime? maturityDate,
+    IncomeFrequency? incomeFrequency,
   }) async {
     // Input validation
     _validateName(name);
@@ -45,6 +45,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         notes: notes?.trim(),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        maturityDate: maturityDate,
+        incomeFrequency: incomeFrequency,
       );
       await _ref.read(investmentRepositoryProvider).createInvestment(investment);
 
@@ -70,6 +72,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     required String name,
     required InvestmentType type,
     String? notes,
+    DateTime? maturityDate,
+    IncomeFrequency? incomeFrequency,
   }) async {
     // Input validation
     _validateName(name);
@@ -85,6 +89,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         type: type,
         notes: notes?.trim(),
         updatedAt: DateTime.now(),
+        maturityDate: maturityDate,
+        incomeFrequency: incomeFrequency,
       );
       await _ref.read(investmentRepositoryProvider).updateInvestment(updated);
 
@@ -184,23 +190,6 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         flowType: type.name,
         amountRange: _getAmountRange(amount),
       );
-
-      // Send income notification for income cash flows
-      if (type == CashFlowType.income) {
-        try {
-          final investment = await _ref.read(investmentRepositoryProvider).getInvestmentById(investmentId);
-          if (investment != null) {
-            final currency = _ref.read(settingsProvider).currency;
-            _ref.read(notificationServiceProvider).showIncomeAlert(
-              investmentName: investment.name,
-              amount: amount,
-              currency: currency,
-            );
-          }
-        } catch (_) {
-          // Ignore notification errors - don't fail the cash flow operation
-        }
-      }
 
       _invalidateAll();
       state = const AsyncValue.data(null);
