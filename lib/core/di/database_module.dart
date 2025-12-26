@@ -22,7 +22,7 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 /// Used by UI to show appropriate prompts without triggering errors
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authStateProvider);
-  final user = authState.valueOrNull;
+  final user = authState.value;
   return user != null;
 });
 
@@ -33,7 +33,7 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
   final authState = ref.watch(authStateProvider);
 
   // Get user ID from auth state
-  final user = authState.valueOrNull;
+  final user = authState.value;
   if (user == null) {
     // Throw a specific exception that UI can catch and handle gracefully
     throw AuthException.notAuthenticated();

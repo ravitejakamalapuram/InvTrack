@@ -19,7 +19,7 @@ class InvestmentListSelectionControls extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final listState = ref.watch(investmentListStateProvider);
     final filteredAsync = ref.watch(filteredInvestmentsProvider);
-    final filteredInvestments = filteredAsync.valueOrNull ?? [];
+    final filteredInvestments = filteredAsync.value ?? [];
 
     final allSelected = filteredInvestments.isNotEmpty &&
         filteredInvestments.every((i) => listState.selectedIds.contains(i.id));

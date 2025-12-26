@@ -255,7 +255,7 @@ class _InvestmentValueColumn extends ConsumerWidget {
         height: AppSpacing.md,
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
-      error: (_, __) => Icon(
+      error: (e, s) => Icon(
         Icons.chevron_right_rounded,
         color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
       ),
@@ -354,7 +354,7 @@ class _InvestmentBottomStrip extends ConsumerWidget {
             ),
           ],
         ),
-        error: (_, __) => Row(
+        error: (e, s) => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(

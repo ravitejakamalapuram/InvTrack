@@ -179,6 +179,25 @@ class SettingsScreen extends ConsumerWidget {
                 }
               },
             ),
+            ListTile(
+              title: const Text('Test Notification'),
+              subtitle: const Text('Send a test notification'),
+              leading: const Icon(Icons.notifications_active, color: Colors.blue),
+              onTap: () async {
+                final notificationService = ref.read(notificationServiceProvider);
+                final success = await notificationService.showTestNotification();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success
+                          ? 'Test notification sent! Check your notification shade.'
+                          : 'Permission denied. Please enable notifications in settings.'),
+                      backgroundColor: success ? Colors.blue : Colors.orange,
+                    ),
+                  );
+                }
+              },
+            ),
           ],
           const Divider(),
           _buildSectionHeader('About'),
@@ -398,6 +417,45 @@ Last updated: December 05, 2025
             ref.invalidate(notificationServiceProvider);
           },
         ),
+        SwitchListTile(
+          title: const Text('Income Reminders'),
+          subtitle: const Text('Remind when income is expected'),
+          secondary: const Icon(Icons.notification_important, color: Colors.orange),
+          value: notificationService.incomeRemindersEnabled,
+          onChanged: (bool value) async {
+            if (value) {
+              await notificationService.requestPermissions();
+            }
+            await notificationService.setIncomeRemindersEnabled(value);
+            ref.invalidate(notificationServiceProvider);
+          },
+        ),
+        SwitchListTile(
+          title: const Text('Maturity Reminders'),
+          subtitle: const Text('Remind before investments mature'),
+          secondary: const Icon(Icons.event_available, color: Colors.purple),
+          value: notificationService.maturityRemindersEnabled,
+          onChanged: (bool value) async {
+            if (value) {
+              await notificationService.requestPermissions();
+            }
+            await notificationService.setMaturityRemindersEnabled(value);
+            ref.invalidate(notificationServiceProvider);
+          },
+        ),
+        SwitchListTile(
+          title: const Text('Monthly Summary'),
+          subtitle: const Text('Summarize income at end of month'),
+          secondary: const Icon(Icons.summarize, color: Colors.teal),
+          value: notificationService.monthlySummaryEnabled,
+          onChanged: (bool value) async {
+            if (value) {
+              await notificationService.requestPermissions();
+            }
+            await notificationService.setMonthlySummaryEnabled(value);
+            ref.invalidate(notificationServiceProvider);
+          },
+        ),
       ],
     );
   }
@@ -460,7 +518,7 @@ Last updated: December 05, 2025
         padding: EdgeInsets.all(AppSpacing.md),
         child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 }

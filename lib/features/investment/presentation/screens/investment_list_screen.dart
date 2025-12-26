@@ -133,6 +133,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                   ],
                 ),
                 child: FloatingActionButton.extended(
+                  heroTag: 'investment_list_add_fab',
                   onPressed: _showAddInvestmentSheet,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
@@ -221,7 +222,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   ) {
     return filteredAsync.when(
       data: (filteredInvestments) {
-        final allInvestments = allInvestmentsAsync.valueOrNull ?? [];
+        final allInvestments = allInvestmentsAsync.value ?? [];
 
         if (allInvestments.isEmpty) {
           return SliverFillRemaining(

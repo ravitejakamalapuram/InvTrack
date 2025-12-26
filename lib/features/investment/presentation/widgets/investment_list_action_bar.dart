@@ -104,7 +104,7 @@ class InvestmentListActionBar extends ConsumerWidget {
 
   Future<void> _showMergeDialog(BuildContext context, WidgetRef ref) async {
     final listState = ref.read(investmentListStateProvider);
-    final allInvestments = ref.read(allInvestmentsProvider).valueOrNull ?? [];
+    final allInvestments = ref.read(allInvestmentsProvider).value ?? [];
     final toMerge = allInvestments.where((i) => listState.selectedIds.contains(i.id)).toList();
 
     // Find the most common type as default

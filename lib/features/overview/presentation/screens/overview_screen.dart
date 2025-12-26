@@ -28,6 +28,7 @@ class OverviewScreen extends ConsumerWidget {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'overview_add_investment_fab',
         onPressed: () {
           HapticFeedback.mediumImpact();
           Navigator.push(
@@ -67,7 +68,7 @@ class OverviewScreen extends ConsumerWidget {
                       ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencyFormat, isDark)
                       : _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
                   loading: () => _buildLoadingContent(context, ref, globalStats, closedStats, currencyFormat),
-                  error: (_, __) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
+                  error: (e, s) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
                 ),
               ),
             ],
@@ -103,7 +104,7 @@ class OverviewScreen extends ConsumerWidget {
         globalStats.when(
           data: (stats) => _buildQuickStats(context, stats, currencyFormat),
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, s) => const SizedBox.shrink(),
         ),
 
         SizedBox(height: AppSpacing.xl),
@@ -137,7 +138,7 @@ class OverviewScreen extends ConsumerWidget {
         globalStats.when(
           data: (stats) => _buildSummarySection(context, stats),
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, s) => const SizedBox.shrink(),
         ),
 
         // Bottom padding for FAB
@@ -273,10 +274,10 @@ class OverviewScreen extends ConsumerWidget {
           );
         },
         loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
+        error: (e, s) => const SizedBox.shrink(),
       ),
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 

@@ -11,8 +11,8 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
-import 'package:inv_tracker/features/investment/presentation/screens/edit_investment_screen.dart';
 
 class InvestmentDetailScreen extends ConsumerStatefulWidget {
   final InvestmentEntity investment;
@@ -205,7 +205,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 child: statsAsync.when(
                   data: (stats) => _buildStatsSection(stats, isDark, currencyFormat),
                   loading: () => _buildStatsLoading(isDark),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (e, s) => const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -309,6 +309,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ],
         ),
         child: FloatingActionButton.extended(
+          heroTag: 'investment_detail_add_cashflow_fab',
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -907,7 +908,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   final navigator = Navigator.of(screenContext);
                   navigator.push(
                     MaterialPageRoute(
-                      builder: (_) => EditInvestmentScreen(investment: widget.investment),
+                      builder: (_) => AddInvestmentScreen(investmentToEdit: widget.investment),
                     ),
                   ).then((result) {
                     if (result == true && mounted) {

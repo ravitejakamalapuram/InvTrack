@@ -8,19 +8,18 @@ final exportServiceProvider = Provider<ExportService>((ref) {
   );
 });
 
-final exportStateProvider = StateNotifierProvider<ExportNotifier, AsyncValue<void>>((ref) {
-  return ExportNotifier(ref.watch(exportServiceProvider));
-});
+final exportStateProvider = NotifierProvider<ExportNotifier, AsyncValue<void>>(
+  ExportNotifier.new,
+);
 
-class ExportNotifier extends StateNotifier<AsyncValue<void>> {
-  final ExportService _service;
-
-  ExportNotifier(this._service) : super(const AsyncValue.data(null));
+class ExportNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
 
   Future<void> exportCsv() async {
     state = const AsyncValue.loading();
     try {
-      await _service.exportToCsv();
+      await ref.read(exportServiceProvider).exportToCsv();
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

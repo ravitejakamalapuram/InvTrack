@@ -43,9 +43,10 @@ class InvestmentListState {
   }
 }
 
-/// StateNotifier for investment list state
-class InvestmentListNotifier extends StateNotifier<InvestmentListState> {
-  InvestmentListNotifier() : super(const InvestmentListState());
+/// Notifier for investment list state (Riverpod 3.x)
+class InvestmentListNotifier extends Notifier<InvestmentListState> {
+  @override
+  InvestmentListState build() => const InvestmentListState();
 
   void toggleSearch() {
     if (state.isSearching) {
@@ -105,9 +106,9 @@ class InvestmentListNotifier extends StateNotifier<InvestmentListState> {
 
 /// Provider for investment list state
 final investmentListStateProvider =
-    StateNotifierProvider<InvestmentListNotifier, InvestmentListState>((ref) {
-  return InvestmentListNotifier();
-});
+    NotifierProvider<InvestmentListNotifier, InvestmentListState>(
+  InvestmentListNotifier.new,
+);
 
 /// Provider for filtered and sorted investments
 final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((ref) {
@@ -139,7 +140,7 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
       final statsCache = <String, InvestmentStats?>{};
       for (final inv in filtered) {
         final statsAsync = ref.watch(investmentStatsProvider(inv.id));
-        statsCache[inv.id] = statsAsync.valueOrNull;
+        statsCache[inv.id] = statsAsync.value;
       }
 
       // Apply sorting
@@ -209,7 +210,7 @@ int _compareInvestments(
 
 /// Provider for investment count by status (for filter tabs)
 final investmentCountsProvider = Provider<({int all, int open, int closed})>((ref) {
-  final investments = ref.watch(allInvestmentsProvider).valueOrNull ?? [];
+  final investments = ref.watch(allInvestmentsProvider).value ?? [];
   return (
     all: investments.length,
     open: investments.where((i) => i.status == InvestmentStatus.open).length,

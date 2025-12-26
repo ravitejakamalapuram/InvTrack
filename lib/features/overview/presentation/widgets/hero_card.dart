@@ -9,8 +9,18 @@ import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 
-/// Provider for toggling between all and realized-only net position
-final showRealizedOnlyProvider = StateProvider<bool>((ref) => false);
+/// Notifier for toggling between all and realized-only net position
+class ShowRealizedOnlyNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+  void set(bool value) => state = value;
+}
+
+final showRealizedOnlyProvider = NotifierProvider<ShowRealizedOnlyNotifier, bool>(
+  ShowRealizedOnlyNotifier.new,
+);
 
 /// Hero card with toggle for showing all vs realized-only stats.
 class HeroCardWithToggle extends ConsumerWidget {
@@ -41,7 +51,7 @@ class HeroCardWithToggle extends ConsumerWidget {
           currencyFormat: currencyFormat,
           showRealizedOnly: showRealizedOnly,
         ),
-        error: (_, __) => HeroCardContent(
+        error: (e, s) => HeroCardContent(
           globalStats: global,
           closedStats: global,
           currencyFormat: currencyFormat,
@@ -135,7 +145,7 @@ class HeroCardContent extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        ref.read(showRealizedOnlyProvider.notifier).state = !showRealizedOnly;
+        ref.read(showRealizedOnlyProvider.notifier).toggle();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

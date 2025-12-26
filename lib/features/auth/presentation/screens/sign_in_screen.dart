@@ -83,6 +83,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     setState(() => _isLoading = true);
     try {
       debugPrint('SignInScreen: Starting Google Sign-In...');
+
+      // Ensure Google Sign-In is initialized before attempting auth
+      await ref.read(googleSignInInitializedProvider.future);
+
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
       debugPrint('SignInScreen: Sign-in result: $user');
 
