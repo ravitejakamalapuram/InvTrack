@@ -126,5 +126,59 @@ class FakeAnalyticsService implements AnalyticsService {
       },
     );
   }
+
+  @override
+  Future<void> logGoalCreated({
+    required String goalType,
+    required String trackingMode,
+    bool hasDeadline = false,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.goalCreated,
+      parameters: {
+        'goal_type': goalType,
+        'tracking_mode': trackingMode,
+        'has_deadline': hasDeadline ? 1 : 0,
+      },
+    );
+  }
+
+  @override
+  Future<void> logGoalUpdated({required String goalId}) async {
+    await logEvent(
+      name: AnalyticsEvents.goalUpdated,
+      parameters: {'goal_id': goalId},
+    );
+  }
+
+  @override
+  Future<void> logGoalArchived({required String goalId}) async {
+    await logEvent(
+      name: AnalyticsEvents.goalArchived,
+      parameters: {'goal_id': goalId},
+    );
+  }
+
+  @override
+  Future<void> logGoalDeleted({required String goalId}) async {
+    await logEvent(
+      name: AnalyticsEvents.goalDeleted,
+      parameters: {'goal_id': goalId},
+    );
+  }
+
+  @override
+  Future<void> logGoalMilestoneReached({
+    required String goalId,
+    required int milestone,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.goalMilestoneReached,
+      parameters: {
+        'goal_id': goalId,
+        'milestone': milestone,
+      },
+    );
+  }
 }
 

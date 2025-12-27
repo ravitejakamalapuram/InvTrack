@@ -29,6 +29,12 @@ abstract class InvestmentRepository {
   /// Reopen a closed investment
   Future<void> reopenInvestment(String id);
 
+  /// Archive an investment (hide from active view)
+  Future<void> archiveInvestment(String id);
+
+  /// Unarchive an investment (restore to active view)
+  Future<void> unarchiveInvestment(String id);
+
   /// Delete an investment and all its cash flows
   Future<void> deleteInvestment(String id);
 

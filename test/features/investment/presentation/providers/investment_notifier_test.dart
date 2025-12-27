@@ -287,5 +287,72 @@ void main() {
       expect(deletedCount, 0);
     });
   });
+
+  group('InvestmentNotifier - archiveInvestment', () {
+    test('should archive an investment', () async {
+      final notifier = container.read(investmentNotifierProvider.notifier);
+      final created = await notifier.addInvestment(
+        name: 'Test Investment',
+        type: InvestmentType.p2pLending,
+      );
+
+      expect(created.isArchived, false);
+
+      await notifier.archiveInvestment(created.id);
+
+      final archived = await fakeRepository.getInvestmentById(created.id);
+      expect(archived!.isArchived, true);
+    });
+
+    test('should archive an already closed investment', () async {
+      final notifier = container.read(investmentNotifierProvider.notifier);
+      final created = await notifier.addInvestment(
+        name: 'Test Investment',
+        type: InvestmentType.stocks,
+      );
+      await notifier.closeInvestment(created.id);
+
+      await notifier.archiveInvestment(created.id);
+
+      final archived = await fakeRepository.getInvestmentById(created.id);
+      expect(archived!.isArchived, true);
+      expect(archived.status, InvestmentStatus.closed);
+    });
+  });
+
+  group('InvestmentNotifier - unarchiveInvestment', () {
+    test('should unarchive an archived investment', () async {
+      final notifier = container.read(investmentNotifierProvider.notifier);
+      final created = await notifier.addInvestment(
+        name: 'Test Investment',
+        type: InvestmentType.p2pLending,
+      );
+      await notifier.archiveInvestment(created.id);
+
+      final archived = await fakeRepository.getInvestmentById(created.id);
+      expect(archived!.isArchived, true);
+
+      await notifier.unarchiveInvestment(created.id);
+
+      final unarchived = await fakeRepository.getInvestmentById(created.id);
+      expect(unarchived!.isArchived, false);
+    });
+
+    test('should preserve investment status when unarchiving', () async {
+      final notifier = container.read(investmentNotifierProvider.notifier);
+      final created = await notifier.addInvestment(
+        name: 'Test Investment',
+        type: InvestmentType.stocks,
+      );
+      await notifier.closeInvestment(created.id);
+      await notifier.archiveInvestment(created.id);
+
+      await notifier.unarchiveInvestment(created.id);
+
+      final unarchived = await fakeRepository.getInvestmentById(created.id);
+      expect(unarchived!.isArchived, false);
+      expect(unarchived.status, InvestmentStatus.closed);
+    });
+  });
 }
 

@@ -119,11 +119,18 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
     data: (investments) {
       var filtered = investments.toList();
 
-      // Apply status filter
-      if (listState.filter == InvestmentFilter.open) {
-        filtered = filtered.where((inv) => inv.status == InvestmentStatus.open).toList();
-      } else if (listState.filter == InvestmentFilter.closed) {
-        filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed).toList();
+      // Apply status/archive filter
+      switch (listState.filter) {
+        case InvestmentFilter.all:
+          // "All" shows only non-archived investments
+          filtered = filtered.where((inv) => !inv.isArchived).toList();
+        case InvestmentFilter.open:
+          filtered = filtered.where((inv) => inv.status == InvestmentStatus.open && !inv.isArchived).toList();
+        case InvestmentFilter.closed:
+          filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed && !inv.isArchived).toList();
+        case InvestmentFilter.archived:
+          // "Archived" shows only archived investments
+          filtered = filtered.where((inv) => inv.isArchived).toList();
       }
 
       // Apply search filter
@@ -209,12 +216,14 @@ int _compareInvestments(
 }
 
 /// Provider for investment count by status (for filter tabs)
-final investmentCountsProvider = Provider<({int all, int open, int closed})>((ref) {
+final investmentCountsProvider = Provider<({int all, int open, int closed, int archived})>((ref) {
   final investments = ref.watch(allInvestmentsProvider).value ?? [];
+  final nonArchived = investments.where((i) => !i.isArchived);
   return (
-    all: investments.length,
-    open: investments.where((i) => i.status == InvestmentStatus.open).length,
-    closed: investments.where((i) => i.status == InvestmentStatus.closed).length,
+    all: nonArchived.length,
+    open: nonArchived.where((i) => i.status == InvestmentStatus.open).length,
+    closed: nonArchived.where((i) => i.status == InvestmentStatus.closed).length,
+    archived: investments.where((i) => i.isArchived).length,
   );
 });
 

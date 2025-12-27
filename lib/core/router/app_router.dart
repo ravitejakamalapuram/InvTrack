@@ -7,6 +7,9 @@ import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.da
 import 'package:inv_tracker/features/home/presentation/screens/home_shell_screen.dart';
 import 'package:inv_tracker/features/overview/presentation/screens/overview_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
+import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dart';
+import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
+import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -86,7 +89,29 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 3: Settings
+          // Tab 3: Goals
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/goals',
+                builder: (context, state) => const GoalsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    builder: (context, state) => const CreateGoalScreen(),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) {
+                      final goalId = state.pathParameters['id']!;
+                      return GoalDetailsScreen(goalId: goalId);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Tab 4: Settings
           StatefulShellBranch(
             routes: [
               GoRoute(

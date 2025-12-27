@@ -870,6 +870,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   void _showOptionsSheet(BuildContext context, bool isDark) {
     final isClosed = widget.investment.status == InvestmentStatus.closed;
+    final isArchived = widget.investment.isArchived;
     // Store a reference to screen's context before entering the builder
     final screenContext = context;
 
@@ -934,6 +935,22 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 },
               ),
               ListTile(
+                leading: Icon(
+                  isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
+                  color: AppColors.graphTeal,
+                ),
+                title: Text(
+                  isArchived ? 'Unarchive Investment' : 'Archive Investment',
+                  style: AppTypography.body.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _toggleArchiveStatus(screenContext, isDark);
+                },
+              ),
+              ListTile(
                 leading: Icon(Icons.delete_rounded, color: AppColors.errorLight),
                 title: Text(
                   'Delete Investment',
@@ -950,5 +967,71 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         ),
       ),
     );
+  }
+
+  void _toggleArchiveStatus(BuildContext context, bool isDark) async {
+    final isArchived = widget.investment.isArchived;
+    // Capture navigator and messenger upfront before any async operations
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final successMessage = 'Investment ${isArchived ? 'unarchived' : 'archived'}';
+    final errorMessage = 'Failed to ${isArchived ? 'unarchive' : 'archive'} investment';
+
+    final confirmed = await AppFeedback.showConfirmDialog(
+      context: context,
+      title: '${isArchived ? 'Unarchive' : 'Archive'} Investment?',
+      message: isArchived
+          ? 'This will restore the investment to your active list.'
+          : 'This will hide the investment from your active list. You can restore it anytime from the Archived filter.',
+      confirmText: isArchived ? 'Unarchive' : 'Archive',
+      isDestructive: false,
+    );
+
+    if (confirmed && mounted) {
+      try {
+        if (isArchived) {
+          await ref.read(investmentNotifierProvider.notifier).unarchiveInvestment(widget.investment.id);
+        } else {
+          await ref.read(investmentNotifierProvider.notifier).archiveInvestment(widget.investment.id);
+        }
+        HapticFeedback.mediumImpact();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text(successMessage)),
+              ],
+            ),
+            backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        // Navigate back after archiving (but not for unarchive)
+        if (!isArchived && mounted) {
+          navigator.pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(errorMessage)),
+                ],
+              ),
+              backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    }
   }
 }

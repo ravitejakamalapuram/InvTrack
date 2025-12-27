@@ -11,7 +11,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 
-/// Filter tabs for All, Open, and Closed investments
+/// Filter tabs for All, Open, Closed, and Archived investments
 class InvestmentListFilterTabs extends ConsumerWidget {
   const InvestmentListFilterTabs({super.key});
 
@@ -21,32 +21,43 @@ class InvestmentListFilterTabs extends ConsumerWidget {
     final listState = ref.watch(investmentListStateProvider);
     final counts = ref.watch(investmentCountsProvider);
 
-    return Row(
-      children: [
-        _FilterChip(
-          label: 'All',
-          count: counts.all,
-          filter: InvestmentFilter.all,
-          isSelected: listState.filter == InvestmentFilter.all,
-          isDark: isDark,
-        ),
-        SizedBox(width: AppSpacing.xs),
-        _FilterChip(
-          label: 'Open',
-          count: counts.open,
-          filter: InvestmentFilter.open,
-          isSelected: listState.filter == InvestmentFilter.open,
-          isDark: isDark,
-        ),
-        SizedBox(width: AppSpacing.xs),
-        _FilterChip(
-          label: 'Closed',
-          count: counts.closed,
-          filter: InvestmentFilter.closed,
-          isSelected: listState.filter == InvestmentFilter.closed,
-          isDark: isDark,
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterChip(
+            label: 'All',
+            count: counts.all,
+            filter: InvestmentFilter.all,
+            isSelected: listState.filter == InvestmentFilter.all,
+            isDark: isDark,
+          ),
+          SizedBox(width: AppSpacing.xs),
+          _FilterChip(
+            label: 'Open',
+            count: counts.open,
+            filter: InvestmentFilter.open,
+            isSelected: listState.filter == InvestmentFilter.open,
+            isDark: isDark,
+          ),
+          SizedBox(width: AppSpacing.xs),
+          _FilterChip(
+            label: 'Closed',
+            count: counts.closed,
+            filter: InvestmentFilter.closed,
+            isSelected: listState.filter == InvestmentFilter.closed,
+            isDark: isDark,
+          ),
+          SizedBox(width: AppSpacing.xs),
+          _FilterChip(
+            label: 'Archived',
+            count: counts.archived,
+            filter: InvestmentFilter.archived,
+            isSelected: listState.filter == InvestmentFilter.archived,
+            isDark: isDark,
+          ),
+        ],
+      ),
     );
   }
 }

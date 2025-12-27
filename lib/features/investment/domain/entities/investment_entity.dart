@@ -192,6 +192,9 @@ class InvestmentEntity {
   /// Frequency of expected income (for income-generating investments)
   final IncomeFrequency? incomeFrequency;
 
+  /// Whether this investment is archived (hidden from active view)
+  final bool isArchived;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -203,6 +206,7 @@ class InvestmentEntity {
     required this.updatedAt,
     this.maturityDate,
     this.incomeFrequency,
+    this.isArchived = false,
   });
 
   bool get isOpen => status == InvestmentStatus.open;
@@ -225,6 +229,7 @@ class InvestmentEntity {
     DateTime? updatedAt,
     DateTime? maturityDate,
     IncomeFrequency? incomeFrequency,
+    bool? isArchived,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -237,6 +242,7 @@ class InvestmentEntity {
       updatedAt: updatedAt ?? this.updatedAt,
       maturityDate: maturityDate ?? this.maturityDate,
       incomeFrequency: incomeFrequency ?? this.incomeFrequency,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 
@@ -253,7 +259,8 @@ class InvestmentEntity {
         other.closedAt == closedAt &&
         other.updatedAt == updatedAt &&
         other.maturityDate == maturityDate &&
-        other.incomeFrequency == incomeFrequency;
+        other.incomeFrequency == incomeFrequency &&
+        other.isArchived == isArchived;
   }
 
   @override
@@ -267,6 +274,7 @@ class InvestmentEntity {
         closedAt.hashCode ^
         updatedAt.hashCode ^
         maturityDate.hashCode ^
-        incomeFrequency.hashCode;
+        incomeFrequency.hashCode ^
+        isArchived.hashCode;
   }
 }

@@ -122,18 +122,6 @@ class SettingsScreen extends ConsumerWidget {
             const Divider(),
             _buildSectionHeader('Developer Options'),
             ListTile(
-              title: const Text('Reset Premium Status'),
-              leading: const Icon(Icons.restore, color: Colors.orange),
-              onTap: () async {
-                await ref.read(isPremiumProvider.notifier).setPremium(false);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Premium status reset to FREE')),
-                  );
-                }
-              },
-            ),
-            ListTile(
               title: const Text('Seed Demo Data'),
               subtitle: const Text('Add sample investments for screenshots'),
               leading: const Icon(Icons.dataset, color: Colors.teal),

@@ -108,6 +108,22 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Future<void> archiveInvestment(String id) async {
+    await _executeWrite(() => _investmentsRef.doc(id).update({
+          'isArchived': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }));
+  }
+
+  @override
+  Future<void> unarchiveInvestment(String id) async {
+    await _executeWrite(() => _investmentsRef.doc(id).update({
+          'isArchived': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }));
+  }
+
+  @override
   Future<void> deleteInvestment(String id) async {
     // Delete all cash flows for this investment first
     // Use timeout to handle offline scenario - Firestore will sync when back online
@@ -312,6 +328,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? Timestamp.fromDate(investment.maturityDate!)
           : null,
       'incomeFrequency': investment.incomeFrequency?.name,
+      'isArchived': investment.isArchived,
     };
   }
 
@@ -333,6 +350,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? (data['maturityDate'] as Timestamp).toDate()
           : null,
       incomeFrequency: IncomeFrequency.fromString(data['incomeFrequency'] as String?),
+      isArchived: data['isArchived'] as bool? ?? false,
     );
   }
 

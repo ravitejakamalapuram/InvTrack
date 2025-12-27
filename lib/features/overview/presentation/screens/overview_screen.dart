@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
@@ -97,6 +98,11 @@ class OverviewScreen extends ConsumerWidget {
           currencyFormat: currencyFormat,
           errorBuilder: (error) => OverviewErrorCard(error: error),
         ),
+
+        SizedBox(height: AppSpacing.xl),
+
+        // Goals Summary Card
+        const GoalsDashboardCard(),
 
         SizedBox(height: AppSpacing.xl),
 

@@ -169,6 +169,45 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  /// Archive an investment (hide from active view)
+  Future<void> archiveInvestment(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(investmentRepositoryProvider).archiveInvestment(id);
+      // Cancel notifications for archived investment
+      await _cancelIncomeReminder(id);
+      await _cancelMaturityReminders(id);
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Unarchive an investment (restore to active view)
+  Future<void> unarchiveInvestment(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      final investment = await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      await ref.read(investmentRepositoryProvider).unarchiveInvestment(id);
+      if (investment != null) {
+        // Re-schedule reminders if applicable
+        if (investment.incomeFrequency != null) {
+          await _scheduleIncomeReminder(investment);
+        }
+        if (investment.maturityDate != null) {
+          await _scheduleMaturityReminders(investment);
+        }
+      }
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
   /// Delete an investment
   Future<void> deleteInvestment(String id) async {
     state = const AsyncValue.loading();
