@@ -1,0 +1,196 @@
+/// About screen with app info, legal documents, and support.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+
+/// App version info - matches pubspec.yaml version: 3.1.0+4
+const String _appVersion = '3.1.0';
+const String _buildNumber = '4';
+
+/// Screen showing app information and legal documents.
+class AboutScreen extends ConsumerWidget {
+  const AboutScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('About', style: AppTypography.h3),
+      ),
+      body: ListView(
+        children: [
+          SizedBox(height: AppSpacing.md),
+
+          // App logo and name
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primaryLight,
+                        AppColors.primaryLight.withValues(alpha: 0.7),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.trending_up,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.md),
+                Text(
+                  'InvTrack',
+                  style: AppTypography.h2.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.xxs),
+                Text(
+                  'Version $_appVersion ($_buildNumber)',
+                  style: AppTypography.small.copyWith(
+                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.xl),
+
+          // Legal section
+          SettingsSection(
+            title: 'Legal',
+            children: [
+              SettingsNavTile(
+                icon: Icons.privacy_tip,
+                iconColor: Colors.purple,
+                title: 'Privacy Policy',
+                onTap: () => _openLegalScreen(context, 'Privacy Policy', _privacyPolicy),
+              ),
+              SettingsNavTile(
+                icon: Icons.description,
+                iconColor: Colors.purple,
+                title: 'Terms of Service',
+                onTap: () => _openLegalScreen(context, 'Terms of Service', _termsOfService),
+              ),
+            ],
+          ),
+
+          // Support section
+          SettingsSection(
+            title: 'Support',
+            children: [
+              SettingsNavTile(
+                icon: Icons.help_outline,
+                iconColor: Colors.blue,
+                title: 'Help & FAQ',
+                onTap: () {
+                  // TODO: Implement help screen
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Coming soon!')),
+                  );
+                },
+              ),
+              SettingsNavTile(
+                icon: Icons.email_outlined,
+                iconColor: Colors.teal,
+                title: 'Contact Support',
+                subtitle: 'support@invtracker.com',
+                onTap: () {
+                  // TODO: Open email
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Email support coming soon!')),
+                  );
+                },
+              ),
+            ],
+          ),
+
+          // Made with love
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: Center(
+              child: Text(
+                'Made with ❤️ for smart investors',
+                style: AppTypography.small.copyWith(
+                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                ),
+              ),
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+    );
+  }
+
+  void _openLegalScreen(BuildContext context, String title, String content) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LegalScreen(title: title, content: content),
+      ),
+    );
+  }
+}
+
+const String _privacyPolicy = '''
+**Privacy Policy**
+
+Last updated: December 05, 2025
+
+1. **Introduction**
+   InvTracker ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by InvTracker.
+
+2. **Data Collection**
+   We do not collect any personal data on our servers. All your investment data is stored locally on your device. If you choose to sign in with Google, your authentication token is used solely to verify your identity and is not stored on our servers.
+
+3. **Data Usage**
+   Your data is used exclusively to provide you with investment tracking features. We do not sell, trade, or rent your personal identification information to others.
+
+4. **Security**
+   We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.
+
+5. **Contact Us**
+   If you have questions about this Privacy Policy, please contact us at support@invtracker.com.
+''';
+
+const String _termsOfService = '''
+**Terms of Service**
+
+Last updated: December 05, 2025
+
+1. **Agreement to Terms**
+   By using our mobile application, you agree to be bound by these Terms of Service.
+
+2. **Intellectual Property**
+   The Service and its original content, features, and functionality are the exclusive property of InvTracker.
+
+3. **Disclaimer**
+   Your use of the Service is at your sole risk. The Service is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind.
+
+4. **Investment Advice**
+   InvTracker is a tracking tool only. We do not provide financial, investment, or tax advice. Always consult with qualified professionals.
+
+5. **Governing Law**
+   These Terms shall be governed by the laws of California, United States.
+''';
+

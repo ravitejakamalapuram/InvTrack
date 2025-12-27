@@ -104,7 +104,7 @@ void main() {
         calculatedAt: DateTime.now(),
       );
 
-      expect(progress.progressMessage, contains('/month'));
+      expect(progress.progressMessage, contains('/mo'));
       expect(progress.progressMessage, contains('500'));
       expect(progress.progressMessage, contains('1.0K'));
     });
