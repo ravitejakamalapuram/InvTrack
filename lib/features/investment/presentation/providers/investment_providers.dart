@@ -75,18 +75,50 @@ final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
   return ref.watch(investmentRepositoryProvider).watchAllCashFlows();
 });
 
+/// Active (non-archived) investments only.
+/// With separate collections, allInvestmentsProvider already returns only active investments.
+/// This provider is kept for backward compatibility.
+final activeInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((ref) {
+  return ref.watch(allInvestmentsProvider);
+});
+
+// ============ ARCHIVED INVESTMENT STREAM PROVIDERS ============
+
+/// Watch all archived investments (reactive).
+/// Returns empty list if user is not authenticated.
+final archivedInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((ref) {
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  if (!isAuthenticated) {
+    return Stream.value([]);
+  }
+  return ref.watch(investmentRepositoryProvider).watchArchivedInvestments();
+});
+
+/// Watch archived cash flows for an investment (reactive).
+/// Returns empty list if user is not authenticated.
+final archivedCashFlowsByInvestmentProvider =
+    StreamProvider.family<List<CashFlowEntity>, String>((ref, investmentId) {
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  if (!isAuthenticated) {
+    return Stream.value([]);
+  }
+  return ref.watch(investmentRepositoryProvider).watchArchivedCashFlowsByInvestment(investmentId);
+});
+
 /// Filtered cash flows for valid investments only (derived from streams)
-/// This is the SINGLE SOURCE OF TRUTH for all stats calculations
+/// This is the SINGLE SOURCE OF TRUTH for all stats calculations.
+/// IMPORTANT: Only includes cash flows from NON-ARCHIVED investments.
 final validCashFlowsProvider = Provider<AsyncValue<List<CashFlowEntity>>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
 
   return investmentsAsync.when(
     data: (investments) {
-      final validIds = investments.map((i) => i.id).toSet();
+      // Only include cash flows from active (non-archived) investments
+      final activeIds = investments.map((i) => i.id).toSet();
       return cashFlowsAsync.when(
         data: (cashFlows) => AsyncValue.data(
-          cashFlows.where((cf) => validIds.contains(cf.investmentId)).toList(),
+          cashFlows.where((cf) => activeIds.contains(cf.investmentId)).toList(),
         ),
         loading: () => const AsyncValue.loading(),
         error: (e, st) => AsyncValue.error(e, st),

@@ -111,26 +111,36 @@ final investmentListStateProvider =
 );
 
 /// Provider for filtered and sorted investments
+/// Uses separate streams for active and archived investments for complete isolation.
 final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((ref) {
   final listState = ref.watch(investmentListStateProvider);
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
 
-  return investmentsAsync.when(
+  // Use the appropriate stream based on filter
+  final AsyncValue<List<InvestmentEntity>> sourceAsync;
+  if (listState.filter == InvestmentFilter.archived) {
+    // For archived filter, use the archived investments stream
+    sourceAsync = ref.watch(archivedInvestmentsProvider);
+  } else {
+    // For all other filters, use the active investments stream
+    sourceAsync = ref.watch(allInvestmentsProvider);
+  }
+
+  return sourceAsync.when(
     data: (investments) {
       var filtered = investments.toList();
 
-      // Apply status/archive filter
+      // Apply status filter (only for active investments)
       switch (listState.filter) {
         case InvestmentFilter.all:
-          // "All" shows only non-archived investments
-          filtered = filtered.where((inv) => !inv.isArchived).toList();
+          // All active investments (already filtered by stream)
+          break;
         case InvestmentFilter.open:
-          filtered = filtered.where((inv) => inv.status == InvestmentStatus.open && !inv.isArchived).toList();
+          filtered = filtered.where((inv) => inv.status == InvestmentStatus.open).toList();
         case InvestmentFilter.closed:
-          filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed && !inv.isArchived).toList();
+          filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed).toList();
         case InvestmentFilter.archived:
-          // "Archived" shows only archived investments
-          filtered = filtered.where((inv) => inv.isArchived).toList();
+          // All archived investments (already filtered by stream)
+          break;
       }
 
       // Apply search filter
@@ -216,14 +226,15 @@ int _compareInvestments(
 }
 
 /// Provider for investment count by status (for filter tabs)
+/// Uses separate streams for active and archived investments.
 final investmentCountsProvider = Provider<({int all, int open, int closed, int archived})>((ref) {
-  final investments = ref.watch(allInvestmentsProvider).value ?? [];
-  final nonArchived = investments.where((i) => !i.isArchived);
+  final activeInvestments = ref.watch(allInvestmentsProvider).value ?? [];
+  final archivedInvestments = ref.watch(archivedInvestmentsProvider).value ?? [];
   return (
-    all: nonArchived.length,
-    open: nonArchived.where((i) => i.status == InvestmentStatus.open).length,
-    closed: nonArchived.where((i) => i.status == InvestmentStatus.closed).length,
-    archived: investments.where((i) => i.isArchived).length,
+    all: activeInvestments.length,
+    open: activeInvestments.where((i) => i.status == InvestmentStatus.open).length,
+    closed: activeInvestments.where((i) => i.status == InvestmentStatus.closed).length,
+    archived: archivedInvestments.length,
   );
 });
 

@@ -23,8 +23,9 @@ class InvestmentWithStats {
 // ============ ANALYTICS PROVIDERS ============
 
 /// Recently closed investments (derived from streams - auto-updates)
+/// Only includes non-archived investments.
 final recentlyClosedInvestmentsProvider = Provider<AsyncValue<List<InvestmentWithStats>>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return investmentsAsync.when(
@@ -101,8 +102,9 @@ final monthlyCashFlowTrendProvider = Provider<AsyncValue<List<MonthlyCashFlowDat
 });
 
 /// Distribution by investment type (derived from streams - auto-updates)
+/// Only includes non-archived investments.
 final investmentTypeDistributionProvider = Provider<AsyncValue<List<TypeDistribution>>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return investmentsAsync.when(

@@ -32,14 +32,21 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
   }
 
-  // Collection references
+  // Collection references for ACTIVE data
   CollectionReference<Map<String, dynamic>> get _investmentsRef =>
       _firestore.collection('users').doc(_userId).collection('investments');
 
   CollectionReference<Map<String, dynamic>> get _cashFlowsRef =>
       _firestore.collection('users').doc(_userId).collection('cashflows');
 
-  // ============ INVESTMENTS ============
+  // Collection references for ARCHIVED data (complete isolation)
+  CollectionReference<Map<String, dynamic>> get _archivedInvestmentsRef =>
+      _firestore.collection('users').doc(_userId).collection('archivedInvestments');
+
+  CollectionReference<Map<String, dynamic>> get _archivedCashFlowsRef =>
+      _firestore.collection('users').doc(_userId).collection('archivedCashflows');
+
+  // ============ ACTIVE INVESTMENTS ============
 
   @override
   Stream<List<InvestmentEntity>> watchAllInvestments() {
@@ -72,9 +79,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<InvestmentEntity?> getInvestmentById(String id) async {
+    // Search active first
     final doc = await _investmentsRef.doc(id).get();
-    if (!doc.exists) return null;
-    return _investmentFromFirestore(doc.data()!, doc.id);
+    if (doc.exists) {
+      return _investmentFromFirestore(doc.data()!, doc.id);
+    }
+    // Fall back to archived
+    final archivedDoc = await _archivedInvestmentsRef.doc(id).get();
+    if (archivedDoc.exists) {
+      return _investmentFromFirestore(archivedDoc.data()!, archivedDoc.id);
+    }
+    return null;
   }
 
   @override
@@ -109,18 +124,72 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> archiveInvestment(String id) async {
-    await _executeWrite(() => _investmentsRef.doc(id).update({
-          'isArchived': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }));
+    // Move investment from active to archived collection
+    try {
+      final doc = await _investmentsRef.doc(id).get();
+      if (!doc.exists) return;
+
+      final investmentData = doc.data()!;
+      investmentData['isArchived'] = true;
+      investmentData['updatedAt'] = FieldValue.serverTimestamp();
+
+      // Move all cash flows for this investment to archived collection
+      final cashFlows = await _cashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get();
+
+      final batch = _firestore.batch();
+
+      // Add investment to archived collection
+      batch.set(_archivedInvestmentsRef.doc(id), investmentData);
+      // Delete from active collection
+      batch.delete(_investmentsRef.doc(id));
+
+      // Move each cash flow
+      for (final cfDoc in cashFlows.docs) {
+        batch.set(_archivedCashFlowsRef.doc(cfDoc.id), cfDoc.data());
+        batch.delete(cfDoc.reference);
+      }
+
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - data will sync when back online
+    }
   }
 
   @override
   Future<void> unarchiveInvestment(String id) async {
-    await _executeWrite(() => _investmentsRef.doc(id).update({
-          'isArchived': false,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }));
+    // Move investment from archived back to active collection
+    try {
+      final doc = await _archivedInvestmentsRef.doc(id).get();
+      if (!doc.exists) return;
+
+      final investmentData = doc.data()!;
+      investmentData['isArchived'] = false;
+      investmentData['updatedAt'] = FieldValue.serverTimestamp();
+
+      // Move all archived cash flows for this investment back to active
+      final cashFlows = await _archivedCashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get();
+
+      final batch = _firestore.batch();
+
+      // Add investment back to active collection
+      batch.set(_investmentsRef.doc(id), investmentData);
+      // Delete from archived collection
+      batch.delete(_archivedInvestmentsRef.doc(id));
+
+      // Move each cash flow back
+      for (final cfDoc in cashFlows.docs) {
+        batch.set(_cashFlowsRef.doc(cfDoc.id), cfDoc.data());
+        batch.delete(cfDoc.reference);
+      }
+
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - data will sync when back online
+    }
   }
 
   @override
@@ -151,7 +220,44 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
   }
 
-  // ============ CASH FLOWS ============
+  // ============ ARCHIVED INVESTMENTS ============
+
+  @override
+  Stream<List<InvestmentEntity>> watchArchivedInvestments() {
+    return _archivedInvestmentsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+            .toList());
+  }
+
+  @override
+  Future<InvestmentEntity?> getArchivedInvestmentById(String id) async {
+    final doc = await _archivedInvestmentsRef.doc(id).get();
+    if (!doc.exists) return null;
+    return _investmentFromFirestore(doc.data()!, doc.id);
+  }
+
+  @override
+  Future<void> deleteArchivedInvestment(String id) async {
+    // Delete all archived cash flows for this investment first
+    try {
+      final cashFlows = await _archivedCashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get();
+      final batch = _firestore.batch();
+      for (final doc in cashFlows.docs) {
+        batch.delete(doc.reference);
+      }
+      batch.delete(_archivedInvestmentsRef.doc(id));
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      await _executeWrite(() => _archivedInvestmentsRef.doc(id).delete());
+    }
+  }
+
+  // ============ ACTIVE CASH FLOWS ============
 
   @override
   Stream<List<CashFlowEntity>> watchAllCashFlows() {
@@ -208,6 +314,30 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   @override
   Future<void> deleteCashFlow(String id) async {
     await _executeWrite(() => _cashFlowsRef.doc(id).delete());
+  }
+
+  // ============ ARCHIVED CASH FLOWS ============
+
+  @override
+  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(String investmentId) {
+    return _archivedCashFlowsRef
+        .where('investmentId', isEqualTo: investmentId)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+            .toList());
+  }
+
+  @override
+  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(String investmentId) async {
+    final snapshot = await _archivedCashFlowsRef
+        .where('investmentId', isEqualTo: investmentId)
+        .orderBy('date', descending: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+        .toList();
   }
 
   // ============ BULK OPERATIONS ============

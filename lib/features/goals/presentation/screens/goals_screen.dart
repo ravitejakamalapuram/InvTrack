@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_empty_state.dart';
@@ -47,7 +48,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final allGoalsAsync = ref.watch(allGoalsProvider);
+    // Use separate providers for active and archived goals
+    final activeGoalsAsync = ref.watch(activeGoalsProvider);
+    final archivedGoalsAsync = ref.watch(archivedGoalsProvider);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -88,67 +91,87 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             ),
           ),
 
-          // Content
-          allGoalsAsync.when(
-            data: (allGoals) {
-              // Apply filter
-              final goals = allGoals.where((goal) {
-                switch (_filter) {
-                  case GoalsFilter.active:
-                    return !goal.isArchived;
-                  case GoalsFilter.archived:
-                    return goal.isArchived;
-                  case GoalsFilter.all:
-                    return true;
-                }
-              }).toList();
-
-              if (goals.isEmpty) {
-                if (_filter == GoalsFilter.archived) {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _buildNoArchivedState(isDark),
-                  );
-                }
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: GoalsEmptyState(
-                    onCreateGoal: () => context.push('/goals/create'),
-                  ),
-                );
-              }
-
-              return SliverPadding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final goal = goals[index];
-                      return StaggeredFadeIn(
-                        index: index,
-                        child: GoalCard(
-                          goal: goal,
-                          onTap: () => context.push('/goals/${goal.id}'),
-                        ),
-                      );
-                    },
-                    childCount: goals.length,
-                  ),
-                ),
-              );
-            },
-            loading: () => const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, stack) => SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildErrorState(isDark),
-            ),
+          // Content - use appropriate provider based on filter
+          _buildGoalsContent(
+            isDark: isDark,
+            activeGoalsAsync: activeGoalsAsync,
+            archivedGoalsAsync: archivedGoalsAsync,
           ),
         ],
       ),
-      floatingActionButton: _buildFab(allGoalsAsync),
+      floatingActionButton: _buildFab(activeGoalsAsync),
+    );
+  }
+
+  Widget _buildGoalsContent({
+    required bool isDark,
+    required AsyncValue<List<GoalEntity>> activeGoalsAsync,
+    required AsyncValue<List<GoalEntity>> archivedGoalsAsync,
+  }) {
+    // Select the appropriate data source based on filter
+    final AsyncValue<List<GoalEntity>> goalsAsync;
+    switch (_filter) {
+      case GoalsFilter.active:
+        goalsAsync = activeGoalsAsync;
+      case GoalsFilter.archived:
+        goalsAsync = archivedGoalsAsync;
+      case GoalsFilter.all:
+        // Combine both lists for "all" filter
+        goalsAsync = activeGoalsAsync.when(
+          data: (active) => archivedGoalsAsync.when(
+            data: (archived) => AsyncValue.data([...active, ...archived]),
+            loading: () => AsyncValue.data(active),
+            error: (e, st) => AsyncValue.data(active),
+          ),
+          loading: () => const AsyncValue.loading(),
+          error: (e, st) => AsyncValue.error(e, st),
+        );
+    }
+
+    return goalsAsync.when(
+      data: (goals) {
+        if (goals.isEmpty) {
+          if (_filter == GoalsFilter.archived) {
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildNoArchivedState(isDark),
+            );
+          }
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: GoalsEmptyState(
+              onCreateGoal: () => context.push('/goals/create'),
+            ),
+          );
+        }
+
+        return SliverPadding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final goal = goals[index];
+                return StaggeredFadeIn(
+                  index: index,
+                  child: GoalCard(
+                    goal: goal,
+                    onTap: () => context.push('/goals/${goal.id}'),
+                  ),
+                );
+              },
+              childCount: goals.length,
+            ),
+          ),
+        );
+      },
+      loading: () => const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: _buildErrorState(isDark),
+      ),
     );
   }
 

@@ -39,8 +39,9 @@ final activeGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   return ref.watch(goalRepositoryProvider).watchActiveGoals();
 });
 
-/// Stream provider for all goals (including archived)
+/// Stream provider for all goals (active only with separate collections)
 /// Returns empty list if user is not authenticated
+/// Note: With separate collections, this is the same as activeGoalsProvider
 final allGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
@@ -48,6 +49,17 @@ final allGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
     return Stream.value([]);
   }
   return ref.watch(goalRepositoryProvider).watchAllGoals();
+});
+
+/// Stream provider for archived goals
+/// Returns empty list if user is not authenticated
+final archivedGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
+  // Check auth first to avoid exception when user signs out
+  final isAuthenticated = ref.watch(isAuthenticatedProvider);
+  if (!isAuthenticated) {
+    return Stream.value([]);
+  }
+  return ref.watch(goalRepositoryProvider).watchArchivedGoals();
 });
 
 /// Provider for a single goal by ID (one-time fetch)

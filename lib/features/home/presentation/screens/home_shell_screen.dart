@@ -11,9 +11,11 @@ class HomeShellScreen extends StatelessWidget {
   });
 
   void _goBranch(int index) {
+    // Always navigate to the root (first page) of the tab
+    // When re-tapping same tab OR switching to a different tab
     navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: true,
     );
   }
 

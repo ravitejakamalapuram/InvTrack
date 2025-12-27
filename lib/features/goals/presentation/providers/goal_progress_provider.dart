@@ -190,11 +190,14 @@ class GoalProgressCalculator {
 }
 
 /// Provider for a single goal's progress (works for any goal including archived)
+/// Uses only active (non-archived) investments for calculations.
 final goalProgressProvider = Provider.family<GoalProgress?, String>((ref, goalId) {
   // Watch the goal directly (not from active list - works for any goal)
   final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
+  // Use activeInvestmentsProvider to exclude archived investments
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
+  // Use validCashFlowsProvider to only include cash flows from active investments
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return goalAsync.when(
     data: (goal) {
@@ -224,10 +227,13 @@ final goalProgressProvider = Provider.family<GoalProgress?, String>((ref, goalId
 });
 
 /// Provider for all goals with their progress
+/// Uses only active (non-archived) investments for calculations.
 final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((ref) {
   final goalsAsync = ref.watch(activeGoalsProvider);
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
+  // Use activeInvestmentsProvider to exclude archived investments
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
+  // Use validCashFlowsProvider to only include cash flows from active investments
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return goalsAsync.when(
     data: (goals) {

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
@@ -257,8 +258,10 @@ class YoYComparisonCard extends ConsumerWidget {
       children: [
         Text(year, style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12)),
         const SizedBox(height: 4),
-        Text(
-          '${isPositive ? '+' : ''}${currencyFormat.formatCompact(net.abs())}',
+        CompactAmountText(
+          amount: net,
+          compactText: currencyFormat.formatCompact(net.abs()),
+          prefix: isPositive ? '+' : '-',
           style: TextStyle(
             color: isPositive ? AppColors.successLight : AppColors.errorLight,
             fontWeight: FontWeight.bold,
@@ -354,8 +357,10 @@ class RecentlyClosedCard extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '${isProfit ? '+' : ''}${currencyFormat.formatCompact(item.stats.netCashFlow.abs())}',
+              CompactAmountText(
+                amount: item.stats.netCashFlow,
+                compactText: currencyFormat.formatCompact(item.stats.netCashFlow.abs()),
+                prefix: isProfit ? '+' : '-',
                 style: TextStyle(color: isProfit ? AppColors.successLight : AppColors.errorLight, fontWeight: FontWeight.w600),
               ),
               if (item.stats.xirr != 0 && !item.stats.xirr.isNaN)

@@ -77,41 +77,65 @@ void main() {
   });
 
   group('FakeGoalRepository - Archive/Unarchive', () {
-    test('archiveGoal sets isArchived to true', () async {
+    test('archiveGoal moves goal to archived collection', () async {
       await repository.createGoal(testGoal);
 
       await repository.archiveGoal('goal-1');
 
-      expect(repository.goals.first.isArchived, isTrue);
+      // Goal should be removed from active goals
+      expect(repository.goals, isEmpty);
+      // Goal should be in archived goals with isArchived = true
+      expect(repository.archivedGoals, hasLength(1));
+      expect(repository.archivedGoals.first.isArchived, isTrue);
     });
 
-    test('unarchiveGoal sets isArchived to false', () async {
-      await repository.createGoal(testGoal.copyWith(isArchived: true));
+    test('unarchiveGoal moves goal back to active collection', () async {
+      // Seed with an archived goal
+      repository.seed(archivedGoals: [testGoal.copyWith(isArchived: true)]);
 
       await repository.unarchiveGoal('goal-1');
 
+      // Goal should be in active goals with isArchived = false
+      expect(repository.goals, hasLength(1));
       expect(repository.goals.first.isArchived, isFalse);
+      // Goal should be removed from archived goals
+      expect(repository.archivedGoals, isEmpty);
     });
   });
 
   group('FakeGoalRepository - Streams', () {
-    test('watchAllGoals returns stream with all goals', () async {
+    test('watchAllGoals returns stream with active goals only', () async {
       await repository.createGoal(testGoal);
-      await repository.createGoal(testGoal.copyWith(id: 'goal-2', isArchived: true));
+      await repository.createGoal(testGoal.copyWith(id: 'goal-2'));
 
       final goals = await repository.watchAllGoals().first;
 
       expect(goals, hasLength(2));
     });
 
-    test('watchActiveGoals filters out archived goals', () async {
+    test('watchActiveGoals returns only active goals', () async {
       await repository.createGoal(testGoal);
-      await repository.createGoal(testGoal.copyWith(id: 'goal-2', isArchived: true));
+      await repository.createGoal(testGoal.copyWith(id: 'goal-2'));
+      // Archive one goal
+      await repository.archiveGoal('goal-2');
 
       final activeGoals = await repository.watchActiveGoals().first;
 
       expect(activeGoals, hasLength(1));
-      expect(activeGoals.first.isArchived, isFalse);
+      expect(activeGoals.first.id, 'goal-1');
+    });
+
+    test('watchArchivedGoals returns only archived goals', () async {
+      await repository.createGoal(testGoal);
+      await repository.createGoal(testGoal.copyWith(id: 'goal-2'));
+      // Archive one goal
+      await repository.archiveGoal('goal-2');
+
+      final archivedGoals = await repository.watchArchivedGoals().first;
+
+      expect(archivedGoals, hasLength(1));
+      expect(archivedGoals.first.id, 'goal-2');
+      expect(archivedGoals.first.isArchived, isTrue);
     });
 
     test('watchGoalById returns stream for specific goal', () async {

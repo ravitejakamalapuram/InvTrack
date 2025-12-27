@@ -6,6 +6,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 
 /// Firestore implementation of GoalRepository
+/// Uses separate collections for active and archived goals.
 class FirestoreGoalRepository implements GoalRepository {
   final FirebaseFirestore _firestore;
   final String _userId;
@@ -19,9 +20,13 @@ class FirestoreGoalRepository implements GoalRepository {
   })  : _firestore = firestore,
         _userId = userId;
 
-  /// Goals collection reference
+  /// Active goals collection reference
   CollectionReference<Map<String, dynamic>> get _goalsRef =>
       _firestore.collection('users').doc(_userId).collection('goals');
+
+  /// Archived goals collection reference
+  CollectionReference<Map<String, dynamic>> get _archivedGoalsRef =>
+      _firestore.collection('users').doc(_userId).collection('archivedGoals');
 
   /// Execute write with timeout (offline-first pattern)
   Future<void> _executeWrite(Future<void> Function() writeOperation) async {
@@ -31,6 +36,8 @@ class FirestoreGoalRepository implements GoalRepository {
       // Write cached locally, will sync when online
     }
   }
+
+  // ============ ACTIVE GOALS ============
 
   @override
   Stream<List<GoalEntity>> watchAllGoals() {
@@ -44,14 +51,8 @@ class FirestoreGoalRepository implements GoalRepository {
 
   @override
   Stream<List<GoalEntity>> watchActiveGoals() {
-    // Client-side filtering to avoid Firestore composite index requirement
-    return _goalsRef
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
-            .where((goal) => !goal.isArchived)
-            .toList());
+    // With separate collections, all goals in _goalsRef are active
+    return watchAllGoals();
   }
 
   @override
@@ -66,16 +67,32 @@ class FirestoreGoalRepository implements GoalRepository {
 
   @override
   Future<GoalEntity?> getGoalById(String id) async {
+    // Search active first
     final doc = await _goalsRef.doc(id).get();
-    if (!doc.exists) return null;
-    return GoalModel.fromFirestore(doc.data()!, doc.id);
+    if (doc.exists) {
+      return GoalModel.fromFirestore(doc.data()!, doc.id);
+    }
+    // Fall back to archived
+    final archivedDoc = await _archivedGoalsRef.doc(id).get();
+    if (archivedDoc.exists) {
+      return GoalModel.fromFirestore(archivedDoc.data()!, archivedDoc.id);
+    }
+    return null;
   }
 
   @override
   Stream<GoalEntity?> watchGoalById(String id) {
-    return _goalsRef.doc(id).snapshots().map((doc) {
-      if (!doc.exists || doc.data() == null) return null;
-      return GoalModel.fromFirestore(doc.data()!, doc.id);
+    // Watch both collections and merge
+    return _goalsRef.doc(id).snapshots().asyncMap((activeDoc) async {
+      if (activeDoc.exists && activeDoc.data() != null) {
+        return GoalModel.fromFirestore(activeDoc.data()!, activeDoc.id);
+      }
+      // Check archived
+      final archivedDoc = await _archivedGoalsRef.doc(id).get();
+      if (archivedDoc.exists && archivedDoc.data() != null) {
+        return GoalModel.fromFirestore(archivedDoc.data()!, archivedDoc.id);
+      }
+      return null;
     });
   }
 
@@ -93,18 +110,44 @@ class FirestoreGoalRepository implements GoalRepository {
 
   @override
   Future<void> archiveGoal(String id) async {
-    await _executeWrite(() => _goalsRef.doc(id).update({
-          'isArchived': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }));
+    // Move goal from active to archived collection
+    try {
+      final doc = await _goalsRef.doc(id).get();
+      if (!doc.exists) return;
+
+      final goalData = doc.data()!;
+      goalData['isArchived'] = true;
+      goalData['updatedAt'] = FieldValue.serverTimestamp();
+
+      final batch = _firestore.batch();
+      batch.set(_archivedGoalsRef.doc(id), goalData);
+      batch.delete(_goalsRef.doc(id));
+
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - will sync when back online
+    }
   }
 
   @override
   Future<void> unarchiveGoal(String id) async {
-    await _executeWrite(() => _goalsRef.doc(id).update({
-          'isArchived': false,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }));
+    // Move goal from archived back to active collection
+    try {
+      final doc = await _archivedGoalsRef.doc(id).get();
+      if (!doc.exists) return;
+
+      final goalData = doc.data()!;
+      goalData['isArchived'] = false;
+      goalData['updatedAt'] = FieldValue.serverTimestamp();
+
+      final batch = _firestore.batch();
+      batch.set(_goalsRef.doc(id), goalData);
+      batch.delete(_archivedGoalsRef.doc(id));
+
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - will sync when back online
+    }
   }
 
   @override
@@ -120,6 +163,30 @@ class FirestoreGoalRepository implements GoalRepository {
     return snapshot.docs
         .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
         .toList();
+  }
+
+  // ============ ARCHIVED GOALS ============
+
+  @override
+  Stream<List<GoalEntity>> watchArchivedGoals() {
+    return _archivedGoalsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+            .toList());
+  }
+
+  @override
+  Future<GoalEntity?> getArchivedGoalById(String id) async {
+    final doc = await _archivedGoalsRef.doc(id).get();
+    if (!doc.exists) return null;
+    return GoalModel.fromFirestore(doc.data()!, doc.id);
+  }
+
+  @override
+  Future<void> deleteArchivedGoal(String id) async {
+    await _executeWrite(() => _archivedGoalsRef.doc(id).delete());
   }
 }
 

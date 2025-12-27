@@ -48,8 +48,9 @@ final globalStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
 });
 
 /// Stats for closed investments only (derived from streams - auto-updates)
+/// Only includes non-archived investments.
 final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return investmentsAsync.when(
@@ -83,8 +84,9 @@ final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((re
 });
 
 /// Stats for open investments only (derived from streams - auto-updates)
+/// Only includes non-archived investments.
 final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return investmentsAsync.when(
