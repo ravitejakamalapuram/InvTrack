@@ -12,8 +12,26 @@ No complicated charts. No stock tickers. Just record what you invested and what 
 • Record money coming back (returns, income)
 • See your actual profit or loss
 • Get professional return metrics (XIRR & MOIC)
+• Set financial goals and track progress
+• Get smart notifications for income & maturity dates
 
-That's it. Simple.
+That's it. Simple but powerful.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆕 NEW IN VERSION 3.2
+
+🎯 Financial Goals
+Set targets for your investments - whether it's reaching a corpus amount or generating monthly income. Track your progress with beautiful progress rings and milestone celebrations.
+
+🔔 Smart Notifications
+Never miss an income payment or maturity date. Get timely reminders for:
+• Upcoming income payments
+• Investment maturity dates
+• Weekly portfolio summaries
+
+📄 Document Management
+Attach receipts, contracts, and documents to your investments. Keep everything organized in one place.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -40,6 +58,12 @@ We don't store your financial data on our servers. It stays with you.
 
 📊 Clean Dashboard
 See your total position, monthly trends, and investment breakdown at a glance.
+
+🎯 Goal Tracking
+Set and track your financial goals with visual progress indicators.
+
+🔔 Smart Reminders
+Get notified about income payments and maturity dates.
 
 🌙 Dark Mode
 Easy on the eyes, especially at night.
@@ -79,7 +103,8 @@ We calculate the rest.
 
 1. Add an investment (give it a name)
 2. Record your cash flows (money out, money in)
-3. See your returns
+3. Set goals to track your progress
+4. See your returns
 
 No learning curve. No confusing features.
 
