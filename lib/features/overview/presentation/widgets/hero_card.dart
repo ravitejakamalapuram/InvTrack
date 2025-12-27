@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 
@@ -187,8 +189,10 @@ class HeroCardContent extends ConsumerWidget {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Flexible(
-          child: Text(
-            currencyFormat.format(netPosition),
+          child: CompactAmountText(
+            amount: netPosition,
+            compactText: currencyFormat.formatSmart(netPosition),
+            currencySymbol: currencyFormat.currencySymbol,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -228,14 +232,16 @@ class HeroCardContent extends ConsumerWidget {
         // Cash Out with up arrow
         _buildCashFlowStat(
           icon: Icons.arrow_upward_rounded,
-          value: currencyFormat.format(stats.totalInvested),
+          amount: stats.totalInvested,
+          value: currencyFormat.formatCompact(stats.totalInvested),
           label: 'out',
         ),
         const SizedBox(width: 16),
         // Cash In with down arrow
         _buildCashFlowStat(
           icon: Icons.arrow_downward_rounded,
-          value: currencyFormat.format(stats.totalReturned),
+          amount: stats.totalReturned,
+          value: currencyFormat.formatCompact(stats.totalReturned),
           label: 'in',
         ),
         const Spacer(),
@@ -267,6 +273,7 @@ class HeroCardContent extends ConsumerWidget {
 
   Widget _buildCashFlowStat({
     required IconData icon,
+    required double amount,
     required String value,
     required String label,
   }) {
@@ -279,8 +286,10 @@ class HeroCardContent extends ConsumerWidget {
           size: 14,
         ),
         const SizedBox(width: 4),
-        Text(
-          value,
+        CompactAmountText(
+          amount: amount,
+          compactText: value,
+          currencySymbol: currencyFormat.currencySymbol,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14,

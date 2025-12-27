@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
@@ -368,8 +369,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      currencyFormat.format(stats.netCashFlow),
+                    CompactAmountText(
+                      amount: stats.netCashFlow,
+                      compactText: currencyFormat.formatSmart(stats.netCashFlow),
+                      currencySymbol: currencyFormat.currencySymbol,
                       style: AppTypography.h2.copyWith(
                         color: isDark ? Colors.white : AppColors.neutral900Light,
                         fontWeight: FontWeight.w700,
@@ -404,8 +407,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               // Cash Out
               Icon(Icons.arrow_upward_rounded, size: 16, color: AppColors.errorLight),
               const SizedBox(width: 4),
-              Text(
-                currencyFormat.format(stats.totalInvested),
+              CompactAmountText(
+                amount: stats.totalInvested,
+                compactText: currencyFormat.formatCompact(stats.totalInvested),
+                currencySymbol: currencyFormat.currencySymbol,
                 style: AppTypography.bodyMedium.copyWith(
                   color: isDark ? Colors.white : AppColors.neutral900Light,
                   fontWeight: FontWeight.w600,
@@ -421,8 +426,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               // Cash In
               Icon(Icons.arrow_downward_rounded, size: 16, color: AppColors.successLight),
               const SizedBox(width: 4),
-              Text(
-                currencyFormat.format(stats.totalReturned),
+              CompactAmountText(
+                amount: stats.totalReturned,
+                compactText: currencyFormat.formatCompact(stats.totalReturned),
+                currencySymbol: currencyFormat.currencySymbol,
                 style: AppTypography.bodyMedium.copyWith(
                   color: isDark ? Colors.white : AppColors.neutral900Light,
                   fontWeight: FontWeight.w600,
@@ -906,7 +913,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ),
               // Amount
               Text(
-                '${isOutflow ? '-' : '+'}${currencyFormat.format(cashFlow.amount)}',
+                '${isOutflow ? '-' : '+'}${currencyFormat.formatSmart(cashFlow.amount)}',
                 style: AppTypography.bodyLarge.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,

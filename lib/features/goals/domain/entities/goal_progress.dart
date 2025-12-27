@@ -123,17 +123,20 @@ class GoalProgress {
     return projectedCompletionDate!.isAfter(goal.targetDate!);
   }
 
-  /// Progress message for display
-  String get progressMessage {
+  /// Progress message for display (with optional currency symbol override)
+  String getProgressMessage([String symbol = '₹']) {
     if (status == GoalStatus.achieved) {
       return 'Congratulations! You\'ve reached your goal!';
     }
     if (goal.isIncomeGoal) {
       final target = goal.targetMonthlyIncome ?? goal.targetAmount;
-      return '₹${_formatAmount(monthlyIncome)}/month of ₹${_formatAmount(target)}/month';
+      return '$symbol${_formatAmount(monthlyIncome)}/mo of $symbol${_formatAmount(target)}/mo';
     }
-    return '₹${_formatAmount(currentAmount)} of ₹${_formatAmount(targetAmount)}';
+    return '$symbol${_formatAmount(currentAmount)} of $symbol${_formatAmount(targetAmount)}';
   }
+
+  /// Progress message for display (default ₹)
+  String get progressMessage => getProgressMessage();
 
   /// Status message
   String get statusMessage {

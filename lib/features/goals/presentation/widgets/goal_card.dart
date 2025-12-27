@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
@@ -24,6 +25,7 @@ class GoalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final progress = ref.watch(goalProgressProvider(goal.id));
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
@@ -41,7 +43,7 @@ class GoalCard extends ConsumerWidget {
                   SizedBox(width: AppSpacing.md),
                   // Name and details
                   Expanded(
-                    child: _buildGoalInfo(context, isDark, progress),
+                    child: _buildGoalInfo(context, isDark, progress, currencySymbol),
                   ),
                   SizedBox(width: AppSpacing.sm),
                   // Progress ring
@@ -90,7 +92,7 @@ class GoalCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildGoalInfo(BuildContext context, bool isDark, GoalProgress? progress) {
+  Widget _buildGoalInfo(BuildContext context, bool isDark, GoalProgress? progress, String currencySymbol) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -105,7 +107,7 @@ class GoalCard extends ConsumerWidget {
         ),
         SizedBox(height: AppSpacing.xxs),
         Text(
-          progress?.progressMessage ?? 'Calculating...',
+          progress?.getProgressMessage(currencySymbol) ?? 'Calculating...',
           style: AppTypography.small.copyWith(
             color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
           ),

@@ -324,7 +324,7 @@ class OverviewScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${isPositive ? '+' : ''}${currencyFormat.format(value.abs())}',
+            '${isPositive ? '+' : ''}${currencyFormat.formatCompact(value.abs())}',
             style: TextStyle(
               color: isPositive ? AppColors.successLight : AppColors.errorLight,
               fontWeight: FontWeight.bold,

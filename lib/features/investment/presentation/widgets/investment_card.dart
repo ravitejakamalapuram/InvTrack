@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
@@ -224,8 +225,11 @@ class _InvestmentValueColumn extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // Net Position (cash in - cash out)
-            Text(
-              '${isPositive ? '+' : ''}${currencyFormat.format(stats.netCashFlow.abs())}',
+            CompactAmountText(
+              amount: stats.netCashFlow.abs(),
+              compactText: currencyFormat.formatCompact(stats.netCashFlow.abs()),
+              currencySymbol: currencyFormat.currencySymbol,
+              prefix: isPositive ? '+' : '-',
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 color: plColor,
@@ -326,12 +330,26 @@ class _InvestmentBottomStrip extends ConsumerWidget {
               Spacer(),
               // Total invested
               if (stats.totalInvested > 0) ...[
-                Text(
-                  'Invested: ${currencyFormat.format(stats.totalInvested)}',
-                  style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Invested: ',
+                      style: AppTypography.small.copyWith(
+                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    CompactAmountText(
+                      amount: stats.totalInvested,
+                      compactText: currencyFormat.formatCompact(stats.totalInvested),
+                      currencySymbol: currencyFormat.currencySymbol,
+                      style: AppTypography.small.copyWith(
+                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ] else ...[
                 Text(

@@ -90,3 +90,129 @@ String formatNumber(double amount, String locale, {int decimalDigits = 0}) {
   return formatter.format(amount);
 }
 
+/// Indian number formatting thresholds
+const double _croreThreshold = 10000000; // 1 Crore = 10 Million
+const double _lakhThreshold = 100000; // 1 Lakh = 100 Thousand
+const double _thousandThreshold = 1000;
+
+/// Format amount with Indian compact notation (K, L, Cr)
+///
+/// Examples:
+/// - 1500 → "1.5K"
+/// - 150000 → "1.5L"
+/// - 15000000 → "1.5Cr"
+/// - 500 → "500"
+///
+/// [amount] - The amount to format
+/// [symbol] - Currency symbol (e.g., "₹")
+/// [maxDecimals] - Maximum decimal places (default 1)
+/// [alwaysShowDecimals] - If true, always show decimal places
+String formatCompactIndian(
+  double amount, {
+  String symbol = '₹',
+  int maxDecimals = 1,
+  bool alwaysShowDecimals = false,
+}) {
+  final absAmount = amount.abs();
+  final sign = amount < 0 ? '-' : '';
+
+  String formatted;
+  String suffix;
+
+  if (absAmount >= _croreThreshold) {
+    final value = absAmount / _croreThreshold;
+    formatted = _formatDecimal(value, maxDecimals, alwaysShowDecimals);
+    suffix = 'Cr';
+  } else if (absAmount >= _lakhThreshold) {
+    final value = absAmount / _lakhThreshold;
+    formatted = _formatDecimal(value, maxDecimals, alwaysShowDecimals);
+    suffix = 'L';
+  } else if (absAmount >= _thousandThreshold) {
+    final value = absAmount / _thousandThreshold;
+    formatted = _formatDecimal(value, maxDecimals, alwaysShowDecimals);
+    suffix = 'K';
+  } else {
+    formatted = absAmount.toStringAsFixed(0);
+    suffix = '';
+  }
+
+  return '$sign$symbol$formatted$suffix';
+}
+
+/// Format amount with automatic compact notation based on size
+/// Uses compact format for large numbers, full format for small numbers
+///
+/// [amount] - The amount to format
+/// [symbol] - Currency symbol
+/// [locale] - Locale for number formatting
+/// [compactThreshold] - Above this value, use compact format (default 100000 = 1L)
+String formatSmartCurrency(
+  double amount, {
+  required String symbol,
+  required String locale,
+  double compactThreshold = 100000,
+}) {
+  final absAmount = amount.abs();
+
+  if (absAmount >= compactThreshold) {
+    return formatCompactIndian(amount, symbol: symbol);
+  }
+
+  return formatCurrency(amount, symbol, locale);
+}
+
+/// Format amount for display in constrained spaces (cards, lists)
+/// Always uses compact format for amounts >= 1000
+String formatCompactCurrency(
+  double amount, {
+  required String symbol,
+}) {
+  return formatCompactIndian(amount, symbol: symbol);
+}
+
+/// Format decimal value, removing trailing zeros if not alwaysShowDecimals
+String _formatDecimal(double value, int maxDecimals, bool alwaysShowDecimals) {
+  if (alwaysShowDecimals) {
+    return value.toStringAsFixed(maxDecimals);
+  }
+
+  // Check if value is close to a whole number (only for 1 decimal display)
+  if (maxDecimals <= 1 && (value - value.roundToDouble()).abs() < 0.05) {
+    return value.round().toString();
+  }
+
+  // Format with decimals, but trim trailing zeros
+  final formatted = value.toStringAsFixed(maxDecimals);
+  if (formatted.contains('.')) {
+    return formatted.replaceAll(RegExp(r'\.?0+$'), '');
+  }
+  return formatted;
+}
+
+/// Extension on NumberFormat for easy smart formatting
+extension SmartCurrencyFormat on NumberFormat {
+  /// Format with automatic compact notation for large values
+  /// Uses 2 decimals for precision on important numbers
+  String formatSmart(double amount, {double compactThreshold = 100000}) {
+    final absAmount = amount.abs();
+
+    if (absAmount >= compactThreshold) {
+      // Use 2 decimals for important/hero numbers
+      return formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 2);
+    }
+
+    return format(amount);
+  }
+
+  /// Always format as compact (for constrained spaces like cards/lists)
+  /// Uses 2 decimals for better precision
+  String formatCompact(double amount) {
+    return formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 2);
+  }
+
+  /// Format compact with minimal decimals (for very tight spaces)
+  String formatCompactShort(double amount) {
+    return formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 1);
+  }
+}
+

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
@@ -19,13 +20,14 @@ class GoalsDashboardCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(goalsSummaryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     return summaryAsync.when(
       data: (summary) {
         if (!summary.hasGoals) {
           return _buildEmptyState(context, isDark);
         }
-        return _buildSummaryCard(context, summary, isDark);
+        return _buildSummaryCard(context, summary, isDark, currencySymbol);
       },
       loading: () => _buildLoadingState(isDark),
       error: (error, stackTrace) => const SizedBox.shrink(),
@@ -80,7 +82,7 @@ class GoalsDashboardCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, GoalsSummary summary, bool isDark) {
+  Widget _buildSummaryCard(BuildContext context, GoalsSummary summary, bool isDark, String currencySymbol) {
     final closest = summary.closestToCompletion;
 
     return GlassCard(
@@ -145,7 +147,7 @@ class GoalsDashboardCard extends ConsumerWidget {
                       ),
                       SizedBox(height: AppSpacing.xxs),
                       Text(
-                        closest.progressMessage,
+                        closest.getProgressMessage(currencySymbol),
                         style: AppTypography.caption.copyWith(
                           color: isDark ? Colors.white70 : AppColors.neutral600Light,
                         ),

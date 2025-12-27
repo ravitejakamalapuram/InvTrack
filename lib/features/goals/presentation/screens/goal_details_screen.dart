@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
@@ -187,7 +188,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           ),
           SizedBox(height: AppSpacing.lg),
           Text(
-            progress?.progressMessage ?? 'Calculating...',
+            progress?.getProgressMessage(currencySymbol) ?? 'Calculating...',
             style: AppTypography.bodyLarge.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
               fontWeight: FontWeight.w600,
@@ -236,9 +237,9 @@ class GoalDetailsScreen extends ConsumerWidget {
           )),
           SizedBox(height: AppSpacing.md),
           _buildDetailRow('Type', goal.type.displayName, isDark),
-          _buildDetailRow('Target', '$currencySymbol${goal.targetAmount.toStringAsFixed(0)}', isDark),
+          _buildAmountDetailRow('Target', goal.targetAmount, currencySymbol, isDark),
           if (goal.targetMonthlyIncome != null)
-            _buildDetailRow('Monthly Income Target', '$currencySymbol${goal.targetMonthlyIncome!.toStringAsFixed(0)}/mo', isDark),
+            _buildAmountDetailRow('Monthly Income Target', goal.targetMonthlyIncome!, currencySymbol, isDark, suffix: '/mo'),
           if (goal.targetDate != null)
             _buildDetailRow('Target Date', AppDateUtils.formatShort(goal.targetDate!), isDark),
           _buildDetailRow('Tracking', goal.trackingMode.displayName, isDark),
@@ -261,6 +262,40 @@ class GoalDetailsScreen extends ConsumerWidget {
             color: isDark ? Colors.white : AppColors.neutral900Light,
             fontWeight: FontWeight.w500,
           )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountDetailRow(String label, double amount, String currencySymbol, bool isDark, {String? suffix}) {
+    final compactText = formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 2);
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: AppTypography.bodyMedium.copyWith(
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          )),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CompactAmountText(
+                amount: amount,
+                compactText: compactText,
+                currencySymbol: currencySymbol,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (suffix != null)
+                Text(suffix, style: AppTypography.bodyMedium.copyWith(
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                  fontWeight: FontWeight.w500,
+                )),
+            ],
+          ),
         ],
       ),
     );
