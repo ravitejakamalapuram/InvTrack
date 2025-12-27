@@ -13,7 +13,6 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/document_viewer_screen.dart';
-import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
 
 /// Widget displaying documents for an investment with add/delete capabilities
 class DocumentListWidget extends ConsumerWidget {
@@ -31,60 +30,26 @@ class DocumentListWidget extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final documentsAsync = ref.watch(documentsByInvestmentProvider(investmentId));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header with add button
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Documents',
-              style: AppTypography.h3.copyWith(
-                color: isDark ? Colors.white : AppColors.neutral900Light,
-              ),
-            ),
-            if (!isReadOnly)
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.heroGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                ),
-                onPressed: () => _showAddDocumentSheet(context, ref),
-                tooltip: 'Add document',
-              ),
-          ],
-        ),
-        SizedBox(height: AppSpacing.sm),
-
-        // Document list or empty state
-        documentsAsync.when(
-          data: (documents) {
-            if (documents.isEmpty) {
-              return _buildEmptyState(isDark);
-            }
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: documents.length,
-              separatorBuilder: (context, index) => SizedBox(height: AppSpacing.xs),
-              itemBuilder: (context, index) => _DocumentCard(
-                document: documents[index],
-                isDark: isDark,
-                isReadOnly: isReadOnly,
-              ),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
-            child: Text('Failed to load documents', style: TextStyle(color: AppColors.errorLight)),
+    // Document list or empty state (header removed - using segmented control + FAB now)
+    return documentsAsync.when(
+      data: (documents) {
+        if (documents.isEmpty) {
+          return _buildEmptyState(isDark);
+        }
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: documents.length,
+          separatorBuilder: (context, index) => SizedBox(height: AppSpacing.xs),
+          itemBuilder: (context, index) => _DocumentCard(
+            document: documents[index],
+            isDark: isDark,
+            isReadOnly: isReadOnly,
           ),
-        ),
-      ],
+        );
+      },
+      loading: () => _buildEmptyState(isDark), // Show empty state while loading (offline friendly)
+      error: (e, _) => _buildEmptyState(isDark), // Show empty state on error (offline friendly)
     );
   }
 
@@ -125,16 +90,6 @@ class DocumentListWidget extends ConsumerWidget {
           ],
         ],
       ),
-    );
-  }
-
-  void _showAddDocumentSheet(BuildContext context, WidgetRef ref) {
-    HapticFeedback.selectionClick();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddDocumentSheet(investmentId: investmentId),
     );
   }
 }

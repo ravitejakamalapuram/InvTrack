@@ -128,7 +128,10 @@ class FakeFlutterLocalNotificationsPlugin
   @override
   T? resolvePlatformSpecificImplementation<
       T extends FlutterLocalNotificationsPlatform>() {
-    // Return null - permissions will be handled separately
+    // Return a fake Android implementation for permission checking
+    if (T == AndroidFlutterLocalNotificationsPlugin) {
+      return FakeAndroidFlutterLocalNotificationsPlugin(this) as T;
+    }
     return null;
   }
 
@@ -169,5 +172,37 @@ class FakeScheduledNotification {
     this.payload,
     this.matchDateTimeComponents,
   });
+}
+
+/// Fake Android implementation for permission checking
+class FakeAndroidFlutterLocalNotificationsPlugin
+    implements AndroidFlutterLocalNotificationsPlugin {
+  final FakeFlutterLocalNotificationsPlugin _parent;
+
+  FakeAndroidFlutterLocalNotificationsPlugin(this._parent);
+
+  @override
+  Future<bool?> areNotificationsEnabled() async {
+    return _parent.permissionsGranted;
+  }
+
+  @override
+  Future<bool?> requestNotificationsPermission() async {
+    return _parent.permissionsGranted;
+  }
+
+  @override
+  Future<bool?> requestExactAlarmsPermission() async {
+    return true;
+  }
+
+  @override
+  Future<bool?> canScheduleExactNotifications() async {
+    return true;
+  }
+
+  // Add remaining required methods with no-op implementations
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 

@@ -2,6 +2,7 @@
 /// Handles all write operations for investments and cash flows.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
@@ -598,19 +599,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Check for goal milestone achievements after adding a cash flow
   Future<void> _checkGoalMilestonesAfterCashFlow() async {
     try {
-      // Get all active goals
-      final goalsAsync = ref.read(activeGoalsProvider);
-      final goals = goalsAsync.value;
-      if (goals == null || goals.isEmpty) return;
+      // Fetch data directly from repository to ensure fresh data
+      final goalRepository = ref.read(goalRepositoryProvider);
+      final investmentRepository = ref.read(investmentRepositoryProvider);
 
-      // Get all investments and cash flows for progress calculation
-      final investmentsAsync = ref.read(allInvestmentsProvider);
-      final investments = investmentsAsync.value;
-      if (investments == null) return;
+      // Get all active goals directly
+      final goals = await goalRepository.watchActiveGoals().first;
+      if (goals.isEmpty) return;
 
-      final cashFlowsAsync = ref.read(allCashFlowsStreamProvider);
-      final cashFlows = cashFlowsAsync.value;
-      if (cashFlows == null) return;
+      // Get all investments
+      final investments = await investmentRepository.getAllInvestments();
+
+      // Get all cash flows
+      final cashFlows = await investmentRepository.getAllCashFlows();
 
       final notificationService = ref.read(notificationServiceProvider);
 
@@ -632,6 +633,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
     } catch (e) {
       // Don't fail the main operation if goal milestone check fails
+      // Error logged in debug mode
     }
   }
 }

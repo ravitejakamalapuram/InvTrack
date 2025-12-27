@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
 
 class InvestmentDetailScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+
+  /// 0 = Transactions, 1 = Documents
+  int _selectedSegment = 0;
 
   @override
   void initState() {
@@ -60,6 +64,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: CustomScrollView(
+        // Pre-render items 500 pixels before they come into view for smoother fast scrolling
+        cacheExtent: 500,
         slivers: [
           // Hero App Bar with pinned navigation
           SliverAppBar(
@@ -213,97 +219,71 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
 
-          // Cash Flows Header
+          // Segmented Control for Transactions / Documents
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Cash Flows',
-                    style: AppTypography.h4.copyWith(
-                      color: isDark ? Colors.white : AppColors.neutral900Light,
-                    ),
-                  ),
-                  if (!isClosed)
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => AddTransactionScreen(investmentId: widget.investment.id),
-                          ),
-                        );
-                      },
-                      icon: Icon(Icons.add_rounded, size: 18, color: AppColors.primaryLight),
-                      label: Text(
-                        'Add',
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.primaryLight,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: _buildSegmentedControl(isDark, cashFlowsAsync, isClosed),
             ),
           ),
 
-          // Cash Flows List
-          cashFlowsAsync.when(
-            data: (cashFlows) {
-              if (cashFlows.isEmpty) {
-                return SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEmptyCashFlows(isDark),
+          // Content based on selected segment
+          if (_selectedSegment == 0) ...[
+            // Cash Flows List
+            cashFlowsAsync.when(
+              data: (cashFlows) {
+                if (cashFlows.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildEmptyCashFlows(isDark),
+                  );
+                }
+                // Sort by date descending
+                final sortedFlows = List<CashFlowEntity>.from(cashFlows)
+                  ..sort((a, b) => b.date.compareTo(a.date));
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return _buildCashFlowCard(sortedFlows[index], isDark, currencyFormat);
+                      },
+                      childCount: sortedFlows.length,
+                      addAutomaticKeepAlives: true,
+                      addRepaintBoundaries: true,
+                    ),
+                  ),
                 );
-              }
-              // Sort by date descending
-              final sortedFlows = List<CashFlowEntity>.from(cashFlows)
-                ..sort((a, b) => b.date.compareTo(a.date));
-              return SliverPadding(
+              },
+              loading: () => SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return StaggeredFadeIn(
-                        index: index,
-                        child: _buildCashFlowCard(sortedFlows[index], isDark, currencyFormat),
-                      );
-                    },
-                    childCount: sortedFlows.length,
+                    (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: const CashFlowCardSkeleton(),
+                    ),
+                    childCount: 4,
                   ),
                 ),
-              );
-            },
-            loading: () => SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: const CashFlowCardSkeleton(),
-                  ),
-                  childCount: 4,
+              ),
+              error: (err, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: _buildErrorState(isDark, err.toString()),
+              ),
+            ),
+          ] else ...[
+            // Documents Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DocumentListWidget(
+                  investmentId: widget.investment.id,
+                  isReadOnly: isClosed,
                 ),
               ),
             ),
-            error: (err, _) => SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildErrorState(isDark, err.toString()),
-            ),
-          ),
-
-          // Documents Section
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-              child: DocumentListWidget(
-                investmentId: widget.investment.id,
-                isReadOnly: isClosed,
-              ),
-            ),
-          ),
+          ],
 
           // Bottom padding
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -322,19 +302,29 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ],
         ),
         child: FloatingActionButton.extended(
-          heroTag: 'investment_detail_add_cashflow_fab',
+          heroTag: 'investment_detail_fab',
           onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => AddTransactionScreen(investmentId: widget.investment.id),
-              ),
-            );
+            if (_selectedSegment == 0) {
+              // Add Transaction
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AddTransactionScreen(investmentId: widget.investment.id),
+                ),
+              );
+            } else {
+              // Add Document - trigger the document picker from DocumentListWidget
+              // We'll use a callback approach by accessing the widget's add function
+              _showAddDocumentSheet(context, isDark);
+            }
           },
           backgroundColor: Colors.transparent,
           elevation: 0,
-          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          icon: Icon(
+            _selectedSegment == 0 ? Icons.add_rounded : Icons.upload_file_rounded,
+            color: Colors.white,
+          ),
           label: Text(
-            'Add Cash Flow',
+            _selectedSegment == 0 ? 'Add Transaction' : 'Add Document',
             style: AppTypography.button.copyWith(color: Colors.white),
           ),
         ),
@@ -566,6 +556,163 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
+  Widget _buildSegmentedControl(bool isDark, AsyncValue<List<CashFlowEntity>> cashFlowsAsync, bool isClosed) {
+    final transactionCount = cashFlowsAsync.value?.length ?? 0;
+    final documentsAsync = ref.watch(documentsByInvestmentProvider(widget.investment.id));
+    final documentCount = documentsAsync.value?.length ?? 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          // Transactions Tab
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedSegment = 0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedSegment == 0
+                      ? (isDark ? AppColors.neutral700Dark : Colors.white)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _selectedSegment == 0
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.swap_vert_rounded,
+                      size: 18,
+                      color: _selectedSegment == 0
+                          ? (isDark ? Colors.white : AppColors.neutral900Light)
+                          : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Transactions',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: _selectedSegment == 0
+                            ? (isDark ? Colors.white : AppColors.neutral900Light)
+                            : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                        fontWeight: _selectedSegment == 0 ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                    if (transactionCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _selectedSegment == 0
+                              ? AppColors.primaryLight.withValues(alpha: 0.15)
+                              : (isDark ? AppColors.neutral600Dark : AppColors.neutral200Light),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$transactionCount',
+                          style: AppTypography.small.copyWith(
+                            color: _selectedSegment == 0
+                                ? AppColors.primaryLight
+                                : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Documents Tab
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedSegment = 1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedSegment == 1
+                      ? (isDark ? AppColors.neutral700Dark : Colors.white)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _selectedSegment == 1
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.folder_outlined,
+                      size: 18,
+                      color: _selectedSegment == 1
+                          ? (isDark ? Colors.white : AppColors.neutral900Light)
+                          : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Documents',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: _selectedSegment == 1
+                            ? (isDark ? Colors.white : AppColors.neutral900Light)
+                            : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                        fontWeight: _selectedSegment == 1 ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                    if (documentCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _selectedSegment == 1
+                              ? AppColors.primaryLight.withValues(alpha: 0.15)
+                              : (isDark ? AppColors.neutral600Dark : AppColors.neutral200Light),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$documentCount',
+                          style: AppTypography.small.copyWith(
+                            color: _selectedSegment == 1
+                                ? AppColors.primaryLight
+                                : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyCashFlows(bool isDark) {
     return Center(
       child: Padding(
@@ -651,9 +798,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final isOutflow = cashFlow.type.isOutflow;
     final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Dismissible(
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Dismissible(
         key: Key(cashFlow.id),
         direction: DismissDirection.endToStart,
         background: Container(
@@ -671,20 +819,35 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ref.read(investmentNotifierProvider.notifier).deleteCashFlow(cashFlow.id);
           AppFeedback.showSuccess(context, 'Transaction deleted');
         },
-        child: GlassCard(
-          onTap: () {
-            // Navigate to edit cash flow
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => AddTransactionScreen(
-                  investmentId: widget.investment.id,
-                  cashFlowToEdit: cashFlow,
+        // Using Material instead of GlassCard - BackdropFilter blur is too expensive for scrolling
+        child: Material(
+          color: isDark ? AppColors.cardDark : AppColors.cardLight,
+          borderRadius: BorderRadius.circular(16),
+          elevation: isDark ? 0 : 1,
+          shadowColor: Colors.black.withValues(alpha: 0.1),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AddTransactionScreen(
+                    investmentId: widget.investment.id,
+                    cashFlowToEdit: cashFlow,
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
               ),
-            );
-          },
-          padding: const EdgeInsets.all(16),
-          child: Row(
+              child: Row(
             children: [
               // Icon
               Container(
@@ -751,7 +914,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               ),
             ],
           ),
+            ),
+          ),
         ),
+      ),
       ),
     );
   }
@@ -880,6 +1046,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         );
       }
     }
+  }
+
+  void _showAddDocumentSheet(BuildContext context, bool isDark) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddDocumentSheet(investmentId: widget.investment.id),
+    );
   }
 
   void _showOptionsSheet(BuildContext context, bool isDark) {

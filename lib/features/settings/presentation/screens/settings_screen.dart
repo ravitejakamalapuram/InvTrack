@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/core/notifications/notification_settings_provider.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
@@ -391,7 +392,8 @@ Last updated: December 05, 2025
   }
 
   Widget _buildNotificationsSection(BuildContext context, WidgetRef ref) {
-    final notificationService = ref.watch(notificationServiceProvider);
+    final settings = ref.watch(notificationSettingsProvider);
+    final notifier = ref.read(notificationSettingsProvider.notifier);
 
     return Column(
       children: [
@@ -399,65 +401,45 @@ Last updated: December 05, 2025
           title: const Text('Weekly Summary'),
           subtitle: const Text('Get a summary every Sunday'),
           secondary: const Icon(Icons.calendar_today, color: Colors.blue),
-          value: notificationService.weeklySummaryEnabled,
-          onChanged: (bool value) async {
-            if (value) {
-              await notificationService.requestPermissions();
-            }
-            await notificationService.setWeeklySummaryEnabled(value);
-            ref.invalidate(notificationServiceProvider);
+          value: settings.weeklySummaryEnabled,
+          onChanged: (bool value) {
+            notifier.setSetting(NotificationSettingType.weeklySummary, value);
           },
         ),
         SwitchListTile(
           title: const Text('Income Reminders'),
           subtitle: const Text('Remind when income is expected'),
           secondary: const Icon(Icons.notification_important, color: Colors.orange),
-          value: notificationService.incomeRemindersEnabled,
-          onChanged: (bool value) async {
-            if (value) {
-              await notificationService.requestPermissions();
-            }
-            await notificationService.setIncomeRemindersEnabled(value);
-            ref.invalidate(notificationServiceProvider);
+          value: settings.incomeRemindersEnabled,
+          onChanged: (bool value) {
+            notifier.setSetting(NotificationSettingType.incomeReminders, value);
           },
         ),
         SwitchListTile(
           title: const Text('Maturity Reminders'),
           subtitle: const Text('Remind before investments mature'),
           secondary: const Icon(Icons.event_available, color: Colors.purple),
-          value: notificationService.maturityRemindersEnabled,
-          onChanged: (bool value) async {
-            if (value) {
-              await notificationService.requestPermissions();
-            }
-            await notificationService.setMaturityRemindersEnabled(value);
-            ref.invalidate(notificationServiceProvider);
+          value: settings.maturityRemindersEnabled,
+          onChanged: (bool value) {
+            notifier.setSetting(NotificationSettingType.maturityReminders, value);
           },
         ),
         SwitchListTile(
           title: const Text('Monthly Summary'),
           subtitle: const Text('Summarize income at end of month'),
           secondary: const Icon(Icons.summarize, color: Colors.teal),
-          value: notificationService.monthlySummaryEnabled,
-          onChanged: (bool value) async {
-            if (value) {
-              await notificationService.requestPermissions();
-            }
-            await notificationService.setMonthlySummaryEnabled(value);
-            ref.invalidate(notificationServiceProvider);
+          value: settings.monthlySummaryEnabled,
+          onChanged: (bool value) {
+            notifier.setSetting(NotificationSettingType.monthlySummary, value);
           },
         ),
         SwitchListTile(
           title: const Text('Goal Milestones'),
           subtitle: const Text('Celebrate when goals reach 25%, 50%, 75%, 100%'),
           secondary: const Icon(Icons.flag, color: Colors.green),
-          value: notificationService.goalMilestonesEnabled,
-          onChanged: (bool value) async {
-            if (value) {
-              await notificationService.requestPermissions();
-            }
-            await notificationService.setGoalMilestonesEnabled(value);
-            ref.invalidate(notificationServiceProvider);
+          value: settings.goalMilestonesEnabled,
+          onChanged: (bool value) {
+            notifier.setSetting(NotificationSettingType.goalMilestones, value);
           },
         ),
       ],

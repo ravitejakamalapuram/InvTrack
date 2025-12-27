@@ -35,24 +35,32 @@ class FirestoreDocumentRepository implements DocumentRepository {
 
   @override
   Stream<List<DocumentEntity>> watchDocumentsByInvestment(String investmentId) {
+    // Use simple query without orderBy to avoid needing composite index
+    // Sort in memory instead
     return _documentsRef
         .where('investmentId', isEqualTo: investmentId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _documentFromFirestore(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final docs = snapshot.docs
+              .map((doc) => _documentFromFirestore(doc.data(), doc.id))
+              .toList();
+          // Sort by createdAt descending in memory
+          docs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return docs;
+        });
   }
 
   @override
   Future<List<DocumentEntity>> getDocumentsByInvestment(String investmentId) async {
     final snapshot = await _documentsRef
         .where('investmentId', isEqualTo: investmentId)
-        .orderBy('createdAt', descending: true)
         .get();
-    return snapshot.docs
+    final docs = snapshot.docs
         .map((doc) => _documentFromFirestore(doc.data(), doc.id))
         .toList();
+    // Sort by createdAt descending in memory
+    docs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return docs;
   }
 
   @override

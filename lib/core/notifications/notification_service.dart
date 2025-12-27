@@ -164,7 +164,36 @@ class NotificationService {
   }
 
   /// Request notification permissions (call this when appropriate in UI)
+  /// Check if notification permissions are currently granted (without prompting)
+  ///
+  /// Returns `true` if permissions are granted, `false` otherwise.
+  /// This does NOT show a permission dialog - use [requestPermissions] for that.
+  Future<bool> arePermissionsGranted() async {
+    await _ensureInitialized();
+
+    // Check Android permissions
+    final androidEnabled = await _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.areNotificationsEnabled();
+
+    // Check iOS permissions (for iOS, if we can check, otherwise assume granted)
+    // iOS doesn't have a simple areNotificationsEnabled, but if initialized, we assume ok
+    // The actual check happens when we try to show
+
+    final granted = androidEnabled ?? true;
+    if (kDebugMode) {
+      debugPrint('🔔 Notification permissions status: $granted');
+    }
+    return granted;
+  }
+
+  /// Request notification permissions (call this when appropriate in UI)
+  ///
+  /// Shows a permission dialog if not already granted.
+  /// Returns `true` if permissions are granted after the request.
   Future<bool> requestPermissions() async {
+    await _ensureInitialized();
+
     // iOS permissions
     final iosResult = await _plugin
         .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
@@ -178,6 +207,20 @@ class NotificationService {
     final granted = (iosResult ?? true) && (androidResult ?? true);
     if (kDebugMode) {
       debugPrint('🔔 Notification permissions granted: $granted');
+    }
+    return granted;
+  }
+
+  /// Ensure permissions are granted before showing a notification.
+  ///
+  /// This is a non-blocking check that returns `false` if permissions aren't granted.
+  /// It does NOT prompt for permissions - that should be done proactively in the UI.
+  ///
+  /// All notification-showing methods should call this before attempting to show.
+  Future<bool> _ensurePermissionsForShow() async {
+    final granted = await arePermissionsGranted();
+    if (!granted && kDebugMode) {
+      debugPrint('🔔 Cannot show notification: permissions not granted');
     }
     return granted;
   }
@@ -950,6 +993,7 @@ class NotificationService {
   Future<void> showIncomeRemindersSummary(List<String> investmentNames) async {
     if (investmentNames.isEmpty) return;
     await _ensureInitialized();
+    if (!await _ensurePermissionsForShow()) return;
 
     final count = investmentNames.length;
     final title = '💰 $count Income Payments Expected';
@@ -992,6 +1036,7 @@ class NotificationService {
   Future<void> showMaturityRemindersSummary(List<String> investmentNames) async {
     if (investmentNames.isEmpty) return;
     await _ensureInitialized();
+    if (!await _ensurePermissionsForShow()) return;
 
     final count = investmentNames.length;
     final title = '📅 $count Investments Maturing Soon';
@@ -1101,6 +1146,9 @@ class NotificationService {
     if (!milestonesEnabled) return;
     if (totalInvested <= 0) return;
 
+    // Check permissions before attempting to show notification
+    if (!await _ensurePermissionsForShow()) return;
+
     final moic = totalReturned / totalInvested;
 
     // Find the highest milestone reached
@@ -1181,6 +1229,9 @@ class NotificationService {
     await _ensureInitialized();
     if (!goalMilestonesEnabled) return;
     if (targetValue <= 0) return;
+
+    // Check permissions before attempting to show notification
+    if (!await _ensurePermissionsForShow()) return;
 
     // Find the highest milestone reached that hasn't been shown
     int? reachedMilestone;
@@ -1370,6 +1421,7 @@ class NotificationService {
   }) async {
     await _ensureInitialized();
     if (!riskAlertsEnabled) return;
+    if (!await _ensurePermissionsForShow()) return;
 
     const androidDetails = AndroidNotificationDetails(
       NotificationChannels.riskAlerts,
@@ -1469,6 +1521,7 @@ class NotificationService {
   ) async {
     await _ensureInitialized();
     if (!idleAlertsEnabled) return;
+    if (!await _ensurePermissionsForShow()) return;
 
     final now = DateTime.now();
     final threshold = now.subtract(Duration(days: idleAlertDays));
@@ -1588,6 +1641,7 @@ class NotificationService {
     String currency = 'INR',
   }) async {
     await _ensureInitialized();
+    if (!await _ensurePermissionsForShow()) return;
 
     final formattedIncome = _formatCurrency(totalIncome, currency);
     final formattedTDS = _formatCurrency(totalTDS, currency);

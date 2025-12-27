@@ -903,5 +903,107 @@ void main() {
       expect(fakePlugin.shownNotifications.last.title, contains('75%'));
     });
   });
+
+  group('NotificationService - Permission Checks', () {
+    test('arePermissionsGranted returns true when permissions granted', () async {
+      fakePlugin.permissionsGranted = true;
+      await service.initialize();
+
+      final result = await service.arePermissionsGranted();
+
+      expect(result, isTrue);
+    });
+
+    test('arePermissionsGranted returns false when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+      await service.initialize();
+
+      final result = await service.arePermissionsGranted();
+
+      expect(result, isFalse);
+    });
+
+    test('should not show goal milestone when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-no-perm',
+        goalName: 'No Permission Goal',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show investment milestone when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+
+      await service.checkAndShowMilestone(
+        investmentId: 'inv-no-perm',
+        investmentName: 'No Permission Investment',
+        totalInvested: 10000,
+        totalReturned: 20000, // 2x return
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should show goal milestone when permissions granted', () async {
+      fakePlugin.permissionsGranted = true;
+
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-with-perm',
+        goalName: 'With Permission Goal',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+    });
+
+    test('should not show risk alert when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+
+      await service.showRiskAlert(
+        alertType: 'concentration',
+        title: 'Test Alert',
+        body: 'Test body',
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show FY summary when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+
+      await service.showFYSummary(
+        previousFY: 2023,
+        totalIncome: 100000,
+        totalTDS: 10000,
+        topPerformer: 'Test Investment',
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show income reminders summary when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+
+      await service.showIncomeRemindersSummary(['Investment 1', 'Investment 2']);
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show maturity reminders summary when permissions denied', () async {
+      fakePlugin.permissionsGranted = false;
+
+      await service.showMaturityRemindersSummary(['Investment 1', 'Investment 2']);
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+  });
 }
 
