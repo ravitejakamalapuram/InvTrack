@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 
@@ -251,7 +252,7 @@ class HeroCardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '${(stats.xirr * 100).toStringAsFixed(1)}%',
+              formatXirr(stats.xirr, showSign: false) ?? '0.0%',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,

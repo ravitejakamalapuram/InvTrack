@@ -180,5 +180,19 @@ class FakeAnalyticsService implements AnalyticsService {
       },
     );
   }
+
+  @override
+  void trackDocumentAdded({
+    required String documentType,
+    required String fileType,
+  }) {
+    logEvent(
+      name: AnalyticsEvents.documentAdded,
+      parameters: {
+        'document_type': documentType,
+        'file_type': fileType,
+      },
+    );
+  }
 }
 

@@ -30,6 +30,7 @@ class NotificationChannels {
   static const String maturityReminders = 'maturity_reminders';
   static const String monthlySummary = 'monthly_summary';
   static const String milestones = 'milestones';
+  static const String goalMilestones = 'goal_milestones';
   static const String taxReminders = 'tax_reminders';
   static const String riskAlerts = 'risk_alerts';
   static const String weeklyCheckIn = 'weekly_check_in';
@@ -43,6 +44,7 @@ class NotificationGroups {
   static const String incomeReminders = 'com.invtracker.INCOME_REMINDERS';
   static const String maturityReminders = 'com.invtracker.MATURITY_REMINDERS';
   static const String milestones = 'com.invtracker.MILESTONES';
+  static const String goalMilestones = 'com.invtracker.GOAL_MILESTONES';
 }
 
 /// Notification IDs for scheduled notifications
@@ -75,6 +77,9 @@ class NotificationIds {
   static int idleAlert(String investmentId) => 210000 + investmentId.hashCode.abs() % 10000;
   /// FY summary notification
   static const int fySummary = 2001;
+  /// Goal milestone notification ID based on goal ID and milestone percentage
+  static int goalMilestone(String goalId, int milestonePercent) =>
+      (goalId.hashCode.abs() % 20000) + 220000 + milestonePercent;
 }
 
 /// Settings keys for notification preferences
@@ -84,6 +89,7 @@ class NotificationPrefsKeys {
   static const String maturityRemindersEnabled = 'notifications_maturity_reminders';
   static const String monthlySummaryEnabled = 'notifications_monthly_summary';
   static const String milestonesEnabled = 'notifications_milestones';
+  static const String goalMilestonesEnabled = 'notifications_goal_milestones';
   static const String taxRemindersEnabled = 'notifications_tax_reminders';
   static const String riskAlertsEnabled = 'notifications_risk_alerts';
   static const String weeklyCheckInEnabled = 'notifications_weekly_check_in';
@@ -93,6 +99,9 @@ class NotificationPrefsKeys {
   /// Track which milestones have been shown (to avoid duplicates)
   static String milestoneShown(String investmentId, double moic) =>
       'milestone_shown_${investmentId}_${moic.toStringAsFixed(1)}';
+  /// Track which goal milestones have been shown (to avoid duplicates)
+  static String goalMilestoneShown(String goalId, int milestonePercent) =>
+      'goal_milestone_shown_${goalId}_$milestonePercent';
   /// Track when idle alert was last shown for an investment
   static String idleAlertLastShown(String investmentId) =>
       'idle_alert_last_shown_$investmentId';
@@ -297,6 +306,14 @@ class NotificationService {
     await _prefs.setBool(NotificationPrefsKeys.milestonesEnabled, enabled);
   }
 
+  /// Goal progress milestone notifications enabled
+  bool get goalMilestonesEnabled =>
+      _prefs.getBool(NotificationPrefsKeys.goalMilestonesEnabled) ?? true;
+
+  Future<void> setGoalMilestonesEnabled(bool enabled) async {
+    await _prefs.setBool(NotificationPrefsKeys.goalMilestonesEnabled, enabled);
+  }
+
   bool get taxRemindersEnabled =>
       _prefs.getBool(NotificationPrefsKeys.taxRemindersEnabled) ?? true;
 
@@ -365,6 +382,15 @@ class NotificationService {
   /// Mark a milestone as shown
   Future<void> markMilestoneShown(String investmentId, double moic) async {
     await _prefs.setBool(NotificationPrefsKeys.milestoneShown(investmentId, moic), true);
+  }
+
+  /// Check if a goal milestone has already been shown
+  bool isGoalMilestoneShown(String goalId, int milestonePercent) =>
+      _prefs.getBool(NotificationPrefsKeys.goalMilestoneShown(goalId, milestonePercent)) ?? false;
+
+  /// Mark a goal milestone as shown
+  Future<void> markGoalMilestoneShown(String goalId, int milestonePercent) async {
+    await _prefs.setBool(NotificationPrefsKeys.goalMilestoneShown(goalId, milestonePercent), true);
   }
 
   /// Get last time idle alert was shown for an investment (as ISO8601 string)
@@ -1127,6 +1153,93 @@ class NotificationService {
 
     if (kDebugMode) {
       debugPrint('🔔 Milestone notification shown: ${reachedMilestone}x for $investmentName');
+    }
+  }
+
+  // ============ Goal Milestone Notifications ============
+
+  /// Standard goal progress milestones to celebrate (percentages)
+  static const List<int> goalMilestones = [25, 50, 75, 100];
+
+  /// Check if goal has reached a new milestone and show notification.
+  ///
+  /// Call this after goal progress changes to check for new milestones.
+  /// [goalId] - Unique ID of the goal
+  /// [goalName] - Name of the goal
+  /// [progressPercent] - Current progress percentage (0-100+)
+  /// [currentValue] - Current value towards the goal
+  /// [targetValue] - Target value of the goal
+  /// [currency] - Currency code (defaults to "INR")
+  Future<void> checkAndShowGoalMilestone({
+    required String goalId,
+    required String goalName,
+    required double progressPercent,
+    required double currentValue,
+    required double targetValue,
+    String currency = 'INR',
+  }) async {
+    await _ensureInitialized();
+    if (!goalMilestonesEnabled) return;
+    if (targetValue <= 0) return;
+
+    // Find the highest milestone reached that hasn't been shown
+    int? reachedMilestone;
+    for (final milestone in goalMilestones.reversed) {
+      if (progressPercent >= milestone && !isGoalMilestoneShown(goalId, milestone)) {
+        reachedMilestone = milestone;
+        break;
+      }
+    }
+
+    if (reachedMilestone == null) return;
+
+    // Mark as shown to prevent duplicate notifications
+    await markGoalMilestoneShown(goalId, reachedMilestone);
+
+    final formattedCurrent = _formatCurrency(currentValue, currency);
+    final formattedTarget = _formatCurrency(targetValue, currency);
+
+    String title;
+    String body;
+
+    if (reachedMilestone == 100) {
+      title = '🎉 Goal Achieved!';
+      body = 'Congratulations! You\'ve reached your "$goalName" goal of $formattedTarget!';
+    } else {
+      title = '🎯 $reachedMilestone% Progress!';
+      body = 'You\'re $reachedMilestone% of the way to your "$goalName" goal! '
+          'Current: $formattedCurrent of $formattedTarget.';
+    }
+
+    final androidDetails = AndroidNotificationDetails(
+      NotificationChannels.goalMilestones,
+      'Goal Milestones',
+      channelDescription: 'Celebration notifications for goal progress milestones',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
+      groupKey: NotificationGroups.goalMilestones,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      threadIdentifier: NotificationGroups.goalMilestones,
+    );
+
+    await _plugin.show(
+      NotificationIds.goalMilestone(goalId, reachedMilestone),
+      title,
+      body,
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: NotificationPayload.goalMilestone(goalId, reachedMilestone),
+    );
+
+    if (kDebugMode) {
+      debugPrint('🔔 Goal milestone notification shown: $reachedMilestone% for $goalName');
     }
   }
 

@@ -211,15 +211,15 @@ final goalProgressProvider = Provider.family<GoalProgress?, String>((ref, goalId
               );
             },
             loading: () => null,
-            error: (_, __) => null,
+            error: (e, s) => null,
           );
         },
         loading: () => null,
-        error: (_, __) => null,
+        error: (e, s) => null,
       );
     },
     loading: () => null,
-    error: (_, __) => null,
+    error: (e, s) => null,
   );
 });
 

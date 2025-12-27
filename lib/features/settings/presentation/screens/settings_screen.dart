@@ -12,7 +12,6 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
-import 'package:inv_tracker/features/premium/presentation/providers/premium_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -445,6 +444,19 @@ Last updated: December 05, 2025
               await notificationService.requestPermissions();
             }
             await notificationService.setMonthlySummaryEnabled(value);
+            ref.invalidate(notificationServiceProvider);
+          },
+        ),
+        SwitchListTile(
+          title: const Text('Goal Milestones'),
+          subtitle: const Text('Celebrate when goals reach 25%, 50%, 75%, 100%'),
+          secondary: const Icon(Icons.flag, color: Colors.green),
+          value: notificationService.goalMilestonesEnabled,
+          onChanged: (bool value) async {
+            if (value) {
+              await notificationService.requestPermissions();
+            }
+            await notificationService.setGoalMilestonesEnabled(value);
             ref.invalidate(notificationServiceProvider);
           },
         ),

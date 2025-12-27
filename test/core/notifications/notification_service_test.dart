@@ -749,5 +749,159 @@ void main() {
       expect(notification.body, contains('TDS'));
     });
   });
+
+  group('NotificationService - Goal Milestones', () {
+    test('should show goal milestone notification at 25%', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-123',
+        goalName: 'Retirement Fund',
+        progressPercent: 25,
+        currentValue: 25000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.title, contains('25%'));
+      expect(notification.body, contains('Retirement Fund'));
+      expect(notification.body, contains('₹25000'));
+      expect(notification.body, contains('₹100000'));
+    });
+
+    test('should show goal milestone notification at 50%', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-456',
+        goalName: 'Emergency Fund',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.title, contains('50%'));
+    });
+
+    test('should show goal milestone notification at 75%', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-789',
+        goalName: 'House Down Payment',
+        progressPercent: 75,
+        currentValue: 75000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.title, contains('75%'));
+    });
+
+    test('should show goal achieved notification at 100%', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-complete',
+        goalName: 'Vacation Fund',
+        progressPercent: 100,
+        currentValue: 100000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.title, contains('Achieved'));
+    });
+
+    test('should use correct notification ID based on goal ID', () async {
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-abc',
+        goalName: 'Test Goal',
+        progressPercent: 25,
+        currentValue: 2500,
+        targetValue: 10000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      // Notification ID should be based on goal ID hash
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.id, greaterThan(0));
+    });
+
+    test('should not show notification when goal milestones disabled', () async {
+      await service.setGoalMilestonesEnabled(false);
+
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-disabled',
+        goalName: 'Disabled Goal',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should show lower milestones if skipped initially', () async {
+      // First call at 50% shows 50% (highest reached)
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-dup',
+        goalName: 'Duplicate Test',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      expect(fakePlugin.shownNotifications.first.title, contains('50%'));
+
+      // Second call at 50% shows 25% (next highest not shown)
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-dup',
+        goalName: 'Duplicate Test',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      // Shows 25% since 50% was already shown
+      expect(fakePlugin.shownNotifications.length, 2);
+      expect(fakePlugin.shownNotifications.last.title, contains('25%'));
+
+      // Third call should not show anything (both 25% and 50% already shown)
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-dup',
+        goalName: 'Duplicate Test',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      // No new notification
+      expect(fakePlugin.shownNotifications.length, 2);
+    });
+
+    test('should show new milestone when higher threshold reached', () async {
+      // First call shows 50% notification
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-progress',
+        goalName: 'Progress Test',
+        progressPercent: 50,
+        currentValue: 50000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+
+      // Second call at 75% should show new notification
+      await service.checkAndShowGoalMilestone(
+        goalId: 'goal-progress',
+        goalName: 'Progress Test',
+        progressPercent: 75,
+        currentValue: 75000,
+        targetValue: 100000,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 2);
+      expect(fakePlugin.shownNotifications.last.title, contains('75%'));
+    });
+  });
 }
 

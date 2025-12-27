@@ -204,6 +204,37 @@ void main() {
 
       expect(parsed.type, NotificationPayloadType.overview);
     });
+
+    test('goalMilestone should create correct payload string', () {
+      final payload = NotificationPayload.goalMilestone('goal-123', 50);
+      expect(payload, 'goal_milestone:goal-123:50');
+    });
+
+    test('should parse goal_milestone payload correctly', () {
+      final parsed = NotificationPayload.parse('goal_milestone:goal-456:75');
+
+      expect(parsed.type, NotificationPayloadType.goalDetail);
+      expect(parsed.goalId, 'goal-456');
+      expect(parsed.params['milestonePercent'], '75');
+      expect(parsed.params['celebration'], 'true');
+    });
+
+    test('should parse goal_milestone with 100% correctly', () {
+      final parsed = NotificationPayload.parse('goal_milestone:goal-789:100');
+
+      expect(parsed.type, NotificationPayloadType.goalDetail);
+      expect(parsed.goalId, 'goal-789');
+      expect(parsed.params['milestonePercent'], '100');
+    });
+
+    test('goal_milestone should round-trip correctly', () {
+      final payloadString = NotificationPayload.goalMilestone('test-goal', 25);
+      final parsed = NotificationPayload.parse(payloadString);
+
+      expect(parsed.type, NotificationPayloadType.goalDetail);
+      expect(parsed.goalId, 'test-goal');
+      expect(parsed.params['milestonePercent'], '25');
+    });
   });
 }
 

@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
+import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
@@ -67,6 +68,9 @@ class NotificationNavigator {
 
       case NotificationPayloadType.investmentList:
         return _navigateToInvestmentList();
+
+      case NotificationPayloadType.goalDetail:
+        return _navigateToGoalDetail(payload.goalId, payload.params);
 
       case NotificationPayloadType.snooze:
         // Snooze is handled directly in notification service
@@ -133,6 +137,27 @@ class NotificationNavigator {
 
   Future<bool> _navigateToInvestmentList() async {
     // TODO: Navigate to investment list tab
+    return true;
+  }
+
+  Future<bool> _navigateToGoalDetail(
+    String? goalId,
+    Map<String, String> params,
+  ) async {
+    if (goalId == null) return false;
+
+    final navigatorState = rootNavigatorKey.currentState;
+    if (navigatorState == null) return false;
+
+    navigatorState.push(
+      MaterialPageRoute(
+        builder: (context) => GoalDetailsScreen(goalId: goalId),
+      ),
+    );
+
+    if (kDebugMode) {
+      debugPrint('🔔 Navigated to goal detail: $goalId');
+    }
     return true;
   }
 

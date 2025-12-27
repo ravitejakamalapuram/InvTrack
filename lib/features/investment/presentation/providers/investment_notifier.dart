@@ -8,6 +8,8 @@ import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:uuid/uuid.dart';
 
@@ -278,6 +280,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       if (type == CashFlowType.income || type == CashFlowType.returnFlow) {
         await _checkMilestoneAfterCashFlow(investmentId);
       }
+
+      // Check for goal milestone achievements after any cash flow
+      await _checkGoalMilestonesAfterCashFlow();
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -587,6 +592,46 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       );
     } catch (e) {
       // Don't fail the main operation if milestone check fails
+    }
+  }
+
+  /// Check for goal milestone achievements after adding a cash flow
+  Future<void> _checkGoalMilestonesAfterCashFlow() async {
+    try {
+      // Get all active goals
+      final goalsAsync = ref.read(activeGoalsProvider);
+      final goals = goalsAsync.value;
+      if (goals == null || goals.isEmpty) return;
+
+      // Get all investments and cash flows for progress calculation
+      final investmentsAsync = ref.read(allInvestmentsProvider);
+      final investments = investmentsAsync.value;
+      if (investments == null) return;
+
+      final cashFlowsAsync = ref.read(allCashFlowsStreamProvider);
+      final cashFlows = cashFlowsAsync.value;
+      if (cashFlows == null) return;
+
+      final notificationService = ref.read(notificationServiceProvider);
+
+      // Check each goal for milestone achievements
+      for (final goal in goals) {
+        final progress = GoalProgressCalculator.calculate(
+          goal: goal,
+          allInvestments: investments,
+          allCashFlows: cashFlows,
+        );
+
+        await notificationService.checkAndShowGoalMilestone(
+          goalId: goal.id,
+          goalName: goal.name,
+          progressPercent: progress.progressPercent,
+          currentValue: progress.currentAmount,
+          targetValue: goal.targetAmount,
+        );
+      }
+    } catch (e) {
+      // Don't fail the main operation if goal milestone check fails
     }
   }
 }

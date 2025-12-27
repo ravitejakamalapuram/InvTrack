@@ -30,6 +30,9 @@ enum NotificationPayloadType {
   /// Navigate to overview/summary screen
   overview,
 
+  /// Navigate to goal detail screen
+  goalDetail,
+
   /// Snooze notification (reschedule for later)
   snooze,
 
@@ -41,11 +44,13 @@ enum NotificationPayloadType {
 class NotificationPayload {
   final NotificationPayloadType type;
   final String? investmentId;
+  final String? goalId;
   final Map<String, String> params;
 
   const NotificationPayload({
     required this.type,
     this.investmentId,
+    this.goalId,
     this.params = const {},
   });
 
@@ -122,6 +127,16 @@ class NotificationPayload {
       case 'fy_summary':
         return const NotificationPayload(type: NotificationPayloadType.overview);
 
+      case 'goal_milestone':
+        return NotificationPayload(
+          type: NotificationPayloadType.goalDetail,
+          goalId: parts.length > 1 ? parts[1] : null,
+          params: {
+            'milestonePercent': parts.length > 2 ? parts[2] : '0',
+            'celebration': 'true',
+          },
+        );
+
       case 'test_notification':
       case 'test_scheduled_notification':
         return const NotificationPayload(type: NotificationPayloadType.unknown);
@@ -170,7 +185,11 @@ class NotificationPayload {
   /// Create a payload string for FY summary
   static String get fySummary => 'fy_summary';
 
+  /// Create a payload string for goal milestone celebration
+  static String goalMilestone(String goalId, int milestonePercent) =>
+      'goal_milestone:$goalId:$milestonePercent';
+
   @override
-  String toString() => 'NotificationPayload(type: $type, investmentId: $investmentId, params: $params)';
+  String toString() => 'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params)';
 }
 

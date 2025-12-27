@@ -37,6 +37,9 @@ class AnalyticsEvents {
   static const String goalDeleted = 'goal_deleted';
   static const String goalMilestoneReached = 'goal_milestone_reached';
 
+  // Documents feature
+  static const String documentAdded = 'document_added';
+
   // Error tracking
   static const String errorOccurred = 'error_occurred';
 }
@@ -236,6 +239,20 @@ class AnalyticsService {
       parameters: {
         'goal_id': goalId,
         'milestone': milestone,
+      },
+    );
+  }
+
+  /// Track document added
+  void trackDocumentAdded({
+    required String documentType,
+    required String fileType,
+  }) {
+    logEvent(
+      name: AnalyticsEvents.documentAdded,
+      parameters: {
+        'document_type': documentType,
+        'file_type': fileType,
       },
     );
   }

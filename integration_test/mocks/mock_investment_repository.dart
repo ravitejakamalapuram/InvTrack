@@ -105,6 +105,24 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Future<void> archiveInvestment(String id) async {
+    final index = _investments.indexWhere((i) => i.id == id);
+    if (index >= 0) {
+      final inv = _investments[index];
+      _investments[index] = inv.copyWith(isArchived: true);
+    }
+  }
+
+  @override
+  Future<void> unarchiveInvestment(String id) async {
+    final index = _investments.indexWhere((i) => i.id == id);
+    if (index >= 0) {
+      final inv = _investments[index];
+      _investments[index] = inv.copyWith(isArchived: false);
+    }
+  }
+
+  @override
   Future<void> deleteInvestment(String id) async {
     _investments.removeWhere((i) => i.id == id);
     _cashFlows.removeWhere((cf) => cf.investmentId == id);

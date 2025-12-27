@@ -7,12 +7,14 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
 
 class InvestmentDetailScreen extends ConsumerStatefulWidget {
   final InvestmentEntity investment;
@@ -292,6 +294,17 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
 
+          // Documents Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              child: DocumentListWidget(
+                investmentId: widget.investment.id,
+                isReadOnly: isClosed,
+              ),
+            ),
+          ),
+
           // Bottom padding
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -331,7 +344,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   Widget _buildStatsSection(InvestmentStats stats, bool isDark, NumberFormat currencyFormat) {
     final isPositive = stats.netCashFlow >= 0;
-    final xirrPercent = stats.xirr * 100;
+    final xirrFormatted = formatXirr(stats.xirr) ?? '0.0%';
+    final xirrIsPositive = stats.xirr >= 0;
 
     return Column(
       children: [
@@ -447,8 +461,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Expanded(
               child: _buildMiniStatCard(
                 'XIRR',
-                '${xirrPercent >= 0 ? '+' : ''}${xirrPercent.toStringAsFixed(1)}%',
-                xirrPercent >= 0 ? AppColors.graphCyan : AppColors.errorLight,
+                xirrFormatted,
+                xirrIsPositive ? AppColors.graphCyan : AppColors.errorLight,
                 isDark,
               ),
             ),
@@ -456,7 +470,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             Expanded(
               child: _buildMiniStatCard(
                 'MOIC',
-                '${stats.moic.toStringAsFixed(2)}x',
+                formatMultiplier(stats.moic),
                 AppColors.graphPurple,
                 isDark,
                 subtitle: stats.durationFormatted,

@@ -28,7 +28,7 @@ class GoalsDashboardCard extends ConsumerWidget {
         return _buildSummaryCard(context, summary, isDark);
       },
       loading: () => _buildLoadingState(isDark),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 

@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
@@ -217,6 +218,7 @@ class _InvestmentValueColumn extends ConsumerWidget {
         final isPositive = stats.netCashFlow >= 0;
         final plColor = isPositive ? AppColors.graphEmerald : AppColors.errorLight;
         final xirrColor = stats.xirr >= 0 ? AppColors.graphEmerald : AppColors.errorLight;
+        final xirrFormatted = formatXirr(stats.xirr);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -230,8 +232,8 @@ class _InvestmentValueColumn extends ConsumerWidget {
               ),
             ),
             SizedBox(height: AppSpacing.xxs),
-            // XIRR
-            if (stats.xirr != 0 && !stats.xirr.isNaN && !stats.xirr.isInfinite)
+            // XIRR - only show if valid
+            if (xirrFormatted != null)
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
@@ -239,7 +241,7 @@ class _InvestmentValueColumn extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${stats.xirr >= 0 ? '+' : ''}${(stats.xirr * 100).toStringAsFixed(1)}% IRR',
+                  '$xirrFormatted IRR',
                   style: AppTypography.small.copyWith(
                     color: xirrColor,
                     fontWeight: FontWeight.w600,
