@@ -253,11 +253,21 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
               height: 80,
               child: showBiometric
                   ? IconButton(
-                      icon: const Icon(Icons.fingerprint, size: 32),
+                      icon: Icon(
+                        Icons.fingerprint,
+                        size: 32,
+                        color: AppColors.primaryLight,
+                      ),
                       onPressed: _tryBiometrics,
                     )
                   : IconButton(
-                      icon: const Icon(Icons.clear, size: 28),
+                      icon: Icon(
+                        Icons.clear,
+                        size: 28,
+                        color: _input.isNotEmpty
+                            ? AppColors.textPrimaryLight
+                            : AppColors.neutral300Light,
+                      ),
                       onPressed: _input.isNotEmpty ? _onClear : null,
                     ),
             );
@@ -267,7 +277,13 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
               width: 80,
               height: 80,
               child: IconButton(
-                icon: const Icon(Icons.backspace_outlined, size: 28),
+                icon: Icon(
+                  Icons.backspace_outlined,
+                  size: 28,
+                  color: _input.isNotEmpty
+                      ? AppColors.textPrimaryLight
+                      : AppColors.neutral300Light,
+                ),
                 onPressed: _input.isNotEmpty ? _onDelete : null,
               ),
             );
