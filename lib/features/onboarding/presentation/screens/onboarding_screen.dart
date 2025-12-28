@@ -39,14 +39,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       title: 'Know Your Real Returns',
       subtitle:
           'XIRR shows your true annual return.\nMOIC shows how much your money multiplied.',
-      gradient: [AppColors.successLight, Color(0xFF059669)],
+      gradient: [AppColors.successLight, const Color(0xFF059669)],
+    ),
+    OnboardingPage(
+      icon: Icons.flag_rounded,
+      title: 'Set Goals & Get Reminders',
+      subtitle:
+          'Track progress toward financial targets.\nGet notified about income & maturity dates.',
+      gradient: [const Color(0xFFF59E0B), const Color(0xFFEA580C)],
     ),
     OnboardingPage(
       icon: Icons.cloud_sync_rounded,
       title: 'Works Offline, Syncs Online',
       subtitle:
           'Use the app without internet.\nSign in to backup and sync across devices.',
-      gradient: [Color(0xFF6366F1), AppColors.primaryLight],
+      gradient: [const Color(0xFF6366F1), AppColors.primaryLight],
     ),
   ];
 
