@@ -40,15 +40,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
       ),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.1, 0.7, curve: Curves.easeOutCubic),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.1, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
 
     // Floating animation for logo
     _floatController = AnimationController(
@@ -83,6 +81,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     setState(() => _isLoading = true);
     try {
       debugPrint('SignInScreen: Starting Google Sign-In...');
+
+      // Ensure Google Sign-In is initialized before attempting auth
+      await ref.read(googleSignInInitializedProvider.future);
+
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
       debugPrint('SignInScreen: Sign-in result: $user');
 
@@ -111,8 +113,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -130,7 +130,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         ),
         child: SafeArea(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingHorizontal),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenPaddingHorizontal,
+            ),
             child: Column(
               children: [
                 const Spacer(flex: 2),
@@ -144,7 +146,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                       children: [
                         // Floating App Icon with animated glow
                         AnimatedBuilder(
-                          animation: Listenable.merge([_floatAnimation, _glowAnimation]),
+                          animation: Listenable.merge([
+                            _floatAnimation,
+                            _glowAnimation,
+                          ]),
                           builder: (context, child) {
                             return Transform.translate(
                               offset: Offset(0, _floatAnimation.value),
@@ -153,10 +158,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                                 height: AppSizes.signInLogoSize,
                                 decoration: BoxDecoration(
                                   gradient: AppColors.heroGradient,
-                                  borderRadius: BorderRadius.circular(AppSizes.signInLogoRadius),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.signInLogoRadius,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primaryLight.withValues(alpha: _glowAnimation.value),
+                                      color: AppColors.primaryLight.withValues(
+                                        alpha: _glowAnimation.value,
+                                      ),
                                       blurRadius: 40,
                                       spreadRadius: 2,
                                       offset: const Offset(0, 8),
@@ -195,7 +204,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
                         // App Name with gradient
                         ShaderMask(
-                          shaderCallback: (bounds) => AppColors.heroGradient.createShader(bounds),
+                          shaderCallback: (bounds) =>
+                              AppColors.heroGradient.createShader(bounds),
                           child: Text(
                             'InvTracker',
                             style: AppTypography.displayLarge.copyWith(
@@ -278,7 +288,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
   Widget _buildFeaturePill(String emoji, String text, bool isDark) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.1)
@@ -318,7 +331,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         borderRadius: AppSizes.borderRadiusLg,
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.3),
+            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(
+              alpha: 0.3,
+            ),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -348,13 +363,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                         height: AppSizes.iconLg,
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.primaryLight : Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusSm - 2),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSm - 2,
+                          ),
                         ),
                         child: Center(
                           child: Text(
                             'G',
                             style: AppTypography.buttonLarge.copyWith(
-                              color: isDark ? Colors.white : AppColors.primaryLight,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.primaryLight,
                               fontWeight: FontWeight.w800,
                               fontSize: AppSizes.iconXs,
                             ),
@@ -365,7 +384,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                       Text(
                         'Continue with Google',
                         style: AppTypography.buttonLarge.copyWith(
-                          color: isDark ? AppColors.neutral900Light : Colors.white,
+                          color: isDark
+                              ? AppColors.neutral900Light
+                              : Colors.white,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.3,
                         ),

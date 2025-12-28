@@ -44,14 +44,14 @@ class InvestmentStats {
 
   /// Creates an empty stats object with all values set to zero
   factory InvestmentStats.empty() => const InvestmentStats(
-        totalInvested: 0,
-        totalReturned: 0,
-        netCashFlow: 0,
-        absoluteReturn: 0,
-        moic: 0,
-        xirr: 0,
-        cashFlowCount: 0,
-      );
+    totalInvested: 0,
+    totalReturned: 0,
+    netCashFlow: 0,
+    absoluteReturn: 0,
+    moic: 0,
+    xirr: 0,
+    cashFlowCount: 0,
+  );
 
   /// Returns true if there is at least one cash flow
   bool get hasData => cashFlowCount > 0;
@@ -179,8 +179,9 @@ class YoYComparison {
   });
 
   /// Percentage change in net position year-over-year
-  double get netChange =>
-      lastYearNet != 0 ? ((thisYearNet - lastYearNet) / lastYearNet.abs()) * 100 : 0;
+  double get netChange => lastYearNet != 0
+      ? ((thisYearNet - lastYearNet) / lastYearNet.abs()) * 100
+      : 0;
 
   /// Returns true if this year's net is better than last year's
   bool get isImproved => thisYearNet > lastYearNet;
@@ -204,4 +205,3 @@ class YoYComparison {
     );
   }
 }
-

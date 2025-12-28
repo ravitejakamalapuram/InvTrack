@@ -17,8 +17,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   FirestoreInvestmentRepository({
     required FirebaseFirestore firestore,
     required String userId,
-  })  : _firestore = firestore,
-        _userId = userId;
+  }) : _firestore = firestore,
+       _userId = userId;
 
   /// Execute a write operation with timeout
   /// If the operation times out (likely offline), we consider it successful
@@ -32,39 +32,60 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
   }
 
-  // Collection references
+  // Collection references for ACTIVE data
   CollectionReference<Map<String, dynamic>> get _investmentsRef =>
       _firestore.collection('users').doc(_userId).collection('investments');
 
   CollectionReference<Map<String, dynamic>> get _cashFlowsRef =>
       _firestore.collection('users').doc(_userId).collection('cashflows');
 
-  // ============ INVESTMENTS ============
+  // Collection references for ARCHIVED data (complete isolation)
+  CollectionReference<Map<String, dynamic>> get _archivedInvestmentsRef =>
+      _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('archivedInvestments');
+
+  CollectionReference<Map<String, dynamic>> get _archivedCashFlowsRef =>
+      _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('archivedCashflows');
+
+  // ============ ACTIVE INVESTMENTS ============
 
   @override
   Stream<List<InvestmentEntity>> watchAllInvestments() {
     return _investmentsRef
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
-  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(InvestmentStatus status) {
+  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(
+    InvestmentStatus status,
+  ) {
     return _investmentsRef
         .where('status', isEqualTo: status.name.toUpperCase())
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
   Future<List<InvestmentEntity>> getAllInvestments() async {
-    final snapshot = await _investmentsRef.orderBy('createdAt', descending: true).get();
+    final snapshot = await _investmentsRef
+        .orderBy('createdAt', descending: true)
+        .get();
     return snapshot.docs
         .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
         .toList();
@@ -72,39 +93,127 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<InvestmentEntity?> getInvestmentById(String id) async {
+    // Search active first
     final doc = await _investmentsRef.doc(id).get();
-    if (!doc.exists) return null;
-    return _investmentFromFirestore(doc.data()!, doc.id);
+    if (doc.exists) {
+      return _investmentFromFirestore(doc.data()!, doc.id);
+    }
+    // Fall back to archived
+    final archivedDoc = await _archivedInvestmentsRef.doc(id).get();
+    if (archivedDoc.exists) {
+      return _investmentFromFirestore(archivedDoc.data()!, archivedDoc.id);
+    }
+    return null;
   }
 
   @override
   Future<void> createInvestment(InvestmentEntity investment) async {
-    await _executeWrite(() =>
-        _investmentsRef.doc(investment.id).set(_investmentToFirestore(investment)));
+    await _executeWrite(
+      () => _investmentsRef
+          .doc(investment.id)
+          .set(_investmentToFirestore(investment)),
+    );
   }
 
   @override
   Future<void> updateInvestment(InvestmentEntity investment) async {
-    await _executeWrite(() =>
-        _investmentsRef.doc(investment.id).update(_investmentToFirestore(investment)));
+    await _executeWrite(
+      () => _investmentsRef
+          .doc(investment.id)
+          .update(_investmentToFirestore(investment)),
+    );
   }
 
   @override
   Future<void> closeInvestment(String id) async {
-    await _executeWrite(() => _investmentsRef.doc(id).update({
-          'status': 'CLOSED',
-          'closedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }));
+    await _executeWrite(
+      () => _investmentsRef.doc(id).update({
+        'status': 'CLOSED',
+        'closedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }),
+    );
   }
 
   @override
   Future<void> reopenInvestment(String id) async {
-    await _executeWrite(() => _investmentsRef.doc(id).update({
-          'status': 'OPEN',
-          'closedAt': null,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }));
+    await _executeWrite(
+      () => _investmentsRef.doc(id).update({
+        'status': 'OPEN',
+        'closedAt': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }),
+    );
+  }
+
+  @override
+  Future<void> archiveInvestment(String id) async {
+    // Move investment from active to archived collection
+    try {
+      final doc = await _investmentsRef.doc(id).get();
+      if (!doc.exists) return;
+
+      final investmentData = doc.data()!;
+      investmentData['isArchived'] = true;
+      investmentData['updatedAt'] = FieldValue.serverTimestamp();
+
+      // Move all cash flows for this investment to archived collection
+      final cashFlows = await _cashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get();
+
+      final batch = _firestore.batch();
+
+      // Add investment to archived collection
+      batch.set(_archivedInvestmentsRef.doc(id), investmentData);
+      // Delete from active collection
+      batch.delete(_investmentsRef.doc(id));
+
+      // Move each cash flow
+      for (final cfDoc in cashFlows.docs) {
+        batch.set(_archivedCashFlowsRef.doc(cfDoc.id), cfDoc.data());
+        batch.delete(cfDoc.reference);
+      }
+
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - data will sync when back online
+    }
+  }
+
+  @override
+  Future<void> unarchiveInvestment(String id) async {
+    // Move investment from archived back to active collection
+    try {
+      final doc = await _archivedInvestmentsRef.doc(id).get();
+      if (!doc.exists) return;
+
+      final investmentData = doc.data()!;
+      investmentData['isArchived'] = false;
+      investmentData['updatedAt'] = FieldValue.serverTimestamp();
+
+      // Move all archived cash flows for this investment back to active
+      final cashFlows = await _archivedCashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get();
+
+      final batch = _firestore.batch();
+
+      // Add investment back to active collection
+      batch.set(_investmentsRef.doc(id), investmentData);
+      // Delete from archived collection
+      batch.delete(_archivedInvestmentsRef.doc(id));
+
+      // Move each cash flow back
+      for (final cfDoc in cashFlows.docs) {
+        batch.set(_cashFlowsRef.doc(cfDoc.id), cfDoc.data());
+        batch.delete(cfDoc.reference);
+      }
+
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      // Offline - data will sync when back online
+    }
   }
 
   @override
@@ -115,13 +224,16 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       final cashFlows = await _cashFlowsRef
           .where('investmentId', isEqualTo: id)
           .get(const GetOptions(source: Source.cache))
-          .timeout(_writeTimeout, onTimeout: () async {
-        // If cache query times out, try server with timeout
-        return await _cashFlowsRef
-            .where('investmentId', isEqualTo: id)
-            .get()
-            .timeout(_writeTimeout);
-      });
+          .timeout(
+            _writeTimeout,
+            onTimeout: () async {
+              // If cache query times out, try server with timeout
+              return await _cashFlowsRef
+                  .where('investmentId', isEqualTo: id)
+                  .get()
+                  .timeout(_writeTimeout);
+            },
+          );
       final batch = _firestore.batch();
       for (final doc in cashFlows.docs) {
         batch.delete(doc.reference);
@@ -135,16 +247,57 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     }
   }
 
-  // ============ CASH FLOWS ============
+  // ============ ARCHIVED INVESTMENTS ============
+
+  @override
+  Stream<List<InvestmentEntity>> watchArchivedInvestments() {
+    return _archivedInvestmentsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
+  }
+
+  @override
+  Future<InvestmentEntity?> getArchivedInvestmentById(String id) async {
+    final doc = await _archivedInvestmentsRef.doc(id).get();
+    if (!doc.exists) return null;
+    return _investmentFromFirestore(doc.data()!, doc.id);
+  }
+
+  @override
+  Future<void> deleteArchivedInvestment(String id) async {
+    // Delete all archived cash flows for this investment first
+    try {
+      final cashFlows = await _archivedCashFlowsRef
+          .where('investmentId', isEqualTo: id)
+          .get();
+      final batch = _firestore.batch();
+      for (final doc in cashFlows.docs) {
+        batch.delete(doc.reference);
+      }
+      batch.delete(_archivedInvestmentsRef.doc(id));
+      await _executeWrite(() => batch.commit());
+    } on TimeoutException {
+      await _executeWrite(() => _archivedInvestmentsRef.doc(id).delete());
+    }
+  }
+
+  // ============ ACTIVE CASH FLOWS ============
 
   @override
   Stream<List<CashFlowEntity>> watchAllCashFlows() {
     return _cashFlowsRef
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
@@ -153,13 +306,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         .where('investmentId', isEqualTo: investmentId)
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
-  Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId) async {
+  Future<List<CashFlowEntity>> getCashFlowsByInvestment(
+    String investmentId,
+  ) async {
     final snapshot = await _cashFlowsRef
         .where('investmentId', isEqualTo: investmentId)
         .orderBy('date', descending: true)
@@ -171,7 +328,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<List<CashFlowEntity>> getAllCashFlows() async {
-    final snapshot = await _cashFlowsRef.orderBy('date', descending: true).get();
+    final snapshot = await _cashFlowsRef
+        .orderBy('date', descending: true)
+        .get();
     return snapshot.docs
         .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
         .toList();
@@ -179,19 +338,52 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> addCashFlow(CashFlowEntity cashFlow) async {
-    await _executeWrite(() =>
-        _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow)));
+    await _executeWrite(
+      () => _cashFlowsRef.doc(cashFlow.id).set(_cashFlowToFirestore(cashFlow)),
+    );
   }
 
   @override
   Future<void> updateCashFlow(CashFlowEntity cashFlow) async {
-    await _executeWrite(() =>
-        _cashFlowsRef.doc(cashFlow.id).update(_cashFlowToFirestore(cashFlow)));
+    await _executeWrite(
+      () =>
+          _cashFlowsRef.doc(cashFlow.id).update(_cashFlowToFirestore(cashFlow)),
+    );
   }
 
   @override
   Future<void> deleteCashFlow(String id) async {
     await _executeWrite(() => _cashFlowsRef.doc(id).delete());
+  }
+
+  // ============ ARCHIVED CASH FLOWS ============
+
+  @override
+  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(
+    String investmentId,
+  ) {
+    return _archivedCashFlowsRef
+        .where('investmentId', isEqualTo: investmentId)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
+  }
+
+  @override
+  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(
+    String investmentId,
+  ) async {
+    final snapshot = await _archivedCashFlowsRef
+        .where('investmentId', isEqualTo: investmentId)
+        .orderBy('date', descending: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+        .toList();
   }
 
   // ============ BULK OPERATIONS ============
@@ -209,7 +401,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     // Process investments in batches
     for (var i = 0; i < investments.length; i += batchLimit) {
       final batch = _firestore.batch();
-      final end = (i + batchLimit < investments.length) ? i + batchLimit : investments.length;
+      final end = (i + batchLimit < investments.length)
+          ? i + batchLimit
+          : investments.length;
 
       for (var j = i; j < end; j++) {
         final inv = investments[j];
@@ -223,7 +417,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     // Process cash flows in batches
     for (var i = 0; i < cashFlows.length; i += batchLimit) {
       final batch = _firestore.batch();
-      final end = (i + batchLimit < cashFlows.length) ? i + batchLimit : cashFlows.length;
+      final end = (i + batchLimit < cashFlows.length)
+          ? i + batchLimit
+          : cashFlows.length;
 
       for (var j = i; j < end; j++) {
         final cf = cashFlows[j];
@@ -251,12 +447,15 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         final cashFlows = await _cashFlowsRef
             .where('investmentId', isEqualTo: investmentId)
             .get(const GetOptions(source: Source.cache))
-            .timeout(_writeTimeout, onTimeout: () async {
-          return await _cashFlowsRef
-              .where('investmentId', isEqualTo: investmentId)
-              .get()
-              .timeout(_writeTimeout);
-        });
+            .timeout(
+              _writeTimeout,
+              onTimeout: () async {
+                return await _cashFlowsRef
+                    .where('investmentId', isEqualTo: investmentId)
+                    .get()
+                    .timeout(_writeTimeout);
+              },
+            );
         for (final doc in cashFlows.docs) {
           cashFlowDocsToDelete.add(doc.reference);
         }
@@ -308,10 +507,18 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           ? Timestamp.fromDate(investment.closedAt!)
           : null,
       'updatedAt': FieldValue.serverTimestamp(),
+      'maturityDate': investment.maturityDate != null
+          ? Timestamp.fromDate(investment.maturityDate!)
+          : null,
+      'incomeFrequency': investment.incomeFrequency?.name,
+      'isArchived': investment.isArchived,
     };
   }
 
-  InvestmentEntity _investmentFromFirestore(Map<String, dynamic> data, String id) {
+  InvestmentEntity _investmentFromFirestore(
+    Map<String, dynamic> data,
+    String id,
+  ) {
     return InvestmentEntity(
       id: id,
       name: data['name'] as String,
@@ -325,6 +532,13 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
+      maturityDate: data['maturityDate'] != null
+          ? (data['maturityDate'] as Timestamp).toDate()
+          : null,
+      incomeFrequency: IncomeFrequency.fromString(
+        data['incomeFrequency'] as String?,
+      ),
+      isArchived: data['isArchived'] as bool? ?? false,
     );
   }
 
@@ -351,4 +565,3 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     );
   }
 }
-

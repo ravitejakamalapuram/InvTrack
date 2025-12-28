@@ -36,7 +36,9 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultIconColor = isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+    final defaultIconColor = isDark
+        ? AppColors.neutral400Dark
+        : AppColors.neutral500Light;
     final effectiveIconColor = iconColor ?? defaultIconColor;
     final iconSize = compact ? 40.0 : 64.0;
     final spacing = compact ? 12.0 : 24.0;
@@ -55,18 +57,10 @@ class EmptyStateWidget extends StatelessWidget {
                   gradient: LinearGradient(colors: iconBackgroundGradient!),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: iconSize,
-                  color: effectiveIconColor,
-                ),
+                child: Icon(icon, size: iconSize, color: effectiveIconColor),
               )
             else
-              Icon(
-                icon,
-                size: iconSize,
-                color: effectiveIconColor,
-              ),
+              Icon(icon, size: iconSize, color: effectiveIconColor),
             SizedBox(height: spacing),
             Text(
               title,
@@ -79,9 +73,12 @@ class EmptyStateWidget extends StatelessWidget {
             SizedBox(height: compact ? 4 : 8),
             Text(
               message,
-              style: (compact ? AppTypography.caption : AppTypography.body).copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-              ),
+              style: (compact ? AppTypography.caption : AppTypography.body)
+                  .copyWith(
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
+                  ),
               textAlign: TextAlign.center,
             ),
             if (actionLabel != null && onAction != null) ...[

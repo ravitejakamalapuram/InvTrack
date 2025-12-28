@@ -41,10 +41,7 @@ class QuickStatCard extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
               Text(
                 value,
@@ -56,10 +53,7 @@ class QuickStatCard extends StatelessWidget {
               if (subtitle != null)
                 Text(
                   subtitle!,
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
                 ),
             ],
           ),
@@ -68,4 +62,3 @@ class QuickStatCard extends StatelessWidget {
     );
   }
 }
-

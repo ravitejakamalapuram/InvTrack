@@ -7,20 +7,22 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT NOTIFIER (ACTIONS) ============
 
 final investmentNotifierProvider =
-    StateNotifierProvider<InvestmentNotifier, AsyncValue<void>>((ref) {
-  return InvestmentNotifier(ref);
-});
+    NotifierProvider<InvestmentNotifier, AsyncValue<void>>(
+      InvestmentNotifier.new,
+    );
 
-class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
-  final Ref _ref;
-
-  InvestmentNotifier(this._ref) : super(const AsyncValue.data(null));
+class InvestmentNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
 
   /// Create a new investment.
   /// Throws [ValidationException] if name is empty or exceeds max length.
@@ -28,6 +30,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     required String name,
     required InvestmentType type,
     String? notes,
+    DateTime? maturityDate,
+    IncomeFrequency? incomeFrequency,
   }) async {
     // Input validation
     _validateName(name);
@@ -43,14 +47,28 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         notes: notes?.trim(),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        maturityDate: maturityDate,
+        incomeFrequency: incomeFrequency,
       );
-      await _ref.read(investmentRepositoryProvider).createInvestment(investment);
+      await ref.read(investmentRepositoryProvider).createInvestment(investment);
 
       // Track analytics event
-      _ref.read(analyticsServiceProvider).logInvestmentCreated(
-        investmentType: type.name,
-        hasNotes: notes != null && notes.trim().isNotEmpty,
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logInvestmentCreated(
+            investmentType: type.name,
+            hasNotes: notes != null && notes.trim().isNotEmpty,
+          );
+
+      // Schedule income reminder if frequency is set
+      if (incomeFrequency != null) {
+        await _scheduleIncomeReminder(investment);
+      }
+
+      // Schedule maturity reminders if maturity date is set
+      if (maturityDate != null) {
+        await _scheduleMaturityReminders(investment);
+      }
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -68,6 +86,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     required String name,
     required InvestmentType type,
     String? notes,
+    DateTime? maturityDate,
+    IncomeFrequency? incomeFrequency,
   }) async {
     // Input validation
     _validateName(name);
@@ -75,7 +95,9 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
 
     state = const AsyncValue.loading();
     try {
-      final existing = await _ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final existing = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
 
       final updated = existing.copyWith(
@@ -83,8 +105,26 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         type: type,
         notes: notes?.trim(),
         updatedAt: DateTime.now(),
+        maturityDate: maturityDate,
+        incomeFrequency: incomeFrequency,
       );
-      await _ref.read(investmentRepositoryProvider).updateInvestment(updated);
+      await ref.read(investmentRepositoryProvider).updateInvestment(updated);
+
+      // Update income reminder based on new frequency
+      if (incomeFrequency != null) {
+        await _scheduleIncomeReminder(updated);
+      } else {
+        // Cancel reminder if frequency was removed
+        await _cancelIncomeReminder(id);
+      }
+
+      // Update maturity reminders based on new maturity date
+      if (maturityDate != null) {
+        await _scheduleMaturityReminders(updated);
+      } else {
+        // Cancel reminders if maturity date was removed
+        await _cancelMaturityReminders(id);
+      }
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -98,7 +138,11 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> closeInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(investmentRepositoryProvider).closeInvestment(id);
+      await ref.read(investmentRepositoryProvider).closeInvestment(id);
+      // Cancel income reminder for closed investment
+      await _cancelIncomeReminder(id);
+      // Cancel maturity reminders for closed investment
+      await _cancelMaturityReminders(id);
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -111,7 +155,61 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> reopenInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(investmentRepositoryProvider).reopenInvestment(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
+      await ref.read(investmentRepositoryProvider).reopenInvestment(id);
+      if (investment != null) {
+        // Re-schedule income reminder if investment has income frequency
+        if (investment.incomeFrequency != null) {
+          await _scheduleIncomeReminder(investment);
+        }
+        // Re-schedule maturity reminders if investment has maturity date
+        if (investment.maturityDate != null) {
+          await _scheduleMaturityReminders(investment);
+        }
+      }
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Archive an investment (hide from active view)
+  Future<void> archiveInvestment(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(investmentRepositoryProvider).archiveInvestment(id);
+      // Cancel notifications for archived investment
+      await _cancelIncomeReminder(id);
+      await _cancelMaturityReminders(id);
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Unarchive an investment (restore to active view)
+  Future<void> unarchiveInvestment(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
+      await ref.read(investmentRepositoryProvider).unarchiveInvestment(id);
+      if (investment != null) {
+        // Re-schedule reminders if applicable
+        if (investment.incomeFrequency != null) {
+          await _scheduleIncomeReminder(investment);
+        }
+        if (investment.maturityDate != null) {
+          await _scheduleMaturityReminders(investment);
+        }
+      }
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -124,7 +222,10 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> deleteInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(investmentRepositoryProvider).deleteInvestment(id);
+      // Cancel all reminders before deleting
+      await _cancelIncomeReminder(id);
+      await _cancelMaturityReminders(id);
+      await ref.read(investmentRepositoryProvider).deleteInvestment(id);
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -139,7 +240,7 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
 
     state = const AsyncValue.loading();
     try {
-      final deletedCount = await _ref
+      final deletedCount = await ref
           .read(investmentRepositoryProvider)
           .bulkDelete(investmentIds);
       _invalidateAll();
@@ -175,13 +276,23 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         notes: notes?.trim(),
         createdAt: DateTime.now(),
       );
-      await _ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
+      await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
       // Track analytics event
-      _ref.read(analyticsServiceProvider).logCashFlowAdded(
-        flowType: type.name,
-        amountRange: _getAmountRange(amount),
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logCashFlowAdded(
+            flowType: type.name,
+            amountRange: _getAmountRange(amount),
+          );
+
+      // Check for milestone achievements after adding return cash flows
+      if (type == CashFlowType.income || type == CashFlowType.returnFlow) {
+        await _checkMilestoneAfterCashFlow(investmentId);
+      }
+
+      // Check for goal milestone achievements after any cash flow
+      await _checkGoalMilestonesAfterCashFlow();
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -217,7 +328,7 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         notes: notes?.trim(),
         createdAt: createdAt,
       );
-      await _ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
+      await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -231,7 +342,7 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> deleteCashFlow(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _ref.read(investmentRepositoryProvider).deleteCashFlow(id);
+      await ref.read(investmentRepositoryProvider).deleteCashFlow(id);
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -250,11 +361,13 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
 
     state = const AsyncValue.loading();
     try {
-      final repo = _ref.read(investmentRepositoryProvider);
+      final repo = ref.read(investmentRepositoryProvider);
 
       // Get all investments to merge
-      final allInvestments = await _ref.read(allInvestmentsProvider.future);
-      final toMerge = allInvestments.where((i) => investmentIds.contains(i.id)).toList();
+      final allInvestments = await ref.read(allInvestmentsProvider.future);
+      final toMerge = allInvestments
+          .where((i) => investmentIds.contains(i.id))
+          .toList();
 
       if (toMerge.isEmpty) {
         state = const AsyncValue.data(null);
@@ -270,7 +383,9 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
         for (final inv in toMerge) {
           typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
         }
-        finalType = typeCount.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+        finalType = typeCount.entries
+            .reduce((a, b) => a.value > b.value ? a : b)
+            .key;
       }
 
       // Create new merged investment
@@ -293,15 +408,19 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
       for (final inv in toMerge) {
         final cashFlows = await repo.getCashFlowsByInvestment(inv.id);
         for (final cf in cashFlows) {
-          newCashFlows.add(CashFlowEntity(
-            id: const Uuid().v4(),
-            investmentId: newInvestmentId,
-            type: cf.type,
-            amount: cf.amount,
-            date: cf.date,
-            notes: cf.notes != null ? '${cf.notes} (from ${inv.name})' : 'From ${inv.name}',
-            createdAt: now,
-          ));
+          newCashFlows.add(
+            CashFlowEntity(
+              id: const Uuid().v4(),
+              investmentId: newInvestmentId,
+              type: cf.type,
+              amount: cf.amount,
+              date: cf.date,
+              notes: cf.notes != null
+                  ? '${cf.notes} (from ${inv.name})'
+                  : 'From ${inv.name}',
+              createdAt: now,
+            ),
+          );
         }
       }
 
@@ -331,10 +450,9 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final result = await _ref.read(investmentRepositoryProvider).bulkImport(
-        investments: investments,
-        cashFlows: cashFlows,
-      );
+      final result = await ref
+          .read(investmentRepositoryProvider)
+          .bulkImport(investments: investments, cashFlows: cashFlows);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -349,8 +467,8 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   // Firestore streams auto-update, and derived providers reactively recompute.
   // This method is kept for edge cases (e.g., forcing refresh after error recovery).
   void _invalidateAll() {
-    _ref.invalidate(allInvestmentsProvider);
-    _ref.invalidate(allCashFlowsStreamProvider);
+    ref.invalidate(allInvestmentsProvider);
+    ref.invalidate(allCashFlowsStreamProvider);
   }
 
   // ============ VALIDATION HELPERS ============
@@ -363,7 +481,10 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
       throw ValidationException.emptyField('Name');
     }
     if (trimmed.length > ValidationConstants.maxNameLength) {
-      throw ValidationException.tooLong('Name', ValidationConstants.maxNameLength);
+      throw ValidationException.tooLong(
+        'Name',
+        ValidationConstants.maxNameLength,
+      );
     }
   }
 
@@ -378,8 +499,12 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
   /// Validates optional notes field.
   /// Throws [ValidationException] if notes exceed max length.
   void _validateNotes(String? notes) {
-    if (notes != null && notes.trim().length > ValidationConstants.maxNotesLength) {
-      throw ValidationException.tooLong('Notes', ValidationConstants.maxNotesLength);
+    if (notes != null &&
+        notes.trim().length > ValidationConstants.maxNotesLength) {
+      throw ValidationException.tooLong(
+        'Notes',
+        ValidationConstants.maxNotesLength,
+      );
     }
   }
 
@@ -392,5 +517,162 @@ class InvestmentNotifier extends StateNotifier<AsyncValue<void>> {
     if (amount < 500000) return '1L_5L';
     if (amount < 1000000) return '5L_10L';
     return 'over_10L';
+  }
+
+  // ============ Income Reminder Helpers ============
+
+  /// Schedule an income reminder for an investment
+  Future<void> _scheduleIncomeReminder(InvestmentEntity investment) async {
+    if (investment.incomeFrequency == null) return;
+
+    try {
+      // Get the last income date from cash flows
+      final cashFlows = await ref
+          .read(investmentRepositoryProvider)
+          .getCashFlowsByInvestment(investment.id);
+
+      DateTime? lastIncomeDate;
+      for (final cf in cashFlows) {
+        if (cf.type == CashFlowType.income) {
+          if (lastIncomeDate == null || cf.date.isAfter(lastIncomeDate)) {
+            lastIncomeDate = cf.date;
+          }
+        }
+      }
+
+      await ref
+          .read(notificationServiceProvider)
+          .scheduleIncomeReminder(
+            investmentId: investment.id,
+            investmentName: investment.name,
+            monthsBetweenPayments:
+                investment.incomeFrequency!.monthsBetweenPayments,
+            lastIncomeDate: lastIncomeDate,
+          );
+    } catch (e) {
+      // Don't fail the main operation if notification scheduling fails
+      // Just log and continue
+    }
+  }
+
+  /// Cancel income reminder for an investment
+  Future<void> _cancelIncomeReminder(String investmentId) async {
+    try {
+      await ref
+          .read(notificationServiceProvider)
+          .cancelIncomeReminder(investmentId);
+    } catch (e) {
+      // Don't fail the main operation if notification cancellation fails
+    }
+  }
+
+  // ============ Maturity Reminder Helpers ============
+
+  /// Schedule maturity reminders for an investment
+  Future<void> _scheduleMaturityReminders(InvestmentEntity investment) async {
+    if (investment.maturityDate == null) return;
+
+    try {
+      await ref
+          .read(notificationServiceProvider)
+          .scheduleMaturityReminders(
+            investmentId: investment.id,
+            investmentName: investment.name,
+            maturityDate: investment.maturityDate!,
+          );
+    } catch (e) {
+      // Don't fail the main operation if notification scheduling fails
+    }
+  }
+
+  /// Cancel maturity reminders for an investment
+  Future<void> _cancelMaturityReminders(String investmentId) async {
+    try {
+      await ref
+          .read(notificationServiceProvider)
+          .cancelMaturityReminders(investmentId);
+    } catch (e) {
+      // Don't fail the main operation if notification cancellation fails
+    }
+  }
+
+  // ============ Milestone Helpers ============
+
+  /// Check for milestone achievements after adding a cash flow
+  Future<void> _checkMilestoneAfterCashFlow(String investmentId) async {
+    try {
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(investmentId);
+      if (investment == null) return;
+
+      final cashFlows = await ref
+          .read(investmentRepositoryProvider)
+          .getCashFlowsByInvestment(investmentId);
+
+      // Calculate totals
+      double totalInvested = 0;
+      double totalReturned = 0;
+      for (final cf in cashFlows) {
+        if (cf.type == CashFlowType.invest || cf.type == CashFlowType.fee) {
+          totalInvested += cf.amount;
+        } else {
+          totalReturned += cf.amount;
+        }
+      }
+
+      // Check for milestone notification
+      await ref
+          .read(notificationServiceProvider)
+          .checkAndShowMilestone(
+            investmentId: investmentId,
+            investmentName: investment.name,
+            totalInvested: totalInvested,
+            totalReturned: totalReturned,
+          );
+    } catch (e) {
+      // Don't fail the main operation if milestone check fails
+    }
+  }
+
+  /// Check for goal milestone achievements after adding a cash flow
+  Future<void> _checkGoalMilestonesAfterCashFlow() async {
+    try {
+      // Fetch data directly from repository to ensure fresh data
+      final goalRepository = ref.read(goalRepositoryProvider);
+      final investmentRepository = ref.read(investmentRepositoryProvider);
+
+      // Get all active goals directly
+      final goals = await goalRepository.watchActiveGoals().first;
+      if (goals.isEmpty) return;
+
+      // Get all investments
+      final investments = await investmentRepository.getAllInvestments();
+
+      // Get all cash flows
+      final cashFlows = await investmentRepository.getAllCashFlows();
+
+      final notificationService = ref.read(notificationServiceProvider);
+
+      // Check each goal for milestone achievements
+      for (final goal in goals) {
+        final progress = GoalProgressCalculator.calculate(
+          goal: goal,
+          allInvestments: investments,
+          allCashFlows: cashFlows,
+        );
+
+        await notificationService.checkAndShowGoalMilestone(
+          goalId: goal.id,
+          goalName: goal.name,
+          progressPercent: progress.progressPercent,
+          currentValue: progress.currentAmount,
+          targetValue: goal.targetAmount,
+        );
+      }
+    } catch (e) {
+      // Don't fail the main operation if goal milestone check fails
+      // Error logged in debug mode
+    }
   }
 }

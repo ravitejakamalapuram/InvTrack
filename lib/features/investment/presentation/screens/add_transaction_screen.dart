@@ -29,7 +29,8 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
   bool get isEditing => cashFlowToEdit != null;
 
   @override
-  ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  ConsumerState<AddTransactionScreen> createState() =>
+      _AddTransactionScreenState();
 }
 
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
@@ -99,28 +100,34 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
     try {
       final amount = double.parse(_amountController.text);
-      final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+      final notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim();
 
       if (widget.isEditing) {
         // Update existing cash flow
-        await ref.read(investmentNotifierProvider.notifier).updateCashFlow(
-          id: widget.cashFlowToEdit!.id,
-          investmentId: widget.investmentId,
-          type: _selectedType,
-          date: _selectedDate,
-          amount: amount,
-          notes: notes,
-          createdAt: widget.cashFlowToEdit!.createdAt,
-        );
+        await ref
+            .read(investmentNotifierProvider.notifier)
+            .updateCashFlow(
+              id: widget.cashFlowToEdit!.id,
+              investmentId: widget.investmentId,
+              type: _selectedType,
+              date: _selectedDate,
+              amount: amount,
+              notes: notes,
+              createdAt: widget.cashFlowToEdit!.createdAt,
+            );
       } else {
         // Add new cash flow
-        await ref.read(investmentNotifierProvider.notifier).addCashFlow(
-          investmentId: widget.investmentId,
-          type: _selectedType,
-          date: _selectedDate,
-          amount: amount,
-          notes: notes,
-        );
+        await ref
+            .read(investmentNotifierProvider.notifier)
+            .addCashFlow(
+              investmentId: widget.investmentId,
+              type: _selectedType,
+              date: _selectedDate,
+              amount: amount,
+              notes: notes,
+            );
       }
 
       if (mounted) {
@@ -151,7 +158,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final currencyFormat = ref.watch(currencyFormatPreciseProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -159,7 +168,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: 0.05,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -231,14 +242,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             Text(
                               AppDateUtils.formatDayOfWeek(_selectedDate),
                               style: AppTypography.small.copyWith(
-                                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                                color: isDark
+                                    ? AppColors.neutral400Dark
+                                    : AppColors.neutral500Light,
                               ),
                             ),
                             Text(
                               AppDateUtils.formatLong(_selectedDate),
                               style: AppTypography.bodyLarge.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : AppColors.neutral900Light,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.neutral900Light,
                               ),
                             ),
                           ],
@@ -246,7 +261,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
                       ),
                     ],
                   ),
@@ -298,18 +315,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         Text(
                           _selectedType.isOutflow ? 'Cash Out' : 'Cash In',
                           style: AppTypography.body.copyWith(
-                            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                            color: isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light,
                           ),
                         ),
                         SizedBox(height: AppSpacing.xxs),
                         ListenableBuilder(
                           listenable: _amountController,
                           builder: (context, _) {
-                            final amount = double.tryParse(_amountController.text) ?? 0;
+                            final amount =
+                                double.tryParse(_amountController.text) ?? 0;
                             return Text(
                               currencyFormat.format(amount),
                               style: AppTypography.numberLarge.copyWith(
-                                color: isDark ? Colors.white : AppColors.neutral900Light,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.neutral900Light,
                                 fontWeight: FontWeight.w700,
                               ),
                             );
@@ -323,7 +345,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         gradient: _selectedType.isOutflow
                             ? AppColors.dangerGradient
                             : AppColors.successGradient,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusMd + 2),
+                        borderRadius: BorderRadius.circular(
+                          AppSizes.radiusMd + 2,
+                        ),
                       ),
                       child: Icon(
                         _selectedType.isOutflow
@@ -387,7 +411,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: AppTypography.body.copyWith(
-              color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+              color: isDark
+                  ? AppColors.neutral500Dark
+                  : AppColors.neutral400Light,
             ),
             prefixText: prefix,
             prefixStyle: AppTypography.body.copyWith(
@@ -395,20 +421,26 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
             prefixIcon: Icon(
               icon,
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
             ),
             filled: true,
             fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -419,7 +451,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: AppColors.errorLight),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: validator,
           onChanged: (_) => setState(() {}),
@@ -427,5 +462,4 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       ],
     );
   }
-
 }

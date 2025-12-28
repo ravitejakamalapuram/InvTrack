@@ -9,19 +9,19 @@ final seedDataServiceProvider = Provider<SeedDataService>((ref) {
 /// Result of seeding demo data
 typedef SeedResult = ({int investments, int cashFlows});
 
-final seedDataStateProvider = StateNotifierProvider<SeedDataNotifier, AsyncValue<SeedResult?>>((ref) {
-  return SeedDataNotifier(ref.watch(seedDataServiceProvider));
-});
+final seedDataStateProvider =
+    NotifierProvider<SeedDataNotifier, AsyncValue<SeedResult?>>(
+      SeedDataNotifier.new,
+    );
 
-class SeedDataNotifier extends StateNotifier<AsyncValue<SeedResult?>> {
-  final SeedDataService _service;
-
-  SeedDataNotifier(this._service) : super(const AsyncValue.data(null));
+class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
+  @override
+  AsyncValue<SeedResult?> build() => const AsyncValue.data(null);
 
   Future<SeedResult?> seedData() async {
     state = const AsyncValue.loading();
     try {
-      final result = await _service.seedDemoData();
+      final result = await ref.read(seedDataServiceProvider).seedDemoData();
       state = AsyncValue.data(result);
       return result;
     } catch (e, st) {
@@ -30,4 +30,3 @@ class SeedDataNotifier extends StateNotifier<AsyncValue<SeedResult?>> {
     }
   }
 }
-

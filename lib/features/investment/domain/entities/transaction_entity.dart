@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 /// Cash Flow Type - direction of money
 enum CashFlowType {
-  invest,  // Cash going out (negative for XIRR)
-  returnFlow,  // Cash coming back from exit/sale (positive for XIRR)
-  income,  // Dividends, interest, rent (positive for XIRR)
-  fee;     // Fees, expenses (negative for XIRR)
+  invest, // Cash going out (negative for XIRR)
+  returnFlow, // Cash coming back from exit/sale (positive for XIRR)
+  income, // Dividends, interest, rent (positive for XIRR)
+  fee; // Fees, expenses (negative for XIRR)
 
   String get displayName {
     switch (this) {
@@ -78,7 +78,8 @@ enum CashFlowType {
   bool get isOutflow => this == CashFlowType.invest || this == CashFlowType.fee;
 
   /// Returns true if this is a cash inflow (money coming back)
-  bool get isInflow => this == CashFlowType.returnFlow || this == CashFlowType.income;
+  bool get isInflow =>
+      this == CashFlowType.returnFlow || this == CashFlowType.income;
 
   static CashFlowType fromString(String value) {
     switch (value.toUpperCase()) {

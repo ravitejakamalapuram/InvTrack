@@ -26,7 +26,7 @@ This is a quick reference for immediate priorities. The full product roadmap con
 ### P1 - High (Next 4 Weeks)
 
 - [ ] **AI Document Parser** - Upload PDF/Excel → auto-extract data
-- [ ] **Smart Notifications** - Maturity reminders, income alerts
+- [x] **Smart Notifications** - ✅ Complete (11 notification types - see docs/NOTIFICATIONS_KT.md)
 - [ ] **App Store Submission** - iOS + Android
 
 ---

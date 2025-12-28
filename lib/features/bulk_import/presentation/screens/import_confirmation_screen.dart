@@ -25,10 +25,12 @@ class ImportConfirmationScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ImportConfirmationScreen> createState() => _ImportConfirmationScreenState();
+  ConsumerState<ImportConfirmationScreen> createState() =>
+      _ImportConfirmationScreenState();
 }
 
-class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScreen> {
+class _ImportConfirmationScreenState
+    extends ConsumerState<ImportConfirmationScreen> {
   bool _isImporting = false;
   final _dateFormat = DateFormat('MMM d, yyyy');
 
@@ -67,26 +69,30 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
         final investmentId = uuid.v4();
 
         // Create investment entity
-        investments.add(InvestmentEntity(
-          id: investmentId,
-          name: investmentName,
-          type: InvestmentType.other,
-          status: InvestmentStatus.open,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        investments.add(
+          InvestmentEntity(
+            id: investmentId,
+            name: investmentName,
+            type: InvestmentType.other,
+            status: InvestmentStatus.open,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
         // Create all cash flow entities for this investment
         for (final row in rows) {
-          cashFlows.add(CashFlowEntity(
-            id: uuid.v4(),
-            investmentId: investmentId,
-            type: row.type,
-            amount: row.amount,
-            date: row.date,
-            notes: row.notes,
-            createdAt: now,
-          ));
+          cashFlows.add(
+            CashFlowEntity(
+              id: uuid.v4(),
+              investmentId: investmentId,
+              type: row.type,
+              amount: row.amount,
+              date: row.date,
+              notes: row.notes,
+              createdAt: now,
+            ),
+          );
         }
       }
 
@@ -97,10 +103,12 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
       );
 
       // Track successful import
-      ref.read(analyticsServiceProvider).logCsvImportCompleted(
-        rowCount: widget.parseResult.validRows,
-        successCount: result.investments,
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logCsvImportCompleted(
+            rowCount: widget.parseResult.validRows,
+            successCount: result.investments,
+          );
 
       if (mounted) {
         AppFeedback.showSuccess(
@@ -125,10 +133,7 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
     final currencyFormat = ref.watch(currencyFormatProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Confirm Import'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Confirm Import'), centerTitle: true),
       body: Column(
         children: [
           // Summary header
@@ -185,7 +190,12 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
     );
   }
 
-  Widget _buildInvestmentCard(String name, List<ParsedCashFlowRow> rows, bool isDark, NumberFormat currencyFormat) {
+  Widget _buildInvestmentCard(
+    String name,
+    List<ParsedCashFlowRow> rows,
+    bool isDark,
+    NumberFormat currencyFormat,
+  ) {
     double totalInvested = 0;
     double totalIncome = 0;
     double totalReturned = 0;
@@ -208,42 +218,74 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
     return GlassCard(
       child: ExpansionTile(
         title: Text(name, style: AppTypography.h4),
-        subtitle: Text('${rows.length} cash flows', style: AppTypography.caption),
+        subtitle: Text(
+          '${rows.length} cash flows',
+          style: AppTypography.caption,
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildSummaryItem('Invested', totalInvested, Colors.red, currencyFormat),
-                _buildSummaryItem('Income', totalIncome, Colors.green, currencyFormat),
-                _buildSummaryItem('Returned', totalReturned, Colors.blue, currencyFormat),
+                _buildSummaryItem(
+                  'Invested',
+                  totalInvested,
+                  Colors.red,
+                  currencyFormat,
+                ),
+                _buildSummaryItem(
+                  'Income',
+                  totalIncome,
+                  Colors.green,
+                  currencyFormat,
+                ),
+                _buildSummaryItem(
+                  'Returned',
+                  totalReturned,
+                  Colors.blue,
+                  currencyFormat,
+                ),
               ],
             ),
           ),
           const Divider(),
-          ...rows.map((row) => ListTile(
-                dense: true,
-                leading: _buildTypeChip(row.type),
-                title: Text(_dateFormat.format(row.date)),
-                trailing: Text(
-                  currencyFormat.format(row.amount),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: row.type == CashFlowType.invest || row.type == CashFlowType.fee ? Colors.red : Colors.green,
-                  ),
+          ...rows.map(
+            (row) => ListTile(
+              dense: true,
+              leading: _buildTypeChip(row.type),
+              title: Text(_dateFormat.format(row.date)),
+              trailing: Text(
+                currencyFormat.format(row.amount),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color:
+                      row.type == CashFlowType.invest ||
+                          row.type == CashFlowType.fee
+                      ? Colors.red
+                      : Colors.green,
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryItem(String label, double amount, Color color, NumberFormat currencyFormat) {
+  Widget _buildSummaryItem(
+    String label,
+    double amount,
+    Color color,
+    NumberFormat currencyFormat,
+  ) {
     return Column(
       children: [
         Text(label, style: AppTypography.caption),
-        Text(currencyFormat.format(amount), style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+        Text(
+          currencyFormat.format(amount),
+          style: TextStyle(fontWeight: FontWeight.bold, color: color),
+        ),
       ],
     );
   }
@@ -271,8 +313,18 @@ class _ImportConfirmationScreenState extends ConsumerState<ImportConfirmationScr
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: BorderRadius.circular(4)),
-      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+      decoration: BoxDecoration(
+        color: color.withAlpha(30),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
     );
   }
 }

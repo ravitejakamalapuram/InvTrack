@@ -15,6 +15,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -56,10 +57,38 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+
+            // Enable R8 code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    // Configure ABI splits for smaller APKs when distributing directly
+    // Note: Play Store automatically does this with App Bundles
+    // Only enable for APK builds, not App Bundles (they handle this automatically)
+    splits {
+        abi {
+            // Disable by default - use --split-per-abi flag when building APKs
+            // This avoids conflicts with App Bundle builds
+            isEnable = false
+            reset()
+            // Include only ARM architectures (covers 99%+ of devices)
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = true
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

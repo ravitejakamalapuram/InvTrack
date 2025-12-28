@@ -6,8 +6,10 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
@@ -28,6 +30,7 @@ class OverviewScreen extends ConsumerWidget {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'overview_add_investment_fab',
         onPressed: () {
           HapticFeedback.mediumImpact();
           Navigator.push(
@@ -37,7 +40,9 @@ class OverviewScreen extends ConsumerWidget {
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Investment'),
-        backgroundColor: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+        backgroundColor: isDark
+            ? AppColors.primaryDark
+            : AppColors.primaryLight,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -64,10 +69,38 @@ class OverviewScreen extends ConsumerWidget {
                 padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
                   data: (stats) => stats.hasData
-                      ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencyFormat, isDark)
-                      : _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
-                  loading: () => _buildLoadingContent(context, ref, globalStats, closedStats, currencyFormat),
-                  error: (_, __) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
+                      ? _buildDataContent(
+                          context,
+                          ref,
+                          globalStats,
+                          openStats,
+                          closedStats,
+                          currencyFormat,
+                          isDark,
+                        )
+                      : _buildEmptyStateContent(
+                          context,
+                          ref,
+                          globalStats,
+                          closedStats,
+                          currencyFormat,
+                          isDark,
+                        ),
+                  loading: () => _buildLoadingContent(
+                    context,
+                    ref,
+                    globalStats,
+                    closedStats,
+                    currencyFormat,
+                  ),
+                  error: (e, s) => _buildEmptyStateContent(
+                    context,
+                    ref,
+                    globalStats,
+                    closedStats,
+                    currencyFormat,
+                    isDark,
+                  ),
                 ),
               ),
             ],
@@ -99,17 +132,29 @@ class OverviewScreen extends ConsumerWidget {
 
         SizedBox(height: AppSpacing.xl),
 
+        // Goals Summary Card
+        const GoalsDashboardCard(),
+
+        SizedBox(height: AppSpacing.xl),
+
         // Quick Stats Grid
         globalStats.when(
           data: (stats) => _buildQuickStats(context, stats, currencyFormat),
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, s) => const SizedBox.shrink(),
         ),
 
         SizedBox(height: AppSpacing.xl),
 
         // Net Position Breakdown (Open vs Closed)
-        _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencyFormat, isDark),
+        _buildNetPositionBreakdown(
+          context,
+          ref,
+          openStats,
+          closedStats,
+          currencyFormat,
+          isDark,
+        ),
 
         SizedBox(height: AppSpacing.xl),
 
@@ -137,7 +182,7 @@ class OverviewScreen extends ConsumerWidget {
         globalStats.when(
           data: (stats) => _buildSummarySection(context, stats),
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, s) => const SizedBox.shrink(),
         ),
 
         // Bottom padding for FAB
@@ -237,10 +282,7 @@ class OverviewScreen extends ConsumerWidget {
               children: [
                 const Text(
                   'Net Position Breakdown',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -261,7 +303,9 @@ class OverviewScreen extends ConsumerWidget {
                         'Closed (Realized)',
                         closed.netCashFlow,
                         currencyFormat,
-                        closed.netCashFlow >= 0 ? AppColors.successLight : AppColors.errorLight,
+                        closed.netCashFlow >= 0
+                            ? AppColors.successLight
+                            : AppColors.errorLight,
                         Icons.check_circle,
                         isDark,
                       ),
@@ -273,10 +317,10 @@ class OverviewScreen extends ConsumerWidget {
           );
         },
         loading: () => const SizedBox.shrink(),
-        error: (_, __) => const SizedBox.shrink(),
+        error: (e, s) => const SizedBox.shrink(),
       ),
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 
@@ -316,8 +360,10 @@ class OverviewScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '${isPositive ? '+' : ''}${currencyFormat.format(value.abs())}',
+          CompactAmountText(
+            amount: value,
+            compactText: currencyFormat.formatCompact(value.abs()),
+            prefix: isPositive ? '+' : '-',
             style: TextStyle(
               color: isPositive ? AppColors.successLight : AppColors.errorLight,
               fontWeight: FontWeight.bold,
@@ -329,9 +375,11 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-
-
-  Widget _buildQuickStats(BuildContext context, InvestmentStats stats, NumberFormat currencyFormat) {
+  Widget _buildQuickStats(
+    BuildContext context,
+    InvestmentStats stats,
+    NumberFormat currencyFormat,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -340,7 +388,9 @@ class OverviewScreen extends ConsumerWidget {
             label: 'MOIC',
             value: '${stats.moic.toStringAsFixed(2)}x',
             color: AppColors.successLight,
-            subtitle: stats.durationFormatted != null ? 'over ${stats.durationFormatted}' : null,
+            subtitle: stats.durationFormatted != null
+                ? 'over ${stats.durationFormatted}'
+                : null,
           ),
         ),
         const SizedBox(width: 12),
@@ -363,10 +413,7 @@ class OverviewScreen extends ConsumerWidget {
         children: [
           const Text(
             'Investment Period',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           const SizedBox(height: 12),
           if (stats.firstCashFlowDate != null && stats.lastCashFlowDate != null)
@@ -386,23 +433,13 @@ class OverviewScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
         const SizedBox(height: 4),
         Text(
           AppDateUtils.formatShort(date),
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
       ],
     );
   }
-
 }

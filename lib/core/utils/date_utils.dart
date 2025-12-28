@@ -53,4 +53,3 @@ class AppDateUtils {
     return DateFormat('MMM').format(date);
   }
 }
-

@@ -8,7 +8,9 @@ import 'package:local_auth/local_auth.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 // Dependencies
-final flutterSecureStorageProvider = Provider((ref) => const FlutterSecureStorage());
+final flutterSecureStorageProvider = Provider(
+  (ref) => const FlutterSecureStorage(),
+);
 final localAuthProvider = Provider((ref) => LocalAuthentication());
 // sharedPreferencesProvider is imported from settings_provider.dart
 
@@ -49,22 +51,23 @@ class SecurityState {
   }
 }
 
-class SecurityNotifier extends StateNotifier<SecurityState> with WidgetsBindingObserver {
-  final SecurityService _service;
+class SecurityNotifier extends Notifier<SecurityState>
+    with WidgetsBindingObserver {
   DateTime? _lastPausedTime;
   Timer? _lockTimer;
 
-  SecurityNotifier(this._service) : super(const SecurityState()) {
-    _init();
+  @override
+  SecurityState build() {
     WidgetsBinding.instance.addObserver(this);
+    ref.onDispose(() {
+      WidgetsBinding.instance.removeObserver(this);
+      _lockTimer?.cancel();
+    });
+    _init();
+    return const SecurityState();
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _lockTimer?.cancel();
-    super.dispose();
-  }
+  SecurityService get _service => ref.read(securityServiceProvider);
 
   Future<void> _init() async {
     try {
@@ -107,7 +110,7 @@ class SecurityNotifier extends StateNotifier<SecurityState> with WidgetsBindingO
     if (_lastPausedTime != null) {
       final duration = DateTime.now().difference(_lastPausedTime!);
       final autoLockSeconds = _service.autoLockDurationSeconds;
-      
+
       if (duration.inSeconds >= autoLockSeconds) {
         lockApp();
       }
@@ -128,7 +131,7 @@ class SecurityNotifier extends StateNotifier<SecurityState> with WidgetsBindingO
 
   Future<bool> unlockWithBiometrics() async {
     if (!state.isBiometricEnabled) return false;
-    
+
     final isAuthenticated = await _service.authenticateWithBiometrics();
     if (isAuthenticated) {
       state = state.copyWith(isLocked: false);
@@ -143,7 +146,11 @@ class SecurityNotifier extends StateNotifier<SecurityState> with WidgetsBindingO
 
   Future<void> removePin() async {
     await _service.removePin();
-    state = state.copyWith(hasPin: false, isLocked: false, isBiometricEnabled: false);
+    state = state.copyWith(
+      hasPin: false,
+      isLocked: false,
+      isBiometricEnabled: false,
+    );
   }
 
   Future<void> toggleBiometrics(bool enabled) async {
@@ -161,6 +168,6 @@ class SecurityNotifier extends StateNotifier<SecurityState> with WidgetsBindingO
   }
 }
 
-final securityProvider = StateNotifierProvider<SecurityNotifier, SecurityState>((ref) {
-  return SecurityNotifier(ref.watch(securityServiceProvider));
-});
+final securityProvider = NotifierProvider<SecurityNotifier, SecurityState>(
+  SecurityNotifier.new,
+);

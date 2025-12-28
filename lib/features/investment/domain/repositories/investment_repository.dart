@@ -2,19 +2,24 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// Repository for Cash Flow Investment Tracker
+///
+/// Active and archived data are stored in separate collections for complete isolation.
+/// This ensures archived investments can never accidentally be included in calculations.
 abstract class InvestmentRepository {
-  // ============ INVESTMENTS ============
+  // ============ ACTIVE INVESTMENTS ============
 
-  /// Watch all investments (reactive stream)
+  /// Watch all active (non-archived) investments (reactive stream)
   Stream<List<InvestmentEntity>> watchAllInvestments();
 
-  /// Watch investments by status
-  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(InvestmentStatus status);
+  /// Watch investments by status (active only)
+  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(
+    InvestmentStatus status,
+  );
 
-  /// Get all investments
+  /// Get all active investments
   Future<List<InvestmentEntity>> getAllInvestments();
 
-  /// Get investment by ID
+  /// Get investment by ID (searches active first, then archived)
   Future<InvestmentEntity?> getInvestmentById(String id);
 
   /// Create a new investment
@@ -29,21 +34,38 @@ abstract class InvestmentRepository {
   /// Reopen a closed investment
   Future<void> reopenInvestment(String id);
 
-  /// Delete an investment and all its cash flows
+  /// Archive an investment (moves to archived collection)
+  Future<void> archiveInvestment(String id);
+
+  /// Unarchive an investment (moves back to active collection)
+  Future<void> unarchiveInvestment(String id);
+
+  /// Delete an investment and all its cash flows permanently
   Future<void> deleteInvestment(String id);
 
-  // ============ CASH FLOWS ============
+  // ============ ARCHIVED INVESTMENTS ============
 
-  /// Watch all cash flows (reactive stream for global stats)
+  /// Watch all archived investments (reactive stream)
+  Stream<List<InvestmentEntity>> watchArchivedInvestments();
+
+  /// Get archived investment by ID
+  Future<InvestmentEntity?> getArchivedInvestmentById(String id);
+
+  /// Delete an archived investment permanently
+  Future<void> deleteArchivedInvestment(String id);
+
+  // ============ ACTIVE CASH FLOWS ============
+
+  /// Watch all active cash flows (reactive stream for global stats)
   Stream<List<CashFlowEntity>> watchAllCashFlows();
 
-  /// Watch cash flows for an investment (reactive stream)
+  /// Watch cash flows for an active investment (reactive stream)
   Stream<List<CashFlowEntity>> watchCashFlowsByInvestment(String investmentId);
 
-  /// Get cash flows for an investment
+  /// Get cash flows for an active investment
   Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId);
 
-  /// Get all cash flows across all investments
+  /// Get all active cash flows across all investments
   Future<List<CashFlowEntity>> getAllCashFlows();
 
   /// Add a new cash flow
@@ -54,6 +76,18 @@ abstract class InvestmentRepository {
 
   /// Delete a cash flow
   Future<void> deleteCashFlow(String id);
+
+  // ============ ARCHIVED CASH FLOWS ============
+
+  /// Watch archived cash flows for an archived investment
+  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(
+    String investmentId,
+  );
+
+  /// Get archived cash flows for an archived investment
+  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(
+    String investmentId,
+  );
 
   // ============ BULK OPERATIONS ============
 

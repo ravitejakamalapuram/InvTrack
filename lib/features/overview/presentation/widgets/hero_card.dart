@@ -6,11 +6,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/number_format_utils.dart';
+import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 
-/// Provider for toggling between all and realized-only net position
-final showRealizedOnlyProvider = StateProvider<bool>((ref) => false);
+/// Notifier for toggling between all and realized-only net position
+class ShowRealizedOnlyNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+  void set(bool value) => state = value;
+}
+
+final showRealizedOnlyProvider =
+    NotifierProvider<ShowRealizedOnlyNotifier, bool>(
+      ShowRealizedOnlyNotifier.new,
+    );
 
 /// Hero card with toggle for showing all vs realized-only stats.
 class HeroCardWithToggle extends ConsumerWidget {
@@ -41,7 +55,7 @@ class HeroCardWithToggle extends ConsumerWidget {
           currencyFormat: currencyFormat,
           showRealizedOnly: showRealizedOnly,
         ),
-        error: (_, __) => HeroCardContent(
+        error: (e, s) => HeroCardContent(
           globalStats: global,
           closedStats: global,
           currencyFormat: currencyFormat,
@@ -80,8 +94,13 @@ class HeroCardContent extends ConsumerWidget {
     final isPositive = netPosition >= 0;
 
     final semanticLabel = AccessibilityUtils.statCardLabel(
-      title: showRealizedOnly ? 'Realized Net Position' : 'Net Position All Investments',
-      value: AccessibilityUtils.formatCurrencyForScreenReader(netPosition, currencyFormat.currencySymbol),
+      title: showRealizedOnly
+          ? 'Realized Net Position'
+          : 'Net Position All Investments',
+      value: AccessibilityUtils.formatCurrencyForScreenReader(
+        netPosition,
+        currencyFormat.currencySymbol,
+      ),
       subtitle: stats.hasData
           ? 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}'
           : null,
@@ -135,7 +154,7 @@ class HeroCardContent extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        ref.read(showRealizedOnlyProvider.notifier).state = !showRealizedOnly;
+        ref.read(showRealizedOnlyProvider.notifier).toggle();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -170,14 +189,20 @@ class HeroCardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildValueRow(double netPosition, bool isPositive, InvestmentStats stats) {
+  Widget _buildValueRow(
+    double netPosition,
+    bool isPositive,
+    InvestmentStats stats,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
         Flexible(
-          child: Text(
-            currencyFormat.format(netPosition),
+          child: CompactAmountText(
+            amount: netPosition,
+            compactText: currencyFormat.formatSmart(netPosition),
+            currencySymbol: currencyFormat.currencySymbol,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -217,14 +242,16 @@ class HeroCardContent extends ConsumerWidget {
         // Cash Out with up arrow
         _buildCashFlowStat(
           icon: Icons.arrow_upward_rounded,
-          value: currencyFormat.format(stats.totalInvested),
+          amount: stats.totalInvested,
+          value: currencyFormat.formatCompact(stats.totalInvested),
           label: 'out',
         ),
         const SizedBox(width: 16),
         // Cash In with down arrow
         _buildCashFlowStat(
           icon: Icons.arrow_downward_rounded,
-          value: currencyFormat.format(stats.totalReturned),
+          amount: stats.totalReturned,
+          value: currencyFormat.formatCompact(stats.totalReturned),
           label: 'in',
         ),
         const Spacer(),
@@ -241,7 +268,7 @@ class HeroCardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '${(stats.xirr * 100).toStringAsFixed(1)}%',
+              formatXirr(stats.xirr, showSign: false) ?? '0.0%',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -256,20 +283,19 @@ class HeroCardContent extends ConsumerWidget {
 
   Widget _buildCashFlowStat({
     required IconData icon,
+    required double amount,
     required String value,
     required String label,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: Colors.white.withValues(alpha: 0.8),
-          size: 14,
-        ),
+        Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 14),
         const SizedBox(width: 4),
-        Text(
-          value,
+        CompactAmountText(
+          amount: amount,
+          compactText: value,
+          currencySymbol: currencyFormat.currencySymbol,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14,
@@ -321,4 +347,3 @@ class LoadingHeroCard extends StatelessWidget {
     );
   }
 }
-

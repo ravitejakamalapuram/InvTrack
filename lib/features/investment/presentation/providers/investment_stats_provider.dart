@@ -15,19 +15,21 @@ export 'package:inv_tracker/features/investment/domain/entities/investment_stats
 /// Calculate stats for a single investment (reactive - watches the stream)
 final investmentStatsProvider =
     Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
-  final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(investmentId));
+      final cashFlowsAsync = ref.watch(
+        cashFlowsByInvestmentProvider(investmentId),
+      );
 
-  return cashFlowsAsync.when(
-    data: (cashFlows) {
-      if (cashFlows.isEmpty) {
-        return AsyncValue.data(InvestmentStats.empty());
-      }
-      return AsyncValue.data(calculateStats(cashFlows));
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          if (cashFlows.isEmpty) {
+            return AsyncValue.data(InvestmentStats.empty());
+          }
+          return AsyncValue.data(calculateStats(cashFlows));
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    });
 
 // ============ AGGREGATE STATS PROVIDERS ============
 
@@ -48,8 +50,11 @@ final globalStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
 });
 
 /// Stats for closed investments only (derived from streams - auto-updates)
-final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+/// Only includes non-archived investments.
+final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
+  ref,
+) {
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return investmentsAsync.when(
@@ -83,8 +88,11 @@ final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((re
 });
 
 /// Stats for open investments only (derived from streams - auto-updates)
-final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
+/// Only includes non-archived investments.
+final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
+  ref,
+) {
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   return investmentsAsync.when(
@@ -133,8 +141,14 @@ InvestmentStats calculateStats(List<CashFlowEntity> cashFlows) {
   // Use FinancialCalculator for all calculations
   final totalInvested = FinancialCalculator.calculateTotalInvested(cashFlows);
   final totalReturned = FinancialCalculator.calculateTotalReturned(cashFlows);
-  final netCashFlow = FinancialCalculator.calculateNetCashFlow(totalInvested, totalReturned);
-  final absoluteReturn = FinancialCalculator.calculateAbsoluteReturn(totalInvested, totalReturned);
+  final netCashFlow = FinancialCalculator.calculateNetCashFlow(
+    totalInvested,
+    totalReturned,
+  );
+  final absoluteReturn = FinancialCalculator.calculateAbsoluteReturn(
+    totalInvested,
+    totalReturned,
+  );
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
   final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
 
@@ -150,4 +164,3 @@ InvestmentStats calculateStats(List<CashFlowEntity> cashFlows) {
     lastCashFlowDate: sorted.last.date,
   );
 }
-

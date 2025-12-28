@@ -5,16 +5,12 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 class HomeShellScreen extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
-  const HomeShellScreen({
-    super.key,
-    required this.navigationShell,
-  });
+  const HomeShellScreen({super.key, required this.navigationShell});
 
   void _goBranch(int index) {
-    navigationShell.goBranch(
-      index,
-      initialLocation: index == navigationShell.currentIndex,
-    );
+    // Always navigate to the root (first page) of the tab
+    // When re-tapping same tab OR switching to a different tab
+    navigationShell.goBranch(index, initialLocation: true);
   }
 
   @override
@@ -38,13 +34,20 @@ class HomeShellScreen extends StatelessWidget {
             label: 'Investments',
           ),
           NavigationDestination(
+            icon: Icon(Icons.flag_outlined),
+            selectedIcon: Icon(Icons.flag),
+            label: 'Goals',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
         backgroundColor: isDark ? AppColors.surfaceDark : AppColors.whiteLight,
-        indicatorColor: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.15),
+        indicatorColor:
+            (isDark ? AppColors.primaryDark : AppColors.primaryLight)
+                .withValues(alpha: 0.15),
         surfaceTintColor: Colors.transparent,
       ),
     );

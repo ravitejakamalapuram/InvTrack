@@ -74,7 +74,10 @@ class ErrorHandler {
   ) {
     switch (error.code) {
       case 'unavailable':
-        return NetworkException.noConnection(cause: error, stackTrace: stackTrace);
+        return NetworkException.noConnection(
+          cause: error,
+          stackTrace: stackTrace,
+        );
       case 'deadline-exceeded':
         return NetworkException.timeout(cause: error, stackTrace: stackTrace);
       case 'permission-denied':
@@ -139,4 +142,3 @@ class ErrorHandler {
     return appException;
   }
 }
-

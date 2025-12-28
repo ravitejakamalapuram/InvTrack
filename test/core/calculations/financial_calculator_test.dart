@@ -7,10 +7,7 @@ void main() {
   group('XirrSolver', () {
     test('should calculate XIRR correctly for simple case', () {
       // -1000 investment, 1100 return after 1 year -> 10% return
-      final dates = [
-        DateTime(2023, 1, 1),
-        DateTime(2024, 1, 1),
-      ];
+      final dates = [DateTime(2023, 1, 1), DateTime(2024, 1, 1)];
       final amounts = [-1000.0, 1100.0];
 
       final xirr = XirrSolver.calculateXirr(dates, amounts);

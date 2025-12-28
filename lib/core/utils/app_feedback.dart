@@ -18,7 +18,9 @@ class AppFeedback {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+        backgroundColor: isDark
+            ? AppColors.successDark
+            : AppColors.successLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -60,7 +62,9 @@ class AppFeedback {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+        backgroundColor: isDark
+            ? AppColors.primaryDark
+            : AppColors.primaryLight,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -78,11 +82,13 @@ class AppFeedback {
     bool isDestructive = true,
   }) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           title,
@@ -93,7 +99,9 @@ class AppFeedback {
         content: Text(
           message,
           style: AppTypography.body.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
         ),
         actions: [
@@ -102,7 +110,9 @@ class AppFeedback {
             child: Text(
               cancelText,
               style: AppTypography.body.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
           ),
@@ -114,7 +124,9 @@ class AppFeedback {
             child: Text(
               confirmText,
               style: AppTypography.body.copyWith(
-                color: isDestructive ? AppColors.errorLight : AppColors.primaryLight,
+                color: isDestructive
+                    ? AppColors.errorLight
+                    : AppColors.primaryLight,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -122,8 +134,7 @@ class AppFeedback {
         ],
       ),
     );
-    
+
     return confirmed ?? false;
   }
 }
-

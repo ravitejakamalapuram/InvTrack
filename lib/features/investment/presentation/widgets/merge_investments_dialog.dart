@@ -84,8 +84,9 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
             const SizedBox(height: 16),
             Text(
               'Investment Type',
-              style:
-                  AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (hasMultipleTypes) ...[
               const SizedBox(height: 4),
@@ -113,10 +114,7 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
           onPressed: () => Navigator.of(context).pop(null),
           child: const Text('Cancel'),
         ),
-        TextButton(
-          onPressed: _onMergePressed,
-          child: const Text('Merge'),
-        ),
+        TextButton(onPressed: _onMergePressed, child: const Text('Merge')),
       ],
     );
   }
@@ -154,8 +152,8 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
                   color: isSelected
                       ? type.color
                       : (isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light),
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -164,9 +162,11 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
                     color: isSelected
                         ? type.color
                         : (isDark
-                            ? AppColors.neutral300Dark
-                            : AppColors.neutral600Light),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              ? AppColors.neutral300Dark
+                              : AppColors.neutral600Light),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
                 if (isFromSelection) ...[
@@ -187,10 +187,9 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
 
   void _onMergePressed() {
     if (_nameController.text.trim().isNotEmpty) {
-      Navigator.of(context).pop(
-        (name: _nameController.text.trim(), type: _selectedType),
-      );
+      Navigator.of(
+        context,
+      ).pop((name: _nameController.text.trim(), type: _selectedType));
     }
   }
 }
-

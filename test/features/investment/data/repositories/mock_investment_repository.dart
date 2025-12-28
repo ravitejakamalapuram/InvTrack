@@ -8,29 +8,54 @@ class MockInvestmentRepository extends Mock implements InvestmentRepository {}
 
 /// Fake implementation of InvestmentRepository for testing.
 /// Maintains in-memory state for integration-style tests.
+/// Implements separate collections for active and archived data.
 class FakeInvestmentRepository implements InvestmentRepository {
   final List<InvestmentEntity> _investments = [];
   final List<CashFlowEntity> _cashFlows = [];
+  final List<InvestmentEntity> _archivedInvestments = [];
+  final List<CashFlowEntity> _archivedCashFlows = [];
 
-  /// Access investments for test assertions
+  /// Access active investments for test assertions
   List<InvestmentEntity> get investments => List.unmodifiable(_investments);
 
-  /// Access cash flows for test assertions
+  /// Access active cash flows for test assertions
   List<CashFlowEntity> get cashFlows => List.unmodifiable(_cashFlows);
+
+  /// Access archived investments for test assertions
+  List<InvestmentEntity> get archivedInvestments =>
+      List.unmodifiable(_archivedInvestments);
+
+  /// Access archived cash flows for test assertions
+  List<CashFlowEntity> get archivedCashFlows =>
+      List.unmodifiable(_archivedCashFlows);
 
   /// Reset state between tests
   void reset() {
     _investments.clear();
     _cashFlows.clear();
+    _archivedInvestments.clear();
+    _archivedCashFlows.clear();
   }
 
   /// Seed with test data
   void seed({
     List<InvestmentEntity>? investments,
     List<CashFlowEntity>? cashFlows,
+    List<InvestmentEntity>? archivedInvestments,
+    List<CashFlowEntity>? archivedCashFlows,
   }) {
-    if (investments != null) _investments.addAll(investments);
-    if (cashFlows != null) _cashFlows.addAll(cashFlows);
+    if (investments != null) {
+      _investments.addAll(investments);
+    }
+    if (cashFlows != null) {
+      _cashFlows.addAll(cashFlows);
+    }
+    if (archivedInvestments != null) {
+      _archivedInvestments.addAll(archivedInvestments);
+    }
+    if (archivedCashFlows != null) {
+      _archivedCashFlows.addAll(archivedCashFlows);
+    }
   }
 
   // ============ INVESTMENTS ============
@@ -41,10 +66,10 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(InvestmentStatus status) {
-    return Stream.value(
-      _investments.where((i) => i.status == status).toList(),
-    );
+  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(
+    InvestmentStatus status,
+  ) {
+    return Stream.value(_investments.where((i) => i.status == status).toList());
   }
 
   @override
@@ -54,10 +79,17 @@ class FakeInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<InvestmentEntity?> getInvestmentById(String id) async {
-    return _investments.cast<InvestmentEntity?>().firstWhere(
-          (i) => i?.id == id,
-          orElse: () => null,
-        );
+    // Search active first
+    final active = _investments.cast<InvestmentEntity?>().firstWhere(
+      (i) => i?.id == id,
+      orElse: () => null,
+    );
+    if (active != null) return active;
+    // Fall back to archived
+    return _archivedInvestments.cast<InvestmentEntity?>().firstWhere(
+      (i) => i?.id == id,
+      orElse: () => null,
+    );
   }
 
   @override
@@ -105,12 +137,65 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Future<void> archiveInvestment(String id) async {
+    final index = _investments.indexWhere((i) => i.id == id);
+    if (index >= 0) {
+      final inv = _investments.removeAt(index);
+      _archivedInvestments.add(inv.copyWith(isArchived: true));
+      // Move cash flows
+      final cfs = _cashFlows.where((cf) => cf.investmentId == id).toList();
+      for (final cf in cfs) {
+        _cashFlows.remove(cf);
+        _archivedCashFlows.add(cf);
+      }
+    }
+  }
+
+  @override
+  Future<void> unarchiveInvestment(String id) async {
+    final index = _archivedInvestments.indexWhere((i) => i.id == id);
+    if (index >= 0) {
+      final inv = _archivedInvestments.removeAt(index);
+      _investments.add(inv.copyWith(isArchived: false));
+      // Move cash flows back
+      final cfs = _archivedCashFlows
+          .where((cf) => cf.investmentId == id)
+          .toList();
+      for (final cf in cfs) {
+        _archivedCashFlows.remove(cf);
+        _cashFlows.add(cf);
+      }
+    }
+  }
+
+  @override
   Future<void> deleteInvestment(String id) async {
     _investments.removeWhere((i) => i.id == id);
     _cashFlows.removeWhere((cf) => cf.investmentId == id);
   }
 
-  // ============ CASH FLOWS ============
+  // ============ ARCHIVED INVESTMENTS ============
+
+  @override
+  Stream<List<InvestmentEntity>> watchArchivedInvestments() {
+    return Stream.value(List.from(_archivedInvestments));
+  }
+
+  @override
+  Future<InvestmentEntity?> getArchivedInvestmentById(String id) async {
+    return _archivedInvestments.cast<InvestmentEntity?>().firstWhere(
+      (i) => i?.id == id,
+      orElse: () => null,
+    );
+  }
+
+  @override
+  Future<void> deleteArchivedInvestment(String id) async {
+    _archivedInvestments.removeWhere((i) => i.id == id);
+    _archivedCashFlows.removeWhere((cf) => cf.investmentId == id);
+  }
+
+  // ============ ACTIVE CASH FLOWS ============
 
   @override
   Stream<List<CashFlowEntity>> watchAllCashFlows() {
@@ -125,7 +210,9 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId) async {
+  Future<List<CashFlowEntity>> getCashFlowsByInvestment(
+    String investmentId,
+  ) async {
     return _cashFlows.where((cf) => cf.investmentId == investmentId).toList();
   }
 
@@ -152,6 +239,28 @@ class FakeInvestmentRepository implements InvestmentRepository {
     _cashFlows.removeWhere((cf) => cf.id == id);
   }
 
+  // ============ ARCHIVED CASH FLOWS ============
+
+  @override
+  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(
+    String investmentId,
+  ) {
+    return Stream.value(
+      _archivedCashFlows
+          .where((cf) => cf.investmentId == investmentId)
+          .toList(),
+    );
+  }
+
+  @override
+  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(
+    String investmentId,
+  ) async {
+    return _archivedCashFlows
+        .where((cf) => cf.investmentId == investmentId)
+        .toList();
+  }
+
   // ============ BULK OPERATIONS ============
 
   @override
@@ -174,4 +283,3 @@ class FakeInvestmentRepository implements InvestmentRepository {
     return count;
   }
 }
-

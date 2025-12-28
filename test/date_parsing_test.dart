@@ -38,8 +38,11 @@ void main() {
       final csv = 'Date,Investment Name,Type,Amount\nSept-25,Test,INVEST,1000';
       final result = SimpleCsvParser.parseString(csv);
 
-      expect(result.errors, isEmpty,
-          reason: 'Sept-25 should parse without errors');
+      expect(
+        result.errors,
+        isEmpty,
+        reason: 'Sept-25 should parse without errors',
+      );
       expect(result.rows.first.date.month, 9);
       expect(result.rows.first.date.year, 2025);
     });
@@ -65,8 +68,7 @@ void main() {
     });
 
     test('handles invalid date gracefully', () {
-      final csv =
-          'Date,Investment Name,Type,Amount\nNotADate,Test,INVEST,1000';
+      final csv = 'Date,Investment Name,Type,Amount\nNotADate,Test,INVEST,1000';
       final result = SimpleCsvParser.parseString(csv);
 
       // Should either produce an error or skip the row

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 /// A mixin that provides common screen entry animations.
-/// 
+///
 /// Features:
 /// - Fade in animation
 /// - Slide up animation
 /// - Configurable duration and curve
-/// 
+///
 /// Usage:
 /// ```dart
 /// class _MyScreenState extends State<MyScreen>
@@ -16,13 +16,13 @@ import 'package:flutter/material.dart';
 ///     super.initState();
 ///     initScreenAnimation(); // Call this after super.initState()
 ///   }
-///   
+///
 ///   @override
 ///   void dispose() {
 ///     disposeScreenAnimation(); // Call this before super.dispose()
 ///     super.dispose();
 ///   }
-///   
+///
 ///   @override
 ///   Widget build(BuildContext context) {
 ///     return FadeTransition(
@@ -35,13 +35,14 @@ import 'package:flutter/material.dart';
 ///   }
 /// }
 /// ```
-mixin ScreenAnimationMixin<T extends StatefulWidget> on State<T>, TickerProviderStateMixin<T> {
+mixin ScreenAnimationMixin<T extends StatefulWidget>
+    on State<T>, TickerProviderStateMixin<T> {
   late AnimationController screenAnimationController;
   late Animation<double> fadeAnimation;
   late Animation<Offset> slideAnimation;
 
   /// Initialize the screen entry animations.
-  /// 
+  ///
   /// Call this in [initState] after [super.initState()].
   void initScreenAnimation({
     Duration duration = const Duration(milliseconds: 400),
@@ -60,13 +61,9 @@ mixin ScreenAnimationMixin<T extends StatefulWidget> on State<T>, TickerProvider
       curve: fadeCurve,
     );
 
-    slideAnimation = Tween<Offset>(
-      begin: slideBegin,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: screenAnimationController,
-      curve: slideCurve,
-    ));
+    slideAnimation = Tween<Offset>(begin: slideBegin, end: Offset.zero).animate(
+      CurvedAnimation(parent: screenAnimationController, curve: slideCurve),
+    );
 
     if (autoForward) {
       screenAnimationController.forward();
@@ -74,7 +71,7 @@ mixin ScreenAnimationMixin<T extends StatefulWidget> on State<T>, TickerProvider
   }
 
   /// Dispose the animation controller.
-  /// 
+  ///
   /// Call this in [dispose] before [super.dispose()].
   void disposeScreenAnimation() {
     screenAnimationController.dispose();
@@ -84,16 +81,14 @@ mixin ScreenAnimationMixin<T extends StatefulWidget> on State<T>, TickerProvider
   Widget buildAnimatedContent({required Widget child}) {
     return FadeTransition(
       opacity: fadeAnimation,
-      child: SlideTransition(
-        position: slideAnimation,
-        child: child,
-      ),
+      child: SlideTransition(position: slideAnimation, child: child),
     );
   }
 }
 
 /// A simpler mixin for screens using SingleTickerProviderStateMixin
-mixin SingleTickerScreenAnimationMixin<T extends StatefulWidget> on State<T>, SingleTickerProviderStateMixin<T> {
+mixin SingleTickerScreenAnimationMixin<T extends StatefulWidget>
+    on State<T>, SingleTickerProviderStateMixin<T> {
   late AnimationController screenAnimationController;
   late Animation<double> fadeAnimation;
   late Animation<Offset> slideAnimation;
@@ -116,13 +111,9 @@ mixin SingleTickerScreenAnimationMixin<T extends StatefulWidget> on State<T>, Si
       curve: fadeCurve,
     );
 
-    slideAnimation = Tween<Offset>(
-      begin: slideBegin,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: screenAnimationController,
-      curve: slideCurve,
-    ));
+    slideAnimation = Tween<Offset>(begin: slideBegin, end: Offset.zero).animate(
+      CurvedAnimation(parent: screenAnimationController, curve: slideCurve),
+    );
 
     if (autoForward) {
       screenAnimationController.forward();
@@ -138,11 +129,7 @@ mixin SingleTickerScreenAnimationMixin<T extends StatefulWidget> on State<T>, Si
   Widget buildAnimatedContent({required Widget child}) {
     return FadeTransition(
       opacity: fadeAnimation,
-      child: SlideTransition(
-        position: slideAnimation,
-        child: child,
-      ),
+      child: SlideTransition(position: slideAnimation, child: child),
     );
   }
 }
-

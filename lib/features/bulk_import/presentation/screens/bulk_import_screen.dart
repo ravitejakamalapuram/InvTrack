@@ -118,10 +118,16 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                       Icon(
                         Icons.upload_file_rounded,
                         size: 48,
-                        color: isDark ? AppColors.accentDark : AppColors.accentLight,
+                        color: isDark
+                            ? AppColors.accentDark
+                            : AppColors.accentLight,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Text('Import from CSV', style: AppTypography.h2, textAlign: TextAlign.center),
+                      Text(
+                        'Import from CSV',
+                        style: AppTypography.h2,
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         'Download our template, fill in your data, and upload to import multiple investments at once.',
@@ -179,9 +185,21 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                     children: [
                       Text('Type Values:', style: AppTypography.h4),
                       const SizedBox(height: AppSpacing.sm),
-                      _buildTypeLegend('INVEST', 'Money put into investment', Colors.red),
-                      _buildTypeLegend('INCOME', 'Returns/dividends received', Colors.green),
-                      _buildTypeLegend('RETURN', 'Withdrawal/maturity', Colors.blue),
+                      _buildTypeLegend(
+                        'INVEST',
+                        'Money put into investment',
+                        Colors.red,
+                      ),
+                      _buildTypeLegend(
+                        'INCOME',
+                        'Returns/dividends received',
+                        Colors.green,
+                      ),
+                      _buildTypeLegend(
+                        'RETURN',
+                        'Withdrawal/maturity',
+                        Colors.blue,
+                      ),
                       _buildTypeLegend('FEE', 'Fees paid', Colors.orange),
                     ],
                   ),
@@ -213,8 +231,16 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: isDark ? AppColors.accentDark : AppColors.accentLight,
-                  child: Text('$stepNumber', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  backgroundColor: isDark
+                      ? AppColors.accentDark
+                      : AppColors.accentLight,
+                  child: Text(
+                    '$stepNumber',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -234,7 +260,11 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
               child: ElevatedButton.icon(
                 onPressed: onPressed,
                 icon: isLoading
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : Icon(buttonIcon),
                 label: Text(buttonLabel),
               ),
@@ -258,11 +288,22 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: isDark ? AppColors.accentDark.withAlpha(128) : AppColors.accentLight.withAlpha(128),
-              child: Text('$stepNumber', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontWeight: FontWeight.bold)),
+              backgroundColor: isDark
+                  ? AppColors.accentDark.withAlpha(128)
+                  : AppColors.accentLight.withAlpha(128),
+              child: Text(
+                '$stepNumber',
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(width: AppSpacing.md),
-            Icon(icon, color: isDark ? AppColors.accentDark : AppColors.accentLight),
+            Icon(
+              icon,
+              color: isDark ? AppColors.accentDark : AppColors.accentLight,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
@@ -286,8 +327,18 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: BorderRadius.circular(4)),
-            child: Text(type, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+            decoration: BoxDecoration(
+              color: color.withAlpha(30),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              type,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           Text(desc, style: AppTypography.caption),

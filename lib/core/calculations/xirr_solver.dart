@@ -16,7 +16,9 @@ class XirrSolver {
 
     // Normalize dates to years from the first date
     final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
-    final days = dates.map((d) => d.difference(firstDate).inDays / 365.0).toList();
+    final days = dates
+        .map((d) => d.difference(firstDate).inDays / 365.0)
+        .toList();
 
     // Calculate total inflows and outflows to determine initial guess direction
     double totalInflows = 0;
@@ -31,13 +33,13 @@ class XirrSolver {
 
     // Try Newton-Raphson with multiple initial guesses
     final initialGuesses = <double>[
-      0.1,   // 10% gain
-      -0.1,  // 10% loss
-      0.0,   // break even
-      0.5,   // 50% gain
-      -0.5,  // 50% loss
-      -0.9,  // 90% loss (near total loss)
-      1.0,   // 100% gain
+      0.1, // 10% gain
+      -0.1, // 10% loss
+      0.0, // break even
+      0.5, // 50% gain
+      -0.5, // 50% loss
+      -0.9, // 90% loss (near total loss)
+      1.0, // 100% gain
     ];
 
     // If it looks like a loss, try negative guesses first
@@ -63,7 +65,11 @@ class XirrSolver {
   }
 
   /// Newton-Raphson iteration
-  static double? _newtonRaphson(double x0, List<double> days, List<double> amounts) {
+  static double? _newtonRaphson(
+    double x0,
+    List<double> days,
+    List<double> amounts,
+  ) {
     double x = x0;
 
     for (int i = 0; i < _maxIterations; i++) {
@@ -139,7 +145,10 @@ class XirrSolver {
 
   /// Calculate approximate annualized return when XIRR doesn't converge
   /// This happens when there's a total loss or unusual cash flow patterns
-  static double? _calculateApproximateReturn(List<double> days, List<double> amounts) {
+  static double? _calculateApproximateReturn(
+    List<double> days,
+    List<double> amounts,
+  ) {
     if (days.isEmpty || amounts.isEmpty) return null;
 
     // Calculate total inflows and outflows

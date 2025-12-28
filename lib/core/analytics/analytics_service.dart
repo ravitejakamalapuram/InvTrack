@@ -30,6 +30,16 @@ class AnalyticsEvents {
   static const String csvImportCompleted = 'csv_import_completed';
   static const String exportGenerated = 'export_generated';
 
+  // Goals feature
+  static const String goalCreated = 'goal_created';
+  static const String goalUpdated = 'goal_updated';
+  static const String goalArchived = 'goal_archived';
+  static const String goalDeleted = 'goal_deleted';
+  static const String goalMilestoneReached = 'goal_milestone_reached';
+
+  // Documents feature
+  static const String documentAdded = 'document_added';
+
   // Error tracking
   static const String errorOccurred = 'error_occurred';
 }
@@ -44,10 +54,7 @@ class AnalyticsService {
     Map<String, Object>? parameters,
   }) async {
     try {
-      await _analytics.logEvent(
-        name: name,
-        parameters: parameters,
-      );
+      await _analytics.logEvent(name: name, parameters: parameters);
       if (kDebugMode) {
         debugPrint('📊 Analytics: $name ${parameters ?? ''}');
       }
@@ -122,10 +129,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.investmentCreated,
-      parameters: {
-        'investment_type': investmentType,
-        'has_notes': hasNotes,
-      },
+      parameters: {'investment_type': investmentType, 'has_notes': hasNotes},
     );
   }
 
@@ -136,10 +140,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.cashFlowAdded,
-      parameters: {
-        'flow_type': flowType,
-        'amount_range': amountRange,
-      },
+      parameters: {'flow_type': flowType, 'amount_range': amountRange},
     );
   }
 
@@ -150,10 +151,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.csvImportCompleted,
-      parameters: {
-        'row_count': rowCount,
-        'success_count': successCount,
-      },
+      parameters: {'row_count': rowCount, 'success_count': successCount},
     );
   }
 
@@ -178,5 +176,68 @@ class AnalyticsService {
       },
     );
   }
-}
 
+  /// Log goal created
+  Future<void> logGoalCreated({
+    required String goalType,
+    required String trackingMode,
+    bool hasDeadline = false,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.goalCreated,
+      parameters: {
+        'goal_type': goalType,
+        'tracking_mode': trackingMode,
+        'has_deadline': hasDeadline
+            ? 1
+            : 0, // Firebase Analytics only accepts String or num
+      },
+    );
+  }
+
+  /// Log goal updated
+  Future<void> logGoalUpdated({required String goalId}) async {
+    await logEvent(
+      name: AnalyticsEvents.goalUpdated,
+      parameters: {'goal_id': goalId},
+    );
+  }
+
+  /// Log goal archived
+  Future<void> logGoalArchived({required String goalId}) async {
+    await logEvent(
+      name: AnalyticsEvents.goalArchived,
+      parameters: {'goal_id': goalId},
+    );
+  }
+
+  /// Log goal deleted
+  Future<void> logGoalDeleted({required String goalId}) async {
+    await logEvent(
+      name: AnalyticsEvents.goalDeleted,
+      parameters: {'goal_id': goalId},
+    );
+  }
+
+  /// Log goal milestone reached
+  Future<void> logGoalMilestoneReached({
+    required String goalId,
+    required int milestone,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.goalMilestoneReached,
+      parameters: {'goal_id': goalId, 'milestone': milestone},
+    );
+  }
+
+  /// Track document added
+  void trackDocumentAdded({
+    required String documentType,
+    required String fileType,
+  }) {
+    logEvent(
+      name: AnalyticsEvents.documentAdded,
+      parameters: {'document_type': documentType, 'file_type': fileType},
+    );
+  }
+}

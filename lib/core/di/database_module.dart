@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/investment/data/repositories/firestore_document_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
+import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 
 /// Provider for FirebaseFirestore instance with offline persistence enabled
@@ -22,7 +25,7 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 /// Used by UI to show appropriate prompts without triggering errors
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authStateProvider);
-  final user = authState.valueOrNull;
+  final user = authState.value;
   return user != null;
 });
 
@@ -33,14 +36,38 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
   final authState = ref.watch(authStateProvider);
 
   // Get user ID from auth state
-  final user = authState.valueOrNull;
+  final user = authState.value;
   if (user == null) {
     // Throw a specific exception that UI can catch and handle gracefully
     throw AuthException.notAuthenticated();
   }
 
-  return FirestoreInvestmentRepository(
-    firestore: firestore,
-    userId: user.id,
-  );
+  return FirestoreInvestmentRepository(firestore: firestore, userId: user.id);
+});
+
+/// Provider for the document repository using Firestore
+/// Throws AuthException.notAuthenticated if user is not authenticated
+final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  final authState = ref.watch(authStateProvider);
+
+  final user = authState.value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+
+  return FirestoreDocumentRepository(firestore: firestore, userId: user.id);
+});
+
+/// Provider for the document storage service
+/// Throws AuthException.notAuthenticated if user is not authenticated
+final documentStorageServiceProvider = Provider<DocumentStorageService>((ref) {
+  final authState = ref.watch(authStateProvider);
+
+  final user = authState.value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+
+  return DocumentStorageService(userId: user.id);
 });

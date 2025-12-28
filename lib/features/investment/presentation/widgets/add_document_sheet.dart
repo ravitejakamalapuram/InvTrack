@@ -1,0 +1,389 @@
+/// Bottom sheet for adding a new document to an investment.
+library;
+
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+
+/// Bottom sheet for adding documents via camera, gallery, or file picker
+class AddDocumentSheet extends ConsumerStatefulWidget {
+  final String investmentId;
+
+  const AddDocumentSheet({super.key, required this.investmentId});
+
+  @override
+  ConsumerState<AddDocumentSheet> createState() => _AddDocumentSheetState();
+}
+
+class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
+  final _nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  DocumentType _selectedType = DocumentType.receipt;
+  Uint8List? _selectedBytes;
+  String? _selectedFileName;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.lg,
+        bottom: AppSpacing.lg + bottomPadding,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.2,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.lg),
+
+            // Title
+            Text(
+              'Add Document',
+              style: AppTypography.h2.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            SizedBox(height: AppSpacing.lg),
+
+            // Source selection buttons
+            if (_selectedBytes == null) ...[
+              _buildSourceButtons(isDark),
+            ] else ...[
+              // Preview and form
+              _buildPreviewAndForm(isDark),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceButtons(bool isDark) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _SourceButton(
+                icon: Icons.camera_alt_rounded,
+                label: 'Camera',
+                onTap: _pickFromCamera,
+                isDark: isDark,
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _SourceButton(
+                icon: Icons.photo_library_rounded,
+                label: 'Gallery',
+                onTap: _pickFromGallery,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.md),
+        _SourceButton(
+          icon: Icons.insert_drive_file_rounded,
+          label: 'Choose PDF File',
+          onTap: _pickPdfFile,
+          isDark: isDark,
+          fullWidth: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreviewAndForm(bool isDark) {
+    final isImage =
+        _selectedFileName != null &&
+        DocumentMimeTypes.isImage(_selectedFileName!);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Preview
+        Container(
+          height: 150,
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.05,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: isImage
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(_selectedBytes!, fit: BoxFit.cover),
+                )
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.picture_as_pdf_rounded,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _selectedFileName ?? 'PDF',
+                        style: AppTypography.caption,
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+        SizedBox(height: AppSpacing.md),
+
+        // Name field
+        TextFormField(
+          controller: _nameController,
+          decoration: InputDecoration(
+            labelText: 'Document Name',
+            hintText: 'e.g., Purchase Receipt',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter a name';
+            }
+            if (value.length > 100) {
+              return 'Name cannot exceed 100 characters';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: AppSpacing.md),
+
+        // Type selector
+        Text(
+          'Document Type',
+          style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: DocumentType.values.map((type) {
+            final isSelected = type == _selectedType;
+            return ChoiceChip(
+              label: Text(type.displayName),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) setState(() => _selectedType = type);
+              },
+              selectedColor: type.color.withValues(alpha: 0.3),
+              avatar: Icon(
+                type.icon,
+                size: 16,
+                color: isSelected ? type.color : null,
+              ),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: AppSpacing.lg),
+
+        // Action buttons
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedBytes = null;
+                    _selectedFileName = null;
+                    _nameController.clear();
+                  });
+                },
+                child: const Text('Change File'),
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: FilledButton(
+                onPressed: _isLoading ? null : _saveDocument,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    HapticFeedback.selectionClick();
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedBytes = bytes;
+        _selectedFileName = image.name;
+        _nameController.text = _suggestName(image.name);
+      });
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    HapticFeedback.selectionClick();
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedBytes = bytes;
+        _selectedFileName = image.name;
+        _nameController.text = _suggestName(image.name);
+      });
+    }
+  }
+
+  Future<void> _pickPdfFile() async {
+    HapticFeedback.selectionClick();
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _selectedBytes = bytes;
+        _selectedFileName = result.files.single.name;
+        _nameController.text = _suggestName(result.files.single.name);
+      });
+    }
+  }
+
+  String _suggestName(String fileName) {
+    // Remove extension and clean up
+    final name = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
+    return name.replaceAll(RegExp(r'[_-]'), ' ').trim();
+  }
+
+  Future<void> _saveDocument() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedBytes == null || _selectedFileName == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await ref
+          .read(documentNotifierProvider)
+          .addDocument(
+            investmentId: widget.investmentId,
+            name: _nameController.text.trim(),
+            fileName: _selectedFileName!,
+            type: _selectedType,
+            bytes: _selectedBytes!,
+          );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        AppFeedback.showSuccess(context, 'Document added');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.showError(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+/// Button for selecting document source
+class _SourceButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDark;
+  final bool fullWidth;
+
+  const _SourceButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.isDark,
+    this.fullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      onTap: onTap,
+      padding: EdgeInsets.symmetric(
+        vertical: AppSpacing.lg,
+        horizontal: AppSpacing.md,
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 32, color: AppColors.primaryLight),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            label,
+            style: AppTypography.body.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

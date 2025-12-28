@@ -13,8 +13,8 @@ class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository({
     required FirebaseAuth firebaseAuth,
     required GoogleSignIn googleSignIn,
-  })  : _firebaseAuth = firebaseAuth,
-        _googleSignIn = googleSignIn;
+  }) : _firebaseAuth = firebaseAuth,
+       _googleSignIn = googleSignIn;
 
   @override
   Stream<UserEntity?> get authStateChanges {
@@ -39,30 +39,41 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<UserEntity?> signInWithGoogle() async {
     try {
       debugPrint('FirebaseAuth: Starting Google Sign-In...');
-      final googleUser = await _googleSignIn.signIn();
 
-      if (googleUser == null) {
-        debugPrint('FirebaseAuth: User cancelled sign-in');
-        return null;
-      }
+      // Use authenticate() in google_sign_in v7
+      // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
+      final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
 
       debugPrint('FirebaseAuth: Got Google user: ${googleUser.email}');
 
-      // Get Google auth credentials
-      final googleAuth = await googleUser.authentication;
+      // Get Google auth credentials using the new API
+      // In v7, authentication provides idToken, and we get accessToken through authorization
+      final googleAuth = googleUser.authentication;
+      final authorization = await googleUser.authorizationClient
+          .authorizationForScopes(['email']);
+
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        accessToken: authorization?.accessToken,
         idToken: googleAuth.idToken,
       );
 
       // Sign in to Firebase with Google credentials
       debugPrint('FirebaseAuth: Signing in to Firebase...');
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
 
       debugPrint('FirebaseAuth: Signed in as ${userCredential.user?.email}');
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        debugPrint('FirebaseAuth: User cancelled sign-in');
+        return null;
+      }
+      debugPrint('FirebaseAuth: GoogleSignInException - ${e.code}');
+      rethrow;
     } catch (e, stackTrace) {
       debugPrint('FirebaseAuth: Error - $e');
       debugPrint('FirebaseAuth: StackTrace - $stackTrace');
@@ -92,4 +103,3 @@ class FirebaseAuthRepository implements AuthRepository {
     );
   }
 }
-

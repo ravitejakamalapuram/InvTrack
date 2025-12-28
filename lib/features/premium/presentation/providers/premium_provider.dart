@@ -6,17 +6,16 @@ final premiumServiceProvider = Provider<PremiumService>((ref) {
   return PremiumService(ref.watch(sharedPreferencesProvider));
 });
 
-final isPremiumProvider = StateNotifierProvider<PremiumNotifier, bool>((ref) {
-  return PremiumNotifier(ref.watch(premiumServiceProvider));
-});
+final isPremiumProvider = NotifierProvider<PremiumNotifier, bool>(
+  PremiumNotifier.new,
+);
 
-class PremiumNotifier extends StateNotifier<bool> {
-  final PremiumService _service;
-
-  PremiumNotifier(this._service) : super(_service.isPremium);
+class PremiumNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(premiumServiceProvider).isPremium;
 
   Future<void> setPremium(bool value) async {
-    await _service.setPremium(value);
+    await ref.read(premiumServiceProvider).setPremium(value);
     state = value;
   }
 }

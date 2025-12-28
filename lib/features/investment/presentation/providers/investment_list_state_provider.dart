@@ -43,9 +43,10 @@ class InvestmentListState {
   }
 }
 
-/// StateNotifier for investment list state
-class InvestmentListNotifier extends StateNotifier<InvestmentListState> {
-  InvestmentListNotifier() : super(const InvestmentListState());
+/// Notifier for investment list state (Riverpod 3.x)
+class InvestmentListNotifier extends Notifier<InvestmentListState> {
+  @override
+  InvestmentListState build() => const InvestmentListState();
 
   void toggleSearch() {
     if (state.isSearching) {
@@ -105,24 +106,47 @@ class InvestmentListNotifier extends StateNotifier<InvestmentListState> {
 
 /// Provider for investment list state
 final investmentListStateProvider =
-    StateNotifierProvider<InvestmentListNotifier, InvestmentListState>((ref) {
-  return InvestmentListNotifier();
-});
+    NotifierProvider<InvestmentListNotifier, InvestmentListState>(
+      InvestmentListNotifier.new,
+    );
 
 /// Provider for filtered and sorted investments
-final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((ref) {
+/// Uses separate streams for active and archived investments for complete isolation.
+final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((
+  ref,
+) {
   final listState = ref.watch(investmentListStateProvider);
-  final investmentsAsync = ref.watch(allInvestmentsProvider);
 
-  return investmentsAsync.when(
+  // Use the appropriate stream based on filter
+  final AsyncValue<List<InvestmentEntity>> sourceAsync;
+  if (listState.filter == InvestmentFilter.archived) {
+    // For archived filter, use the archived investments stream
+    sourceAsync = ref.watch(archivedInvestmentsProvider);
+  } else {
+    // For all other filters, use the active investments stream
+    sourceAsync = ref.watch(allInvestmentsProvider);
+  }
+
+  return sourceAsync.when(
     data: (investments) {
       var filtered = investments.toList();
 
-      // Apply status filter
-      if (listState.filter == InvestmentFilter.open) {
-        filtered = filtered.where((inv) => inv.status == InvestmentStatus.open).toList();
-      } else if (listState.filter == InvestmentFilter.closed) {
-        filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed).toList();
+      // Apply status filter (only for active investments)
+      switch (listState.filter) {
+        case InvestmentFilter.all:
+          // All active investments (already filtered by stream)
+          break;
+        case InvestmentFilter.open:
+          filtered = filtered
+              .where((inv) => inv.status == InvestmentStatus.open)
+              .toList();
+        case InvestmentFilter.closed:
+          filtered = filtered
+              .where((inv) => inv.status == InvestmentStatus.closed)
+              .toList();
+        case InvestmentFilter.archived:
+          // All archived investments (already filtered by stream)
+          break;
       }
 
       // Apply search filter
@@ -139,11 +163,13 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
       final statsCache = <String, InvestmentStats?>{};
       for (final inv in filtered) {
         final statsAsync = ref.watch(investmentStatsProvider(inv.id));
-        statsCache[inv.id] = statsAsync.valueOrNull;
+        statsCache[inv.id] = statsAsync.value;
       }
 
       // Apply sorting
-      filtered.sort((a, b) => _compareInvestments(a, b, listState.sort, statsCache));
+      filtered.sort(
+        (a, b) => _compareInvestments(a, b, listState.sort, statsCache),
+      );
 
       return AsyncValue.data(filtered);
     },
@@ -175,25 +201,41 @@ int _compareInvestments(
     case InvestmentSort.nameDesc:
       comparison = b.name.toLowerCase().compareTo(a.name.toLowerCase());
     case InvestmentSort.totalInvestedDesc:
-      comparison = (statsB?.totalInvested ?? 0).compareTo(statsA?.totalInvested ?? 0);
+      comparison = (statsB?.totalInvested ?? 0).compareTo(
+        statsA?.totalInvested ?? 0,
+      );
     case InvestmentSort.totalInvestedAsc:
-      comparison = (statsA?.totalInvested ?? 0).compareTo(statsB?.totalInvested ?? 0);
+      comparison = (statsA?.totalInvested ?? 0).compareTo(
+        statsB?.totalInvested ?? 0,
+      );
     case InvestmentSort.totalReturnsDesc:
-      comparison = (statsB?.totalReturned ?? 0).compareTo(statsA?.totalReturned ?? 0);
+      comparison = (statsB?.totalReturned ?? 0).compareTo(
+        statsA?.totalReturned ?? 0,
+      );
     case InvestmentSort.totalReturnsAsc:
-      comparison = (statsA?.totalReturned ?? 0).compareTo(statsB?.totalReturned ?? 0);
+      comparison = (statsA?.totalReturned ?? 0).compareTo(
+        statsB?.totalReturned ?? 0,
+      );
     case InvestmentSort.returnPercentDesc:
-      comparison = (statsB?.absoluteReturn ?? 0).compareTo(statsA?.absoluteReturn ?? 0);
+      comparison = (statsB?.absoluteReturn ?? 0).compareTo(
+        statsA?.absoluteReturn ?? 0,
+      );
     case InvestmentSort.returnPercentAsc:
-      comparison = (statsA?.absoluteReturn ?? 0).compareTo(statsB?.absoluteReturn ?? 0);
+      comparison = (statsA?.absoluteReturn ?? 0).compareTo(
+        statsB?.absoluteReturn ?? 0,
+      );
     case InvestmentSort.xirrDesc:
       comparison = (statsB?.xirr ?? 0).compareTo(statsA?.xirr ?? 0);
     case InvestmentSort.xirrAsc:
       comparison = (statsA?.xirr ?? 0).compareTo(statsB?.xirr ?? 0);
     case InvestmentSort.netPositionDesc:
-      comparison = (statsB?.netCashFlow ?? 0).compareTo(statsA?.netCashFlow ?? 0);
+      comparison = (statsB?.netCashFlow ?? 0).compareTo(
+        statsA?.netCashFlow ?? 0,
+      );
     case InvestmentSort.netPositionAsc:
-      comparison = (statsA?.netCashFlow ?? 0).compareTo(statsB?.netCashFlow ?? 0);
+      comparison = (statsA?.netCashFlow ?? 0).compareTo(
+        statsB?.netCashFlow ?? 0,
+      );
     case InvestmentSort.createdDesc:
       comparison = b.createdAt.compareTo(a.createdAt);
     case InvestmentSort.createdAsc:
@@ -208,12 +250,20 @@ int _compareInvestments(
 }
 
 /// Provider for investment count by status (for filter tabs)
-final investmentCountsProvider = Provider<({int all, int open, int closed})>((ref) {
-  final investments = ref.watch(allInvestmentsProvider).valueOrNull ?? [];
-  return (
-    all: investments.length,
-    open: investments.where((i) => i.status == InvestmentStatus.open).length,
-    closed: investments.where((i) => i.status == InvestmentStatus.closed).length,
-  );
-});
-
+/// Uses separate streams for active and archived investments.
+final investmentCountsProvider =
+    Provider<({int all, int open, int closed, int archived})>((ref) {
+      final activeInvestments = ref.watch(allInvestmentsProvider).value ?? [];
+      final archivedInvestments =
+          ref.watch(archivedInvestmentsProvider).value ?? [];
+      return (
+        all: activeInvestments.length,
+        open: activeInvestments
+            .where((i) => i.status == InvestmentStatus.open)
+            .length,
+        closed: activeInvestments
+            .where((i) => i.status == InvestmentStatus.closed)
+            .length,
+        archived: archivedInvestments.length,
+      );
+    });

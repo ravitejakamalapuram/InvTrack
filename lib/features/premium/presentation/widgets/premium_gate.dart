@@ -7,11 +7,7 @@ class PremiumGate extends ConsumerWidget {
   final Widget child;
   final Widget? lockedChild;
 
-  const PremiumGate({
-    super.key,
-    required this.child,
-    this.lockedChild,
-  });
+  const PremiumGate({super.key, required this.child, this.lockedChild});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,12 +19,13 @@ class PremiumGate extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const PaywallScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const PaywallScreen()));
       },
       child: AbsorbPointer(
-        child: lockedChild ??
+        child:
+            lockedChild ??
             Stack(
               children: [
                 Opacity(opacity: 0.3, child: child),

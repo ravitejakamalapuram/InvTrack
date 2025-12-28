@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 
 /// Filter state for investment list
-enum InvestmentFilter { all, open, closed }
+enum InvestmentFilter { all, open, closed, archived }
 
 /// Sort options for investment list
 enum InvestmentSort {
@@ -28,4 +28,3 @@ enum InvestmentSort {
   final IconData icon;
   const InvestmentSort(this.displayName, this.icon);
 }
-

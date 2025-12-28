@@ -59,7 +59,9 @@ class _QuickStatCardSkeleton extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -93,7 +95,11 @@ class SectionCardSkeleton extends StatelessWidget {
           children: [
             _SkeletonBox(width: 140, height: 16, isDark: isDark),
             const SizedBox(height: 16),
-            _SkeletonBox(width: double.infinity, height: height - 60, isDark: isDark),
+            _SkeletonBox(
+              width: double.infinity,
+              height: height - 60,
+              isDark: isDark,
+            ),
           ],
         ),
       ),
@@ -118,7 +124,9 @@ class InvestmentCardSkeleton extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
@@ -187,7 +195,9 @@ class CashFlowCardSkeleton extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -232,7 +242,9 @@ class StatsCardsSkeleton extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                        color: isDark
+                            ? AppColors.neutral700Dark
+                            : AppColors.neutral200Light,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -265,7 +277,8 @@ class _SkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actualIsDark = isDark || Theme.of(context).brightness == Brightness.dark;
+    final actualIsDark =
+        isDark || Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: width,
       height: height,
@@ -287,7 +300,9 @@ class FullScreenLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primaryLight;
+    final primaryColor = isDark
+        ? AppColors.primaryDark
+        : AppColors.primaryLight;
 
     return Container(
       color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -333,7 +348,9 @@ class FullScreenLoading extends StatelessWidget {
                 message!,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],
@@ -343,4 +360,3 @@ class FullScreenLoading extends StatelessWidget {
     );
   }
 }
-
