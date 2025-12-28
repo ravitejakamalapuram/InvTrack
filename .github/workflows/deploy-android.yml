@@ -1,103 +1,90 @@
-name: Deploy Android to Play Store
+name: Deploy Android App
 
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      track:
-        description: 'Deployment track'
-        required: true
-        default: 'internal'
-        type: choice
-        options:
-          - internal
-          - beta
-          - production
-
-env:
-  FLUTTER_VERSION: '3.38.4'
-  JAVA_VERSION: '17'
 
 jobs:
-  deploy:
-    name: Build & Deploy to Play Store
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/checkout@v3
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
+          java-version: '17'
           distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'gradle'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-          cache: true
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-          working-directory: android
-
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      
       - name: Decode keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
-
-      - name: Create key.properties
-        env:
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          echo ${{ secrets.KEYSTORE_BASE64 }} | base64 -d > keystore.jks
+      
+      - name: Build Release APK
         run: |
-          cat > android/key.properties << EOF
-          storePassword=$STORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=../upload-keystore.jks
-          EOF
-
-      - name: Create Play Store credentials
-        env:
-          PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/keystore.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+      
+      - name: Build Release Bundle
         run: |
-          echo "$PLAY_STORE_CREDENTIALS" > android/fastlane/play-store-credentials.json
-
-      - name: Get Flutter dependencies
-        run: flutter pub get
-
-      - name: Build App Bundle
-        run: flutter build appbundle --release
-
-      - name: Determine track
-        id: track
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/keystore.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+      
+      - name: Extract version from tag
+        id: version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "track=${{ github.event.inputs.track }}" >> $GITHUB_OUTPUT
-          else
-            echo "track=internal" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Deploy to Play Store
-        working-directory: android
-        run: bundle exec fastlane ${{ steps.track.outputs.track }}
-
-      - name: Upload App Bundle artifact
-        uses: actions/upload-artifact@v4
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Authenticate to Google Play
+        uses: google-github-actions/auth@v1
         with:
-          name: app-release
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 30
-
+          credentials_json: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Deploy to Google Play (Beta Track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.example.invtrack
+          releaseFiles: 'app/build/outputs/bundle/release/app-release.aab'
+          track: beta
+          status: completed
+      
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Release v${{ steps.version.outputs.version }}
+            
+            App has been deployed to Google Play closed testing (beta track).
+          draft: false
+          prerelease: false
+      
+      - name: Set deployment track output
+        id: deployment
+        run: echo "track=beta" >> $GITHUB_OUTPUT
+      
+      - name: Notify deployment
+        run: |
+          echo "✅ Build and deployment completed successfully!"
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "Track: ${{ steps.deployment.outputs.track }}"
