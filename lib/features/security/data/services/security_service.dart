@@ -70,6 +70,13 @@ class SecurityService {
 
   Future<bool> authenticateWithBiometrics() async {
     try {
+      // Check if biometrics are available before attempting auth
+      final isAvailable = await isBiometricAvailable();
+      if (!isAvailable) {
+        debugPrint('Biometrics not available on this device');
+        return false;
+      }
+
       return await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock InvTracker',
         biometricOnly: true,

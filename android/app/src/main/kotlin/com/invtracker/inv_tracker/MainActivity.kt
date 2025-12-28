@@ -1,5 +1,6 @@
 package com.invtracker.inv_tracker
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity is required for local_auth biometric dialogs to work
+class MainActivity : FlutterFragmentActivity()
