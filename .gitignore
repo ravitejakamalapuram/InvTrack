@@ -58,8 +58,8 @@ key.properties
 **/*.jks
 **/*.keystore
 
-# Firebase config (if used later)
-firebase_options.dart
+# Firebase config - NOT ignored (contains public identifiers, safe to commit)
+# firebase_options.dart
 key.properties
 
 # Fastlane
