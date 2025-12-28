@@ -26,15 +26,20 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
   String? _tempPin; // For create mode (first entry)
   String _message = 'Enter PIN';
   bool _isError = false;
+  bool _biometricAttempted = false;
 
   @override
   void initState() {
     super.initState();
     _updateMessage();
     if (widget.mode == PasscodeMode.unlock) {
-      // Try biometrics automatically if enabled
+      // Try biometrics automatically if enabled (with small delay to ensure state is ready)
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _tryBiometrics();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && !_biometricAttempted) {
+            _tryBiometrics();
+          }
+        });
       });
     }
   }
@@ -56,14 +61,26 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
   }
 
   Future<void> _tryBiometrics() async {
+    if (_biometricAttempted && widget.mode == PasscodeMode.unlock) {
+      // For manual retry, reset the flag
+    }
+    _biometricAttempted = true;
+
     final securityState = ref.read(securityProvider);
-    if (securityState.isBiometricEnabled) {
+    if (!securityState.isBiometricEnabled || !securityState.isBiometricAvailable) {
+      return;
+    }
+
+    try {
       final success = await ref
           .read(securityProvider.notifier)
           .unlockWithBiometrics();
       if (success && mounted) {
         widget.onSuccess?.call();
       }
+    } catch (e) {
+      // Biometric auth failed or was cancelled - user can retry or use PIN
+      debugPrint('Biometric auth failed: $e');
     }
   }
 
@@ -84,6 +101,15 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
     if (_input.isNotEmpty) {
       setState(() {
         _input = _input.substring(0, _input.length - 1);
+        _isError = false;
+      });
+    }
+  }
+
+  void _onClear() {
+    if (_input.isNotEmpty) {
+      setState(() {
+        _input = '';
         _isError = false;
       });
     }
@@ -217,9 +243,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: keys.map((key) {
           if (key == 'biometric') {
+            final securityState = ref.watch(securityProvider);
             final showBiometric =
                 widget.mode == PasscodeMode.unlock &&
-                ref.watch(securityProvider).isBiometricEnabled;
+                securityState.isBiometricEnabled &&
+                securityState.isBiometricAvailable;
             return SizedBox(
               width: 80,
               height: 80,
@@ -228,7 +256,10 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
                       icon: const Icon(Icons.fingerprint, size: 32),
                       onPressed: _tryBiometrics,
                     )
-                  : const SizedBox(),
+                  : IconButton(
+                      icon: const Icon(Icons.clear, size: 28),
+                      onPressed: _input.isNotEmpty ? _onClear : null,
+                    ),
             );
           }
           if (key == 'backspace') {
@@ -237,7 +268,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
               height: 80,
               child: IconButton(
                 icon: const Icon(Icons.backspace_outlined, size: 28),
-                onPressed: _onDelete,
+                onPressed: _input.isNotEmpty ? _onDelete : null,
               ),
             );
           }
