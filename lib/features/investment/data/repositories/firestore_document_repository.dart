@@ -17,8 +17,8 @@ class FirestoreDocumentRepository implements DocumentRepository {
   FirestoreDocumentRepository({
     required FirebaseFirestore firestore,
     required String userId,
-  })  : _firestore = firestore,
-        _userId = userId;
+  }) : _firestore = firestore,
+       _userId = userId;
 
   /// Execute a write operation with timeout
   Future<void> _executeWrite(Future<void> Function() writeOperation) async {
@@ -51,7 +51,9 @@ class FirestoreDocumentRepository implements DocumentRepository {
   }
 
   @override
-  Future<List<DocumentEntity>> getDocumentsByInvestment(String investmentId) async {
+  Future<List<DocumentEntity>> getDocumentsByInvestment(
+    String investmentId,
+  ) async {
     final snapshot = await _documentsRef
         .where('investmentId', isEqualTo: investmentId)
         .get();
@@ -72,14 +74,17 @@ class FirestoreDocumentRepository implements DocumentRepository {
 
   @override
   Future<void> createDocument(DocumentEntity document) async {
-    await _executeWrite(() =>
-        _documentsRef.doc(document.id).set(_documentToFirestore(document)));
+    await _executeWrite(
+      () => _documentsRef.doc(document.id).set(_documentToFirestore(document)),
+    );
   }
 
   @override
   Future<void> updateDocument(DocumentEntity document) async {
-    await _executeWrite(() =>
-        _documentsRef.doc(document.id).update(_documentToFirestore(document)));
+    await _executeWrite(
+      () =>
+          _documentsRef.doc(document.id).update(_documentToFirestore(document)),
+    );
   }
 
   @override
@@ -92,7 +97,7 @@ class FirestoreDocumentRepository implements DocumentRepository {
     final snapshot = await _documentsRef
         .where('investmentId', isEqualTo: investmentId)
         .get();
-    
+
     if (snapshot.docs.isEmpty) return;
 
     final batch = _firestore.batch();
@@ -144,4 +149,3 @@ class FirestoreDocumentRepository implements DocumentRepository {
     );
   }
 }
-

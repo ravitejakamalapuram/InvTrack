@@ -3,9 +3,7 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/settings/data/services/export_service.dart';
 
 final exportServiceProvider = Provider<ExportService>((ref) {
-  return ExportService(
-    ref.watch(investmentRepositoryProvider),
-  );
+  return ExportService(ref.watch(investmentRepositoryProvider));
 });
 
 final exportStateProvider = NotifierProvider<ExportNotifier, AsyncValue<void>>(

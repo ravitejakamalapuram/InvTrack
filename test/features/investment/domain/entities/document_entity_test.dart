@@ -43,7 +43,10 @@ void main() {
       });
 
       test('should parse certificate', () {
-        expect(DocumentType.fromString('certificate'), DocumentType.certificate);
+        expect(
+          DocumentType.fromString('certificate'),
+          DocumentType.certificate,
+        );
       });
 
       test('should default to other for unknown values', () {
@@ -134,7 +137,10 @@ void main() {
         updatedAt: now,
       );
 
-      final copy = original.copyWith(name: 'Updated', type: DocumentType.receipt);
+      final copy = original.copyWith(
+        name: 'Updated',
+        type: DocumentType.receipt,
+      );
 
       expect(copy.id, 'doc-1');
       expect(copy.investmentId, 'inv-1');
@@ -161,4 +167,3 @@ void main() {
     });
   });
 }
-

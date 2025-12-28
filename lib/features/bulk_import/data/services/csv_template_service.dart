@@ -17,19 +17,49 @@ class CsvTemplateService {
   /// Sample data rows covering all scenarios
   static const List<List<String>> sampleRows = [
     // Investment examples
-    ['2024-01-15', 'Bhive Investment', 'INVEST', '100000', 'Initial investment'],
+    [
+      '2024-01-15',
+      'Bhive Investment',
+      'INVEST',
+      '100000',
+      'Initial investment',
+    ],
     ['2024-02-15', 'Bhive Investment', 'INCOME', '1500', 'Monthly interest'],
     ['2024-03-15', 'Bhive Investment', 'INCOME', '1500', 'Monthly interest'],
     // Another investment
-    ['2024-01-20', 'P2P Lending - LenDenClub', 'INVEST', '50000', 'Started P2P'],
-    ['2024-02-20', 'P2P Lending - LenDenClub', 'INCOME', '750', 'Interest received'],
-    ['2024-03-20', 'P2P Lending - LenDenClub', 'RETURN', '10000', 'Partial withdrawal'],
+    [
+      '2024-01-20',
+      'P2P Lending - LenDenClub',
+      'INVEST',
+      '50000',
+      'Started P2P',
+    ],
+    [
+      '2024-02-20',
+      'P2P Lending - LenDenClub',
+      'INCOME',
+      '750',
+      'Interest received',
+    ],
+    [
+      '2024-03-20',
+      'P2P Lending - LenDenClub',
+      'RETURN',
+      '10000',
+      'Partial withdrawal',
+    ],
     // Third investment with fees
     ['2024-02-01', 'Gold Bonds', 'INVEST', '200000', 'Sovereign Gold Bonds'],
     ['2024-08-01', 'Gold Bonds', 'INCOME', '2500', 'Interest payout'],
     // Investment with exit
     ['2023-06-01', 'Fixed Deposit - HDFC', 'INVEST', '100000', 'FD for 1 year'],
-    ['2024-06-01', 'Fixed Deposit - HDFC', 'RETURN', '107000', 'Maturity amount'],
+    [
+      '2024-06-01',
+      'Fixed Deposit - HDFC',
+      'RETURN',
+      '107000',
+      'Maturity amount',
+    ],
   ];
 
   /// Type descriptions for the template
@@ -84,4 +114,3 @@ class CsvTemplateService {
     return utf8.encode(generateTemplateContent());
   }
 }
-

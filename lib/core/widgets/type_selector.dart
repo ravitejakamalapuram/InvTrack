@@ -61,7 +61,10 @@ class TypeSelector<T> extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   gradient: isSelected
                       ? LinearGradient(
@@ -70,14 +73,16 @@ class TypeSelector<T> extends StatelessWidget {
                       : null,
                   color: isSelected
                       ? null
-                      : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
+                      : (isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.surfaceLight),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
                         ? Colors.transparent
                         : (isDark
-                            ? AppColors.neutral700Dark
-                            : AppColors.neutral200Light),
+                              ? AppColors.neutral700Dark
+                              : AppColors.neutral200Light),
                     width: 1,
                   ),
                   boxShadow: isSelected
@@ -99,8 +104,8 @@ class TypeSelector<T> extends StatelessWidget {
                       color: isSelected
                           ? Colors.white
                           : (isDark
-                              ? AppColors.neutral400Dark
-                              : AppColors.neutral600Light),
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral600Light),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -109,9 +114,11 @@ class TypeSelector<T> extends StatelessWidget {
                         color: isSelected
                             ? Colors.white
                             : (isDark
-                                ? AppColors.neutral300Dark
-                                : AppColors.neutral700Light),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                  ? AppColors.neutral300Dark
+                                  : AppColors.neutral700Light),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -124,4 +131,3 @@ class TypeSelector<T> extends StatelessWidget {
     );
   }
 }
-

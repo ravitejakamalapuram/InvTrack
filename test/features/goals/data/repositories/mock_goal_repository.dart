@@ -25,10 +25,7 @@ class FakeGoalRepository implements GoalRepository {
   }
 
   /// Seed with test data
-  void seed({
-    List<GoalEntity>? goals,
-    List<GoalEntity>? archivedGoals,
-  }) {
+  void seed({List<GoalEntity>? goals, List<GoalEntity>? archivedGoals}) {
     if (goals != null) _goals.addAll(goals);
     if (archivedGoals != null) _archivedGoals.addAll(archivedGoals);
   }
@@ -118,7 +115,9 @@ class FakeGoalRepository implements GoalRepository {
 
   @override
   Future<List<GoalEntity>> getGoalsForInvestment(String investmentId) async {
-    return _goals.where((g) => g.linkedInvestmentIds.contains(investmentId)).toList();
+    return _goals
+        .where((g) => g.linkedInvestmentIds.contains(investmentId))
+        .toList();
   }
 
   // ============ ARCHIVED GOALS ============
@@ -142,4 +141,3 @@ class FakeGoalRepository implements GoalRepository {
     _archivedGoals.removeWhere((g) => g.id == id);
   }
 }
-

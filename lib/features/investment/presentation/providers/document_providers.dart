@@ -10,16 +10,22 @@ export 'package:inv_tracker/features/investment/domain/entities/document_entity.
 
 /// Watch documents for an investment (reactive stream)
 /// Returns empty list if user is not authenticated
-final documentsByInvestmentProvider = StreamProvider.family<List<DocumentEntity>, String>((ref, investmentId) {
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  if (!isAuthenticated) {
-    return Stream.value([]);
-  }
-  return ref.watch(documentRepositoryProvider).watchDocumentsByInvestment(investmentId);
-});
+final documentsByInvestmentProvider =
+    StreamProvider.family<List<DocumentEntity>, String>((ref, investmentId) {
+      final isAuthenticated = ref.watch(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        return Stream.value([]);
+      }
+      return ref
+          .watch(documentRepositoryProvider)
+          .watchDocumentsByInvestment(investmentId);
+    });
 
 /// Get document count for an investment
-final documentCountProvider = FutureProvider.family<int, String>((ref, investmentId) async {
+final documentCountProvider = FutureProvider.family<int, String>((
+  ref,
+  investmentId,
+) async {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return 0;
@@ -28,7 +34,10 @@ final documentCountProvider = FutureProvider.family<int, String>((ref, investmen
 });
 
 /// Get a single document by ID
-final documentByIdProvider = FutureProvider.family<DocumentEntity?, String>((ref, documentId) async {
+final documentByIdProvider = FutureProvider.family<DocumentEntity?, String>((
+  ref,
+  documentId,
+) async {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return null;
@@ -44,4 +53,3 @@ final totalDocumentStorageProvider = FutureProvider<int>((ref) async {
   }
   return ref.watch(documentStorageServiceProvider).getTotalStorageUsed();
 });
-

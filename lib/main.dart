@@ -14,52 +14,60 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 void main() async {
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-    // Critical path: Firebase must be initialized before runApp
-    // Run in parallel with SharedPreferences for faster startup
-    final results = await Future.wait([
-      Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
-      SharedPreferences.getInstance(),
-    ]);
+      // Critical path: Firebase must be initialized before runApp
+      // Run in parallel with SharedPreferences for faster startup
+      final results = await Future.wait([
+        Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+        SharedPreferences.getInstance(),
+      ]);
 
-    final sharedPreferences = results[1] as SharedPreferences;
+      final sharedPreferences = results[1] as SharedPreferences;
 
-    // Create notification service (don't initialize yet - defer to post-frame)
-    final notificationPlugin = FlutterLocalNotificationsPlugin();
-    final notificationService = NotificationService(notificationPlugin, sharedPreferences);
+      // Create notification service (don't initialize yet - defer to post-frame)
+      final notificationPlugin = FlutterLocalNotificationsPlugin();
+      final notificationService = NotificationService(
+        notificationPlugin,
+        sharedPreferences,
+      );
 
-    // Launch UI immediately - don't block on non-critical initialization
-    runApp(
-      ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          notificationServiceProvider.overrideWithValue(notificationService),
-        ],
-        child: const InvTrackerApp(),
-      ),
-    );
+      // Launch UI immediately - don't block on non-critical initialization
+      runApp(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            notificationServiceProvider.overrideWithValue(notificationService),
+          ],
+          child: const InvTrackerApp(),
+        ),
+      );
 
-    // Defer non-critical initialization to after first frame
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      _initializeNonCriticalServices(notificationService);
-    });
-  }, (error, stack) {
-    // Catch any errors that escape the Flutter framework
-    if (kDebugMode) {
-      debugPrint('🔴 Uncaught error: $error');
-      debugPrint('Stack trace: $stack');
-    } else {
-      // In release mode, send to Crashlytics
-      CrashlyticsService().recordError(error, stack, fatal: true);
-    }
-  });
+      // Defer non-critical initialization to after first frame
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _initializeNonCriticalServices(notificationService);
+      });
+    },
+    (error, stack) {
+      // Catch any errors that escape the Flutter framework
+      if (kDebugMode) {
+        debugPrint('🔴 Uncaught error: $error');
+        debugPrint('Stack trace: $stack');
+      } else {
+        // In release mode, send to Crashlytics
+        CrashlyticsService().recordError(error, stack, fatal: true);
+      }
+    },
+  );
 }
 
 /// Initialize non-critical services after the first frame is rendered.
 /// This prevents blocking the UI during app startup.
-Future<void> _initializeNonCriticalServices(NotificationService notificationService) async {
+Future<void> _initializeNonCriticalServices(
+  NotificationService notificationService,
+) async {
   try {
     // Initialize Crashlytics in background
     final crashlyticsService = CrashlyticsService();
@@ -80,7 +88,9 @@ Future<void> _initializeNonCriticalServices(NotificationService notificationServ
 
 /// Schedule all recurring notifications.
 /// Called on every app start - methods are idempotent.
-Future<void> _scheduleRecurringNotifications(NotificationService notificationService) async {
+Future<void> _scheduleRecurringNotifications(
+  NotificationService notificationService,
+) async {
   try {
     // Schedule tax deadline reminders (India-specific)
     await notificationService.scheduleTaxReminders();

@@ -30,19 +30,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     OnboardingPage(
       icon: Icons.account_balance_wallet_rounded,
       title: 'Track Money In & Out',
-      subtitle: 'Record what you invested and what came back.\nFDs, P2P lending, bonds, real estate & more.',
+      subtitle:
+          'Record what you invested and what came back.\nFDs, P2P lending, bonds, real estate & more.',
       gradient: [AppColors.primaryLight, AppColors.accentLight],
     ),
     OnboardingPage(
       icon: Icons.trending_up_rounded,
       title: 'Know Your Real Returns',
-      subtitle: 'XIRR shows your true annual return.\nMOIC shows how much your money multiplied.',
+      subtitle:
+          'XIRR shows your true annual return.\nMOIC shows how much your money multiplied.',
       gradient: [AppColors.successLight, Color(0xFF059669)],
     ),
     OnboardingPage(
       icon: Icons.cloud_sync_rounded,
       title: 'Works Offline, Syncs Online',
-      subtitle: 'Use the app without internet.\nSign in to backup and sync across devices.',
+      subtitle:
+          'Use the app without internet.\nSign in to backup and sync across devices.',
       gradient: [Color(0xFF6366F1), AppColors.primaryLight],
     ),
   ];
@@ -77,7 +80,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -91,7 +96,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: Text(
                     'Skip',
                     style: AppTypography.body.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
                     ),
                   ),
                 ),
@@ -152,7 +159,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(AppSizes.onboardingIconRadius),
+              borderRadius: BorderRadius.circular(
+                AppSizes.onboardingIconRadius,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: page.gradient[0].withValues(alpha: 0.4),
@@ -161,7 +170,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ],
             ),
-            child: Icon(page.icon, size: AppSizes.iconDisplay, color: Colors.white),
+            child: Icon(
+              page.icon,
+              size: AppSizes.iconDisplay,
+              color: Colors.white,
+            ),
           ),
           SizedBox(height: AppSpacing.huge),
           // Title
@@ -178,7 +191,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             page.subtitle,
             style: AppTypography.body.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
               height: 1.6,
             ),
             textAlign: TextAlign.center,
@@ -215,9 +230,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryLight,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppSizes.borderRadiusLg,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppSizes.borderRadiusLg),
           elevation: 0,
         ),
         child: Row(
@@ -226,9 +239,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           children: [
             Text(
               isLastPage ? 'Get Started' : 'Next',
-              style: AppTypography.buttonLarge.copyWith(
-                color: Colors.white,
-              ),
+              style: AppTypography.buttonLarge.copyWith(color: Colors.white),
             ),
             if (!isLastPage) ...[
               SizedBox(width: AppSpacing.xs),
@@ -254,4 +265,3 @@ class OnboardingPage {
     required this.gradient,
   });
 }
-

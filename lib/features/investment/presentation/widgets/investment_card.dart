@@ -52,7 +52,8 @@ class InvestmentCard extends ConsumerWidget {
         currencySymbol: currencySymbol,
         isClosed: isClosed,
       ),
-      orElse: () => '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
+      orElse: () =>
+          '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
     );
 
     return Semantics(
@@ -96,10 +97,7 @@ class InvestmentCard extends ConsumerWidget {
                 ),
               ),
               // Bottom info strip with stats
-              _InvestmentBottomStrip(
-                investment: investment,
-                isDark: isDark,
-              ),
+              _InvestmentBottomStrip(investment: investment, isDark: isDark),
             ],
           ),
         ),
@@ -157,7 +155,10 @@ class InvestmentCard extends ConsumerWidget {
           runSpacing: AppSpacing.xs,
           children: [
             Container(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: 2,
+              ),
               decoration: BoxDecoration(
                 color: typeColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
@@ -172,7 +173,10 @@ class InvestmentCard extends ConsumerWidget {
             ),
             if (isClosed)
               Container(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(6),
@@ -212,13 +216,19 @@ class _InvestmentValueColumn extends ConsumerWidget {
         if (!stats.hasData) {
           return Icon(
             Icons.chevron_right_rounded,
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral400Light,
           );
         }
 
         final isPositive = stats.netCashFlow >= 0;
-        final plColor = isPositive ? AppColors.graphEmerald : AppColors.errorLight;
-        final xirrColor = stats.xirr >= 0 ? AppColors.graphEmerald : AppColors.errorLight;
+        final plColor = isPositive
+            ? AppColors.graphEmerald
+            : AppColors.errorLight;
+        final xirrColor = stats.xirr >= 0
+            ? AppColors.graphEmerald
+            : AppColors.errorLight;
         final xirrFormatted = formatXirr(stats.xirr);
 
         return Column(
@@ -227,7 +237,9 @@ class _InvestmentValueColumn extends ConsumerWidget {
             // Net Position (cash in - cash out)
             CompactAmountText(
               amount: stats.netCashFlow.abs(),
-              compactText: currencyFormat.formatCompact(stats.netCashFlow.abs()),
+              compactText: currencyFormat.formatCompact(
+                stats.netCashFlow.abs(),
+              ),
               currencySymbol: currencyFormat.currencySymbol,
               prefix: isPositive ? '+' : '-',
               style: AppTypography.bodyLarge.copyWith(
@@ -285,7 +297,10 @@ class _InvestmentBottomStrip extends ConsumerWidget {
     final statsAsync = ref.watch(investmentStatsProvider(investment.id));
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
         borderRadius: BorderRadius.only(
@@ -295,7 +310,8 @@ class _InvestmentBottomStrip extends ConsumerWidget {
       ),
       child: statsAsync.when(
         data: (stats) {
-          final lastActivityDate = stats.lastCashFlowDate ?? investment.createdAt;
+          final lastActivityDate =
+              stats.lastCashFlowDate ?? investment.createdAt;
           final cashFlowCount = stats.cashFlowCount;
 
           return Row(
@@ -304,13 +320,17 @@ class _InvestmentBottomStrip extends ConsumerWidget {
               Icon(
                 Icons.update_rounded,
                 size: 12,
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
               SizedBox(width: 4),
               Text(
                 AppDateUtils.formatRelative(lastActivityDate),
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
               SizedBox(width: AppSpacing.md),
@@ -318,13 +338,17 @@ class _InvestmentBottomStrip extends ConsumerWidget {
               Icon(
                 Icons.receipt_long_rounded,
                 size: 12,
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
               SizedBox(width: 4),
               Text(
                 '$cashFlowCount ${cashFlowCount == 1 ? 'entry' : 'entries'}',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
               Spacer(),
@@ -336,16 +360,22 @@ class _InvestmentBottomStrip extends ConsumerWidget {
                     Text(
                       'Invested: ',
                       style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     CompactAmountText(
                       amount: stats.totalInvested,
-                      compactText: currencyFormat.formatCompact(stats.totalInvested),
+                      compactText: currencyFormat.formatCompact(
+                        stats.totalInvested,
+                      ),
                       currencySymbol: currencyFormat.currencySymbol,
                       style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -369,7 +399,9 @@ class _InvestmentBottomStrip extends ConsumerWidget {
             Text(
               'Loading...',
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
           ],
@@ -380,7 +412,9 @@ class _InvestmentBottomStrip extends ConsumerWidget {
             Text(
               'Added ${AppDateUtils.formatRelative(investment.createdAt)}',
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             Text(
@@ -396,4 +430,3 @@ class _InvestmentBottomStrip extends ConsumerWidget {
     );
   }
 }
-

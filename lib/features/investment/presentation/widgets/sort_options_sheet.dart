@@ -54,7 +54,9 @@ class SortOptionsSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: 0.2,
+              ),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -92,7 +94,12 @@ class SortOptionsSheet extends StatelessWidget {
               ],
             ),
           ),
-          Divider(height: 1, color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+          Divider(
+            height: 1,
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.1,
+            ),
+          ),
           // Sort options
           Flexible(
             child: SingleChildScrollView(
@@ -105,7 +112,9 @@ class SortOptionsSheet extends StatelessWidget {
                       sortOption.icon,
                       color: isSelected
                           ? AppColors.primaryLight
-                          : (isDark ? Colors.white70 : AppColors.neutral600Light),
+                          : (isDark
+                                ? Colors.white70
+                                : AppColors.neutral600Light),
                     ),
                     title: Row(
                       children: [
@@ -114,8 +123,12 @@ class SortOptionsSheet extends StatelessWidget {
                           style: AppTypography.body.copyWith(
                             color: isSelected
                                 ? AppColors.primaryLight
-                                : (isDark ? Colors.white : AppColors.neutral800Light),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                : (isDark
+                                      ? Colors.white
+                                      : AppColors.neutral800Light),
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                         if (isDefault) ...[
@@ -126,14 +139,19 @@ class SortOptionsSheet extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: (isDark ? Colors.white : AppColors.primaryLight)
-                                  .withValues(alpha: 0.1),
+                              color:
+                                  (isDark
+                                          ? Colors.white
+                                          : AppColors.primaryLight)
+                                      .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Default',
                               style: AppTypography.caption.copyWith(
-                                color: isDark ? Colors.white70 : AppColors.neutral600Light,
+                                color: isDark
+                                    ? Colors.white70
+                                    : AppColors.neutral600Light,
                                 fontSize: 10,
                               ),
                             ),
@@ -142,7 +160,10 @@ class SortOptionsSheet extends StatelessWidget {
                       ],
                     ),
                     trailing: isSelected
-                        ? Icon(Icons.check_rounded, color: AppColors.primaryLight)
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: AppColors.primaryLight,
+                          )
                         : null,
                     onTap: () {
                       HapticFeedback.selectionClick();
@@ -160,4 +181,3 @@ class SortOptionsSheet extends StatelessWidget {
     );
   }
 }
-

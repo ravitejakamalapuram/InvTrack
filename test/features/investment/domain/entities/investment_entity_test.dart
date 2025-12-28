@@ -36,16 +36,37 @@ void main() {
   group('InvestmentType', () {
     group('fromString', () {
       test('should parse all investment types', () {
-        expect(InvestmentType.fromString('p2pLending'), InvestmentType.p2pLending);
-        expect(InvestmentType.fromString('fixedDeposit'), InvestmentType.fixedDeposit);
+        expect(
+          InvestmentType.fromString('p2pLending'),
+          InvestmentType.p2pLending,
+        );
+        expect(
+          InvestmentType.fromString('fixedDeposit'),
+          InvestmentType.fixedDeposit,
+        );
         expect(InvestmentType.fromString('bonds'), InvestmentType.bonds);
-        expect(InvestmentType.fromString('realEstate'), InvestmentType.realEstate);
-        expect(InvestmentType.fromString('privateEquity'), InvestmentType.privateEquity);
-        expect(InvestmentType.fromString('angelInvesting'), InvestmentType.angelInvesting);
-        expect(InvestmentType.fromString('chitFunds'), InvestmentType.chitFunds);
+        expect(
+          InvestmentType.fromString('realEstate'),
+          InvestmentType.realEstate,
+        );
+        expect(
+          InvestmentType.fromString('privateEquity'),
+          InvestmentType.privateEquity,
+        );
+        expect(
+          InvestmentType.fromString('angelInvesting'),
+          InvestmentType.angelInvesting,
+        );
+        expect(
+          InvestmentType.fromString('chitFunds'),
+          InvestmentType.chitFunds,
+        );
         expect(InvestmentType.fromString('gold'), InvestmentType.gold);
         expect(InvestmentType.fromString('crypto'), InvestmentType.crypto);
-        expect(InvestmentType.fromString('mutualFunds'), InvestmentType.mutualFunds);
+        expect(
+          InvestmentType.fromString('mutualFunds'),
+          InvestmentType.mutualFunds,
+        );
         expect(InvestmentType.fromString('stocks'), InvestmentType.stocks);
         expect(InvestmentType.fromString('other'), InvestmentType.other);
       });
@@ -154,4 +175,3 @@ void main() {
     });
   });
 }
-

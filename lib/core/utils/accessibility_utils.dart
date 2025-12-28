@@ -52,7 +52,7 @@ class AccessibilityUtils {
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = formatCurrencyForScreenReader(currentValue, currencySymbol);
-    final returns = returnPercent != null 
+    final returns = returnPercent != null
         ? 'Returns: ${formatPercentageForScreenReader(returnPercent)}'
         : '';
     return '$status: $name, Type: $type, Current value: $value. $returns';
@@ -66,7 +66,10 @@ class AccessibilityUtils {
     required String currencySymbol,
   }) {
     final formattedDate = formatDateForScreenReader(date);
-    final formattedAmount = formatCurrencyForScreenReader(amount, currencySymbol);
+    final formattedAmount = formatCurrencyForScreenReader(
+      amount,
+      currencySymbol,
+    );
     return '$type of $formattedAmount on $formattedDate';
   }
 
@@ -76,9 +79,7 @@ class AccessibilityUtils {
     required String value,
     String? subtitle,
   }) {
-    return subtitle != null 
-        ? '$title: $value. $subtitle'
-        : '$title: $value';
+    return subtitle != null ? '$title: $value. $subtitle' : '$title: $value';
   }
 }
 
@@ -134,4 +135,3 @@ class SemanticValue extends StatelessWidget {
     );
   }
 }
-

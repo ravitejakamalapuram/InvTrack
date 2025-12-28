@@ -64,7 +64,8 @@ class CompactAmountText extends StatelessWidget {
     return formatted;
   }
 
-  String get _displayText => prefix != null ? '$prefix$compactText' : compactText;
+  String get _displayText =>
+      prefix != null ? '$prefix$compactText' : compactText;
 
   void _showFullAmount(BuildContext context) {
     HapticFeedback.mediumImpact();
@@ -89,7 +90,9 @@ class CompactAmountText extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    prefix != null ? '$prefix$_fullFormattedAmount' : _fullFormattedAmount,
+                    prefix != null
+                        ? '$prefix$_fullFormattedAmount'
+                        : _fullFormattedAmount,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -100,11 +103,19 @@ class CompactAmountText extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.copy_rounded, color: Colors.white, size: 20),
+              icon: const Icon(
+                Icons.copy_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               onPressed: () {
-                Clipboard.setData(ClipboardData(
-                  text: prefix != null ? '$prefix$_fullFormattedAmount' : _fullFormattedAmount,
-                ));
+                Clipboard.setData(
+                  ClipboardData(
+                    text: prefix != null
+                        ? '$prefix$_fullFormattedAmount'
+                        : _fullFormattedAmount,
+                  ),
+                );
                 HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -129,7 +140,9 @@ class CompactAmountText extends StatelessWidget {
             ),
           ],
         ),
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.neutral800Light,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.neutral800Light,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
@@ -152,4 +165,3 @@ class CompactAmountText extends StatelessWidget {
     );
   }
 }
-

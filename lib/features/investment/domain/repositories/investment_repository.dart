@@ -12,7 +12,9 @@ abstract class InvestmentRepository {
   Stream<List<InvestmentEntity>> watchAllInvestments();
 
   /// Watch investments by status (active only)
-  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(InvestmentStatus status);
+  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(
+    InvestmentStatus status,
+  );
 
   /// Get all active investments
   Future<List<InvestmentEntity>> getAllInvestments();
@@ -78,10 +80,14 @@ abstract class InvestmentRepository {
   // ============ ARCHIVED CASH FLOWS ============
 
   /// Watch archived cash flows for an archived investment
-  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(String investmentId);
+  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(
+    String investmentId,
+  );
 
   /// Get archived cash flows for an archived investment
-  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(String investmentId);
+  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(
+    String investmentId,
+  );
 
   // ============ BULK OPERATIONS ============
 

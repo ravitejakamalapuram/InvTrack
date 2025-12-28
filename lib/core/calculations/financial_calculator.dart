@@ -20,7 +20,11 @@ class FinancialCalculator {
   }
 
   /// Calculates CAGR (Compound Annual Growth Rate).
-  static double calculateCAGR(double startValue, double endValue, double years) {
+  static double calculateCAGR(
+    double startValue,
+    double endValue,
+    double years,
+  ) {
     if (startValue <= 0 || years <= 0) return 0.0;
     return pow(endValue / startValue, 1 / years) - 1;
   }

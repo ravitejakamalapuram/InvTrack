@@ -26,4 +26,3 @@ abstract class DocumentRepository {
   /// Get total document count for an investment
   Future<int> getDocumentCount(String investmentId);
 }
-

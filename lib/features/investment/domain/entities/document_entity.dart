@@ -79,17 +79,29 @@ class DocumentMimeTypes {
     'webp': 'image/webp',
     'heic': 'image/heic',
     'doc': 'application/msword',
-    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'docx':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'xls': 'application/vnd.ms-excel',
     'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   };
 
   static const List<String> supportedExtensions = [
-    'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic',
+    'pdf',
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'heic',
   ];
 
   static const List<String> imageExtensions = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic',
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'heic',
   ];
 
   static String getMimeType(String fileName) {
@@ -146,8 +158,12 @@ class DocumentEntity {
 
   /// Get file size in human-readable format
   String get fileSizeFormatted {
-    if (fileSize < 1024) return '$fileSize B';
-    if (fileSize < 1024 * 1024) return '${(fileSize / 1024).toStringAsFixed(1)} KB';
+    if (fileSize < 1024) {
+      return '$fileSize B';
+    }
+    if (fileSize < 1024 * 1024) {
+      return '${(fileSize / 1024).toStringAsFixed(1)} KB';
+    }
     return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
@@ -207,4 +223,3 @@ class DocumentEntity {
         updatedAt.hashCode;
   }
 }
-

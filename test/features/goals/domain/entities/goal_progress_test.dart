@@ -22,20 +22,17 @@ void main() {
     test('achievedMilestones returns correct milestones', () {
       expect(GoalMilestone.achievedMilestones(0), isEmpty);
       expect(GoalMilestone.achievedMilestones(25), [GoalMilestone.quarter]);
-      expect(
-        GoalMilestone.achievedMilestones(50),
-        [GoalMilestone.quarter, GoalMilestone.half],
-      );
-      expect(
-        GoalMilestone.achievedMilestones(100),
-        [
-          GoalMilestone.quarter,
-          GoalMilestone.half,
-          GoalMilestone.threeQuarters,
-          GoalMilestone.ninety,
-          GoalMilestone.complete,
-        ],
-      );
+      expect(GoalMilestone.achievedMilestones(50), [
+        GoalMilestone.quarter,
+        GoalMilestone.half,
+      ]);
+      expect(GoalMilestone.achievedMilestones(100), [
+        GoalMilestone.quarter,
+        GoalMilestone.half,
+        GoalMilestone.threeQuarters,
+        GoalMilestone.ninety,
+        GoalMilestone.complete,
+      ]);
     });
 
     test('displayName returns correct names', () {
@@ -142,7 +139,9 @@ void main() {
         projectedCompletionDate: null,
         status: GoalStatus.achieved,
         currentMilestone: GoalMilestone.complete,
-        achievedMilestones: GoalMilestone.values.where((m) => m.percentage > 0).toList(),
+        achievedMilestones: GoalMilestone.values
+            .where((m) => m.percentage > 0)
+            .toList(),
         linkedInvestmentCount: 5,
         calculatedAt: DateTime.now(),
       );
@@ -151,4 +150,3 @@ void main() {
     });
   });
 }
-

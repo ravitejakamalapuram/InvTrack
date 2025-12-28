@@ -24,22 +24,29 @@ class SettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Padding(
-      padding: margin ?? EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
+      padding:
+          margin ??
+          EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null) ...[
             Padding(
-              padding: EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.xs),
+              padding: EdgeInsets.only(
+                left: AppSpacing.xs,
+                bottom: AppSpacing.xs,
+              ),
               child: Text(
                 title!.toUpperCase(),
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
@@ -51,8 +58,8 @@ class SettingsSection extends StatelessWidget {
               color: isDark ? AppColors.surfaceDark : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark 
-                    ? Colors.white.withValues(alpha: 0.08) 
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
                     : Colors.black.withValues(alpha: 0.06),
               ),
             ),
@@ -67,7 +74,9 @@ class SettingsSection extends StatelessWidget {
               child: Text(
                 footer!,
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                  color: isDark
+                      ? AppColors.neutral500Dark
+                      : AppColors.neutral400Light,
                 ),
               ),
             ),
@@ -82,17 +91,18 @@ class SettingsSection extends StatelessWidget {
     for (var i = 0; i < children.length; i++) {
       result.add(children[i]);
       if (i < children.length - 1) {
-        result.add(Divider(
-          height: 1,
-          thickness: 1,
-          indent: AppSpacing.xl + AppSpacing.md,
-          color: isDark 
-              ? Colors.white.withValues(alpha: 0.06) 
-              : Colors.black.withValues(alpha: 0.04),
-        ));
+        result.add(
+          Divider(
+            height: 1,
+            thickness: 1,
+            indent: AppSpacing.xl + AppSpacing.md,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.04),
+          ),
+        );
       }
     }
     return result;
   }
 }
-

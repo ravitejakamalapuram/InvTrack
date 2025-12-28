@@ -29,7 +29,7 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final defaultBgColor = isDark
         ? AppColors.cardDark.withValues(alpha: 0.8)
         : AppColors.cardLight.withValues(alpha: 0.9);
@@ -89,7 +89,7 @@ class GlassHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     final defaultGradient = isDark
         ? AppColors.heroGradientDark
         : AppColors.heroGradient;
@@ -112,25 +112,17 @@ class GlassHeroCard extends StatelessWidget {
           children: [
             // Subtle pattern overlay
             Positioned.fill(
-              child: CustomPaint(
-                painter: _GlowPatternPainter(isDark: isDark),
-              ),
+              child: CustomPaint(painter: _GlowPatternPainter(isDark: isDark)),
             ),
             // Content
-            Padding(
-              padding: padding,
-              child: child,
-            ),
+            Padding(padding: padding, child: child),
           ],
         ),
       ),
     );
 
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: cardContent,
-      );
+      return GestureDetector(onTap: onTap, child: cardContent);
     }
 
     return cardContent;
@@ -167,4 +159,3 @@ class _GlowPatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

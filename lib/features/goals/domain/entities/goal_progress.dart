@@ -96,7 +96,8 @@ class GoalProgress {
   double get targetAmount => goal.targetAmount;
 
   /// Amount remaining to reach the goal
-  double get remainingAmount => (targetAmount - currentAmount).clamp(0, double.infinity);
+  double get remainingAmount =>
+      (targetAmount - currentAmount).clamp(0, double.infinity);
 
   /// Days until projected completion (null if can't calculate)
   int? get daysToProjectedCompletion {
@@ -113,13 +114,17 @@ class GoalProgress {
 
   /// Whether the goal is ahead of schedule (if has deadline)
   bool get isAheadOfSchedule {
-    if (goal.targetDate == null || projectedCompletionDate == null) return false;
+    if (goal.targetDate == null || projectedCompletionDate == null) {
+      return false;
+    }
     return projectedCompletionDate!.isBefore(goal.targetDate!);
   }
 
   /// Whether the goal is behind schedule
   bool get isBehindSchedule {
-    if (goal.targetDate == null || projectedCompletionDate == null) return false;
+    if (goal.targetDate == null || projectedCompletionDate == null) {
+      return false;
+    }
     return projectedCompletionDate!.isAfter(goal.targetDate!);
   }
 
@@ -163,16 +168,33 @@ class GoalProgress {
   }
 
   String _formatAmount(double amount) {
-    if (amount >= 10000000) return '${(amount / 10000000).toStringAsFixed(2)}Cr';
-    if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)}L';
-    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
+    if (amount >= 10000000) {
+      return '${(amount / 10000000).toStringAsFixed(2)}Cr';
+    }
+    if (amount >= 100000) {
+      return '${(amount / 100000).toStringAsFixed(2)}L';
+    }
+    if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(1)}K';
+    }
     return amount.toStringAsFixed(0);
   }
 
   String _formatDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[date.month - 1]} ${date.year}';
   }
 }
-

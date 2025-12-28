@@ -128,7 +128,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/lock',
-        builder: (context, state) => const PasscodeScreen(mode: PasscodeMode.unlock),
+        builder: (context, state) =>
+            const PasscodeScreen(mode: PasscodeMode.unlock),
       ),
       GoRoute(
         path: '/onboarding',

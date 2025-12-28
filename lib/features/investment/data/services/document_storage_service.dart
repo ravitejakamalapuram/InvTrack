@@ -46,10 +46,10 @@ class DocumentStorageService {
     final extension = path_lib.extension(fileName);
     final localFileName = '$documentId$extension';
     final filePath = path_lib.join(invDir.path, localFileName);
-    
+
     final file = File(filePath);
     await file.writeAsBytes(bytes);
-    
+
     return filePath;
   }
 
@@ -93,7 +93,7 @@ class DocumentStorageService {
   Future<int> getTotalStorageUsed() async {
     final baseDir = await _documentsDirectory;
     if (!await baseDir.exists()) return 0;
-    
+
     int totalSize = 0;
     await for (final entity in baseDir.list(recursive: true)) {
       if (entity is File) {
@@ -113,4 +113,3 @@ class DocumentStorageService {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }
-

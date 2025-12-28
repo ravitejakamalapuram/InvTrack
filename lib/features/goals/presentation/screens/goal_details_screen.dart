@@ -29,7 +29,9 @@ class GoalDetailsScreen extends ConsumerWidget {
     final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: goalAsync.when(
         data: (goal) {
           if (goal == null) {
@@ -48,11 +50,18 @@ class GoalDetailsScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.search_off_rounded, size: 64, color: AppColors.neutral400Dark),
+          Icon(
+            Icons.search_off_rounded,
+            size: 64,
+            color: AppColors.neutral400Dark,
+          ),
           SizedBox(height: AppSpacing.md),
-          Text('Goal not found', style: AppTypography.h3.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          )),
+          Text(
+            'Goal not found',
+            style: AppTypography.h3.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+            ),
+          ),
           SizedBox(height: AppSpacing.md),
           TextButton(
             onPressed: () => context.pop(),
@@ -68,11 +77,18 @@ class GoalDetailsScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline_rounded, size: 64, color: AppColors.errorLight),
+          Icon(
+            Icons.error_outline_rounded,
+            size: 64,
+            color: AppColors.errorLight,
+          ),
           SizedBox(height: AppSpacing.md),
-          Text('Failed to load goal', style: AppTypography.h3.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          )),
+          Text(
+            'Failed to load goal',
+            style: AppTypography.h3.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+            ),
+          ),
           SizedBox(height: AppSpacing.md),
           TextButton(
             onPressed: () => context.pop(),
@@ -83,7 +99,12 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, GoalEntity goal, bool isDark) {
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    GoalEntity goal,
+    bool isDark,
+  ) {
     final progress = ref.watch(goalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
 
@@ -94,7 +115,13 @@ class GoalDetailsScreen extends ConsumerWidget {
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildProgressSection(context, goal, progress, isDark, currencySymbol),
+              _buildProgressSection(
+                context,
+                goal,
+                progress,
+                isDark,
+                currencySymbol,
+              ),
               SizedBox(height: AppSpacing.lg),
               _buildDetailsSection(context, goal, isDark, currencySymbol),
               SizedBox(height: AppSpacing.lg),
@@ -109,11 +136,18 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  SliverAppBar _buildAppBar(BuildContext context, WidgetRef ref, GoalEntity goal, bool isDark) {
+  SliverAppBar _buildAppBar(
+    BuildContext context,
+    WidgetRef ref,
+    GoalEntity goal,
+    bool isDark,
+  ) {
     return SliverAppBar(
       expandedHeight: 140,
       pinned: true,
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => context.pop(),
@@ -131,7 +165,11 @@ class GoalDetailsScreen extends ConsumerWidget {
               value: goal.isArchived ? 'unarchive' : 'archive',
               child: Row(
                 children: [
-                  Icon(goal.isArchived ? Icons.unarchive_rounded : Icons.archive_rounded),
+                  Icon(
+                    goal.isArchived
+                        ? Icons.unarchive_rounded
+                        : Icons.archive_rounded,
+                  ),
                   SizedBox(width: AppSpacing.sm),
                   Text(goal.isArchived ? 'Unarchive' : 'Archive'),
                 ],
@@ -173,7 +211,13 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressSection(BuildContext context, GoalEntity goal, GoalProgress? progress, bool isDark, String currencySymbol) {
+  Widget _buildProgressSection(
+    BuildContext context,
+    GoalEntity goal,
+    GoalProgress? progress,
+    bool isDark,
+    String currencySymbol,
+  ) {
     final percent = progress?.progressPercent ?? 0;
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.lg),
@@ -199,8 +243,11 @@ class GoalDetailsScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(progress?.status.icon ?? Icons.hourglass_empty,
-                size: 16, color: progress?.status.color ?? Colors.grey),
+              Icon(
+                progress?.status.icon ?? Icons.hourglass_empty,
+                size: 16,
+                color: progress?.status.color ?? Colors.grey,
+              ),
               SizedBox(width: 4),
               Text(
                 progress?.status.displayName ?? 'Not Started',
@@ -216,7 +263,9 @@ class GoalDetailsScreen extends ConsumerWidget {
             Text(
               progress!.statusMessage,
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
               textAlign: TextAlign.center,
             ),
@@ -226,24 +275,51 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDetailsSection(BuildContext context, GoalEntity goal, bool isDark, String currencySymbol) {
+  Widget _buildDetailsSection(
+    BuildContext context,
+    GoalEntity goal,
+    bool isDark,
+    String currencySymbol,
+  ) {
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Details', style: AppTypography.h4.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          )),
+          Text(
+            'Details',
+            style: AppTypography.h4.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+            ),
+          ),
           SizedBox(height: AppSpacing.md),
           _buildDetailRow('Type', goal.type.displayName, isDark),
-          _buildAmountDetailRow('Target', goal.targetAmount, currencySymbol, isDark),
+          _buildAmountDetailRow(
+            'Target',
+            goal.targetAmount,
+            currencySymbol,
+            isDark,
+          ),
           if (goal.targetMonthlyIncome != null)
-            _buildAmountDetailRow('Monthly Income Target', goal.targetMonthlyIncome!, currencySymbol, isDark, suffix: '/mo'),
+            _buildAmountDetailRow(
+              'Monthly Income Target',
+              goal.targetMonthlyIncome!,
+              currencySymbol,
+              isDark,
+              suffix: '/mo',
+            ),
           if (goal.targetDate != null)
-            _buildDetailRow('Target Date', AppDateUtils.formatShort(goal.targetDate!), isDark),
+            _buildDetailRow(
+              'Target Date',
+              AppDateUtils.formatShort(goal.targetDate!),
+              isDark,
+            ),
           _buildDetailRow('Tracking', goal.trackingMode.displayName, isDark),
-          _buildDetailRow('Created', AppDateUtils.formatShort(goal.createdAt), isDark),
+          _buildDetailRow(
+            'Created',
+            AppDateUtils.formatShort(goal.createdAt),
+            isDark,
+          ),
         ],
       ),
     );
@@ -255,28 +331,51 @@ class GoalDetailsScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTypography.bodyMedium.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          )),
-          Text(value, style: AppTypography.bodyMedium.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-            fontWeight: FontWeight.w500,
-          )),
+          Text(
+            label,
+            style: AppTypography.bodyMedium.copyWith(
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.bodyMedium.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAmountDetailRow(String label, double amount, String currencySymbol, bool isDark, {String? suffix}) {
-    final compactText = formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 2);
+  Widget _buildAmountDetailRow(
+    String label,
+    double amount,
+    String currencySymbol,
+    bool isDark, {
+    String? suffix,
+  }) {
+    final compactText = formatCompactIndian(
+      amount,
+      symbol: currencySymbol,
+      maxDecimals: 2,
+    );
     return Padding(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTypography.bodyMedium.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          )),
+          Text(
+            label,
+            style: AppTypography.bodyMedium.copyWith(
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
+            ),
+          ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -290,10 +389,13 @@ class GoalDetailsScreen extends ConsumerWidget {
                 ),
               ),
               if (suffix != null)
-                Text(suffix, style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                  fontWeight: FontWeight.w500,
-                )),
+                Text(
+                  suffix,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
             ],
           ),
         ],
@@ -301,31 +403,49 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMilestonesSection(BuildContext context, GoalProgress? progress, bool isDark) {
+  Widget _buildMilestonesSection(
+    BuildContext context,
+    GoalProgress? progress,
+    bool isDark,
+  ) {
     final milestones = progress?.achievedMilestones ?? [];
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Milestones', style: AppTypography.h4.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          )),
+          Text(
+            'Milestones',
+            style: AppTypography.h4.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+            ),
+          ),
           SizedBox(height: AppSpacing.md),
           if (milestones.isEmpty)
-            Text('No milestones reached yet', style: AppTypography.bodyMedium.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-            ))
+            Text(
+              'No milestones reached yet',
+              style: AppTypography.bodyMedium.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+            )
           else
-            ...GoalMilestone.values.where((m) => m != GoalMilestone.start).map((milestone) {
+            ...GoalMilestone.values.where((m) => m != GoalMilestone.start).map((
+              milestone,
+            ) {
               final achieved = milestones.contains(milestone);
               return Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Row(
                   children: [
                     Icon(
-                      achieved ? Icons.check_circle_rounded : Icons.circle_outlined,
-                      color: achieved ? AppColors.successLight : AppColors.neutral400Dark,
+                      achieved
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      color: achieved
+                          ? AppColors.successLight
+                          : AppColors.neutral400Dark,
                       size: 20,
                     ),
                     SizedBox(width: AppSpacing.sm),
@@ -335,9 +455,13 @@ class GoalDetailsScreen extends ConsumerWidget {
                       milestone.displayName,
                       style: AppTypography.bodyMedium.copyWith(
                         color: achieved
-                            ? (isDark ? Colors.white : AppColors.neutral900Light)
+                            ? (isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
                             : AppColors.neutral400Dark,
-                        fontWeight: achieved ? FontWeight.w500 : FontWeight.normal,
+                        fontWeight: achieved
+                            ? FontWeight.w500
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -349,8 +473,12 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-
-  Widget _buildActionsSection(BuildContext context, WidgetRef ref, GoalEntity goal, bool isDark) {
+  Widget _buildActionsSection(
+    BuildContext context,
+    WidgetRef ref,
+    GoalEntity goal,
+    bool isDark,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -365,7 +493,9 @@ class GoalDetailsScreen extends ConsumerWidget {
         SizedBox(height: AppSpacing.sm),
         OutlinedButton.icon(
           onPressed: () => _handleArchiveToggle(context, ref, goal),
-          icon: Icon(goal.isArchived ? Icons.unarchive_rounded : Icons.archive_rounded),
+          icon: Icon(
+            goal.isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
+          ),
           label: Text(goal.isArchived ? 'Unarchive Goal' : 'Archive Goal'),
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -383,7 +513,12 @@ class GoalDetailsScreen extends ConsumerWidget {
     );
   }
 
-  void _handleMenuAction(BuildContext context, WidgetRef ref, GoalEntity goal, String action) {
+  void _handleMenuAction(
+    BuildContext context,
+    WidgetRef ref,
+    GoalEntity goal,
+    String action,
+  ) {
     switch (action) {
       case 'archive':
       case 'unarchive':
@@ -395,7 +530,11 @@ class GoalDetailsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _handleArchiveToggle(BuildContext context, WidgetRef ref, GoalEntity goal) async {
+  Future<void> _handleArchiveToggle(
+    BuildContext context,
+    WidgetRef ref,
+    GoalEntity goal,
+  ) async {
     HapticFeedback.lightImpact();
     try {
       if (goal.isArchived) {
@@ -417,12 +556,18 @@ class GoalDetailsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, GoalEntity goal) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    GoalEntity goal,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Goal'),
-        content: Text('Are you sure you want to permanently delete "${goal.name}"?'),
+        content: Text(
+          'Are you sure you want to permanently delete "${goal.name}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

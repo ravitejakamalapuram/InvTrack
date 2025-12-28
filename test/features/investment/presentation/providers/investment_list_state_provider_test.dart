@@ -52,12 +52,14 @@ void main() {
 
   setUp(() {
     fakeRepository = FakeInvestmentRepository();
-    fakeRepository.seed(investments: [
-      openInvestment,
-      closedInvestment,
-      archivedOpenInvestment,
-      archivedClosedInvestment,
-    ]);
+    fakeRepository.seed(
+      investments: [
+        openInvestment,
+        closedInvestment,
+        archivedOpenInvestment,
+        archivedClosedInvestment,
+      ],
+    );
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(fakeRepository),
@@ -101,26 +103,39 @@ void main() {
     });
 
     test('should update filter when setFilter is called', () {
-      container.read(investmentListStateProvider.notifier).setFilter(InvestmentFilter.archived);
+      container
+          .read(investmentListStateProvider.notifier)
+          .setFilter(InvestmentFilter.archived);
       final state = container.read(investmentListStateProvider);
       expect(state.filter, InvestmentFilter.archived);
     });
 
     test('should cycle through all filters', () {
       final notifier = container.read(investmentListStateProvider.notifier);
-      
+
       notifier.setFilter(InvestmentFilter.open);
-      expect(container.read(investmentListStateProvider).filter, InvestmentFilter.open);
-      
+      expect(
+        container.read(investmentListStateProvider).filter,
+        InvestmentFilter.open,
+      );
+
       notifier.setFilter(InvestmentFilter.closed);
-      expect(container.read(investmentListStateProvider).filter, InvestmentFilter.closed);
-      
+      expect(
+        container.read(investmentListStateProvider).filter,
+        InvestmentFilter.closed,
+      );
+
       notifier.setFilter(InvestmentFilter.archived);
-      expect(container.read(investmentListStateProvider).filter, InvestmentFilter.archived);
-      
+      expect(
+        container.read(investmentListStateProvider).filter,
+        InvestmentFilter.archived,
+      );
+
       notifier.setFilter(InvestmentFilter.all);
-      expect(container.read(investmentListStateProvider).filter, InvestmentFilter.all);
+      expect(
+        container.read(investmentListStateProvider).filter,
+        InvestmentFilter.all,
+      );
     });
   });
 }
-

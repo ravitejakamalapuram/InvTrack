@@ -17,12 +17,14 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
 final googleSignInInitializedProvider = FutureProvider<void>((ref) async {
   if (kIsWeb) {
     await GoogleSignIn.instance.initialize(
-      clientId: '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com',
+      clientId:
+          '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com',
     );
   } else {
     // Android/iOS use serverClientId for Firebase Auth
     await GoogleSignIn.instance.initialize(
-      serverClientId: '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com',
+      serverClientId:
+          '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com',
     );
   }
 });

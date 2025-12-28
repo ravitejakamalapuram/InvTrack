@@ -26,7 +26,8 @@ class InvestmentListScreen extends ConsumerStatefulWidget {
   const InvestmentListScreen({super.key});
 
   @override
-  ConsumerState<InvestmentListScreen> createState() => _InvestmentListScreenState();
+  ConsumerState<InvestmentListScreen> createState() =>
+      _InvestmentListScreenState();
 }
 
 class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
@@ -41,9 +42,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _fabScale = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _fabController, curve: Curves.easeInOut),
-    );
+    _fabScale = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _fabController, curve: Curves.easeInOut));
   }
 
   @override
@@ -78,7 +80,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     final allInvestmentsAsync = ref.watch(allInvestmentsProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: CustomScrollView(
         slivers: [
           // Premium App Bar with Search
@@ -86,7 +90,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             expandedHeight: listState.isSearching ? 60 : 56,
             floating: true,
             pinned: true,
-            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            backgroundColor: isDark
+                ? AppColors.surfaceDark
+                : AppColors.surfaceLight,
             titleSpacing: AppSpacing.md,
             title: listState.isSearching
                 ? const InvestmentListSearchField()
@@ -105,7 +111,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           // Filter Tabs or Selection Controls
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
               child: listState.isSelectionMode
                   ? const InvestmentListSelectionControls()
                   : const InvestmentListFilterTabs(),
@@ -145,7 +154,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 ),
               ),
             ),
-      bottomNavigationBar: listState.isSelectionMode ? const InvestmentListActionBar() : null,
+      bottomNavigationBar: listState.isSelectionMode
+          ? const InvestmentListActionBar()
+          : null,
     );
   }
 
@@ -158,12 +169,18 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           decoration: BoxDecoration(
             color: listState.isSelectionMode
                 ? AppColors.primaryLight
-                : (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
+                    alpha: 0.1,
+                  ),
             borderRadius: AppSizes.borderRadiusMd,
           ),
           child: Icon(
-            listState.isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
-            color: listState.isSelectionMode ? Colors.white : (isDark ? Colors.white : AppColors.neutral700Light),
+            listState.isSelectionMode
+                ? Icons.close_rounded
+                : Icons.checklist_rounded,
+            color: listState.isSelectionMode
+                ? Colors.white
+                : (isDark ? Colors.white : AppColors.neutral700Light),
             size: 20,
           ),
         ),
@@ -179,7 +196,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           decoration: BoxDecoration(
             color: listState.sort != InvestmentSort.lastActivity
                 ? AppColors.primaryLight
-                : (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
+                    alpha: 0.1,
+                  ),
             borderRadius: AppSizes.borderRadiusMd,
           ),
           child: Icon(
@@ -196,7 +215,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(
+              alpha: 0.1,
+            ),
             borderRadius: AppSizes.borderRadiusMd,
           ),
           child: Icon(
@@ -244,36 +265,43 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         return SliverPadding(
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final investment = filteredInvestments[index];
-                return StaggeredFadeIn(
-                  index: index,
-                  child: InvestmentCard(
-                    investment: investment,
-                    isSelectionMode: listState.isSelectionMode,
-                    isSelected: listState.selectedIds.contains(investment.id),
-                    onTap: listState.isSelectionMode
-                        ? () => ref.read(investmentListStateProvider.notifier).toggleSelection(investment.id)
-                        : () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => InvestmentDetailScreen(investment: investment),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final investment = filteredInvestments[index];
+              return StaggeredFadeIn(
+                index: index,
+                child: InvestmentCard(
+                  investment: investment,
+                  isSelectionMode: listState.isSelectionMode,
+                  isSelected: listState.selectedIds.contains(investment.id),
+                  onTap: listState.isSelectionMode
+                      ? () => ref
+                            .read(investmentListStateProvider.notifier)
+                            .toggleSelection(investment.id)
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => InvestmentDetailScreen(
+                                investment: investment,
                               ),
-                            );
-                          },
-                    onLongPress: !listState.isSelectionMode
-                        ? () {
-                            ref.read(investmentListStateProvider.notifier).toggleSelectionMode();
-                            ref.read(investmentListStateProvider.notifier).toggleSelection(investment.id);
-                          }
-                        : null,
-                    onCheckboxChanged: (_) => ref.read(investmentListStateProvider.notifier).toggleSelection(investment.id),
-                  ),
-                );
-              },
-              childCount: filteredInvestments.length,
-            ),
+                            ),
+                          );
+                        },
+                  onLongPress: !listState.isSelectionMode
+                      ? () {
+                          ref
+                              .read(investmentListStateProvider.notifier)
+                              .toggleSelectionMode();
+                          ref
+                              .read(investmentListStateProvider.notifier)
+                              .toggleSelection(investment.id);
+                        }
+                      : null,
+                  onCheckboxChanged: (_) => ref
+                      .read(investmentListStateProvider.notifier)
+                      .toggleSelection(investment.id),
+                ),
+              );
+            }, childCount: filteredInvestments.length),
           ),
         );
       },
@@ -287,5 +315,4 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       ),
     );
   }
-
 }

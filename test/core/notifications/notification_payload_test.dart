@@ -5,20 +5,20 @@ void main() {
   group('NotificationPayload - Parsing', () {
     test('should parse null payload as unknown', () {
       final payload = NotificationPayload.parse(null);
-      
+
       expect(payload.type, NotificationPayloadType.unknown);
       expect(payload.investmentId, isNull);
     });
 
     test('should parse empty payload as unknown', () {
       final payload = NotificationPayload.parse('');
-      
+
       expect(payload.type, NotificationPayloadType.unknown);
     });
 
     test('should parse income_reminder with investment ID', () {
       final payload = NotificationPayload.parse('income_reminder:inv-456');
-      
+
       expect(payload.type, NotificationPayloadType.addCashFlow);
       expect(payload.investmentId, 'inv-456');
       expect(payload.params['flowType'], 'income');
@@ -26,7 +26,7 @@ void main() {
 
     test('should parse maturity_reminder with investment ID and days', () {
       final payload = NotificationPayload.parse('maturity_reminder:inv-789:7');
-      
+
       expect(payload.type, NotificationPayloadType.investmentDetail);
       expect(payload.investmentId, 'inv-789');
       expect(payload.params['daysToMaturity'], '7');
@@ -35,7 +35,7 @@ void main() {
 
     test('should parse maturity_reminder with 1 day', () {
       final payload = NotificationPayload.parse('maturity_reminder:inv-abc:1');
-      
+
       expect(payload.type, NotificationPayloadType.investmentDetail);
       expect(payload.investmentId, 'inv-abc');
       expect(payload.params['daysToMaturity'], '1');
@@ -43,42 +43,41 @@ void main() {
 
     test('should parse weekly_summary as overview', () {
       final payload = NotificationPayload.parse('weekly_summary');
-      
+
       expect(payload.type, NotificationPayloadType.overview);
       expect(payload.investmentId, isNull);
     });
 
     test('should parse monthly_summary as overview', () {
       final payload = NotificationPayload.parse('monthly_summary');
-      
+
       expect(payload.type, NotificationPayloadType.overview);
     });
 
     test('should parse test_notification as unknown', () {
       final payload = NotificationPayload.parse('test_notification');
-      
+
       expect(payload.type, NotificationPayloadType.unknown);
     });
 
     test('should parse test_scheduled_notification as unknown', () {
       final payload = NotificationPayload.parse('test_scheduled_notification');
-      
+
       expect(payload.type, NotificationPayloadType.unknown);
     });
-
   });
 
   group('NotificationPayload - Factory Methods', () {
     test('incomeReminder should create correct payload string', () {
       final payload = NotificationPayload.incomeReminder('test-id');
-      
+
       expect(payload, 'income_reminder:test-id');
     });
 
     test('maturityReminder should create correct payload string with days', () {
       final payload7 = NotificationPayload.maturityReminder('test-id', 7);
       final payload1 = NotificationPayload.maturityReminder('test-id', 1);
-      
+
       expect(payload7, 'maturity_reminder:test-id:7');
       expect(payload1, 'maturity_reminder:test-id:1');
     });
@@ -102,7 +101,10 @@ void main() {
     });
 
     test('should round-trip maturity_reminder payload', () {
-      final payloadString = NotificationPayload.maturityReminder('maturity-id', 7);
+      final payloadString = NotificationPayload.maturityReminder(
+        'maturity-id',
+        7,
+      );
       final parsed = NotificationPayload.parse(payloadString);
 
       expect(parsed.type, NotificationPayloadType.investmentDetail);
@@ -237,4 +239,3 @@ void main() {
     });
   });
 }
-

@@ -22,10 +22,12 @@ class FakeInvestmentRepository implements InvestmentRepository {
   List<CashFlowEntity> get cashFlows => List.unmodifiable(_cashFlows);
 
   /// Access archived investments for test assertions
-  List<InvestmentEntity> get archivedInvestments => List.unmodifiable(_archivedInvestments);
+  List<InvestmentEntity> get archivedInvestments =>
+      List.unmodifiable(_archivedInvestments);
 
   /// Access archived cash flows for test assertions
-  List<CashFlowEntity> get archivedCashFlows => List.unmodifiable(_archivedCashFlows);
+  List<CashFlowEntity> get archivedCashFlows =>
+      List.unmodifiable(_archivedCashFlows);
 
   /// Reset state between tests
   void reset() {
@@ -42,10 +44,18 @@ class FakeInvestmentRepository implements InvestmentRepository {
     List<InvestmentEntity>? archivedInvestments,
     List<CashFlowEntity>? archivedCashFlows,
   }) {
-    if (investments != null) _investments.addAll(investments);
-    if (cashFlows != null) _cashFlows.addAll(cashFlows);
-    if (archivedInvestments != null) _archivedInvestments.addAll(archivedInvestments);
-    if (archivedCashFlows != null) _archivedCashFlows.addAll(archivedCashFlows);
+    if (investments != null) {
+      _investments.addAll(investments);
+    }
+    if (cashFlows != null) {
+      _cashFlows.addAll(cashFlows);
+    }
+    if (archivedInvestments != null) {
+      _archivedInvestments.addAll(archivedInvestments);
+    }
+    if (archivedCashFlows != null) {
+      _archivedCashFlows.addAll(archivedCashFlows);
+    }
   }
 
   // ============ INVESTMENTS ============
@@ -56,10 +66,10 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(InvestmentStatus status) {
-    return Stream.value(
-      _investments.where((i) => i.status == status).toList(),
-    );
+  Stream<List<InvestmentEntity>> watchInvestmentsByStatus(
+    InvestmentStatus status,
+  ) {
+    return Stream.value(_investments.where((i) => i.status == status).toList());
   }
 
   @override
@@ -71,15 +81,15 @@ class FakeInvestmentRepository implements InvestmentRepository {
   Future<InvestmentEntity?> getInvestmentById(String id) async {
     // Search active first
     final active = _investments.cast<InvestmentEntity?>().firstWhere(
-          (i) => i?.id == id,
-          orElse: () => null,
-        );
+      (i) => i?.id == id,
+      orElse: () => null,
+    );
     if (active != null) return active;
     // Fall back to archived
     return _archivedInvestments.cast<InvestmentEntity?>().firstWhere(
-          (i) => i?.id == id,
-          orElse: () => null,
-        );
+      (i) => i?.id == id,
+      orElse: () => null,
+    );
   }
 
   @override
@@ -148,7 +158,9 @@ class FakeInvestmentRepository implements InvestmentRepository {
       final inv = _archivedInvestments.removeAt(index);
       _investments.add(inv.copyWith(isArchived: false));
       // Move cash flows back
-      final cfs = _archivedCashFlows.where((cf) => cf.investmentId == id).toList();
+      final cfs = _archivedCashFlows
+          .where((cf) => cf.investmentId == id)
+          .toList();
       for (final cf in cfs) {
         _archivedCashFlows.remove(cf);
         _cashFlows.add(cf);
@@ -172,9 +184,9 @@ class FakeInvestmentRepository implements InvestmentRepository {
   @override
   Future<InvestmentEntity?> getArchivedInvestmentById(String id) async {
     return _archivedInvestments.cast<InvestmentEntity?>().firstWhere(
-          (i) => i?.id == id,
-          orElse: () => null,
-        );
+      (i) => i?.id == id,
+      orElse: () => null,
+    );
   }
 
   @override
@@ -198,7 +210,9 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
-  Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId) async {
+  Future<List<CashFlowEntity>> getCashFlowsByInvestment(
+    String investmentId,
+  ) async {
     return _cashFlows.where((cf) => cf.investmentId == investmentId).toList();
   }
 
@@ -228,15 +242,23 @@ class FakeInvestmentRepository implements InvestmentRepository {
   // ============ ARCHIVED CASH FLOWS ============
 
   @override
-  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(String investmentId) {
+  Stream<List<CashFlowEntity>> watchArchivedCashFlowsByInvestment(
+    String investmentId,
+  ) {
     return Stream.value(
-      _archivedCashFlows.where((cf) => cf.investmentId == investmentId).toList(),
+      _archivedCashFlows
+          .where((cf) => cf.investmentId == investmentId)
+          .toList(),
     );
   }
 
   @override
-  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(String investmentId) async {
-    return _archivedCashFlows.where((cf) => cf.investmentId == investmentId).toList();
+  Future<List<CashFlowEntity>> getArchivedCashFlowsByInvestment(
+    String investmentId,
+  ) async {
+    return _archivedCashFlows
+        .where((cf) => cf.investmentId == investmentId)
+        .toList();
   }
 
   // ============ BULK OPERATIONS ============
@@ -261,4 +283,3 @@ class FakeInvestmentRepository implements InvestmentRepository {
     return count;
   }
 }
-

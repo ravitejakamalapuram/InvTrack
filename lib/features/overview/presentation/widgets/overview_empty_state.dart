@@ -12,7 +12,9 @@ class OverviewEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primaryLight;
+    final primaryColor = isDark
+        ? AppColors.primaryDark
+        : AppColors.primaryLight;
 
     return Column(
       children: [
@@ -54,7 +56,9 @@ class OverviewEmptyState extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                   height: 1.5,
                 ),
               ),
@@ -117,11 +121,7 @@ class OverviewEmptyState extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.touch_app_rounded,
-                color: primaryColor,
-                size: 24,
-              ),
+              Icon(Icons.touch_app_rounded, color: primaryColor, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -158,7 +158,9 @@ class _GettingStartedStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.primaryDark : AppColors.primaryLight;
+    final primaryColor = isDark
+        ? AppColors.primaryDark
+        : AppColors.primaryLight;
 
     return Row(
       children: [
@@ -198,7 +200,9 @@ class _GettingStartedStep extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],
@@ -233,4 +237,3 @@ class OverviewErrorCard extends StatelessWidget {
     );
   }
 }
-

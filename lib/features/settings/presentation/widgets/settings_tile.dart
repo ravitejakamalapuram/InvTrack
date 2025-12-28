@@ -30,7 +30,7 @@ class SettingsNavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       leading: Container(
@@ -40,11 +40,7 @@ class SettingsNavTile extends StatelessWidget {
           color: (iconColor ?? AppColors.primaryLight).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: iconColor ?? AppColors.primaryLight,
-        ),
+        child: Icon(icon, size: 18, color: iconColor ?? AppColors.primaryLight),
       ),
       title: Text(
         title,
@@ -56,16 +52,22 @@ class SettingsNavTile extends StatelessWidget {
           ? Text(
               subtitle!,
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             )
           : null,
-      trailing: trailing ?? (showChevron 
-          ? Icon(
-              Icons.chevron_right,
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
-            )
-          : null),
+      trailing:
+          trailing ??
+          (showChevron
+              ? Icon(
+                  Icons.chevron_right,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral400Light,
+                )
+              : null),
       onTap: onTap,
     );
   }
@@ -93,7 +95,7 @@ class SettingsToggleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return SwitchListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       secondary: Container(
@@ -103,11 +105,7 @@ class SettingsToggleTile extends StatelessWidget {
           color: (iconColor ?? AppColors.primaryLight).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: iconColor ?? AppColors.primaryLight,
-        ),
+        child: Icon(icon, size: 18, color: iconColor ?? AppColors.primaryLight),
       ),
       title: Text(
         title,
@@ -119,7 +117,9 @@ class SettingsToggleTile extends StatelessWidget {
           ? Text(
               subtitle!,
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             )
           : null,
@@ -149,7 +149,7 @@ class SettingsValueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       leading: Container(
@@ -161,19 +161,31 @@ class SettingsValueTile extends StatelessWidget {
         ),
         child: Icon(icon, size: 18, color: iconColor ?? AppColors.primaryLight),
       ),
-      title: Text(title, style: AppTypography.bodyMedium.copyWith(
-        color: isDark ? Colors.white : AppColors.neutral900Light,
-      )),
+      title: Text(
+        title,
+        style: AppTypography.bodyMedium.copyWith(
+          color: isDark ? Colors.white : AppColors.neutral900Light,
+        ),
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: AppTypography.bodyMedium.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          )),
+          Text(
+            value,
+            style: AppTypography.bodyMedium.copyWith(
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
+            ),
+          ),
           if (onTap != null) ...[
             SizedBox(width: AppSpacing.xs),
-            Icon(Icons.chevron_right, 
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light),
+            Icon(
+              Icons.chevron_right,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral400Light,
+            ),
           ],
         ],
       ),
@@ -181,4 +193,3 @@ class SettingsValueTile extends StatelessWidget {
     );
   }
 }
-

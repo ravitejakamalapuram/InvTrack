@@ -23,8 +23,8 @@ class GoalProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark 
-        ? Colors.white.withValues(alpha: 0.1) 
+    final bgColor = isDark
+        ? Colors.white.withValues(alpha: 0.1)
         : Colors.black.withValues(alpha: 0.08);
 
     return SizedBox(
@@ -82,7 +82,7 @@ class _RingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
-    
+
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
@@ -126,7 +126,7 @@ class GoalProgressRingLarge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return SizedBox(
       width: 180,
       height: 180,
@@ -161,7 +161,9 @@ class GoalProgressRingLarge extends StatelessWidget {
               Text(
                 'of $targetAmount',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],
@@ -171,4 +173,3 @@ class GoalProgressRingLarge extends StatelessWidget {
     );
   }
 }
-

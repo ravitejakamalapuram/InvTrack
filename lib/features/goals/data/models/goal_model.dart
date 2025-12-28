@@ -11,8 +11,8 @@ class GoalModel {
       'type': goal.type.name,
       'targetAmount': goal.targetAmount,
       'targetMonthlyIncome': goal.targetMonthlyIncome,
-      'targetDate': goal.targetDate != null 
-          ? Timestamp.fromDate(goal.targetDate!) 
+      'targetDate': goal.targetDate != null
+          ? Timestamp.fromDate(goal.targetDate!)
           : null,
       'trackingMode': goal.trackingMode.name,
       'linkedInvestmentIds': goal.linkedInvestmentIds,
@@ -32,25 +32,27 @@ class GoalModel {
       name: data['name'] as String,
       type: GoalType.fromString(data['type'] as String),
       targetAmount: (data['targetAmount'] as num).toDouble(),
-      targetMonthlyIncome: data['targetMonthlyIncome'] != null 
-          ? (data['targetMonthlyIncome'] as num).toDouble() 
+      targetMonthlyIncome: data['targetMonthlyIncome'] != null
+          ? (data['targetMonthlyIncome'] as num).toDouble()
           : null,
-      targetDate: data['targetDate'] != null 
-          ? (data['targetDate'] as Timestamp).toDate() 
+      targetDate: data['targetDate'] != null
+          ? (data['targetDate'] as Timestamp).toDate()
           : null,
       trackingMode: GoalTrackingMode.fromString(data['trackingMode'] as String),
       linkedInvestmentIds: List<String>.from(data['linkedInvestmentIds'] ?? []),
-      linkedTypes: (data['linkedTypes'] as List<dynamic>?)
-          ?.map((t) => InvestmentType.fromString(t as String))
-          .toList() ?? [],
+      linkedTypes:
+          (data['linkedTypes'] as List<dynamic>?)
+              ?.map((t) => InvestmentType.fromString(t as String))
+              .toList() ??
+          [],
       icon: data['icon'] as String? ?? GoalIcons.defaultIcon,
-      colorValue: data['colorValue'] as int? ?? GoalColors.defaultColor.toARGB32(),
+      colorValue:
+          data['colorValue'] as int? ?? GoalColors.defaultColor.toARGB32(),
       isArchived: data['isArchived'] as bool? ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: data['updatedAt'] != null 
-          ? (data['updatedAt'] as Timestamp).toDate() 
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
     );
   }
 }
-

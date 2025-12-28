@@ -25,9 +25,7 @@ class DataManagementScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Data Management', style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text('Data Management', style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
@@ -57,7 +55,9 @@ class DataManagementScreen extends ConsumerWidget {
                       SnackBar(content: Text('Export failed: ${state.error}')),
                     );
                   } else {
-                    ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
+                    ref
+                        .read(analyticsServiceProvider)
+                        .logExportGenerated(format: 'csv');
                   }
                 },
               ),
@@ -126,7 +126,9 @@ class DataManagementScreen extends ConsumerWidget {
                     child: Text(
                       'All data is stored locally on your device. Export regularly to keep a backup.',
                       style: AppTypography.small.copyWith(
-                        color: isDark ? Colors.white70 : AppColors.neutral700Light,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.neutral700Light,
                       ),
                     ),
                   ),
@@ -163,7 +165,7 @@ class DataManagementScreen extends ConsumerWidget {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       final result = await ref.read(seedDataStateProvider.notifier).seedData();
       if (context.mounted && result != null) {
@@ -177,4 +179,3 @@ class DataManagementScreen extends ConsumerWidget {
     }
   }
 }
-

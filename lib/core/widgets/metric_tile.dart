@@ -26,7 +26,7 @@ class MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -35,7 +35,9 @@ class MetricTile extends StatelessWidget {
           color: isDark ? AppColors.cardDark : AppColors.cardLight,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+            color: isDark
+                ? AppColors.neutral700Dark
+                : AppColors.neutral200Light,
           ),
         ),
         child: Column(
@@ -48,7 +50,9 @@ class MetricTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: (iconColor ?? AppColors.primaryLight).withValues(alpha: 0.1),
+                      color: (iconColor ?? AppColors.primaryLight).withValues(
+                        alpha: 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -63,7 +67,9 @@ class MetricTile extends StatelessWidget {
                   child: Text(
                     label,
                     style: AppTypography.caption.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral600Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral600Light,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -75,7 +81,9 @@ class MetricTile extends StatelessWidget {
             Text(
               value,
               style: AppTypography.numberSmall.copyWith(
-                color: isDark ? AppColors.neutral50Dark : AppColors.neutral900Light,
+                color: isDark
+                    ? AppColors.neutral50Dark
+                    : AppColors.neutral900Light,
               ),
             ),
             if (change != null) ...[
@@ -91,7 +99,7 @@ class MetricTile extends StatelessWidget {
   Widget _buildChangeIndicator(bool isDark) {
     final positive = isPositive ?? true;
     final color = positive ? AppColors.successLight : AppColors.dangerLight;
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -146,9 +154,7 @@ class HeroMetric extends StatelessWidget {
             Expanded(
               child: Text(
                 value,
-                style: AppTypography.numberLarge.copyWith(
-                  color: Colors.white,
-                ),
+                style: AppTypography.numberLarge.copyWith(color: Colors.white),
               ),
             ),
             if (trailing != null) trailing!,
@@ -167,4 +173,3 @@ class HeroMetric extends StatelessWidget {
     );
   }
 }
-

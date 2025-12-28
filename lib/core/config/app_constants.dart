@@ -1,5 +1,5 @@
 /// Application-wide configuration constants.
-/// 
+///
 /// This file centralizes all configurable values that may need to be
 /// adjusted or referenced across multiple parts of the application.
 library;
@@ -60,4 +60,3 @@ class BusinessConstants {
   /// Excel epoch date (1899-12-30) for serial date conversion
   static final DateTime excelEpoch = DateTime(1899, 12, 30);
 }
-

@@ -51,9 +51,11 @@ class NotificationGroups {
 class NotificationIds {
   static const int weeklySummary = 1000;
   static const int monthlySummary = 1001;
+
   /// Summary notification IDs for grouped notifications
   static const int incomeRemindersSummary = 1002;
   static const int maturityRemindersSummary = 1003;
+
   /// Tax reminder IDs (fixed dates throughout the year)
   static const int taxReminder80C = 1010;
   static const int taxReminderAdvanceQ1 = 1011;
@@ -61,22 +63,35 @@ class NotificationIds {
   static const int taxReminderAdvanceQ3 = 1013;
   static const int taxReminderAdvanceQ4 = 1014;
   static const int taxReminderITR = 1015;
+
   /// Generate a unique notification ID for income reminders based on investment ID
-  static int incomeReminder(String investmentId) => (investmentId.hashCode.abs() % 50000) + 50000;
+  static int incomeReminder(String investmentId) =>
+      (investmentId.hashCode.abs() % 50000) + 50000;
+
   /// Generate unique notification IDs for maturity reminders (7-day and 1-day before)
-  static int maturityReminder7Days(String investmentId) => (investmentId.hashCode.abs() % 25000) + 100000;
-  static int maturityReminder1Day(String investmentId) => (investmentId.hashCode.abs() % 25000) + 125000;
+  static int maturityReminder7Days(String investmentId) =>
+      (investmentId.hashCode.abs() % 25000) + 100000;
+  static int maturityReminder1Day(String investmentId) =>
+      (investmentId.hashCode.abs() % 25000) + 125000;
+
   /// Milestone notification ID based on investment ID and milestone type
   static int milestone(String investmentId, double moic) =>
       (investmentId.hashCode.abs() % 20000) + 150000 + (moic * 100).toInt();
+
   /// Risk alert notification ID
-  static int riskAlert(String alertType) => 200000 + alertType.hashCode.abs() % 1000;
+  static int riskAlert(String alertType) =>
+      200000 + alertType.hashCode.abs() % 1000;
+
   /// Weekly check-in notification
   static const int weeklyCheckIn = 2000;
+
   /// Idle investment alert ID (per investment)
-  static int idleAlert(String investmentId) => 210000 + investmentId.hashCode.abs() % 10000;
+  static int idleAlert(String investmentId) =>
+      210000 + investmentId.hashCode.abs() % 10000;
+
   /// FY summary notification
   static const int fySummary = 2001;
+
   /// Goal milestone notification ID based on goal ID and milestone percentage
   static int goalMilestone(String goalId, int milestonePercent) =>
       (goalId.hashCode.abs() % 20000) + 220000 + milestonePercent;
@@ -86,7 +101,8 @@ class NotificationIds {
 class NotificationPrefsKeys {
   static const String weeklySummaryEnabled = 'notifications_weekly_summary';
   static const String incomeRemindersEnabled = 'notifications_income_reminders';
-  static const String maturityRemindersEnabled = 'notifications_maturity_reminders';
+  static const String maturityRemindersEnabled =
+      'notifications_maturity_reminders';
   static const String monthlySummaryEnabled = 'notifications_monthly_summary';
   static const String milestonesEnabled = 'notifications_milestones';
   static const String goalMilestonesEnabled = 'notifications_goal_milestones';
@@ -96,12 +112,15 @@ class NotificationPrefsKeys {
   static const String idleAlertsEnabled = 'notifications_idle_alerts';
   static const String idleAlertDays = 'notifications_idle_alert_days';
   static const String fySummaryEnabled = 'notifications_fy_summary';
+
   /// Track which milestones have been shown (to avoid duplicates)
   static String milestoneShown(String investmentId, double moic) =>
       'milestone_shown_${investmentId}_${moic.toStringAsFixed(1)}';
+
   /// Track which goal milestones have been shown (to avoid duplicates)
   static String goalMilestoneShown(String goalId, int milestonePercent) =>
       'goal_milestone_shown_${goalId}_$milestonePercent';
+
   /// Track when idle alert was last shown for an investment
   static String idleAlertLastShown(String investmentId) =>
       'idle_alert_last_shown_$investmentId';
@@ -133,7 +152,9 @@ class NotificationService {
     // Initialize timezone
     tz_data.initializeTimeZones();
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -173,7 +194,9 @@ class NotificationService {
 
     // Check Android permissions
     final androidEnabled = await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.areNotificationsEnabled();
 
     // Check iOS permissions (for iOS, if we can check, otherwise assume granted)
@@ -196,12 +219,16 @@ class NotificationService {
 
     // iOS permissions
     final iosResult = await _plugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
     // Android 13+ permissions
     final androidResult = await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
 
     final granted = (iosResult ?? true) && (androidResult ?? true);
@@ -227,8 +254,10 @@ class NotificationService {
 
   void _onNotificationTapped(NotificationResponse response) {
     if (kDebugMode) {
-      debugPrint('🔔 Notification response: type=${response.notificationResponseType}, '
-          'actionId=${response.actionId}, payload=${response.payload}');
+      debugPrint(
+        '🔔 Notification response: type=${response.notificationResponseType}, '
+        'actionId=${response.actionId}, payload=${response.payload}',
+      );
     }
 
     final payload = response.payload;
@@ -293,7 +322,9 @@ class NotificationService {
     // For now, we can't directly reschedule from here without investment details
     // The snooze will be handled by the notification navigator
     if (kDebugMode) {
-      debugPrint('🔔 Snoozed notification for ${parsed.investmentId} by $days days');
+      debugPrint(
+        '🔔 Snoozed notification for ${parsed.investmentId} by $days days',
+      );
     }
     // Note: Full snooze implementation would require storing investment details
     // or looking them up via repository. For MVP, the notification is dismissed.
@@ -327,7 +358,10 @@ class NotificationService {
       _prefs.getBool(NotificationPrefsKeys.maturityRemindersEnabled) ?? true;
 
   Future<void> setMaturityRemindersEnabled(bool enabled) async {
-    await _prefs.setBool(NotificationPrefsKeys.maturityRemindersEnabled, enabled);
+    await _prefs.setBool(
+      NotificationPrefsKeys.maturityRemindersEnabled,
+      enabled,
+    );
   }
 
   bool get monthlySummaryEnabled =>
@@ -420,25 +454,42 @@ class NotificationService {
 
   /// Check if a milestone has already been shown for an investment
   bool isMilestoneShown(String investmentId, double moic) =>
-      _prefs.getBool(NotificationPrefsKeys.milestoneShown(investmentId, moic)) ?? false;
+      _prefs.getBool(
+        NotificationPrefsKeys.milestoneShown(investmentId, moic),
+      ) ??
+      false;
 
   /// Mark a milestone as shown
   Future<void> markMilestoneShown(String investmentId, double moic) async {
-    await _prefs.setBool(NotificationPrefsKeys.milestoneShown(investmentId, moic), true);
+    await _prefs.setBool(
+      NotificationPrefsKeys.milestoneShown(investmentId, moic),
+      true,
+    );
   }
 
   /// Check if a goal milestone has already been shown
   bool isGoalMilestoneShown(String goalId, int milestonePercent) =>
-      _prefs.getBool(NotificationPrefsKeys.goalMilestoneShown(goalId, milestonePercent)) ?? false;
+      _prefs.getBool(
+        NotificationPrefsKeys.goalMilestoneShown(goalId, milestonePercent),
+      ) ??
+      false;
 
   /// Mark a goal milestone as shown
-  Future<void> markGoalMilestoneShown(String goalId, int milestonePercent) async {
-    await _prefs.setBool(NotificationPrefsKeys.goalMilestoneShown(goalId, milestonePercent), true);
+  Future<void> markGoalMilestoneShown(
+    String goalId,
+    int milestonePercent,
+  ) async {
+    await _prefs.setBool(
+      NotificationPrefsKeys.goalMilestoneShown(goalId, milestonePercent),
+      true,
+    );
   }
 
   /// Get last time idle alert was shown for an investment (as ISO8601 string)
   DateTime? getIdleAlertLastShown(String investmentId) {
-    final str = _prefs.getString(NotificationPrefsKeys.idleAlertLastShown(investmentId));
+    final str = _prefs.getString(
+      NotificationPrefsKeys.idleAlertLastShown(investmentId),
+    );
     if (str == null) return null;
     return DateTime.tryParse(str);
   }
@@ -478,14 +529,18 @@ class NotificationService {
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     // Schedule for next Sunday at 10 AM
     final now = DateTime.now();
     var scheduledDate = DateTime(now.year, now.month, now.day, 10, 0);
 
     // Find next Sunday
-    while (scheduledDate.weekday != DateTime.sunday || scheduledDate.isBefore(now)) {
+    while (scheduledDate.weekday != DateTime.sunday ||
+        scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
@@ -530,7 +585,10 @@ class NotificationService {
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     // Schedule for last day of current month at 6 PM
     final now = DateTime.now();
@@ -595,7 +653,10 @@ class NotificationService {
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _plugin.show(
       99999, // Fixed ID for test notification
@@ -643,7 +704,10 @@ class NotificationService {
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     final scheduledTime = DateTime.now().add(Duration(seconds: delaySeconds));
 
@@ -658,7 +722,9 @@ class NotificationService {
     );
 
     if (kDebugMode) {
-      debugPrint('🔔 Test notification scheduled for $scheduledTime ($delaySeconds seconds from now)');
+      debugPrint(
+        '🔔 Test notification scheduled for $scheduledTime ($delaySeconds seconds from now)',
+      );
     }
     return true;
   }
@@ -754,7 +820,10 @@ class NotificationService {
       threadIdentifier: NotificationGroups.incomeReminders,
     );
 
-    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _plugin.zonedSchedule(
       NotificationIds.incomeReminder(investmentId),
@@ -767,7 +836,9 @@ class NotificationService {
     );
 
     if (kDebugMode) {
-      debugPrint('🔔 Income reminder scheduled for $investmentName on $scheduledDate');
+      debugPrint(
+        '🔔 Income reminder scheduled for $investmentName on $scheduledDate',
+      );
     }
   }
 
@@ -850,7 +921,10 @@ class NotificationService {
       threadIdentifier: NotificationGroups.maturityReminders,
     );
 
-    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     // Build enhanced notification body with financial context
     final body7Days = _buildMaturityNotificationBody(
@@ -893,7 +967,9 @@ class NotificationService {
       );
 
       if (kDebugMode) {
-        debugPrint('🔔 7-day maturity reminder scheduled for $investmentName on $scheduledDate');
+        debugPrint(
+          '🔔 7-day maturity reminder scheduled for $investmentName on $scheduledDate',
+        );
       }
     }
 
@@ -919,7 +995,9 @@ class NotificationService {
       );
 
       if (kDebugMode) {
-        debugPrint('🔔 1-day maturity reminder scheduled for $investmentName on $scheduledDate');
+        debugPrint(
+          '🔔 1-day maturity reminder scheduled for $investmentName on $scheduledDate',
+        );
       }
     }
   }
@@ -929,7 +1007,9 @@ class NotificationService {
     await _plugin.cancel(NotificationIds.maturityReminder7Days(investmentId));
     await _plugin.cancel(NotificationIds.maturityReminder1Day(investmentId));
     if (kDebugMode) {
-      debugPrint('🔔 Maturity reminders cancelled for investment $investmentId');
+      debugPrint(
+        '🔔 Maturity reminders cancelled for investment $investmentId',
+      );
     }
   }
 
@@ -943,9 +1023,13 @@ class NotificationService {
   ///
   /// This ensures all devices have notifications scheduled, not just
   /// the device that originally created the investment.
-  Future<void> rescheduleAllNotifications(List<InvestmentEntity> investments) async {
+  Future<void> rescheduleAllNotifications(
+    List<InvestmentEntity> investments,
+  ) async {
     if (kDebugMode) {
-      debugPrint('🔔 Re-scheduling notifications for ${investments.length} investments');
+      debugPrint(
+        '🔔 Re-scheduling notifications for ${investments.length} investments',
+      );
     }
 
     // Schedule recurring summaries
@@ -971,7 +1055,8 @@ class NotificationService {
         await scheduleIncomeReminder(
           investmentId: investment.id,
           investmentName: investment.name,
-          monthsBetweenPayments: investment.incomeFrequency!.monthsBetweenPayments,
+          monthsBetweenPayments:
+              investment.incomeFrequency!.monthsBetweenPayments,
           // lastIncomeDate will be null - schedules from today
           // TODO: In future, could look up last income cash flow date
         );
@@ -997,7 +1082,8 @@ class NotificationService {
 
     final count = investmentNames.length;
     final title = '💰 $count Income Payments Expected';
-    final body = investmentNames.take(3).join(', ') +
+    final body =
+        investmentNames.take(3).join(', ') +
         (count > 3 ? ' and ${count - 3} more' : '');
 
     final androidDetails = AndroidNotificationDetails(
@@ -1033,14 +1119,17 @@ class NotificationService {
   /// Show a grouped summary notification for maturity reminders.
   ///
   /// [investmentNames] - List of investment names maturing soon
-  Future<void> showMaturityRemindersSummary(List<String> investmentNames) async {
+  Future<void> showMaturityRemindersSummary(
+    List<String> investmentNames,
+  ) async {
     if (investmentNames.isEmpty) return;
     await _ensureInitialized();
     if (!await _ensurePermissionsForShow()) return;
 
     final count = investmentNames.length;
     final title = '📅 $count Investments Maturing Soon';
-    final body = investmentNames.take(3).join(', ') +
+    final body =
+        investmentNames.take(3).join(', ') +
         (count > 3 ? ' and ${count - 3} more' : '');
 
     final androidDetails = AndroidNotificationDetails(
@@ -1110,9 +1199,13 @@ class NotificationService {
       final formattedReturns = _formatCurrency(returns.abs(), currency);
 
       if (returns >= 0) {
-        buffer.write('. Maturity value: $formattedCurrent (+$formattedReturns, ${returnPercent.toStringAsFixed(1)}%)');
+        buffer.write(
+          '. Maturity value: $formattedCurrent (+$formattedReturns, ${returnPercent.toStringAsFixed(1)}%)',
+        );
       } else {
-        buffer.write('. Maturity value: $formattedCurrent (-$formattedReturns, ${returnPercent.toStringAsFixed(1)}%)');
+        buffer.write(
+          '. Maturity value: $formattedCurrent (-$formattedReturns, ${returnPercent.toStringAsFixed(1)}%)',
+        );
       }
     } else if (currentValue != null) {
       final formattedCurrent = _formatCurrency(currentValue, currency);
@@ -1168,8 +1261,10 @@ class NotificationService {
     final profit = totalReturned - totalInvested;
     final formattedProfit = _formatCurrency(profit, currency);
 
-    final title = '🎉 ${reachedMilestone.toStringAsFixed(1)}x Returns Achieved!';
-    final body = '$investmentName has reached ${reachedMilestone.toStringAsFixed(1)}x returns! '
+    final title =
+        '🎉 ${reachedMilestone.toStringAsFixed(1)}x Returns Achieved!';
+    final body =
+        '$investmentName has reached ${reachedMilestone.toStringAsFixed(1)}x returns! '
         'You\'ve earned $formattedProfit profit.';
 
     final androidDetails = AndroidNotificationDetails(
@@ -1200,7 +1295,9 @@ class NotificationService {
     );
 
     if (kDebugMode) {
-      debugPrint('🔔 Milestone notification shown: ${reachedMilestone}x for $investmentName');
+      debugPrint(
+        '🔔 Milestone notification shown: ${reachedMilestone}x for $investmentName',
+      );
     }
   }
 
@@ -1236,7 +1333,8 @@ class NotificationService {
     // Find the highest milestone reached that hasn't been shown
     int? reachedMilestone;
     for (final milestone in goalMilestones.reversed) {
-      if (progressPercent >= milestone && !isGoalMilestoneShown(goalId, milestone)) {
+      if (progressPercent >= milestone &&
+          !isGoalMilestoneShown(goalId, milestone)) {
         reachedMilestone = milestone;
         break;
       }
@@ -1255,17 +1353,20 @@ class NotificationService {
 
     if (reachedMilestone == 100) {
       title = '🎉 Goal Achieved!';
-      body = 'Congratulations! You\'ve reached your "$goalName" goal of $formattedTarget!';
+      body =
+          'Congratulations! You\'ve reached your "$goalName" goal of $formattedTarget!';
     } else {
       title = '🎯 $reachedMilestone% Progress!';
-      body = 'You\'re $reachedMilestone% of the way to your "$goalName" goal! '
+      body =
+          'You\'re $reachedMilestone% of the way to your "$goalName" goal! '
           'Current: $formattedCurrent of $formattedTarget.';
     }
 
     final androidDetails = AndroidNotificationDetails(
       NotificationChannels.goalMilestones,
       'Goal Milestones',
-      channelDescription: 'Celebration notifications for goal progress milestones',
+      channelDescription:
+          'Celebration notifications for goal progress milestones',
       importance: Importance.max,
       priority: Priority.max,
       playSound: true,
@@ -1290,7 +1391,9 @@ class NotificationService {
     );
 
     if (kDebugMode) {
-      debugPrint('🔔 Goal milestone notification shown: $reachedMilestone% for $goalName');
+      debugPrint(
+        '🔔 Goal milestone notification shown: $reachedMilestone% for $goalName',
+      );
     }
   }
 
@@ -1319,7 +1422,8 @@ class NotificationService {
       _TaxReminder(
         id: NotificationIds.taxReminder80C,
         title: '📋 80C Investment Deadline',
-        body: 'March 31 is the deadline for 80C tax-saving investments. Review your ELSS, PPF, and insurance investments.',
+        body:
+            'March 31 is the deadline for 80C tax-saving investments. Review your ELSS, PPF, and insurance investments.',
         date: DateTime(fyYear + 1, 3, 24, 9, 0), // 7 days before March 31
       ),
       // Advance Tax Q1 - June 15
@@ -1333,14 +1437,16 @@ class NotificationService {
       _TaxReminder(
         id: NotificationIds.taxReminderAdvanceQ2,
         title: '💰 Advance Tax Due (Q2)',
-        body: 'Second installment of advance tax (45% cumulative) is due by September 15.',
+        body:
+            'Second installment of advance tax (45% cumulative) is due by September 15.',
         date: DateTime(now.month >= 9 ? nextYear : currentYear, 9, 10, 9, 0),
       ),
       // Advance Tax Q3 - December 15
       _TaxReminder(
         id: NotificationIds.taxReminderAdvanceQ3,
         title: '💰 Advance Tax Due (Q3)',
-        body: 'Third installment of advance tax (75% cumulative) is due by December 15.',
+        body:
+            'Third installment of advance tax (75% cumulative) is due by December 15.',
         date: DateTime(now.month >= 12 ? nextYear : currentYear, 12, 10, 9, 0),
       ),
       // Advance Tax Q4 - March 15
@@ -1348,14 +1454,27 @@ class NotificationService {
         id: NotificationIds.taxReminderAdvanceQ4,
         title: '💰 Advance Tax Due (Q4)',
         body: 'Final installment of advance tax (100%) is due by March 15.',
-        date: DateTime(now.month >= 3 && now.day > 15 ? nextYear : currentYear, 3, 10, 9, 0),
+        date: DateTime(
+          now.month >= 3 && now.day > 15 ? nextYear : currentYear,
+          3,
+          10,
+          9,
+          0,
+        ),
       ),
       // ITR filing - July 31
       _TaxReminder(
         id: NotificationIds.taxReminderITR,
         title: '📝 ITR Filing Deadline',
-        body: 'July 31 is the deadline for filing Income Tax Returns. Gather your Form 16, investment proofs, and capital gains statements.',
-        date: DateTime(now.month >= 7 && now.day > 25 ? nextYear : currentYear, 7, 25, 9, 0),
+        body:
+            'July 31 is the deadline for filing Income Tax Returns. Gather your Form 16, investment proofs, and capital gains statements.',
+        date: DateTime(
+          now.month >= 7 && now.day > 25 ? nextYear : currentYear,
+          7,
+          25,
+          9,
+          0,
+        ),
       ),
     ];
 
@@ -1376,7 +1495,10 @@ class NotificationService {
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     for (final reminder in reminders) {
       if (reminder.date.isAfter(now)) {
@@ -1391,7 +1513,9 @@ class NotificationService {
         );
 
         if (kDebugMode) {
-          debugPrint('🔔 Tax reminder scheduled: ${reminder.title} on ${reminder.date}');
+          debugPrint(
+            '🔔 Tax reminder scheduled: ${reminder.title} on ${reminder.date}',
+          );
         }
       }
     }
@@ -1469,7 +1593,13 @@ class NotificationService {
     while (nextSunday.weekday != DateTime.sunday) {
       nextSunday = nextSunday.add(const Duration(days: 1));
     }
-    nextSunday = DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 18, 0);
+    nextSunday = DateTime(
+      nextSunday.year,
+      nextSunday.month,
+      nextSunday.day,
+      18,
+      0,
+    );
 
     // If it's already past 6 PM on Sunday, schedule for next Sunday
     if (nextSunday.isBefore(DateTime.now())) {
@@ -1532,7 +1662,8 @@ class NotificationService {
       if (inv.isClosed) continue;
 
       // Skip if activity is recent
-      if (inv.lastActivityDate != null && inv.lastActivityDate!.isAfter(threshold)) {
+      if (inv.lastActivityDate != null &&
+          inv.lastActivityDate!.isAfter(threshold)) {
         continue;
       }
 
@@ -1715,4 +1846,3 @@ class IdleInvestmentInfo {
     this.isClosed = false,
   });
 }
-

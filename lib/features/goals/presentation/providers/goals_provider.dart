@@ -22,10 +22,7 @@ final goalRepositoryProvider = Provider<GoalRepository>((ref) {
     throw AuthException.notAuthenticated();
   }
 
-  return FirestoreGoalRepository(
-    firestore: firestore,
-    userId: user.id,
-  );
+  return FirestoreGoalRepository(firestore: firestore, userId: user.id);
 });
 
 /// Stream provider for all active goals
@@ -64,7 +61,10 @@ final archivedGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
 
 /// Provider for a single goal by ID (one-time fetch)
 /// Returns null if user is not authenticated
-final goalByIdProvider = FutureProvider.family<GoalEntity?, String>((ref, id) async {
+final goalByIdProvider = FutureProvider.family<GoalEntity?, String>((
+  ref,
+  id,
+) async {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
@@ -75,7 +75,10 @@ final goalByIdProvider = FutureProvider.family<GoalEntity?, String>((ref, id) as
 
 /// Stream provider for watching a single goal by ID (real-time updates)
 /// Returns null if user is not authenticated
-final watchGoalByIdProvider = StreamProvider.family<GoalEntity?, String>((ref, id) {
+final watchGoalByIdProvider = StreamProvider.family<GoalEntity?, String>((
+  ref,
+  id,
+) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {

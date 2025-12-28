@@ -42,10 +42,7 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
     throw AuthException.notAuthenticated();
   }
 
-  return FirestoreInvestmentRepository(
-    firestore: firestore,
-    userId: user.id,
-  );
+  return FirestoreInvestmentRepository(firestore: firestore, userId: user.id);
 });
 
 /// Provider for the document repository using Firestore
@@ -59,10 +56,7 @@ final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
     throw AuthException.notAuthenticated();
   }
 
-  return FirestoreDocumentRepository(
-    firestore: firestore,
-    userId: user.id,
-  );
+  return FirestoreDocumentRepository(firestore: firestore, userId: user.id);
 });
 
 /// Provider for the document storage service

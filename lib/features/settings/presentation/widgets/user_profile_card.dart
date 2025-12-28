@@ -32,8 +32,8 @@ class UserProfileCard extends ConsumerWidget {
             color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark 
-                  ? Colors.white.withValues(alpha: 0.08) 
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
                   : Colors.black.withValues(alpha: 0.06),
             ),
           ),
@@ -81,7 +81,9 @@ class UserProfileCard extends ConsumerWidget {
                     Text(
                       displayName,
                       style: AppTypography.h4.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -89,7 +91,9 @@ class UserProfileCard extends ConsumerWidget {
                     Text(
                       email,
                       style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                       ),
                     ),
                   ],
@@ -118,4 +122,3 @@ class UserProfileCard extends ConsumerWidget {
     return 'U';
   }
 }
-

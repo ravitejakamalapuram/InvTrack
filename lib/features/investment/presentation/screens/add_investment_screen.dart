@@ -25,7 +25,8 @@ class AddInvestmentScreen extends ConsumerStatefulWidget {
   bool get isEditing => investmentToEdit != null;
 
   @override
-  ConsumerState<AddInvestmentScreen> createState() => _AddInvestmentScreenState();
+  ConsumerState<AddInvestmentScreen> createState() =>
+      _AddInvestmentScreenState();
 }
 
 class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
@@ -68,7 +69,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     HapticFeedback.selectionClick();
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _maturityDate ?? DateTime.now().add(const Duration(days: 365)),
+      initialDate:
+          _maturityDate ?? DateTime.now().add(const Duration(days: 365)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 30)),
       builder: (context, child) {
@@ -98,25 +100,31 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
     try {
       final name = _nameController.text.trim();
-      final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+      final notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim();
 
       if (widget.isEditing) {
-        await ref.read(investmentNotifierProvider.notifier).updateInvestment(
-          id: widget.investmentToEdit!.id,
-          name: name,
-          type: _selectedType,
-          notes: notes,
-          maturityDate: _maturityDate,
-          incomeFrequency: _incomeFrequency,
-        );
+        await ref
+            .read(investmentNotifierProvider.notifier)
+            .updateInvestment(
+              id: widget.investmentToEdit!.id,
+              name: name,
+              type: _selectedType,
+              notes: notes,
+              maturityDate: _maturityDate,
+              incomeFrequency: _incomeFrequency,
+            );
       } else {
-        await ref.read(investmentNotifierProvider.notifier).addInvestment(
-          name: name,
-          type: _selectedType,
-          notes: notes,
-          maturityDate: _maturityDate,
-          incomeFrequency: _incomeFrequency,
-        );
+        await ref
+            .read(investmentNotifierProvider.notifier)
+            .addInvestment(
+              name: name,
+              type: _selectedType,
+              notes: notes,
+              maturityDate: _maturityDate,
+              incomeFrequency: _incomeFrequency,
+            );
       }
 
       if (mounted) {
@@ -145,7 +153,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -153,7 +163,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: 0.05,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -239,7 +251,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 GradientButton(
                   onPressed: _submit,
                   isLoading: _isLoading,
-                  icon: widget.isEditing ? Icons.save_rounded : Icons.add_rounded,
+                  icon: widget.isEditing
+                      ? Icons.save_rounded
+                      : Icons.add_rounded,
                   label: widget.isEditing ? 'Save Changes' : 'Add Investment',
                 ),
 
@@ -292,7 +306,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       fontWeight: FontWeight.w500,
                       color: _maturityDate != null
                           ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                          : (isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light),
                     ),
                   ),
                 ),
@@ -300,7 +316,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   IconButton(
                     icon: Icon(
                       Icons.clear_rounded,
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral400Light,
                       size: 20,
                     ),
                     onPressed: () => setState(() => _maturityDate = null),
@@ -310,7 +328,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 else
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral400Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral400Light,
                   ),
               ],
             ),
@@ -346,7 +366,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     );
   }
 
-  Widget _buildFrequencyChip(IncomeFrequency? frequency, String label, bool isDark) {
+  Widget _buildFrequencyChip(
+    IncomeFrequency? frequency,
+    String label,
+    bool isDark,
+  ) {
     final isSelected = _incomeFrequency == frequency;
     return GestureDetector(
       onTap: () {
@@ -367,7 +391,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           border: Border.all(
             color: isSelected
                 ? AppColors.primaryLight
-                : (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light),
+                : (isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral300Light),
           ),
         ),
         child: Text(

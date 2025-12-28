@@ -13,8 +13,8 @@ class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository({
     required FirebaseAuth firebaseAuth,
     required GoogleSignIn googleSignIn,
-  })  : _firebaseAuth = firebaseAuth,
-        _googleSignIn = googleSignIn;
+  }) : _firebaseAuth = firebaseAuth,
+       _googleSignIn = googleSignIn;
 
   @override
   Stream<UserEntity?> get authStateChanges {
@@ -49,7 +49,8 @@ class FirebaseAuthRepository implements AuthRepository {
       // Get Google auth credentials using the new API
       // In v7, authentication provides idToken, and we get accessToken through authorization
       final googleAuth = googleUser.authentication;
-      final authorization = await googleUser.authorizationClient.authorizationForScopes(['email']);
+      final authorization = await googleUser.authorizationClient
+          .authorizationForScopes(['email']);
 
       final credential = GoogleAuthProvider.credential(
         accessToken: authorization?.accessToken,
@@ -58,7 +59,9 @@ class FirebaseAuthRepository implements AuthRepository {
 
       // Sign in to Firebase with Google credentials
       debugPrint('FirebaseAuth: Signing in to Firebase...');
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
 
       debugPrint('FirebaseAuth: Signed in as ${userCredential.user?.email}');
       return userCredential.user != null
@@ -100,4 +103,3 @@ class FirebaseAuthRepository implements AuthRepository {
     );
   }
 }
-

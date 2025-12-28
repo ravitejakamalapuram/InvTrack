@@ -9,7 +9,8 @@ class MockAnalyticsService extends Mock implements AnalyticsService {}
 /// Fake implementation of AnalyticsService for testing.
 /// Records all events for verification without Firebase.
 class FakeAnalyticsService implements AnalyticsService {
-  final List<({String name, Map<String, Object>? parameters})> loggedEvents = [];
+  final List<({String name, Map<String, Object>? parameters})> loggedEvents =
+      [];
   final List<String> screenViews = [];
   String? currentUserId;
   final Map<String, String?> userProperties = {};
@@ -70,10 +71,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.investmentCreated,
-      parameters: {
-        'investment_type': investmentType,
-        'has_notes': hasNotes,
-      },
+      parameters: {'investment_type': investmentType, 'has_notes': hasNotes},
     );
   }
 
@@ -84,10 +82,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.cashFlowAdded,
-      parameters: {
-        'flow_type': flowType,
-        'amount_range': amountRange,
-      },
+      parameters: {'flow_type': flowType, 'amount_range': amountRange},
     );
   }
 
@@ -98,10 +93,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.csvImportCompleted,
-      parameters: {
-        'row_count': rowCount,
-        'success_count': successCount,
-      },
+      parameters: {'row_count': rowCount, 'success_count': successCount},
     );
   }
 
@@ -174,10 +166,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.goalMilestoneReached,
-      parameters: {
-        'goal_id': goalId,
-        'milestone': milestone,
-      },
+      parameters: {'goal_id': goalId, 'milestone': milestone},
     );
   }
 
@@ -188,11 +177,7 @@ class FakeAnalyticsService implements AnalyticsService {
   }) {
     logEvent(
       name: AnalyticsEvents.documentAdded,
-      parameters: {
-        'document_type': documentType,
-        'file_type': fileType,
-      },
+      parameters: {'document_type': documentType, 'file_type': fileType},
     );
   }
 }
-

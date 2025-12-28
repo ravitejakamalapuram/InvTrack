@@ -50,4 +50,3 @@ abstract class GoalRepository {
   /// Delete an archived goal permanently
   Future<void> deleteArchivedGoal(String id);
 }
-

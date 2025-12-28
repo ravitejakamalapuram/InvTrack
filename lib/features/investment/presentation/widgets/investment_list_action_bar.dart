@@ -57,7 +57,10 @@ class InvestmentListActionBar extends ConsumerWidget {
                   ? () => _showDeleteConfirmation(context, ref)
                   : null,
               icon: Icon(Icons.delete_rounded, color: AppColors.errorLight),
-              label: Text('Delete', style: TextStyle(color: AppColors.errorLight)),
+              label: Text(
+                'Delete',
+                style: TextStyle(color: AppColors.errorLight),
+              ),
             ),
           ],
         ),
@@ -65,7 +68,10 @@ class InvestmentListActionBar extends ConsumerWidget {
     );
   }
 
-  Future<void> _showDeleteConfirmation(BuildContext context, WidgetRef ref) async {
+  Future<void> _showDeleteConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final listState = ref.read(investmentListStateProvider);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -96,7 +102,11 @@ class InvestmentListActionBar extends ConsumerWidget {
       ref.read(investmentListStateProvider.notifier).clearSelection();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$deletedCount investment${deletedCount != 1 ? 's' : ''} deleted')),
+          SnackBar(
+            content: Text(
+              '$deletedCount investment${deletedCount != 1 ? 's' : ''} deleted',
+            ),
+          ),
         );
       }
     }
@@ -105,7 +115,9 @@ class InvestmentListActionBar extends ConsumerWidget {
   Future<void> _showMergeDialog(BuildContext context, WidgetRef ref) async {
     final listState = ref.read(investmentListStateProvider);
     final allInvestments = ref.read(allInvestmentsProvider).value ?? [];
-    final toMerge = allInvestments.where((i) => listState.selectedIds.contains(i.id)).toList();
+    final toMerge = allInvestments
+        .where((i) => listState.selectedIds.contains(i.id))
+        .toList();
 
     // Find the most common type as default
     final typeCount = <InvestmentType, int>{};
@@ -125,7 +137,11 @@ class InvestmentListActionBar extends ConsumerWidget {
 
     if (result != null && result.name.isNotEmpty && context.mounted) {
       final notifier = ref.read(investmentNotifierProvider.notifier);
-      await notifier.mergeInvestments(listState.selectedIds.toList(), result.name, type: result.type);
+      await notifier.mergeInvestments(
+        listState.selectedIds.toList(),
+        result.name,
+        type: result.type,
+      );
       ref.read(investmentListStateProvider.notifier).clearSelection();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -135,4 +151,3 @@ class InvestmentListActionBar extends ConsumerWidget {
     }
   }
 }
-

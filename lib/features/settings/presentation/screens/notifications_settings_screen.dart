@@ -22,13 +22,11 @@ class NotificationsSettingsScreen extends ConsumerWidget {
     final notifier = ref.read(notificationSettingsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Notifications', style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text('Notifications', style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
-          
+
           // Summary notifications
           SettingsSection(
             title: 'Summaries',
@@ -41,7 +39,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 subtitle: 'Get a summary every Sunday',
                 value: settings.weeklySummaryEnabled,
                 onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.weeklySummary, value),
+                  NotificationSettingType.weeklySummary,
+                  value,
+                ),
               ),
               SettingsToggleTile(
                 icon: Icons.summarize,
@@ -50,7 +50,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 subtitle: 'End of month income recap',
                 value: settings.monthlySummaryEnabled,
                 onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.monthlySummary, value),
+                  NotificationSettingType.monthlySummary,
+                  value,
+                ),
               ),
             ],
           ),
@@ -67,7 +69,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 subtitle: 'When income is expected',
                 value: settings.incomeRemindersEnabled,
                 onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.incomeReminders, value),
+                  NotificationSettingType.incomeReminders,
+                  value,
+                ),
               ),
               SettingsToggleTile(
                 icon: Icons.event_available,
@@ -76,7 +80,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 subtitle: 'Before investments mature',
                 value: settings.maturityRemindersEnabled,
                 onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.maturityReminders, value),
+                  NotificationSettingType.maturityReminders,
+                  value,
+                ),
               ),
             ],
           ),
@@ -92,7 +98,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 subtitle: 'Celebrate at 25%, 50%, 75%, 100%',
                 value: settings.goalMilestonesEnabled,
                 onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.goalMilestones, value),
+                  NotificationSettingType.goalMilestones,
+                  value,
+                ),
               ),
             ],
           ),
@@ -114,10 +122,14 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(success
-                              ? 'Test notification sent!'
-                              : 'Permission denied'),
-                          backgroundColor: success ? Colors.blue : Colors.orange,
+                          content: Text(
+                            success
+                                ? 'Test notification sent!'
+                                : 'Permission denied',
+                          ),
+                          backgroundColor: success
+                              ? Colors.blue
+                              : Colors.orange,
                         ),
                       );
                     }
@@ -131,14 +143,20 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                   showChevron: false,
                   onTap: () async {
                     final service = ref.read(notificationServiceProvider);
-                    final success = await service.scheduleTestNotification(delaySeconds: 5);
+                    final success = await service.scheduleTestNotification(
+                      delaySeconds: 5,
+                    );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(success
-                              ? 'Scheduled for 5 seconds'
-                              : 'Permission denied'),
-                          backgroundColor: success ? Colors.purple : Colors.orange,
+                          content: Text(
+                            success
+                                ? 'Scheduled for 5 seconds'
+                                : 'Permission denied',
+                          ),
+                          backgroundColor: success
+                              ? Colors.purple
+                              : Colors.orange,
                         ),
                       );
                     }
@@ -154,4 +172,3 @@ class NotificationsSettingsScreen extends ConsumerWidget {
     );
   }
 }
-

@@ -7,10 +7,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 class GoalsEmptyState extends StatelessWidget {
   final VoidCallback onCreateGoal;
 
-  const GoalsEmptyState({
-    super.key,
-    required this.onCreateGoal,
-  });
+  const GoalsEmptyState({super.key, required this.onCreateGoal});
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +34,11 @@ class GoalsEmptyState extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text(
-                '🎯',
-                style: const TextStyle(fontSize: 56),
-              ),
+              child: Text('🎯', style: const TextStyle(fontSize: 56)),
             ),
           ),
           SizedBox(height: AppSpacing.xl),
-          
+
           // Title
           Text(
             'Set Your First Goal',
@@ -54,22 +48,24 @@ class GoalsEmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: AppSpacing.sm),
-          
+
           // Description
           Text(
             'Goals help you track progress toward your financial targets. '
             'Link them to your investments for automatic tracking.',
             style: AppTypography.bodyMedium.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
             ),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: AppSpacing.xl),
-          
+
           // Example goals
           _buildExampleGoals(isDark),
           SizedBox(height: AppSpacing.xl),
-          
+
           // CTA Button
           FilledButton.icon(
             onPressed: onCreateGoal,
@@ -101,7 +97,9 @@ class GoalsEmptyState extends StatelessWidget {
         Text(
           'Example Goals',
           style: AppTypography.small.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -117,7 +115,9 @@ class GoalsEmptyState extends StatelessWidget {
                 vertical: AppSpacing.sm,
               ),
               decoration: BoxDecoration(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                color: (isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.05,
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -132,13 +132,17 @@ class GoalsEmptyState extends StatelessWidget {
                         e.$2,
                         style: AppTypography.small.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : AppColors.neutral900Light,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
                         ),
                       ),
                       Text(
                         e.$3,
                         style: AppTypography.small.copyWith(
-                          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral500Light,
                         ),
                       ),
                     ],
@@ -152,4 +156,3 @@ class GoalsEmptyState extends StatelessWidget {
     );
   }
 }
-

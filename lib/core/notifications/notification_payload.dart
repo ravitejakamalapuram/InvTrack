@@ -90,7 +90,9 @@ class NotificationPayload {
 
       case 'weekly_summary':
       case 'monthly_summary':
-        return const NotificationPayload(type: NotificationPayloadType.overview);
+        return const NotificationPayload(
+          type: NotificationPayloadType.overview,
+        );
 
       case 'milestone':
         return NotificationPayload(
@@ -103,7 +105,9 @@ class NotificationPayload {
         );
 
       case 'tax_reminder':
-        return const NotificationPayload(type: NotificationPayloadType.overview);
+        return const NotificationPayload(
+          type: NotificationPayloadType.overview,
+        );
 
       case 'risk_alert':
         return NotificationPayload(
@@ -125,7 +129,9 @@ class NotificationPayload {
         );
 
       case 'fy_summary':
-        return const NotificationPayload(type: NotificationPayloadType.overview);
+        return const NotificationPayload(
+          type: NotificationPayloadType.overview,
+        );
 
       case 'goal_milestone':
         return NotificationPayload(
@@ -154,7 +160,8 @@ class NotificationPayload {
   }
 
   /// Create a payload string for income reminder
-  static String incomeReminder(String investmentId) => 'income_reminder:$investmentId';
+  static String incomeReminder(String investmentId) =>
+      'income_reminder:$investmentId';
 
   /// Create a payload string for maturity reminder
   static String maturityReminder(String investmentId, int daysToMaturity) =>
@@ -190,6 +197,6 @@ class NotificationPayload {
       'goal_milestone:$goalId:$milestonePercent';
 
   @override
-  String toString() => 'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params)';
+  String toString() =>
+      'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params)';
 }
-

@@ -17,8 +17,8 @@ import 'package:uuid/uuid.dart';
 
 final investmentNotifierProvider =
     NotifierProvider<InvestmentNotifier, AsyncValue<void>>(
-  InvestmentNotifier.new,
-);
+      InvestmentNotifier.new,
+    );
 
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   @override
@@ -53,10 +53,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       await ref.read(investmentRepositoryProvider).createInvestment(investment);
 
       // Track analytics event
-      ref.read(analyticsServiceProvider).logInvestmentCreated(
-        investmentType: type.name,
-        hasNotes: notes != null && notes.trim().isNotEmpty,
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logInvestmentCreated(
+            investmentType: type.name,
+            hasNotes: notes != null && notes.trim().isNotEmpty,
+          );
 
       // Schedule income reminder if frequency is set
       if (incomeFrequency != null) {
@@ -93,7 +95,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
     state = const AsyncValue.loading();
     try {
-      final existing = await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final existing = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
 
       final updated = existing.copyWith(
@@ -151,7 +155,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> reopenInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
-      final investment = await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).reopenInvestment(id);
       if (investment != null) {
         // Re-schedule income reminder if investment has income frequency
@@ -191,7 +197,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> unarchiveInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
-      final investment = await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).unarchiveInvestment(id);
       if (investment != null) {
         // Re-schedule reminders if applicable
@@ -271,10 +279,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
       // Track analytics event
-      ref.read(analyticsServiceProvider).logCashFlowAdded(
-        flowType: type.name,
-        amountRange: _getAmountRange(amount),
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logCashFlowAdded(
+            flowType: type.name,
+            amountRange: _getAmountRange(amount),
+          );
 
       // Check for milestone achievements after adding return cash flows
       if (type == CashFlowType.income || type == CashFlowType.returnFlow) {
@@ -355,7 +365,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Get all investments to merge
       final allInvestments = await ref.read(allInvestmentsProvider.future);
-      final toMerge = allInvestments.where((i) => investmentIds.contains(i.id)).toList();
+      final toMerge = allInvestments
+          .where((i) => investmentIds.contains(i.id))
+          .toList();
 
       if (toMerge.isEmpty) {
         state = const AsyncValue.data(null);
@@ -371,7 +383,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         for (final inv in toMerge) {
           typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
         }
-        finalType = typeCount.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+        finalType = typeCount.entries
+            .reduce((a, b) => a.value > b.value ? a : b)
+            .key;
       }
 
       // Create new merged investment
@@ -394,15 +408,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       for (final inv in toMerge) {
         final cashFlows = await repo.getCashFlowsByInvestment(inv.id);
         for (final cf in cashFlows) {
-          newCashFlows.add(CashFlowEntity(
-            id: const Uuid().v4(),
-            investmentId: newInvestmentId,
-            type: cf.type,
-            amount: cf.amount,
-            date: cf.date,
-            notes: cf.notes != null ? '${cf.notes} (from ${inv.name})' : 'From ${inv.name}',
-            createdAt: now,
-          ));
+          newCashFlows.add(
+            CashFlowEntity(
+              id: const Uuid().v4(),
+              investmentId: newInvestmentId,
+              type: cf.type,
+              amount: cf.amount,
+              date: cf.date,
+              notes: cf.notes != null
+                  ? '${cf.notes} (from ${inv.name})'
+                  : 'From ${inv.name}',
+              createdAt: now,
+            ),
+          );
         }
       }
 
@@ -432,10 +450,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final result = await ref.read(investmentRepositoryProvider).bulkImport(
-        investments: investments,
-        cashFlows: cashFlows,
-      );
+      final result = await ref
+          .read(investmentRepositoryProvider)
+          .bulkImport(investments: investments, cashFlows: cashFlows);
 
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -464,7 +481,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       throw ValidationException.emptyField('Name');
     }
     if (trimmed.length > ValidationConstants.maxNameLength) {
-      throw ValidationException.tooLong('Name', ValidationConstants.maxNameLength);
+      throw ValidationException.tooLong(
+        'Name',
+        ValidationConstants.maxNameLength,
+      );
     }
   }
 
@@ -479,8 +499,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Validates optional notes field.
   /// Throws [ValidationException] if notes exceed max length.
   void _validateNotes(String? notes) {
-    if (notes != null && notes.trim().length > ValidationConstants.maxNotesLength) {
-      throw ValidationException.tooLong('Notes', ValidationConstants.maxNotesLength);
+    if (notes != null &&
+        notes.trim().length > ValidationConstants.maxNotesLength) {
+      throw ValidationException.tooLong(
+        'Notes',
+        ValidationConstants.maxNotesLength,
+      );
     }
   }
 
@@ -503,7 +527,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
     try {
       // Get the last income date from cash flows
-      final cashFlows = await ref.read(investmentRepositoryProvider)
+      final cashFlows = await ref
+          .read(investmentRepositoryProvider)
           .getCashFlowsByInvestment(investment.id);
 
       DateTime? lastIncomeDate;
@@ -515,12 +540,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         }
       }
 
-      await ref.read(notificationServiceProvider).scheduleIncomeReminder(
-        investmentId: investment.id,
-        investmentName: investment.name,
-        monthsBetweenPayments: investment.incomeFrequency!.monthsBetweenPayments,
-        lastIncomeDate: lastIncomeDate,
-      );
+      await ref
+          .read(notificationServiceProvider)
+          .scheduleIncomeReminder(
+            investmentId: investment.id,
+            investmentName: investment.name,
+            monthsBetweenPayments:
+                investment.incomeFrequency!.monthsBetweenPayments,
+            lastIncomeDate: lastIncomeDate,
+          );
     } catch (e) {
       // Don't fail the main operation if notification scheduling fails
       // Just log and continue
@@ -530,7 +558,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Cancel income reminder for an investment
   Future<void> _cancelIncomeReminder(String investmentId) async {
     try {
-      await ref.read(notificationServiceProvider).cancelIncomeReminder(investmentId);
+      await ref
+          .read(notificationServiceProvider)
+          .cancelIncomeReminder(investmentId);
     } catch (e) {
       // Don't fail the main operation if notification cancellation fails
     }
@@ -543,11 +573,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     if (investment.maturityDate == null) return;
 
     try {
-      await ref.read(notificationServiceProvider).scheduleMaturityReminders(
-        investmentId: investment.id,
-        investmentName: investment.name,
-        maturityDate: investment.maturityDate!,
-      );
+      await ref
+          .read(notificationServiceProvider)
+          .scheduleMaturityReminders(
+            investmentId: investment.id,
+            investmentName: investment.name,
+            maturityDate: investment.maturityDate!,
+          );
     } catch (e) {
       // Don't fail the main operation if notification scheduling fails
     }
@@ -556,7 +588,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Cancel maturity reminders for an investment
   Future<void> _cancelMaturityReminders(String investmentId) async {
     try {
-      await ref.read(notificationServiceProvider).cancelMaturityReminders(investmentId);
+      await ref
+          .read(notificationServiceProvider)
+          .cancelMaturityReminders(investmentId);
     } catch (e) {
       // Don't fail the main operation if notification cancellation fails
     }
@@ -567,10 +601,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   /// Check for milestone achievements after adding a cash flow
   Future<void> _checkMilestoneAfterCashFlow(String investmentId) async {
     try {
-      final investment = await ref.read(investmentRepositoryProvider).getInvestmentById(investmentId);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(investmentId);
       if (investment == null) return;
 
-      final cashFlows = await ref.read(investmentRepositoryProvider).getCashFlowsByInvestment(investmentId);
+      final cashFlows = await ref
+          .read(investmentRepositoryProvider)
+          .getCashFlowsByInvestment(investmentId);
 
       // Calculate totals
       double totalInvested = 0;
@@ -584,12 +622,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       }
 
       // Check for milestone notification
-      await ref.read(notificationServiceProvider).checkAndShowMilestone(
-        investmentId: investmentId,
-        investmentName: investment.name,
-        totalInvested: totalInvested,
-        totalReturned: totalReturned,
-      );
+      await ref
+          .read(notificationServiceProvider)
+          .checkAndShowMilestone(
+            investmentId: investmentId,
+            investmentName: investment.name,
+            totalInvested: totalInvested,
+            totalReturned: totalReturned,
+          );
     } catch (e) {
       // Don't fail the main operation if milestone check fails
     }

@@ -13,10 +13,12 @@ class InvestmentListSearchField extends ConsumerStatefulWidget {
   const InvestmentListSearchField({super.key});
 
   @override
-  ConsumerState<InvestmentListSearchField> createState() => _InvestmentListSearchFieldState();
+  ConsumerState<InvestmentListSearchField> createState() =>
+      _InvestmentListSearchFieldState();
 }
 
-class _InvestmentListSearchFieldState extends ConsumerState<InvestmentListSearchField> {
+class _InvestmentListSearchFieldState
+    extends ConsumerState<InvestmentListSearchField> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -72,7 +74,9 @@ class _InvestmentListSearchFieldState extends ConsumerState<InvestmentListSearch
               decoration: InputDecoration(
                 hintText: 'Search...',
                 hintStyle: AppTypography.body.copyWith(
-                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral500Dark
+                      : AppColors.neutral500Light,
                   fontSize: 16,
                   height: 1.2,
                 ),
@@ -84,7 +88,9 @@ class _InvestmentListSearchFieldState extends ConsumerState<InvestmentListSearch
                 isDense: true,
               ),
               onChanged: (value) {
-                ref.read(investmentListStateProvider.notifier).setSearchQuery(value);
+                ref
+                    .read(investmentListStateProvider.notifier)
+                    .setSearchQuery(value);
               },
             ),
           ),
@@ -97,11 +103,12 @@ class _InvestmentListSearchFieldState extends ConsumerState<InvestmentListSearch
           child: Icon(
             Icons.close_rounded,
             size: 20,
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
         ),
       ],
     );
   }
 }
-

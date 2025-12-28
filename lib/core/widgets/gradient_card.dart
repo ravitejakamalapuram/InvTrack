@@ -23,7 +23,7 @@ class GradientCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardGradient = gradient ?? AppColors.heroGradient;
-    
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
@@ -52,10 +52,7 @@ class GradientCard extends StatelessWidget {
               gradient: cardGradient,
               borderRadius: BorderRadius.circular(borderRadius),
             ),
-            child: Padding(
-              padding: padding,
-              child: child,
-            ),
+            child: Padding(padding: padding, child: child),
           ),
         ),
       ),
@@ -83,18 +80,19 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        color: isDark 
+        color: isDark
             ? Colors.white.withValues(alpha: 0.05)
             : Colors.white.withValues(alpha: 0.7),
         border: Border.all(
-          color: borderColor ?? 
-            (isDark 
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.8)),
+          color:
+              borderColor ??
+              (isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.white.withValues(alpha: 0.8)),
           width: 1,
         ),
         boxShadow: isDark ? null : AppColors.cardShadowLight,
@@ -104,13 +102,9 @@ class GlassCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(borderRadius),
-          child: Padding(
-            padding: padding,
-            child: child,
-          ),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
   }
 }
-

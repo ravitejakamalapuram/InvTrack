@@ -32,7 +32,7 @@ class FakeFlutterLocalNotificationsPlugin
     InitializationSettings initializationSettings, {
     void Function(NotificationResponse)? onDidReceiveNotificationResponse,
     void Function(NotificationResponse)?
-        onDidReceiveBackgroundNotificationResponse,
+    onDidReceiveBackgroundNotificationResponse,
   }) async {
     _isInitialized = true;
     if (kDebugMode) {
@@ -49,12 +49,9 @@ class FakeFlutterLocalNotificationsPlugin
     NotificationDetails? notificationDetails, {
     String? payload,
   }) async {
-    shownNotifications.add(FakeNotification(
-      id: id,
-      title: title,
-      body: body,
-      payload: payload,
-    ));
+    shownNotifications.add(
+      FakeNotification(id: id, title: title, body: body, payload: payload),
+    );
     if (kDebugMode) {
       debugPrint('🔔 FakeNotificationPlugin: show($id, $title, $body)');
     }
@@ -71,17 +68,20 @@ class FakeFlutterLocalNotificationsPlugin
     String? payload,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
-    scheduledNotifications.add(FakeScheduledNotification(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduledDate,
-      payload: payload,
-      matchDateTimeComponents: matchDateTimeComponents,
-    ));
+    scheduledNotifications.add(
+      FakeScheduledNotification(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledDate,
+        payload: payload,
+        matchDateTimeComponents: matchDateTimeComponents,
+      ),
+    );
     if (kDebugMode) {
       debugPrint(
-          '🔔 FakeNotificationPlugin: zonedSchedule($id, $title, $scheduledDate)');
+        '🔔 FakeNotificationPlugin: zonedSchedule($id, $title, $scheduledDate)',
+      );
     }
   }
 
@@ -108,15 +108,11 @@ class FakeFlutterLocalNotificationsPlugin
   bool get isInitialized => _isInitialized;
 
   @override
-  Future<List<PendingNotificationRequest>>
-      pendingNotificationRequests() async {
+  Future<List<PendingNotificationRequest>> pendingNotificationRequests() async {
     return scheduledNotifications
-        .map((n) => PendingNotificationRequest(
-              n.id,
-              n.title,
-              n.body,
-              n.payload,
-            ))
+        .map(
+          (n) => PendingNotificationRequest(n.id, n.title, n.body, n.payload),
+        )
         .toList();
   }
 
@@ -127,7 +123,8 @@ class FakeFlutterLocalNotificationsPlugin
 
   @override
   T? resolvePlatformSpecificImplementation<
-      T extends FlutterLocalNotificationsPlatform>() {
+    T extends FlutterLocalNotificationsPlatform
+  >() {
     // Return a fake Android implementation for permission checking
     if (T == AndroidFlutterLocalNotificationsPlugin) {
       return FakeAndroidFlutterLocalNotificationsPlugin(this) as T;
@@ -147,12 +144,7 @@ class FakeNotification {
   final String? body;
   final String? payload;
 
-  FakeNotification({
-    required this.id,
-    this.title,
-    this.body,
-    this.payload,
-  });
+  FakeNotification({required this.id, this.title, this.body, this.payload});
 }
 
 /// Represents a notification that was scheduled for later
@@ -205,4 +197,3 @@ class FakeAndroidFlutterLocalNotificationsPlugin
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
-

@@ -43,15 +43,23 @@ void main() {
       expect(service.weeklySummaryEnabled, isTrue);
     });
 
-    test('should persist weekly summary preference and schedule/cancel', () async {
-      await service.setWeeklySummaryEnabled(true);
-      expect(service.weeklySummaryEnabled, isTrue);
-      expect(fakePlugin.scheduledNotifications.length, 1);
-      
-      await service.setWeeklySummaryEnabled(false);
-      expect(service.weeklySummaryEnabled, isFalse);
-      expect(fakePlugin.cancelledNotificationIds.contains(NotificationIds.weeklySummary), isTrue);
-    });
+    test(
+      'should persist weekly summary preference and schedule/cancel',
+      () async {
+        await service.setWeeklySummaryEnabled(true);
+        expect(service.weeklySummaryEnabled, isTrue);
+        expect(fakePlugin.scheduledNotifications.length, 1);
+
+        await service.setWeeklySummaryEnabled(false);
+        expect(service.weeklySummaryEnabled, isFalse);
+        expect(
+          fakePlugin.cancelledNotificationIds.contains(
+            NotificationIds.weeklySummary,
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('income reminders should be enabled by default', () {
       expect(service.incomeRemindersEnabled, isTrue);
@@ -75,15 +83,23 @@ void main() {
       expect(service.monthlySummaryEnabled, isTrue);
     });
 
-    test('should persist monthly summary preference and schedule/cancel', () async {
-      await service.setMonthlySummaryEnabled(true);
-      expect(service.monthlySummaryEnabled, isTrue);
-      expect(fakePlugin.scheduledNotifications.isNotEmpty, isTrue);
-      
-      await service.setMonthlySummaryEnabled(false);
-      expect(service.monthlySummaryEnabled, isFalse);
-      expect(fakePlugin.cancelledNotificationIds.contains(NotificationIds.monthlySummary), isTrue);
-    });
+    test(
+      'should persist monthly summary preference and schedule/cancel',
+      () async {
+        await service.setMonthlySummaryEnabled(true);
+        expect(service.monthlySummaryEnabled, isTrue);
+        expect(fakePlugin.scheduledNotifications.isNotEmpty, isTrue);
+
+        await service.setMonthlySummaryEnabled(false);
+        expect(service.monthlySummaryEnabled, isFalse);
+        expect(
+          fakePlugin.cancelledNotificationIds.contains(
+            NotificationIds.monthlySummary,
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 
   group('NotificationService - Test Notifications', () {
@@ -101,7 +117,10 @@ void main() {
 
       expect(result, isTrue);
       expect(fakePlugin.scheduledNotifications.length, 1);
-      expect(fakePlugin.scheduledNotifications.first.title, '⏰ Scheduled Test Notification');
+      expect(
+        fakePlugin.scheduledNotifications.first.title,
+        '⏰ Scheduled Test Notification',
+      );
       expect(fakePlugin.scheduledNotifications.first.id, 99998);
     });
 
@@ -110,11 +129,18 @@ void main() {
       await service.scheduleTestNotification(delaySeconds: 5);
       final afterSchedule = DateTime.now();
 
-      final scheduledTime = fakePlugin.scheduledNotifications.first.scheduledDate;
+      final scheduledTime =
+          fakePlugin.scheduledNotifications.first.scheduledDate;
 
       // Scheduled time should be approximately 5 seconds after now
-      expect(scheduledTime.isAfter(beforeSchedule.add(const Duration(seconds: 4))), isTrue);
-      expect(scheduledTime.isBefore(afterSchedule.add(const Duration(seconds: 6))), isTrue);
+      expect(
+        scheduledTime.isAfter(beforeSchedule.add(const Duration(seconds: 4))),
+        isTrue,
+      );
+      expect(
+        scheduledTime.isBefore(afterSchedule.add(const Duration(seconds: 6))),
+        isTrue,
+      );
     });
   });
 
@@ -144,7 +170,12 @@ void main() {
       await service.scheduleWeeklySummary();
       await service.scheduleWeeklySummary();
 
-      expect(fakePlugin.cancelledNotificationIds.contains(NotificationIds.weeklySummary), isTrue);
+      expect(
+        fakePlugin.cancelledNotificationIds.contains(
+          NotificationIds.weeklySummary,
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -242,22 +273,27 @@ void main() {
       expect(fakePlugin.cancelledNotificationIds.contains(expectedId), isTrue);
     });
 
-    test('should calculate next income date when last income is in the past', () async {
-      // Last income was 3 months ago with monthly frequency
-      final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
+    test(
+      'should calculate next income date when last income is in the past',
+      () async {
+        // Last income was 3 months ago with monthly frequency
+        final threeMonthsAgo = DateTime.now().subtract(
+          const Duration(days: 90),
+        );
 
-      await service.scheduleIncomeReminder(
-        investmentId: 'inv-past',
-        investmentName: 'Past Income',
-        monthsBetweenPayments: 1,
-        lastIncomeDate: threeMonthsAgo,
-      );
+        await service.scheduleIncomeReminder(
+          investmentId: 'inv-past',
+          investmentName: 'Past Income',
+          monthsBetweenPayments: 1,
+          lastIncomeDate: threeMonthsAgo,
+        );
 
-      expect(fakePlugin.scheduledNotifications.length, 1);
-      final scheduled = fakePlugin.scheduledNotifications.first;
-      // Should be scheduled in the future
-      expect(scheduled.scheduledDate.isAfter(DateTime.now()), isTrue);
-    });
+        expect(fakePlugin.scheduledNotifications.length, 1);
+        final scheduled = fakePlugin.scheduledNotifications.first;
+        // Should be scheduled in the future
+        expect(scheduled.scheduledDate.isAfter(DateTime.now()), isTrue);
+      },
+    );
   });
 
   group('NotificationService - Maturity Reminders', () {
@@ -273,35 +309,46 @@ void main() {
       // Should have both 7-day and 1-day reminders
       expect(fakePlugin.scheduledNotifications.length, 2);
 
-      final titles = fakePlugin.scheduledNotifications.map((n) => n.title).toList();
+      final titles = fakePlugin.scheduledNotifications
+          .map((n) => n.title)
+          .toList();
       expect(titles, contains('📅 Investment Maturing Soon'));
       expect(titles, contains('⚠️ Investment Matures Tomorrow'));
     });
 
-    test('should only schedule 1-day reminder when less than 7 days away', () async {
-      final maturityDate = DateTime.now().add(const Duration(days: 5));
+    test(
+      'should only schedule 1-day reminder when less than 7 days away',
+      () async {
+        final maturityDate = DateTime.now().add(const Duration(days: 5));
 
-      await service.scheduleMaturityReminders(
-        investmentId: 'inv-soon',
-        investmentName: 'Soon Bond',
-        maturityDate: maturityDate,
-      );
+        await service.scheduleMaturityReminders(
+          investmentId: 'inv-soon',
+          investmentName: 'Soon Bond',
+          maturityDate: maturityDate,
+        );
 
-      expect(fakePlugin.scheduledNotifications.length, 1);
-      expect(fakePlugin.scheduledNotifications.first.title, '⚠️ Investment Matures Tomorrow');
-    });
+        expect(fakePlugin.scheduledNotifications.length, 1);
+        expect(
+          fakePlugin.scheduledNotifications.first.title,
+          '⚠️ Investment Matures Tomorrow',
+        );
+      },
+    );
 
-    test('should not schedule reminders when maturity is in the past', () async {
-      final pastDate = DateTime.now().subtract(const Duration(days: 5));
+    test(
+      'should not schedule reminders when maturity is in the past',
+      () async {
+        final pastDate = DateTime.now().subtract(const Duration(days: 5));
 
-      await service.scheduleMaturityReminders(
-        investmentId: 'inv-past',
-        investmentName: 'Past Bond',
-        maturityDate: pastDate,
-      );
+        await service.scheduleMaturityReminders(
+          investmentId: 'inv-past',
+          investmentName: 'Past Bond',
+          maturityDate: pastDate,
+        );
 
-      expect(fakePlugin.scheduledNotifications, isEmpty);
-    });
+        expect(fakePlugin.scheduledNotifications, isEmpty);
+      },
+    );
 
     test('should not schedule when maturity reminders disabled', () async {
       await service.setMaturityRemindersEnabled(false);
@@ -316,61 +363,72 @@ void main() {
       expect(fakePlugin.scheduledNotifications, isEmpty);
     });
 
-    test('should cancel existing reminders before scheduling new ones', () async {
-      final maturityDate1 = DateTime.now().add(const Duration(days: 14));
-      final maturityDate2 = DateTime.now().add(const Duration(days: 20));
+    test(
+      'should cancel existing reminders before scheduling new ones',
+      () async {
+        final maturityDate1 = DateTime.now().add(const Duration(days: 14));
+        final maturityDate2 = DateTime.now().add(const Duration(days: 20));
 
-      await service.scheduleMaturityReminders(
-        investmentId: 'inv-update',
-        investmentName: 'Update Bond',
-        maturityDate: maturityDate1,
-      );
+        await service.scheduleMaturityReminders(
+          investmentId: 'inv-update',
+          investmentName: 'Update Bond',
+          maturityDate: maturityDate1,
+        );
 
-      await service.scheduleMaturityReminders(
-        investmentId: 'inv-update',
-        investmentName: 'Update Bond',
-        maturityDate: maturityDate2,
-      );
+        await service.scheduleMaturityReminders(
+          investmentId: 'inv-update',
+          investmentName: 'Update Bond',
+          maturityDate: maturityDate2,
+        );
 
-      final id7Days = NotificationIds.maturityReminder7Days('inv-update');
-      final id1Day = NotificationIds.maturityReminder1Day('inv-update');
-      expect(fakePlugin.cancelledNotificationIds.contains(id7Days), isTrue);
-      expect(fakePlugin.cancelledNotificationIds.contains(id1Day), isTrue);
-    });
+        final id7Days = NotificationIds.maturityReminder7Days('inv-update');
+        final id1Day = NotificationIds.maturityReminder1Day('inv-update');
+        expect(fakePlugin.cancelledNotificationIds.contains(id7Days), isTrue);
+        expect(fakePlugin.cancelledNotificationIds.contains(id1Day), isTrue);
+      },
+    );
 
     test('should cancel maturity reminders by investment ID', () async {
       await service.cancelMaturityReminders('inv-cancel-maturity');
 
-      final id7Days = NotificationIds.maturityReminder7Days('inv-cancel-maturity');
-      final id1Day = NotificationIds.maturityReminder1Day('inv-cancel-maturity');
+      final id7Days = NotificationIds.maturityReminder7Days(
+        'inv-cancel-maturity',
+      );
+      final id1Day = NotificationIds.maturityReminder1Day(
+        'inv-cancel-maturity',
+      );
       expect(fakePlugin.cancelledNotificationIds.contains(id7Days), isTrue);
       expect(fakePlugin.cancelledNotificationIds.contains(id1Day), isTrue);
     });
 
-    test('should include financial context in enhanced maturity reminders', () async {
-      final maturityDate = DateTime.now().add(const Duration(days: 14));
+    test(
+      'should include financial context in enhanced maturity reminders',
+      () async {
+        final maturityDate = DateTime.now().add(const Duration(days: 14));
 
-      await service.scheduleMaturityReminders(
-        investmentId: 'inv-enhanced',
-        investmentName: 'My FD',
-        maturityDate: maturityDate,
-        investmentType: 'FD',
-        investedAmount: 100000,
-        currentValue: 108000,
-        currency: 'INR',
-      );
+        await service.scheduleMaturityReminders(
+          investmentId: 'inv-enhanced',
+          investmentName: 'My FD',
+          maturityDate: maturityDate,
+          investmentType: 'FD',
+          investedAmount: 100000,
+          currentValue: 108000,
+          currency: 'INR',
+        );
 
-      expect(fakePlugin.scheduledNotifications.length, 2);
+        expect(fakePlugin.scheduledNotifications.length, 2);
 
-      final sevenDayReminder = fakePlugin.scheduledNotifications
-          .firstWhere((n) => n.title == '📅 Investment Maturing Soon');
+        final sevenDayReminder = fakePlugin.scheduledNotifications.firstWhere(
+          (n) => n.title == '📅 Investment Maturing Soon',
+        );
 
-      // Should contain the investment name, type, and returns info
-      expect(sevenDayReminder.body, contains('My FD'));
-      expect(sevenDayReminder.body, contains('FD'));
-      expect(sevenDayReminder.body, contains('₹108000'));
-      expect(sevenDayReminder.body, contains('8.0%'));
-    });
+        // Should contain the investment name, type, and returns info
+        expect(sevenDayReminder.body, contains('My FD'));
+        expect(sevenDayReminder.body, contains('FD'));
+        expect(sevenDayReminder.body, contains('₹108000'));
+        expect(sevenDayReminder.body, contains('8.0%'));
+      },
+    );
   });
 
   group('NotificationService - Cancel All', () {
@@ -385,32 +443,38 @@ void main() {
   });
 
   group('NotificationService - Grouped Notifications', () {
-    test('should show income reminders summary with multiple investments', () async {
-      await service.showIncomeRemindersSummary([
-        'FD 1',
-        'Bond 2',
-        'P2P Loan 3',
-      ]);
+    test(
+      'should show income reminders summary with multiple investments',
+      () async {
+        await service.showIncomeRemindersSummary([
+          'FD 1',
+          'Bond 2',
+          'P2P Loan 3',
+        ]);
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.id, NotificationIds.incomeRemindersSummary);
-      expect(notification.title, contains('3 Income Payments'));
-      expect(notification.body, contains('FD 1'));
-      expect(notification.body, contains('Bond 2'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.id, NotificationIds.incomeRemindersSummary);
+        expect(notification.title, contains('3 Income Payments'));
+        expect(notification.body, contains('FD 1'));
+        expect(notification.body, contains('Bond 2'));
+      },
+    );
 
-    test('should show maturity reminders summary with multiple investments', () async {
-      await service.showMaturityRemindersSummary([
-        'Maturing FD',
-        'Maturing Bond',
-      ]);
+    test(
+      'should show maturity reminders summary with multiple investments',
+      () async {
+        await service.showMaturityRemindersSummary([
+          'Maturing FD',
+          'Maturing Bond',
+        ]);
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.id, NotificationIds.maturityRemindersSummary);
-      expect(notification.title, contains('2 Investments Maturing'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.id, NotificationIds.maturityRemindersSummary);
+        expect(notification.title, contains('2 Investments Maturing'));
+      },
+    );
 
     test('should not show summary for empty list', () async {
       await service.showIncomeRemindersSummary([]);
@@ -539,28 +603,43 @@ void main() {
 
   group('NotificationPrefsKeys - Constants', () {
     test('should have correct preference keys', () {
-      expect(NotificationPrefsKeys.weeklySummaryEnabled, 'notifications_weekly_summary');
-      expect(NotificationPrefsKeys.incomeRemindersEnabled, 'notifications_income_reminders');
-      expect(NotificationPrefsKeys.maturityRemindersEnabled, 'notifications_maturity_reminders');
-      expect(NotificationPrefsKeys.monthlySummaryEnabled, 'notifications_monthly_summary');
+      expect(
+        NotificationPrefsKeys.weeklySummaryEnabled,
+        'notifications_weekly_summary',
+      );
+      expect(
+        NotificationPrefsKeys.incomeRemindersEnabled,
+        'notifications_income_reminders',
+      );
+      expect(
+        NotificationPrefsKeys.maturityRemindersEnabled,
+        'notifications_maturity_reminders',
+      );
+      expect(
+        NotificationPrefsKeys.monthlySummaryEnabled,
+        'notifications_monthly_summary',
+      );
     });
   });
 
   group('NotificationService - Milestones', () {
-    test('should show milestone notification when MOIC threshold reached', () async {
-      // 1000 invested, 1500 returned = 1.5x MOIC
-      await service.checkAndShowMilestone(
-        investmentId: 'inv-milestone',
-        investmentName: 'P2P Investment',
-        totalInvested: 1000,
-        totalReturned: 1500,
-      );
+    test(
+      'should show milestone notification when MOIC threshold reached',
+      () async {
+        // 1000 invested, 1500 returned = 1.5x MOIC
+        await service.checkAndShowMilestone(
+          investmentId: 'inv-milestone',
+          investmentName: 'P2P Investment',
+          totalInvested: 1000,
+          totalReturned: 1500,
+        );
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('1.5x'));
-      expect(notification.body, contains('P2P Investment'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.title, contains('1.5x'));
+        expect(notification.body, contains('P2P Investment'));
+      },
+    );
 
     test('should not show duplicate milestone notification', () async {
       await service.checkAndShowMilestone(
@@ -582,19 +661,22 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 1);
     });
 
-    test('should show higher milestone when multiple thresholds crossed', () async {
-      // 1000 invested, 2000 returned = 2.0x MOIC
-      await service.checkAndShowMilestone(
-        investmentId: 'inv-high',
-        investmentName: 'High Performer',
-        totalInvested: 1000,
-        totalReturned: 2000,
-      );
+    test(
+      'should show higher milestone when multiple thresholds crossed',
+      () async {
+        // 1000 invested, 2000 returned = 2.0x MOIC
+        await service.checkAndShowMilestone(
+          investmentId: 'inv-high',
+          investmentName: 'High Performer',
+          totalInvested: 1000,
+          totalReturned: 2000,
+        );
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('2.0x'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.title, contains('2.0x'));
+      },
+    );
 
     test('should not show milestone when disabled', () async {
       await service.setMilestonesEnabled(false);
@@ -622,8 +704,18 @@ void main() {
       await service.scheduleTaxReminders();
       await service.cancelTaxReminders();
 
-      expect(fakePlugin.cancelledNotificationIds.contains(NotificationIds.taxReminder80C), isTrue);
-      expect(fakePlugin.cancelledNotificationIds.contains(NotificationIds.taxReminderITR), isTrue);
+      expect(
+        fakePlugin.cancelledNotificationIds.contains(
+          NotificationIds.taxReminder80C,
+        ),
+        isTrue,
+      );
+      expect(
+        fakePlugin.cancelledNotificationIds.contains(
+          NotificationIds.taxReminderITR,
+        ),
+        isTrue,
+      );
     });
   });
 
@@ -675,23 +767,26 @@ void main() {
   });
 
   group('NotificationService - Idle Investment Alerts', () {
-    test('should show idle alert for investment with no recent activity', () async {
-      final oldDate = DateTime.now().subtract(const Duration(days: 100));
+    test(
+      'should show idle alert for investment with no recent activity',
+      () async {
+        final oldDate = DateTime.now().subtract(const Duration(days: 100));
 
-      await service.checkIdleInvestments([
-        IdleInvestmentInfo(
-          id: 'inv-idle',
-          name: 'Idle Investment',
-          lastActivityDate: oldDate,
-          isClosed: false,
-        ),
-      ]);
+        await service.checkIdleInvestments([
+          IdleInvestmentInfo(
+            id: 'inv-idle',
+            name: 'Idle Investment',
+            lastActivityDate: oldDate,
+            isClosed: false,
+          ),
+        ]);
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('Review Needed'));
-      expect(notification.body, contains('Idle Investment'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.title, contains('Review Needed'));
+        expect(notification.body, contains('Idle Investment'));
+      },
+    );
 
     test('should not show idle alert for recent activity', () async {
       final recentDate = DateTime.now().subtract(const Duration(days: 30));
@@ -825,19 +920,22 @@ void main() {
       expect(notification.id, greaterThan(0));
     });
 
-    test('should not show notification when goal milestones disabled', () async {
-      await service.setGoalMilestonesEnabled(false);
+    test(
+      'should not show notification when goal milestones disabled',
+      () async {
+        await service.setGoalMilestonesEnabled(false);
 
-      await service.checkAndShowGoalMilestone(
-        goalId: 'goal-disabled',
-        goalName: 'Disabled Goal',
-        progressPercent: 50,
-        currentValue: 50000,
-        targetValue: 100000,
-      );
+        await service.checkAndShowGoalMilestone(
+          goalId: 'goal-disabled',
+          goalName: 'Disabled Goal',
+          progressPercent: 50,
+          currentValue: 50000,
+          targetValue: 100000,
+        );
 
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
 
     test('should show lower milestones if skipped initially', () async {
       // First call at 50% shows 50% (highest reached)
@@ -905,23 +1003,29 @@ void main() {
   });
 
   group('NotificationService - Permission Checks', () {
-    test('arePermissionsGranted returns true when permissions granted', () async {
-      fakePlugin.permissionsGranted = true;
-      await service.initialize();
+    test(
+      'arePermissionsGranted returns true when permissions granted',
+      () async {
+        fakePlugin.permissionsGranted = true;
+        await service.initialize();
 
-      final result = await service.arePermissionsGranted();
+        final result = await service.arePermissionsGranted();
 
-      expect(result, isTrue);
-    });
+        expect(result, isTrue);
+      },
+    );
 
-    test('arePermissionsGranted returns false when permissions denied', () async {
-      fakePlugin.permissionsGranted = false;
-      await service.initialize();
+    test(
+      'arePermissionsGranted returns false when permissions denied',
+      () async {
+        fakePlugin.permissionsGranted = false;
+        await service.initialize();
 
-      final result = await service.arePermissionsGranted();
+        final result = await service.arePermissionsGranted();
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
 
     test('should not show goal milestone when permissions denied', () async {
       fakePlugin.permissionsGranted = false;
@@ -937,18 +1041,21 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 0);
     });
 
-    test('should not show investment milestone when permissions denied', () async {
-      fakePlugin.permissionsGranted = false;
+    test(
+      'should not show investment milestone when permissions denied',
+      () async {
+        fakePlugin.permissionsGranted = false;
 
-      await service.checkAndShowMilestone(
-        investmentId: 'inv-no-perm',
-        investmentName: 'No Permission Investment',
-        totalInvested: 10000,
-        totalReturned: 20000, // 2x return
-      );
+        await service.checkAndShowMilestone(
+          investmentId: 'inv-no-perm',
+          investmentName: 'No Permission Investment',
+          totalInvested: 10000,
+          totalReturned: 20000, // 2x return
+        );
 
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
 
     test('should show goal milestone when permissions granted', () async {
       fakePlugin.permissionsGranted = true;
@@ -989,21 +1096,32 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 0);
     });
 
-    test('should not show income reminders summary when permissions denied', () async {
-      fakePlugin.permissionsGranted = false;
+    test(
+      'should not show income reminders summary when permissions denied',
+      () async {
+        fakePlugin.permissionsGranted = false;
 
-      await service.showIncomeRemindersSummary(['Investment 1', 'Investment 2']);
+        await service.showIncomeRemindersSummary([
+          'Investment 1',
+          'Investment 2',
+        ]);
 
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
 
-    test('should not show maturity reminders summary when permissions denied', () async {
-      fakePlugin.permissionsGranted = false;
+    test(
+      'should not show maturity reminders summary when permissions denied',
+      () async {
+        fakePlugin.permissionsGranted = false;
 
-      await service.showMaturityRemindersSummary(['Investment 1', 'Investment 2']);
+        await service.showMaturityRemindersSummary([
+          'Investment 1',
+          'Investment 2',
+        ]);
 
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
   });
 }
-

@@ -29,7 +29,7 @@ class ChangeBadge extends StatelessWidget {
     final color = isZero
         ? AppColors.neutral500Light
         : (isPositive ? AppColors.successLight : AppColors.dangerLight);
-    
+
     final bgColor = isZero
         ? AppColors.neutral200Light
         : (isPositive ? AppColors.successBgLight : AppColors.dangerBgLight);
@@ -41,9 +41,18 @@ class ChangeBadge extends StatelessWidget {
     };
 
     final padding = switch (size) {
-      ChangeBadgeSize.small => const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      ChangeBadgeSize.medium => const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      ChangeBadgeSize.large => const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      ChangeBadgeSize.small => const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 2,
+      ),
+      ChangeBadgeSize.medium => const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      ChangeBadgeSize.large => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
     };
 
     final iconSize = switch (size) {
@@ -52,13 +61,16 @@ class ChangeBadge extends StatelessWidget {
       ChangeBadgeSize.large => 16.0,
     };
 
-    final displayValue = '${isPositive && !isZero ? '+' : ''}${value.toStringAsFixed(2)}';
+    final displayValue =
+        '${isPositive && !isZero ? '+' : ''}${value.toStringAsFixed(2)}';
 
     return Container(
       padding: padding,
       decoration: BoxDecoration(
         color: filled ? bgColor : Colors.transparent,
-        borderRadius: BorderRadius.circular(size == ChangeBadgeSize.large ? 10 : 6),
+        borderRadius: BorderRadius.circular(
+          size == ChangeBadgeSize.large ? 10 : 6,
+        ),
         border: filled ? null : Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -66,7 +78,9 @@ class ChangeBadge extends StatelessWidget {
         children: [
           if (showIcon && !isZero) ...[
             Icon(
-              isPositive ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+              isPositive
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
               size: iconSize,
               color: color,
             ),
@@ -107,7 +121,9 @@ class StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: outlined ? Colors.transparent : color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: outlined ? Border.all(color: color.withValues(alpha: 0.5)) : null,
+        border: outlined
+            ? Border.all(color: color.withValues(alpha: 0.5))
+            : null,
       ),
       child: Text(
         label,
@@ -119,4 +135,3 @@ class StatusBadge extends StatelessWidget {
     );
   }
 }
-

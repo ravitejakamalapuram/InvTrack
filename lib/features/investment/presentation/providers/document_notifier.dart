@@ -33,9 +33,9 @@ class DocumentNotifier {
     required DocumentRepository repository,
     required DocumentStorageService storageService,
     required AnalyticsService analytics,
-  })  : _repository = repository,
-        _storageService = storageService,
-        _analytics = analytics;
+  }) : _repository = repository,
+       _storageService = storageService,
+       _analytics = analytics;
 
   /// Add a new document to an investment
   /// [investmentId] - The investment to attach the document to
@@ -61,14 +61,16 @@ class DocumentNotifier {
     if (trimmedName.length > 100) {
       throw ValidationException(
         userMessage: 'Document name cannot exceed 100 characters',
-        technicalMessage: 'Document name length ${trimmedName.length} exceeds 100',
+        technicalMessage:
+            'Document name length ${trimmedName.length} exceeds 100',
       );
     }
 
     // Validate file is supported
     if (!DocumentMimeTypes.isSupported(fileName)) {
       throw ValidationException(
-        userMessage: 'Unsupported file type. Supported: PDF, JPG, PNG, GIF, WEBP',
+        userMessage:
+            'Unsupported file type. Supported: PDF, JPG, PNG, GIF, WEBP',
         technicalMessage: 'Unsupported file type: $fileName',
       );
     }
@@ -117,7 +119,9 @@ class DocumentNotifier {
     );
 
     if (kDebugMode) {
-      debugPrint('📄 Document added: ${document.name} to investment $investmentId');
+      debugPrint(
+        '📄 Document added: ${document.name} to investment $investmentId',
+      );
     }
 
     return document;
@@ -144,7 +148,8 @@ class DocumentNotifier {
     if (trimmedName != null && trimmedName.length > 100) {
       throw ValidationException(
         userMessage: 'Document name cannot exceed 100 characters',
-        technicalMessage: 'Document name length ${trimmedName.length} exceeds 100',
+        technicalMessage:
+            'Document name length ${trimmedName.length} exceeds 100',
       );
     }
 
@@ -202,4 +207,3 @@ class DocumentNotifier {
     return _storageService.readDocument(localPath);
   }
 }
-

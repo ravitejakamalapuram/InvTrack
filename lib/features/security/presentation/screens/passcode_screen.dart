@@ -58,7 +58,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
   Future<void> _tryBiometrics() async {
     final securityState = ref.read(securityProvider);
     if (securityState.isBiometricEnabled) {
-      final success = await ref.read(securityProvider.notifier).unlockWithBiometrics();
+      final success = await ref
+          .read(securityProvider.notifier)
+          .unlockWithBiometrics();
       if (success && mounted) {
         widget.onSuccess?.call();
       }
@@ -95,7 +97,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
 
     switch (widget.mode) {
       case PasscodeMode.unlock:
-        final success = await ref.read(securityProvider.notifier).unlockWithPin(pin);
+        final success = await ref
+            .read(securityProvider.notifier)
+            .unlockWithPin(pin);
         if (success) {
           widget.onSuccess?.call();
         } else {
@@ -114,9 +118,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
             await ref.read(securityProvider.notifier).setPin(pin);
             if (mounted) {
               context.pop(); // Close screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('App Lock enabled')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('App Lock enabled')));
             }
           } else {
             _tempPin = null;
@@ -125,17 +129,19 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
           }
         }
         break;
-        
+
       case PasscodeMode.verify:
-         // Used for changing settings etc.
-         final success = await ref.read(securityProvider.notifier).unlockWithPin(pin); // Re-use unlock logic for verification
-         if (success) {
-           widget.onSuccess?.call();
-           if (mounted) context.pop();
-         } else {
-           _showError('Incorrect PIN');
-         }
-         break;
+        // Used for changing settings etc.
+        final success = await ref
+            .read(securityProvider.notifier)
+            .unlockWithPin(pin); // Re-use unlock logic for verification
+        if (success) {
+          widget.onSuccess?.call();
+          if (mounted) context.pop();
+        } else {
+          _showError('Incorrect PIN');
+        }
+        break;
     }
   }
 
@@ -155,7 +161,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
         child: Column(
           children: [
             const SizedBox(height: 60),
-            const Icon(Icons.lock_outline, size: 48, color: AppColors.primaryLight),
+            const Icon(
+              Icons.lock_outline,
+              size: 48,
+              color: AppColors.primaryLight,
+            ),
             const SizedBox(height: 24),
             Text(
               _message,
@@ -207,17 +217,18 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: keys.map((key) {
           if (key == 'biometric') {
-            final showBiometric = widget.mode == PasscodeMode.unlock && 
-                                  ref.watch(securityProvider).isBiometricEnabled;
+            final showBiometric =
+                widget.mode == PasscodeMode.unlock &&
+                ref.watch(securityProvider).isBiometricEnabled;
             return SizedBox(
               width: 80,
               height: 80,
-              child: showBiometric 
-                ? IconButton(
-                    icon: const Icon(Icons.fingerprint, size: 32),
-                    onPressed: _tryBiometrics,
-                  )
-                : const SizedBox(),
+              child: showBiometric
+                  ? IconButton(
+                      icon: const Icon(Icons.fingerprint, size: 32),
+                      onPressed: _tryBiometrics,
+                    )
+                  : const SizedBox(),
             );
           }
           if (key == 'backspace') {

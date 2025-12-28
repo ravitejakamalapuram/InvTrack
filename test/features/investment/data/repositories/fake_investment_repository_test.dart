@@ -34,7 +34,9 @@ void main() {
 
     test('getAllInvestments returns all investments', () async {
       await repository.createInvestment(testInvestment);
-      await repository.createInvestment(testInvestment.copyWith(id: 'inv-2', name: 'Second'));
+      await repository.createInvestment(
+        testInvestment.copyWith(id: 'inv-2', name: 'Second'),
+      );
 
       final investments = await repository.getAllInvestments();
 
@@ -77,10 +79,12 @@ void main() {
     });
 
     test('reopenInvestment changes status back to open', () async {
-      await repository.createInvestment(testInvestment.copyWith(
-        status: InvestmentStatus.closed,
-        closedAt: DateTime.now(),
-      ));
+      await repository.createInvestment(
+        testInvestment.copyWith(
+          status: InvestmentStatus.closed,
+          closedAt: DateTime.now(),
+        ),
+      );
 
       await repository.reopenInvestment('inv-1');
 
@@ -91,14 +95,16 @@ void main() {
 
     test('deleteInvestment removes investment and its cash flows', () async {
       await repository.createInvestment(testInvestment);
-      await repository.addCashFlow(CashFlowEntity(
-        id: 'cf-1',
-        investmentId: 'inv-1',
-        date: DateTime.now(),
-        type: CashFlowType.invest,
-        amount: 1000,
-        createdAt: DateTime.now(),
-      ));
+      await repository.addCashFlow(
+        CashFlowEntity(
+          id: 'cf-1',
+          investmentId: 'inv-1',
+          date: DateTime.now(),
+          type: CashFlowType.invest,
+          amount: 1000,
+          createdAt: DateTime.now(),
+        ),
+      );
 
       await repository.deleteInvestment('inv-1');
 
@@ -116,13 +122,16 @@ void main() {
 
     test('watchInvestmentsByStatus filters by status', () async {
       await repository.createInvestment(testInvestment);
-      await repository.createInvestment(testInvestment.copyWith(
-        id: 'inv-2',
-        status: InvestmentStatus.closed,
-      ));
+      await repository.createInvestment(
+        testInvestment.copyWith(id: 'inv-2', status: InvestmentStatus.closed),
+      );
 
-      final openStream = repository.watchInvestmentsByStatus(InvestmentStatus.open);
-      final closedStream = repository.watchInvestmentsByStatus(InvestmentStatus.closed);
+      final openStream = repository.watchInvestmentsByStatus(
+        InvestmentStatus.open,
+      );
+      final closedStream = repository.watchInvestmentsByStatus(
+        InvestmentStatus.closed,
+      );
 
       expect(await openStream.first, hasLength(1));
       expect(await closedStream.first, hasLength(1));
@@ -148,10 +157,9 @@ void main() {
 
     test('getCashFlowsByInvestment returns filtered cash flows', () async {
       await repository.addCashFlow(testCashFlow);
-      await repository.addCashFlow(testCashFlow.copyWith(
-        id: 'cf-2',
-        investmentId: 'inv-2',
-      ));
+      await repository.addCashFlow(
+        testCashFlow.copyWith(id: 'cf-2', investmentId: 'inv-2'),
+      );
 
       final result = await repository.getCashFlowsByInvestment('inv-1');
 
@@ -228,61 +236,64 @@ void main() {
       expect(repository.cashFlows, hasLength(2));
     });
 
-    test('bulkDelete removes multiple investments and their cash flows', () async {
-      repository.seed(
-        investments: [
-          InvestmentEntity(
-            id: 'inv-1',
-            name: 'Investment 1',
-            type: InvestmentType.p2pLending,
-            status: InvestmentStatus.open,
-            createdAt: DateTime(2024, 1, 1),
-            updatedAt: DateTime(2024, 1, 1),
-          ),
-          InvestmentEntity(
-            id: 'inv-2',
-            name: 'Investment 2',
-            type: InvestmentType.stocks,
-            status: InvestmentStatus.open,
-            createdAt: DateTime(2024, 1, 1),
-            updatedAt: DateTime(2024, 1, 1),
-          ),
-          InvestmentEntity(
-            id: 'inv-3',
-            name: 'Investment 3',
-            type: InvestmentType.realEstate,
-            status: InvestmentStatus.open,
-            createdAt: DateTime(2024, 1, 1),
-            updatedAt: DateTime(2024, 1, 1),
-          ),
-        ],
-        cashFlows: [
-          CashFlowEntity(
-            id: 'cf-1',
-            investmentId: 'inv-1',
-            date: DateTime(2024, 1, 15),
-            type: CashFlowType.invest,
-            amount: 5000,
-            createdAt: DateTime(2024, 1, 15),
-          ),
-          CashFlowEntity(
-            id: 'cf-2',
-            investmentId: 'inv-2',
-            date: DateTime(2024, 1, 20),
-            type: CashFlowType.invest,
-            amount: 3000,
-            createdAt: DateTime(2024, 1, 20),
-          ),
-        ],
-      );
+    test(
+      'bulkDelete removes multiple investments and their cash flows',
+      () async {
+        repository.seed(
+          investments: [
+            InvestmentEntity(
+              id: 'inv-1',
+              name: 'Investment 1',
+              type: InvestmentType.p2pLending,
+              status: InvestmentStatus.open,
+              createdAt: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+            InvestmentEntity(
+              id: 'inv-2',
+              name: 'Investment 2',
+              type: InvestmentType.stocks,
+              status: InvestmentStatus.open,
+              createdAt: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+            InvestmentEntity(
+              id: 'inv-3',
+              name: 'Investment 3',
+              type: InvestmentType.realEstate,
+              status: InvestmentStatus.open,
+              createdAt: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+          ],
+          cashFlows: [
+            CashFlowEntity(
+              id: 'cf-1',
+              investmentId: 'inv-1',
+              date: DateTime(2024, 1, 15),
+              type: CashFlowType.invest,
+              amount: 5000,
+              createdAt: DateTime(2024, 1, 15),
+            ),
+            CashFlowEntity(
+              id: 'cf-2',
+              investmentId: 'inv-2',
+              date: DateTime(2024, 1, 20),
+              type: CashFlowType.invest,
+              amount: 3000,
+              createdAt: DateTime(2024, 1, 20),
+            ),
+          ],
+        );
 
-      final result = await repository.bulkDelete(['inv-1', 'inv-2']);
+        final result = await repository.bulkDelete(['inv-1', 'inv-2']);
 
-      expect(result, 2);
-      expect(repository.investments, hasLength(1));
-      expect(repository.investments.first.id, 'inv-3');
-      expect(repository.cashFlows, isEmpty);
-    });
+        expect(result, 2);
+        expect(repository.investments, hasLength(1));
+        expect(repository.investments.first.id, 'inv-3');
+        expect(repository.cashFlows, isEmpty);
+      },
+    );
 
     test('bulkDelete with empty list returns 0', () async {
       final result = await repository.bulkDelete([]);
@@ -291,4 +302,3 @@ void main() {
     });
   });
 }
-

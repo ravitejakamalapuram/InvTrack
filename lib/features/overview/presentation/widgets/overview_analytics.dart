@@ -23,12 +23,16 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
 
     return trendAsync.when(
       data: (data) {
-        if (data.isEmpty || data.every((d) => d.inflows == 0 && d.outflows == 0)) {
+        if (data.isEmpty ||
+            data.every((d) => d.inflows == 0 && d.outflows == 0)) {
           return const SizedBox.shrink();
         }
 
-        final maxValue = data.fold<double>(0, (max, d) =>
-            [max, d.inflows, d.outflows].reduce((a, b) => a > b ? a : b));
+        final maxValue = data.fold<double>(
+          0,
+          (max, d) =>
+              [max, d.inflows, d.outflows].reduce((a, b) => a > b ? a : b),
+        );
 
         return GlassCard(
           child: Column(
@@ -44,8 +48,20 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: data.map((d) {
-                    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    final months = [
+                      'Jan',
+                      'Feb',
+                      'Mar',
+                      'Apr',
+                      'May',
+                      'Jun',
+                      'Jul',
+                      'Aug',
+                      'Sep',
+                      'Oct',
+                      'Nov',
+                      'Dec',
+                    ];
                     return Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -58,20 +74,33 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                 children: [
                                   Expanded(
                                     child: Container(
-                                      height: maxValue > 0 ? (d.outflows / maxValue * 80) : 0,
+                                      height: maxValue > 0
+                                          ? (d.outflows / maxValue * 80)
+                                          : 0,
                                       decoration: BoxDecoration(
-                                        color: AppColors.errorLight.withValues(alpha: 0.7),
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                        color: AppColors.errorLight.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(4),
+                                            ),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 2),
                                   Expanded(
                                     child: Container(
-                                      height: maxValue > 0 ? (d.inflows / maxValue * 80) : 0,
+                                      height: maxValue > 0
+                                          ? (d.inflows / maxValue * 80)
+                                          : 0,
                                       decoration: BoxDecoration(
-                                        color: AppColors.successLight.withValues(alpha: 0.7),
-                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                        color: AppColors.successLight
+                                            .withValues(alpha: 0.7),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(4),
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -81,7 +110,10 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(
                               months[d.month.month - 1],
-                              style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.grey),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark ? Colors.white54 : Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -111,7 +143,14 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 11)),
       ],
@@ -138,15 +177,22 @@ class TypeDistributionChart extends ConsumerWidget {
         if (total == 0) return const SizedBox.shrink();
 
         final colors = [
-          AppColors.graphBlue, AppColors.graphEmerald, AppColors.graphAmber,
-          AppColors.graphPurple, AppColors.graphPink, AppColors.graphCyan,
+          AppColors.graphBlue,
+          AppColors.graphEmerald,
+          AppColors.graphAmber,
+          AppColors.graphPurple,
+          AppColors.graphPink,
+          AppColors.graphCyan,
         ];
 
         return GlassCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Investment Distribution', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              const Text(
+                'Investment Distribution',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
               const SizedBox(height: 16),
               _buildDistributionBar(data, total, colors),
               const SizedBox(height: 12),
@@ -160,7 +206,11 @@ class TypeDistributionChart extends ConsumerWidget {
     );
   }
 
-  Widget _buildDistributionBar(List<TypeDistribution> data, double total, List<Color> colors) {
+  Widget _buildDistributionBar(
+    List<TypeDistribution> data,
+    double total,
+    List<Color> colors,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
@@ -179,7 +229,12 @@ class TypeDistributionChart extends ConsumerWidget {
     );
   }
 
-  Widget _buildLegend(List<TypeDistribution> data, double total, List<Color> colors, bool isDark) {
+  Widget _buildLegend(
+    List<TypeDistribution> data,
+    double total,
+    List<Color> colors,
+    bool isDark,
+  ) {
     return Wrap(
       spacing: 12,
       runSpacing: 8,
@@ -189,9 +244,22 @@ class TypeDistributionChart extends ConsumerWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             const SizedBox(width: 4),
-            Text('${e.value.type.displayName} ($pct%)', style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.grey[700])),
+            Text(
+              '${e.value.type.displayName} ($pct%)',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white70 : Colors.grey[700],
+              ),
+            ),
           ],
         );
       }).toList(),
@@ -226,17 +294,32 @@ class YoYComparisonCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.compare_arrows, color: AppColors.primaryLight, size: 20),
+                  Icon(
+                    Icons.compare_arrows,
+                    color: AppColors.primaryLight,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
-                  const Text('Year over Year', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Text(
+                    'Year over Year',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _buildYoYColumn(lastYear, data.lastYearNet, isDark)),
-                  Container(width: 1, height: 60, color: isDark ? Colors.white24 : Colors.grey[300]),
-                  Expanded(child: _buildYoYColumn(thisYear, data.thisYearNet, isDark)),
+                  Expanded(
+                    child: _buildYoYColumn(lastYear, data.lastYearNet, isDark),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 60,
+                    color: isDark ? Colors.white24 : Colors.grey[300],
+                  ),
+                  Expanded(
+                    child: _buildYoYColumn(thisYear, data.thisYearNet, isDark),
+                  ),
                 ],
               ),
               if (data.lastYearNet != 0) ...[
@@ -256,7 +339,13 @@ class YoYComparisonCard extends ConsumerWidget {
     final isPositive = net >= 0;
     return Column(
       children: [
-        Text(year, style: TextStyle(color: isDark ? Colors.white54 : Colors.grey, fontSize: 12)),
+        Text(
+          year,
+          style: TextStyle(
+            color: isDark ? Colors.white54 : Colors.grey,
+            fontSize: 12,
+          ),
+        ),
         const SizedBox(height: 4),
         CompactAmountText(
           amount: net,
@@ -276,7 +365,8 @@ class YoYComparisonCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: (data.isImproved ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.1),
+        color: (data.isImproved ? AppColors.successLight : AppColors.errorLight)
+            .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -284,14 +374,18 @@ class YoYComparisonCard extends ConsumerWidget {
         children: [
           Icon(
             data.isImproved ? Icons.trending_up : Icons.trending_down,
-            color: data.isImproved ? AppColors.successLight : AppColors.errorLight,
+            color: data.isImproved
+                ? AppColors.successLight
+                : AppColors.errorLight,
             size: 16,
           ),
           const SizedBox(width: 6),
           Text(
             '${data.netChange >= 0 ? '+' : ''}${data.netChange.toStringAsFixed(0)}% vs last year',
             style: TextStyle(
-              color: data.isImproved ? AppColors.successLight : AppColors.errorLight,
+              color: data.isImproved
+                  ? AppColors.successLight
+                  : AppColors.errorLight,
               fontWeight: FontWeight.w500,
               fontSize: 12,
             ),
@@ -323,9 +417,16 @@ class RecentlyClosedCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: AppColors.successLight, size: 20),
+                  Icon(
+                    Icons.check_circle,
+                    color: AppColors.successLight,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
-                  const Text('Recently Closed', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  const Text(
+                    'Recently Closed',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -349,8 +450,19 @@ class RecentlyClosedCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.investment.name, style: const TextStyle(fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(item.investment.type.displayName, style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey)),
+                Text(
+                  item.investment.name,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  item.investment.type.displayName,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white54 : Colors.grey,
+                  ),
+                ),
               ],
             ),
           ),
@@ -359,12 +471,25 @@ class RecentlyClosedCard extends ConsumerWidget {
             children: [
               CompactAmountText(
                 amount: item.stats.netCashFlow,
-                compactText: currencyFormat.formatCompact(item.stats.netCashFlow.abs()),
+                compactText: currencyFormat.formatCompact(
+                  item.stats.netCashFlow.abs(),
+                ),
                 prefix: isProfit ? '+' : '-',
-                style: TextStyle(color: isProfit ? AppColors.successLight : AppColors.errorLight, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: isProfit
+                      ? AppColors.successLight
+                      : AppColors.errorLight,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (item.stats.xirr != 0 && !item.stats.xirr.isNaN)
-                Text('${(item.stats.xirr * 100).toStringAsFixed(1)}% IRR', style: TextStyle(fontSize: 10, color: isDark ? Colors.white54 : Colors.grey)),
+                Text(
+                  '${(item.stats.xirr * 100).toStringAsFixed(1)}% IRR',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? Colors.white54 : Colors.grey,
+                  ),
+                ),
             ],
           ),
         ],
@@ -372,4 +497,3 @@ class RecentlyClosedCard extends ConsumerWidget {
     );
   }
 }
-

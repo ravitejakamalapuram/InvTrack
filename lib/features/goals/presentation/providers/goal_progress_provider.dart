@@ -35,7 +35,7 @@ class GoalProgressCalculator {
     }
 
     // Calculate target
-    final targetAmount = goal.isIncomeGoal 
+    final targetAmount = goal.isIncomeGoal
         ? (goal.targetMonthlyIncome ?? goal.targetAmount)
         : goal.targetAmount;
 
@@ -52,7 +52,9 @@ class GoalProgressCalculator {
     if (monthlyVelocity > 0 && currentAmount < targetAmount) {
       final remaining = targetAmount - currentAmount;
       final monthsNeeded = remaining / monthlyVelocity;
-      projectedDate = DateTime.now().add(Duration(days: (monthsNeeded * 30).round()));
+      projectedDate = DateTime.now().add(
+        Duration(days: (monthsNeeded * 30).round()),
+      );
     } else if (currentAmount >= targetAmount) {
       projectedDate = DateTime.now(); // Already achieved
     }
@@ -67,7 +69,9 @@ class GoalProgressCalculator {
 
     // Get milestones
     final currentMilestone = GoalMilestone.forPercentage(progressPercent);
-    final achievedMilestones = GoalMilestone.achievedMilestones(progressPercent);
+    final achievedMilestones = GoalMilestone.achievedMilestones(
+      progressPercent,
+    );
 
     return GoalProgress(
       goal: goal,
@@ -159,7 +163,8 @@ class GoalProgressCalculator {
     // Calculate net positive flow (returns + income)
     double netPositive = 0;
     for (final cf in cashFlows) {
-      if (cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income) {
+      if (cf.type == CashFlowType.returnFlow ||
+          cf.type == CashFlowType.income) {
         netPositive += cf.amount;
       }
     }
@@ -191,7 +196,10 @@ class GoalProgressCalculator {
 
 /// Provider for a single goal's progress (works for any goal including archived)
 /// Uses only active (non-archived) investments for calculations.
-final goalProgressProvider = Provider.family<GoalProgress?, String>((ref, goalId) {
+final goalProgressProvider = Provider.family<GoalProgress?, String>((
+  ref,
+  goalId,
+) {
   // Watch the goal directly (not from active list - works for any goal)
   final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
   // Use activeInvestmentsProvider to exclude archived investments
@@ -228,7 +236,9 @@ final goalProgressProvider = Provider.family<GoalProgress?, String>((ref, goalId
 
 /// Provider for all goals with their progress
 /// Uses only active (non-archived) investments for calculations.
-final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((ref) {
+final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((
+  ref,
+) {
   final goalsAsync = ref.watch(activeGoalsProvider);
   // Use activeInvestmentsProvider to exclude archived investments
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
@@ -274,26 +284,45 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
       }
 
       final totalGoals = progressList.length;
-      final achievedGoals = progressList.where((p) => p.status == GoalStatus.achieved).length;
-      final onTrackGoals = progressList.where((p) => p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead).length;
-      final behindGoals = progressList.where((p) => p.status == GoalStatus.behind).length;
+      final achievedGoals = progressList
+          .where((p) => p.status == GoalStatus.achieved)
+          .length;
+      final onTrackGoals = progressList
+          .where(
+            (p) =>
+                p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead,
+          )
+          .length;
+      final behindGoals = progressList
+          .where((p) => p.status == GoalStatus.behind)
+          .length;
 
       // Average progress across all goals
-      final avgProgress = progressList.fold(0.0, (sum, p) => sum + p.progressPercent) / totalGoals;
+      final avgProgress =
+          progressList.fold(0.0, (sum, p) => sum + p.progressPercent) /
+          totalGoals;
 
       // Find the goal closest to completion (but not achieved)
-      final activeGoals = progressList.where((p) => p.status != GoalStatus.achieved).toList();
-      activeGoals.sort((a, b) => b.progressPercent.compareTo(a.progressPercent));
-      final closestToCompletion = activeGoals.isNotEmpty ? activeGoals.first : null;
+      final activeGoals = progressList
+          .where((p) => p.status != GoalStatus.achieved)
+          .toList();
+      activeGoals.sort(
+        (a, b) => b.progressPercent.compareTo(a.progressPercent),
+      );
+      final closestToCompletion = activeGoals.isNotEmpty
+          ? activeGoals.first
+          : null;
 
-      return AsyncValue.data(GoalsSummary(
-        totalGoals: totalGoals,
-        achievedGoals: achievedGoals,
-        onTrackGoals: onTrackGoals,
-        behindGoals: behindGoals,
-        averageProgress: avgProgress,
-        closestToCompletion: closestToCompletion,
-      ));
+      return AsyncValue.data(
+        GoalsSummary(
+          totalGoals: totalGoals,
+          achievedGoals: achievedGoals,
+          onTrackGoals: onTrackGoals,
+          behindGoals: behindGoals,
+          averageProgress: avgProgress,
+          closestToCompletion: closestToCompletion,
+        ),
+      );
     },
     loading: () => const AsyncValue.loading(),
     error: (e, st) => AsyncValue.error(e, st),

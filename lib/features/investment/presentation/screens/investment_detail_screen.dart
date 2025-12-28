@@ -24,7 +24,8 @@ class InvestmentDetailScreen extends ConsumerStatefulWidget {
   const InvestmentDetailScreen({super.key, required this.investment});
 
   @override
-  ConsumerState<InvestmentDetailScreen> createState() => _InvestmentDetailScreenState();
+  ConsumerState<InvestmentDetailScreen> createState() =>
+      _InvestmentDetailScreenState();
 }
 
 class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
@@ -54,7 +55,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
+    final cashFlowsAsync = ref.watch(
+      cashFlowsByInvestmentProvider(widget.investment.id),
+    );
     final statsAsync = ref.watch(investmentStatsProvider(widget.investment.id));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencyFormat = ref.watch(currencyFormatProvider);
@@ -63,7 +66,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: CustomScrollView(
         // Pre-render items 500 pixels before they come into view for smoother fast scrolling
         cacheExtent: 500,
@@ -81,7 +86,11 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   color: Colors.black.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -102,7 +111,11 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     color: Colors.black.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
+                  child: const Icon(
+                    Icons.more_vert_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
                 onPressed: () => _showOptionsSheet(context, isDark),
               ),
@@ -160,10 +173,17 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                   Row(
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
                                         child: Text(
                                           widget.investment.type.displayName,
@@ -176,10 +196,17 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                       if (isClosed) ...[
                                         const SizedBox(width: 8),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.3),
-                                            borderRadius: BorderRadius.circular(6),
+                                            color: Colors.white.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           child: Text(
                                             'CLOSED',
@@ -212,7 +239,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: statsAsync.when(
-                  data: (stats) => _buildStatsSection(stats, isDark, currencyFormat),
+                  data: (stats) =>
+                      _buildStatsSection(stats, isDark, currencyFormat),
                   loading: () => _buildStatsLoading(isDark),
                   error: (e, s) => const SizedBox.shrink(),
                 ),
@@ -247,7 +275,11 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        return _buildCashFlowCard(sortedFlows[index], isDark, currencyFormat);
+                        return _buildCashFlowCard(
+                          sortedFlows[index],
+                          isDark,
+                          currencyFormat,
+                        );
                       },
                       childCount: sortedFlows.length,
                       addAutomaticKeepAlives: true,
@@ -290,50 +322,60 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: isClosed ? null : Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.heroGradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryLight.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          heroTag: 'investment_detail_fab',
-          onPressed: () {
-            if (_selectedSegment == 0) {
-              // Add Transaction
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => AddTransactionScreen(investmentId: widget.investment.id),
+      floatingActionButton: isClosed
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.heroGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryLight.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton.extended(
+                heroTag: 'investment_detail_fab',
+                onPressed: () {
+                  if (_selectedSegment == 0) {
+                    // Add Transaction
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AddTransactionScreen(
+                          investmentId: widget.investment.id,
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Add Document - trigger the document picker from DocumentListWidget
+                    // We'll use a callback approach by accessing the widget's add function
+                    _showAddDocumentSheet(context, isDark);
+                  }
+                },
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                icon: Icon(
+                  _selectedSegment == 0
+                      ? Icons.add_rounded
+                      : Icons.upload_file_rounded,
+                  color: Colors.white,
                 ),
-              );
-            } else {
-              // Add Document - trigger the document picker from DocumentListWidget
-              // We'll use a callback approach by accessing the widget's add function
-              _showAddDocumentSheet(context, isDark);
-            }
-          },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          icon: Icon(
-            _selectedSegment == 0 ? Icons.add_rounded : Icons.upload_file_rounded,
-            color: Colors.white,
-          ),
-          label: Text(
-            _selectedSegment == 0 ? 'Add Transaction' : 'Add Document',
-            style: AppTypography.button.copyWith(color: Colors.white),
-          ),
-        ),
-      ),
+                label: Text(
+                  _selectedSegment == 0 ? 'Add Transaction' : 'Add Document',
+                  style: AppTypography.button.copyWith(color: Colors.white),
+                ),
+              ),
+            ),
     );
   }
 
-  Widget _buildStatsSection(InvestmentStats stats, bool isDark, NumberFormat currencyFormat) {
+  Widget _buildStatsSection(
+    InvestmentStats stats,
+    bool isDark,
+    NumberFormat currencyFormat,
+  ) {
     final isPositive = stats.netCashFlow >= 0;
     final xirrFormatted = formatXirr(stats.xirr) ?? '0.0%';
     final xirrIsPositive = stats.xirr >= 0;
@@ -348,13 +390,21 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (isPositive ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.1),
+                  color:
+                      (isPositive
+                              ? AppColors.successLight
+                              : AppColors.errorLight)
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
-                  isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                  isPositive
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
                   size: 28,
-                  color: isPositive ? AppColors.successLight : AppColors.errorLight,
+                  color: isPositive
+                      ? AppColors.successLight
+                      : AppColors.errorLight,
                 ),
               ),
               const SizedBox(width: 14),
@@ -365,16 +415,22 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     Text(
                       'Net Position',
                       style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                       ),
                     ),
                     const SizedBox(height: 4),
                     CompactAmountText(
                       amount: stats.netCashFlow,
-                      compactText: currencyFormat.formatSmart(stats.netCashFlow),
+                      compactText: currencyFormat.formatSmart(
+                        stats.netCashFlow,
+                      ),
                       currencySymbol: currencyFormat.currencySymbol,
                       style: AppTypography.h2.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -382,15 +438,24 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: (isPositive ? AppColors.successLight : AppColors.errorLight).withValues(alpha: 0.15),
+                  color:
+                      (isPositive
+                              ? AppColors.successLight
+                              : AppColors.errorLight)
+                          .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
                   style: AppTypography.bodyMedium.copyWith(
-                    color: isPositive ? AppColors.successLight : AppColors.errorLight,
+                    color: isPositive
+                        ? AppColors.successLight
+                        : AppColors.errorLight,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -405,7 +470,11 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           child: Row(
             children: [
               // Cash Out
-              Icon(Icons.arrow_upward_rounded, size: 16, color: AppColors.errorLight),
+              Icon(
+                Icons.arrow_upward_rounded,
+                size: 16,
+                color: AppColors.errorLight,
+              ),
               const SizedBox(width: 4),
               CompactAmountText(
                 amount: stats.totalInvested,
@@ -419,12 +488,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               Text(
                 ' out',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
               const SizedBox(width: 16),
               // Cash In
-              Icon(Icons.arrow_downward_rounded, size: 16, color: AppColors.successLight),
+              Icon(
+                Icons.arrow_downward_rounded,
+                size: 16,
+                color: AppColors.successLight,
+              ),
               const SizedBox(width: 4),
               CompactAmountText(
                 amount: stats.totalReturned,
@@ -438,14 +513,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               Text(
                 ' in',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
               const Spacer(),
               Text(
                 '${stats.cashFlowCount} txns',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],
@@ -479,7 +558,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildMiniStatCard(String label, String value, Color color, bool isDark, {String? subtitle}) {
+  Widget _buildMiniStatCard(
+    String label,
+    String value,
+    Color color,
+    bool isDark, {
+    String? subtitle,
+  }) {
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
@@ -487,7 +572,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           Text(
             label,
             style: AppTypography.small.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
               fontSize: 11,
             ),
           ),
@@ -505,7 +592,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Text(
                 subtitle,
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                  color: isDark
+                      ? AppColors.neutral500Dark
+                      : AppColors.neutral400Light,
                   fontSize: 10,
                 ),
               ),
@@ -531,7 +620,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                        color: isDark
+                            ? AppColors.neutral700Dark
+                            : AppColors.neutral200Light,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -540,7 +631,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       width: 60,
                       height: 20,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                        color: isDark
+                            ? AppColors.neutral700Dark
+                            : AppColors.neutral200Light,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -549,7 +642,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       width: 40,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                        color: isDark
+                            ? AppColors.neutral700Dark
+                            : AppColors.neutral200Light,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -563,9 +658,15 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildSegmentedControl(bool isDark, AsyncValue<List<CashFlowEntity>> cashFlowsAsync, bool isClosed) {
+  Widget _buildSegmentedControl(
+    bool isDark,
+    AsyncValue<List<CashFlowEntity>> cashFlowsAsync,
+    bool isClosed,
+  ) {
     final transactionCount = cashFlowsAsync.value?.length ?? 0;
-    final documentsAsync = ref.watch(documentsByInvestmentProvider(widget.investment.id));
+    final documentsAsync = ref.watch(
+      documentsByInvestmentProvider(widget.investment.id),
+    );
     final documentCount = documentsAsync.value?.length ?? 0;
 
     return Container(
@@ -606,26 +707,39 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       size: 18,
                       color: _selectedSegment == 0
                           ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                          : (isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'Transactions',
                       style: AppTypography.bodyMedium.copyWith(
                         color: _selectedSegment == 0
-                            ? (isDark ? Colors.white : AppColors.neutral900Light)
-                            : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
-                        fontWeight: _selectedSegment == 0 ? FontWeight.w600 : FontWeight.w500,
+                            ? (isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
+                            : (isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
+                        fontWeight: _selectedSegment == 0
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                     if (transactionCount > 0) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: _selectedSegment == 0
                               ? AppColors.primaryLight.withValues(alpha: 0.15)
-                              : (isDark ? AppColors.neutral600Dark : AppColors.neutral200Light),
+                              : (isDark
+                                    ? AppColors.neutral600Dark
+                                    : AppColors.neutral200Light),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -633,7 +747,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                           style: AppTypography.small.copyWith(
                             color: _selectedSegment == 0
                                 ? AppColors.primaryLight
-                                : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                                : (isDark
+                                      ? AppColors.neutral400Dark
+                                      : AppColors.neutral500Light),
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
                           ),
@@ -676,26 +792,39 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       size: 18,
                       color: _selectedSegment == 1
                           ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                          : (isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'Documents',
                       style: AppTypography.bodyMedium.copyWith(
                         color: _selectedSegment == 1
-                            ? (isDark ? Colors.white : AppColors.neutral900Light)
-                            : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
-                        fontWeight: _selectedSegment == 1 ? FontWeight.w600 : FontWeight.w500,
+                            ? (isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
+                            : (isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
+                        fontWeight: _selectedSegment == 1
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                     if (documentCount > 0) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: _selectedSegment == 1
                               ? AppColors.primaryLight.withValues(alpha: 0.15)
-                              : (isDark ? AppColors.neutral600Dark : AppColors.neutral200Light),
+                              : (isDark
+                                    ? AppColors.neutral600Dark
+                                    : AppColors.neutral200Light),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -703,7 +832,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                           style: AppTypography.small.copyWith(
                             color: _selectedSegment == 1
                                 ? AppColors.primaryLight
-                                : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                                : (isDark
+                                      ? AppColors.neutral400Dark
+                                      : AppColors.neutral500Light),
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
                           ),
@@ -745,7 +876,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               'Tap + Add to start tracking',
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
           ],
@@ -786,12 +919,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               'Check your connection and try again',
               textAlign: TextAlign.center,
               style: AppTypography.caption.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             const SizedBox(height: 16),
             TextButton.icon(
-              onPressed: () => ref.invalidate(cashFlowsByInvestmentProvider(widget.investment.id)),
+              onPressed: () => ref.invalidate(
+                cashFlowsByInvestmentProvider(widget.investment.id),
+              ),
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
             ),
@@ -801,7 +938,11 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     );
   }
 
-  Widget _buildCashFlowCard(CashFlowEntity cashFlow, bool isDark, NumberFormat currencyFormat) {
+  Widget _buildCashFlowCard(
+    CashFlowEntity cashFlow,
+    bool isDark,
+    NumberFormat currencyFormat,
+  ) {
     final isOutflow = cashFlow.type.isOutflow;
     final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
 
@@ -809,127 +950,143 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Dismissible(
-        key: Key(cashFlow.id),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            gradient: AppColors.dangerGradient,
-            borderRadius: BorderRadius.circular(16),
+          key: Key(cashFlow.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              gradient: AppColors.dangerGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 24),
+            child: const Icon(Icons.delete_rounded, color: Colors.white),
           ),
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 24),
-          child: const Icon(Icons.delete_rounded, color: Colors.white),
-        ),
-        confirmDismiss: (direction) => _confirmDeleteCashFlow(context, isDark),
-        onDismissed: (direction) {
-          ref.read(investmentNotifierProvider.notifier).deleteCashFlow(cashFlow.id);
-          AppFeedback.showSuccess(context, 'Transaction deleted');
-        },
-        // Using Material instead of GlassCard - BackdropFilter blur is too expensive for scrolling
-        child: Material(
-          color: isDark ? AppColors.cardDark : AppColors.cardLight,
-          borderRadius: BorderRadius.circular(16),
-          elevation: isDark ? 0 : 1,
-          shadowColor: Colors.black.withValues(alpha: 0.1),
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => AddTransactionScreen(
-                    investmentId: widget.investment.id,
-                    cashFlowToEdit: cashFlow,
+          confirmDismiss: (direction) =>
+              _confirmDeleteCashFlow(context, isDark),
+          onDismissed: (direction) {
+            ref
+                .read(investmentNotifierProvider.notifier)
+                .deleteCashFlow(cashFlow.id);
+            AppFeedback.showSuccess(context, 'Transaction deleted');
+          },
+          // Using Material instead of GlassCard - BackdropFilter blur is too expensive for scrolling
+          child: Material(
+            color: isDark ? AppColors.cardDark : AppColors.cardLight,
+            borderRadius: BorderRadius.circular(16),
+            elevation: isDark ? 0 : 1,
+            shadowColor: Colors.black.withValues(alpha: 0.1),
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => AddTransactionScreen(
+                      investmentId: widget.investment.id,
+                      cashFlowToEdit: cashFlow,
+                    ),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.05),
-                ),
-              ),
-              child: Row(
-            children: [
-              // Icon
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  isOutflow ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
+                    // Icon
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        cashFlow.type.displayName,
-                        style: AppTypography.small.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Icon(
+                        isOutflow
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
+                        color: color,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(width: 14),
+                    // Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              cashFlow.type.displayName,
+                              style: AppTypography.small.copyWith(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            AppDateUtils.formatShort(cashFlow.date),
+                            style: AppTypography.small.copyWith(
+                              color: isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light,
+                            ),
+                          ),
+                          if (cashFlow.notes != null &&
+                              cashFlow.notes!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              cashFlow.notes!,
+                              style: AppTypography.small.copyWith(
+                                color: isDark
+                                    ? AppColors.neutral400Dark
+                                    : AppColors.neutral500Light,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Amount
                     Text(
-                      AppDateUtils.formatShort(cashFlow.date),
-                      style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      '${isOutflow ? '-' : '+'}${currencyFormat.formatSmart(cashFlow.amount)}',
+                      style: AppTypography.bodyLarge.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (cashFlow.notes != null && cashFlow.notes!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        cashFlow.notes!,
-                        style: AppTypography.small.copyWith(
-                          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
                 ),
               ),
-              // Amount
-              Text(
-                '${isOutflow ? '-' : '+'}${currencyFormat.formatSmart(cashFlow.amount)}',
-                style: AppTypography.bodyLarge.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
             ),
           ),
         ),
       ),
-      ),
     );
   }
 
-  Future<bool?> _confirmDeleteCashFlow(BuildContext context, bool isDark) async {
+  Future<bool?> _confirmDeleteCashFlow(
+    BuildContext context,
+    bool isDark,
+  ) async {
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Transaction?',
@@ -939,7 +1096,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     return confirmed;
   }
 
-  Future<void> _confirmDeleteInvestment(BuildContext context, bool isDark) async {
+  Future<void> _confirmDeleteInvestment(
+    BuildContext context,
+    bool isDark,
+  ) async {
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -947,26 +1107,37 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Investment?',
-      message: 'This will permanently delete this investment and all its transactions. This action cannot be undone.',
+      message:
+          'This will permanently delete this investment and all its transactions. This action cannot be undone.',
       confirmText: 'Delete',
     );
 
     if (confirmed && mounted) {
       try {
-        await ref.read(investmentNotifierProvider.notifier).deleteInvestment(widget.investment.id);
+        await ref
+            .read(investmentNotifierProvider.notifier)
+            .deleteInvestment(widget.investment.id);
         HapticFeedback.mediumImpact();
         messenger.showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 const Expanded(child: Text('Investment deleted')),
               ],
             ),
-            backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -982,9 +1153,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 const Expanded(child: Text('Failed to delete investment')),
               ],
             ),
-            backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -998,7 +1173,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final successMessage = 'Investment ${isClosed ? 'reopened' : 'closed'}';
-    final errorMessage = 'Failed to ${isClosed ? 'reopen' : 'close'} investment';
+    final errorMessage =
+        'Failed to ${isClosed ? 'reopen' : 'close'} investment';
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
@@ -1013,23 +1189,35 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     if (confirmed && mounted) {
       try {
         if (isClosed) {
-          await ref.read(investmentNotifierProvider.notifier).reopenInvestment(widget.investment.id);
+          await ref
+              .read(investmentNotifierProvider.notifier)
+              .reopenInvestment(widget.investment.id);
         } else {
-          await ref.read(investmentNotifierProvider.notifier).closeInvestment(widget.investment.id);
+          await ref
+              .read(investmentNotifierProvider.notifier)
+              .closeInvestment(widget.investment.id);
         }
         HapticFeedback.mediumImpact();
         messenger.showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(successMessage)),
               ],
             ),
-            backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -1045,9 +1233,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 Expanded(child: Text(errorMessage)),
               ],
             ),
-            backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+            backgroundColor: isDark
+                ? AppColors.errorDark
+                : AppColors.errorLight,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -1061,7 +1253,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddDocumentSheet(investmentId: widget.investment.id),
+      builder: (context) =>
+          AddDocumentSheet(investmentId: widget.investment.id),
     );
   }
 
@@ -1088,13 +1281,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 height: 4,
                 margin: const EdgeInsets.only(top: 12),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.neutral600Dark : AppColors.neutral300Light,
+                  color: isDark
+                      ? AppColors.neutral600Dark
+                      : AppColors.neutral300Light,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: Icon(Icons.edit_rounded, color: AppColors.primaryLight),
+                leading: Icon(
+                  Icons.edit_rounded,
+                  color: AppColors.primaryLight,
+                ),
                 title: Text(
                   'Edit Investment',
                   style: AppTypography.body.copyWith(
@@ -1104,15 +1302,19 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 onTap: () {
                   Navigator.pop(sheetContext);
                   final navigator = Navigator.of(screenContext);
-                  navigator.push(
-                    MaterialPageRoute(
-                      builder: (_) => AddInvestmentScreen(investmentToEdit: widget.investment),
-                    ),
-                  ).then((result) {
-                    if (result == true && mounted) {
-                      navigator.pop();
-                    }
-                  });
+                  navigator
+                      .push(
+                        MaterialPageRoute(
+                          builder: (_) => AddInvestmentScreen(
+                            investmentToEdit: widget.investment,
+                          ),
+                        ),
+                      )
+                      .then((result) {
+                        if (result == true && mounted) {
+                          navigator.pop();
+                        }
+                      });
                 },
               ),
               ListTile(
@@ -1148,10 +1350,15 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 },
               ),
               ListTile(
-                leading: Icon(Icons.delete_rounded, color: AppColors.errorLight),
+                leading: Icon(
+                  Icons.delete_rounded,
+                  color: AppColors.errorLight,
+                ),
                 title: Text(
                   'Delete Investment',
-                  style: AppTypography.body.copyWith(color: AppColors.errorLight),
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.errorLight,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -1171,8 +1378,10 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final successMessage = 'Investment ${isArchived ? 'unarchived' : 'archived'}';
-    final errorMessage = 'Failed to ${isArchived ? 'unarchive' : 'archive'} investment';
+    final successMessage =
+        'Investment ${isArchived ? 'unarchived' : 'archived'}';
+    final errorMessage =
+        'Failed to ${isArchived ? 'unarchive' : 'archive'} investment';
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
@@ -1187,23 +1396,35 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     if (confirmed && mounted) {
       try {
         if (isArchived) {
-          await ref.read(investmentNotifierProvider.notifier).unarchiveInvestment(widget.investment.id);
+          await ref
+              .read(investmentNotifierProvider.notifier)
+              .unarchiveInvestment(widget.investment.id);
         } else {
-          await ref.read(investmentNotifierProvider.notifier).archiveInvestment(widget.investment.id);
+          await ref
+              .read(investmentNotifierProvider.notifier)
+              .archiveInvestment(widget.investment.id);
         }
         HapticFeedback.mediumImpact();
         messenger.showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(successMessage)),
               ],
             ),
-            backgroundColor: isDark ? AppColors.successDark : AppColors.successLight,
+            backgroundColor: isDark
+                ? AppColors.successDark
+                : AppColors.successLight,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -1217,14 +1438,22 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                  const Icon(
+                    Icons.error_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(child: Text(errorMessage)),
                 ],
               ),
-              backgroundColor: isDark ? AppColors.errorDark : AppColors.errorLight,
+              backgroundColor: isDark
+                  ? AppColors.errorDark
+                  : AppColors.errorLight,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }

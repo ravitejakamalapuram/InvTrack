@@ -30,9 +30,7 @@ class SettingsScreen extends ConsumerWidget {
     final securityState = ref.watch(securityProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Settings', style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text('Settings', style: AppTypography.h3)),
       body: ListView(
         children: [
           // User Profile Card
@@ -47,7 +45,8 @@ class SettingsScreen extends ConsumerWidget {
                 iconColor: Colors.purple,
                 title: 'Appearance',
                 subtitle: _getThemeModeLabel(themeMode),
-                onTap: () => _navigateTo(context, const AppearanceSettingsScreen()),
+                onTap: () =>
+                    _navigateTo(context, const AppearanceSettingsScreen()),
               ),
               SettingsValueTile(
                 icon: Icons.attach_money,
@@ -70,7 +69,8 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: securityState.hasPin
                     ? 'PIN enabled${securityState.isBiometricEnabled ? ' • Biometrics on' : ''}'
                     : 'Protect your data',
-                onTap: () => _navigateTo(context, const SecuritySettingsScreen()),
+                onTap: () =>
+                    _navigateTo(context, const SecuritySettingsScreen()),
               ),
             ],
           ),
@@ -84,7 +84,8 @@ class SettingsScreen extends ConsumerWidget {
                 iconColor: Colors.orange,
                 title: 'Notifications',
                 subtitle: 'Reminders & summaries',
-                onTap: () => _navigateTo(context, const NotificationsSettingsScreen()),
+                onTap: () =>
+                    _navigateTo(context, const NotificationsSettingsScreen()),
               ),
             ],
           ),
@@ -148,9 +149,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _navigateTo(BuildContext context, Widget screen) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
   }
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
@@ -168,16 +167,18 @@ class SettingsScreen extends ConsumerWidget {
               padding: EdgeInsets.all(AppSpacing.md),
               child: Text('Select Currency', style: AppTypography.h4),
             ),
-            ...currencies.map((currency) => ListTile(
-              title: Text(currency),
-              trailing: settings.currency == currency
-                  ? Icon(Icons.check, color: AppColors.primaryLight)
-                  : null,
-              onTap: () {
-                notifier.setCurrency(currency);
-                Navigator.pop(context);
-              },
-            )),
+            ...currencies.map(
+              (currency) => ListTile(
+                title: Text(currency),
+                trailing: settings.currency == currency
+                    ? Icon(Icons.check, color: AppColors.primaryLight)
+                    : null,
+                onTap: () {
+                  notifier.setCurrency(currency);
+                  Navigator.pop(context);
+                },
+              ),
+            ),
             SizedBox(height: AppSpacing.md),
           ],
         ),

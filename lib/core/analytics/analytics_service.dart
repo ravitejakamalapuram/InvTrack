@@ -54,10 +54,7 @@ class AnalyticsService {
     Map<String, Object>? parameters,
   }) async {
     try {
-      await _analytics.logEvent(
-        name: name,
-        parameters: parameters,
-      );
+      await _analytics.logEvent(name: name, parameters: parameters);
       if (kDebugMode) {
         debugPrint('📊 Analytics: $name ${parameters ?? ''}');
       }
@@ -132,10 +129,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.investmentCreated,
-      parameters: {
-        'investment_type': investmentType,
-        'has_notes': hasNotes,
-      },
+      parameters: {'investment_type': investmentType, 'has_notes': hasNotes},
     );
   }
 
@@ -146,10 +140,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.cashFlowAdded,
-      parameters: {
-        'flow_type': flowType,
-        'amount_range': amountRange,
-      },
+      parameters: {'flow_type': flowType, 'amount_range': amountRange},
     );
   }
 
@@ -160,10 +151,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.csvImportCompleted,
-      parameters: {
-        'row_count': rowCount,
-        'success_count': successCount,
-      },
+      parameters: {'row_count': rowCount, 'success_count': successCount},
     );
   }
 
@@ -200,7 +188,9 @@ class AnalyticsService {
       parameters: {
         'goal_type': goalType,
         'tracking_mode': trackingMode,
-        'has_deadline': hasDeadline ? 1 : 0, // Firebase Analytics only accepts String or num
+        'has_deadline': hasDeadline
+            ? 1
+            : 0, // Firebase Analytics only accepts String or num
       },
     );
   }
@@ -236,10 +226,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.goalMilestoneReached,
-      parameters: {
-        'goal_id': goalId,
-        'milestone': milestone,
-      },
+      parameters: {'goal_id': goalId, 'milestone': milestone},
     );
   }
 
@@ -250,11 +237,7 @@ class AnalyticsService {
   }) {
     logEvent(
       name: AnalyticsEvents.documentAdded,
-      parameters: {
-        'document_type': documentType,
-        'file_type': fileType,
-      },
+      parameters: {'document_type': documentType, 'file_type': fileType},
     );
   }
 }
-

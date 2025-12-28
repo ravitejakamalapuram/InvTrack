@@ -52,14 +52,22 @@ final currencyLocaleProvider = Provider<String>((ref) {
 final currencyFormatProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return NumberFormat.currency(symbol: symbol, decimalDigits: 0, locale: locale);
+  return NumberFormat.currency(
+    symbol: symbol,
+    decimalDigits: 0,
+    locale: locale,
+  );
 });
 
 /// Provider for a NumberFormat with 2 decimal places (for prices)
 final currencyFormatPreciseProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return NumberFormat.currency(symbol: symbol, decimalDigits: 2, locale: locale);
+  return NumberFormat.currency(
+    symbol: symbol,
+    decimalDigits: 2,
+    locale: locale,
+  );
 });
 
 /// Provider for compact currency format (e.g., $1.2K, ₹3.4L)
@@ -71,7 +79,12 @@ final currencyFormatCompactProvider = Provider<NumberFormat>((ref) {
 
 /// Format a number as currency with proper locale formatting
 /// Use this function for displaying amounts throughout the app
-String formatCurrency(double amount, String symbol, String locale, {int decimalDigits = 0}) {
+String formatCurrency(
+  double amount,
+  String symbol,
+  String locale, {
+  int decimalDigits = 0,
+}) {
   final formatter = NumberFormat.currency(
     symbol: symbol,
     decimalDigits: decimalDigits,
@@ -163,10 +176,7 @@ String formatSmartCurrency(
 
 /// Format amount for display in constrained spaces (cards, lists)
 /// Always uses compact format for amounts >= 1000
-String formatCompactCurrency(
-  double amount, {
-  required String symbol,
-}) {
+String formatCompactCurrency(double amount, {required String symbol}) {
   return formatCompactIndian(amount, symbol: symbol);
 }
 
@@ -198,7 +208,11 @@ extension SmartCurrencyFormat on NumberFormat {
 
     if (absAmount >= compactThreshold) {
       // Use 2 decimals for important/hero numbers
-      return formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 2);
+      return formatCompactIndian(
+        amount,
+        symbol: currencySymbol,
+        maxDecimals: 2,
+      );
     }
 
     return format(amount);
@@ -215,4 +229,3 @@ extension SmartCurrencyFormat on NumberFormat {
     return formatCompactIndian(amount, symbol: currencySymbol, maxDecimals: 1);
   }
 }
-

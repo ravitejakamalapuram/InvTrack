@@ -38,7 +38,8 @@ class NetworkException extends AppException {
   final bool shouldReport;
 
   NetworkException({
-    this.userMessage = 'Unable to connect. Please check your internet connection.',
+    this.userMessage =
+        'Unable to connect. Please check your internet connection.',
     required this.technicalMessage,
     this.cause,
     this.stackTrace,
@@ -55,9 +56,13 @@ class NetworkException extends AppException {
     );
   }
 
-  factory NetworkException.noConnection({Object? cause, StackTrace? stackTrace}) {
+  factory NetworkException.noConnection({
+    Object? cause,
+    StackTrace? stackTrace,
+  }) {
     return NetworkException(
-      userMessage: 'No internet connection. Your changes will sync when back online.',
+      userMessage:
+          'No internet connection. Your changes will sync when back online.',
       technicalMessage: 'No network connection available',
       cause: cause,
       stackTrace: stackTrace,
@@ -222,8 +227,8 @@ class ValidationException extends AppException {
   factory ValidationException.tooLong(String fieldName, int maxLength) {
     return ValidationException(
       userMessage: '$fieldName is too long (max $maxLength characters).',
-      technicalMessage: 'Validation failed: $fieldName exceeds $maxLength characters',
+      technicalMessage:
+          'Validation failed: $fieldName exceeds $maxLength characters',
     );
   }
 }
-

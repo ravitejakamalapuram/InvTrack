@@ -108,4 +108,3 @@ class CrashlyticsService {
   bool get isCrashlyticsCollectionEnabled =>
       _crashlytics.isCrashlyticsCollectionEnabled;
 }
-

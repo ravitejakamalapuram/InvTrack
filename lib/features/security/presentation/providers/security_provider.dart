@@ -8,7 +8,9 @@ import 'package:local_auth/local_auth.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 // Dependencies
-final flutterSecureStorageProvider = Provider((ref) => const FlutterSecureStorage());
+final flutterSecureStorageProvider = Provider(
+  (ref) => const FlutterSecureStorage(),
+);
 final localAuthProvider = Provider((ref) => LocalAuthentication());
 // sharedPreferencesProvider is imported from settings_provider.dart
 
@@ -49,7 +51,8 @@ class SecurityState {
   }
 }
 
-class SecurityNotifier extends Notifier<SecurityState> with WidgetsBindingObserver {
+class SecurityNotifier extends Notifier<SecurityState>
+    with WidgetsBindingObserver {
   DateTime? _lastPausedTime;
   Timer? _lockTimer;
 
@@ -143,7 +146,11 @@ class SecurityNotifier extends Notifier<SecurityState> with WidgetsBindingObserv
 
   Future<void> removePin() async {
     await _service.removePin();
-    state = state.copyWith(hasPin: false, isLocked: false, isBiometricEnabled: false);
+    state = state.copyWith(
+      hasPin: false,
+      isLocked: false,
+      isBiometricEnabled: false,
+    );
   }
 
   Future<void> toggleBiometrics(bool enabled) async {

@@ -61,7 +61,9 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.neutral600Dark : AppColors.neutral300Light,
+                      color: isDark
+                          ? AppColors.neutral600Dark
+                          : AppColors.neutral300Light,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -75,7 +77,10 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                     height: 80,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [_currentColor, _currentColor.withValues(alpha: 0.7)],
+                        colors: [
+                          _currentColor,
+                          _currentColor.withValues(alpha: 0.7),
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -89,7 +94,10 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                       ],
                     ),
                     child: Center(
-                      child: Text(_currentIcon, style: const TextStyle(fontSize: 40)),
+                      child: Text(
+                        _currentIcon,
+                        style: const TextStyle(fontSize: 40),
+                      ),
                     ),
                   ),
                 ),
@@ -108,7 +116,8 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
                   children: GoalColors.available.map((color) {
-                    final isSelected = color.toARGB32() == _currentColor.toARGB32();
+                    final isSelected =
+                        color.toARGB32() == _currentColor.toARGB32();
                     return GestureDetector(
                       onTap: () {
                         setState(() => _currentColor = color);
@@ -124,11 +133,20 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                               ? Border.all(color: Colors.white, width: 3)
                               : null,
                           boxShadow: isSelected
-                              ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)]
+                              ? [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.5),
+                                    blurRadius: 8,
+                                  ),
+                                ]
                               : null,
                         ),
                         child: isSelected
-                            ? const Icon(Icons.check, color: Colors.white, size: 20)
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 20,
+                              )
                             : null,
                       ),
                     );
@@ -166,14 +184,18 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? _currentColor.withValues(alpha: 0.2)
-                              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                              : (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: isSelected
                               ? Border.all(color: _currentColor, width: 2)
                               : null,
                         ),
                         child: Center(
-                          child: Text(icon, style: const TextStyle(fontSize: 24)),
+                          child: Text(
+                            icon,
+                            style: const TextStyle(fontSize: 24),
+                          ),
                         ),
                       ),
                     );
@@ -188,4 +210,3 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
     );
   }
 }
-

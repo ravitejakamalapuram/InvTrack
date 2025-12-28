@@ -53,7 +53,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     final archivedGoalsAsync = ref.watch(archivedGoalsProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: CustomScrollView(
         slivers: [
           // App Bar - matching Investment screen style
@@ -61,7 +63,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             expandedHeight: 56,
             floating: true,
             pinned: true,
-            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            backgroundColor: isDark
+                ? AppColors.surfaceDark
+                : AppColors.surfaceLight,
             titleSpacing: AppSpacing.md,
             title: Text(
               'Goals',
@@ -148,19 +152,16 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         return SliverPadding(
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final goal = goals[index];
-                return StaggeredFadeIn(
-                  index: index,
-                  child: GoalCard(
-                    goal: goal,
-                    onTap: () => context.push('/goals/${goal.id}'),
-                  ),
-                );
-              },
-              childCount: goals.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final goal = goals[index];
+              return StaggeredFadeIn(
+                index: index,
+                child: GoalCard(
+                  goal: goal,
+                  onTap: () => context.push('/goals/${goal.id}'),
+                ),
+              );
+            }, childCount: goals.length),
           ),
         );
       },
@@ -203,7 +204,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                     size: 16,
                     color: isSelected
                         ? Colors.white
-                        : (isDark ? AppColors.neutral400Dark : AppColors.neutral600Light),
+                        : (isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral600Light),
                   ),
                   SizedBox(width: AppSpacing.xs),
                   Text(label),
@@ -212,7 +215,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               selected: isSelected,
               onSelected: (_) => setState(() => _filter = filter),
               selectedColor: AppColors.primaryLight,
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+              backgroundColor: isDark
+                  ? AppColors.surfaceDark
+                  : AppColors.surfaceLight,
               labelStyle: AppTypography.small.copyWith(
                 color: isSelected
                     ? Colors.white
@@ -222,7 +227,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               side: BorderSide(
                 color: isSelected
                     ? AppColors.primaryLight
-                    : (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light),
+                    : (isDark
+                          ? AppColors.neutral700Dark
+                          : AppColors.neutral300Light),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -244,13 +251,16 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             Container(
               padding: EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
-                color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                color: (isDark ? Colors.white : AppColors.primaryLight)
+                    .withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.archive_outlined,
                 size: AppSizes.iconDisplay,
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             SizedBox(height: AppSpacing.xl),
@@ -264,7 +274,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             Text(
               'Archived goals will appear here',
               style: AppTypography.bodyMedium.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
               textAlign: TextAlign.center,
             ),
@@ -309,7 +321,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             Text(
               'Failed to load goals. Please try again.',
               style: AppTypography.bodyMedium.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
               textAlign: TextAlign.center,
             ),
@@ -376,4 +390,3 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     );
   }
 }
-

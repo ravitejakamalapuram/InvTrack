@@ -21,9 +21,10 @@ class ShowRealizedOnlyNotifier extends Notifier<bool> {
   void set(bool value) => state = value;
 }
 
-final showRealizedOnlyProvider = NotifierProvider<ShowRealizedOnlyNotifier, bool>(
-  ShowRealizedOnlyNotifier.new,
-);
+final showRealizedOnlyProvider =
+    NotifierProvider<ShowRealizedOnlyNotifier, bool>(
+      ShowRealizedOnlyNotifier.new,
+    );
 
 /// Hero card with toggle for showing all vs realized-only stats.
 class HeroCardWithToggle extends ConsumerWidget {
@@ -93,8 +94,13 @@ class HeroCardContent extends ConsumerWidget {
     final isPositive = netPosition >= 0;
 
     final semanticLabel = AccessibilityUtils.statCardLabel(
-      title: showRealizedOnly ? 'Realized Net Position' : 'Net Position All Investments',
-      value: AccessibilityUtils.formatCurrencyForScreenReader(netPosition, currencyFormat.currencySymbol),
+      title: showRealizedOnly
+          ? 'Realized Net Position'
+          : 'Net Position All Investments',
+      value: AccessibilityUtils.formatCurrencyForScreenReader(
+        netPosition,
+        currencyFormat.currencySymbol,
+      ),
       subtitle: stats.hasData
           ? 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}'
           : null,
@@ -183,7 +189,11 @@ class HeroCardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildValueRow(double netPosition, bool isPositive, InvestmentStats stats) {
+  Widget _buildValueRow(
+    double netPosition,
+    bool isPositive,
+    InvestmentStats stats,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
@@ -280,11 +290,7 @@ class HeroCardContent extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: Colors.white.withValues(alpha: 0.8),
-          size: 14,
-        ),
+        Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 14),
         const SizedBox(width: 4),
         CompactAmountText(
           amount: amount,
@@ -341,4 +347,3 @@ class LoadingHeroCard extends StatelessWidget {
     );
   }
 }
-

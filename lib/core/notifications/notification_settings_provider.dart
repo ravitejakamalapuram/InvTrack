@@ -97,11 +97,15 @@ class NotificationSettingsState {
   }) {
     return NotificationSettingsState(
       weeklySummaryEnabled: weeklySummaryEnabled ?? this.weeklySummaryEnabled,
-      incomeRemindersEnabled: incomeRemindersEnabled ?? this.incomeRemindersEnabled,
-      maturityRemindersEnabled: maturityRemindersEnabled ?? this.maturityRemindersEnabled,
-      monthlySummaryEnabled: monthlySummaryEnabled ?? this.monthlySummaryEnabled,
+      incomeRemindersEnabled:
+          incomeRemindersEnabled ?? this.incomeRemindersEnabled,
+      maturityRemindersEnabled:
+          maturityRemindersEnabled ?? this.maturityRemindersEnabled,
+      monthlySummaryEnabled:
+          monthlySummaryEnabled ?? this.monthlySummaryEnabled,
       milestonesEnabled: milestonesEnabled ?? this.milestonesEnabled,
-      goalMilestonesEnabled: goalMilestonesEnabled ?? this.goalMilestonesEnabled,
+      goalMilestonesEnabled:
+          goalMilestonesEnabled ?? this.goalMilestonesEnabled,
       taxRemindersEnabled: taxRemindersEnabled ?? this.taxRemindersEnabled,
       riskAlertsEnabled: riskAlertsEnabled ?? this.riskAlertsEnabled,
       weeklyCheckInEnabled: weeklyCheckInEnabled ?? this.weeklyCheckInEnabled,
@@ -117,8 +121,8 @@ class NotificationSettingsState {
 /// that triggers UI rebuilds when settings change.
 final notificationSettingsProvider =
     NotifierProvider<NotificationSettingsNotifier, NotificationSettingsState>(
-  NotificationSettingsNotifier.new,
-);
+      NotificationSettingsNotifier.new,
+    );
 
 /// Notifier that manages notification settings state.
 ///
@@ -193,4 +197,3 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettingsState> {
     }
   }
 }
-

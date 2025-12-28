@@ -107,12 +107,14 @@ class InvestmentListNotifier extends Notifier<InvestmentListState> {
 /// Provider for investment list state
 final investmentListStateProvider =
     NotifierProvider<InvestmentListNotifier, InvestmentListState>(
-  InvestmentListNotifier.new,
-);
+      InvestmentListNotifier.new,
+    );
 
 /// Provider for filtered and sorted investments
 /// Uses separate streams for active and archived investments for complete isolation.
-final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((ref) {
+final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((
+  ref,
+) {
   final listState = ref.watch(investmentListStateProvider);
 
   // Use the appropriate stream based on filter
@@ -135,9 +137,13 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
           // All active investments (already filtered by stream)
           break;
         case InvestmentFilter.open:
-          filtered = filtered.where((inv) => inv.status == InvestmentStatus.open).toList();
+          filtered = filtered
+              .where((inv) => inv.status == InvestmentStatus.open)
+              .toList();
         case InvestmentFilter.closed:
-          filtered = filtered.where((inv) => inv.status == InvestmentStatus.closed).toList();
+          filtered = filtered
+              .where((inv) => inv.status == InvestmentStatus.closed)
+              .toList();
         case InvestmentFilter.archived:
           // All archived investments (already filtered by stream)
           break;
@@ -161,7 +167,9 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
       }
 
       // Apply sorting
-      filtered.sort((a, b) => _compareInvestments(a, b, listState.sort, statsCache));
+      filtered.sort(
+        (a, b) => _compareInvestments(a, b, listState.sort, statsCache),
+      );
 
       return AsyncValue.data(filtered);
     },
@@ -193,25 +201,41 @@ int _compareInvestments(
     case InvestmentSort.nameDesc:
       comparison = b.name.toLowerCase().compareTo(a.name.toLowerCase());
     case InvestmentSort.totalInvestedDesc:
-      comparison = (statsB?.totalInvested ?? 0).compareTo(statsA?.totalInvested ?? 0);
+      comparison = (statsB?.totalInvested ?? 0).compareTo(
+        statsA?.totalInvested ?? 0,
+      );
     case InvestmentSort.totalInvestedAsc:
-      comparison = (statsA?.totalInvested ?? 0).compareTo(statsB?.totalInvested ?? 0);
+      comparison = (statsA?.totalInvested ?? 0).compareTo(
+        statsB?.totalInvested ?? 0,
+      );
     case InvestmentSort.totalReturnsDesc:
-      comparison = (statsB?.totalReturned ?? 0).compareTo(statsA?.totalReturned ?? 0);
+      comparison = (statsB?.totalReturned ?? 0).compareTo(
+        statsA?.totalReturned ?? 0,
+      );
     case InvestmentSort.totalReturnsAsc:
-      comparison = (statsA?.totalReturned ?? 0).compareTo(statsB?.totalReturned ?? 0);
+      comparison = (statsA?.totalReturned ?? 0).compareTo(
+        statsB?.totalReturned ?? 0,
+      );
     case InvestmentSort.returnPercentDesc:
-      comparison = (statsB?.absoluteReturn ?? 0).compareTo(statsA?.absoluteReturn ?? 0);
+      comparison = (statsB?.absoluteReturn ?? 0).compareTo(
+        statsA?.absoluteReturn ?? 0,
+      );
     case InvestmentSort.returnPercentAsc:
-      comparison = (statsA?.absoluteReturn ?? 0).compareTo(statsB?.absoluteReturn ?? 0);
+      comparison = (statsA?.absoluteReturn ?? 0).compareTo(
+        statsB?.absoluteReturn ?? 0,
+      );
     case InvestmentSort.xirrDesc:
       comparison = (statsB?.xirr ?? 0).compareTo(statsA?.xirr ?? 0);
     case InvestmentSort.xirrAsc:
       comparison = (statsA?.xirr ?? 0).compareTo(statsB?.xirr ?? 0);
     case InvestmentSort.netPositionDesc:
-      comparison = (statsB?.netCashFlow ?? 0).compareTo(statsA?.netCashFlow ?? 0);
+      comparison = (statsB?.netCashFlow ?? 0).compareTo(
+        statsA?.netCashFlow ?? 0,
+      );
     case InvestmentSort.netPositionAsc:
-      comparison = (statsA?.netCashFlow ?? 0).compareTo(statsB?.netCashFlow ?? 0);
+      comparison = (statsA?.netCashFlow ?? 0).compareTo(
+        statsB?.netCashFlow ?? 0,
+      );
     case InvestmentSort.createdDesc:
       comparison = b.createdAt.compareTo(a.createdAt);
     case InvestmentSort.createdAsc:
@@ -227,14 +251,19 @@ int _compareInvestments(
 
 /// Provider for investment count by status (for filter tabs)
 /// Uses separate streams for active and archived investments.
-final investmentCountsProvider = Provider<({int all, int open, int closed, int archived})>((ref) {
-  final activeInvestments = ref.watch(allInvestmentsProvider).value ?? [];
-  final archivedInvestments = ref.watch(archivedInvestmentsProvider).value ?? [];
-  return (
-    all: activeInvestments.length,
-    open: activeInvestments.where((i) => i.status == InvestmentStatus.open).length,
-    closed: activeInvestments.where((i) => i.status == InvestmentStatus.closed).length,
-    archived: archivedInvestments.length,
-  );
-});
-
+final investmentCountsProvider =
+    Provider<({int all, int open, int closed, int archived})>((ref) {
+      final activeInvestments = ref.watch(allInvestmentsProvider).value ?? [];
+      final archivedInvestments =
+          ref.watch(archivedInvestmentsProvider).value ?? [];
+      return (
+        all: activeInvestments.length,
+        open: activeInvestments
+            .where((i) => i.status == InvestmentStatus.open)
+            .length,
+        closed: activeInvestments
+            .where((i) => i.status == InvestmentStatus.closed)
+            .length,
+        archived: archivedInvestments.length,
+      );
+    });

@@ -97,4 +97,3 @@ class GradientButton extends StatelessWidget {
     );
   }
 }
-

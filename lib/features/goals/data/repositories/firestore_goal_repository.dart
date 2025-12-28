@@ -17,8 +17,8 @@ class FirestoreGoalRepository implements GoalRepository {
   FirestoreGoalRepository({
     required FirebaseFirestore firestore,
     required String userId,
-  })  : _firestore = firestore,
-        _userId = userId;
+  }) : _firestore = firestore,
+       _userId = userId;
 
   /// Active goals collection reference
   CollectionReference<Map<String, dynamic>> get _goalsRef =>
@@ -44,9 +44,11 @@ class FirestoreGoalRepository implements GoalRepository {
     return _goalsRef
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
@@ -98,14 +100,16 @@ class FirestoreGoalRepository implements GoalRepository {
 
   @override
   Future<void> createGoal(GoalEntity goal) async {
-    await _executeWrite(() =>
-        _goalsRef.doc(goal.id).set(GoalModel.toFirestore(goal)));
+    await _executeWrite(
+      () => _goalsRef.doc(goal.id).set(GoalModel.toFirestore(goal)),
+    );
   }
 
   @override
   Future<void> updateGoal(GoalEntity goal) async {
-    await _executeWrite(() =>
-        _goalsRef.doc(goal.id).update(GoalModel.toFirestore(goal)));
+    await _executeWrite(
+      () => _goalsRef.doc(goal.id).update(GoalModel.toFirestore(goal)),
+    );
   }
 
   @override
@@ -172,9 +176,11 @@ class FirestoreGoalRepository implements GoalRepository {
     return _archivedGoalsRef
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
@@ -189,4 +195,3 @@ class FirestoreGoalRepository implements GoalRepository {
     await _executeWrite(() => _archivedGoalsRef.doc(id).delete());
   }
 }
-

@@ -28,4 +28,3 @@ enum InvestmentSort {
   final IconData icon;
   const InvestmentSort(this.displayName, this.icon);
 }
-

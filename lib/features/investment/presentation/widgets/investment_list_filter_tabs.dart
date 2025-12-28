@@ -85,7 +85,10 @@ class _FilterChip extends ConsumerWidget {
         ref.read(investmentListStateProvider.notifier).setFilter(filter);
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryLight
@@ -111,7 +114,8 @@ class _FilterChip extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.2)
-                      : (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.15),
+                      : (isDark ? Colors.white : AppColors.primaryLight)
+                            .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -132,4 +136,3 @@ class _FilterChip extends ConsumerWidget {
     );
   }
 }
-

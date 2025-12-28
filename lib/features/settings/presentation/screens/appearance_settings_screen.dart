@@ -20,9 +20,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Appearance', style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text('Appearance', style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
@@ -36,21 +34,27 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 title: 'System',
                 subtitle: 'Match device settings',
                 isSelected: themeMode == ThemeMode.system,
-                onTap: () => ref.read(settingsProvider.notifier).setThemeMode(ThemeMode.system),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setThemeMode(ThemeMode.system),
               ),
               _ThemeOption(
                 icon: Icons.light_mode,
                 title: 'Light',
                 subtitle: 'Always use light theme',
                 isSelected: themeMode == ThemeMode.light,
-                onTap: () => ref.read(settingsProvider.notifier).setThemeMode(ThemeMode.light),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setThemeMode(ThemeMode.light),
               ),
               _ThemeOption(
                 icon: Icons.dark_mode,
                 title: 'Dark',
                 subtitle: 'Always use dark theme',
                 isSelected: themeMode == ThemeMode.dark,
-                onTap: () => ref.read(settingsProvider.notifier).setThemeMode(ThemeMode.dark),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setThemeMode(ThemeMode.dark),
               ),
             ],
           ),
@@ -64,8 +68,8 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 color: isDark ? AppColors.surfaceDark : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark 
-                      ? Colors.white.withValues(alpha: 0.08) 
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
                       : Colors.black.withValues(alpha: 0.06),
                 ),
               ),
@@ -75,7 +79,9 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                   Text(
                     'Preview',
                     style: AppTypography.small.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -92,7 +98,9 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               'Primary',
-                              style: AppTypography.small.copyWith(color: Colors.white),
+                              style: AppTypography.small.copyWith(
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -108,7 +116,9 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               'Success',
-                              style: AppTypography.small.copyWith(color: Colors.white),
+                              style: AppTypography.small.copyWith(
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -124,7 +134,9 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               'Error',
-                              style: AppTypography.small.copyWith(color: Colors.white),
+                              style: AppTypography.small.copyWith(
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -168,7 +180,9 @@ class _ThemeOption extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: (isSelected ? AppColors.primaryLight : Colors.grey).withValues(alpha: 0.15),
+          color: (isSelected ? AppColors.primaryLight : Colors.grey).withValues(
+            alpha: 0.15,
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -196,4 +210,3 @@ class _ThemeOption extends StatelessWidget {
     );
   }
 }
-

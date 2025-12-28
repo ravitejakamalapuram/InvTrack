@@ -15,11 +15,7 @@ class GoalCard extends ConsumerWidget {
   final GoalEntity goal;
   final VoidCallback onTap;
 
-  const GoalCard({
-    super.key,
-    required this.goal,
-    required this.onTap,
-  });
+  const GoalCard({super.key, required this.goal, required this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +39,12 @@ class GoalCard extends ConsumerWidget {
                   SizedBox(width: AppSpacing.md),
                   // Name and details
                   Expanded(
-                    child: _buildGoalInfo(context, isDark, progress, currencySymbol),
+                    child: _buildGoalInfo(
+                      context,
+                      isDark,
+                      progress,
+                      currencySymbol,
+                    ),
                   ),
                   SizedBox(width: AppSpacing.sm),
                   // Progress ring
@@ -84,15 +85,17 @@ class GoalCard extends ConsumerWidget {
         ],
       ),
       child: Center(
-        child: Text(
-          goal.icon,
-          style: const TextStyle(fontSize: 24),
-        ),
+        child: Text(goal.icon, style: const TextStyle(fontSize: 24)),
       ),
     );
   }
 
-  Widget _buildGoalInfo(BuildContext context, bool isDark, GoalProgress? progress, String currencySymbol) {
+  Widget _buildGoalInfo(
+    BuildContext context,
+    bool isDark,
+    GoalProgress? progress,
+    String currencySymbol,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,18 +112,27 @@ class GoalCard extends ConsumerWidget {
         Text(
           progress?.getProgressMessage(currencySymbol) ?? 'Calculating...',
           style: AppTypography.small.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomStrip(BuildContext context, bool isDark, GoalProgress? progress) {
+  Widget _buildBottomStrip(
+    BuildContext context,
+    bool isDark,
+    GoalProgress? progress,
+  ) {
     final status = progress?.status ?? GoalStatus.notStarted;
-    
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
         borderRadius: const BorderRadius.only(
@@ -131,11 +143,7 @@ class GoalCard extends ConsumerWidget {
       child: Row(
         children: [
           // Status indicator
-          Icon(
-            status.icon,
-            size: 14,
-            color: status.color,
-          ),
+          Icon(status.icon, size: 14, color: status.color),
           const SizedBox(width: 6),
           Text(
             status.displayName,
@@ -150,7 +158,9 @@ class GoalCard extends ConsumerWidget {
             child: Text(
               progress?.statusMessage ?? '',
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -161,4 +171,3 @@ class GoalCard extends ConsumerWidget {
     );
   }
 }
-

@@ -20,4 +20,3 @@ export 'investment_list_state_provider.dart';
 // Document providers and notifier
 export 'document_providers.dart';
 export 'document_notifier.dart';
-

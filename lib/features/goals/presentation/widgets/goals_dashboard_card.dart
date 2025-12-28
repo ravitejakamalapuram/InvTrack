@@ -82,7 +82,12 @@ class GoalsDashboardCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, GoalsSummary summary, bool isDark, String currencySymbol) {
+  Widget _buildSummaryCard(
+    BuildContext context,
+    GoalsSummary summary,
+    bool isDark,
+    String currencySymbol,
+  ) {
     final closest = summary.closestToCompletion;
 
     return GlassCard(
@@ -140,7 +145,9 @@ class GoalsDashboardCard extends ConsumerWidget {
                         closest.goal.name,
                         style: AppTypography.bodyMedium.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : AppColors.neutral900Light,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -149,7 +156,9 @@ class GoalsDashboardCard extends ConsumerWidget {
                       Text(
                         closest.getProgressMessage(currencySymbol),
                         style: AppTypography.caption.copyWith(
-                          color: isDark ? Colors.white70 : AppColors.neutral600Light,
+                          color: isDark
+                              ? Colors.white70
+                              : AppColors.neutral600Light,
                         ),
                       ),
                     ],
@@ -181,4 +190,3 @@ class GoalsDashboardCard extends ConsumerWidget {
     );
   }
 }
-

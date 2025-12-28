@@ -29,7 +29,8 @@ final notificationNavigatorProvider = Provider<NotificationNavigator>((ref) {
 final _pendingNavigationController = StreamController<String>.broadcast();
 
 /// Stream of pending navigation payloads
-Stream<String> get pendingNavigationStream => _pendingNavigationController.stream;
+Stream<String> get pendingNavigationStream =>
+    _pendingNavigationController.stream;
 
 /// Queue a navigation for when the app is ready
 void queueNotificationNavigation(String payload) {
@@ -58,7 +59,10 @@ class NotificationNavigator {
 
     switch (payload.type) {
       case NotificationPayloadType.investmentDetail:
-        return _navigateToInvestmentDetail(payload.investmentId, payload.params);
+        return _navigateToInvestmentDetail(
+          payload.investmentId,
+          payload.params,
+        );
 
       case NotificationPayloadType.addCashFlow:
         return _navigateToAddCashFlow(payload.investmentId, payload.params);
@@ -179,4 +183,3 @@ class NotificationNavigator {
     }
   }
 }
-

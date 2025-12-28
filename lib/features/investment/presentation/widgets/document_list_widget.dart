@@ -28,7 +28,9 @@ class DocumentListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final documentsAsync = ref.watch(documentsByInvestmentProvider(investmentId));
+    final documentsAsync = ref.watch(
+      documentsByInvestmentProvider(investmentId),
+    );
 
     // Document list or empty state (header removed - using segmented control + FAB now)
     return documentsAsync.when(
@@ -48,8 +50,12 @@ class DocumentListWidget extends ConsumerWidget {
           ),
         );
       },
-      loading: () => _buildEmptyState(isDark), // Show empty state while loading (offline friendly)
-      error: (e, _) => _buildEmptyState(isDark), // Show empty state on error (offline friendly)
+      loading: () => _buildEmptyState(
+        isDark,
+      ), // Show empty state while loading (offline friendly)
+      error: (e, _) => _buildEmptyState(
+        isDark,
+      ), // Show empty state on error (offline friendly)
     );
   }
 
@@ -69,13 +75,17 @@ class DocumentListWidget extends ConsumerWidget {
           Icon(
             Icons.folder_open_rounded,
             size: 48,
-            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3),
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.3,
+            ),
           ),
           SizedBox(height: AppSpacing.sm),
           Text(
             'No documents yet',
             style: AppTypography.body.copyWith(
-              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: 0.5,
+              ),
             ),
           ),
           if (!isReadOnly) ...[
@@ -83,7 +93,9 @@ class DocumentListWidget extends ConsumerWidget {
             Text(
               'Tap + to add receipts, contracts, or statements',
               style: AppTypography.caption.copyWith(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3),
+                color: (isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.3,
+                ),
               ),
               textAlign: TextAlign.center,
             ),
@@ -130,7 +142,9 @@ class _DocumentCard extends ConsumerWidget {
                     Text(
                       document.name,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -140,7 +154,10 @@ class _DocumentCard extends ConsumerWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: document.type.color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
@@ -157,7 +174,8 @@ class _DocumentCard extends ConsumerWidget {
                         Text(
                           document.fileSizeFormatted,
                           style: AppTypography.caption.copyWith(
-                            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -166,7 +184,8 @@ class _DocumentCard extends ConsumerWidget {
                     Text(
                       AppDateUtils.formatRelative(document.createdAt),
                       style: AppTypography.caption.copyWith(
-                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.4),
+                        color: (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -178,14 +197,19 @@ class _DocumentCard extends ConsumerWidget {
                 PopupMenuButton<String>(
                   icon: Icon(
                     Icons.more_vert_rounded,
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                    color: (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.5,
+                    ),
                   ),
                   onSelected: (value) => _handleMenuAction(context, ref, value),
                   itemBuilder: (context) => [
                     const PopupMenuItem(value: 'view', child: Text('View')),
                     const PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete', style: TextStyle(color: Colors.red)),
+                      child: Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ],
                 ),
@@ -237,7 +261,11 @@ class _DocumentCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleMenuAction(BuildContext context, WidgetRef ref, String action) async {
+  Future<void> _handleMenuAction(
+    BuildContext context,
+    WidgetRef ref,
+    String action,
+  ) async {
     switch (action) {
       case 'view':
         _openDocument(context, ref);
@@ -282,4 +310,3 @@ class _DocumentCard extends ConsumerWidget {
     }
   }
 }
-

@@ -66,10 +66,7 @@ void main() {
       final notifier = container.read(investmentNotifierProvider.notifier);
 
       expect(
-        () => notifier.addInvestment(
-          name: '',
-          type: InvestmentType.p2pLending,
-        ),
+        () => notifier.addInvestment(name: '', type: InvestmentType.p2pLending),
         throwsA(isA<ValidationException>()),
       );
     });
@@ -86,32 +83,38 @@ void main() {
       );
     });
 
-    test('should throw ValidationException for name exceeding max length', () async {
-      final notifier = container.read(investmentNotifierProvider.notifier);
-      final longName = 'A' * (ValidationConstants.maxNameLength + 1);
+    test(
+      'should throw ValidationException for name exceeding max length',
+      () async {
+        final notifier = container.read(investmentNotifierProvider.notifier);
+        final longName = 'A' * (ValidationConstants.maxNameLength + 1);
 
-      expect(
-        () => notifier.addInvestment(
-          name: longName,
-          type: InvestmentType.p2pLending,
-        ),
-        throwsA(isA<ValidationException>()),
-      );
-    });
+        expect(
+          () => notifier.addInvestment(
+            name: longName,
+            type: InvestmentType.p2pLending,
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+      },
+    );
 
-    test('should throw ValidationException for notes exceeding max length', () async {
-      final notifier = container.read(investmentNotifierProvider.notifier);
-      final longNotes = 'A' * (ValidationConstants.maxNotesLength + 1);
+    test(
+      'should throw ValidationException for notes exceeding max length',
+      () async {
+        final notifier = container.read(investmentNotifierProvider.notifier);
+        final longNotes = 'A' * (ValidationConstants.maxNotesLength + 1);
 
-      expect(
-        () => notifier.addInvestment(
-          name: 'Valid Name',
-          type: InvestmentType.p2pLending,
-          notes: longNotes,
-        ),
-        throwsA(isA<ValidationException>()),
-      );
-    });
+        expect(
+          () => notifier.addInvestment(
+            name: 'Valid Name',
+            type: InvestmentType.p2pLending,
+            notes: longNotes,
+          ),
+          throwsA(isA<ValidationException>()),
+        );
+      },
+    );
   });
 
   group('InvestmentNotifier - updateInvestment', () {
@@ -355,4 +358,3 @@ void main() {
     });
   });
 }
-

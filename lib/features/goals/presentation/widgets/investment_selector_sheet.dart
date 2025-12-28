@@ -24,10 +24,12 @@ class InvestmentSelectorSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<InvestmentSelectorSheet> createState() => _InvestmentSelectorSheetState();
+  ConsumerState<InvestmentSelectorSheet> createState() =>
+      _InvestmentSelectorSheetState();
 }
 
-class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorSheet> {
+class _InvestmentSelectorSheetState
+    extends ConsumerState<InvestmentSelectorSheet> {
   late List<String> _selectedIds;
   late List<InvestmentType> _selectedTypes;
 
@@ -64,7 +66,9 @@ class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorShee
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.neutral600Dark : AppColors.neutral300Light,
+                        color: isDark
+                            ? AppColors.neutral600Dark
+                            : AppColors.neutral300Light,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -74,7 +78,9 @@ class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorShee
                           ? 'Select Investments'
                           : 'Select Investment Types',
                       style: AppTypography.h3.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                       ),
                     ),
                   ],
@@ -114,7 +120,11 @@ class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorShee
     );
   }
 
-  Widget _buildInvestmentList(BuildContext context, ScrollController controller, bool isDark) {
+  Widget _buildInvestmentList(
+    BuildContext context,
+    ScrollController controller,
+    bool isDark,
+  ) {
     final investmentsAsync = ref.watch(allInvestmentsProvider);
 
     return investmentsAsync.when(
@@ -124,7 +134,9 @@ class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorShee
             child: Text(
               'No investments found',
               style: AppTypography.bodyMedium.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
           );
@@ -158,7 +170,11 @@ class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorShee
                   color: investment.type.color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(investment.type.icon, color: investment.type.color, size: 20),
+                child: Icon(
+                  investment.type.icon,
+                  color: investment.type.color,
+                  size: 20,
+                ),
               ),
             );
           },
@@ -204,4 +220,3 @@ class _InvestmentSelectorSheetState extends ConsumerState<InvestmentSelectorShee
     );
   }
 }
-

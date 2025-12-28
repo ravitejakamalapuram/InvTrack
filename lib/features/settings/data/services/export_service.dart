@@ -31,31 +31,27 @@ class ExportService {
 
     // Collect all cash flows with investment info
     for (final investment in investments) {
-      final cashFlows = await _investmentRepository.getCashFlowsByInvestment(investment.id);
+      final cashFlows = await _investmentRepository.getCashFlowsByInvestment(
+        investment.id,
+      );
       for (final cf in cashFlows) {
-        allCashFlows.add({
-          'cashFlow': cf,
-          'investment': investment,
-        });
+        allCashFlows.add({'cashFlow': cf, 'investment': investment});
       }
     }
 
     // Sort by date
-    allCashFlows.sort((a, b) =>
-      (a['cashFlow'].date as DateTime).compareTo(b['cashFlow'].date as DateTime));
+    allCashFlows.sort(
+      (a, b) => (a['cashFlow'].date as DateTime).compareTo(
+        b['cashFlow'].date as DateTime,
+      ),
+    );
 
     // 2. Prepare CSV Data - matching import template format exactly
     // Import template: Date, Investment Name, Type, Amount, Notes
     final List<List<dynamic>> rows = [];
 
     // Header Row - matches CsvTemplateService.headers exactly
-    rows.add([
-      'Date',
-      'Investment Name',
-      'Type',
-      'Amount',
-      'Notes',
-    ]);
+    rows.add(['Date', 'Investment Name', 'Type', 'Amount', 'Notes']);
 
     // Data Rows
     for (final item in allCashFlows) {
@@ -76,7 +72,8 @@ class ExportService {
 
     // 4. Save to Temp File
     final directory = await getTemporaryDirectory();
-    final path = '${directory.path}/investments_export_${DateTime.now().millisecondsSinceEpoch}.csv';
+    final path =
+        '${directory.path}/investments_export_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File(path);
     await file.writeAsString(csvData);
 
@@ -84,7 +81,8 @@ class ExportService {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(path)],
-        text: 'Your InvTrack investments export. This file can be re-imported into the app.',
+        text:
+            'Your InvTrack investments export. This file can be re-imported into the app.',
         subject: 'InvTrack Investments Export',
       ),
     );

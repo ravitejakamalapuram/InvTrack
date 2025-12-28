@@ -26,14 +26,12 @@ class ParsedCashFlowRow {
 
   bool get isValid => error == null;
 
-  ParsedCashFlowRow.withError({
-    required this.rowNumber,
-    required this.error,
-  })  : date = DateTime.now(),
-        investmentName = '',
-        type = CashFlowType.invest,
-        amount = 0,
-        notes = null;
+  ParsedCashFlowRow.withError({required this.rowNumber, required this.error})
+    : date = DateTime.now(),
+      investmentName = '',
+      type = CashFlowType.invest,
+      amount = 0,
+      notes = null;
 }
 
 /// Result of parsing a CSV file
@@ -51,7 +49,8 @@ class ParsedCsvResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedCashFlowRow> get validRowsOnly => rows.where((r) => r.isValid).toList();
+  List<ParsedCashFlowRow> get validRowsOnly =>
+      rows.where((r) => r.isValid).toList();
 }
 
 /// Simple CSV parser with smart date inference
@@ -99,11 +98,15 @@ class SimpleCsvParser {
     final headerRow = _parseCSVLine(lines.first);
     final columnMap = _mapColumns(headerRow);
 
-    if (!columnMap.containsKey('date') || !columnMap.containsKey('investment') ||
-        !columnMap.containsKey('type') || !columnMap.containsKey('amount')) {
+    if (!columnMap.containsKey('date') ||
+        !columnMap.containsKey('investment') ||
+        !columnMap.containsKey('type') ||
+        !columnMap.containsKey('amount')) {
       return ParsedCsvResult(
         rows: [],
-        errors: ['Missing required columns. Required: Date, Investment Name, Type, Amount'],
+        errors: [
+          'Missing required columns. Required: Date, Investment Name, Type, Amount',
+        ],
         totalRows: lines.length - 1,
         validRows: 0,
       );
@@ -182,31 +185,72 @@ class SimpleCsvParser {
   }
 
   /// Parse a single row
-  static ParsedCashFlowRow _parseRow(int rowNum, List<String> values, Map<String, int> columnMap) {
+  static ParsedCashFlowRow _parseRow(
+    int rowNum,
+    List<String> values,
+    Map<String, int> columnMap,
+  ) {
     try {
       final dateStr = _getValue(values, columnMap['date']!);
       final investmentName = _getValue(values, columnMap['investment']!);
       final typeStr = _getValue(values, columnMap['type']!);
       final amountStr = _getValue(values, columnMap['amount']!);
-      final notes = columnMap.containsKey('notes') ? _getValue(values, columnMap['notes']!) : null;
+      final notes = columnMap.containsKey('notes')
+          ? _getValue(values, columnMap['notes']!)
+          : null;
 
       // Validate required fields
-      if (dateStr.isEmpty) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Missing date');
-      if (investmentName.isEmpty) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Missing investment name');
-      if (typeStr.isEmpty) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Missing type');
-      if (amountStr.isEmpty) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Missing amount');
+      if (dateStr.isEmpty) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing date',
+        );
+      }
+      if (investmentName.isEmpty) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing investment name',
+        );
+      }
+      if (typeStr.isEmpty) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing type',
+        );
+      }
+      if (amountStr.isEmpty) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing amount',
+        );
+      }
 
       // Parse date
       final date = _parseDate(dateStr);
-      if (date == null) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Invalid date: $dateStr');
+      if (date == null) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Invalid date: $dateStr',
+        );
+      }
 
       // Parse type
       final type = _parseType(typeStr);
-      if (type == null) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Invalid type: $typeStr');
+      if (type == null) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Invalid type: $typeStr',
+        );
+      }
 
       // Parse amount
       final amount = _parseAmount(amountStr);
-      if (amount == null) return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Invalid amount: $amountStr');
+      if (amount == null) {
+        return ParsedCashFlowRow.withError(
+          rowNumber: rowNum,
+          error: 'Invalid amount: $amountStr',
+        );
+      }
 
       return ParsedCashFlowRow(
         rowNumber: rowNum,
@@ -217,7 +261,10 @@ class SimpleCsvParser {
         notes: notes?.isNotEmpty == true ? notes : null,
       );
     } catch (e) {
-      return ParsedCashFlowRow.withError(rowNumber: rowNum, error: 'Parse error: $e');
+      return ParsedCashFlowRow.withError(
+        rowNumber: rowNum,
+        error: 'Parse error: $e',
+      );
     }
   }
 
@@ -227,7 +274,9 @@ class SimpleCsvParser {
 
   /// Flexible date parser that handles any format
   static final AnyDate _dateParser = AnyDate(
-    info: const DateParserInfo(dayFirst: true), // Prefer day-first for non-US formats
+    info: const DateParserInfo(
+      dayFirst: true,
+    ), // Prefer day-first for non-US formats
   );
 
   /// Month name variations for custom month-year parsing
@@ -240,7 +289,12 @@ class SimpleCsvParser {
     'sept': 9,
     // Full names
     'january': 1, 'february': 2, 'march': 3, 'april': 4, 'june': 6,
-    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12,
+    'july': 7,
+    'august': 8,
+    'september': 9,
+    'october': 10,
+    'november': 11,
+    'december': 12,
   };
 
   /// Parse date with smart format detection
@@ -255,13 +309,17 @@ class SimpleCsvParser {
 
     // Try month-year format first (e.g., Jan-21, Sept-25, Feb/22)
     // This format is common in financial data but not supported by any_date
-    final monthYearMatch = RegExp(r'^([A-Za-z]+)[-/\s](\d{2,4})$').firstMatch(dateStr);
+    final monthYearMatch = RegExp(
+      r'^([A-Za-z]+)[-/\s](\d{2,4})$',
+    ).firstMatch(dateStr);
     if (monthYearMatch != null) {
       final monthStr = monthYearMatch.group(1)!.toLowerCase();
       final yearStr = monthYearMatch.group(2)!;
       final month = _monthNames[monthStr];
       if (month != null) {
-        final year = yearStr.length == 2 ? 2000 + int.parse(yearStr) : int.parse(yearStr);
+        final year = yearStr.length == 2
+            ? 2000 + int.parse(yearStr)
+            : int.parse(yearStr);
         return DateTime(year, month, 1);
       }
     }

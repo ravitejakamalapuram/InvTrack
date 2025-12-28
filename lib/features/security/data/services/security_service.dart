@@ -19,9 +19,8 @@ class SecurityService {
 
   AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
-  IOSOptions _getIOSOptions() => const IOSOptions(
-        accessibility: KeychainAccessibility.first_unlock,
-      );
+  IOSOptions _getIOSOptions() =>
+      const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
   Future<bool> hasPin() async {
     final pin = await _secureStorage.read(
@@ -90,7 +89,8 @@ class SecurityService {
 
   // --- Auto Lock ---
 
-  int get autoLockDurationSeconds => _prefs.getInt(_autoLockDurationKey) ?? 0; // 0 = Immediate
+  int get autoLockDurationSeconds =>
+      _prefs.getInt(_autoLockDurationKey) ?? 0; // 0 = Immediate
 
   Future<void> setAutoLockDuration(int seconds) async {
     await _prefs.setInt(_autoLockDurationKey, seconds);

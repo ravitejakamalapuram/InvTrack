@@ -48,7 +48,8 @@ String? formatXirr(
   final xirrPercent = xirr * 100;
 
   // Check if within valid display range
-  if (xirrPercent > config.maxDisplayPercent || xirrPercent < config.minDisplayPercent) {
+  if (xirrPercent > config.maxDisplayPercent ||
+      xirrPercent < config.minDisplayPercent) {
     return null;
   }
 
@@ -66,11 +67,15 @@ String? formatXirr(
 /// Checks if an XIRR value is valid for display.
 ///
 /// Returns true if the value can be meaningfully displayed.
-bool isValidXirr(double xirr, {XirrFormatConfig config = XirrFormatConfig.defaultConfig}) {
+bool isValidXirr(
+  double xirr, {
+  XirrFormatConfig config = XirrFormatConfig.defaultConfig,
+}) {
   if (xirr.isNaN || xirr.isInfinite) return false;
 
   final xirrPercent = xirr * 100;
-  if (xirrPercent > config.maxDisplayPercent || xirrPercent < config.minDisplayPercent) {
+  if (xirrPercent > config.maxDisplayPercent ||
+      xirrPercent < config.minDisplayPercent) {
     return false;
   }
 
@@ -98,4 +103,3 @@ String formatPercent(double value, {int decimals = 1, bool showSign = false}) {
 String formatMultiplier(double value, {int decimals = 2}) {
   return '${value.toStringAsFixed(decimals)}x';
 }
-

@@ -150,20 +150,14 @@ class AppColors {
 
   // Subtle glass gradient for cards
   static const LinearGradient glassGradient = LinearGradient(
-    colors: [
-      Color(0x1AFFFFFF),
-      Color(0x0DFFFFFF),
-    ],
+    colors: [Color(0x1AFFFFFF), Color(0x0DFFFFFF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   // Dark glass gradient
   static const LinearGradient glassGradientDark = LinearGradient(
-    colors: [
-      Color(0x1A000000),
-      Color(0x0D000000),
-    ],
+    colors: [Color(0x1A000000), Color(0x0D000000)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

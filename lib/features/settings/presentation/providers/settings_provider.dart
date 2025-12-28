@@ -11,10 +11,7 @@ class SettingsState {
     this.currency = 'INR',
   });
 
-  SettingsState copyWith({
-    ThemeMode? themeMode,
-    String? currency,
-  }) {
+  SettingsState copyWith({ThemeMode? themeMode, String? currency}) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
       currency: currency ?? this.currency,
@@ -46,10 +43,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       themeMode = ThemeMode.values[themeIndex];
     }
 
-    return SettingsState(
-      themeMode: themeMode,
-      currency: currency,
-    );
+    return SettingsState(themeMode: themeMode, currency: currency);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

@@ -19,11 +19,13 @@ class DocumentViewerScreen extends ConsumerStatefulWidget {
   const DocumentViewerScreen({super.key, required this.document});
 
   @override
-  ConsumerState<DocumentViewerScreen> createState() => _DocumentViewerScreenState();
+  ConsumerState<DocumentViewerScreen> createState() =>
+      _DocumentViewerScreenState();
 }
 
 class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
   bool _showInfo = true;
 
   @override
@@ -97,7 +99,8 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                       child: Image.file(
                         File(document.localPath),
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => _buildErrorState(),
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildErrorState(),
                       ),
                     ),
                   )
@@ -123,7 +126,11 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.picture_as_pdf_rounded, size: 80, color: Colors.red.shade300),
+          Icon(
+            Icons.picture_as_pdf_rounded,
+            size: 80,
+            color: Colors.red.shade300,
+          ),
           SizedBox(height: AppSpacing.lg),
           Text(
             document.name,
@@ -153,10 +160,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.8),
-          ],
+          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
         ),
       ),
       child: SafeArea(
@@ -172,7 +176,10 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: document.type.color.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(6),
@@ -180,11 +187,17 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(document.type.icon, size: 14, color: document.type.color),
+                      Icon(
+                        document.type.icon,
+                        size: 14,
+                        color: document.type.color,
+                      ),
                       SizedBox(width: 4),
                       Text(
                         document.type.displayName,
-                        style: AppTypography.caption.copyWith(color: document.type.color),
+                        style: AppTypography.caption.copyWith(
+                          color: document.type.color,
+                        ),
                       ),
                     ],
                   ),
@@ -234,11 +247,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     HapticFeedback.selectionClick();
     final file = XFile(widget.document.localPath);
     await SharePlus.instance.share(
-      ShareParams(
-        files: [file],
-        text: widget.document.name,
-      ),
+      ShareParams(files: [file], text: widget.document.name),
     );
   }
 }
-

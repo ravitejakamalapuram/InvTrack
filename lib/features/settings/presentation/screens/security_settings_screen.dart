@@ -22,9 +22,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Security', style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text('Security', style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
@@ -32,7 +30,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
           // App Lock section
           SettingsSection(
             title: 'App Lock',
-            footer: securityState.hasPin 
+            footer: securityState.hasPin
                 ? 'Your app is protected with a PIN'
                 : 'Add a PIN to protect your data',
             children: [
@@ -40,12 +38,12 @@ class SecuritySettingsScreen extends ConsumerWidget {
                 icon: securityState.hasPin ? Icons.lock : Icons.lock_open,
                 iconColor: securityState.hasPin ? AppColors.successLight : null,
                 title: 'Enable App Lock',
-                subtitle: securityState.hasPin 
+                subtitle: securityState.hasPin
                     ? 'PIN required to open app'
                     : 'Protect with a 4-digit PIN',
                 value: securityState.hasPin,
-                onChanged: (value) => _handlePinToggle(
-                  context, value, securityNotifier),
+                onChanged: (value) =>
+                    _handlePinToggle(context, value, securityNotifier),
               ),
             ],
           ),
@@ -58,13 +56,14 @@ class SecuritySettingsScreen extends ConsumerWidget {
               children: [
                 SettingsToggleTile(
                   icon: Icons.fingerprint,
-                  iconColor: securityState.isBiometricEnabled 
-                      ? AppColors.primaryLight 
+                  iconColor: securityState.isBiometricEnabled
+                      ? AppColors.primaryLight
                       : null,
                   title: 'Face ID / Touch ID',
                   subtitle: 'Unlock with biometrics',
                   value: securityState.isBiometricEnabled,
-                  onChanged: (value) => securityNotifier.toggleBiometrics(value),
+                  onChanged: (value) =>
+                      securityNotifier.toggleBiometrics(value),
                 ),
               ],
             ),
@@ -105,7 +104,9 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     child: Text(
                       'Your investment data is stored locally on this device and is never uploaded to external servers.',
                       style: AppTypography.small.copyWith(
-                        color: isDark ? Colors.white70 : AppColors.neutral700Light,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.neutral700Light,
                       ),
                     ),
                   ),
@@ -151,7 +152,8 @@ class SecuritySettingsScreen extends ConsumerWidget {
           onSuccess: () {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const PasscodeScreen(mode: PasscodeMode.create),
+                builder: (context) =>
+                    const PasscodeScreen(mode: PasscodeMode.create),
               ),
             );
           },
@@ -160,4 +162,3 @@ class SecuritySettingsScreen extends ConsumerWidget {
     );
   }
 }
-

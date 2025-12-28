@@ -1,8 +1,8 @@
 /// Widget that initializes notification sync on app startup.
-/// 
+///
 /// This widget listens to investment changes and re-schedules notifications
 /// asynchronously with debouncing to avoid performance issues.
-/// 
+///
 /// It ensures all devices get notifications scheduled, not just the device
 /// that originally created the investment.
 library;
@@ -16,16 +16,13 @@ import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
 /// A widget that initializes notification sync in the background.
-/// 
+///
 /// Wraps the app and listens to investment changes, re-scheduling
 /// notifications with debouncing to prevent performance issues.
 class NotificationSyncInitializer extends ConsumerStatefulWidget {
   final Widget child;
 
-  const NotificationSyncInitializer({
-    super.key,
-    required this.child,
-  });
+  const NotificationSyncInitializer({super.key, required this.child});
 
   @override
   ConsumerState<NotificationSyncInitializer> createState() =>
@@ -74,7 +71,7 @@ class _NotificationSyncInitializerState
     // Get notification service (might throw if not initialized yet)
     try {
       final notificationService = ref.read(notificationServiceProvider);
-      
+
       // Schedule in background - don't await, fire and forget
       Future(() async {
         try {
@@ -96,19 +93,18 @@ class _NotificationSyncInitializerState
   Widget build(BuildContext context) {
     // Listen to investments and trigger async re-scheduling
     // Using ref.listen instead of ref.watch to avoid blocking builds
-    ref.listen<AsyncValue<List<InvestmentEntity>>>(
-      allInvestmentsProvider,
-      (previous, next) {
-        // Only process when data is available
-        final investments = next.value;
-        if (investments != null && investments.isNotEmpty) {
-          _scheduleNotificationsDebounced(investments);
-        }
-      },
-    );
+    ref.listen<AsyncValue<List<InvestmentEntity>>>(allInvestmentsProvider, (
+      previous,
+      next,
+    ) {
+      // Only process when data is available
+      final investments = next.value;
+      if (investments != null && investments.isNotEmpty) {
+        _scheduleNotificationsDebounced(investments);
+      }
+    });
 
     // Render child immediately without waiting for notifications
     return widget.child;
   }
 }
-

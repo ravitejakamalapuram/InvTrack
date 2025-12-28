@@ -21,7 +21,8 @@ class InvestmentListSelectionControls extends ConsumerWidget {
     final filteredAsync = ref.watch(filteredInvestmentsProvider);
     final filteredInvestments = filteredAsync.value ?? [];
 
-    final allSelected = filteredInvestments.isNotEmpty &&
+    final allSelected =
+        filteredInvestments.isNotEmpty &&
         filteredInvestments.every((i) => listState.selectedIds.contains(i.id));
 
     return Row(
@@ -38,11 +39,16 @@ class InvestmentListSelectionControls extends ConsumerWidget {
             }
           },
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
             decoration: BoxDecoration(
               color: allSelected
                   ? AppColors.primaryLight
-                  : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                  : (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.05,
+                    ),
               borderRadius: BorderRadius.circular(AppSizes.radiusXl),
             ),
             child: Row(
@@ -71,9 +77,14 @@ class InvestmentListSelectionControls extends ConsumerWidget {
         ),
         const Spacer(),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
           decoration: BoxDecoration(
-            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(
+              alpha: 0.1,
+            ),
             borderRadius: BorderRadius.circular(AppSizes.radiusXl),
           ),
           child: Text(
@@ -88,4 +99,3 @@ class InvestmentListSelectionControls extends ConsumerWidget {
     );
   }
 }
-

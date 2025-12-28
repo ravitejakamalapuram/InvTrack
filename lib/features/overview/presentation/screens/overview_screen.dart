@@ -40,7 +40,9 @@ class OverviewScreen extends ConsumerWidget {
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Investment'),
-        backgroundColor: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+        backgroundColor: isDark
+            ? AppColors.primaryDark
+            : AppColors.primaryLight,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -67,10 +69,38 @@ class OverviewScreen extends ConsumerWidget {
                 padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
                   data: (stats) => stats.hasData
-                      ? _buildDataContent(context, ref, globalStats, openStats, closedStats, currencyFormat, isDark)
-                      : _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
-                  loading: () => _buildLoadingContent(context, ref, globalStats, closedStats, currencyFormat),
-                  error: (e, s) => _buildEmptyStateContent(context, ref, globalStats, closedStats, currencyFormat, isDark),
+                      ? _buildDataContent(
+                          context,
+                          ref,
+                          globalStats,
+                          openStats,
+                          closedStats,
+                          currencyFormat,
+                          isDark,
+                        )
+                      : _buildEmptyStateContent(
+                          context,
+                          ref,
+                          globalStats,
+                          closedStats,
+                          currencyFormat,
+                          isDark,
+                        ),
+                  loading: () => _buildLoadingContent(
+                    context,
+                    ref,
+                    globalStats,
+                    closedStats,
+                    currencyFormat,
+                  ),
+                  error: (e, s) => _buildEmptyStateContent(
+                    context,
+                    ref,
+                    globalStats,
+                    closedStats,
+                    currencyFormat,
+                    isDark,
+                  ),
                 ),
               ),
             ],
@@ -117,7 +147,14 @@ class OverviewScreen extends ConsumerWidget {
         SizedBox(height: AppSpacing.xl),
 
         // Net Position Breakdown (Open vs Closed)
-        _buildNetPositionBreakdown(context, ref, openStats, closedStats, currencyFormat, isDark),
+        _buildNetPositionBreakdown(
+          context,
+          ref,
+          openStats,
+          closedStats,
+          currencyFormat,
+          isDark,
+        ),
 
         SizedBox(height: AppSpacing.xl),
 
@@ -245,10 +282,7 @@ class OverviewScreen extends ConsumerWidget {
               children: [
                 const Text(
                   'Net Position Breakdown',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -269,7 +303,9 @@ class OverviewScreen extends ConsumerWidget {
                         'Closed (Realized)',
                         closed.netCashFlow,
                         currencyFormat,
-                        closed.netCashFlow >= 0 ? AppColors.successLight : AppColors.errorLight,
+                        closed.netCashFlow >= 0
+                            ? AppColors.successLight
+                            : AppColors.errorLight,
                         Icons.check_circle,
                         isDark,
                       ),
@@ -339,9 +375,11 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-
-
-  Widget _buildQuickStats(BuildContext context, InvestmentStats stats, NumberFormat currencyFormat) {
+  Widget _buildQuickStats(
+    BuildContext context,
+    InvestmentStats stats,
+    NumberFormat currencyFormat,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -350,7 +388,9 @@ class OverviewScreen extends ConsumerWidget {
             label: 'MOIC',
             value: '${stats.moic.toStringAsFixed(2)}x',
             color: AppColors.successLight,
-            subtitle: stats.durationFormatted != null ? 'over ${stats.durationFormatted}' : null,
+            subtitle: stats.durationFormatted != null
+                ? 'over ${stats.durationFormatted}'
+                : null,
           ),
         ),
         const SizedBox(width: 12),
@@ -373,10 +413,7 @@ class OverviewScreen extends ConsumerWidget {
         children: [
           const Text(
             'Investment Period',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           const SizedBox(height: 12),
           if (stats.firstCashFlowDate != null && stats.lastCashFlowDate != null)
@@ -396,23 +433,13 @@ class OverviewScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
         const SizedBox(height: 4),
         Text(
           AppDateUtils.formatShort(date),
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
       ],
     );
   }
-
 }

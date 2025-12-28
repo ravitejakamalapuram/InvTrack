@@ -36,7 +36,9 @@ void main() {
 
     test('getAllGoals returns all goals', () async {
       await repository.createGoal(testGoal);
-      await repository.createGoal(testGoal.copyWith(id: 'goal-2', name: 'Second'));
+      await repository.createGoal(
+        testGoal.copyWith(id: 'goal-2', name: 'Second'),
+      );
 
       final goals = await repository.getAllGoals();
 
@@ -156,8 +158,12 @@ void main() {
 
   group('FakeGoalRepository - Linked Investments', () {
     test('getGoalsForInvestment returns goals linked to investment', () async {
-      await repository.createGoal(testGoal.copyWith(linkedInvestmentIds: ['inv-1']));
-      await repository.createGoal(testGoal.copyWith(id: 'goal-2', linkedInvestmentIds: ['inv-2']));
+      await repository.createGoal(
+        testGoal.copyWith(linkedInvestmentIds: ['inv-1']),
+      );
+      await repository.createGoal(
+        testGoal.copyWith(id: 'goal-2', linkedInvestmentIds: ['inv-2']),
+      );
 
       final linkedGoals = await repository.getGoalsForInvestment('inv-1');
 
@@ -166,4 +172,3 @@ void main() {
     });
   });
 }
-

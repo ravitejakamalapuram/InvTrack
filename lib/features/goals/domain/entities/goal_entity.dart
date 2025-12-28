@@ -148,8 +148,22 @@ enum GoalStatus {
 /// Default goal icons for selection
 class GoalIcons {
   static const List<String> available = [
-    '🎯', '🏠', '🚗', '🎓', '💰', '🏝️', '👶', '💍', 
-    '🏦', '📈', '🛡️', '🎁', '🏥', '✈️', '🎮', '📱',
+    '🎯',
+    '🏠',
+    '🚗',
+    '🎓',
+    '💰',
+    '🏝️',
+    '👶',
+    '💍',
+    '🏦',
+    '📈',
+    '🛡️',
+    '🎁',
+    '🏥',
+    '✈️',
+    '🎮',
+    '📱',
   ];
 
   static String get defaultIcon => '🎯';
@@ -290,4 +304,3 @@ class GoalEntity {
         isArchived.hashCode;
   }
 }
-

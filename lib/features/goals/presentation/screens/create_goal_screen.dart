@@ -112,33 +112,37 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
           : null;
 
       if (widget.isEditing) {
-        await ref.read(goalsNotifierProvider.notifier).updateGoal(
-          widget.goalToEdit!.copyWith(
-            name: name,
-            type: _selectedType,
-            targetAmount: targetAmount,
-            targetMonthlyIncome: monthlyIncome,
-            targetDate: _targetDate,
-            trackingMode: _trackingMode,
-            linkedInvestmentIds: _linkedInvestmentIds,
-            linkedTypes: _linkedTypes,
-            icon: _selectedIcon,
-            colorValue: _selectedColor.toARGB32(),
-          ),
-        );
+        await ref
+            .read(goalsNotifierProvider.notifier)
+            .updateGoal(
+              widget.goalToEdit!.copyWith(
+                name: name,
+                type: _selectedType,
+                targetAmount: targetAmount,
+                targetMonthlyIncome: monthlyIncome,
+                targetDate: _targetDate,
+                trackingMode: _trackingMode,
+                linkedInvestmentIds: _linkedInvestmentIds,
+                linkedTypes: _linkedTypes,
+                icon: _selectedIcon,
+                colorValue: _selectedColor.toARGB32(),
+              ),
+            );
       } else {
-        await ref.read(goalsNotifierProvider.notifier).createGoal(
-          name: name,
-          type: _selectedType,
-          targetAmount: targetAmount,
-          targetMonthlyIncome: monthlyIncome,
-          targetDate: _targetDate,
-          trackingMode: _trackingMode,
-          linkedInvestmentIds: _linkedInvestmentIds,
-          linkedTypes: _linkedTypes,
-          icon: _selectedIcon,
-          colorValue: _selectedColor.toARGB32(),
-        );
+        await ref
+            .read(goalsNotifierProvider.notifier)
+            .createGoal(
+              name: name,
+              type: _selectedType,
+              targetAmount: targetAmount,
+              targetMonthlyIncome: monthlyIncome,
+              targetDate: _targetDate,
+              trackingMode: _trackingMode,
+              linkedInvestmentIds: _linkedInvestmentIds,
+              linkedTypes: _linkedTypes,
+              icon: _selectedIcon,
+              colorValue: _selectedColor.toARGB32(),
+            );
       }
 
       if (mounted) {
@@ -160,7 +164,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: _buildAppBar(isDark),
       body: _buildBody(isDark),
     );
@@ -168,7 +174,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
 
   PreferredSizeWidget _buildAppBar(bool isDark) {
     return AppBar(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       title: Text(
         widget.isEditing ? 'Edit Goal' : 'Create Goal',
         style: AppTypography.h3.copyWith(
@@ -275,14 +283,20 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               height: 64,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [_selectedColor, _selectedColor.withValues(alpha: 0.7)],
+                  colors: [
+                    _selectedColor,
+                    _selectedColor.withValues(alpha: 0.7),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
-                child: Text(_selectedIcon, style: const TextStyle(fontSize: 32)),
+                child: Text(
+                  _selectedIcon,
+                  style: const TextStyle(fontSize: 32),
+                ),
               ),
             ),
           ),
@@ -301,7 +315,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 Text(
                   'Choose icon and color',
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
               ],
@@ -333,7 +349,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         Text(
           'Goal Type',
           style: AppTypography.small.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -347,7 +365,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               label: Text(type.displayName),
               selected: isSelected,
               onSelected: (_) => setState(() => _selectedType = type),
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+              backgroundColor: isDark
+                  ? AppColors.surfaceDark
+                  : AppColors.surfaceLight,
               selectedColor: AppColors.primaryLight.withValues(alpha: 0.2),
               labelStyle: AppTypography.small.copyWith(
                 color: isSelected
@@ -370,7 +390,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         children: [
           Icon(
             Icons.calendar_today_rounded,
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
           SizedBox(width: AppSpacing.md),
           Expanded(
@@ -380,7 +402,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 Text(
                   'Target Date (Optional)',
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
                 SizedBox(height: 2),
@@ -413,7 +437,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         Text(
           'Tracking Mode',
           style: AppTypography.small.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -449,10 +475,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
       padding: EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          Icon(
-            Icons.link_rounded,
-            color: AppColors.primaryLight,
-          ),
+          Icon(Icons.link_rounded, color: AppColors.primaryLight),
           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -470,7 +493,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 Text(
                   linkedCount > 0 ? '$linkedCount selected' : 'Tap to select',
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
               ],
@@ -491,7 +516,8 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         trackingMode: _trackingMode,
         selectedInvestmentIds: _linkedInvestmentIds,
         selectedTypes: _linkedTypes,
-        onInvestmentsSelected: (ids) => setState(() => _linkedInvestmentIds = ids),
+        onInvestmentsSelected: (ids) =>
+            setState(() => _linkedInvestmentIds = ids),
         onTypesSelected: (types) => setState(() => _linkedTypes = types),
       ),
     );

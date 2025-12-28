@@ -67,7 +67,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.2,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -133,7 +135,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   }
 
   Widget _buildPreviewAndForm(bool isDark) {
-    final isImage = _selectedFileName != null && DocumentMimeTypes.isImage(_selectedFileName!);
+    final isImage =
+        _selectedFileName != null &&
+        DocumentMimeTypes.isImage(_selectedFileName!);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +146,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         Container(
           height: 150,
           decoration: BoxDecoration(
-            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.05,
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: isImage
@@ -154,9 +160,16 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.picture_as_pdf_rounded, size: 48, color: Colors.red),
+                      Icon(
+                        Icons.picture_as_pdf_rounded,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                       SizedBox(height: AppSpacing.xs),
-                      Text(_selectedFileName ?? 'PDF', style: AppTypography.caption),
+                      Text(
+                        _selectedFileName ?? 'PDF',
+                        style: AppTypography.caption,
+                      ),
                     ],
                   ),
                 ),
@@ -184,7 +197,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         SizedBox(height: AppSpacing.md),
 
         // Type selector
-        Text('Document Type', style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Document Type',
+          style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+        ),
         SizedBox(height: AppSpacing.xs),
         Wrap(
           spacing: AppSpacing.xs,
@@ -198,7 +214,11 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                 if (selected) setState(() => _selectedType = type);
               },
               selectedColor: type.color.withValues(alpha: 0.3),
-              avatar: Icon(type.icon, size: 16, color: isSelected ? type.color : null),
+              avatar: Icon(
+                type.icon,
+                size: 16,
+                color: isSelected ? type.color : null,
+              ),
             );
           }).toList(),
         ),
@@ -241,7 +261,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   Future<void> _pickFromCamera() async {
     HapticFeedback.selectionClick();
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    final image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
     if (image != null) {
       final bytes = await image.readAsBytes();
       setState(() {
@@ -255,7 +278,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   Future<void> _pickFromGallery() async {
     HapticFeedback.selectionClick();
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (image != null) {
       final bytes = await image.readAsBytes();
       setState(() {
@@ -296,7 +322,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(documentNotifierProvider).addDocument(
+      await ref
+          .read(documentNotifierProvider)
+          .addDocument(
             investmentId: widget.investmentId,
             name: _nameController.text.trim(),
             fileName: _selectedFileName!,

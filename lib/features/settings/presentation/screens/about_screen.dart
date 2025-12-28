@@ -23,9 +23,7 @@ class AboutScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('About', style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text('About', style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.md),
@@ -48,11 +46,7 @@ class AboutScreen extends ConsumerWidget {
                     ),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Icon(
-                    Icons.trending_up,
-                    size: 40,
-                    color: Colors.white,
-                  ),
+                  child: Icon(Icons.trending_up, size: 40, color: Colors.white),
                 ),
                 SizedBox(height: AppSpacing.md),
                 Text(
@@ -66,7 +60,9 @@ class AboutScreen extends ConsumerWidget {
                 Text(
                   'Version $_appVersion ($_buildNumber)',
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
               ],
@@ -83,13 +79,18 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.privacy_tip,
                 iconColor: Colors.purple,
                 title: 'Privacy Policy',
-                onTap: () => _openLegalScreen(context, 'Privacy Policy', _privacyPolicy),
+                onTap: () =>
+                    _openLegalScreen(context, 'Privacy Policy', _privacyPolicy),
               ),
               SettingsNavTile(
                 icon: Icons.description,
                 iconColor: Colors.purple,
                 title: 'Terms of Service',
-                onTap: () => _openLegalScreen(context, 'Terms of Service', _termsOfService),
+                onTap: () => _openLegalScreen(
+                  context,
+                  'Terms of Service',
+                  _termsOfService,
+                ),
               ),
             ],
           ),
@@ -104,9 +105,9 @@ class AboutScreen extends ConsumerWidget {
                 title: 'Help & FAQ',
                 onTap: () {
                   // TODO: Implement help screen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Coming soon!')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('Coming soon!')));
                 },
               ),
               SettingsNavTile(
@@ -131,7 +132,9 @@ class AboutScreen extends ConsumerWidget {
               child: Text(
                 'Made with ❤️ for smart investors',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                  color: isDark
+                      ? AppColors.neutral500Dark
+                      : AppColors.neutral400Light,
                 ),
               ),
             ),
@@ -193,4 +196,3 @@ Last updated: December 05, 2025
 5. **Governing Law**
    These Terms shall be governed by the laws of California, United States.
 ''';
-

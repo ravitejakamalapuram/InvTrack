@@ -18,7 +18,7 @@ void main() {
 
     test('color getter returns correct Color from colorValue', () {
       final goal = testGoal.copyWith(colorValue: 0xFF3B82F6);
-      
+
       expect(goal.color, const Color(0xFF3B82F6));
     });
 
@@ -26,7 +26,7 @@ void main() {
       final goalWithDeadline = testGoal.copyWith(
         targetDate: DateTime(2025, 12, 31),
       );
-      
+
       expect(goalWithDeadline.hasDeadline, isTrue);
     });
 
@@ -109,7 +109,10 @@ void main() {
     test('fromString returns correct enum value', () {
       expect(GoalTrackingMode.fromString('all'), GoalTrackingMode.all);
       expect(GoalTrackingMode.fromString('byType'), GoalTrackingMode.byType);
-      expect(GoalTrackingMode.fromString('selected'), GoalTrackingMode.selected);
+      expect(
+        GoalTrackingMode.fromString('selected'),
+        GoalTrackingMode.selected,
+      );
     });
   });
 
@@ -150,4 +153,3 @@ void main() {
     });
   });
 }
-

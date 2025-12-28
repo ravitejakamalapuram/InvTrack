@@ -55,7 +55,9 @@ class InvestmentEmptyState extends StatelessWidget {
               'Add your first investment to start tracking',
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             SizedBox(height: AppSpacing.xxl),
@@ -76,7 +78,10 @@ class InvestmentEmptyState extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.md),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xxl,
+                    vertical: AppSpacing.md,
+                  ),
                 ),
                 icon: const Icon(Icons.add_rounded, color: Colors.white),
                 label: Text(
@@ -96,10 +101,7 @@ class InvestmentEmptyState extends StatelessWidget {
 class InvestmentNoResultsState extends StatelessWidget {
   final bool isDark;
 
-  const InvestmentNoResultsState({
-    super.key,
-    required this.isDark,
-  });
+  const InvestmentNoResultsState({super.key, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -112,13 +114,16 @@ class InvestmentNoResultsState extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
-                color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.1),
+                color: (isDark ? Colors.white : AppColors.primaryLight)
+                    .withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.search_off_rounded,
                 size: AppSizes.iconDisplay,
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             SizedBox(height: AppSpacing.xl),
@@ -133,7 +138,9 @@ class InvestmentNoResultsState extends StatelessWidget {
               'Try searching with a different term',
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
           ],
@@ -186,7 +193,9 @@ class InvestmentErrorState extends StatelessWidget {
               'Unable to load investments.\nPlease check your connection and try again.',
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             SizedBox(height: AppSpacing.xl),
@@ -201,4 +210,3 @@ class InvestmentErrorState extends StatelessWidget {
     );
   }
 }
-

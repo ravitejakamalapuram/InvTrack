@@ -40,9 +40,11 @@ class _ShimmerEffectState extends State<ShimmerEffect>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final base = widget.baseColor ??
+    final base =
+        widget.baseColor ??
         (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0));
-    final highlight = widget.highlightColor ??
+    final highlight =
+        widget.highlightColor ??
         (isDark ? const Color(0xFF334155) : const Color(0xFFF8FAFC));
 
     return AnimatedBuilder(
@@ -104,9 +106,10 @@ class _AnimatedCounterState extends State<AnimatedCounter>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
-    _animation = Tween<double>(begin: 0, end: widget.value).animate(
-      CurvedAnimation(parent: _controller, curve: widget.curve),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: widget.value,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     _controller.forward();
   }
 
@@ -115,8 +118,10 @@ class _AnimatedCounterState extends State<AnimatedCounter>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
       _previousValue = _animation.value;
-      _animation = Tween<double>(begin: _previousValue, end: widget.value)
-          .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+      _animation = Tween<double>(
+        begin: _previousValue,
+        end: widget.value,
+      ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
       _controller.forward(from: 0);
     }
   }
@@ -175,11 +180,14 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _slideAnimation = Tween<Offset>(begin: widget.offset, end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slideAnimation = Tween<Offset>(
+      begin: widget.offset,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     Future.delayed(widget.delay * widget.index, () {
       if (mounted) _controller.forward();
@@ -255,7 +263,10 @@ class _PulseAnimationState extends State<PulseAnimation>
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
-        return Transform.scale(scale: _scaleAnimation.value, child: widget.child);
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: widget.child,
+        );
       },
     );
   }
@@ -288,8 +299,10 @@ class _FloatingAnimationState extends State<FloatingAnimation>
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..repeat(reverse: true);
-    _animation = Tween<double>(begin: -widget.distance, end: widget.distance)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _animation = Tween<double>(
+      begin: -widget.distance,
+      end: widget.distance,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -341,9 +354,10 @@ class _GlowEffectState extends State<GlowEffect>
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 0.8,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -447,4 +461,3 @@ class _AnimatedGradientBorderState extends State<AnimatedGradientBorder>
     );
   }
 }
-

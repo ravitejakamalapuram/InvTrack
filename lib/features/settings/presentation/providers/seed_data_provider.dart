@@ -9,9 +9,10 @@ final seedDataServiceProvider = Provider<SeedDataService>((ref) {
 /// Result of seeding demo data
 typedef SeedResult = ({int investments, int cashFlows});
 
-final seedDataStateProvider = NotifierProvider<SeedDataNotifier, AsyncValue<SeedResult?>>(
-  SeedDataNotifier.new,
-);
+final seedDataStateProvider =
+    NotifierProvider<SeedDataNotifier, AsyncValue<SeedResult?>>(
+      SeedDataNotifier.new,
+    );
 
 class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
   @override
@@ -29,4 +30,3 @@ class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
     }
   }
 }
-
