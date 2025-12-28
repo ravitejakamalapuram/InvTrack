@@ -36,11 +36,11 @@ jobs:
 
       - name: Create key.properties
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "storePassword=$KEYSTORE_PASSWORD" > android/key.properties
+          echo "storePassword=$STORE_PASSWORD" > android/key.properties
           echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
           echo "keyAlias=$KEY_ALIAS" >> android/key.properties
           echo "storeFile=keystore.jks" >> android/key.properties
@@ -49,9 +49,13 @@ jobs:
 
       - name: Verify keystore
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
-          keytool -list -keystore android/app/keystore.jks -storepass "$KEYSTORE_PASSWORD" || echo "Keystore verification failed - check KEYSTORE_PASSWORD secret"
+          if [ -z "$STORE_PASSWORD" ]; then
+            echo "ERROR: STORE_PASSWORD secret is not set!"
+            exit 1
+          fi
+          keytool -list -keystore android/app/keystore.jks -storepass "$STORE_PASSWORD"
 
       - name: Build Release Bundle
         run: flutter build appbundle --release
@@ -65,7 +69,7 @@ jobs:
       - name: Deploy to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           packageName: com.invtracker.inv_tracker
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: alpha
