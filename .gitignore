@@ -44,9 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Google Services credentials (KEEP PRIVATE - DO NOT COMMIT)
-**/google-services.json
-**/GoogleService-Info.plist
+# Google Services credentials - NOT ignored (contains public identifiers, safe to commit)
+# These are embedded in the compiled app anyway and are not secrets
+# **/google-services.json
+# **/GoogleService-Info.plist
 
 # Environment files
 .env

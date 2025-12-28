@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "784857267556",
+    "project_id": "invtracker-b19d1",
+    "storage_bucket": "invtracker-b19d1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784857267556:android:5ba7e064263d78f61dce71",
+        "android_client_info": {
+          "package_name": "com.invtracker.inv_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "784857267556-11hac9h5j7bidre8g6imhu3442gurc6j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invtracker.inv_tracker",
+            "certificate_hash": "e64d3130466c3792f87616a5c1faa6a16bdcb6d3"
+          }
+        },
+        {
+          "client_id": "784857267556-m379hn2ihvg028qmk11c0p5cnvih4dt2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.invtracker.inv_tracker",
+            "certificate_hash": "eed37ca950d7edd1f36819d23ddea5bc73fcd2ea"
+          }
+        },
+        {
+          "client_id": "784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVyICKv0sQlJUAjxj1gYwGlekC_7hLPz4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "784857267556-lq24tg6aicppvdga587fglmhqllsko22.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.invtracker.invTracke"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
