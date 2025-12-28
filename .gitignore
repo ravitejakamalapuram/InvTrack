@@ -61,3 +61,9 @@ key.properties
 # Firebase config (if used later)
 firebase_options.dart
 key.properties
+
+# Fastlane
+android/fastlane/report.xml
+android/fastlane/README.md
+android/fastlane/play-store-credentials.json
+android/.bundle/

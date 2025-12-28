@@ -1,0 +1,24 @@
+🎯 Goals & Smart Notifications Update!
+
+NEW FEATURES:
+
+🎯 Financial Goals
+• Set corpus or income targets
+• Track progress with visual rings
+• Celebrate milestones
+
+🔔 Smart Notifications
+• Income payment reminders
+• Maturity date alerts
+• Weekly portfolio summaries
+
+📄 Document Management
+• Attach receipts & contracts
+• Full-screen document viewer
+
+⚙️ Enhanced Settings
+• Reorganized settings
+• Better navigation
+
+Plus: Bug fixes & performance improvements
+
