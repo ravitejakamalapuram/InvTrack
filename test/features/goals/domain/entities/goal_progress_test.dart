@@ -76,9 +76,9 @@ void main() {
         calculatedAt: DateTime.now(),
       );
 
-      // Uses K formatting (5.0K of 10.0K)
-      expect(progress.progressMessage, contains('5.0K'));
-      expect(progress.progressMessage, contains('10.0K'));
+      // Uses K formatting (5K of 10K - trailing zeros trimmed)
+      expect(progress.progressMessage, contains('5K'));
+      expect(progress.progressMessage, contains('10K'));
     });
 
     test('progressMessage shows correct format for income goals', () {
@@ -103,7 +103,7 @@ void main() {
 
       expect(progress.progressMessage, contains('/mo'));
       expect(progress.progressMessage, contains('500'));
-      expect(progress.progressMessage, contains('1.0K'));
+      expect(progress.progressMessage, contains('1K'));
     });
 
     test('statusMessage for ahead status shows encouragement', () {

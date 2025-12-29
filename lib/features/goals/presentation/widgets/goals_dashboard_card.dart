@@ -4,11 +4,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
 
@@ -21,13 +23,20 @@ class GoalsDashboardCard extends ConsumerWidget {
     final summaryAsync = ref.watch(goalsSummaryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return summaryAsync.when(
       data: (summary) {
         if (!summary.hasGoals) {
           return _buildEmptyState(context, isDark);
         }
-        return _buildSummaryCard(context, summary, isDark, currencySymbol);
+        return _buildSummaryCard(
+          context,
+          summary,
+          isDark,
+          currencySymbol,
+          isPrivacyMode,
+        );
       },
       loading: () => _buildLoadingState(isDark),
       error: (error, stackTrace) => const SizedBox.shrink(),
@@ -87,8 +96,12 @@ class GoalsDashboardCard extends ConsumerWidget {
     GoalsSummary summary,
     bool isDark,
     String currencySymbol,
+    bool isPrivacyMode,
   ) {
     final closest = summary.closestToCompletion;
+    final progressTextStyle = AppTypography.caption.copyWith(
+      color: isDark ? Colors.white70 : AppColors.neutral600Light,
+    );
 
     return GlassCard(
       onTap: () => context.push('/goals'),
@@ -130,11 +143,16 @@ class GoalsDashboardCard extends ConsumerWidget {
           if (closest != null) ...[
             Row(
               children: [
-                GoalProgressRing(
-                  progress: closest.progressPercent,
-                  size: 48,
-                  color: closest.goal.color,
-                  strokeWidth: 4,
+                // Mask the progress ring percentage when privacy mode is on
+                PrivacyMask(
+                  useTextMask: true,
+                  maskedText: '••%',
+                  child: GoalProgressRing(
+                    progress: closest.progressPercent,
+                    size: 48,
+                    color: closest.goal.color,
+                    strokeWidth: 4,
+                  ),
                 ),
                 SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -153,14 +171,16 @@ class GoalsDashboardCard extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        closest.getProgressMessage(currencySymbol),
-                        style: AppTypography.caption.copyWith(
-                          color: isDark
-                              ? Colors.white70
-                              : AppColors.neutral600Light,
-                        ),
-                      ),
+                      // Mask the progress message (contains amounts)
+                      isPrivacyMode
+                          ? MaskedAmountText(
+                              text: closest.getProgressMessage(currencySymbol),
+                              style: progressTextStyle,
+                            )
+                          : Text(
+                              closest.getProgressMessage(currencySymbol),
+                              style: progressTextStyle,
+                            ),
                     ],
                   ),
                 ),

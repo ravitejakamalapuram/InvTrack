@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -22,6 +24,7 @@ class GoalCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final progress = ref.watch(goalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
@@ -44,15 +47,20 @@ class GoalCard extends ConsumerWidget {
                       isDark,
                       progress,
                       currencySymbol,
+                      isPrivacyMode,
                     ),
                   ),
                   SizedBox(width: AppSpacing.sm),
-                  // Progress ring
-                  GoalProgressRing(
-                    progress: progress?.progressPercent ?? 0,
-                    size: 56,
-                    color: goal.color,
-                    strokeWidth: 5,
+                  // Progress ring - wrap in PrivacyMask
+                  PrivacyMask(
+                    useTextMask: true,
+                    maskedText: '••%',
+                    child: GoalProgressRing(
+                      progress: progress?.progressPercent ?? 0,
+                      size: 56,
+                      color: goal.color,
+                      strokeWidth: 5,
+                    ),
                   ),
                 ],
               ),
@@ -95,7 +103,14 @@ class GoalCard extends ConsumerWidget {
     bool isDark,
     GoalProgress? progress,
     String currencySymbol,
+    bool isPrivacyMode,
   ) {
+    final progressTextStyle = AppTypography.small.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    final progressText =
+        progress?.getProgressMessage(currencySymbol) ?? 'Calculating...';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,14 +124,9 @@ class GoalCard extends ConsumerWidget {
           overflow: TextOverflow.ellipsis,
         ),
         SizedBox(height: AppSpacing.xxs),
-        Text(
-          progress?.getProgressMessage(currencySymbol) ?? 'Calculating...',
-          style: AppTypography.small.copyWith(
-            color: isDark
-                ? AppColors.neutral400Dark
-                : AppColors.neutral500Light,
-          ),
-        ),
+        isPrivacyMode
+            ? MaskedAmountText(text: progressText, style: progressTextStyle)
+            : Text(progressText, style: progressTextStyle),
       ],
     );
   }

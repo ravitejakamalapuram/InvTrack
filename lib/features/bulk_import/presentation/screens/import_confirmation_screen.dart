@@ -256,7 +256,7 @@ class _ImportConfirmationScreenState
               leading: _buildTypeChip(row.type),
               title: Text(_dateFormat.format(row.date)),
               trailing: Text(
-                currencyFormat.format(row.amount),
+                currencyFormat.formatCompact(row.amount),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color:
@@ -283,7 +283,7 @@ class _ImportConfirmationScreenState
       children: [
         Text(label, style: AppTypography.caption),
         Text(
-          currencyFormat.format(amount),
+          currencyFormat.formatCompact(amount),
           style: TextStyle(fontWeight: FontWeight.bold, color: color),
         ),
       ],

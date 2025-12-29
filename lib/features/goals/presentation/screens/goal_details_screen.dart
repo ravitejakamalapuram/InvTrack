@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -10,6 +11,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -107,6 +109,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   ) {
     final progress = ref.watch(goalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return CustomScrollView(
       slivers: [
@@ -121,9 +124,16 @@ class GoalDetailsScreen extends ConsumerWidget {
                 progress,
                 isDark,
                 currencySymbol,
+                isPrivacyMode,
               ),
               SizedBox(height: AppSpacing.lg),
-              _buildDetailsSection(context, goal, isDark, currencySymbol),
+              _buildDetailsSection(
+                context,
+                goal,
+                isDark,
+                currencySymbol,
+                isPrivacyMode,
+              ),
               SizedBox(height: AppSpacing.lg),
               _buildMilestonesSection(context, progress, isDark),
               SizedBox(height: AppSpacing.lg),
@@ -217,28 +227,44 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalProgress? progress,
     bool isDark,
     String currencySymbol,
+    bool isPrivacyMode,
   ) {
     final percent = progress?.progressPercent ?? 0;
+    final progressText =
+        progress?.getProgressMessage(currencySymbol) ?? 'Calculating...';
+    final progressTextStyle = AppTypography.bodyLarge.copyWith(
+      color: isDark ? Colors.white : AppColors.neutral900Light,
+      fontWeight: FontWeight.w600,
+    );
+
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
-          GoalProgressRing(
-            progress: percent,
-            size: 140,
-            color: goal.color,
-            strokeWidth: 12,
-            showPercentage: true,
+          // Wrap progress ring in PrivacyMask
+          PrivacyMask(
+            useTextMask: true,
+            maskedText: '••%',
+            child: GoalProgressRing(
+              progress: percent,
+              size: 140,
+              color: goal.color,
+              strokeWidth: 12,
+              showPercentage: true,
+            ),
           ),
           SizedBox(height: AppSpacing.lg),
-          Text(
-            progress?.getProgressMessage(currencySymbol) ?? 'Calculating...',
-            style: AppTypography.bodyLarge.copyWith(
-              color: isDark ? Colors.white : AppColors.neutral900Light,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          isPrivacyMode
+              ? MaskedAmountText(
+                  text: progressText,
+                  style: progressTextStyle,
+                  textAlign: TextAlign.center,
+                )
+              : Text(
+                  progressText,
+                  style: progressTextStyle,
+                  textAlign: TextAlign.center,
+                ),
           SizedBox(height: AppSpacing.xs),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -280,6 +306,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalEntity goal,
     bool isDark,
     String currencySymbol,
+    bool isPrivacyMode,
   ) {
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.md),
@@ -299,6 +326,7 @@ class GoalDetailsScreen extends ConsumerWidget {
             goal.targetAmount,
             currencySymbol,
             isDark,
+            isPrivacyMode: isPrivacyMode,
           ),
           if (goal.targetMonthlyIncome != null)
             _buildAmountDetailRow(
@@ -307,6 +335,7 @@ class GoalDetailsScreen extends ConsumerWidget {
               currencySymbol,
               isDark,
               suffix: '/mo',
+              isPrivacyMode: isPrivacyMode,
             ),
           if (goal.targetDate != null)
             _buildDetailRow(
@@ -357,12 +386,18 @@ class GoalDetailsScreen extends ConsumerWidget {
     String currencySymbol,
     bool isDark, {
     String? suffix,
+    bool isPrivacyMode = false,
   }) {
     final compactText = formatCompactIndian(
       amount,
       symbol: currencySymbol,
       maxDecimals: 2,
     );
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: isDark ? Colors.white : AppColors.neutral900Light,
+      fontWeight: FontWeight.w500,
+    );
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
@@ -379,23 +414,16 @@ class GoalDetailsScreen extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CompactAmountText(
-                amount: amount,
-                compactText: compactText,
-                currencySymbol: currencySymbol,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              isPrivacyMode
+                  ? MaskedAmountText(text: compactText, style: valueStyle)
+                  : CompactAmountText(
+                      amount: amount,
+                      compactText: compactText,
+                      currencySymbol: currencySymbol,
+                      style: valueStyle,
+                    ),
               if (suffix != null)
-                Text(
-                  suffix,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(suffix, style: valueStyle),
             ],
           ),
         ],

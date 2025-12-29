@@ -1,3 +1,4 @@
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 
 /// Milestone levels for goal progress
@@ -167,17 +168,16 @@ class GoalProgress {
     }
   }
 
+  /// Formats amount using centralized compact Indian notation (K, L, Cr)
+  /// without the currency symbol prefix (symbol is added separately in getProgressMessage)
   String _formatAmount(double amount) {
-    if (amount >= 10000000) {
-      return '${(amount / 10000000).toStringAsFixed(2)}Cr';
-    }
-    if (amount >= 100000) {
-      return '${(amount / 100000).toStringAsFixed(2)}L';
-    }
-    if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}K';
-    }
-    return amount.toStringAsFixed(0);
+    // Use centralized formatter but strip the symbol since we add it separately
+    final formatted = formatCompactIndian(
+      amount,
+      symbol: '',
+      maxDecimals: 2,
+    );
+    return formatted;
   }
 
   String _formatDate(DateTime date) {

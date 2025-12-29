@@ -5,6 +5,31 @@ All notable changes to InvTracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.8] - 2025-12-29
+
+### Added
+- 🔒 **Privacy Mode**: Tap the eye icon to hide all financial amounts and sensitive data
+  - Masks investment values, returns, and percentages with `••••`
+  - Hides goal progress and amounts
+  - Perfect for checking your portfolio in public
+
+### Changed
+- Improved number formatting consistency across the app
+- Centralized compact amount display with `CompactAmountText` widget
+- Enhanced goal progress display with privacy mode support
+- Better currency formatting for large numbers (K, L, Cr abbreviations)
+
+### Fixed
+- Privacy mode now works consistently across all screens:
+  - Overview dashboard
+  - Investment detail screen
+  - Goal cards and goal details
+  - Analytics widgets
+- Fixed notification permission checks for milestone notifications
+- Fixed notification settings toggle reactivity
+
+---
+
 ## [3.2.0] - 2025-12-27
 
 ### Added
