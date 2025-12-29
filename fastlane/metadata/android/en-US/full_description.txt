@@ -1,0 +1,28 @@
+InvTrack - Your Personal Investment Tracker
+
+Track all your investments in one place. Calculate XIRR (annualized returns) and MOIC (Multiple on Invested Capital) for any investment.
+
+✨ KEY FEATURES:
+
+📊 Portfolio Tracking
+• Track stocks, mutual funds, real estate, and any other investments
+• Record buy/sell transactions with dates and amounts
+• View your complete investment history
+
+📈 Performance Metrics
+• XIRR calculation - See your true annualized returns
+• MOIC calculation - Know your total return multiple
+• Real-time portfolio valuation
+
+🔒 Privacy First
+• Works completely offline
+• Your data stays on your device
+• Optional cloud sync with Firebase
+
+🎯 Perfect For:
+• Individual investors tracking personal portfolios
+• Anyone wanting to understand their true investment returns
+• People who prefer offline-first apps with optional sync
+
+Download now and take control of your investment tracking!
+

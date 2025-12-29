@@ -88,6 +88,8 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: alpha
           status: completed
+          releaseName: v${{ steps.version.outputs.version }}
+          whatsNewDirectory: distribution/whatsnew
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1

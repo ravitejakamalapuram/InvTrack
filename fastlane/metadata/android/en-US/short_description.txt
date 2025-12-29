@@ -1,0 +1,1 @@
+Track investments with XIRR & MOIC. Works offline, syncs online.
