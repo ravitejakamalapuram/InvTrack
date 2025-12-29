@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -13,6 +14,7 @@ import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 /// A card displaying an investment's summary information.
@@ -210,6 +212,7 @@ class _InvestmentValueColumn extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
     final statsAsync = ref.watch(investmentStatsProvider(investmentId));
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return statsAsync.when(
       data: (stats) {
@@ -231,37 +234,49 @@ class _InvestmentValueColumn extends ConsumerWidget {
             : AppColors.errorLight;
         final xirrFormatted = formatXirr(stats.xirr);
 
+        final valueStyle = AppTypography.bodyLarge.copyWith(
+          fontWeight: FontWeight.w600,
+          color: plColor,
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // Net Position (cash in - cash out)
-            CompactAmountText(
-              amount: stats.netCashFlow.abs(),
-              compactText: currencyFormat.formatCompact(
-                stats.netCashFlow.abs(),
-              ),
-              currencySymbol: currencyFormat.currencySymbol,
-              prefix: isPositive ? '+' : '-',
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
-                color: plColor,
-              ),
-            ),
+            isPrivacyMode
+                ? MaskedAmountText(
+                    text:
+                        '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(stats.netCashFlow.abs())}',
+                    style: valueStyle,
+                  )
+                : CompactAmountText(
+                    amount: stats.netCashFlow.abs(),
+                    compactText: currencyFormat.formatCompact(
+                      stats.netCashFlow.abs(),
+                    ),
+                    currencySymbol: currencyFormat.currencySymbol,
+                    prefix: isPositive ? '+' : '-',
+                    style: valueStyle,
+                  ),
             SizedBox(height: AppSpacing.xxs),
             // XIRR - only show if valid
             if (xirrFormatted != null)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: xirrColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '$xirrFormatted IRR',
-                  style: AppTypography.small.copyWith(
-                    color: xirrColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: isPrivacyMode ? 0.0 : 1.0,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: xirrColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$xirrFormatted IRR',
+                    style: AppTypography.small.copyWith(
+                      color: xirrColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
               ),
@@ -295,6 +310,7 @@ class _InvestmentBottomStrip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
     final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -314,6 +330,12 @@ class _InvestmentBottomStrip extends ConsumerWidget {
               stats.lastCashFlowDate ?? investment.createdAt;
           final cashFlowCount = stats.cashFlowCount;
 
+          final subtleTextStyle = AppTypography.small.copyWith(
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
+          );
+
           return Row(
             children: [
               // Last activity
@@ -327,11 +349,7 @@ class _InvestmentBottomStrip extends ConsumerWidget {
               SizedBox(width: 4),
               Text(
                 AppDateUtils.formatRelative(lastActivityDate),
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral400Dark
-                      : AppColors.neutral500Light,
-                ),
+                style: subtleTextStyle,
               ),
               SizedBox(width: AppSpacing.md),
               // Cash flow count
@@ -345,11 +363,7 @@ class _InvestmentBottomStrip extends ConsumerWidget {
               SizedBox(width: 4),
               Text(
                 '$cashFlowCount ${cashFlowCount == 1 ? 'entry' : 'entries'}',
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral400Dark
-                      : AppColors.neutral500Light,
-                ),
+                style: subtleTextStyle,
               ),
               Spacer(),
               // Total invested
@@ -359,26 +373,29 @@ class _InvestmentBottomStrip extends ConsumerWidget {
                   children: [
                     Text(
                       'Invested: ',
-                      style: AppTypography.small.copyWith(
-                        color: isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral500Light,
+                      style: subtleTextStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    CompactAmountText(
-                      amount: stats.totalInvested,
-                      compactText: currencyFormat.formatCompact(
-                        stats.totalInvested,
-                      ),
-                      currencySymbol: currencyFormat.currencySymbol,
-                      style: AppTypography.small.copyWith(
-                        color: isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral500Light,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    isPrivacyMode
+                        ? MaskedAmountText(
+                            text: currencyFormat.formatCompact(
+                              stats.totalInvested,
+                            ),
+                            style: subtleTextStyle.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          )
+                        : CompactAmountText(
+                            amount: stats.totalInvested,
+                            compactText: currencyFormat.formatCompact(
+                              stats.totalInvested,
+                            ),
+                            currencySymbol: currencyFormat.currencySymbol,
+                            style: subtleTextStyle.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ],
                 ),
               ] else ...[

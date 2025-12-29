@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 
 /// Notifier for toggling between all and realized-only net position
@@ -114,9 +117,9 @@ class HeroCardContent extends ConsumerWidget {
           children: [
             _buildTitleRow(context, ref),
             const SizedBox(height: 8),
-            _buildValueRow(netPosition, isPositive, stats),
+            _buildValueRow(netPosition, isPositive, stats, ref),
             const SizedBox(height: 16),
-            _buildStatsRow(stats),
+            _buildStatsRow(stats, ref),
             if (showRealizedOnly) ...[
               const SizedBox(height: 8),
               Text(
@@ -136,15 +139,19 @@ class HeroCardContent extends ConsumerWidget {
 
   Widget _buildTitleRow(BuildContext context, WidgetRef ref) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          showRealizedOnly ? 'Realized Net Position' : 'Net Position (All)',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 14,
+        Expanded(
+          child: Text(
+            showRealizedOnly ? 'Realized Net Position' : 'Net Position (All)',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 14,
+            ),
           ),
         ),
+        // Privacy toggle button
+        const PrivacyToggleButton(iconSize: 18),
+        const SizedBox(width: 8),
         _buildToggleButton(ref),
       ],
     );
@@ -193,41 +200,50 @@ class HeroCardContent extends ConsumerWidget {
     double netPosition,
     bool isPositive,
     InvestmentStats stats,
+    WidgetRef ref,
   ) {
+    final isPrivacyMode = ref.watch(privacyModeProvider);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
         Flexible(
-          child: CompactAmountText(
-            amount: netPosition,
-            compactText: currencyFormat.formatSmart(netPosition),
-            currencySymbol: currencyFormat.currencySymbol,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+          child: PrivacyMask(
+            child: CompactAmountText(
+              amount: netPosition,
+              compactText: currencyFormat.formatSmart(netPosition),
+              currencySymbol: currencyFormat.currencySymbol,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         if (stats.hasData) ...[
           const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isPositive
-                  ? Colors.green.withValues(alpha: 0.3)
-                  : Colors.red.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
-              style: TextStyle(
-                color: isPositive ? Colors.greenAccent : Colors.redAccent,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isPrivacyMode ? 0.0 : 1.0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isPositive
+                    ? Colors.green.withValues(alpha: 0.3)
+                    : Colors.red.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+                style: TextStyle(
+                  color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -236,7 +252,9 @@ class HeroCardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(InvestmentStats stats) {
+  Widget _buildStatsRow(InvestmentStats stats, WidgetRef ref) {
+    final isPrivacyMode = ref.watch(privacyModeProvider);
+
     return Row(
       children: [
         // Cash Out with up arrow
@@ -245,6 +263,7 @@ class HeroCardContent extends ConsumerWidget {
           amount: stats.totalInvested,
           value: currencyFormat.formatCompact(stats.totalInvested),
           label: 'out',
+          isPrivacyMode: isPrivacyMode,
         ),
         const SizedBox(width: 16),
         // Cash In with down arrow
@@ -253,6 +272,7 @@ class HeroCardContent extends ConsumerWidget {
           amount: stats.totalReturned,
           value: currencyFormat.formatCompact(stats.totalReturned),
           label: 'in',
+          isPrivacyMode: isPrivacyMode,
         ),
         const Spacer(),
         // XIRR
@@ -267,8 +287,8 @@ class HeroCardContent extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              formatXirr(stats.xirr, showSign: false) ?? '0.0%',
+            MaskedAmountText(
+              text: formatXirr(stats.xirr, showSign: false) ?? '0.0%',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -286,22 +306,32 @@ class HeroCardContent extends ConsumerWidget {
     required double amount,
     required String value,
     required String label,
+    required bool isPrivacyMode,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 14),
         const SizedBox(width: 4),
-        CompactAmountText(
-          amount: amount,
-          compactText: value,
-          currencySymbol: currencyFormat.currencySymbol,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        isPrivacyMode
+            ? MaskedAmountText(
+                text: value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            : CompactAmountText(
+                amount: amount,
+                compactText: value,
+                currencySymbol: currencyFormat.currencySymbol,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
         const SizedBox(width: 3),
         Text(
           label,

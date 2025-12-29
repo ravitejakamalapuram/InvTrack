@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 
 /// A text widget that displays amounts in compact format (e.g., ₹1.05Cr)
 /// with long-press to reveal full amount and copy functionality.
+///
+/// Automatically respects privacy mode - shows masked text when privacy is enabled.
 ///
 /// Usage:
 /// ```dart
@@ -14,7 +18,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 ///   style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
 /// )
 /// ```
-class CompactAmountText extends StatelessWidget {
+class CompactAmountText extends ConsumerWidget {
   /// The actual numeric amount (used for formatting full value)
   final double amount;
 
@@ -152,7 +156,19 @@ class CompactAmountText extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPrivacyMode = ref.watch(privacyModeProvider);
+
+    if (isPrivacyMode) {
+      return Text(
+        '•••••',
+        style: style,
+        maxLines: maxLines,
+        overflow: overflow,
+        textAlign: textAlign,
+      );
+    }
+
     return GestureDetector(
       onLongPress: () => _showFullAmount(context),
       child: Text(

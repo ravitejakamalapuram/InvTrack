@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -9,6 +10,7 @@ import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
@@ -268,6 +270,8 @@ class OverviewScreen extends ConsumerWidget {
     NumberFormat currencyFormat,
     bool isDark,
   ) {
+    final isPrivacyMode = ref.watch(privacyModeProvider);
+
     return openStats.when(
       data: (open) => closedStats.when(
         data: (closed) {
@@ -289,25 +293,27 @@ class OverviewScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: _buildBreakdownItem(
-                        'Open Investments',
-                        open.netCashFlow,
-                        currencyFormat,
-                        AppColors.graphBlue,
-                        Icons.hourglass_top,
-                        isDark,
+                        label: 'Open Investments',
+                        value: open.netCashFlow,
+                        currencyFormat: currencyFormat,
+                        color: AppColors.graphBlue,
+                        icon: Icons.hourglass_top,
+                        isDark: isDark,
+                        isPrivacyMode: isPrivacyMode,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildBreakdownItem(
-                        'Closed (Realized)',
-                        closed.netCashFlow,
-                        currencyFormat,
-                        closed.netCashFlow >= 0
+                        label: 'Closed (Realized)',
+                        value: closed.netCashFlow,
+                        currencyFormat: currencyFormat,
+                        color: closed.netCashFlow >= 0
                             ? AppColors.successLight
                             : AppColors.errorLight,
-                        Icons.check_circle,
-                        isDark,
+                        icon: Icons.check_circle,
+                        isDark: isDark,
+                        isPrivacyMode: isPrivacyMode,
                       ),
                     ),
                   ],
@@ -324,15 +330,22 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBreakdownItem(
-    String label,
-    double value,
-    NumberFormat currencyFormat,
-    Color color,
-    IconData icon,
-    bool isDark,
-  ) {
+  Widget _buildBreakdownItem({
+    required String label,
+    required double value,
+    required NumberFormat currencyFormat,
+    required Color color,
+    required IconData icon,
+    required bool isDark,
+    required bool isPrivacyMode,
+  }) {
     final isPositive = value >= 0;
+    final valueStyle = TextStyle(
+      color: isPositive ? AppColors.successLight : AppColors.errorLight,
+      fontWeight: FontWeight.bold,
+      fontSize: 16,
+    );
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -360,16 +373,18 @@ class OverviewScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          CompactAmountText(
-            amount: value,
-            compactText: currencyFormat.formatCompact(value.abs()),
-            prefix: isPositive ? '+' : '-',
-            style: TextStyle(
-              color: isPositive ? AppColors.successLight : AppColors.errorLight,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
+          isPrivacyMode
+              ? MaskedAmountText(
+                  text:
+                      '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(value.abs())}',
+                  style: valueStyle,
+                )
+              : CompactAmountText(
+                  amount: value,
+                  compactText: currencyFormat.formatCompact(value.abs()),
+                  prefix: isPositive ? '+' : '-',
+                  style: valueStyle,
+                ),
         ],
       ),
     );
@@ -400,6 +415,7 @@ class OverviewScreen extends ConsumerWidget {
             label: 'Cash Flows',
             value: '${stats.cashFlowCount}',
             color: AppColors.primaryLight,
+            isSensitive: false, // Count is not sensitive
           ),
         ),
       ],

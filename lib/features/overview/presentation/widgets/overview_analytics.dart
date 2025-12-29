@@ -4,10 +4,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 /// Monthly cash flow trend chart.
@@ -20,6 +22,7 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final trendAsync = ref.watch(monthlyCashFlowTrendProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return trendAsync.when(
       data: (data) {
@@ -43,83 +46,89 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 120,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: data.map((d) {
-                    final months = [
-                      'Jan',
-                      'Feb',
-                      'Mar',
-                      'Apr',
-                      'May',
-                      'Jun',
-                      'Jul',
-                      'Aug',
-                      'Sep',
-                      'Oct',
-                      'Nov',
-                      'Dec',
-                    ];
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: maxValue > 0
-                                          ? (d.outflows / maxValue * 80)
-                                          : 0,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.errorLight.withValues(
-                                          alpha: 0.7,
+              // Fade chart in privacy mode to hide relative proportions
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: isPrivacyMode ? 0.15 : 1.0,
+                child: SizedBox(
+                  height: 120,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: data.map((d) {
+                      final months = [
+                        'Jan',
+                        'Feb',
+                        'Mar',
+                        'Apr',
+                        'May',
+                        'Jun',
+                        'Jul',
+                        'Aug',
+                        'Sep',
+                        'Oct',
+                        'Nov',
+                        'Dec',
+                      ];
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        height: maxValue > 0
+                                            ? (d.outflows / maxValue * 80)
+                                            : 0,
+                                        decoration: BoxDecoration(
+                                          color:
+                                              AppColors.errorLight.withValues(
+                                            alpha: 0.7,
+                                          ),
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                            top: Radius.circular(4),
+                                          ),
                                         ),
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                              top: Radius.circular(4),
-                                            ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Expanded(
-                                    child: Container(
-                                      height: maxValue > 0
-                                          ? (d.inflows / maxValue * 80)
-                                          : 0,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.successLight
-                                            .withValues(alpha: 0.7),
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                              top: Radius.circular(4),
-                                            ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: Container(
+                                        height: maxValue > 0
+                                            ? (d.inflows / maxValue * 80)
+                                            : 0,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.successLight
+                                              .withValues(alpha: 0.7),
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                            top: Radius.circular(4),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              months[d.month.month - 1],
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isDark ? Colors.white54 : Colors.grey,
+                              const SizedBox(height: 4),
+                              Text(
+                                months[d.month.month - 1],
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDark ? Colors.white54 : Colors.grey,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -277,6 +286,7 @@ class YoYComparisonCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final yoyAsync = ref.watch(yoyComparisonProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return yoyAsync.when(
       data: (data) {
@@ -310,7 +320,12 @@ class YoYComparisonCard extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildYoYColumn(lastYear, data.lastYearNet, isDark),
+                    child: _buildYoYColumn(
+                      lastYear,
+                      data.lastYearNet,
+                      isDark,
+                      isPrivacyMode,
+                    ),
                   ),
                   Container(
                     width: 1,
@@ -318,13 +333,18 @@ class YoYComparisonCard extends ConsumerWidget {
                     color: isDark ? Colors.white24 : Colors.grey[300],
                   ),
                   Expanded(
-                    child: _buildYoYColumn(thisYear, data.thisYearNet, isDark),
+                    child: _buildYoYColumn(
+                      thisYear,
+                      data.thisYearNet,
+                      isDark,
+                      isPrivacyMode,
+                    ),
                   ),
                 ],
               ),
               if (data.lastYearNet != 0) ...[
                 const SizedBox(height: 12),
-                _buildChangeIndicator(data),
+                _buildChangeIndicator(data, isPrivacyMode),
               ],
             ],
           ),
@@ -335,8 +355,19 @@ class YoYComparisonCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildYoYColumn(String year, double net, bool isDark) {
+  Widget _buildYoYColumn(
+    String year,
+    double net,
+    bool isDark,
+    bool isPrivacyMode,
+  ) {
     final isPositive = net >= 0;
+    final valueStyle = TextStyle(
+      color: isPositive ? AppColors.successLight : AppColors.errorLight,
+      fontWeight: FontWeight.bold,
+      fontSize: 18,
+    );
+
     return Column(
       children: [
         Text(
@@ -347,50 +378,57 @@ class YoYComparisonCard extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 4),
-        CompactAmountText(
-          amount: net,
-          compactText: currencyFormat.formatCompact(net.abs()),
-          prefix: isPositive ? '+' : '-',
-          style: TextStyle(
-            color: isPositive ? AppColors.successLight : AppColors.errorLight,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        isPrivacyMode
+            ? MaskedAmountText(
+                text:
+                    '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(net.abs())}',
+                style: valueStyle,
+              )
+            : CompactAmountText(
+                amount: net,
+                compactText: currencyFormat.formatCompact(net.abs()),
+                prefix: isPositive ? '+' : '-',
+                style: valueStyle,
+              ),
       ],
     );
   }
 
-  Widget _buildChangeIndicator(YoYComparison data) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: (data.isImproved ? AppColors.successLight : AppColors.errorLight)
-            .withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            data.isImproved ? Icons.trending_up : Icons.trending_down,
-            color: data.isImproved
-                ? AppColors.successLight
-                : AppColors.errorLight,
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${data.netChange >= 0 ? '+' : ''}${data.netChange.toStringAsFixed(0)}% vs last year',
-            style: TextStyle(
+  Widget _buildChangeIndicator(YoYComparison data, bool isPrivacyMode) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: isPrivacyMode ? 0.0 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color:
+              (data.isImproved ? AppColors.successLight : AppColors.errorLight)
+                  .withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              data.isImproved ? Icons.trending_up : Icons.trending_down,
               color: data.isImproved
                   ? AppColors.successLight
                   : AppColors.errorLight,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
+              size: 16,
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              '${data.netChange >= 0 ? '+' : ''}${data.netChange.toStringAsFixed(0)}% vs last year',
+              style: TextStyle(
+                color: data.isImproved
+                    ? AppColors.successLight
+                    : AppColors.errorLight,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -406,6 +444,7 @@ class RecentlyClosedCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final closedAsync = ref.watch(recentlyClosedInvestmentsProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return closedAsync.when(
       data: (data) {
@@ -430,7 +469,9 @@ class RecentlyClosedCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              ...data.map((item) => _buildClosedItem(item, isDark)),
+              ...data.map(
+                (item) => _buildClosedItem(item, isDark, isPrivacyMode),
+              ),
             ],
           ),
         );
@@ -440,8 +481,17 @@ class RecentlyClosedCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildClosedItem(InvestmentWithStats item, bool isDark) {
+  Widget _buildClosedItem(
+    InvestmentWithStats item,
+    bool isDark,
+    bool isPrivacyMode,
+  ) {
     final isProfit = item.stats.netCashFlow >= 0;
+    final valueStyle = TextStyle(
+      color: isProfit ? AppColors.successLight : AppColors.errorLight,
+      fontWeight: FontWeight.w600,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -469,25 +519,30 @@ class RecentlyClosedCard extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              CompactAmountText(
-                amount: item.stats.netCashFlow,
-                compactText: currencyFormat.formatCompact(
-                  item.stats.netCashFlow.abs(),
-                ),
-                prefix: isProfit ? '+' : '-',
-                style: TextStyle(
-                  color: isProfit
-                      ? AppColors.successLight
-                      : AppColors.errorLight,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              isPrivacyMode
+                  ? MaskedAmountText(
+                      text:
+                          '${isProfit ? '+' : '-'}${currencyFormat.formatCompact(item.stats.netCashFlow.abs())}',
+                      style: valueStyle,
+                    )
+                  : CompactAmountText(
+                      amount: item.stats.netCashFlow,
+                      compactText: currencyFormat.formatCompact(
+                        item.stats.netCashFlow.abs(),
+                      ),
+                      prefix: isProfit ? '+' : '-',
+                      style: valueStyle,
+                    ),
               if (item.stats.xirr != 0 && !item.stats.xirr.isNaN)
-                Text(
-                  '${(item.stats.xirr * 100).toStringAsFixed(1)}% IRR',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDark ? Colors.white54 : Colors.grey,
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isPrivacyMode ? 0.0 : 1.0,
+                  child: Text(
+                    '${(item.stats.xirr * 100).toStringAsFixed(1)}% IRR',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isDark ? Colors.white54 : Colors.grey,
+                    ),
                   ),
                 ),
             ],

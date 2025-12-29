@@ -19,7 +19,10 @@ That's it. Simple but powerful.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🆕 NEW IN VERSION 3.2
+🆕 NEW IN VERSION 3.2.8
+
+🔒 Privacy Mode
+Check your portfolio anywhere without revealing sensitive data. One tap to hide all amounts, returns, and percentages. Perfect for public places!
 
 🎯 Financial Goals
 Set targets for your investments - whether it's reaching a corpus amount or generating monthly income. Track your progress with beautiful progress rings and milestone celebrations.
@@ -64,6 +67,9 @@ Set and track your financial goals with visual progress indicators.
 
 🔔 Smart Reminders
 Get notified about income payments and maturity dates.
+
+👁️ Privacy Mode
+Hide all amounts with one tap. Check your portfolio in public places.
 
 🌙 Dark Mode
 Easy on the eyes, especially at night.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
@@ -12,6 +13,7 @@ import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
@@ -62,6 +64,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
@@ -239,8 +242,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: statsAsync.when(
-                  data: (stats) =>
-                      _buildStatsSection(stats, isDark, currencyFormat),
+                  data: (stats) => _buildStatsSection(
+                    stats,
+                    isDark,
+                    currencyFormat,
+                    isPrivacyMode,
+                  ),
                   loading: () => _buildStatsLoading(isDark),
                   error: (e, s) => const SizedBox.shrink(),
                 ),
@@ -375,10 +382,20 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     InvestmentStats stats,
     bool isDark,
     NumberFormat currencyFormat,
+    bool isPrivacyMode,
   ) {
     final isPositive = stats.netCashFlow >= 0;
     final xirrFormatted = formatXirr(stats.xirr) ?? '0.0%';
     final xirrIsPositive = stats.xirr >= 0;
+
+    final netPositionStyle = AppTypography.h2.copyWith(
+      color: isDark ? Colors.white : AppColors.neutral900Light,
+      fontWeight: FontWeight.w700,
+    );
+    final cashFlowStyle = AppTypography.bodyMedium.copyWith(
+      color: isDark ? Colors.white : AppColors.neutral900Light,
+      fontWeight: FontWeight.w600,
+    );
 
     return Column(
       children: [
@@ -421,45 +438,58 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    CompactAmountText(
-                      amount: stats.netCashFlow,
-                      compactText: currencyFormat.formatSmart(
-                        stats.netCashFlow,
-                      ),
-                      currencySymbol: currencyFormat.currencySymbol,
-                      style: AppTypography.h2.copyWith(
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.neutral900Light,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    isPrivacyMode
+                        ? MaskedAmountText(
+                            text: currencyFormat.formatSmart(stats.netCashFlow),
+                            style: netPositionStyle,
+                          )
+                        : CompactAmountText(
+                            amount: stats.netCashFlow,
+                            compactText: currencyFormat.formatSmart(
+                              stats.netCashFlow,
+                            ),
+                            currencySymbol: currencyFormat.currencySymbol,
+                            style: netPositionStyle,
+                          ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      (isPositive
+              // Return percentage - also mask in privacy mode
+              isPrivacyMode
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const MaskedAmountText(text: '••••'),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            (isPositive
+                                    ? AppColors.successLight
+                                    : AppColors.errorLight)
+                                .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isPositive
                               ? AppColors.successLight
-                              : AppColors.errorLight)
-                          .withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: isPositive
-                        ? AppColors.successLight
-                        : AppColors.errorLight,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+                              : AppColors.errorLight,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
             ],
           ),
         ),
@@ -476,15 +506,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 color: AppColors.errorLight,
               ),
               const SizedBox(width: 4),
-              CompactAmountText(
-                amount: stats.totalInvested,
-                compactText: currencyFormat.formatCompact(stats.totalInvested),
-                currencySymbol: currencyFormat.currencySymbol,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              isPrivacyMode
+                  ? MaskedAmountText(
+                      text: currencyFormat.formatCompact(stats.totalInvested),
+                      style: cashFlowStyle,
+                    )
+                  : CompactAmountText(
+                      amount: stats.totalInvested,
+                      compactText:
+                          currencyFormat.formatCompact(stats.totalInvested),
+                      currencySymbol: currencyFormat.currencySymbol,
+                      style: cashFlowStyle,
+                    ),
               Text(
                 ' out',
                 style: AppTypography.small.copyWith(
@@ -501,15 +534,18 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 color: AppColors.successLight,
               ),
               const SizedBox(width: 4),
-              CompactAmountText(
-                amount: stats.totalReturned,
-                compactText: currencyFormat.formatCompact(stats.totalReturned),
-                currencySymbol: currencyFormat.currencySymbol,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              isPrivacyMode
+                  ? MaskedAmountText(
+                      text: currencyFormat.formatCompact(stats.totalReturned),
+                      style: cashFlowStyle,
+                    )
+                  : CompactAmountText(
+                      amount: stats.totalReturned,
+                      compactText:
+                          currencyFormat.formatCompact(stats.totalReturned),
+                      currencySymbol: currencyFormat.currencySymbol,
+                      style: cashFlowStyle,
+                    ),
               Text(
                 ' in',
                 style: AppTypography.small.copyWith(
@@ -540,6 +576,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 xirrFormatted,
                 xirrIsPositive ? AppColors.graphCyan : AppColors.errorLight,
                 isDark,
+                isPrivacyMode: isPrivacyMode,
               ),
             ),
             const SizedBox(width: 10),
@@ -550,6 +587,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 AppColors.graphPurple,
                 isDark,
                 subtitle: stats.durationFormatted,
+                isPrivacyMode: isPrivacyMode,
               ),
             ),
           ],
@@ -564,7 +602,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     Color color,
     bool isDark, {
     String? subtitle,
+    bool isPrivacyMode = false,
   }) {
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: color,
+      fontWeight: FontWeight.w700,
+    );
+
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Column(
@@ -579,13 +623,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTypography.bodyMedium.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          isPrivacyMode
+              ? MaskedAmountText(text: value, style: valueStyle)
+              : Text(value, style: valueStyle),
           if (subtitle != null)
             Padding(
               padding: const EdgeInsets.only(top: 2),
