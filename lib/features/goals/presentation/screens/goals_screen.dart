@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -6,10 +7,14 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/core/widgets/swipe_to_delete.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_list_state_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_empty_state.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goals_list_action_bar.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/goals_list_selection_controls.dart';
 
 /// Filter options for goals list
 enum GoalsFilter { active, archived, all }
@@ -51,6 +56,11 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     // Use separate providers for active and archived goals
     final activeGoalsAsync = ref.watch(activeGoalsProvider);
     final archivedGoalsAsync = ref.watch(archivedGoalsProvider);
+    final listState = ref.watch(goalsListStateProvider);
+    final isSelectionMode = listState.isSelectionMode;
+
+    // Get filtered goals for selection controls
+    final filteredGoals = _getFilteredGoals(activeGoalsAsync, archivedGoalsAsync);
 
     return Scaffold(
       backgroundColor: isDark
@@ -74,24 +84,19 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                 fontSize: 22,
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add_rounded),
-                onPressed: () => context.push('/goals/create'),
-                tooltip: 'Add Goal',
-              ),
-              SizedBox(width: AppSpacing.sm),
-            ],
+            actions: _buildAppBarActions(isDark, isSelectionMode),
           ),
 
-          // Filter Tabs - matching Investment screen style
+          // Filter Tabs or Selection Controls
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.xs,
               ),
-              child: _buildFilterTabs(isDark),
+              child: isSelectionMode
+                  ? GoalsListSelectionControls(filteredGoals: filteredGoals)
+                  : _buildFilterTabs(isDark),
             ),
           ),
 
@@ -100,17 +105,78 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             isDark: isDark,
             activeGoalsAsync: activeGoalsAsync,
             archivedGoalsAsync: archivedGoalsAsync,
+            isSelectionMode: isSelectionMode,
+            selectedIds: listState.selectedIds,
           ),
         ],
       ),
-      floatingActionButton: _buildFab(activeGoalsAsync),
+      floatingActionButton: isSelectionMode ? null : _buildFab(activeGoalsAsync),
+      bottomNavigationBar: isSelectionMode ? const GoalsListActionBar() : null,
     );
+  }
+
+  List<Widget> _buildAppBarActions(bool isDark, bool isSelectionMode) {
+    return [
+      // Selection mode toggle
+      IconButton(
+        icon: Container(
+          padding: EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: isSelectionMode
+                ? AppColors.primaryLight
+                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
+                    alpha: 0.1,
+                  ),
+            borderRadius: AppSizes.borderRadiusMd,
+          ),
+          child: Icon(
+            isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
+            color: isSelectionMode
+                ? Colors.white
+                : (isDark ? Colors.white : AppColors.neutral700Light),
+            size: 20,
+          ),
+        ),
+        onPressed: () {
+          HapticFeedback.selectionClick();
+          ref.read(goalsListStateProvider.notifier).toggleSelectionMode();
+        },
+        tooltip: isSelectionMode ? 'Exit selection' : 'Select goals',
+      ),
+      // Add button (only when not in selection mode)
+      if (!isSelectionMode)
+        IconButton(
+          icon: const Icon(Icons.add_rounded),
+          onPressed: () => context.push('/goals/create'),
+          tooltip: 'Add Goal',
+        ),
+      SizedBox(width: AppSpacing.sm),
+    ];
+  }
+
+  /// Get the list of filtered goals based on current filter
+  List<GoalEntity> _getFilteredGoals(
+    AsyncValue<List<GoalEntity>> activeGoalsAsync,
+    AsyncValue<List<GoalEntity>> archivedGoalsAsync,
+  ) {
+    switch (_filter) {
+      case GoalsFilter.active:
+        return activeGoalsAsync.value ?? [];
+      case GoalsFilter.archived:
+        return archivedGoalsAsync.value ?? [];
+      case GoalsFilter.all:
+        final active = activeGoalsAsync.value ?? [];
+        final archived = archivedGoalsAsync.value ?? [];
+        return [...active, ...archived];
+    }
   }
 
   Widget _buildGoalsContent({
     required bool isDark,
     required AsyncValue<List<GoalEntity>> activeGoalsAsync,
     required AsyncValue<List<GoalEntity>> archivedGoalsAsync,
+    required bool isSelectionMode,
+    required Set<String> selectedIds,
   }) {
     // Select the appropriate data source based on filter
     final AsyncValue<List<GoalEntity>> goalsAsync;
@@ -156,9 +222,27 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               final goal = goals[index];
               return StaggeredFadeIn(
                 index: index,
-                child: GoalCard(
-                  goal: goal,
-                  onTap: () => context.push('/goals/${goal.id}'),
+                child: SwipeToDelete(
+                  itemKey: goal.id,
+                  enabled: !isSelectionMode,
+                  confirmTitle: 'Delete Goal?',
+                  confirmMessage:
+                      'This will permanently delete "${goal.name}".',
+                  successMessage: 'Goal deleted',
+                  onDismissed: () =>
+                      ref.read(goalNotifierProvider.notifier).deleteGoal(goal.id),
+                  child: GoalCard(
+                    goal: goal,
+                    onTap: () => context.push('/goals/${goal.id}'),
+                    isSelectionMode: isSelectionMode,
+                    isSelected: selectedIds.contains(goal.id),
+                    onLongPress: () => ref
+                        .read(goalsListStateProvider.notifier)
+                        .enterSelectionMode(goal.id),
+                    onCheckboxChanged: (_) => ref
+                        .read(goalsListStateProvider.notifier)
+                        .toggleSelection(goal.id),
+                  ),
                 ),
               );
             }, childCount: goals.length),
@@ -389,4 +473,5 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
       orElse: () => null,
     );
   }
+
 }

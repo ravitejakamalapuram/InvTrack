@@ -308,6 +308,231 @@ class SeedDataService {
       185000, // Chit value minus discount
     );
 
+    // ============================================================
+    // ADDITIONAL INVESTMENTS - Cover all remaining types & edge cases
+    // ============================================================
+
+    // 11. Private Equity Fund (open) - privateEquity type
+    final peFund = addInvestment(
+      name: 'Blume Ventures Fund IV',
+      type: InvestmentType.privateEquity,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 600)),
+      notes: 'Committed ₹10L. 40% capital called. 10-year fund life.',
+    );
+    addCashFlow(
+      peFund.id,
+      now.subtract(const Duration(days: 600)),
+      CashFlowType.invest,
+      200000, // First capital call
+    );
+    addCashFlow(
+      peFund.id,
+      now.subtract(const Duration(days: 300)),
+      CashFlowType.invest,
+      200000, // Second capital call
+    );
+
+    // 12. Crypto Portfolio (open) - crypto type with volatility
+    final crypto = addInvestment(
+      name: 'Bitcoin & Ethereum',
+      type: InvestmentType.crypto,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 400)),
+      notes: 'BTC 0.05, ETH 1.5. Held on Ledger cold wallet.',
+    );
+    addCashFlow(
+      crypto.id,
+      now.subtract(const Duration(days: 400)),
+      CashFlowType.invest,
+      150000,
+    );
+    addCashFlow(
+      crypto.id,
+      now.subtract(const Duration(days: 200)),
+      CashFlowType.invest,
+      50000, // DCA purchase
+    );
+
+    // 13. Direct Stocks (open) - stocks type
+    final stocks = addInvestment(
+      name: 'HDFC Bank + Reliance',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 365)),
+      notes: 'HDFC 50 shares, RIL 30 shares. Zerodha demat.',
+    );
+    addCashFlow(
+      stocks.id,
+      now.subtract(const Duration(days: 365)),
+      CashFlowType.invest,
+      180000,
+    );
+    // Dividend income
+    addCashFlow(
+      stocks.id,
+      now.subtract(const Duration(days: 90)),
+      CashFlowType.income,
+      2500, // HDFC dividend
+    );
+
+    // 14. NSC (open) - other type
+    final nsc = addInvestment(
+      name: 'National Savings Certificate',
+      type: InvestmentType.other,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 180)),
+      maturityDate: now.add(const Duration(days: 1645)), // 5 years total
+      notes: 'Post office NSC. 7.7% compounding. 80C eligible.',
+    );
+    addCashFlow(
+      nsc.id,
+      now.subtract(const Duration(days: 180)),
+      CashFlowType.invest,
+      100000,
+    );
+
+    // 15. Just Created Investment - NO CASH FLOWS (edge case)
+    addInvestment(
+      name: 'New PPF Account',
+      type: InvestmentType.other,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 2)),
+      maturityDate: now.add(const Duration(days: 5475)), // 15 years
+      notes: 'Just opened. First deposit pending.',
+    );
+
+    // 16. Loss-Making Investment (closed with loss)
+    final lossInvestment = addInvestment(
+      name: 'Failed Crypto Token',
+      type: InvestmentType.crypto,
+      status: InvestmentStatus.closed,
+      createdAt: now.subtract(const Duration(days: 300)),
+      closedAt: now.subtract(const Duration(days: 60)),
+      notes: 'Altcoin investment. Lost 70% value. Lesson learned.',
+    );
+    addCashFlow(
+      lossInvestment.id,
+      now.subtract(const Duration(days: 300)),
+      CashFlowType.invest,
+      50000,
+    );
+    addCashFlow(
+      lossInvestment.id,
+      now.subtract(const Duration(days: 60)),
+      CashFlowType.returnFlow,
+      15000, // Only recovered 30%
+    );
+
+    // 17. Investment with ONLY fees (expense tracking)
+    final pendingInvestment = addInvestment(
+      name: 'Plot in Hyderabad',
+      type: InvestmentType.realEstate,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 90)),
+      notes: 'Under registration. Only fees paid so far.',
+    );
+    addCashFlow(
+      pendingInvestment.id,
+      now.subtract(const Duration(days: 90)),
+      CashFlowType.fee,
+      25000, // Legal fees
+    );
+    addCashFlow(
+      pendingInvestment.id,
+      now.subtract(const Duration(days: 60)),
+      CashFlowType.fee,
+      15000, // Survey & documentation
+    );
+
+    // 18. Matured but NOT closed (overdue maturity)
+    final maturedFd = addInvestment(
+      name: 'SBI FD (Matured)',
+      type: InvestmentType.fixedDeposit,
+      status: InvestmentStatus.open, // Still open despite maturity passed
+      createdAt: now.subtract(const Duration(days: 400)),
+      maturityDate: now.subtract(const Duration(days: 35)), // Matured 35 days ago!
+      incomeFrequency: IncomeFrequency.quarterly,
+      notes: 'Matured on 25th Nov. Pending renewal decision.',
+    );
+    addCashFlow(
+      maturedFd.id,
+      now.subtract(const Duration(days: 400)),
+      CashFlowType.invest,
+      300000,
+    );
+    // Interest payments during term
+    for (int i = 4; i >= 1; i--) {
+      addCashFlow(
+        maturedFd.id,
+        now.subtract(Duration(days: 35 + i * 90)),
+        CashFlowType.income,
+        5438, // ~7.25% quarterly
+      );
+    }
+
+    // 19. Partial Exit Investment (stocks with partial sell)
+    final partialExit = addInvestment(
+      name: 'Tata Motors Shares',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 500)),
+      notes: 'Original 100 shares. Sold 40 at profit. Holding 60.',
+    );
+    addCashFlow(
+      partialExit.id,
+      now.subtract(const Duration(days: 500)),
+      CashFlowType.invest,
+      80000, // Bought 100 shares at ₹800
+    );
+    addCashFlow(
+      partialExit.id,
+      now.subtract(const Duration(days: 100)),
+      CashFlowType.returnFlow,
+      48000, // Sold 40 shares at ₹1200
+    );
+    addCashFlow(
+      partialExit.id,
+      now.subtract(const Duration(days: 180)),
+      CashFlowType.income,
+      500, // Dividend
+    );
+
+    // 20. High-frequency trading scenario (many transactions)
+    final activeTrading = addInvestment(
+      name: 'Intraday Trading Account',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      createdAt: now.subtract(const Duration(days: 60)),
+      notes: 'Active F&O trading. High volume.',
+    );
+    addCashFlow(
+      activeTrading.id,
+      now.subtract(const Duration(days: 60)),
+      CashFlowType.invest,
+      200000, // Initial margin
+    );
+    // Simulate trading activity
+    for (int i = 1; i <= 15; i++) {
+      // Some wins
+      if (i % 3 != 0) {
+        addCashFlow(
+          activeTrading.id,
+          now.subtract(Duration(days: 60 - i * 3)),
+          CashFlowType.income,
+          (2000 + i * 100).toDouble(),
+        );
+      } else {
+        // Some losses (as fees)
+        addCashFlow(
+          activeTrading.id,
+          now.subtract(Duration(days: 60 - i * 3)),
+          CashFlowType.fee,
+          (1500 + i * 50).toDouble(),
+        );
+      }
+    }
+
     // Bulk import investments
     final investmentResult = await _investmentRepository.bulkImport(
       investments: investments,
@@ -404,6 +629,92 @@ class SeedDataService {
       updatedAt: now,
     );
     await _goalRepository.createGoal(childEducation);
+    goalsCreated++;
+
+    // ============================================================
+    // ADDITIONAL GOALS - Edge cases for comprehensive testing
+    // ============================================================
+
+    // Goal 6: Zero Progress - Just created, no linked investments yet
+    final vacationGoal = GoalEntity(
+      id: _uuid.v4(),
+      name: 'Europe Vacation 2026',
+      type: GoalType.targetDate,
+      targetAmount: 300000, // ₹3L target
+      targetDate: now.add(const Duration(days: 365)), // 1 year deadline
+      trackingMode: GoalTrackingMode.selected,
+      linkedInvestmentIds: [], // No investments linked = 0%
+      icon: '✈️',
+      colorValue: GoalColors.available[3].toARGB32(), // Rose
+      createdAt: now.subtract(const Duration(days: 7)),
+      updatedAt: now,
+    );
+    await _goalRepository.createGoal(vacationGoal);
+    goalsCreated++;
+
+    // Goal 7: Over 100% - Exceeded target (success celebration!)
+    final carGoal = GoalEntity(
+      id: _uuid.v4(),
+      name: 'Car Down Payment',
+      type: GoalType.targetAmount,
+      targetAmount: 300000, // ₹3L target - but we have more!
+      trackingMode: GoalTrackingMode.byType,
+      linkedTypes: [InvestmentType.p2pLending], // LenDenClub has ₹1.5L + income
+      icon: '🚗',
+      colorValue: GoalColors.available[6].toARGB32(), // Teal
+      createdAt: now.subtract(const Duration(days: 200)),
+      updatedAt: now,
+    );
+    await _goalRepository.createGoal(carGoal);
+    goalsCreated++;
+
+    // Goal 8: Past deadline goal (overdue)
+    final laptopGoal = GoalEntity(
+      id: _uuid.v4(),
+      name: 'MacBook Pro Fund',
+      type: GoalType.targetDate,
+      targetAmount: 200000, // ₹2L target
+      targetDate: now.subtract(const Duration(days: 30)), // Deadline passed!
+      trackingMode: GoalTrackingMode.byType,
+      linkedTypes: [InvestmentType.crypto], // Has some crypto
+      icon: '💻',
+      colorValue: GoalColors.available[7].toARGB32(), // Orange
+      createdAt: now.subtract(const Duration(days: 180)),
+      updatedAt: now,
+    );
+    await _goalRepository.createGoal(laptopGoal);
+    goalsCreated++;
+
+    // Goal 9: Income goal with no income-generating investments
+    final dividendGoal = GoalEntity(
+      id: _uuid.v4(),
+      name: 'Dividend Portfolio',
+      type: GoalType.incomeTarget,
+      targetAmount: 120000, // ₹1L annual for display
+      targetMonthlyIncome: 10000,
+      trackingMode: GoalTrackingMode.byType,
+      linkedTypes: [InvestmentType.stocks], // Only stocks, not much dividend yet
+      icon: '📈',
+      colorValue: GoalColors.available[0].toARGB32(), // Blue
+      createdAt: now.subtract(const Duration(days: 60)),
+      updatedAt: now,
+    );
+    await _goalRepository.createGoal(dividendGoal);
+    goalsCreated++;
+
+    // Goal 10: All investments tracking (should show full portfolio)
+    final wealthGoal = GoalEntity(
+      id: _uuid.v4(),
+      name: 'Net Worth ₹50L',
+      type: GoalType.targetAmount,
+      targetAmount: 5000000, // ₹50L target
+      trackingMode: GoalTrackingMode.all, // Track everything
+      icon: '💎',
+      colorValue: GoalColors.available[1].toARGB32(), // Emerald
+      createdAt: now.subtract(const Duration(days: 400)),
+      updatedAt: now,
+    );
+    await _goalRepository.createGoal(wealthGoal);
     goalsCreated++;
 
     return (

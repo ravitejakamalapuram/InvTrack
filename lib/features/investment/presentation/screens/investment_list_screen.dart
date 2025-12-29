@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
+import 'package:inv_tracker/core/widgets/swipe_to_delete.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
@@ -269,36 +270,47 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               final investment = filteredInvestments[index];
               return StaggeredFadeIn(
                 index: index,
-                child: InvestmentCard(
-                  investment: investment,
-                  isSelectionMode: listState.isSelectionMode,
-                  isSelected: listState.selectedIds.contains(investment.id),
-                  onTap: listState.isSelectionMode
-                      ? () => ref
-                            .read(investmentListStateProvider.notifier)
-                            .toggleSelection(investment.id)
-                      : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => InvestmentDetailScreen(
-                                investment: investment,
+                child: SwipeToDelete(
+                  itemKey: investment.id,
+                  enabled: !listState.isSelectionMode,
+                  confirmTitle: 'Delete Investment?',
+                  confirmMessage:
+                      'This will permanently delete "${investment.name}" and all its transactions.',
+                  successMessage: 'Investment deleted',
+                  onDismissed: () => ref
+                      .read(investmentNotifierProvider.notifier)
+                      .deleteInvestment(investment.id),
+                  child: InvestmentCard(
+                    investment: investment,
+                    isSelectionMode: listState.isSelectionMode,
+                    isSelected: listState.selectedIds.contains(investment.id),
+                    onTap: listState.isSelectionMode
+                        ? () => ref
+                              .read(investmentListStateProvider.notifier)
+                              .toggleSelection(investment.id)
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => InvestmentDetailScreen(
+                                  investment: investment,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                  onLongPress: !listState.isSelectionMode
-                      ? () {
-                          ref
-                              .read(investmentListStateProvider.notifier)
-                              .toggleSelectionMode();
-                          ref
-                              .read(investmentListStateProvider.notifier)
-                              .toggleSelection(investment.id);
-                        }
-                      : null,
-                  onCheckboxChanged: (_) => ref
-                      .read(investmentListStateProvider.notifier)
-                      .toggleSelection(investment.id),
+                            );
+                          },
+                    onLongPress: !listState.isSelectionMode
+                        ? () {
+                            ref
+                                .read(investmentListStateProvider.notifier)
+                                .toggleSelectionMode();
+                            ref
+                                .read(investmentListStateProvider.notifier)
+                                .toggleSelection(investment.id);
+                          }
+                        : null,
+                    onCheckboxChanged: (_) => ref
+                        .read(investmentListStateProvider.notifier)
+                        .toggleSelection(investment.id),
+                  ),
                 ),
               );
             }, childCount: filteredInvestments.length),

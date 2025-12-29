@@ -4,8 +4,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
-import 'package:inv_tracker/core/theme/app_spacing.dart';
-import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/core/widgets/selection_list_action_bar.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/merge_investments_dialog.dart';
 
@@ -15,56 +15,25 @@ class InvestmentListActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final listState = ref.watch(investmentListStateProvider);
 
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // Selection count
-            Expanded(
-              child: Text(
-                '${listState.selectedIds.length} selected',
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                ),
-              ),
-            ),
-            // Merge button
-            if (listState.selectedIds.length >= 2)
-              TextButton.icon(
-                onPressed: () => _showMergeDialog(context, ref),
-                icon: const Icon(Icons.merge_rounded),
-                label: const Text('Merge'),
-              ),
-            SizedBox(width: AppSpacing.sm),
-            // Delete button
-            TextButton.icon(
-              onPressed: listState.selectedIds.isNotEmpty
-                  ? () => _showDeleteConfirmation(context, ref)
-                  : null,
-              icon: Icon(Icons.delete_rounded, color: AppColors.errorLight),
-              label: Text(
-                'Delete',
-                style: TextStyle(color: AppColors.errorLight),
-              ),
-            ),
-          ],
+    return SelectionListActionBar(
+      selectedCount: listState.selectedIds.length,
+      actions: [
+        SelectionActionConfig(
+          label: 'Merge',
+          icon: Icons.merge_rounded,
+          minSelection: 2,
+          onPressed: () => _showMergeDialog(context, ref),
         ),
-      ),
+        SelectionActionConfig(
+          label: 'Delete',
+          icon: Icons.delete_rounded,
+          color: AppColors.errorLight,
+          minSelection: 1,
+          onPressed: () => _showDeleteConfirmation(context, ref),
+        ),
+      ],
     );
   }
 
@@ -73,40 +42,24 @@ class InvestmentListActionBar extends ConsumerWidget {
     WidgetRef ref,
   ) async {
     final listState = ref.read(investmentListStateProvider);
-    final confirmed = await showDialog<bool>(
+    final selectedCount = listState.selectedIds.length;
+
+    final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Investments'),
-        content: Text(
-          'Are you sure you want to delete ${listState.selectedIds.length} investment(s)? '
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.errorLight),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete $selectedCount Investment${selectedCount > 1 ? 's' : ''}?',
+      message: 'This action cannot be undone.',
+      confirmText: 'Delete',
     );
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed && context.mounted) {
       final notifier = ref.read(investmentNotifierProvider.notifier);
       final idsToDelete = listState.selectedIds.toList();
       final deletedCount = await notifier.bulkDelete(idsToDelete);
       ref.read(investmentListStateProvider.notifier).clearSelection();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '$deletedCount investment${deletedCount != 1 ? 's' : ''} deleted',
-            ),
-          ),
+        AppFeedback.showSuccess(
+          context,
+          '$deletedCount investment${deletedCount != 1 ? 's' : ''} deleted',
         );
       }
     }

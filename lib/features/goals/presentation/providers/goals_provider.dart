@@ -192,6 +192,26 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
       rethrow;
     }
   }
+
+  /// Bulk delete multiple goals
+  Future<int> bulkDelete(List<String> goalIds) async {
+    if (goalIds.isEmpty) return 0;
+
+    state = const AsyncValue.loading();
+    try {
+      var deletedCount = 0;
+      for (final id in goalIds) {
+        await _repository.deleteGoal(id);
+        _analytics.logGoalDeleted(goalId: id);
+        deletedCount++;
+      }
+      state = const AsyncValue.data(null);
+      return deletedCount;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
 }
 
 /// Provider for goal operations
