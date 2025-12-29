@@ -5,6 +5,28 @@ All notable changes to InvTracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2025-12-29
+
+### Added
+- 🎯 **Goals Selection Mode**: Multi-select goals for bulk operations
+  - Tap the checkbox icon to enter selection mode
+  - Select All / Deselect All controls
+  - Bulk delete multiple goals at once
+- 👆 **Swipe-to-Delete**: Quick delete with swipe gestures
+  - Swipe left on any investment card to delete
+  - Swipe left on any goal card to delete
+  - Confirmation dialog before deletion
+  - Disabled during multi-select mode
+
+### Changed
+- Refactored selection controls into reusable generic widgets
+- Created `SelectionListControls` for consistent selection UI
+- Created `SelectionListActionBar` for configurable bulk actions
+- Created `SwipeToDelete` wrapper for consistent swipe behavior
+- Improved code reuse across investments and goals features
+
+---
+
 ## [3.2.8] - 2025-12-29
 
 ### Added

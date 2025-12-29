@@ -1,0 +1,21 @@
+🎯 Selection Mode & Swipe-to-Delete!
+
+NEW FEATURES:
+
+🎯 Goals Selection Mode
+• Multi-select goals for bulk operations
+• Select All / Deselect All controls
+• Bulk delete multiple goals at once
+
+👆 Swipe-to-Delete
+• Swipe left on investments to delete
+• Swipe left on goals to delete
+• Confirmation dialog before deletion
+
+🔧 Under the Hood
+• Refactored to reusable generic widgets
+• Improved code consistency
+• Better maintainability
+
+Plus: Bug fixes & performance improvements
+

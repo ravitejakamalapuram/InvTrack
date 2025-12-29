@@ -149,8 +149,9 @@ class DataManagementScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Seed Demo Data?'),
         content: const Text(
-          'This will add 8 sample investments with realistic cash flows. '
-          'Use this for app store screenshots.\n\n'
+          'This will add 10 sample investments with realistic cash flows '
+          'and 5 goals at different progress levels.\n\n'
+          'Perfect for app store screenshots!\n\n'
           'Note: Existing data will NOT be deleted.',
         ),
         actions: [
@@ -171,7 +172,9 @@ class DataManagementScreen extends ConsumerWidget {
       if (context.mounted && result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Seeded ${result.investments} investments'),
+            content: Text(
+              'Seeded ${result.investments} investments & ${result.goals} goals',
+            ),
             backgroundColor: Colors.green,
           ),
         );

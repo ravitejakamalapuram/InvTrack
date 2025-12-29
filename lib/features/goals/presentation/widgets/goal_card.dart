@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -16,8 +17,20 @@ import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ri
 class GoalCard extends ConsumerWidget {
   final GoalEntity goal;
   final VoidCallback onTap;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onLongPress;
+  final ValueChanged<bool?>? onCheckboxChanged;
 
-  const GoalCard({super.key, required this.goal, required this.onTap});
+  const GoalCard({
+    super.key,
+    required this.goal,
+    required this.onTap,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onLongPress,
+    this.onCheckboxChanged,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,46 +41,68 @@ class GoalCard extends ConsumerWidget {
 
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
-      child: GlassCard(
-        onTap: onTap,
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  // Goal icon
-                  _buildGoalIcon(goal),
-                  SizedBox(width: AppSpacing.md),
-                  // Name and details
-                  Expanded(
-                    child: _buildGoalInfo(
-                      context,
-                      isDark,
-                      progress,
-                      currencySymbol,
-                      isPrivacyMode,
+      child: GestureDetector(
+        onLongPress: onLongPress != null
+            ? () {
+                HapticFeedback.mediumImpact();
+                onLongPress!();
+              }
+            : null,
+        child: GlassCard(
+          onTap: isSelectionMode
+              ? () => onCheckboxChanged?.call(!isSelected)
+              : onTap,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    // Selection checkbox (shown in selection mode)
+                    if (isSelectionMode) ...[
+                      Checkbox(
+                        value: isSelected,
+                        onChanged: onCheckboxChanged,
+                        activeColor: goal.color,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.xs),
+                    ],
+                    // Goal icon
+                    _buildGoalIcon(goal),
+                    SizedBox(width: AppSpacing.md),
+                    // Name and details
+                    Expanded(
+                      child: _buildGoalInfo(
+                        context,
+                        isDark,
+                        progress,
+                        currencySymbol,
+                        isPrivacyMode,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: AppSpacing.sm),
-                  // Progress ring - wrap in PrivacyMask
-                  PrivacyMask(
-                    useTextMask: true,
-                    maskedText: '••%',
-                    child: GoalProgressRing(
-                      progress: progress?.progressPercent ?? 0,
-                      size: 56,
-                      color: goal.color,
-                      strokeWidth: 5,
+                    SizedBox(width: AppSpacing.sm),
+                    // Progress ring - wrap in PrivacyMask
+                    PrivacyMask(
+                      useTextMask: true,
+                      maskedText: '••%',
+                      child: GoalProgressRing(
+                        progress: progress?.progressPercent ?? 0,
+                        size: 56,
+                        color: goal.color,
+                        strokeWidth: 5,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Bottom strip with status
-            _buildBottomStrip(context, isDark, progress),
-          ],
+              // Bottom strip with status
+              _buildBottomStrip(context, isDark, progress),
+            ],
+          ),
         ),
       ),
     );
