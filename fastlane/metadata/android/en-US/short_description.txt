@@ -1,1 +1,1 @@
-Track investments with XIRR & MOIC. Works offline, syncs online.
+Track investments with XIRR & MOIC. Goals, privacy mode & cloud sync.

@@ -1,28 +1,120 @@
-InvTrack - Your Personal Investment Tracker
+📊 InvTracker - Simple Investment Tracker
 
-Track all your investments in one place. Calculate XIRR (annualized returns) and MOIC (Multiple on Invested Capital) for any investment.
+Finally, a simple way to track where your money went and what came back.
 
-✨ KEY FEATURES:
+No complicated charts. No stock tickers. Just record what you invested and what you got back. InvTracker calculates your real returns automatically.
 
-📊 Portfolio Tracking
-• Track stocks, mutual funds, real estate, and any other investments
-• Record buy/sell transactions with dates and amounts
-• View your complete investment history
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📈 Performance Metrics
-• XIRR calculation - See your true annualized returns
-• MOIC calculation - Know your total return multiple
-• Real-time portfolio valuation
+🎯 WHAT IT DOES
 
-🔒 Privacy First
-• Works completely offline
-• Your data stays on your device
-• Optional cloud sync with Firebase
+• Record money going out (investments, fees)
+• Record money coming back (returns, income)
+• See your actual profit or loss
+• Get professional return metrics (XIRR & MOIC)
+• Set financial goals and track progress
+• Get smart notifications for income & maturity dates
 
-🎯 Perfect For:
-• Individual investors tracking personal portfolios
-• Anyone wanting to understand their true investment returns
-• People who prefer offline-first apps with optional sync
+That's it. Simple but powerful.
 
-Download now and take control of your investment tracking!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆕 NEW IN VERSION 3.2.8
+
+� Privacy Mode
+Check your portfolio anywhere without revealing sensitive data. One tap to hide all amounts, returns, and percentages. Perfect for public places!
+
+🎯 Financial Goals
+Set targets for your investments - whether it's reaching a corpus amount or generating monthly income. Track your progress with beautiful progress rings and milestone celebrations.
+
+🔔 Smart Notifications
+Never miss an income payment or maturity date. Get timely reminders for:
+• Upcoming income payments
+• Investment maturity dates
+• Weekly portfolio summaries
+
+📄 Document Management
+Attach receipts, contracts, and documents to your investments. Keep everything organized in one place.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 SMART METRICS
+
+XIRR - Your True Annual Return
+Most apps show basic percentage returns. XIRR accounts for WHEN you invested and WHEN you got money back. This is what banks and professionals use.
+
+MOIC - Your Money Multiple
+Invested ₹1 lakh and got ₹1.5 lakh back? That's 1.5x MOIC. Simple way to see how much your money multiplied.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ KEY FEATURES
+
+✅ Works Offline
+Use the app without internet. Your data syncs automatically when you're back online.
+
+☁️ Cloud Backup
+Sign in with Google to backup your data. Access it from any device.
+
+🔒 Your Data, Your Control
+We don't store your financial data on our servers. It stays with you.
+
+📊 Clean Dashboard
+See your total position, monthly trends, and investment breakdown at a glance.
+
+🎯 Goal Tracking
+Set and track your financial goals with visual progress indicators.
+
+🔔 Smart Reminders
+Get notified about income payments and maturity dates.
+
+👁️ Privacy Mode
+Hide all amounts with one tap. Check your portfolio in public places.
+
+🌙 Dark Mode
+Easy on the eyes, especially at night.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💼 PERFECT FOR TRACKING
+
+• Fixed Deposits (FDs)
+• P2P Lending (LenDenClub, Faircent, etc.)
+• Bonds & NCDs
+• Real Estate investments
+• Chit Funds
+• Gold investments
+• Crypto holdings
+• Private investments
+• Angel investments
+• Or any investment with cash in and cash out
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤔 WHY INVTRACKER?
+
+Regular portfolio apps track stocks and mutual funds with daily prices. But what about your FD? Your P2P loans? That property you invested in?
+
+InvTracker is built for these "other" investments where you put money in today and get money back later - maybe in months or years.
+
+Just record:
+1. What you invested and when
+2. What you got back and when
+
+We calculate the rest.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 SIMPLE TO USE
+
+1. Add an investment (give it a name)
+2. Record your cash flows (money out, money in)
+3. Set goals to track your progress
+4. See your returns
+
+No learning curve. No confusing features.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Download InvTracker and finally know how your investments are really doing.
 
