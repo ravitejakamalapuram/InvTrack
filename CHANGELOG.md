@@ -5,6 +5,24 @@ All notable changes to InvTracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2025-12-30
+
+### Added
+- 📥 **Swipe-to-Archive**: Swipe right on investments or goals to archive/unarchive
+  - Swipe right to archive active items (amber indicator)
+  - Swipe right on archived items to restore (green indicator)
+  - Works alongside existing swipe-left-to-delete
+
+### Fixed
+- 🔔 **Scheduled Notifications**: Fixed notifications firing at wrong times
+  - Notifications now use device's local timezone instead of UTC
+  - Added `flutter_timezone` dependency for timezone detection
+- 🔐 **Biometric Authentication**: Fixed biometrics not retrying after app resume
+  - Biometric prompt now re-appears when returning to app from background
+  - Prevents concurrent biometric prompts with proper flag management
+
+---
+
 ## [3.3.0] - 2025-12-29
 
 ### Added
