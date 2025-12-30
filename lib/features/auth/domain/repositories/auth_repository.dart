@@ -15,4 +15,15 @@ abstract class AuthRepository {
 
   /// Retrieves the current authentication token (e.g., for API calls).
   Future<String?> getAuthToken();
+
+  /// Deletes the current user's account.
+  /// This will delete the Firebase Auth account.
+  /// Note: Firestore data cleanup should be handled separately before calling this.
+  /// Throws [FirebaseAuthException] if re-authentication is required.
+  Future<void> deleteAccount();
+
+  /// Re-authenticates the user with Google.
+  /// Required before sensitive operations like account deletion.
+  /// Returns true if re-authentication was successful.
+  Future<bool> reauthenticateWithGoogle();
 }

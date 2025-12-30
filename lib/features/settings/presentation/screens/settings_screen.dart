@@ -90,15 +90,15 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
 
-          // Data Management
+          // Data & Account
           SettingsSection(
-            title: 'Data',
+            title: 'Data & Account',
             children: [
               SettingsNavTile(
                 icon: Icons.folder,
                 iconColor: Colors.blue,
-                title: 'Data Management',
-                subtitle: 'Import, export & backup',
+                title: 'Data & Account',
+                subtitle: 'Import, export, backup & delete',
                 onTap: () => _navigateTo(context, const DataManagementScreen()),
               ),
             ],

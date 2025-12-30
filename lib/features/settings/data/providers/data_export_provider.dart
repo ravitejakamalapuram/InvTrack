@@ -1,0 +1,54 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
+
+/// Provider for DataExportService
+final dataExportServiceProvider = Provider<DataExportService?>((ref) {
+  final authState = ref.watch(authStateProvider);
+  final user = authState.value;
+
+  if (user == null) {
+    return null;
+  }
+
+  final investmentRepository = ref.watch(investmentRepositoryProvider);
+  final goalRepository = ref.watch(goalRepositoryProvider);
+  final documentRepository = ref.watch(documentRepositoryProvider);
+  final documentStorageService = ref.watch(documentStorageServiceProvider);
+
+  return DataExportService(
+    investmentRepository: investmentRepository,
+    goalRepository: goalRepository,
+    documentRepository: documentRepository,
+    documentStorageService: documentStorageService,
+    userId: user.id,
+  );
+});
+
+/// State for ZIP export operation
+final zipExportStateProvider =
+    NotifierProvider<ZipExportNotifier, AsyncValue<void>>(
+  ZipExportNotifier.new,
+);
+
+class ZipExportNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
+
+  Future<void> exportAsZip() async {
+    state = const AsyncValue.loading();
+    try {
+      final service = ref.read(dataExportServiceProvider);
+      if (service == null) {
+        throw Exception('User not authenticated');
+      }
+      await service.exportAndShare();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
