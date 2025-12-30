@@ -29,6 +29,20 @@
       ]
     },
     {
+      "collectionGroup": "archivedCashflows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "investmentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "goals",
       "queryScope": "COLLECTION",
       "fields": [

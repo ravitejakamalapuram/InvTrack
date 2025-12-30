@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,17 +74,37 @@ class SecurityService {
       // Check if biometrics are available before attempting auth
       final isAvailable = await isBiometricAvailable();
       if (!isAvailable) {
-        debugPrint('Biometrics not available on this device');
+        debugPrint('🔐 Biometrics not available on this device');
         return false;
       }
 
-      return await _localAuth.authenticate(
+      // Cancel any existing authentication sessions first
+      // This prevents stale auth dialogs from causing issues
+      await _localAuth.stopAuthentication();
+
+      // local_auth 3.0.0 API: parameters are now direct instead of AuthenticationOptions
+      // - biometricOnly: only allow biometric auth (no PIN/pattern fallback)
+      // - persistAcrossBackgrounding (stickyAuth): keep auth valid across app lifecycle changes
+      // - sensitiveTransaction: whether this is a sensitive transaction
+      final result = await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock InvTracker',
         biometricOnly: true,
-        persistAcrossBackgrounding: true,
+        persistAcrossBackgrounding: true, // Keep auth valid across app lifecycle changes
+        sensitiveTransaction: false, // Don't require re-auth for app resume
       );
+
+      debugPrint('🔐 Biometric auth result: $result');
+      return result;
+    } on PlatformException catch (e) {
+      debugPrint('🔐 Biometric platform error: ${e.code} - ${e.message}');
+      // Handle specific error codes
+      if (e.code == 'NotAvailable' || e.code == 'NotEnrolled') {
+        return false;
+      }
+      // For other errors (like user cancelled), just return false
+      return false;
     } catch (e) {
-      debugPrint('Biometric auth error: $e');
+      debugPrint('🔐 Biometric auth error: $e');
       return false;
     }
   }

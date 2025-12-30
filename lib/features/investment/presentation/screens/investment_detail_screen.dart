@@ -57,10 +57,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cashFlowsAsync = ref.watch(
-      cashFlowsByInvestmentProvider(widget.investment.id),
-    );
-    final statsAsync = ref.watch(investmentStatsProvider(widget.investment.id));
+    final isArchived = widget.investment.isArchived;
+    // Use the appropriate providers based on whether investment is archived
+    final cashFlowsAsync = isArchived
+        ? ref.watch(archivedCashFlowsByInvestmentProvider(widget.investment.id))
+        : ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
+    final statsAsync = isArchived
+        ? ref.watch(archivedInvestmentStatsProvider(widget.investment.id))
+        : ref.watch(investmentStatsProvider(widget.investment.id));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;
@@ -966,9 +970,17 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
             const SizedBox(height: 16),
             TextButton.icon(
-              onPressed: () => ref.invalidate(
-                cashFlowsByInvestmentProvider(widget.investment.id),
-              ),
+              onPressed: () {
+                if (widget.investment.isArchived) {
+                  ref.invalidate(
+                    archivedCashFlowsByInvestmentProvider(widget.investment.id),
+                  );
+                } else {
+                  ref.invalidate(
+                    cashFlowsByInvestmentProvider(widget.investment.id),
+                  );
+                }
+              },
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
             ),

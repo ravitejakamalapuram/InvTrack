@@ -100,14 +100,35 @@ class SwipeActions extends StatelessWidget {
       return child;
     }
 
+    // Determine backgrounds based on configuration:
+    // - background: shown when swiping right (startToEnd) - archive action
+    // - secondaryBackground: shown when swiping left (endToStart) - delete action
+    // NOTE: Dismissible requires that if secondaryBackground is provided,
+    // background must also be provided. So when only delete is configured,
+    // we use delete as the primary background since it's the only direction.
+    Widget? background;
+    Widget? secondaryBackground;
+
+    if (archiveConfig != null && deleteConfig != null) {
+      // Both configured: archive for right swipe, delete for left swipe
+      background = _buildArchiveBackground();
+      secondaryBackground = _buildDeleteBackground();
+    } else if (archiveConfig != null) {
+      // Only archive: use as primary background for right swipe
+      background = _buildArchiveBackground();
+    } else if (deleteConfig != null) {
+      // Only delete: use as primary background for left swipe (endToStart)
+      background = _buildDeleteBackground();
+    }
+
     return Dismissible(
       key: Key(itemKey),
       direction: _direction,
-      background: archiveConfig != null ? _buildArchiveBackground() : null,
-      secondaryBackground:
-          deleteConfig != null ? _buildDeleteBackground() : null,
+      background: background,
+      secondaryBackground: secondaryBackground,
       confirmDismiss: (direction) => _confirmDismiss(context, direction),
-      onDismissed: (direction) => _onDismissed(context, direction),
+      // Note: We handle the action in confirmDismiss and return false,
+      // so the item is removed by provider update, not by Dismissible
       child: child,
     );
   }
@@ -148,34 +169,39 @@ class SwipeActions extends StatelessWidget {
   ) async {
     HapticFeedback.mediumImpact();
     if (direction == DismissDirection.endToStart && deleteConfig != null) {
-      return AppFeedback.showConfirmDialog(
+      final confirmed = await AppFeedback.showConfirmDialog(
         context: context,
         title: deleteConfig!.confirmTitle,
         message: deleteConfig!.confirmMessage,
         confirmText: 'Delete',
       );
+      if (confirmed == true) {
+        deleteConfig!.onDelete();
+        if (context.mounted) {
+          AppFeedback.showSuccess(context, deleteConfig!.successMessage);
+        }
+      }
+      // Always return false - the item will be removed by provider update
+      return false;
     } else if (direction == DismissDirection.startToEnd &&
         archiveConfig != null) {
       final isArchived = archiveConfig!.isArchived;
-      return AppFeedback.showConfirmDialog(
+      final confirmed = await AppFeedback.showConfirmDialog(
         context: context,
         title: archiveConfig!.confirmTitle,
         message: archiveConfig!.confirmMessage,
         confirmText: isArchived ? 'Unarchive' : 'Archive',
       );
+      if (confirmed == true) {
+        archiveConfig!.onArchive();
+        if (context.mounted) {
+          AppFeedback.showSuccess(context, archiveConfig!.successMessage);
+        }
+      }
+      // Always return false - the item will be removed by provider update
+      return false;
     }
     return false;
-  }
-
-  void _onDismissed(BuildContext context, DismissDirection direction) {
-    if (direction == DismissDirection.endToStart && deleteConfig != null) {
-      deleteConfig!.onDelete();
-      AppFeedback.showSuccess(context, deleteConfig!.successMessage);
-    } else if (direction == DismissDirection.startToEnd &&
-        archiveConfig != null) {
-      archiveConfig!.onArchive();
-      AppFeedback.showSuccess(context, archiveConfig!.successMessage);
-    }
   }
 }
 

@@ -29,6 +29,13 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   bool _isError = false;
   bool _autoAttemptedOnInit = false;
   bool _biometricInProgress = false;
+  int _biometricAttemptCount = 0;
+  DateTime? _lastBiometricAttempt;
+
+  // Maximum biometric attempts before requiring PIN
+  static const int _maxBiometricAttempts = 3;
+  // Cooldown period between auto-retry attempts
+  static const Duration _biometricCooldown = Duration(seconds: 2);
 
   @override
   void initState() {
@@ -41,7 +48,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted && !_autoAttemptedOnInit) {
             _autoAttemptedOnInit = true;
-            _tryBiometrics();
+            _tryBiometrics(isAutoAttempt: true);
           }
         });
       });
@@ -58,11 +65,27 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     // When app resumes from background, try biometrics again if we're on unlock screen
+    // BUT only if we haven't exceeded max attempts and aren't in cooldown
     if (state == AppLifecycleState.resumed && widget.mode == PasscodeMode.unlock) {
-      // Small delay to let the system settle
+      // Don't auto-retry if we've had too many failed attempts
+      if (_biometricAttemptCount >= _maxBiometricAttempts) {
+        debugPrint('🔐 Max biometric attempts reached, user must enter PIN or tap fingerprint');
+        return;
+      }
+
+      // Check cooldown to prevent rapid retries
+      if (_lastBiometricAttempt != null) {
+        final elapsed = DateTime.now().difference(_lastBiometricAttempt!);
+        if (elapsed < _biometricCooldown) {
+          debugPrint('🔐 Biometric cooldown active, skipping auto-retry');
+          return;
+        }
+      }
+
+      // Small delay to let the system settle after resume
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted && !_biometricInProgress) {
-          _tryBiometrics();
+          _tryBiometrics(isAutoAttempt: true);
         }
       });
     }
@@ -84,30 +107,63 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     });
   }
 
-  Future<void> _tryBiometrics() async {
+  Future<void> _tryBiometrics({bool isAutoAttempt = false}) async {
     // Prevent multiple simultaneous biometric prompts
-    if (_biometricInProgress) return;
+    if (_biometricInProgress) {
+      debugPrint('🔐 Biometric auth already in progress, skipping');
+      return;
+    }
 
     final securityState = ref.read(securityProvider);
     if (!securityState.isBiometricEnabled || !securityState.isBiometricAvailable) {
+      debugPrint('🔐 Biometrics not enabled or not available');
+      return;
+    }
+
+    // For auto-attempts, check if we've exceeded max attempts
+    if (isAutoAttempt && _biometricAttemptCount >= _maxBiometricAttempts) {
+      debugPrint('🔐 Max biometric attempts reached for auto-retry');
       return;
     }
 
     _biometricInProgress = true;
+    _lastBiometricAttempt = DateTime.now();
 
     try {
+      debugPrint('🔐 Starting biometric authentication (auto: $isAutoAttempt, attempt: ${_biometricAttemptCount + 1})');
+
       final success = await ref
           .read(securityProvider.notifier)
           .unlockWithBiometrics();
+
       if (success && mounted) {
+        debugPrint('🔐 Biometric auth SUCCESS');
+        // Reset attempt counter on success
+        _biometricAttemptCount = 0;
         widget.onSuccess?.call();
+      } else if (mounted) {
+        debugPrint('🔐 Biometric auth failed or cancelled');
+        // Only increment counter for auto attempts to allow manual retries
+        if (isAutoAttempt) {
+          _biometricAttemptCount++;
+        }
       }
     } catch (e) {
       // Biometric auth failed or was cancelled - user can retry or use PIN
-      debugPrint('Biometric auth failed: $e');
+      debugPrint('🔐 Biometric auth exception: $e');
+      if (isAutoAttempt) {
+        _biometricAttemptCount++;
+      }
     } finally {
       _biometricInProgress = false;
     }
+  }
+
+  /// Manual biometric retry from fingerprint button - resets attempt counter
+  void _onBiometricButtonPressed() {
+    // Manual attempt - reset counter to allow user to try again
+    _biometricAttemptCount = 0;
+    _tryBiometrics(isAutoAttempt: false);
   }
 
   void _onKeyPress(String key) {
@@ -284,7 +340,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                         size: 32,
                         color: AppColors.primaryLight,
                       ),
-                      onPressed: _tryBiometrics,
+                      onPressed: _onBiometricButtonPressed,
                     )
                   : IconButton(
                       icon: Icon(

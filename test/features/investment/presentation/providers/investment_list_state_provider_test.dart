@@ -138,4 +138,189 @@ void main() {
       );
     });
   });
+
+  group('investmentListStateProvider - Selection Mode', () {
+    test('should start with selection mode disabled', () {
+      final state = container.read(investmentListStateProvider);
+      expect(state.isSelectionMode, false);
+      expect(state.selectedIds, isEmpty);
+    });
+
+    test('should toggle selection mode on', () {
+      container.read(investmentListStateProvider.notifier).toggleSelectionMode();
+      final state = container.read(investmentListStateProvider);
+      expect(state.isSelectionMode, true);
+    });
+
+    test('should toggle selection mode off and clear selection', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.enterSelectionMode('test-id');
+      notifier.toggleSelectionMode();
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.isSelectionMode, false);
+      expect(state.selectedIds, isEmpty);
+    });
+
+    test('should enter selection mode with initial selection', () {
+      container
+          .read(investmentListStateProvider.notifier)
+          .enterSelectionMode('investment-1');
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.isSelectionMode, true);
+      expect(state.selectedIds, {'investment-1'});
+    });
+
+    test('should toggle selection to add item', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.enterSelectionMode('inv-1');
+      notifier.toggleSelection('inv-2');
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.selectedIds, {'inv-1', 'inv-2'});
+    });
+
+    test('should toggle selection to remove item', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.enterSelectionMode('inv-1');
+      notifier.toggleSelection('inv-2');
+      notifier.toggleSelection('inv-1');
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.selectedIds, {'inv-2'});
+    });
+
+    test('should exit selection mode when last item is deselected', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.enterSelectionMode('inv-1');
+      notifier.toggleSelection('inv-1');
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.isSelectionMode, false);
+      expect(state.selectedIds, isEmpty);
+    });
+
+    test('should select all provided ids', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.enterSelectionMode('inv-1');
+      notifier.selectAll(['inv-1', 'inv-2', 'inv-3']);
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.selectedIds, {'inv-1', 'inv-2', 'inv-3'});
+    });
+
+    test('should clear selection', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.enterSelectionMode('inv-1');
+      notifier.toggleSelection('inv-2');
+      notifier.clearSelection();
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.isSelectionMode, false);
+      expect(state.selectedIds, isEmpty);
+    });
+  });
+
+  group('investmentListStateProvider - Search', () {
+    test('should start with no search query', () {
+      final state = container.read(investmentListStateProvider);
+      expect(state.isSearching, false);
+      expect(state.searchQuery, '');
+    });
+
+    test('should update search query', () {
+      container
+          .read(investmentListStateProvider.notifier)
+          .setSearchQuery('test query');
+      final state = container.read(investmentListStateProvider);
+
+      // setSearchQuery only updates searchQuery, not isSearching
+      expect(state.searchQuery, 'test query');
+    });
+
+    test('should toggle search mode on', () {
+      container.read(investmentListStateProvider.notifier).toggleSearch();
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.isSearching, true);
+    });
+
+    test('should toggle search mode off and clear query', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+      notifier.toggleSearch(); // On
+      notifier.setSearchQuery('test query');
+      notifier.toggleSearch(); // Off
+
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.isSearching, false);
+      expect(state.searchQuery, '');
+    });
+  });
+
+  group('InvestmentListState - copyWith', () {
+    test('should copy with updated filter', () {
+      const state = InvestmentListState();
+      final updated = state.copyWith(filter: InvestmentFilter.archived);
+
+      expect(updated.filter, InvestmentFilter.archived);
+      expect(updated.isSelectionMode, false);
+      expect(updated.selectedIds, isEmpty);
+    });
+
+    test('should copy with updated selection mode', () {
+      const state = InvestmentListState();
+      final updated = state.copyWith(
+        isSelectionMode: true,
+        selectedIds: {'id1', 'id2'},
+      );
+
+      expect(updated.isSelectionMode, true);
+      expect(updated.selectedIds, {'id1', 'id2'});
+    });
+
+    test('should preserve other fields when updating one', () {
+      final state = const InvestmentListState().copyWith(
+        filter: InvestmentFilter.closed,
+        isSelectionMode: true,
+        selectedIds: {'id1'},
+      );
+      final updated = state.copyWith(selectedIds: {'id2'});
+
+      expect(updated.filter, InvestmentFilter.closed);
+      expect(updated.isSelectionMode, true);
+      expect(updated.selectedIds, {'id2'});
+    });
+  });
+
+  group('Archived filter behavior', () {
+    test('should identify archived filter correctly', () {
+      container
+          .read(investmentListStateProvider.notifier)
+          .setFilter(InvestmentFilter.archived);
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.filter == InvestmentFilter.archived, true);
+    });
+
+    test('should use correct isArchived check for bulk operations', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      // Set to archived filter
+      notifier.setFilter(InvestmentFilter.archived);
+      final archivedState = container.read(investmentListStateProvider);
+
+      // This is the check used in InvestmentListActionBar
+      final isArchivedFilter =
+          archivedState.filter == InvestmentFilter.archived;
+      expect(isArchivedFilter, true);
+
+      // Set to all filter
+      notifier.setFilter(InvestmentFilter.all);
+      final allState = container.read(investmentListStateProvider);
+      final isNotArchivedFilter = allState.filter != InvestmentFilter.archived;
+      expect(isNotArchivedFilter, true);
+    });
+  });
 }

@@ -197,9 +197,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> unarchiveInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch from archived collection since that's where the investment is
       final investment = await ref
           .read(investmentRepositoryProvider)
-          .getInvestmentById(id);
+          .getArchivedInvestmentById(id);
       await ref.read(investmentRepositoryProvider).unarchiveInvestment(id);
       if (investment != null) {
         // Re-schedule reminders if applicable
@@ -226,6 +227,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       await _cancelIncomeReminder(id);
       await _cancelMaturityReminders(id);
       await ref.read(investmentRepositoryProvider).deleteInvestment(id);
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Delete an archived investment
+  Future<void> deleteArchivedInvestment(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      // No need to cancel reminders - archived investments don't have them
+      await ref.read(investmentRepositoryProvider).deleteArchivedInvestment(id);
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -469,6 +484,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   void _invalidateAll() {
     ref.invalidate(allInvestmentsProvider);
     ref.invalidate(allCashFlowsStreamProvider);
+    // Also invalidate archived providers for consistency
+    ref.invalidate(archivedInvestmentsProvider);
   }
 
   // ============ VALIDATION HELPERS ============

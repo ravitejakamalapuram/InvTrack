@@ -54,7 +54,12 @@ class SecurityState {
 class SecurityNotifier extends Notifier<SecurityState>
     with WidgetsBindingObserver {
   DateTime? _lastPausedTime;
+  DateTime? _lastUnlockTime;
   Timer? _lockTimer;
+
+  // Grace period after unlock before auto-lock can trigger again
+  // This prevents re-locking during app switches immediately after unlock
+  static const Duration _unlockGracePeriod = Duration(seconds: 5);
 
   @override
   SecurityState build() {
@@ -83,6 +88,9 @@ class SecurityNotifier extends Notifier<SecurityState>
         isBiometricAvailable = false;
       }
 
+      // Check if provider is still mounted before updating state
+      if (!ref.mounted) return;
+
       state = state.copyWith(
         hasPin: hasPin,
         isBiometricEnabled: isBiometricEnabled,
@@ -91,6 +99,7 @@ class SecurityNotifier extends Notifier<SecurityState>
       );
     } catch (e) {
       // If initialization fails, just use default state
+      if (!ref.mounted) return;
       state = const SecurityState();
     }
   }
@@ -105,13 +114,25 @@ class SecurityNotifier extends Notifier<SecurityState>
   }
 
   void _checkAutoLock() {
+    // Don't lock if no PIN or already locked
     if (!state.hasPin || state.isLocked) return;
+
+    // Check if we're within the grace period after a successful unlock
+    // This prevents the biometric dialog dismissal from triggering a re-lock
+    if (_lastUnlockTime != null) {
+      final timeSinceUnlock = DateTime.now().difference(_lastUnlockTime!);
+      if (timeSinceUnlock < _unlockGracePeriod) {
+        debugPrint('🔐 Within unlock grace period, skipping auto-lock');
+        return;
+      }
+    }
 
     if (_lastPausedTime != null) {
       final duration = DateTime.now().difference(_lastPausedTime!);
       final autoLockSeconds = _service.autoLockDurationSeconds;
 
       if (duration.inSeconds >= autoLockSeconds) {
+        debugPrint('🔐 Auto-locking app after ${duration.inSeconds}s (threshold: ${autoLockSeconds}s)');
         lockApp();
       }
     }
@@ -121,10 +142,16 @@ class SecurityNotifier extends Notifier<SecurityState>
     state = state.copyWith(isLocked: true);
   }
 
+  void _onSuccessfulUnlock() {
+    _lastUnlockTime = DateTime.now();
+    _lastPausedTime = null; // Reset pause time to prevent immediate re-lock
+    state = state.copyWith(isLocked: false);
+  }
+
   Future<bool> unlockWithPin(String pin) async {
     final isValid = await _service.verifyPin(pin);
     if (isValid) {
-      state = state.copyWith(isLocked: false);
+      _onSuccessfulUnlock();
     }
     return isValid;
   }
@@ -134,7 +161,7 @@ class SecurityNotifier extends Notifier<SecurityState>
 
     final isAuthenticated = await _service.authenticateWithBiometrics();
     if (isAuthenticated) {
-      state = state.copyWith(isLocked: false);
+      _onSuccessfulUnlock();
     }
     return isAuthenticated;
   }

@@ -242,11 +242,16 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     AsyncValue<List<InvestmentEntity>> filteredAsync,
     AsyncValue<List<InvestmentEntity>> allInvestmentsAsync,
   ) {
+    // Get counts to check if there are ANY investments (active or archived)
+    final counts = ref.watch(investmentCountsProvider);
+    final hasAnyInvestments =
+        counts.all > 0 || counts.archived > 0;
+
     return filteredAsync.when(
       data: (filteredInvestments) {
-        final allInvestments = allInvestmentsAsync.value ?? [];
-
-        if (allInvestments.isEmpty) {
+        // Only show "Add First Investment" empty state if there are NO investments at all
+        // (neither active nor archived)
+        if (!hasAnyInvestments) {
           return SliverFillRemaining(
             hasScrollBody: false,
             child: InvestmentEmptyState(
@@ -256,10 +261,15 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           );
         }
 
+        // Show "no results" state when the current filter has no matching investments
         if (filteredInvestments.isEmpty) {
           return SliverFillRemaining(
             hasScrollBody: false,
-            child: InvestmentNoResultsState(isDark: isDark),
+            child: InvestmentNoResultsState(
+              isDark: isDark,
+              isSearching: listState.searchQuery.isNotEmpty,
+              isArchivedFilter: listState.filter == InvestmentFilter.archived,
+            ),
           );
         }
 
@@ -279,9 +289,17 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     confirmMessage:
                         'This will permanently delete "${investment.name}" and all its transactions.',
                     successMessage: 'Investment deleted',
-                    onDelete: () => ref
-                        .read(investmentNotifierProvider.notifier)
-                        .deleteInvestment(investment.id),
+                    onDelete: () {
+                      if (isArchived) {
+                        ref
+                            .read(investmentNotifierProvider.notifier)
+                            .deleteArchivedInvestment(investment.id);
+                      } else {
+                        ref
+                            .read(investmentNotifierProvider.notifier)
+                            .deleteInvestment(investment.id);
+                      }
+                    },
                   ),
                   archiveConfig: ArchiveActionConfig(
                     confirmTitle: isArchived

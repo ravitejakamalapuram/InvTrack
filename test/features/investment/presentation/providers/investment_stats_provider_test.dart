@@ -1,6 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
+import '../../data/repositories/mock_investment_repository.dart';
 
 void main() {
   group('calculateStats', () {
@@ -164,6 +168,215 @@ void main() {
       expect(result.totalReturned, 100);
       expect(result.netCashFlow, -900);
       expect(result.cashFlowCount, 2);
+    });
+  });
+
+  group('archivedInvestmentStatsProvider', () {
+    late FakeInvestmentRepository fakeRepository;
+    late ProviderContainer container;
+
+    final archivedInvestment = InvestmentEntity(
+      id: 'archived-inv-1',
+      name: 'Archived Investment',
+      type: InvestmentType.p2pLending,
+      status: InvestmentStatus.closed,
+      isArchived: true,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    final archivedCashFlows = [
+      CashFlowEntity(
+        id: 'cf-1',
+        investmentId: 'archived-inv-1',
+        date: DateTime(2023, 1, 1),
+        type: CashFlowType.invest,
+        amount: 1000,
+        createdAt: DateTime(2023, 1, 1),
+      ),
+      CashFlowEntity(
+        id: 'cf-2',
+        investmentId: 'archived-inv-1',
+        date: DateTime(2024, 1, 1),
+        type: CashFlowType.returnFlow,
+        amount: 1500,
+        createdAt: DateTime(2024, 1, 1),
+      ),
+    ];
+
+    setUp(() {
+      fakeRepository = FakeInvestmentRepository();
+      fakeRepository.seed(
+        archivedInvestments: [archivedInvestment],
+        archivedCashFlows: archivedCashFlows,
+      );
+      container = ProviderContainer(
+        overrides: [
+          investmentRepositoryProvider.overrideWithValue(fakeRepository),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepository.reset();
+    });
+
+    test('should return empty stats for non-existent archived investment',
+        () async {
+      // Wait for stream to emit
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      final statsAsync = container.read(
+        archivedInvestmentStatsProvider('non-existent-id'),
+      );
+
+      statsAsync.when(
+        data: (stats) {
+          expect(stats.hasData, false);
+          expect(stats.totalInvested, 0);
+        },
+        loading: () {}, // Stream may still be initializing
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
+
+    test('should calculate stats correctly for archived investment', () async {
+      // Give provider time to process stream
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      final statsAsync = container.read(
+        archivedInvestmentStatsProvider('archived-inv-1'),
+      );
+
+      statsAsync.when(
+        data: (stats) {
+          expect(stats.hasData, true);
+          expect(stats.totalInvested, 1000);
+          expect(stats.totalReturned, 1500);
+          expect(stats.netCashFlow, 500);
+          expect(stats.absoluteReturn, 50);
+          expect(stats.moic, 1.5);
+          expect(stats.cashFlowCount, 2);
+        },
+        loading: () {}, // May still be loading
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
+  });
+
+  group('investmentStatsProvider vs archivedInvestmentStatsProvider', () {
+    late FakeInvestmentRepository fakeRepository;
+    late ProviderContainer container;
+
+    final activeInvestment = InvestmentEntity(
+      id: 'active-inv-1',
+      name: 'Active Investment',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    final archivedInvestment = InvestmentEntity(
+      id: 'archived-inv-1',
+      name: 'Archived Investment',
+      type: InvestmentType.p2pLending,
+      status: InvestmentStatus.closed,
+      isArchived: true,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    final activeCashFlows = [
+      CashFlowEntity(
+        id: 'active-cf-1',
+        investmentId: 'active-inv-1',
+        date: DateTime(2023, 1, 1),
+        type: CashFlowType.invest,
+        amount: 2000,
+        createdAt: DateTime(2023, 1, 1),
+      ),
+    ];
+
+    final archivedCashFlows = [
+      CashFlowEntity(
+        id: 'archived-cf-1',
+        investmentId: 'archived-inv-1',
+        date: DateTime(2023, 1, 1),
+        type: CashFlowType.invest,
+        amount: 1000,
+        createdAt: DateTime(2023, 1, 1),
+      ),
+    ];
+
+    setUp(() {
+      fakeRepository = FakeInvestmentRepository();
+      fakeRepository.seed(
+        investments: [activeInvestment],
+        cashFlows: activeCashFlows,
+        archivedInvestments: [archivedInvestment],
+        archivedCashFlows: archivedCashFlows,
+      );
+      container = ProviderContainer(
+        overrides: [
+          investmentRepositoryProvider.overrideWithValue(fakeRepository),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepository.reset();
+    });
+
+    test('should use correct collection for each provider type', () async {
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Active investment should use investmentStatsProvider
+      final activeStatsAsync = container.read(
+        investmentStatsProvider('active-inv-1'),
+      );
+      activeStatsAsync.whenData((stats) {
+        expect(stats.totalInvested, 2000);
+      });
+
+      // Archived investment should use archivedInvestmentStatsProvider
+      final archivedStatsAsync = container.read(
+        archivedInvestmentStatsProvider('archived-inv-1'),
+      );
+      archivedStatsAsync.whenData((stats) {
+        expect(stats.totalInvested, 1000);
+      });
+    });
+
+    test('investmentStatsProvider should not find archived cash flows',
+        () async {
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Using investmentStatsProvider on archived investment should return empty
+      final wrongProviderAsync = container.read(
+        investmentStatsProvider('archived-inv-1'),
+      );
+      wrongProviderAsync.whenData((stats) {
+        expect(stats.hasData, false);
+        expect(stats.totalInvested, 0);
+      });
+    });
+
+    test('archivedInvestmentStatsProvider should not find active cash flows',
+        () async {
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Using archivedInvestmentStatsProvider on active investment returns empty
+      final wrongProviderAsync = container.read(
+        archivedInvestmentStatsProvider('active-inv-1'),
+      );
+      wrongProviderAsync.whenData((stats) {
+        expect(stats.hasData, false);
+        expect(stats.totalInvested, 0);
+      });
     });
   });
 }

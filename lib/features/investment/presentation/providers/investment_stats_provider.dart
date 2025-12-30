@@ -12,11 +12,30 @@ export 'package:inv_tracker/features/investment/domain/entities/investment_stats
 
 // ============ INDIVIDUAL INVESTMENT STATS ============
 
-/// Calculate stats for a single investment (reactive - watches the stream)
+/// Calculate stats for a single active investment (reactive - watches the stream)
 final investmentStatsProvider =
     Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
       final cashFlowsAsync = ref.watch(
         cashFlowsByInvestmentProvider(investmentId),
+      );
+
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          if (cashFlows.isEmpty) {
+            return AsyncValue.data(InvestmentStats.empty());
+          }
+          return AsyncValue.data(calculateStats(cashFlows));
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    });
+
+/// Calculate stats for a single archived investment (reactive - watches the stream)
+final archivedInvestmentStatsProvider =
+    Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
+      final cashFlowsAsync = ref.watch(
+        archivedCashFlowsByInvestmentProvider(investmentId),
       );
 
       return cashFlowsAsync.when(

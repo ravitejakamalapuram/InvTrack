@@ -4,9 +4,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/selection_list_action_bar.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/merge_investments_dialog.dart';
 
 /// Bottom action bar shown during selection mode
@@ -16,6 +18,33 @@ class InvestmentListActionBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final listState = ref.watch(investmentListStateProvider);
+    final isArchived = listState.filter == InvestmentFilter.archived;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Bulk operations are not supported for archived investments
+    if (isArchived) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.grey[100],
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+            ),
+          ),
+        ),
+        child: SafeArea(
+          child: Text(
+            'Bulk operations are not available for archived investments.\n'
+            'Use swipe actions to delete or unarchive individual items.',
+            textAlign: TextAlign.center,
+            style: AppTypography.caption.copyWith(
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+        ),
+      );
+    }
 
     return SelectionListActionBar(
       selectedCount: listState.selectedIds.length,

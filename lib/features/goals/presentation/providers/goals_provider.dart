@@ -59,6 +59,14 @@ final archivedGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   return ref.watch(goalRepositoryProvider).watchArchivedGoals();
 });
 
+/// Provider for goal counts by filter (for filter tabs)
+/// Note: Goals only have active/archived filters (no open/closed like investments)
+final goalCountsProvider = Provider<({int active, int archived})>((ref) {
+  final activeGoals = ref.watch(activeGoalsProvider).value ?? [];
+  final archivedGoals = ref.watch(archivedGoalsProvider).value ?? [];
+  return (active: activeGoals.length, archived: archivedGoals.length);
+});
+
 /// Provider for a single goal by ID (one-time fetch)
 /// Returns null if user is not authenticated
 final goalByIdProvider = FutureProvider.family<GoalEntity?, String>((

@@ -100,11 +100,37 @@ class InvestmentEmptyState extends StatelessWidget {
 /// Displayed when search/filter returns no results.
 class InvestmentNoResultsState extends StatelessWidget {
   final bool isDark;
+  final bool isSearching;
+  final bool isArchivedFilter;
 
-  const InvestmentNoResultsState({super.key, required this.isDark});
+  const InvestmentNoResultsState({
+    super.key,
+    required this.isDark,
+    this.isSearching = false,
+    this.isArchivedFilter = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Determine appropriate icon, title, and message based on context
+    final IconData icon;
+    final String title;
+    final String message;
+
+    if (isSearching) {
+      icon = Icons.search_off_rounded;
+      title = 'No Results Found';
+      message = 'Try searching with a different term';
+    } else if (isArchivedFilter) {
+      icon = Icons.archive_outlined;
+      title = 'No Archived Investments';
+      message = 'Investments you archive will appear here';
+    } else {
+      icon = Icons.filter_list_off_rounded;
+      title = 'No Matching Investments';
+      message = 'Try a different filter';
+    }
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -119,7 +145,7 @@ class InvestmentNoResultsState extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.search_off_rounded,
+                icon,
                 size: AppSizes.iconDisplay,
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -128,14 +154,14 @@ class InvestmentNoResultsState extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.xl),
             Text(
-              'No Results Found',
+              title,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.xs),
             Text(
-              'Try searching with a different term',
+              message,
               textAlign: TextAlign.center,
               style: AppTypography.body.copyWith(
                 color: isDark

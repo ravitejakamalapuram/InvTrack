@@ -1,9 +1,13 @@
-🔒 NEW: Privacy Mode
-• Tap the eye icon to hide all financial data
-• Perfect for checking your portfolio in public
+📦 NEW: Swipe to Archive
+• Swipe right on investments/goals to archive
+• Swipe left to delete
+• Easily restore archived items
 
-🛠️ Improvements
-• Enhanced number formatting across the app
-• Fixed notification permission flow
-• Improved settings toggle responsiveness
+🔐 Security & Notifications
+• Fixed biometric auth after switching apps
+• Notifications now use your local timezone
+• Improved app lock reliability
 
+🛠️ Bug Fixes
+• Archive/unarchive works correctly
+• Better handling of archived investment stats

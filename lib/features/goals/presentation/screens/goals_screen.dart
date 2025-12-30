@@ -17,7 +17,9 @@ import 'package:inv_tracker/features/goals/presentation/widgets/goals_list_actio
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_list_selection_controls.dart';
 
 /// Filter options for goals list
-enum GoalsFilter { active, archived, all }
+/// Note: Goals don't have open/closed like investments, so "All" is removed
+/// as it would be redundant with "Active"
+enum GoalsFilter { active, archived }
 
 /// Main screen displaying all goals
 class GoalsScreen extends ConsumerStatefulWidget {
@@ -164,10 +166,6 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         return activeGoalsAsync.value ?? [];
       case GoalsFilter.archived:
         return archivedGoalsAsync.value ?? [];
-      case GoalsFilter.all:
-        final active = activeGoalsAsync.value ?? [];
-        final archived = archivedGoalsAsync.value ?? [];
-        return [...active, ...archived];
     }
   }
 
@@ -185,17 +183,6 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         goalsAsync = activeGoalsAsync;
       case GoalsFilter.archived:
         goalsAsync = archivedGoalsAsync;
-      case GoalsFilter.all:
-        // Combine both lists for "all" filter
-        goalsAsync = activeGoalsAsync.when(
-          data: (active) => archivedGoalsAsync.when(
-            data: (archived) => AsyncValue.data([...active, ...archived]),
-            loading: () => AsyncValue.data(active),
-            error: (e, st) => AsyncValue.data(active),
-          ),
-          loading: () => const AsyncValue.loading(),
-          error: (e, st) => AsyncValue.error(e, st),
-        );
     }
 
     return goalsAsync.when(
@@ -285,6 +272,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildFilterTabs(bool isDark) {
+    final counts = ref.watch(goalCountsProvider);
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -293,54 +282,76 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           final label = switch (filter) {
             GoalsFilter.active => 'Active',
             GoalsFilter.archived => 'Archived',
-            GoalsFilter.all => 'All',
           };
-          final icon = switch (filter) {
-            GoalsFilter.active => Icons.flag_rounded,
-            GoalsFilter.archived => Icons.archive_rounded,
-            GoalsFilter.all => Icons.list_rounded,
+          final count = switch (filter) {
+            GoalsFilter.active => counts.active,
+            GoalsFilter.archived => counts.archived,
           };
 
           return Padding(
             padding: EdgeInsets.only(right: AppSpacing.sm),
-            child: FilterChip(
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 16,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark
-                              ? AppColors.neutral400Dark
-                              : AppColors.neutral600Light),
-                  ),
-                  SizedBox(width: AppSpacing.xs),
-                  Text(label),
-                ],
-              ),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _filter = filter),
-              selectedColor: AppColors.primaryLight,
-              backgroundColor: isDark
-                  ? AppColors.surfaceDark
-                  : AppColors.surfaceLight,
-              labelStyle: AppTypography.small.copyWith(
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? Colors.white70 : AppColors.neutral700Light),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              side: BorderSide(
-                color: isSelected
-                    ? AppColors.primaryLight
-                    : (isDark
-                          ? AppColors.neutral700Dark
-                          : AppColors.neutral300Light),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _filter = filter);
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primaryLight
+                      : (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTypography.small.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark
+                                  ? Colors.white70
+                                  : AppColors.neutral700Light),
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                    if (count > 0) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : (isDark ? Colors.white : AppColors.primaryLight)
+                                    .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$count',
+                          style: AppTypography.small.copyWith(
+                            fontSize: 10,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark
+                                      ? Colors.white70
+                                      : AppColors.primaryLight),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           );
@@ -456,8 +467,6 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               return !goal.isArchived;
             case GoalsFilter.archived:
               return goal.isArchived;
-            case GoalsFilter.all:
-              return true;
           }
         }).toList();
 

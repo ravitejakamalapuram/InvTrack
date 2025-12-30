@@ -248,11 +248,13 @@ class NotificationService {
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
     // Android 13+ permissions
-    final androidResult = await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    final androidResult = await androidPlugin?.requestNotificationsPermission();
+
+    // Note: We intentionally do NOT request SCHEDULE_EXACT_ALARM permission
+    // as it requires special Play Store approval for non-alarm apps.
+    // We use inexact scheduling which is sufficient for reminder notifications.
 
     final granted = (iosResult ?? true) && (androidResult ?? true);
     if (kDebugMode) {
@@ -740,7 +742,7 @@ class NotificationService {
       'This notification was scheduled $delaySeconds seconds ago!',
       tz.TZDateTime.from(scheduledTime, tz.local),
       details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: 'test_scheduled_notification',
     );
 
