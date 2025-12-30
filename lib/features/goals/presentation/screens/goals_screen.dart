@@ -7,7 +7,7 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
-import 'package:inv_tracker/core/widgets/swipe_to_delete.dart';
+import 'package:inv_tracker/core/widgets/swipe_actions.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_list_state_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -220,17 +220,41 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final goal = goals[index];
+              final isArchived = goal.isArchived;
               return StaggeredFadeIn(
                 index: index,
-                child: SwipeToDelete(
+                child: SwipeActions(
                   itemKey: goal.id,
                   enabled: !isSelectionMode,
-                  confirmTitle: 'Delete Goal?',
-                  confirmMessage:
-                      'This will permanently delete "${goal.name}".',
-                  successMessage: 'Goal deleted',
-                  onDismissed: () =>
-                      ref.read(goalNotifierProvider.notifier).deleteGoal(goal.id),
+                  deleteConfig: DeleteActionConfig(
+                    confirmTitle: 'Delete Goal?',
+                    confirmMessage:
+                        'This will permanently delete "${goal.name}".',
+                    successMessage: 'Goal deleted',
+                    onDelete: () =>
+                        ref.read(goalNotifierProvider.notifier).deleteGoal(goal.id),
+                  ),
+                  archiveConfig: ArchiveActionConfig(
+                    confirmTitle:
+                        isArchived ? 'Unarchive Goal?' : 'Archive Goal?',
+                    confirmMessage: isArchived
+                        ? '"${goal.name}" will be restored to your active goals.'
+                        : '"${goal.name}" will be hidden from your active goals.',
+                    successMessage:
+                        isArchived ? 'Goal restored' : 'Goal archived',
+                    isArchived: isArchived,
+                    onArchive: () {
+                      if (isArchived) {
+                        ref
+                            .read(goalNotifierProvider.notifier)
+                            .unarchiveGoal(goal.id);
+                      } else {
+                        ref
+                            .read(goalNotifierProvider.notifier)
+                            .archiveGoal(goal.id);
+                      }
+                    },
+                  ),
                   child: GoalCard(
                     goal: goal,
                     onTap: () => context.push('/goals/${goal.id}'),

@@ -21,25 +21,49 @@ class PasscodeScreen extends ConsumerStatefulWidget {
   ConsumerState<PasscodeScreen> createState() => _PasscodeScreenState();
 }
 
-class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
+class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
+    with WidgetsBindingObserver {
   String _input = '';
   String? _tempPin; // For create mode (first entry)
   String _message = 'Enter PIN';
   bool _isError = false;
-  bool _biometricAttempted = false;
+  bool _autoAttemptedOnInit = false;
+  bool _biometricInProgress = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _updateMessage();
     if (widget.mode == PasscodeMode.unlock) {
       // Try biometrics automatically if enabled (with small delay to ensure state is ready)
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted && !_biometricAttempted) {
+          if (mounted && !_autoAttemptedOnInit) {
+            _autoAttemptedOnInit = true;
             _tryBiometrics();
           }
         });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // When app resumes from background, try biometrics again if we're on unlock screen
+    if (state == AppLifecycleState.resumed && widget.mode == PasscodeMode.unlock) {
+      // Small delay to let the system settle
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_biometricInProgress) {
+          _tryBiometrics();
+        }
       });
     }
   }
@@ -61,15 +85,15 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
   }
 
   Future<void> _tryBiometrics() async {
-    if (_biometricAttempted && widget.mode == PasscodeMode.unlock) {
-      // For manual retry, reset the flag
-    }
-    _biometricAttempted = true;
+    // Prevent multiple simultaneous biometric prompts
+    if (_biometricInProgress) return;
 
     final securityState = ref.read(securityProvider);
     if (!securityState.isBiometricEnabled || !securityState.isBiometricAvailable) {
       return;
     }
+
+    _biometricInProgress = true;
 
     try {
       final success = await ref
@@ -81,6 +105,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen> {
     } catch (e) {
       // Biometric auth failed or was cancelled - user can retry or use PIN
       debugPrint('Biometric auth failed: $e');
+    } finally {
+      _biometricInProgress = false;
     }
   }
 

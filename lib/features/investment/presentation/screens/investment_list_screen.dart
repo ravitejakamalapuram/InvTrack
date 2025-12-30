@@ -8,7 +8,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/premium_animations.dart';
-import 'package:inv_tracker/core/widgets/swipe_to_delete.dart';
+import 'package:inv_tracker/core/widgets/swipe_actions.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
@@ -268,18 +268,44 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final investment = filteredInvestments[index];
+              final isArchived = investment.isArchived;
               return StaggeredFadeIn(
                 index: index,
-                child: SwipeToDelete(
+                child: SwipeActions(
                   itemKey: investment.id,
                   enabled: !listState.isSelectionMode,
-                  confirmTitle: 'Delete Investment?',
-                  confirmMessage:
-                      'This will permanently delete "${investment.name}" and all its transactions.',
-                  successMessage: 'Investment deleted',
-                  onDismissed: () => ref
-                      .read(investmentNotifierProvider.notifier)
-                      .deleteInvestment(investment.id),
+                  deleteConfig: DeleteActionConfig(
+                    confirmTitle: 'Delete Investment?',
+                    confirmMessage:
+                        'This will permanently delete "${investment.name}" and all its transactions.',
+                    successMessage: 'Investment deleted',
+                    onDelete: () => ref
+                        .read(investmentNotifierProvider.notifier)
+                        .deleteInvestment(investment.id),
+                  ),
+                  archiveConfig: ArchiveActionConfig(
+                    confirmTitle: isArchived
+                        ? 'Unarchive Investment?'
+                        : 'Archive Investment?',
+                    confirmMessage: isArchived
+                        ? '"${investment.name}" will be restored to your active investments.'
+                        : '"${investment.name}" will be hidden from your active investments.',
+                    successMessage: isArchived
+                        ? 'Investment restored'
+                        : 'Investment archived',
+                    isArchived: isArchived,
+                    onArchive: () {
+                      if (isArchived) {
+                        ref
+                            .read(investmentNotifierProvider.notifier)
+                            .unarchiveInvestment(investment.id);
+                      } else {
+                        ref
+                            .read(investmentNotifierProvider.notifier)
+                            .archiveInvestment(investment.id);
+                      }
+                    },
+                  ),
                   child: InvestmentCard(
                     investment: investment,
                     isSelectionMode: listState.isSelectionMode,

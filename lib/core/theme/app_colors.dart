@@ -120,6 +120,13 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
+  // Archive Gradient (for archive actions) - Amber to orange
+  static const LinearGradient archiveGradient = LinearGradient(
+    colors: [Color(0xFFF59E0B), Color(0xFFEA580C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   // Card Gradient (subtle) - Warm white
   static const LinearGradient cardGradient = LinearGradient(
     colors: [Color(0xFFFFFFFF), Color(0xFFFAFAF9)],

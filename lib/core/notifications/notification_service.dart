@@ -11,6 +11,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -149,8 +150,11 @@ class NotificationService {
   }
 
   Future<void> _doInitialize() async {
-    // Initialize timezone
+    // Initialize timezone database
     tz_data.initializeTimeZones();
+
+    // Set the local timezone from the device
+    await _configureLocalTimeZone();
 
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -174,6 +178,25 @@ class NotificationService {
     _isInitialized = true;
     if (kDebugMode) {
       debugPrint('🔔 NotificationService initialized');
+    }
+  }
+
+  /// Configure the local timezone from the device.
+  /// This is required for scheduled notifications to work correctly.
+  Future<void> _configureLocalTimeZone() async {
+    try {
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      final timeZoneName = timezoneInfo.identifier;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      if (kDebugMode) {
+        debugPrint('🔔 Local timezone set to: $timeZoneName');
+      }
+    } catch (e) {
+      // Fallback to UTC if we can't get the local timezone
+      if (kDebugMode) {
+        debugPrint('🔔 Failed to get local timezone, using UTC: $e');
+      }
+      // tz.local defaults to UTC, which is fine as a fallback
     }
   }
 
