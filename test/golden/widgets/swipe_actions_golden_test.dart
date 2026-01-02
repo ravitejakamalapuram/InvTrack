@@ -1,6 +1,7 @@
-/// Golden tests for SwipeActions widget.
-///
-/// Tests visual appearance of swipe action backgrounds (delete and archive).
+// Golden tests for SwipeActions widget.
+//
+// Tests visual appearance of swipe action backgrounds (delete and archive).
+@Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';

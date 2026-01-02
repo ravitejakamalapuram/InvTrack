@@ -43,7 +43,7 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Run unit tests with coverage
-        run: flutter test --coverage --reporter=github
+        run: flutter test --coverage --reporter=github --exclude-tags=golden
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

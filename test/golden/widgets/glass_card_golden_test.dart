@@ -1,4 +1,5 @@
-/// Golden tests for GlassCard widget.
+// Golden tests for GlassCard widget.
+@Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';

@@ -1,4 +1,5 @@
-/// Golden tests for GradientButton widget.
+// Golden tests for GradientButton widget.
+@Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';

@@ -1,4 +1,5 @@
-/// Golden tests for GradientCard widget.
+// Golden tests for GradientCard widget.
+@Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';

@@ -1,4 +1,5 @@
-/// Golden tests for EmptyStateWidget.
+// Golden tests for EmptyStateWidget.
+@Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';

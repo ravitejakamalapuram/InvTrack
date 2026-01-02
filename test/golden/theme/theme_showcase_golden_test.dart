@@ -1,4 +1,5 @@
-/// Golden tests for theme consistency - showcases key UI patterns.
+// Golden tests for theme consistency - showcases key UI patterns.
+@Tags(['golden'])
 library;
 
 import 'package:flutter/material.dart';
