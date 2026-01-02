@@ -613,7 +613,12 @@ class GoalDetailsScreen extends ConsumerWidget {
     if (confirmed == true) {
       HapticFeedback.mediumImpact();
       try {
-        await ref.read(goalNotifierProvider.notifier).deleteGoal(goal.id);
+        final notifier = ref.read(goalNotifierProvider.notifier);
+        if (goal.isArchived) {
+          await notifier.deleteArchivedGoal(goal.id);
+        } else {
+          await notifier.deleteGoal(goal.id);
+        }
         if (context.mounted) {
           AppFeedback.showSuccess(context, 'Goal deleted');
           context.pop();

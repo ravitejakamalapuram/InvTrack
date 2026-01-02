@@ -1,6 +1,7 @@
 /// Unified data and account management screen.
 library;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,8 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
+import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
+import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -35,6 +38,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   Widget build(BuildContext context) {
     final exportState = ref.watch(exportStateProvider);
     final zipExportState = ref.watch(zipExportStateProvider);
+    final zipImportState = ref.watch(zipImportStateProvider);
     final seedState = ref.watch(seedDataStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -95,6 +99,20 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                     ),
                   );
                 },
+              ),
+              SettingsNavTile(
+                icon: Icons.folder_zip_outlined,
+                iconColor: Colors.indigo,
+                title: 'Import from ZIP',
+                subtitle: 'Restore from backup',
+                trailing: zipImportState.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
+                onTap: () => _handleZipImport(context, ref),
               ),
             ],
           ),
@@ -219,6 +237,124 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     }
   }
 
+  Future<void> _handleZipImport(BuildContext context, WidgetRef ref) async {
+    // Show strategy selection dialog
+    final strategy = await showDialog<ImportStrategy>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Import Strategy'),
+        content: const Text(
+          'Choose how to handle existing data:\n\n'
+          '• Merge: Add new data, skip duplicates\n'
+          '• Replace: Delete all existing data first',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext, ImportStrategy.merge),
+            child: const Text('Merge'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, ImportStrategy.replace),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.errorLight,
+            ),
+            child: const Text('Replace'),
+          ),
+        ],
+      ),
+    );
+
+    if (strategy == null || !context.mounted) return;
+
+    // If replace, show extra confirmation
+    if (strategy == ImportStrategy.replace) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Replace All Data?'),
+          content: const Text(
+            'This will DELETE all existing investments, goals, and documents '
+            'before importing the backup.\n\n'
+            'This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.errorLight,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Replace All'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !context.mounted) return;
+    }
+
+    // Pick ZIP file
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+      withData: true,
+    );
+
+    if (result == null ||
+        result.files.isEmpty ||
+        result.files.first.bytes == null) {
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    // Import the ZIP
+    try {
+      final importResult = await ref
+          .read(zipImportStateProvider.notifier)
+          .importFromZip(result.files.first.bytes!, strategy);
+
+      if (context.mounted) {
+        if (importResult.hasErrors) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Import completed with errors: ${importResult.errors.first}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Imported ${importResult.cashflowsImported} cashflows, '
+                '${importResult.goalsImported} goals, '
+                '${importResult.documentsImported} documents',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import failed: $e'),
+            backgroundColor: AppColors.errorLight,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleSeedData(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -310,38 +446,56 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     try {
       final authRepo = ref.read(authRepositoryProvider);
 
-      // Try to re-authenticate first (optional - may fail on some devices)
-      bool reauthenticated = false;
-      try {
-        reauthenticated = await authRepo.reauthenticateWithGoogle();
-      } catch (e) {
-        // Re-authentication failed, but we can still try to delete
-        debugPrint('Re-authentication failed: $e');
-      }
-
-      // Delete all Firestore data first
+      // Delete all Firestore data first (before any auth operations)
       await _deleteAllUserData();
 
       // Try to delete the Firebase Auth account
       try {
         await authRepo.deleteAccount();
       } on FirebaseAuthException catch (e) {
-        // If requires-recent-login, re-auth is needed
-        if (e.code == 'requires-recent-login' && !reauthenticated) {
-          if (mounted) {
-            scaffoldMessenger.showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Please sign out and sign back in, then try again',
+        // If requires-recent-login, try to re-authenticate and retry
+        if (e.code == 'requires-recent-login') {
+          debugPrint('Account deletion requires recent login, attempting re-auth...');
+
+          try {
+            final reauthenticated = await authRepo.reauthenticateWithGoogle();
+            if (reauthenticated) {
+              // Retry deletion after re-authentication
+              await authRepo.deleteAccount();
+            } else {
+              // User cancelled re-auth
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Account deletion cancelled'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+              // Data is already deleted, sign out the user
+              await authRepo.signOut();
+              return;
+            }
+          } catch (reauthError) {
+            debugPrint('Re-authentication failed: $reauthError');
+            if (mounted) {
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Re-authentication failed. Your data has been deleted. Please sign out.',
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 5),
                 ),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 5),
-              ),
-            );
+              );
+            }
+            // Data is already deleted, sign out the user
+            await authRepo.signOut();
+            return;
           }
-          return;
+        } else {
+          rethrow;
         }
-        rethrow;
       }
 
       // Log analytics

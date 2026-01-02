@@ -152,5 +152,94 @@ void main() {
       expect(goalDeletedEvents, hasLength(1));
     });
   });
+
+  group('GoalNotifier - deleteArchivedGoal', () {
+    final archivedGoal = GoalEntity(
+      id: 'archived-goal-1',
+      name: 'Archived Goal',
+      type: GoalType.targetAmount,
+      targetAmount: 15000,
+      trackingMode: GoalTrackingMode.all,
+      icon: GoalIcons.defaultIcon,
+      colorValue: GoalColors.defaultColor.toARGB32(),
+      isArchived: true,
+      createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+    );
+
+    test('should delete archived goal', () async {
+      fakeRepository.seed(archivedGoals: [archivedGoal]);
+      final notifier = container.read(goalNotifierProvider.notifier);
+
+      await notifier.deleteArchivedGoal(archivedGoal.id);
+
+      expect(fakeRepository.archivedGoals, isEmpty);
+    });
+
+    test('should log analytics for deleted archived goal', () async {
+      fakeRepository.seed(archivedGoals: [archivedGoal]);
+      final notifier = container.read(goalNotifierProvider.notifier);
+
+      await notifier.deleteArchivedGoal(archivedGoal.id);
+
+      final goalDeletedEvents = fakeAnalytics.loggedEvents
+          .where((e) => e.name == AnalyticsEvents.goalDeleted)
+          .toList();
+      expect(goalDeletedEvents, hasLength(1));
+    });
+  });
+
+  group('GoalNotifier - bulkDelete with isArchived', () {
+    final archivedGoal1 = GoalEntity(
+      id: 'archived-1',
+      name: 'Archived 1',
+      type: GoalType.targetAmount,
+      targetAmount: 10000,
+      trackingMode: GoalTrackingMode.all,
+      icon: GoalIcons.defaultIcon,
+      colorValue: GoalColors.defaultColor.toARGB32(),
+      isArchived: true,
+      createdAt: DateTime(2024, 1, 1),
+      updatedAt: DateTime(2024, 1, 1),
+    );
+
+    final archivedGoal2 = GoalEntity(
+      id: 'archived-2',
+      name: 'Archived 2',
+      type: GoalType.targetAmount,
+      targetAmount: 20000,
+      trackingMode: GoalTrackingMode.all,
+      icon: GoalIcons.defaultIcon,
+      colorValue: GoalColors.defaultColor.toARGB32(),
+      isArchived: true,
+      createdAt: DateTime(2024, 1, 2),
+      updatedAt: DateTime(2024, 1, 2),
+    );
+
+    test('should delete archived goals when isArchived is true', () async {
+      fakeRepository.seed(archivedGoals: [archivedGoal1, archivedGoal2]);
+      final notifier = container.read(goalNotifierProvider.notifier);
+
+      final deletedCount = await notifier.bulkDelete(
+        [archivedGoal1.id, archivedGoal2.id],
+        isArchived: true,
+      );
+
+      expect(deletedCount, 2);
+      expect(fakeRepository.archivedGoals, isEmpty);
+    });
+
+    test('should delete active goals when isArchived is false (default)', () async {
+      fakeRepository.seed(goals: [testGoal1, testGoal2]);
+      final notifier = container.read(goalNotifierProvider.notifier);
+
+      final deletedCount = await notifier.bulkDelete(
+        [testGoal1.id, testGoal2.id],
+      );
+
+      expect(deletedCount, 2);
+      expect(fakeRepository.goals, isEmpty);
+    });
+  });
 }
 

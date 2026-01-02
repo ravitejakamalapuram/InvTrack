@@ -1,11 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
-import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
+import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 
-/// Provider for DataExportService
-final dataExportServiceProvider = Provider<DataExportService?>((ref) {
+/// Provider for DataImportService
+final dataImportServiceProvider = Provider<DataImportService?>((ref) {
   final authState = ref.watch(authStateProvider);
   final user = authState.value;
 
@@ -18,7 +20,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
   final documentRepository = ref.watch(documentRepositoryProvider);
   final documentStorageService = ref.watch(documentStorageServiceProvider);
 
-  return DataExportService(
+  return DataImportService(
     investmentRepository: investmentRepository,
     goalRepository: goalRepository,
     documentRepository: documentRepository,
@@ -26,28 +28,39 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
   );
 });
 
-/// State for ZIP export operation
-final zipExportStateProvider =
-    NotifierProvider<ZipExportNotifier, AsyncValue<void>>(
-  ZipExportNotifier.new,
+/// State for ZIP import operation
+final zipImportStateProvider =
+    NotifierProvider<ZipImportNotifier, AsyncValue<ZipImportResult?>>(
+  ZipImportNotifier.new,
 );
 
-class ZipExportNotifier extends Notifier<AsyncValue<void>> {
+class ZipImportNotifier extends Notifier<AsyncValue<ZipImportResult?>> {
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  AsyncValue<ZipImportResult?> build() => const AsyncValue.data(null);
 
-  Future<void> exportAsZip() async {
+  /// Import data from a ZIP file
+  Future<ZipImportResult> importFromZip(
+    Uint8List zipBytes,
+    ImportStrategy strategy,
+  ) async {
     state = const AsyncValue.loading();
     try {
-      final service = ref.read(dataExportServiceProvider);
+      final service = ref.read(dataImportServiceProvider);
       if (service == null) {
         throw Exception('User not authenticated');
       }
-      await service.exportAndShare();
-      state = const AsyncValue.data(null);
+      final result = await service.importFromZip(zipBytes, strategy);
+      state = AsyncValue.data(result);
+      return result;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      rethrow;
     }
+  }
+
+  /// Reset the import state
+  void reset() {
+    state = const AsyncValue.data(null);
   }
 }
 

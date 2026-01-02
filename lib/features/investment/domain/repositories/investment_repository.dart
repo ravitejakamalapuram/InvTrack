@@ -51,6 +51,9 @@ abstract class InvestmentRepository {
   /// Get archived investment by ID
   Future<InvestmentEntity?> getArchivedInvestmentById(String id);
 
+  /// Update an archived investment
+  Future<void> updateArchivedInvestment(InvestmentEntity investment);
+
   /// Delete an archived investment permanently
   Future<void> deleteArchivedInvestment(String id);
 

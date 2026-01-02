@@ -269,6 +269,15 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Future<void> updateArchivedInvestment(InvestmentEntity investment) async {
+    await _executeWrite(
+      () => _archivedInvestmentsRef
+          .doc(investment.id)
+          .update(_investmentToFirestore(investment)),
+    );
+  }
+
+  @override
   Future<void> deleteArchivedInvestment(String id) async {
     // Delete all archived cash flows for this investment first
     try {

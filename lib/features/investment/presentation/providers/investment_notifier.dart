@@ -108,7 +108,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
       );
-      await ref.read(investmentRepositoryProvider).updateInvestment(updated);
+      final repo = ref.read(investmentRepositoryProvider);
+      if (existing.isArchived) {
+        await repo.updateArchivedInvestment(updated);
+      } else {
+        await repo.updateInvestment(updated);
+      }
 
       // Update income reminder based on new frequency
       if (incomeFrequency != null) {

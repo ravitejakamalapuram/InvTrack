@@ -47,6 +47,9 @@ abstract class GoalRepository {
   /// Get archived goal by ID
   Future<GoalEntity?> getArchivedGoalById(String id);
 
+  /// Update an archived goal
+  Future<void> updateArchivedGoal(GoalEntity goal);
+
   /// Delete an archived goal permanently
   Future<void> deleteArchivedGoal(String id);
 }

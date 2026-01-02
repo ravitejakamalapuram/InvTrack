@@ -1166,9 +1166,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     if (confirmed && mounted) {
       try {
-        await ref
-            .read(investmentNotifierProvider.notifier)
-            .deleteInvestment(widget.investment.id);
+        final notifier = ref.read(investmentNotifierProvider.notifier);
+        if (widget.investment.isArchived) {
+          await notifier.deleteArchivedInvestment(widget.investment.id);
+        } else {
+          await notifier.deleteInvestment(widget.investment.id);
+        }
         HapticFeedback.mediumImpact();
         messenger.showSnackBar(
           SnackBar(

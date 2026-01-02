@@ -137,6 +137,14 @@ class FakeGoalRepository implements GoalRepository {
   }
 
   @override
+  Future<void> updateArchivedGoal(GoalEntity goal) async {
+    final index = _archivedGoals.indexWhere((g) => g.id == goal.id);
+    if (index >= 0) {
+      _archivedGoals[index] = goal;
+    }
+  }
+
+  @override
   Future<void> deleteArchivedGoal(String id) async {
     _archivedGoals.removeWhere((g) => g.id == id);
   }

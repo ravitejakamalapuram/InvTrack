@@ -113,7 +113,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         ],
       ),
       floatingActionButton: isSelectionMode ? null : _buildFab(activeGoalsAsync),
-      bottomNavigationBar: isSelectionMode ? const GoalsListActionBar() : null,
+      bottomNavigationBar: isSelectionMode
+          ? GoalsListActionBar(isArchived: _filter == GoalsFilter.archived)
+          : null,
     );
   }
 
@@ -218,8 +220,17 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                     confirmMessage:
                         'This will permanently delete "${goal.name}".',
                     successMessage: 'Goal deleted',
-                    onDelete: () =>
-                        ref.read(goalNotifierProvider.notifier).deleteGoal(goal.id),
+                    onDelete: () {
+                      if (isArchived) {
+                        ref
+                            .read(goalNotifierProvider.notifier)
+                            .deleteArchivedGoal(goal.id);
+                      } else {
+                        ref
+                            .read(goalNotifierProvider.notifier)
+                            .deleteGoal(goal.id);
+                      }
+                    },
                   ),
                   archiveConfig: ArchiveActionConfig(
                     confirmTitle:
