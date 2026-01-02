@@ -68,3 +68,6 @@ android/fastlane/report.xml
 android/fastlane/README.md
 android/fastlane/play-store-credentials.json
 android/.bundle/
+
+# Patrol CLI generated files
+patrol_test/

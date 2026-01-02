@@ -1,4 +1,4 @@
-/// Tests for SwipeActions widget.
+// Tests for SwipeActions widget.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/swipe_actions.dart';
