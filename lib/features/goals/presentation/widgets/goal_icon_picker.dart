@@ -123,31 +123,49 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                         setState(() => _currentColor = color);
                         widget.onColorSelected(color);
                       },
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.white, width: 3)
-                              : null,
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: color.withValues(alpha: 0.5),
-                                    blurRadius: 8,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: isSelected
-                            ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 20,
-                              )
-                            : null,
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          final shadowOpacity = 0.5 * value;
+                          final borderWidth = 3.0 * value;
+                          return Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: borderWidth > 0
+                                  ? Border.all(
+                                      color: Colors.white,
+                                      width: borderWidth,
+                                    )
+                                  : null,
+                              boxShadow: value > 0.01
+                                  ? [
+                                      BoxShadow(
+                                        color: color.withValues(
+                                          alpha: shadowOpacity,
+                                        ),
+                                        blurRadius: 8,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Center(
+                              child: AnimatedOpacity(
+                                opacity: value,
+                                duration: const Duration(milliseconds: 150),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     );
                   }).toList(),
@@ -180,23 +198,37 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                         setState(() => _currentIcon = icon);
                         widget.onIconSelected(icon);
                       },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? _currentColor.withValues(alpha: 0.2)
-                              : (isDark ? Colors.white : Colors.black)
-                                    .withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: isSelected
-                              ? Border.all(color: _currentColor, width: 2)
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            icon,
-                            style: const TextStyle(fontSize: 24),
-                          ),
-                        ),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          final bgColor = Color.lerp(
+                            (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.05),
+                            _currentColor.withValues(alpha: 0.2),
+                            value,
+                          )!;
+                          final borderWidth = 2.0 * value;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: bgColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: borderWidth > 0
+                                  ? Border.all(
+                                      color: _currentColor,
+                                      width: borderWidth,
+                                    )
+                                  : null,
+                            ),
+                            child: Center(
+                              child: Text(
+                                icon,
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },

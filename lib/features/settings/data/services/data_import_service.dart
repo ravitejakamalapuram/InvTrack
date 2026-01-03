@@ -21,6 +21,7 @@ enum ImportStrategy {
 
 /// Result of a ZIP import operation
 class ZipImportResult {
+  final int investmentsImported;
   final int cashflowsImported;
   final int goalsImported;
   final int documentsImported;
@@ -28,6 +29,7 @@ class ZipImportResult {
   final List<String> warnings;
 
   const ZipImportResult({
+    required this.investmentsImported,
     required this.cashflowsImported,
     required this.goalsImported,
     required this.documentsImported,
@@ -38,7 +40,8 @@ class ZipImportResult {
   bool get hasErrors => errors.isNotEmpty;
   bool get isSuccess => !hasErrors;
 
-  int get totalImported => cashflowsImported + goalsImported + documentsImported;
+  int get totalImported =>
+      investmentsImported + cashflowsImported + goalsImported + documentsImported;
 }
 
 /// Service for importing user data from a ZIP file
@@ -78,6 +81,7 @@ class DataImportService {
       archive = ZipDecoder().decodeBytes(zipBytes);
     } catch (e) {
       return ZipImportResult(
+        investmentsImported: 0,
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
@@ -89,6 +93,7 @@ class DataImportService {
     final metadataFile = archive.findFile('metadata.json');
     if (metadataFile == null) {
       return ZipImportResult(
+        investmentsImported: 0,
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
@@ -101,6 +106,7 @@ class DataImportService {
       metadata = jsonDecode(utf8.decode(metadataFile.content as List<int>));
     } catch (e) {
       return ZipImportResult(
+        investmentsImported: 0,
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
@@ -115,6 +121,7 @@ class DataImportService {
 
     // 4. Parse and import CSV files
     // Import cashflows first and collect investment name-to-ID mapping
+    int investmentsImported = 0;
     int cashflowsImported = 0;
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
@@ -127,6 +134,7 @@ class DataImportService {
         isArchived: false,
         strategy: strategy,
       );
+      investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
       errors.addAll(result.errors);
       warnings.addAll(result.warnings);
@@ -141,6 +149,7 @@ class DataImportService {
         isArchived: true,
         strategy: strategy,
       );
+      investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
@@ -193,12 +202,14 @@ class DataImportService {
 
     if (kDebugMode) {
       debugPrint('📥 Import complete: '
+          '$investmentsImported investments, '
           '$cashflowsImported cashflows, '
           '$goalsImported goals, '
           '$documentsImported documents');
     }
 
     return ZipImportResult(
+      investmentsImported: investmentsImported,
       cashflowsImported: cashflowsImported,
       goalsImported: goalsImported,
       documentsImported: documentsImported,
@@ -338,6 +349,7 @@ class DataImportService {
 
     return _CsvImportResult(
       imported: cashFlows.length,
+      investmentsCreated: investments.length,
       errors: parseResult.errors,
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
@@ -470,13 +482,16 @@ class DataImportService {
 /// Internal result class for CSV import operations
 class _CsvImportResult {
   final int imported;
+  final int investmentsCreated;
   final List<String> errors;
   final List<String> warnings;
+
   /// Map of investment name (lowercase) to investment ID (for goals linking)
   final Map<String, String> investmentNameToIdMap;
 
   const _CsvImportResult({
     required this.imported,
+    this.investmentsCreated = 0,
     required this.errors,
     required this.warnings,
     this.investmentNameToIdMap = const {},

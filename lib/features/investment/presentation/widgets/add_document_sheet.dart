@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 /// Bottom sheet for adding documents via camera, gallery, or file picker
@@ -197,30 +198,17 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         SizedBox(height: AppSpacing.md),
 
         // Type selector
-        Text(
-          'Document Type',
-          style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-        ),
-        SizedBox(height: AppSpacing.xs),
-        Wrap(
-          spacing: AppSpacing.xs,
-          runSpacing: AppSpacing.xs,
-          children: DocumentType.values.map((type) {
-            final isSelected = type == _selectedType;
-            return ChoiceChip(
-              label: Text(type.displayName),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) setState(() => _selectedType = type);
-              },
-              selectedColor: type.color.withValues(alpha: 0.3),
-              avatar: Icon(
-                type.icon,
-                size: 16,
-                color: isSelected ? type.color : null,
-              ),
-            );
-          }).toList(),
+        TypeSelector<DocumentType>(
+          label: 'Document Type',
+          subtitle: 'Categorize this document',
+          values: DocumentType.values,
+          selectedValue: _selectedType,
+          onSelected: (type) => setState(() => _selectedType = type),
+          labelBuilder: (type) => type.displayName,
+          iconBuilder: (type) => type.icon,
+          colorBuilder: (type) => type.color,
+          gridLayout: true,
+          compactMode: true,
         ),
         SizedBox(height: AppSpacing.lg),
 

@@ -334,7 +334,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Imported ${importResult.cashflowsImported} cashflows, '
+                'Imported ${importResult.investmentsImported} investments, '
+                '${importResult.cashflowsImported} cashflows, '
                 '${importResult.goalsImported} goals, '
                 '${importResult.documentsImported} documents',
               ),
@@ -396,7 +397,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
     // Capture context-dependent objects before any async gap
-    final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     // First confirmation dialog
