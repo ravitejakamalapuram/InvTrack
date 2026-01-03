@@ -191,15 +191,20 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Investment Type Selector
+                // Investment Type Selector - Using grid layout for cleaner 2-column arrangement
                 TypeSelector<InvestmentType>(
                   label: 'Investment Type',
+                  subtitle: 'Select the category that best describes this investment',
                   values: InvestmentType.values,
                   selectedValue: _selectedType,
                   onSelected: (type) => setState(() => _selectedType = type),
                   colorBuilder: (type) => type.color,
                   iconBuilder: (type) => type.icon,
                   labelBuilder: (type) => type.displayName,
+                  gridLayout: true,
+                  compactMode: true,
+                  spacing: 10,
+                  runSpacing: 10,
                 ),
 
                 SizedBox(height: AppSpacing.sectionSpacing),
@@ -210,7 +215,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   focusNode: _nameFocusNode,
                   label: 'Investment Name',
                   hint: 'e.g. LenDenClub, Grip Invest',
-                  prefixIcon: Icons.label_outline_rounded,
+                  prefixIcon: Icons.business_rounded,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter a name';
@@ -224,15 +229,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
                 SizedBox(height: AppSpacing.formFieldSpacing),
 
-                // Notes Field
+                // Notes Field - reduced to 2 lines for more compact form
                 AppTextField(
                   controller: _notesController,
                   focusNode: _notesFocusNode,
                   label: 'Notes (Optional)',
-                  hint: 'e.g. Investment details, platform info',
-                  prefixIcon: Icons.notes_rounded,
+                  hint: 'Add any details about this investment',
+                  prefixIcon: Icons.edit_note_rounded,
                   textCapitalization: TextCapitalization.sentences,
-                  maxLines: 3,
+                  maxLines: 2,
                 ),
 
                 SizedBox(height: AppSpacing.sectionSpacing),
@@ -245,7 +250,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 // Income Frequency (Optional)
                 _buildIncomeFrequencySelector(isDark),
 
-                SizedBox(height: AppSpacing.xxxl),
+                SizedBox(height: AppSpacing.xxl),
 
                 // Submit Button
                 GradientButton(
@@ -257,7 +262,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   label: widget.isEditing ? 'Save Changes' : 'Add Investment',
                 ),
 
-                SizedBox(height: AppSpacing.formFieldSpacing),
+                SizedBox(height: AppSpacing.lg),
               ],
             ),
           ),
