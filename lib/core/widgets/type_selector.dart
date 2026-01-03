@@ -109,84 +109,133 @@ class TypeSelector<T> extends StatelessWidget {
         HapticFeedback.selectionClick();
         onSelected(item);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: compactMode ? 12 : 16,
-          vertical: compactMode ? 10 : 12,
-        ),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [color, color.withValues(alpha: 0.85)],
-                )
-              : null,
-          color: isSelected
-              ? null
-              : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : (isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light),
-            width: 1.5,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                    spreadRadius: -2,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
-          mainAxisAlignment:
-              expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
-          children: [
-            // Icon with subtle color tint when not selected
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.2)
-                    : color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                iconBuilder(item),
-                size: compactMode ? 16 : 18,
-                color: isSelected ? Colors.white : color,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                labelBuilder(item),
-                style: AppTypography.body.copyWith(
-                  fontSize: compactMode ? 13 : 14,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark
-                            ? AppColors.neutral200Dark
-                            : AppColors.neutral700Light),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
+      child: _TypeSelectorChip(
+        isSelected: isSelected,
+        color: color,
+        isDark: isDark,
+        expanded: expanded,
+        compactMode: compactMode,
+        icon: iconBuilder(item),
+        label: labelBuilder(item),
       ),
+    );
+  }
+}
+
+/// Stateful chip widget with smooth animations that avoid flickering.
+/// Uses TweenAnimationBuilder for controlled, non-rebuilding animations.
+class _TypeSelectorChip extends StatelessWidget {
+  final bool isSelected;
+  final Color color;
+  final bool isDark;
+  final bool expanded;
+  final bool compactMode;
+  final IconData icon;
+  final String label;
+
+  const _TypeSelectorChip({
+    required this.isSelected,
+    required this.color,
+    required this.isDark,
+    required this.expanded,
+    required this.compactMode,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, selectionProgress, child) {
+        // Interpolate colors based on selection progress
+        final backgroundColor = Color.lerp(
+          isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          color,
+          selectionProgress,
+        )!;
+
+        final borderColor = Color.lerp(
+          isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+          Colors.transparent,
+          selectionProgress,
+        )!;
+
+        final iconBgColor = Color.lerp(
+          color.withValues(alpha: 0.12),
+          Colors.white.withValues(alpha: 0.2),
+          selectionProgress,
+        )!;
+
+        final iconColor = Color.lerp(color, Colors.white, selectionProgress)!;
+
+        final textColor = Color.lerp(
+          isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+          Colors.white,
+          selectionProgress,
+        )!;
+
+        final shadowOpacity = selectionProgress * 0.35;
+
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compactMode ? 12 : 16,
+            vertical: compactMode ? 10 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: selectionProgress > 0.1
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: shadowOpacity),
+                      blurRadius: 16 * selectionProgress,
+                      offset: Offset(0, 6 * selectionProgress),
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment:
+                expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+            children: [
+              // Icon container
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  size: compactMode ? 16 : 18,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTypography.body.copyWith(
+                    fontSize: compactMode ? 13 : 14,
+                    color: textColor,
+                    fontWeight:
+                        selectionProgress > 0.5
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
