@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -200,7 +201,9 @@ class SettingsScreen extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
+              // Clear user identity from Analytics and Crashlytics
               ref.read(analyticsServiceProvider).setUserId(null);
+              ref.read(crashlyticsServiceProvider).clearUserIdentifier();
               ref.read(authRepositoryProvider).signOut();
             },
             child: const Text('Sign Out'),

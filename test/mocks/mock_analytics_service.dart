@@ -180,4 +180,69 @@ class FakeAnalyticsService implements AnalyticsService {
       parameters: {'document_type': documentType, 'file_type': fileType},
     );
   }
+
+  // ============ Investment Lifecycle Events ============
+
+  @override
+  Future<void> logInvestmentClosed({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentClosed,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  @override
+  Future<void> logInvestmentReopened({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentReopened,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  @override
+  Future<void> logInvestmentArchived({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentArchived,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  @override
+  Future<void> logInvestmentUnarchived({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentUnarchived,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  @override
+  Future<void> logInvestmentDeleted({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentDeleted,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  // ============ Security & Settings Events ============
+
+  @override
+  Future<void> logSecurityEnabled({required String method}) async {
+    await logEvent(
+      name: AnalyticsEvents.securityEnabled,
+      parameters: {'method': method},
+    );
+  }
+
+  @override
+  Future<void> logSecurityDisabled() async {
+    await logEvent(name: AnalyticsEvents.securityDisabled);
+  }
+
+  @override
+  Future<void> logThemeChanged({required String theme}) async {
+    await logEvent(
+      name: AnalyticsEvents.themeChanged,
+      parameters: {'theme': theme},
+    );
+  }
 }

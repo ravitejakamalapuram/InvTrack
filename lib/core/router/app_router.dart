@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
 
@@ -22,11 +23,13 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final securityState = ref.watch(securityProvider);
   final onboardingComplete = ref.watch(onboardingCompleteProvider);
+  final analyticsObserver = ref.watch(analyticsObserverProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
+    observers: [analyticsObserver],
     redirect: (context, state) {
       // If auth or onboarding state is loading, we don't redirect yet
       if (authState.isLoading || authState.hasError) return null;

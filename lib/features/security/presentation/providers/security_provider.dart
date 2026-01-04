@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -169,6 +170,9 @@ class SecurityNotifier extends Notifier<SecurityState>
   Future<void> setPin(String pin) async {
     await _service.setPin(pin);
     state = state.copyWith(hasPin: true, isLocked: false);
+
+    // Track analytics
+    ref.read(analyticsServiceProvider).logSecurityEnabled(method: 'passcode');
   }
 
   Future<void> removePin() async {
@@ -178,6 +182,9 @@ class SecurityNotifier extends Notifier<SecurityState>
       isLocked: false,
       isBiometricEnabled: false,
     );
+
+    // Track analytics
+    ref.read(analyticsServiceProvider).logSecurityDisabled();
   }
 
   Future<void> toggleBiometrics(bool enabled) async {
@@ -187,10 +194,16 @@ class SecurityNotifier extends Notifier<SecurityState>
       if (success) {
         await _service.setBiometricEnabled(true);
         state = state.copyWith(isBiometricEnabled: true);
+
+        // Track analytics
+        ref
+            .read(analyticsServiceProvider)
+            .logSecurityEnabled(method: 'biometric');
       }
     } else {
       await _service.setBiometricEnabled(false);
       state = state.copyWith(isBiometricEnabled: false);
+      // Note: We don't track biometric disable separately since it's a secondary auth method
     }
   }
 }

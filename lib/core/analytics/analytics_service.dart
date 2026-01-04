@@ -26,6 +26,13 @@ class AnalyticsEvents {
   static const String investmentCreated = 'investment_created';
   static const String cashFlowAdded = 'cashflow_added';
 
+  // Investment lifecycle
+  static const String investmentClosed = 'investment_closed';
+  static const String investmentReopened = 'investment_reopened';
+  static const String investmentArchived = 'investment_archived';
+  static const String investmentUnarchived = 'investment_unarchived';
+  static const String investmentDeleted = 'investment_deleted';
+
   // Feature adoption
   static const String csvImportCompleted = 'csv_import_completed';
   static const String exportGenerated = 'export_generated';
@@ -39,6 +46,11 @@ class AnalyticsEvents {
 
   // Documents feature
   static const String documentAdded = 'document_added';
+
+  // Security & Settings
+  static const String securityEnabled = 'security_enabled';
+  static const String securityDisabled = 'security_disabled';
+  static const String themeChanged = 'theme_changed';
 
   // Error tracking
   static const String errorOccurred = 'error_occurred';
@@ -238,6 +250,71 @@ class AnalyticsService {
     logEvent(
       name: AnalyticsEvents.documentAdded,
       parameters: {'document_type': documentType, 'file_type': fileType},
+    );
+  }
+
+  // ============ Investment Lifecycle Events ============
+
+  /// Log investment closed
+  Future<void> logInvestmentClosed({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentClosed,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  /// Log investment reopened
+  Future<void> logInvestmentReopened({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentReopened,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  /// Log investment archived
+  Future<void> logInvestmentArchived({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentArchived,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  /// Log investment unarchived
+  Future<void> logInvestmentUnarchived({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentUnarchived,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  /// Log investment deleted
+  Future<void> logInvestmentDeleted({required String investmentType}) async {
+    await logEvent(
+      name: AnalyticsEvents.investmentDeleted,
+      parameters: {'investment_type': investmentType},
+    );
+  }
+
+  // ============ Security & Settings Events ============
+
+  /// Log security feature enabled (biometric or passcode)
+  Future<void> logSecurityEnabled({required String method}) async {
+    await logEvent(
+      name: AnalyticsEvents.securityEnabled,
+      parameters: {'method': method},
+    );
+  }
+
+  /// Log security feature disabled
+  Future<void> logSecurityDisabled() async {
+    await logEvent(name: AnalyticsEvents.securityDisabled);
+  }
+
+  /// Log theme changed
+  Future<void> logThemeChanged({required String theme}) async {
+    await logEvent(
+      name: AnalyticsEvents.themeChanged,
+      parameters: {'theme': theme},
     );
   }
 }

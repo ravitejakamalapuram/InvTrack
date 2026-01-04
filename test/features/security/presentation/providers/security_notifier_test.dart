@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../mocks/mock_analytics_service.dart';
 import '../../../../mocks/mock_security_service.dart';
 
 void main() {
@@ -46,10 +48,12 @@ void main() {
     late FakeLocalAuthentication fakeLocalAuth;
     late SharedPreferences prefs;
     late ProviderContainer container;
+    late FakeAnalyticsService fakeAnalytics;
 
     setUp(() async {
       fakeSecureStorage = FakeFlutterSecureStorage();
       fakeLocalAuth = FakeLocalAuthentication();
+      fakeAnalytics = FakeAnalyticsService();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
     });
@@ -58,6 +62,7 @@ void main() {
       container.dispose();
       fakeSecureStorage.reset();
       fakeLocalAuth.reset();
+      fakeAnalytics.reset();
     });
 
     /// Helper to create container with mocked dependencies
@@ -70,6 +75,7 @@ void main() {
           flutterSecureStorageProvider.overrideWithValue(fakeSecureStorage),
           localAuthProvider.overrideWithValue(fakeLocalAuth),
           securityServiceProvider.overrideWithValue(service),
+          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
         ],
       );
     }

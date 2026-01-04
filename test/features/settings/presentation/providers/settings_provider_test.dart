@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../mocks/mock_analytics_service.dart';
 
 void main() {
   group('SettingsState', () {
@@ -42,20 +45,24 @@ void main() {
   group('SettingsNotifier', () {
     late ProviderContainer container;
     late SharedPreferences prefs;
+    late FakeAnalyticsService fakeAnalytics;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
+      fakeAnalytics = FakeAnalyticsService();
 
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
         ],
       );
     });
 
     tearDown(() {
       container.dispose();
+      fakeAnalytics.reset();
     });
 
     test('initial state uses default values when no prefs exist', () {
@@ -75,6 +82,7 @@ void main() {
       final newContainer = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(newPrefs),
+          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
         ],
       );
       addTearDown(newContainer.dispose);

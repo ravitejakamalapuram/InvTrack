@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -89,10 +90,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       debugPrint('SignInScreen: Sign-in result: $user');
 
       if (user != null) {
-        // Track successful sign-in
+        // Track successful sign-in in Analytics
         final analytics = ref.read(analyticsServiceProvider);
         await analytics.logSignIn(method: 'google');
         await analytics.setUserId(user.id);
+
+        // Set user identifier in Crashlytics for crash reports
+        final crashlytics = ref.read(crashlyticsServiceProvider);
+        await crashlytics.setUserIdentifier(user.id);
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsState {
@@ -50,6 +51,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt('themeMode', mode.index);
     state = state.copyWith(themeMode: mode);
+
+    // Track analytics
+    ref.read(analyticsServiceProvider).logThemeChanged(theme: mode.name);
   }
 
   Future<void> setCurrency(String currency) async {

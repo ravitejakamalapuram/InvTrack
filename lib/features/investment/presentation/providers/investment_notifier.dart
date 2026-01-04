@@ -143,11 +143,22 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> closeInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch investment first for analytics
+      final investment =
+          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).closeInvestment(id);
       // Cancel income reminder for closed investment
       await _cancelIncomeReminder(id);
       // Cancel maturity reminders for closed investment
       await _cancelMaturityReminders(id);
+
+      // Track analytics
+      if (investment != null) {
+        ref
+            .read(analyticsServiceProvider)
+            .logInvestmentClosed(investmentType: investment.type.name);
+      }
+
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -173,6 +184,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         if (investment.maturityDate != null) {
           await _scheduleMaturityReminders(investment);
         }
+
+        // Track analytics
+        ref
+            .read(analyticsServiceProvider)
+            .logInvestmentReopened(investmentType: investment.type.name);
       }
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -186,10 +202,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> archiveInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch investment first for analytics
+      final investment =
+          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).archiveInvestment(id);
       // Cancel notifications for archived investment
       await _cancelIncomeReminder(id);
       await _cancelMaturityReminders(id);
+
+      // Track analytics
+      if (investment != null) {
+        ref
+            .read(analyticsServiceProvider)
+            .logInvestmentArchived(investmentType: investment.type.name);
+      }
+
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -215,6 +242,11 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         if (investment.maturityDate != null) {
           await _scheduleMaturityReminders(investment);
         }
+
+        // Track analytics
+        ref
+            .read(analyticsServiceProvider)
+            .logInvestmentUnarchived(investmentType: investment.type.name);
       }
       _invalidateAll();
       state = const AsyncValue.data(null);
@@ -228,10 +260,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> deleteInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch investment first for analytics
+      final investment =
+          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
       // Cancel all reminders before deleting
       await _cancelIncomeReminder(id);
       await _cancelMaturityReminders(id);
       await ref.read(investmentRepositoryProvider).deleteInvestment(id);
+
+      // Track analytics
+      if (investment != null) {
+        ref
+            .read(analyticsServiceProvider)
+            .logInvestmentDeleted(investmentType: investment.type.name);
+      }
+
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -244,8 +287,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   Future<void> deleteArchivedInvestment(String id) async {
     state = const AsyncValue.loading();
     try {
+      // Fetch investment first for analytics
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getArchivedInvestmentById(id);
       // No need to cancel reminders - archived investments don't have them
       await ref.read(investmentRepositoryProvider).deleteArchivedInvestment(id);
+
+      // Track analytics
+      if (investment != null) {
+        ref
+            .read(analyticsServiceProvider)
+            .logInvestmentDeleted(investmentType: investment.type.name);
+      }
+
       _invalidateAll();
       state = const AsyncValue.data(null);
     } catch (e, st) {
