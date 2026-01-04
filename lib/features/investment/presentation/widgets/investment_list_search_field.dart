@@ -96,16 +96,20 @@ class _InvestmentListSearchFieldState
           ),
         ),
         // Close button
-        GestureDetector(
-          onTap: () {
-            ref.read(investmentListStateProvider.notifier).toggleSearch();
-          },
-          child: Icon(
-            Icons.close_rounded,
-            size: 20,
-            color: isDark
-                ? AppColors.neutral400Dark
-                : AppColors.neutral500Light,
+        Semantics(
+          button: true,
+          label: 'Close search',
+          child: GestureDetector(
+            onTap: () {
+              ref.read(investmentListStateProvider.notifier).toggleSearch();
+            },
+            child: Icon(
+              Icons.close_rounded,
+              size: 20,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
+            ),
           ),
         ),
       ],
