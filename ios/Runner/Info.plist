@@ -56,6 +56,12 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>InvTracker needs Face ID to securely unlock your portfolio.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>InvTracker needs camera access to capture documents like receipts, contracts, and statements for your investment records.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>InvTracker needs photo library access to attach document images to your investment records.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>InvTracker needs permission to save captured documents to your photo library.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 </dict>

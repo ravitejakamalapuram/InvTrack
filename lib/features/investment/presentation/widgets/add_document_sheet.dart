@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:inv_tracker/core/services/permission_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -246,55 +247,150 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     );
   }
 
+  static const _permissionService = PermissionService();
+
   Future<void> _pickFromCamera() async {
     HapticFeedback.selectionClick();
+
+    // Check and request camera permission
+    final result = await _permissionService.requestCamera();
+    if (!mounted) return;
+
+    if (!_handlePermissionResult(result, 'camera')) {
+      return;
+    }
+
     final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 85,
-    );
-    if (image != null) {
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _selectedBytes = bytes;
-        _selectedFileName = image.name;
-        _nameController.text = _suggestName(image.name);
-      });
+    try {
+      final image = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+      if (image != null && mounted) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedBytes = bytes;
+          _selectedFileName = image.name;
+          _nameController.text = _suggestName(image.name);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.showError(context, 'Could not access camera');
+      }
     }
   }
 
   Future<void> _pickFromGallery() async {
     HapticFeedback.selectionClick();
+
+    // Check and request photos permission
+    final result = await _permissionService.requestPhotos();
+    if (!mounted) return;
+
+    if (!_handlePermissionResult(result, 'photo library')) {
+      return;
+    }
+
     final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (image != null) {
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _selectedBytes = bytes;
-        _selectedFileName = image.name;
-        _nameController.text = _suggestName(image.name);
-      });
+    try {
+      final image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (image != null && mounted) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedBytes = bytes;
+          _selectedFileName = image.name;
+          _nameController.text = _suggestName(image.name);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.showError(context, 'Could not access photo library');
+      }
     }
   }
 
   Future<void> _pickPdfFile() async {
     HapticFeedback.selectionClick();
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _selectedBytes = bytes;
-        _selectedFileName = result.files.single.name;
-        _nameController.text = _suggestName(result.files.single.name);
-      });
+
+    // FilePicker uses SAF on Android, no explicit permission needed
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (result != null && result.files.single.path != null && mounted) {
+        final file = File(result.files.single.path!);
+        final bytes = await file.readAsBytes();
+        setState(() {
+          _selectedBytes = bytes;
+          _selectedFileName = result.files.single.name;
+          _nameController.text = _suggestName(result.files.single.name);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.showError(context, 'Could not access file');
+      }
     }
+  }
+
+  /// Handles permission result and shows appropriate UI feedback
+  /// Returns true if permission was granted, false otherwise
+  bool _handlePermissionResult(PermissionResult result, String permissionName) {
+    switch (result) {
+      case PermissionResult.granted:
+      case PermissionResult.limited:
+        return true;
+
+      case PermissionResult.denied:
+        AppFeedback.showError(
+          context,
+          'Permission denied. Please allow $permissionName access.',
+        );
+        return false;
+
+      case PermissionResult.permanentlyDenied:
+        _showSettingsDialog(permissionName);
+        return false;
+
+      case PermissionResult.restricted:
+        AppFeedback.showError(
+          context,
+          'Access to $permissionName is restricted on this device.',
+        );
+        return false;
+    }
+  }
+
+  /// Shows dialog prompting user to open settings when permission is permanently denied
+  void _showSettingsDialog(String permissionName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: Text(
+          'InvTracker needs $permissionName access to attach documents. '
+          'Please enable it in Settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _permissionService.openSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _suggestName(String fileName) {
