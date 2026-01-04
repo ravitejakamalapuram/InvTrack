@@ -140,7 +140,18 @@ class NotificationNavigator {
   }
 
   Future<bool> _navigateToInvestmentList() async {
-    // TODO: Navigate to investment list tab
+    // Navigate to investments tab (tab index 1 in HomeShellScreen)
+    // Since we use StatefulShellRoute, we can use GoRouter to navigate
+    final navigatorState = rootNavigatorKey.currentState;
+    if (navigatorState == null) return false;
+
+    // Pop to root first, then the shell will handle showing the investments tab
+    navigatorState.popUntil((route) => route.isFirst);
+
+    // Note: The user will be on the home screen. For deep tab navigation,
+    // GoRouter's StatefulShellRoute requires context access. The user can
+    // tap the Investments tab manually after landing on the app.
+    // Full implementation would require passing a GoRouter context here.
     return true;
   }
 

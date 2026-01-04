@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Full-screen document viewer with zoom and share capabilities
@@ -132,10 +133,13 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
             color: Colors.red.shade300,
           ),
           SizedBox(height: AppSpacing.lg),
-          Text(
-            document.name,
-            style: AppTypography.h3.copyWith(color: Colors.white),
-            textAlign: TextAlign.center,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              document.name,
+              style: AppTypography.h3.copyWith(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
           ),
           SizedBox(height: AppSpacing.sm),
           Text(
@@ -144,9 +148,18 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           ),
           SizedBox(height: AppSpacing.xl),
           FilledButton.icon(
-            onPressed: _shareDocument,
+            onPressed: () => _openInExternalViewer(context),
             icon: const Icon(Icons.open_in_new_rounded),
             label: const Text('Open in PDF Viewer'),
+          ),
+          SizedBox(height: AppSpacing.md),
+          TextButton.icon(
+            onPressed: _shareDocument,
+            icon: const Icon(Icons.share_rounded, color: Colors.white70),
+            label: Text(
+              'Share',
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
         ],
       ),
@@ -241,6 +254,71 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 
   void _resetZoom() {
     _transformationController.value = Matrix4.identity();
+  }
+
+  /// Opens the document in the system's default external viewer (e.g., PDF viewer)
+  Future<void> _openInExternalViewer(BuildContext context) async {
+    HapticFeedback.selectionClick();
+
+    final filePath = widget.document.localPath;
+    final file = File(filePath);
+
+    // Check if file exists before trying to open
+    if (!await file.exists()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('File not found. It may have been moved or deleted.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final result = await OpenFilex.open(filePath);
+
+    // Handle different result types
+    if (context.mounted) {
+      switch (result.type) {
+        case ResultType.done:
+          // Successfully opened - no action needed
+          break;
+        case ResultType.noAppToOpen:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No app found to open this file. Try sharing instead.',
+              ),
+            ),
+          );
+          break;
+        case ResultType.fileNotFound:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('File not found.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          break;
+        case ResultType.permissionDenied:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permission denied to open this file.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          break;
+        case ResultType.error:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error opening file: ${result.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          break;
+      }
+    }
   }
 
   Future<void> _shareDocument() async {

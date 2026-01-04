@@ -9,10 +9,11 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// App version info - matches pubspec.yaml version: 3.1.0+4
-const String _appVersion = '3.1.0';
-const String _buildNumber = '4';
+/// App version info - matches pubspec.yaml version: 3.5.0+18
+const String _appVersion = '3.5.0';
+const String _buildNumber = '18';
 
 /// Screen showing app information and legal documents.
 class AboutScreen extends ConsumerWidget {
@@ -103,24 +104,14 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.help_outline,
                 iconColor: Colors.blue,
                 title: 'Help & FAQ',
-                onTap: () {
-                  // TODO: Implement help screen
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Coming soon!')));
-                },
+                onTap: () => _openHelpPage(context),
               ),
               SettingsNavTile(
                 icon: Icons.email_outlined,
                 iconColor: Colors.teal,
                 title: 'Contact Support',
                 subtitle: 'support@invtracker.com',
-                onTap: () {
-                  // TODO: Open email
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Email support coming soon!')),
-                  );
-                },
+                onTap: () => _openSupportEmail(context),
               ),
             ],
           ),
@@ -152,6 +143,52 @@ class AboutScreen extends ConsumerWidget {
         builder: (context) => LegalScreen(title: title, content: content),
       ),
     );
+  }
+
+  /// Opens the Help & FAQ page (GitHub repository wiki or docs)
+  Future<void> _openHelpPage(BuildContext context) async {
+    const helpUrl = 'https://github.com/ravitejakamalapuram/InvTrack#readme';
+    final uri = Uri.parse(helpUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open help page')),
+        );
+      }
+    }
+  }
+
+  /// Opens the email client for support
+  Future<void> _openSupportEmail(BuildContext context) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'support@invtracker.com',
+      query: _encodeQueryParameters({
+        'subject': 'InvTrack Support Request (v$_appVersion)',
+        'body': 'Please describe your issue or question:\n\n',
+      }),
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open email client')),
+        );
+      }
+    }
+  }
+
+  /// Encodes query parameters for mailto URI
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 }
 

@@ -199,11 +199,9 @@ class DataImportService {
             newInvestmentId = investmentNameToIdMap[investmentName.toLowerCase()];
           }
 
-          if (newInvestmentId == null) {
-            // Fallback: try using the original investmentId (for replace mode
-            // where IDs might be preserved, or for backward compatibility)
-            newInvestmentId = docMeta['investmentId'] as String?;
-          }
+          // Fallback: try using the original investmentId (for replace mode
+          // where IDs might be preserved, or for backward compatibility)
+          newInvestmentId ??= docMeta['investmentId'] as String?;
 
           if (newInvestmentId == null) {
             warnings.add(

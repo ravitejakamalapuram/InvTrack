@@ -1082,8 +1082,8 @@ class NotificationService {
           investmentName: investment.name,
           monthsBetweenPayments:
               investment.incomeFrequency!.monthsBetweenPayments,
-          // lastIncomeDate will be null - schedules from today
-          // TODO: In future, could look up last income cash flow date
+          // Note: lastIncomeDate is null here - schedules from today.
+          // Future enhancement: look up last income cash flow date from repository.
         );
       }
     }

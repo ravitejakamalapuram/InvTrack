@@ -113,5 +113,40 @@ class FakeAnalyticsService implements AnalyticsService {
   }) {
     _log('document_added', {'document_type': documentType, 'file_type': fileType});
   }
+
+  // ============ Investment Lifecycle Events ============
+
+  @override
+  Future<void> logInvestmentClosed({required String investmentType}) async =>
+      _log('investment_closed', {'investment_type': investmentType});
+
+  @override
+  Future<void> logInvestmentReopened({required String investmentType}) async =>
+      _log('investment_reopened', {'investment_type': investmentType});
+
+  @override
+  Future<void> logInvestmentArchived({required String investmentType}) async =>
+      _log('investment_archived', {'investment_type': investmentType});
+
+  @override
+  Future<void> logInvestmentUnarchived({required String investmentType}) async =>
+      _log('investment_unarchived', {'investment_type': investmentType});
+
+  @override
+  Future<void> logInvestmentDeleted({required String investmentType}) async =>
+      _log('investment_deleted', {'investment_type': investmentType});
+
+  // ============ Security & Settings Events ============
+
+  @override
+  Future<void> logSecurityEnabled({required String method}) async =>
+      _log('security_enabled', {'method': method});
+
+  @override
+  Future<void> logSecurityDisabled() async => _log('security_disabled');
+
+  @override
+  Future<void> logThemeChanged({required String theme}) async =>
+      _log('theme_changed', {'theme': theme});
 }
 
