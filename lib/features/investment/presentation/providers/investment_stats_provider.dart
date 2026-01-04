@@ -50,6 +50,51 @@ final archivedInvestmentStatsProvider =
       );
     });
 
+/// LIGHTWEIGHT stats for sorting active investments (skips expensive XIRR calculation).
+/// Use this provider when sorting by date, name, or simple sums.
+final investmentBasicStatsProvider =
+    Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
+      final cashFlowsAsync = ref.watch(
+        cashFlowsByInvestmentProvider(investmentId),
+      );
+
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          if (cashFlows.isEmpty) {
+            return AsyncValue.data(InvestmentStats.empty());
+          }
+          // Optimization: Skip XIRR calculation
+          return AsyncValue.data(
+            calculateStats(cashFlows, includeXirr: false),
+          );
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    });
+
+/// LIGHTWEIGHT stats for sorting archived investments (skips expensive XIRR calculation).
+final archivedInvestmentBasicStatsProvider =
+    Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
+      final cashFlowsAsync = ref.watch(
+        archivedCashFlowsByInvestmentProvider(investmentId),
+      );
+
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          if (cashFlows.isEmpty) {
+            return AsyncValue.data(InvestmentStats.empty());
+          }
+          // Optimization: Skip XIRR calculation
+          return AsyncValue.data(
+            calculateStats(cashFlows, includeXirr: false),
+          );
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    });
+
 // ============ AGGREGATE STATS PROVIDERS ============
 
 /// Global stats across all investments (derived from streams - auto-updates)
@@ -148,7 +193,13 @@ final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 
 /// Calculate stats from a list of cash flows.
 /// Uses [FinancialCalculator] for all financial calculations to avoid duplication.
-InvestmentStats calculateStats(List<CashFlowEntity> cashFlows) {
+///
+/// [includeXirr] - Set to false to skip expensive XIRR calculation if not needed
+/// (e.g. for simple sorting or lists where XIRR is not displayed).
+InvestmentStats calculateStats(
+  List<CashFlowEntity> cashFlows, {
+  bool includeXirr = true,
+}) {
   if (cashFlows.isEmpty) {
     return InvestmentStats.empty();
   }
@@ -169,7 +220,12 @@ InvestmentStats calculateStats(List<CashFlowEntity> cashFlows) {
     totalReturned,
   );
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
-  final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
+
+  // Skip XIRR calculation if not requested (performance optimization)
+  final xirr =
+      includeXirr
+          ? FinancialCalculator.calculateXirrFromCashFlows(cashFlows)
+          : 0.0;
 
   return InvestmentStats(
     totalInvested: totalInvested,

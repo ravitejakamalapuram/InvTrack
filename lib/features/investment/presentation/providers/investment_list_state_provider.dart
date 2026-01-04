@@ -161,8 +161,30 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
       // Pre-compute stats for sorting using ref.watch to react to stats loading
       // This ensures the list re-sorts when stats become available
       final statsCache = <String, InvestmentStats?>{};
+
+      // Check if current sort criteria actually needs XIRR
+      final requiresXirr =
+          listState.sort == InvestmentSort.xirrAsc ||
+          listState.sort == InvestmentSort.xirrDesc;
+
       for (final inv in filtered) {
-        final statsAsync = ref.watch(investmentStatsProvider(inv.id));
+        // PERFORMANCE OPTIMIZATION:
+        // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
+        // Also correctly handle archived vs active investments.
+        final AsyncValue<InvestmentStats> statsAsync;
+
+        if (inv.isArchived) {
+          statsAsync =
+              requiresXirr
+                  ? ref.watch(archivedInvestmentStatsProvider(inv.id))
+                  : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
+        } else {
+          statsAsync =
+              requiresXirr
+                  ? ref.watch(investmentStatsProvider(inv.id))
+                  : ref.watch(investmentBasicStatsProvider(inv.id));
+        }
+
         statsCache[inv.id] = statsAsync.value;
       }
 
