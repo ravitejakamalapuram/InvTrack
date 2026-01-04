@@ -98,7 +98,10 @@ class DataExportService {
     final goalsArchivedCsv = _generateGoalsCsv(archivedGoals, allInvestments);
 
     // 3. Create metadata JSON
-    final metadata = _createMetadata(documents: allDocuments);
+    final metadata = _createMetadata(
+      documents: allDocuments,
+      investments: allInvestments,
+    );
 
     // 4. Create ZIP archive
     final archive = Archive();
@@ -292,7 +295,13 @@ class DataExportService {
   /// Create simple metadata JSON structure
   Map<String, dynamic> _createMetadata({
     required List<DocumentEntity> documents,
+    required List<InvestmentEntity> investments,
   }) {
+    // Create a lookup map for investment names
+    final investmentIdToName = <String, String>{
+      for (final inv in investments) inv.id: inv.name,
+    };
+
     return {
       'version': '1.0',
       'exportedAt': DateTime.now().toIso8601String(),
@@ -308,13 +317,20 @@ class DataExportService {
           'type': ExportFileType.goalsArchived.name
         },
       ],
-      'documents': documents.map((d) => _documentToJson(d)).toList(),
+      'documents': documents.map((d) {
+        return _documentToJson(d, investmentIdToName[d.investmentId] ?? '');
+      }).toList(),
     };
   }
 
-  Map<String, dynamic> _documentToJson(DocumentEntity doc) => {
+  Map<String, dynamic> _documentToJson(
+    DocumentEntity doc,
+    String investmentName,
+  ) =>
+      {
         'id': doc.id,
         'investmentId': doc.investmentId,
+        'investmentName': investmentName,
         'name': doc.name,
         'fileName': doc.fileName,
         'type': doc.type.name,

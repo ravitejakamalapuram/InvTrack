@@ -238,32 +238,51 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _handleZipImport(BuildContext context, WidgetRef ref) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Show strategy selection dialog
     final strategy = await showDialog<ImportStrategy>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Import Strategy'),
-        content: const Text(
-          'Choose how to handle existing data:\n\n'
-          '• Merge: Add new data, skip duplicates\n'
-          '• Replace: Delete all existing data first',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'How should we handle existing data?',
+              style: AppTypography.body.copyWith(
+                color: isDark
+                    ? AppColors.neutral300Dark
+                    : AppColors.neutral600Light,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Merge option
+            _ImportOptionTile(
+              icon: Icons.merge_rounded,
+              iconColor: AppColors.successLight,
+              title: 'Merge',
+              description: 'Add new data, skip duplicates',
+              onTap: () => Navigator.pop(dialogContext, ImportStrategy.merge),
+            ),
+            const SizedBox(height: 12),
+            // Replace option
+            _ImportOptionTile(
+              icon: Icons.swap_horiz_rounded,
+              iconColor: AppColors.warningLight,
+              title: 'Replace',
+              description: 'Delete existing data first',
+              onTap: () =>
+                  Navigator.pop(dialogContext, ImportStrategy.replace),
+              isDangerous: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.pop(dialogContext, ImportStrategy.merge),
-            child: const Text('Merge'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, ImportStrategy.replace),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.errorLight,
-            ),
-            child: const Text('Replace'),
           ),
         ],
       ),
@@ -620,6 +639,94 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           child: const Text('Delete My Account'),
         ),
       ],
+    );
+  }
+}
+
+/// A selectable option tile for the import strategy dialog
+class _ImportOptionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+  final bool isDangerous;
+
+  const _ImportOptionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    this.isDangerous = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isDangerous
+                  ? AppColors.warningLight.withValues(alpha: 0.5)
+                  : (isDark
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: AppTypography.caption.copyWith(
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isDark
+                    ? AppColors.neutral500Dark
+                    : AppColors.neutral400Light,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

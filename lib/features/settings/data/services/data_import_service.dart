@@ -190,7 +190,33 @@ class DataImportService {
         final zipPath = docMeta['zipPath'] as String;
         final docFile = archive.findFile(zipPath);
         if (docFile != null) {
-          await _importDocument(docMeta, docFile.content as List<int>);
+          // Get the new investment ID by looking up the investment name
+          final investmentName = docMeta['investmentName'] as String?;
+          String? newInvestmentId;
+
+          if (investmentName != null && investmentName.isNotEmpty) {
+            // Use the name-to-ID mapping we built during import
+            newInvestmentId = investmentNameToIdMap[investmentName.toLowerCase()];
+          }
+
+          if (newInvestmentId == null) {
+            // Fallback: try using the original investmentId (for replace mode
+            // where IDs might be preserved, or for backward compatibility)
+            newInvestmentId = docMeta['investmentId'] as String?;
+          }
+
+          if (newInvestmentId == null) {
+            warnings.add(
+              'Document "${docMeta['fileName']}": could not find investment',
+            );
+            continue;
+          }
+
+          await _importDocument(
+            docMeta,
+            docFile.content as List<int>,
+            investmentId: newInvestmentId,
+          );
           documentsImported++;
         } else {
           warnings.add('Document not found in ZIP: $zipPath');
@@ -443,15 +469,17 @@ class DataImportService {
   }
 
   /// Import a document from metadata and file bytes
+  ///
+  /// [investmentId] is the new investment ID to use (after remapping)
   Future<void> _importDocument(
     Map<String, dynamic> docMeta,
-    List<int> bytes,
-  ) async {
-    final investmentId = docMeta['investmentId'] as String;
+    List<int> bytes, {
+    required String investmentId,
+  }) async {
     final documentId = docMeta['id'] as String? ?? _uuid.v4();
     final fileName = docMeta['fileName'] as String;
 
-    // Save the file
+    // Save the file to local storage
     final localPath = await _documentStorageService.saveDocument(
       investmentId: investmentId,
       documentId: documentId,
@@ -459,7 +487,7 @@ class DataImportService {
       bytes: Uint8List.fromList(bytes),
     );
 
-    // Create document entity
+    // Create document entity with the remapped investment ID
     final doc = DocumentEntity(
       id: documentId,
       investmentId: investmentId,
