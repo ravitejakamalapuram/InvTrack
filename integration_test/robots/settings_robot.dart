@@ -65,15 +65,70 @@ class SettingsRobot extends BaseRobot {
     await tapText(currencyCode);
   }
 
-  // ============ EXPORT/IMPORT ============
+  // ============ DATA MANAGEMENT ============
 
-  /// Tap export data
+  /// Navigate to data management screen
+  Future<void> tapDataManagement() async {
+    await scrollUntilVisible(find.text('Data & Account'));
+    await tapText('Data & Account');
+  }
+
+  /// Verify data management screen is displayed
+  void verifyOnDataManagementScreen() {
+    verifyTextDisplayed('Data & Account');
+    // Section titles are uppercase
+    verifyTextDisplayed('EXPORT');
+    verifyTextDisplayed('IMPORT');
+  }
+
+  /// Verify export section options
+  void verifyExportSection() {
+    verifyTextDisplayed('Export as CSV');
+    verifyTextDisplayed('Export as ZIP');
+  }
+
+  /// Verify import section options
+  void verifyImportSection() {
+    verifyTextDisplayed('Import from CSV');
+    verifyTextDisplayed('Import from ZIP');
+  }
+
+  /// Tap export as CSV
+  Future<void> tapExportCsv() async {
+    await tapText('Export as CSV');
+  }
+
+  /// Tap export as ZIP
+  Future<void> tapExportZip() async {
+    await tapText('Export as ZIP');
+  }
+
+  /// Tap import from CSV
+  Future<void> tapImportCsv() async {
+    await tapText('Import from CSV');
+  }
+
+  /// Tap import from ZIP
+  Future<void> tapImportZip() async {
+    await tapText('Import from ZIP');
+  }
+
+  /// Verify danger zone section
+  void verifyDangerZone() {
+    // Section title is uppercase
+    verifyTextDisplayed('DANGER ZONE');
+    verifyTextDisplayed('Delete Account');
+  }
+
+  // ============ LEGACY EXPORT/IMPORT ============
+
+  /// Tap export data (legacy)
   Future<void> tapExportData() async {
     await scrollUntilVisible(find.text('Export Data'));
     await tapText('Export Data');
   }
 
-  /// Tap import data
+  /// Tap import data (legacy)
   Future<void> tapImportData() async {
     await scrollUntilVisible(find.text('Import Data'));
     await tapText('Import Data');

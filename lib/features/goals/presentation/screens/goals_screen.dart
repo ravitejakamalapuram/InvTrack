@@ -113,7 +113,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         ],
       ),
       floatingActionButton: isSelectionMode ? null : _buildFab(activeGoalsAsync),
-      bottomNavigationBar: isSelectionMode ? const GoalsListActionBar() : null,
+      bottomNavigationBar: isSelectionMode
+          ? GoalsListActionBar(isArchived: _filter == GoalsFilter.archived)
+          : null,
     );
   }
 
@@ -218,8 +220,17 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                     confirmMessage:
                         'This will permanently delete "${goal.name}".',
                     successMessage: 'Goal deleted',
-                    onDelete: () =>
-                        ref.read(goalNotifierProvider.notifier).deleteGoal(goal.id),
+                    onDelete: () {
+                      if (isArchived) {
+                        ref
+                            .read(goalNotifierProvider.notifier)
+                            .deleteArchivedGoal(goal.id);
+                      } else {
+                        ref
+                            .read(goalNotifierProvider.notifier)
+                            .deleteGoal(goal.id);
+                      }
+                    },
                   ),
                   archiveConfig: ArchiveActionConfig(
                     confirmTitle:
@@ -295,63 +306,81 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                 HapticFeedback.selectionClick();
                 setState(() => _filter = filter);
               },
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primaryLight
-                      : (isDark ? Colors.white : Colors.black)
-                            .withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: AppTypography.small.copyWith(
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark
-                                  ? Colors.white70
-                                  : AppColors.neutral700Light),
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  final bgColor = Color.lerp(
+                    (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.05),
+                    AppColors.primaryLight,
+                    value,
+                  )!;
+                  final textColor = Color.lerp(
+                    isDark ? Colors.white70 : AppColors.neutral700Light,
+                    Colors.white,
+                    value,
+                  )!;
+                  final fontWeight = value > 0.5
+                      ? FontWeight.w600
+                      : FontWeight.w500;
+                  final badgeBgColor = Color.lerp(
+                    (isDark ? Colors.white : AppColors.primaryLight)
+                        .withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.2),
+                    value,
+                  )!;
+                  final badgeTextColor = Color.lerp(
+                    isDark ? Colors.white70 : AppColors.primaryLight,
+                    Colors.white,
+                    value,
+                  )!;
+
+                  return Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xs,
                     ),
-                    if (count > 0) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.white.withValues(alpha: 0.2)
-                              : (isDark ? Colors.white : AppColors.primaryLight)
-                                    .withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$count',
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          label,
                           style: AppTypography.small.copyWith(
-                            fontSize: 10,
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark
-                                      ? Colors.white70
-                                      : AppColors.primaryLight),
-                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                            fontWeight: fontWeight,
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                        if (count > 0) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeBgColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: AppTypography.small.copyWith(
+                                fontSize: 10,
+                                color: badgeTextColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           );

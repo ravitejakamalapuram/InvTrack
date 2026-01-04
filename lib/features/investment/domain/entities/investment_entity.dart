@@ -34,6 +34,34 @@ enum IncomeFrequency {
     }
   }
 
+  /// Icon for this frequency
+  IconData get icon {
+    switch (this) {
+      case IncomeFrequency.monthly:
+        return Icons.calendar_month_rounded;
+      case IncomeFrequency.quarterly:
+        return Icons.event_repeat_rounded;
+      case IncomeFrequency.semiAnnual:
+        return Icons.date_range_rounded;
+      case IncomeFrequency.annual:
+        return Icons.calendar_today_rounded;
+    }
+  }
+
+  /// Color for this frequency
+  Color get color {
+    switch (this) {
+      case IncomeFrequency.monthly:
+        return const Color(0xFF3B82F6); // Blue
+      case IncomeFrequency.quarterly:
+        return const Color(0xFF10B981); // Emerald
+      case IncomeFrequency.semiAnnual:
+        return const Color(0xFFF59E0B); // Amber
+      case IncomeFrequency.annual:
+        return const Color(0xFF8B5CF6); // Purple
+    }
+  }
+
   static IncomeFrequency? fromString(String? value) {
     if (value == null) return null;
     return IncomeFrequency.values.cast<IncomeFrequency?>().firstWhere(

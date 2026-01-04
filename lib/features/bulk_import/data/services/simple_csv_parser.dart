@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:any_date/any_date.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// Parsed row from CSV import
@@ -14,6 +15,10 @@ class ParsedCashFlowRow {
   final String? notes;
   final String? error;
 
+  /// Optional investment metadata (from enhanced export format)
+  final InvestmentType? investmentType;
+  final InvestmentStatus? investmentStatus;
+
   const ParsedCashFlowRow({
     required this.rowNumber,
     required this.date,
@@ -22,6 +27,8 @@ class ParsedCashFlowRow {
     required this.amount,
     this.notes,
     this.error,
+    this.investmentType,
+    this.investmentStatus,
   });
 
   bool get isValid => error == null;
@@ -31,7 +38,9 @@ class ParsedCashFlowRow {
       investmentName = '',
       type = CashFlowType.invest,
       amount = 0,
-      notes = null;
+      notes = null,
+      investmentType = null,
+      investmentStatus = null;
 }
 
 /// Result of parsing a CSV file
@@ -145,10 +154,18 @@ class SimpleCsvParser {
       final header = headers[i].toLowerCase().trim();
       if (header.contains('date')) {
         map['date'] = i;
-      } else if (header.contains('investment') || header.contains('name')) {
+      } else if (header == 'investment name') {
         map['investment'] = i;
-      } else if (header.contains('type')) {
+      } else if (header == 'investment type') {
+        map['investmentType'] = i;
+      } else if (header == 'investment status') {
+        map['investmentStatus'] = i;
+      } else if (header == 'type') {
+        // Cashflow type (INVEST, INCOME, RETURN, FEE)
         map['type'] = i;
+      } else if (header.contains('name') && !map.containsKey('investment')) {
+        // Fallback for older CSV formats
+        map['investment'] = i;
       } else if (header.contains('amount')) {
         map['amount'] = i;
       } else if (header.contains('note')) {
@@ -197,6 +214,14 @@ class SimpleCsvParser {
       final amountStr = _getValue(values, columnMap['amount']!);
       final notes = columnMap.containsKey('notes')
           ? _getValue(values, columnMap['notes']!)
+          : null;
+
+      // Optional investment metadata (from enhanced export format)
+      final investmentTypeStr = columnMap.containsKey('investmentType')
+          ? _getValue(values, columnMap['investmentType']!)
+          : null;
+      final investmentStatusStr = columnMap.containsKey('investmentStatus')
+          ? _getValue(values, columnMap['investmentStatus']!)
           : null;
 
       // Validate required fields
@@ -252,6 +277,23 @@ class SimpleCsvParser {
         );
       }
 
+      // Parse optional investment metadata
+      InvestmentType? investmentType;
+      if (investmentTypeStr != null && investmentTypeStr.isNotEmpty) {
+        investmentType = InvestmentType.values.firstWhere(
+          (t) => t.name.toLowerCase() == investmentTypeStr.toLowerCase(),
+          orElse: () => InvestmentType.other,
+        );
+      }
+
+      InvestmentStatus? investmentStatus;
+      if (investmentStatusStr != null && investmentStatusStr.isNotEmpty) {
+        investmentStatus = InvestmentStatus.values.firstWhere(
+          (s) => s.name.toLowerCase() == investmentStatusStr.toLowerCase(),
+          orElse: () => InvestmentStatus.open,
+        );
+      }
+
       return ParsedCashFlowRow(
         rowNumber: rowNum,
         date: date,
@@ -259,6 +301,8 @@ class SimpleCsvParser {
         type: type,
         amount: amount,
         notes: notes?.isNotEmpty == true ? notes : null,
+        investmentType: investmentType,
+        investmentStatus: investmentStatus,
       );
     } catch (e) {
       return ParsedCashFlowRow.withError(
@@ -376,5 +420,260 @@ class SimpleCsvParser {
         .replaceAll('(', '-')
         .replaceAll(')', '');
     return double.tryParse(cleaned);
+  }
+}
+
+// ============================================================
+// Goals CSV Parser
+// ============================================================
+
+/// Parsed row from Goals CSV import
+class ParsedGoalRow {
+  final int rowNumber;
+  final String name;
+  final String type;
+  final double targetAmount;
+  final double? targetMonthlyIncome;
+  final DateTime? targetDate;
+  final String trackingMode;
+  /// Linked investment names (used for remapping to IDs during import)
+  final List<String> linkedInvestmentNames;
+  final List<String> linkedTypes;
+  final String icon;
+  final int colorValue;
+  final String? error;
+
+  const ParsedGoalRow({
+    required this.rowNumber,
+    required this.name,
+    required this.type,
+    required this.targetAmount,
+    this.targetMonthlyIncome,
+    this.targetDate,
+    required this.trackingMode,
+    required this.linkedInvestmentNames,
+    required this.linkedTypes,
+    required this.icon,
+    required this.colorValue,
+    this.error,
+  });
+
+  bool get isValid => error == null;
+
+  ParsedGoalRow.withError({required this.rowNumber, required this.error})
+      : name = '',
+        type = 'targetAmount',
+        targetAmount = 0,
+        targetMonthlyIncome = null,
+        targetDate = null,
+        trackingMode = 'all',
+        linkedInvestmentNames = const [],
+        linkedTypes = const [],
+        icon = '🎯',
+        colorValue = 0xFF4CAF50;
+}
+
+/// Result of parsing a Goals CSV file
+class ParsedGoalsResult {
+  final List<ParsedGoalRow> rows;
+  final List<String> errors;
+  final int totalRows;
+  final int validRows;
+
+  const ParsedGoalsResult({
+    required this.rows,
+    required this.errors,
+    required this.totalRows,
+    required this.validRows,
+  });
+
+  bool get hasErrors => errors.isNotEmpty;
+  List<ParsedGoalRow> get validRowsOnly => rows.where((r) => r.isValid).toList();
+}
+
+/// Parser for Goals CSV files
+class GoalsCsvParser {
+  /// Parse Goals CSV string content
+  static ParsedGoalsResult parseString(String content) {
+    final lines = const LineSplitter().convert(content);
+    if (lines.isEmpty) {
+      return const ParsedGoalsResult(
+        rows: [],
+        errors: ['Empty file'],
+        totalRows: 0,
+        validRows: 0,
+      );
+    }
+
+    // Parse header row
+    final headerRow = SimpleCsvParser._parseCSVLine(lines.first);
+    final columnMap = _mapColumns(headerRow);
+
+    if (!columnMap.containsKey('name') ||
+        !columnMap.containsKey('type') ||
+        !columnMap.containsKey('targetAmount')) {
+      return ParsedGoalsResult(
+        rows: [],
+        errors: [
+          'Missing required columns. Required: Name, Type, Target Amount',
+        ],
+        totalRows: lines.length - 1,
+        validRows: 0,
+      );
+    }
+
+    final rows = <ParsedGoalRow>[];
+    final errors = <String>[];
+
+    // Parse data rows (skip header)
+    for (var i = 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) continue;
+
+      final values = SimpleCsvParser._parseCSVLine(line);
+      final result = _parseRow(i + 1, values, columnMap);
+
+      if (result.isValid) {
+        rows.add(result);
+      } else {
+        errors.add('Row ${result.rowNumber}: ${result.error}');
+      }
+    }
+
+    return ParsedGoalsResult(
+      rows: rows,
+      errors: errors,
+      totalRows: lines.length - 1,
+      validRows: rows.where((r) => r.isValid).length,
+    );
+  }
+
+  /// Map column headers to indices
+  static Map<String, int> _mapColumns(List<String> headers) {
+    final map = <String, int>{};
+    for (var i = 0; i < headers.length; i++) {
+      final header = headers[i].toLowerCase().trim();
+      if (header == 'name') {
+        map['name'] = i;
+      } else if (header == 'type') {
+        map['type'] = i;
+      } else if (header.contains('target amount')) {
+        map['targetAmount'] = i;
+      } else if (header.contains('monthly income')) {
+        map['targetMonthlyIncome'] = i;
+      } else if (header.contains('target date')) {
+        map['targetDate'] = i;
+      } else if (header.contains('tracking')) {
+        map['trackingMode'] = i;
+      } else if (header.contains('linked investment')) {
+        // Handles both "Linked Investment Names" and legacy "Linked Investment IDs"
+        map['linkedInvestmentNames'] = i;
+      } else if (header.contains('linked types')) {
+        map['linkedTypes'] = i;
+      } else if (header == 'icon') {
+        map['icon'] = i;
+      } else if (header == 'color') {
+        map['color'] = i;
+      }
+    }
+    return map;
+  }
+
+  static String _getValue(List<String> values, int index) {
+    return index < values.length ? values[index].trim() : '';
+  }
+
+  /// Parse a single row
+  static ParsedGoalRow _parseRow(
+    int rowNum,
+    List<String> values,
+    Map<String, int> columnMap,
+  ) {
+    try {
+      final name = _getValue(values, columnMap['name']!);
+      final type = _getValue(values, columnMap['type']!);
+      final targetAmountStr = _getValue(values, columnMap['targetAmount']!);
+
+      if (name.isEmpty) {
+        return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Missing name');
+      }
+      if (type.isEmpty) {
+        return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Missing type');
+      }
+      if (targetAmountStr.isEmpty) {
+        return ParsedGoalRow.withError(
+            rowNumber: rowNum, error: 'Missing target amount');
+      }
+
+      final targetAmount = double.tryParse(targetAmountStr);
+      if (targetAmount == null) {
+        return ParsedGoalRow.withError(
+            rowNumber: rowNum, error: 'Invalid target amount: $targetAmountStr');
+      }
+
+      // Optional fields
+      double? targetMonthlyIncome;
+      if (columnMap.containsKey('targetMonthlyIncome')) {
+        final str = _getValue(values, columnMap['targetMonthlyIncome']!);
+        if (str.isNotEmpty) {
+          targetMonthlyIncome = double.tryParse(str);
+        }
+      }
+
+      DateTime? targetDate;
+      if (columnMap.containsKey('targetDate')) {
+        final str = _getValue(values, columnMap['targetDate']!);
+        if (str.isNotEmpty) {
+          targetDate = DateTime.tryParse(str);
+        }
+      }
+
+      final trackingMode = columnMap.containsKey('trackingMode')
+          ? _getValue(values, columnMap['trackingMode']!)
+          : 'all';
+
+      List<String> linkedInvestmentNames = [];
+      if (columnMap.containsKey('linkedInvestmentNames')) {
+        final str = _getValue(values, columnMap['linkedInvestmentNames']!);
+        if (str.isNotEmpty) {
+          linkedInvestmentNames = str.split(';').where((s) => s.isNotEmpty).toList();
+        }
+      }
+
+      List<String> linkedTypes = [];
+      if (columnMap.containsKey('linkedTypes')) {
+        final str = _getValue(values, columnMap['linkedTypes']!);
+        if (str.isNotEmpty) {
+          linkedTypes = str.split(';').where((s) => s.isNotEmpty).toList();
+        }
+      }
+
+      final icon =
+          columnMap.containsKey('icon') ? _getValue(values, columnMap['icon']!) : '🎯';
+
+      int colorValue = 0xFF4CAF50;
+      if (columnMap.containsKey('color')) {
+        final colorStr = _getValue(values, columnMap['color']!);
+        if (colorStr.isNotEmpty) {
+          colorValue = int.tryParse(colorStr) ?? 0xFF4CAF50;
+        }
+      }
+
+      return ParsedGoalRow(
+        rowNumber: rowNum,
+        name: name,
+        type: type,
+        targetAmount: targetAmount,
+        targetMonthlyIncome: targetMonthlyIncome,
+        targetDate: targetDate,
+        trackingMode: trackingMode.isNotEmpty ? trackingMode : 'all',
+        linkedInvestmentNames: linkedInvestmentNames,
+        linkedTypes: linkedTypes,
+        icon: icon.isNotEmpty ? icon : '🎯',
+        colorValue: colorValue,
+      );
+    } catch (e) {
+      return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Parse error: $e');
+    }
   }
 }

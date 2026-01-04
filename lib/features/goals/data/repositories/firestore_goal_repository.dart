@@ -191,6 +191,13 @@ class FirestoreGoalRepository implements GoalRepository {
   }
 
   @override
+  Future<void> updateArchivedGoal(GoalEntity goal) async {
+    await _executeWrite(
+      () => _archivedGoalsRef.doc(goal.id).update(GoalModel.toFirestore(goal)),
+    );
+  }
+
+  @override
   Future<void> deleteArchivedGoal(String id) async {
     await _executeWrite(() => _archivedGoalsRef.doc(id).delete());
   }

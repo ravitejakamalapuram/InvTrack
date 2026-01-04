@@ -190,6 +190,14 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Future<void> updateArchivedInvestment(InvestmentEntity investment) async {
+    final index = _archivedInvestments.indexWhere((i) => i.id == investment.id);
+    if (index >= 0) {
+      _archivedInvestments[index] = investment;
+    }
+  }
+
+  @override
   Future<void> deleteArchivedInvestment(String id) async {
     _archivedInvestments.removeWhere((i) => i.id == id);
     _archivedCashFlows.removeWhere((cf) => cf.investmentId == id);

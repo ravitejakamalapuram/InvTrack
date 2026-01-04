@@ -120,32 +120,43 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
       );
     }
 
-    final bgColor = widget.backgroundColor ??
-        Colors.white.withValues(alpha: isPrivacyMode ? 0.25 : 0.15);
-
     return GestureDetector(
       onTap: _handleTap,
-      child: AnimatedContainer(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: isPrivacyMode ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
-          ),
-          boxShadow: isPrivacyMode
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: iconButton,
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) {
+          final bgColor = widget.backgroundColor ??
+              Color.lerp(
+                Colors.white.withValues(alpha: 0.15),
+                Colors.white.withValues(alpha: 0.25),
+                value,
+              )!;
+          final shadowOpacity = 0.2 * value;
+
+          return Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
+              ),
+              boxShadow: value > 0.01
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: shadowOpacity),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: iconButton,
+          );
+        },
       ),
     );
   }

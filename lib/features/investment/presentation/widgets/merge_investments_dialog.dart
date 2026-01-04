@@ -126,59 +126,71 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
       children: InvestmentType.values.map((type) {
         final isSelected = type == _selectedType;
         final isFromSelection = widget.investmentTypes.contains(type);
+
         return GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
             setState(() => _selectedType = type);
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? type.color.withValues(alpha: 0.2)
-                  : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? type.color : Colors.transparent,
-                width: 2,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  type.icon,
-                  size: 16,
-                  color: isSelected
-                      ? type.color
-                      : (isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral500Light),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              final bgColor = Color.lerp(
+                isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                type.color.withValues(alpha: 0.2),
+                value,
+              )!;
+              final borderColor = Color.lerp(
+                Colors.transparent,
+                type.color,
+                value,
+              )!;
+              final iconColor = Color.lerp(
+                isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                type.color,
+                value,
+              )!;
+              final textColor = Color.lerp(
+                isDark ? AppColors.neutral300Dark : AppColors.neutral600Light,
+                type.color,
+                value,
+              )!;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor, width: 2),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  type.displayName,
-                  style: AppTypography.caption.copyWith(
-                    color: isSelected
-                        ? type.color
-                        : (isDark
-                              ? AppColors.neutral300Dark
-                              : AppColors.neutral600Light),
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(type.icon, size: 16, color: iconColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      type.displayName,
+                      style: AppTypography.caption.copyWith(
+                        color: textColor,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    if (isFromSelection) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.check_circle,
+                        size: 12,
+                        color: type.color.withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ],
                 ),
-                if (isFromSelection) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.check_circle,
-                    size: 12,
-                    color: type.color.withValues(alpha: 0.7),
-                  ),
-                ],
-              ],
-            ),
+              );
+            },
           ),
         );
       }).toList(),

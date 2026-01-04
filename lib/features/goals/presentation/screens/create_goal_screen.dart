@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
+import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_icon_picker.dart';
@@ -343,42 +344,17 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   }
 
   Widget _buildGoalTypeSelector(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Goal Type',
-          style: AppTypography.small.copyWith(
-            color: isDark
-                ? AppColors.neutral400Dark
-                : AppColors.neutral500Light,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        SizedBox(height: AppSpacing.xs),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: GoalType.values.map((type) {
-            final isSelected = type == _selectedType;
-            return ChoiceChip(
-              label: Text(type.displayName),
-              selected: isSelected,
-              onSelected: (_) => setState(() => _selectedType = type),
-              backgroundColor: isDark
-                  ? AppColors.surfaceDark
-                  : AppColors.surfaceLight,
-              selectedColor: AppColors.primaryLight.withValues(alpha: 0.2),
-              labelStyle: AppTypography.small.copyWith(
-                color: isSelected
-                    ? AppColors.primaryLight
-                    : (isDark ? Colors.white : AppColors.neutral900Light),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+    return TypeSelector<GoalType>(
+      label: 'Goal Type',
+      subtitle: 'What kind of target are you aiming for?',
+      values: GoalType.values,
+      selectedValue: _selectedType,
+      onSelected: (type) => setState(() => _selectedType = type),
+      labelBuilder: (type) => type.displayName,
+      iconBuilder: (type) => type.icon,
+      colorBuilder: (type) => type.color,
+      gridLayout: true,
+      compactMode: true,
     );
   }
 

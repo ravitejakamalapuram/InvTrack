@@ -40,6 +40,17 @@ enum GoalType {
     }
   }
 
+  Color get color {
+    switch (this) {
+      case GoalType.targetAmount:
+        return const Color(0xFF3B82F6); // Blue
+      case GoalType.targetDate:
+        return const Color(0xFFF59E0B); // Amber
+      case GoalType.incomeTarget:
+        return const Color(0xFF10B981); // Emerald
+    }
+  }
+
   static GoalType fromString(String value) {
     return GoalType.values.firstWhere(
       (e) => e.name == value,

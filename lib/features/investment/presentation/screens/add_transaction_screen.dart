@@ -194,15 +194,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           child: ListView(
             padding: AppSpacing.screenPadding,
             children: [
-              // Cash Flow Type Selector
+              // Cash Flow Type Selector - Using grid layout for better UX
               TypeSelector<CashFlowType>(
                 label: 'Cash Flow Type',
+                subtitle: 'Select the type of cash movement',
                 values: CashFlowType.values,
                 selectedValue: _selectedType,
                 onSelected: (type) => setState(() => _selectedType = type),
                 colorBuilder: (type) => type.color,
                 iconBuilder: (type) => type.iconData,
                 labelBuilder: (type) => type.displayName,
+                gridLayout: true,
+                compactMode: true,
+                spacing: 10,
+                runSpacing: 10,
               ),
 
               SizedBox(height: AppSpacing.sectionSpacing),
@@ -291,14 +296,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
               SizedBox(height: AppSpacing.formFieldSpacing),
 
-              // Notes Field
+              // Notes Field - reduced to 2 lines for compact form
               AppTextField(
                 controller: _notesController,
                 label: 'Notes (Optional)',
                 hint: 'Add any notes about this transaction...',
-                prefixIcon: Icons.notes_rounded,
+                prefixIcon: Icons.edit_note_rounded,
                 textCapitalization: TextCapitalization.sentences,
-                maxLines: 3,
+                maxLines: 2,
               ),
 
               SizedBox(height: AppSpacing.sectionSpacing),

@@ -5,6 +5,51 @@ All notable changes to InvTracker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-01-04
+
+### Added
+- 📦 **Data Export/Import**: Full backup & restore with documents
+  - Export all data as ZIP including investment documents
+  - Import with merge or replace strategy options
+  - Documents correctly linked to investments by name
+- 🎨 **Unified Data & Account Screen**: New settings organization
+  - Combined data management and account deletion
+  - Export data as CSV or ZIP with documents
+  - Delete account with confirmation flow
+- ✨ **Smooth Animations**: Enhanced UX across the app
+  - Animated transitions for selection states
+  - Smooth filter tab animations
+  - Improved TypeSelector with 2-column grid layout
+- 🧪 **Comprehensive Testing Infrastructure**
+  - Integration tests with Robot pattern
+  - Golden tests for visual regression
+  - Performance benchmarks
+  - Patrol E2E testing setup
+
+### Fixed
+- 🔗 **Document Import**: Fixed documents not linking to investments after import
+- 📂 **FileProvider**: Added Android FileProvider for secure file sharing
+- 🔄 **Archive/Unarchive**: Fixed close/reopen investment and goal logic
+- 🎯 **TypeSelector**: Fixed layout and added smooth animations
+
+### Changed
+- Redesigned import strategy dialog with option tiles
+- Improved Add Investment screen layout
+- Enhanced privacy toggle button animations
+
+---
+
+## [3.3.2] - 2025-12-30
+
+### Added
+- 📥 **Swipe-to-Archive**: Swipe right on investments or goals to archive/unarchive
+
+### Fixed
+- 🔔 **Scheduled Notifications**: Fixed notifications firing at wrong times
+- 🔐 **Biometric Authentication**: Fixed biometrics not retrying after app resume
+
+---
+
 ## [3.3.1] - 2025-12-30
 
 ### Added

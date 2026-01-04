@@ -6,8 +6,10 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 /// A generic type selector widget that displays selectable chips in a wrap layout.
 ///
 /// Supports haptic feedback, animated transitions, and gradient styling.
+/// Now with improved layout options for better UX.
 class TypeSelector<T> extends StatelessWidget {
   final String? label;
+  final String? subtitle;
   final List<T> values;
   final T selectedValue;
   final ValueChanged<T> onSelected;
@@ -17,9 +19,16 @@ class TypeSelector<T> extends StatelessWidget {
   final double spacing;
   final double runSpacing;
 
+  /// If true, uses a more compact chip style (icon only visible when selected)
+  final bool compactMode;
+
+  /// If true, chips are sized to fit a 2-column grid layout
+  final bool gridLayout;
+
   const TypeSelector({
     super.key,
     this.label,
+    this.subtitle,
     required this.values,
     required this.selectedValue,
     required this.onSelected,
@@ -28,6 +37,8 @@ class TypeSelector<T> extends StatelessWidget {
     required this.labelBuilder,
     this.spacing = 10,
     this.runSpacing = 10,
+    this.compactMode = false,
+    this.gridLayout = false,
   });
 
   @override
@@ -45,89 +56,186 @@ class TypeSelector<T> extends StatelessWidget {
               color: isDark ? Colors.white : AppColors.neutral900Light,
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: AppTypography.caption.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
         ],
-        Wrap(
+        gridLayout ? _buildGridLayout(isDark) : _buildWrapLayout(isDark),
+      ],
+    );
+  }
+
+  Widget _buildWrapLayout(bool isDark) {
+    return Wrap(
+      spacing: spacing,
+      runSpacing: runSpacing,
+      children: values.map((item) => _buildChip(item, isDark)).toList(),
+    );
+  }
+
+  Widget _buildGridLayout(bool isDark) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final chipWidth = (constraints.maxWidth - spacing) / 2;
+        return Wrap(
           spacing: spacing,
           runSpacing: runSpacing,
           children: values.map((item) {
-            final isSelected = selectedValue == item;
-            final color = colorBuilder(item);
-
-            return GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onSelected(item);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? LinearGradient(
-                          colors: [color, color.withValues(alpha: 0.8)],
-                        )
-                      : null,
-                  color: isSelected
-                      ? null
-                      : (isDark
-                            ? AppColors.surfaceDark
-                            : AppColors.surfaceLight),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isSelected
-                        ? Colors.transparent
-                        : (isDark
-                              ? AppColors.neutral700Dark
-                              : AppColors.neutral200Light),
-                    width: 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      iconBuilder(item),
-                      size: 18,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral600Light),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      labelBuilder(item),
-                      style: AppTypography.body.copyWith(
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark
-                                  ? AppColors.neutral300Dark
-                                  : AppColors.neutral700Light),
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return SizedBox(
+              width: chipWidth,
+              child: _buildChip(item, isDark, expanded: true),
             );
           }).toList(),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Widget _buildChip(T item, bool isDark, {bool expanded = false}) {
+    final isSelected = selectedValue == item;
+    final color = colorBuilder(item);
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onSelected(item);
+      },
+      child: _TypeSelectorChip(
+        isSelected: isSelected,
+        color: color,
+        isDark: isDark,
+        expanded: expanded,
+        compactMode: compactMode,
+        icon: iconBuilder(item),
+        label: labelBuilder(item),
+      ),
+    );
+  }
+}
+
+/// Stateful chip widget with smooth animations that avoid flickering.
+/// Uses TweenAnimationBuilder for controlled, non-rebuilding animations.
+class _TypeSelectorChip extends StatelessWidget {
+  final bool isSelected;
+  final Color color;
+  final bool isDark;
+  final bool expanded;
+  final bool compactMode;
+  final IconData icon;
+  final String label;
+
+  const _TypeSelectorChip({
+    required this.isSelected,
+    required this.color,
+    required this.isDark,
+    required this.expanded,
+    required this.compactMode,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, selectionProgress, child) {
+        // Interpolate colors based on selection progress
+        final backgroundColor = Color.lerp(
+          isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          color,
+          selectionProgress,
+        )!;
+
+        final borderColor = Color.lerp(
+          isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+          Colors.transparent,
+          selectionProgress,
+        )!;
+
+        final iconBgColor = Color.lerp(
+          color.withValues(alpha: 0.12),
+          Colors.white.withValues(alpha: 0.2),
+          selectionProgress,
+        )!;
+
+        final iconColor = Color.lerp(color, Colors.white, selectionProgress)!;
+
+        final textColor = Color.lerp(
+          isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+          Colors.white,
+          selectionProgress,
+        )!;
+
+        final shadowOpacity = selectionProgress * 0.35;
+
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: compactMode ? 12 : 16,
+            vertical: compactMode ? 10 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: selectionProgress > 0.1
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: shadowOpacity),
+                      blurRadius: 16 * selectionProgress,
+                      offset: Offset(0, 6 * selectionProgress),
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment:
+                expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+            children: [
+              // Icon container
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  size: compactMode ? 16 : 18,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTypography.body.copyWith(
+                    fontSize: compactMode ? 13 : 14,
+                    color: textColor,
+                    fontWeight:
+                        selectionProgress > 0.5
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

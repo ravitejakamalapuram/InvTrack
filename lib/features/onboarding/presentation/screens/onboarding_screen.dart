@@ -212,17 +212,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildDot(int index, bool isDark) {
     final isActive = index == _currentPage;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-      width: isActive ? AppSpacing.xl : AppSpacing.xs,
-      height: AppSpacing.xs,
-      decoration: BoxDecoration(
-        color: isActive
-            ? AppColors.primaryLight
-            : (isDark ? AppColors.neutral700Dark : AppColors.neutral300Light),
-        borderRadius: BorderRadius.circular(AppSizes.radiusXs),
-      ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        final width =
+            AppSpacing.xs + (AppSpacing.xl - AppSpacing.xs) * value;
+        final color = Color.lerp(
+          isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+          AppColors.primaryLight,
+          value,
+        )!;
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+          width: width,
+          height: AppSpacing.xs,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(AppSizes.radiusXs),
+          ),
+        );
+      },
     );
   }
 

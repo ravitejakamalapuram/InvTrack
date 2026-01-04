@@ -94,6 +94,75 @@ class FirebaseAuthRepository implements AuthRepository {
     return await user.getIdToken();
   }
 
+  @override
+  Future<bool> reauthenticateWithGoogle() async {
+    try {
+      debugPrint('FirebaseAuth: Re-authenticating with Google...');
+
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        debugPrint('FirebaseAuth: No current user for re-authentication');
+        return false;
+      }
+
+      // Sign out first to force fresh authentication
+      await _googleSignIn.signOut();
+
+      final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
+      final googleAuth = googleUser.authentication;
+      final authorization = await googleUser.authorizationClient
+          .authorizationForScopes(['email']);
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: authorization?.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+      debugPrint('FirebaseAuth: Re-authentication successful');
+      return true;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        debugPrint('FirebaseAuth: User cancelled re-authentication');
+        return false;
+      }
+      debugPrint('FirebaseAuth: GoogleSignInException during reauth - ${e.code}');
+      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint('FirebaseAuth: Re-authentication error - $e');
+      debugPrint('FirebaseAuth: StackTrace - $stackTrace');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-user',
+        message: 'No user is currently signed in',
+      );
+    }
+
+    debugPrint('FirebaseAuth: Deleting user account...');
+
+    try {
+      // Sign out from Google first
+      await _googleSignIn.signOut();
+
+      // Delete the Firebase Auth account
+      await user.delete();
+
+      debugPrint('FirebaseAuth: Account deleted successfully');
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        debugPrint('FirebaseAuth: Re-authentication required for deletion');
+      }
+      rethrow;
+    }
+  }
+
   UserEntity _mapFirebaseUserToEntity(User firebaseUser) {
     return UserEntity(
       id: firebaseUser.uid,

@@ -1,13 +1,14 @@
-📦 NEW: Swipe to Archive
-• Swipe right on investments/goals to archive
-• Swipe left to delete
-• Easily restore archived items
+📦 NEW: Full Data Backup
+• Export everything as ZIP with documents
+• Import with merge or replace options
+• Secure file sharing on Android
 
-🔐 Security & Notifications
-• Fixed biometric auth after switching apps
-• Notifications now use your local timezone
-• Improved app lock reliability
+✨ Enhanced Experience
+• Smooth animations throughout
+• Improved TypeSelector layout
+• Unified Data & Account settings
 
-🛠️ Bug Fixes
-• Archive/unarchive works correctly
-• Better handling of archived investment stats
+🧪 Quality & Testing
+• Comprehensive test infrastructure
+• Performance benchmarks
+• Visual regression tests

@@ -150,11 +150,16 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Update an existing goal
+  /// Update an existing goal (handles both active and archived)
   Future<void> updateGoal(GoalEntity goal) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.updateGoal(goal.copyWith(updatedAt: DateTime.now()));
+      final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
+      if (goal.isArchived) {
+        await _repository.updateArchivedGoal(updatedGoal);
+      } else {
+        await _repository.updateGoal(updatedGoal);
+      }
       _analytics.logGoalUpdated(goalId: goal.id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -188,7 +193,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Delete a goal permanently
+  /// Delete an active goal permanently
   Future<void> deleteGoal(String id) async {
     state = const AsyncValue.loading();
     try {
@@ -201,15 +206,32 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  /// Bulk delete multiple goals
-  Future<int> bulkDelete(List<String> goalIds) async {
+  /// Delete an archived goal permanently
+  Future<void> deleteArchivedGoal(String id) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.deleteArchivedGoal(id);
+      _analytics.logGoalDeleted(goalId: id);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// Bulk delete multiple goals (handles both active and archived)
+  Future<int> bulkDelete(List<String> goalIds, {bool isArchived = false}) async {
     if (goalIds.isEmpty) return 0;
 
     state = const AsyncValue.loading();
     try {
       var deletedCount = 0;
       for (final id in goalIds) {
-        await _repository.deleteGoal(id);
+        if (isArchived) {
+          await _repository.deleteArchivedGoal(id);
+        } else {
+          await _repository.deleteGoal(id);
+        }
         _analytics.logGoalDeleted(goalId: id);
         deletedCount++;
       }

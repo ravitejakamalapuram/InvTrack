@@ -723,174 +723,121 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         children: [
           // Transactions Tab
           Expanded(
-            child: GestureDetector(
+            child: _buildSegmentTab(
+              isDark: isDark,
+              isSelected: _selectedSegment == 0,
+              icon: Icons.swap_vert_rounded,
+              label: 'Transactions',
+              count: transactionCount,
               onTap: () => setState(() => _selectedSegment = 0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _selectedSegment == 0
-                      ? (isDark ? AppColors.neutral700Dark : Colors.white)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: _selectedSegment == 0
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.swap_vert_rounded,
-                      size: 18,
-                      color: _selectedSegment == 0
-                          ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Transactions',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: _selectedSegment == 0
-                            ? (isDark
-                                  ? Colors.white
-                                  : AppColors.neutral900Light)
-                            : (isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light),
-                        fontWeight: _selectedSegment == 0
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
-                    ),
-                    if (transactionCount > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _selectedSegment == 0
-                              ? AppColors.primaryLight.withValues(alpha: 0.15)
-                              : (isDark
-                                    ? AppColors.neutral600Dark
-                                    : AppColors.neutral200Light),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '$transactionCount',
-                          style: AppTypography.small.copyWith(
-                            color: _selectedSegment == 0
-                                ? AppColors.primaryLight
-                                : (isDark
-                                      ? AppColors.neutral400Dark
-                                      : AppColors.neutral500Light),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ),
           ),
 
           // Documents Tab
           Expanded(
-            child: GestureDetector(
+            child: _buildSegmentTab(
+              isDark: isDark,
+              isSelected: _selectedSegment == 1,
+              icon: Icons.folder_outlined,
+              label: 'Documents',
+              count: documentCount,
               onTap: () => setState(() => _selectedSegment = 1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _selectedSegment == 1
-                      ? (isDark ? AppColors.neutral700Dark : Colors.white)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: _selectedSegment == 1
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.folder_outlined,
-                      size: 18,
-                      color: _selectedSegment == 1
-                          ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Documents',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: _selectedSegment == 1
-                            ? (isDark
-                                  ? Colors.white
-                                  : AppColors.neutral900Light)
-                            : (isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light),
-                        fontWeight: _selectedSegment == 1
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
-                    ),
-                    if (documentCount > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _selectedSegment == 1
-                              ? AppColors.primaryLight.withValues(alpha: 0.15)
-                              : (isDark
-                                    ? AppColors.neutral600Dark
-                                    : AppColors.neutral200Light),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '$documentCount',
-                          style: AppTypography.small.copyWith(
-                            color: _selectedSegment == 1
-                                ? AppColors.primaryLight
-                                : (isDark
-                                      ? AppColors.neutral400Dark
-                                      : AppColors.neutral500Light),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentTab({
+    required bool isDark,
+    required bool isSelected,
+    required IconData icon,
+    required String label,
+    required int count,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) {
+          final bgColor = Color.lerp(
+            Colors.transparent,
+            isDark ? AppColors.neutral700Dark : Colors.white,
+            value,
+          )!;
+          final iconTextColor = Color.lerp(
+            isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            isDark ? Colors.white : AppColors.neutral900Light,
+            value,
+          )!;
+          final badgeBgColor = Color.lerp(
+            isDark ? AppColors.neutral600Dark : AppColors.neutral200Light,
+            AppColors.primaryLight.withValues(alpha: 0.15),
+            value,
+          )!;
+          final badgeTextColor = Color.lerp(
+            isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            AppColors.primaryLight,
+            value,
+          )!;
+          final shadowOpacity = 0.08 * value;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: value > 0.01
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: shadowOpacity),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: iconTextColor),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: iconTextColor,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+                if (count > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeBgColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: AppTypography.small.copyWith(
+                        color: badgeTextColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -1166,9 +1113,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     if (confirmed && mounted) {
       try {
-        await ref
-            .read(investmentNotifierProvider.notifier)
-            .deleteInvestment(widget.investment.id);
+        final notifier = ref.read(investmentNotifierProvider.notifier);
+        if (widget.investment.isArchived) {
+          await notifier.deleteArchivedInvestment(widget.investment.id);
+        } else {
+          await notifier.deleteInvestment(widget.investment.id);
+        }
         HapticFeedback.mediumImpact();
         messenger.showSnackBar(
           SnackBar(

@@ -191,15 +191,20 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Investment Type Selector
+                // Investment Type Selector - Using grid layout for cleaner 2-column arrangement
                 TypeSelector<InvestmentType>(
                   label: 'Investment Type',
+                  subtitle: 'Select the category that best describes this investment',
                   values: InvestmentType.values,
                   selectedValue: _selectedType,
                   onSelected: (type) => setState(() => _selectedType = type),
                   colorBuilder: (type) => type.color,
                   iconBuilder: (type) => type.icon,
                   labelBuilder: (type) => type.displayName,
+                  gridLayout: true,
+                  compactMode: true,
+                  spacing: 10,
+                  runSpacing: 10,
                 ),
 
                 SizedBox(height: AppSpacing.sectionSpacing),
@@ -210,7 +215,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   focusNode: _nameFocusNode,
                   label: 'Investment Name',
                   hint: 'e.g. LenDenClub, Grip Invest',
-                  prefixIcon: Icons.label_outline_rounded,
+                  prefixIcon: Icons.business_rounded,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter a name';
@@ -224,15 +229,15 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
                 SizedBox(height: AppSpacing.formFieldSpacing),
 
-                // Notes Field
+                // Notes Field - reduced to 2 lines for more compact form
                 AppTextField(
                   controller: _notesController,
                   focusNode: _notesFocusNode,
                   label: 'Notes (Optional)',
-                  hint: 'e.g. Investment details, platform info',
-                  prefixIcon: Icons.notes_rounded,
+                  hint: 'Add any details about this investment',
+                  prefixIcon: Icons.edit_note_rounded,
                   textCapitalization: TextCapitalization.sentences,
-                  maxLines: 3,
+                  maxLines: 2,
                 ),
 
                 SizedBox(height: AppSpacing.sectionSpacing),
@@ -245,7 +250,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 // Income Frequency (Optional)
                 _buildIncomeFrequencySelector(isDark),
 
-                SizedBox(height: AppSpacing.xxxl),
+                SizedBox(height: AppSpacing.xxl),
 
                 // Submit Button
                 GradientButton(
@@ -257,7 +262,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   label: widget.isEditing ? 'Save Changes' : 'Add Investment',
                 ),
 
-                SizedBox(height: AppSpacing.formFieldSpacing),
+                SizedBox(height: AppSpacing.lg),
               ],
             ),
           ),
@@ -351,14 +356,29 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
         ),
-        SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: 4),
+        Text(
+          'How often does this investment pay income?',
+          style: AppTypography.caption.copyWith(
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
+          ),
+        ),
+        const SizedBox(height: 12),
         Wrap(
-          spacing: AppSpacing.xs,
-          runSpacing: AppSpacing.xs,
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            _buildFrequencyChip(null, 'None', isDark),
+            _buildFrequencyChip(null, 'None', Icons.block_rounded, isDark),
             ...IncomeFrequency.values.map(
-              (freq) => _buildFrequencyChip(freq, freq.displayName, isDark),
+              (freq) => _buildFrequencyChip(
+                freq,
+                freq.displayName,
+                freq.icon,
+                isDark,
+                color: freq.color,
+              ),
             ),
           ],
         ),
@@ -369,42 +389,87 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   Widget _buildFrequencyChip(
     IncomeFrequency? frequency,
     String label,
-    bool isDark,
-  ) {
+    IconData icon,
+    bool isDark, {
+    Color? color,
+  }) {
     final isSelected = _incomeFrequency == frequency;
+    final chipColor = color ?? AppColors.neutral500Light;
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() => _incomeFrequency = frequency);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primaryLight
-              : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primaryLight
-                : (isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral300Light),
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.bodyMedium.copyWith(
-            color: isSelected
-                ? Colors.white
-                : (isDark ? Colors.white70 : AppColors.neutral700Light),
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
-        ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        builder: (context, progress, child) {
+          final backgroundColor = Color.lerp(
+            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            chipColor,
+            progress,
+          )!;
+          final borderColor = Color.lerp(
+            isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+            Colors.transparent,
+            progress,
+          )!;
+          final iconBgColor = Color.lerp(
+            chipColor.withValues(alpha: 0.12),
+            Colors.white.withValues(alpha: 0.2),
+            progress,
+          )!;
+          final iconColor = Color.lerp(chipColor, Colors.white, progress)!;
+          final textColor = Color.lerp(
+            isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+            Colors.white,
+            progress,
+          )!;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 1.5),
+              boxShadow: progress > 0.1
+                  ? [
+                      BoxShadow(
+                        color: chipColor.withValues(alpha: progress * 0.35),
+                        blurRadius: 12 * progress,
+                        offset: Offset(0, 4 * progress),
+                        spreadRadius: -2,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(icon, size: 16, color: iconColor),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: AppTypography.body.copyWith(
+                    fontSize: 13,
+                    color: textColor,
+                    fontWeight:
+                        progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
