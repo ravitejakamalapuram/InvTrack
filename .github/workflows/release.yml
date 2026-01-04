@@ -1,0 +1,175 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/workflows/screenshots.yml'
+
+# Prevent concurrent releases
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Skip if commit message contains [skip-release] or is a version bump commit
+    if: "!contains(github.event.head_commit.message, '[skip-release]') && !contains(github.event.head_commit.message, 'chore(release)')"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Determine version bump type
+        id: bump_type
+        run: |
+          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
+          
+          # Get commits since last tag
+          COMMITS=$(git log $LATEST_TAG..HEAD --oneline 2>/dev/null || git log --oneline)
+          
+          echo "Commits since $LATEST_TAG:"
+          echo "$COMMITS"
+          
+          # Determine bump type based on conventional commits
+          if echo "$COMMITS" | grep -qiE "BREAKING CHANGE|!:"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qiE "^[a-f0-9]+ feat"; then
+            BUMP="minor"
+          else
+            BUMP="patch"
+          fi
+          
+          echo "bump_type=$BUMP" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP"
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          LATEST="${{ steps.get_tag.outputs.latest_tag }}"
+          BUMP="${{ steps.bump_type.outputs.bump_type }}"
+          
+          # Remove 'v' prefix
+          VERSION=${LATEST#v}
+          
+          # Split into parts
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          
+          # Handle build number if present (e.g., 3.5.1+19)
+          PATCH_NUM=${PATCH%%+*}
+          BUILD_NUM=${PATCH#*+}
+          if [ "$BUILD_NUM" = "$PATCH_NUM" ]; then
+            BUILD_NUM=0
+          fi
+          
+          # Increment based on bump type
+          case $BUMP in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH_NUM=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH_NUM=0
+              ;;
+            patch)
+              PATCH_NUM=$((PATCH_NUM + 1))
+              ;;
+          esac
+          
+          # Increment build number
+          BUILD_NUM=$((BUILD_NUM + 1))
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH_NUM}"
+          NEW_VERSION_FULL="${MAJOR}.${MINOR}.${PATCH_NUM}+${BUILD_NUM}"
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_version_full=$NEW_VERSION_FULL" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUM" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION_FULL"
+
+      - name: Install git-cliff
+        run: |
+          wget -qO- https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Generate changelog for this release
+          CHANGELOG=$(git-cliff --latest --strip header)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Also update CHANGELOG.md
+          git-cliff -o CHANGELOG.md
+
+      - name: Update pubspec.yaml version
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version_full }}"
+          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+          echo "Updated pubspec.yaml to version $NEW_VERSION"
+          grep "^version:" pubspec.yaml
+
+      - name: Update about_screen.dart version
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          BUILD_NUM="${{ steps.new_version.outputs.build_number }}"
+          FULL_VERSION="${{ steps.new_version.outputs.new_version_full }}"
+          
+          # Update version constants in about_screen.dart
+          sed -i "s/const String _appVersion = '.*'/const String _appVersion = '$NEW_VERSION'/" \
+            lib/features/settings/presentation/screens/about_screen.dart
+          sed -i "s/const String _buildNumber = '.*'/const String _buildNumber = '$BUILD_NUM'/" \
+            lib/features/settings/presentation/screens/about_screen.dart
+          sed -i "s|// matches pubspec.yaml version: .*|// matches pubspec.yaml version: $FULL_VERSION|" \
+            lib/features/settings/presentation/screens/about_screen.dart
+          
+          echo "Updated about_screen.dart"
+
+      - name: Create whatsnew for Play Store
+        run: |
+          mkdir -p distribution/whatsnew
+          cat > distribution/whatsnew/whatsnew-en-US <<EOF
+          ${{ steps.changelog.outputs.changelog }}
+          EOF
+          echo "Created whatsnew file"
+
+      - name: Commit version bump
+        run: |
+          git add pubspec.yaml CHANGELOG.md distribution/whatsnew/ \
+            lib/features/settings/presentation/screens/about_screen.dart
+          git commit -m "chore(release): v${{ steps.new_version.outputs.new_version }} [skip-release]"
+          git push
+
+      - name: Create and push tag
+        run: |
+          git tag -a "v${{ steps.new_version.outputs.new_version }}" \
+            -m "Release v${{ steps.new_version.outputs.new_version }}"
+          git push origin "v${{ steps.new_version.outputs.new_version }}"
+          echo "Created tag v${{ steps.new_version.outputs.new_version }}"
+

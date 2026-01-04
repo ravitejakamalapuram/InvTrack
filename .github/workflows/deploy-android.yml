@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # App size threshold in bytes (20 MB)
+  MAX_APP_SIZE: 20971520
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -24,6 +28,18 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ inputs.tag }}"
+            VERSION=${VERSION#v}
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -80,20 +96,56 @@ jobs:
           fi
           keytool -list -keystore android/app/keystore.jks -storepass "$STORE_PASSWORD"
 
+      # Security Scanning
+      - name: Security scan - Check for leaked secrets
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
+        id: gitleaks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Security scan - Dependency vulnerabilities
+        id: security
+        continue-on-error: true
+        run: |
+          # Check for outdated packages with known issues
+          flutter pub outdated --json > outdated.json || true
+
+          # Count outdated packages
+          OUTDATED_COUNT=$(cat outdated.json | jq '.packages | length' 2>/dev/null || echo "0")
+          echo "outdated_count=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$OUTDATED_COUNT" -gt "0" ]; then
+            echo "⚠️ Found $OUTDATED_COUNT outdated packages"
+            flutter pub outdated
+          else
+            echo "✅ All packages are up to date"
+          fi
+
       - name: Build Release Bundle
         run: flutter build appbundle --release
 
-      - name: Extract version from tag
-        id: version
+      # Track App Size
+      - name: Track app size
+        id: app_size
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ inputs.tag }}"
-            VERSION=${VERSION#v}
+          AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
+          SIZE_BYTES=$(stat -c%s "$AAB_PATH")
+          SIZE_MB=$(echo "scale=2; $SIZE_BYTES / 1048576" | bc)
+
+          echo "size_bytes=$SIZE_BYTES" >> $GITHUB_OUTPUT
+          echo "size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
+
+          echo "📦 App Bundle Size: ${SIZE_MB} MB ($SIZE_BYTES bytes)"
+
+          # Check if exceeds threshold
+          if [ "$SIZE_BYTES" -gt "$MAX_APP_SIZE" ]; then
+            echo "⚠️ WARNING: App size exceeds ${MAX_APP_SIZE} bytes threshold!"
+            echo "size_warning=true" >> $GITHUB_OUTPUT
           else
-            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "✅ App size is within acceptable limits"
+            echo "size_warning=false" >> $GITHUB_OUTPUT
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Deploying version: $VERSION"
 
       - name: Deploy to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
@@ -106,6 +158,18 @@ jobs:
           releaseName: v${{ steps.version.outputs.version }}
           whatsNewDirectory: distribution/whatsnew
 
+      - name: Get changelog for notifications
+        id: changelog
+        run: |
+          if [ -f "distribution/whatsnew/whatsnew-en-US" ]; then
+            CHANGELOG=$(cat distribution/whatsnew/whatsnew-en-US | head -20)
+          else
+            CHANGELOG="No changelog available"
+          fi
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -114,13 +178,122 @@ jobs:
             ## Release v${{ steps.version.outputs.version }}
 
             App has been deployed to Google Play closed testing (alpha track).
+
+            ### 📦 App Size
+            ${{ steps.app_size.outputs.size_mb }} MB
+
+            ### 📝 Changes
+            ${{ steps.changelog.outputs.content }}
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Notify deployment
+      # Slack Notification - Success
+      - name: Notify Slack - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 InvTrack v${{ steps.version.outputs.version }} Deployed!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {"type": "mrkdwn", "text": "*Track:*\nAlpha (Closed Testing)"},
+                    {"type": "mrkdwn", "text": "*App Size:*\n${{ steps.app_size.outputs.size_mb }} MB"}
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Security:* ${{ steps.gitleaks.outcome == 'success' && '✅ No secrets leaked' || '⚠️ Check gitleaks results' }}\n*Dependencies:* ${{ steps.security.outputs.outdated_count }} outdated packages"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Changes:*\n${{ steps.changelog.outputs.content }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "View Release"},
+                      "url": "https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "Play Console"},
+                      "url": "https://play.google.com/console"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      # Slack Notification - Failure
+      - name: Notify Slack - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ InvTrack v${{ steps.version.outputs.version }} Deploy Failed!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Deployment to Google Play failed. Check the workflow logs for details."
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "View Logs"},
+                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Summary
         run: |
-          echo "✅ Build and deployment completed successfully!"
-          echo "Version: ${{ steps.version.outputs.version }}"
-          echo "Track: alpha (closed testing)"
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | v${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Track | Alpha (Closed Testing) |" >> $GITHUB_STEP_SUMMARY
+          echo "| App Size | ${{ steps.app_size.outputs.size_mb }} MB |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ steps.gitleaks.outcome == 'success' && '✅ Pass' || '⚠️ Check' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Outdated Deps | ${{ steps.security.outputs.outdated_count }} |" >> $GITHUB_STEP_SUMMARY
