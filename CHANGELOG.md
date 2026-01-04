@@ -1,188 +1,150 @@
 # Changelog
 
-All notable changes to InvTracker will be documented in this file.
+## [Unreleased]
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### ✨ Features
+
+- Add CI/CD automation with Slack notifications
+
+## [3.5.1] - 2026-01-04
+
+### ✨ Features
+
+- Add proper permission handling for document picker (v3.5.1)
+
+## [3.5.0] - 2026-01-04
+
+### ✨ Features
+
+- Add document PDF viewer with external app support (v3.5.0)
 
 ## [3.4.0] - 2026-01-04
 
-### Added
-- 📦 **Data Export/Import**: Full backup & restore with documents
-  - Export all data as ZIP including investment documents
-  - Import with merge or replace strategy options
-  - Documents correctly linked to investments by name
-- 🎨 **Unified Data & Account Screen**: New settings organization
-  - Combined data management and account deletion
-  - Export data as CSV or ZIP with documents
-  - Delete account with confirmation flow
-- ✨ **Smooth Animations**: Enhanced UX across the app
-  - Animated transitions for selection states
-  - Smooth filter tab animations
-  - Improved TypeSelector with 2-column grid layout
-- 🧪 **Comprehensive Testing Infrastructure**
-  - Integration tests with Robot pattern
-  - Golden tests for visual regression
-  - Performance benchmarks
-  - Patrol E2E testing setup
+### ✨ Features
 
-### Fixed
-- 🔗 **Document Import**: Fixed documents not linking to investments after import
-- 📂 **FileProvider**: Added Android FileProvider for secure file sharing
-- 🔄 **Archive/Unarchive**: Fixed close/reopen investment and goal logic
-- 🎯 **TypeSelector**: Fixed layout and added smooth animations
-
-### Changed
-- Redesigned import strategy dialog with option tiles
-- Improved Add Investment screen layout
-- Enhanced privacy toggle button animations
-
----
-
-## [3.3.2] - 2025-12-30
-
-### Added
-- 📥 **Swipe-to-Archive**: Swipe right on investments or goals to archive/unarchive
-
-### Fixed
-- 🔔 **Scheduled Notifications**: Fixed notifications firing at wrong times
-- 🔐 **Biometric Authentication**: Fixed biometrics not retrying after app resume
-
----
+- **analytics**: Add comprehensive analytics tracking for investment lifecycle and settings
+- V3.4.0 - Data Export/Import, Unified Settings & UX Improvements (#41)
+- Add comprehensive automation testing infrastructure (#43)
 
 ## [3.3.1] - 2025-12-30
 
-### Added
-- 📥 **Swipe-to-Archive**: Swipe right on investments or goals to archive/unarchive
-  - Swipe right to archive active items (amber indicator)
-  - Swipe right on archived items to restore (green indicator)
-  - Works alongside existing swipe-left-to-delete
+### 🐛 Bug Fixes
 
-### Fixed
-- 🔔 **Scheduled Notifications**: Fixed notifications firing at wrong times
-  - Notifications now use device's local timezone instead of UTC
-  - Added `flutter_timezone` dependency for timezone detection
-- 🔐 **Biometric Authentication**: Fixed biometrics not retrying after app resume
-  - Biometric prompt now re-appears when returning to app from background
-  - Prevents concurrent biometric prompts with proper flag management
+- Notifications, biometrics, and swipe archive (#42)
 
----
+### 🔧 Miscellaneous
+
+- Bump version to 3.3.1+15
 
 ## [3.3.0] - 2025-12-29
 
-### Added
-- 🎯 **Goals Selection Mode**: Multi-select goals for bulk operations
-  - Tap the checkbox icon to enter selection mode
-  - Select All / Deselect All controls
-  - Bulk delete multiple goals at once
-- 👆 **Swipe-to-Delete**: Quick delete with swipe gestures
-  - Swipe left on any investment card to delete
-  - Swipe left on any goal card to delete
-  - Confirmation dialog before deletion
-  - Disabled during multi-select mode
+### ✨ Features
 
-### Changed
-- Refactored selection controls into reusable generic widgets
-- Created `SelectionListControls` for consistent selection UI
-- Created `SelectionListActionBar` for configurable bulk actions
-- Created `SwipeToDelete` wrapper for consistent swipe behavior
-- Improved code reuse across investments and goals features
+- Goals Selection Mode & Swipe-to-Delete v3.3.0 (#40)
 
----
+### 📚 Documentation
+
+- Add store listing workflow guide & sync fastlane metadata
 
 ## [3.2.8] - 2025-12-29
 
-### Added
-- 🔒 **Privacy Mode**: Tap the eye icon to hide all financial amounts and sensitive data
-  - Masks investment values, returns, and percentages with `••••`
-  - Hides goal progress and amounts
-  - Perfect for checking your portfolio in public
+### ✨ Features
 
-### Changed
-- Improved number formatting consistency across the app
-- Centralized compact amount display with `CompactAmountText` widget
-- Enhanced goal progress display with privacy mode support
-- Better currency formatting for large numbers (K, L, Cr abbreviations)
+- Add Privacy Mode to hide financial data (#39)
 
-### Fixed
-- Privacy mode now works consistently across all screens:
-  - Overview dashboard
-  - Investment detail screen
-  - Goal cards and goal details
-  - Analytics widgets
-- Fixed notification permission checks for milestone notifications
-- Fixed notification settings toggle reactivity
+## [3.2.7] - 2025-12-28
+
+### 🐛 Bug Fixes
+
+- **ci**: Add Gradle/pub caching, fix GitHub release permissions (v3.2.7+12)
+
+## [3.2.6] - 2025-12-28
+
+### 🐛 Bug Fixes
+
+- **ci**: Use correct secret names STORE_PASSWORD and PLAY_STORE_CREDENTIALS (v3.2.6+11)
+
+## [3.2.5] - 2025-12-28
+
+### 🐛 Bug Fixes
+
+- **ci**: Add keystore verification step and fix key.properties format (v3.2.5+10)
+
+## [3.2.4] - 2025-12-28
+
+### 🐛 Bug Fixes
+
+- **ci**: Use Flutter master channel for Dart 3.10+ support (v3.2.4+9)
+
+## [3.2.3] - 2025-12-28
+
+### 🐛 Bug Fixes
+
+- **ci**: Fix Flutter build workflow for Android deployment (v3.2.3+8)
+
+## [3.2.2] - 2025-12-28
+
+### 🐛 Bug Fixes
+
+- Enable AD_ID permission for Firebase Analytics (v3.2.2+7)
+
+## [3.2.1] - 2025-12-28
+
+### ✨ Features
+
+- **ci**: Add Fastlane and GitHub Actions for automated Play Store deployment
+- **onboarding**: Add Goals & Reminders screen to onboarding
+- **android**: Optimize APK size with R8 shrinking and ProGuard rules
+- Add document management and enhanced notifications
+- Simplify app messaging and update version to 3.1.0
+
+### 🐛 Bug Fixes
+
+- **android**: Remove AD_ID permission for Play Store compliance
+- **ci**: Correct package name in Fastlane Appfile
+- **ci**: Add all Firebase config files for CI builds
+- **ci**: Add firebase_options.dart to repo for CI builds
+- **ci**: Update Flutter version to 3.38.4 to match Dart SDK constraint
+- **security**: App lock screen clear button and biometric auth issues (#38)
+- **android**: Remove USE_EXACT_ALARM permission for Play Store compliance
+- Update test repositories to implement archived collections interface
+
+### 🔧 Miscellaneous
+
+- Bump version to 3.2.1+6 for release
+- Bump version to 3.2.0 and update store listings
+
+## [3.0.0] - 2025-12-24
+
+### ✨ Features
+
+- Standardize App Lock UI
+
+### 🐛 Bug Fixes
+
+- Improve XIRR calculation for loss-making investments
+
+## [0-stable] - 2025-12-08
+
+### ✨ Features
+
+- Add sync functionality to settings screen
+- Implement financial calculators, entry form, sync, and charts
+- Implement app theme, design system, and navigation
+- Implement Investment and Entry CRUD operations
+- Implement secure token storage and Drift database
+- Implement Google Sign-In flow with Riverpod state management
+- Configure Google OAuth credentials for web platform
+- **P1-02**: Add core dependencies to pubspec.yaml
+- **P1-01**: Initialize Flutter project with Clean Architecture structure
+
+### 🐛 Bug Fixes
+
+- Update integration tests to match actual entity structures
+- Resolve deprecation warnings and improve auth initialization
+- Add refreshListenable to router for auth state changes
+- Resolve compilation errors for web platform
+- Use Google's renderButton for web sign-in
 
 ---
-
-## [3.2.0] - 2025-12-27
-
-### Added
-
-#### 🎯 Financial Goals
-- New Goals feature to set and track financial targets
-- Support for corpus goals (reach a target amount)
-- Support for income goals (generate target monthly income)
-- Beautiful progress rings with milestone celebrations
-- Link investments to goals to track contributions
-- Goal details screen with progress breakdown
-- Goals dashboard card on overview screen
-
-#### 🔔 Smart Notifications
-- Income payment reminders (get notified before income is due)
-- Maturity date alerts (never miss when investments mature)
-- Weekly portfolio summary notifications
-- Customizable notification settings per category
-- Deep linking from notifications to relevant screens
-
-#### 📄 Document Management
-- Attach documents to investments (receipts, contracts, etc.)
-- Document viewer with full-screen support
-- Support for images and PDF files
-- Cloud storage for documents with sync
-
-#### ⚙️ Enhanced Settings
-- Reorganized settings with dedicated screens
-- New Appearance settings screen
-- New Notifications settings screen
-- New Security settings screen
-- New Data Management screen
-- New About screen with app info
-
-### Changed
-- Improved investment detail screen layout
-- Enhanced currency formatting with compact notation
-- Better number formatting utilities
-- Optimized settings screen navigation
-- Improved investment card design
-
-### Fixed
-- Currency display formatting issues
-- Test repository implementations for archived collections
-- Various UI polish and stability improvements
-
----
-
-## [3.1.0] - 2025-12-15
-
-### Added
-- Archive/Unarchive investments feature
-- Separate archived investments view
-- Archived cash flows management
-
-### Changed
-- Improved investment list filtering
-- Enhanced repository interfaces
-
----
-
-## [3.0.0] - 2025-12-01
-
-### Added
-- Initial release with core investment tracking
-- XIRR and MOIC calculations
-- Offline-first with cloud sync
-- Google Sign-In authentication
-- Dark mode support
-- Clean dashboard with analytics
-
+*Generated by [git-cliff](https://git-cliff.org)*
