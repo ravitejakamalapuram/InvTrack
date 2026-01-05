@@ -79,12 +79,17 @@ class _FilterChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        ref.read(investmentListStateProvider.notifier).setFilter(filter);
-      },
-      child: TweenAnimationBuilder<double>(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '$label, $count items',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          ref.read(investmentListStateProvider.notifier).setFilter(filter);
+        },
+        child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
@@ -154,6 +159,6 @@ class _FilterChip extends ConsumerWidget {
           );
         },
       ),
-    );
+    ));
   }
 }
