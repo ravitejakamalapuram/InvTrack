@@ -51,6 +51,17 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Copy keystore from persistent location
+        run: |
+          # For self-hosted runner: keystore stored at ~/invtrack-keys/
+          KEYSTORE_SOURCE="$HOME/invtrack-keys/upload-keystore.jks"
+          if [ -f "$KEYSTORE_SOURCE" ]; then
+            cp "$KEYSTORE_SOURCE" android/upload-keystore.jks
+            echo "✅ Keystore copied from $KEYSTORE_SOURCE"
+          else
+            echo "⚠️ No persistent keystore found at $KEYSTORE_SOURCE"
+          fi
+
       - name: Verify keystore
         run: |
           if [ ! -f "android/upload-keystore.jks" ]; then
