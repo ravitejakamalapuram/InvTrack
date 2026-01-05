@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -216,6 +217,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   label: 'Investment Name',
                   hint: 'e.g. LenDenClub, Grip Invest',
                   prefixIcon: Icons.business_rounded,
+                  maxLength: ValidationConstants.maxNameLength,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Please enter a name';
@@ -238,6 +240,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   prefixIcon: Icons.edit_note_rounded,
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: 2,
+                  maxLength: ValidationConstants.maxNotesLength,
                 ),
 
                 SizedBox(height: AppSpacing.sectionSpacing),
