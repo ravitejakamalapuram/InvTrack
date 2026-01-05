@@ -4,6 +4,16 @@
 
 ### ✨ Features
 
+- **a11y**: Add semantics to investment list filters and search (#45)
+
+### 🐛 Bug Fixes
+
+- Trigger deploy workflow via gh cli to bypass GITHUB_TOKEN limitation [skip-release]
+
+## [3.6.0] - 2026-01-04
+
+### ✨ Features
+
 - Add CI/CD automation with Slack notifications
 
 ## [3.5.1] - 2026-01-04
