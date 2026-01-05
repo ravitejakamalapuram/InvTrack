@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚡ Performance
+
+- Optimize investment list sorting by skipping XIRR calculation (#46)
+
 ## [3.7.0] - 2026-01-05
 
 ### ✨ Features
