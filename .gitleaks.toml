@@ -1,0 +1,32 @@
+# Gitleaks configuration for InvTrack
+# https://github.com/gitleaks/gitleaks
+
+title = "InvTrack Gitleaks Config"
+
+# Allowlist paths that contain non-sensitive, intentionally public keys
+[allowlist]
+description = "Files containing public Firebase/Google configuration"
+paths = [
+    # Firebase configuration files (API keys are meant to be public, security is via Firebase rules)
+    '''android/app/google-services\.json''',
+    '''ios/Runner/GoogleService-Info\.plist''',
+    '''ios/GoogleService-Info\.plist''',
+    '''lib/firebase_options\.dart''',
+    
+    # CocoaPods lock files (contain dependency checksums, not secrets)
+    '''ios/Podfile\.lock''',
+    '''macos/Podfile\.lock''',
+    
+    # Generated/build files
+    '''\.dart_tool/''',
+    '''build/''',
+    '''\.flutter-plugins''',
+    '''\.flutter-plugins-dependencies''',
+]
+
+# Additional regex patterns to allow
+regexes = [
+    # Firebase API keys pattern (these are public by design)
+    '''AIza[0-9A-Za-z\-_]{35}''',
+]
+
