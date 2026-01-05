@@ -20,7 +20,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -41,60 +41,24 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'master'
-          cache: true
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
+      - name: Verify local environment
+        run: |
+          echo "🔍 Checking local environment..."
+          echo "Flutter: $(flutter --version | head -1)"
+          echo "Java: $(java -version 2>&1 | head -1)"
+          echo "Dart: $(dart --version)"
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Decode keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
-
-      - name: Create key.properties
-        env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          echo "storePassword=$STORE_PASSWORD" > android/key.properties
-          echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
-          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-          echo "storeFile=keystore.jks" >> android/key.properties
-          echo "key.properties created:"
-          cat android/key.properties | sed 's/Password=.*/Password=***/'
-
       - name: Verify keystore
-        env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
         run: |
-          if [ -z "$STORE_PASSWORD" ]; then
-            echo "ERROR: STORE_PASSWORD secret is not set!"
+          if [ ! -f "android/upload-keystore.jks" ]; then
+            echo "ERROR: Keystore not found at android/upload-keystore.jks"
             exit 1
           fi
-          keytool -list -keystore android/app/keystore.jks -storepass "$STORE_PASSWORD"
+          echo "✅ Keystore found"
+          keytool -list -keystore android/upload-keystore.jks -storepass invtracker123 2>/dev/null | head -5
 
       # Security Scanning
       - name: Security scan - Check for leaked secrets
@@ -130,7 +94,8 @@ jobs:
         id: app_size
         run: |
           AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
-          SIZE_BYTES=$(stat -c%s "$AAB_PATH")
+          # macOS compatible stat command
+          SIZE_BYTES=$(stat -f%z "$AAB_PATH" 2>/dev/null || stat -c%s "$AAB_PATH" 2>/dev/null)
           SIZE_MB=$(echo "scale=2; $SIZE_BYTES / 1048576" | bc)
 
           echo "size_bytes=$SIZE_BYTES" >> $GITHUB_OUTPUT
