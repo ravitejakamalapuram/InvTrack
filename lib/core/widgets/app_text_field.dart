@@ -17,6 +17,7 @@ class AppTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final TextInputType? keyboardType;
   final int maxLines;
+  final int? maxLength;
   final bool readOnly;
   final bool enabled;
   final bool autofocus;
@@ -35,6 +36,7 @@ class AppTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.keyboardType,
     this.maxLines = 1,
+    this.maxLength,
     this.readOnly = false,
     this.enabled = true,
     this.autofocus = false,
@@ -63,6 +65,7 @@ class AppTextField extends StatelessWidget {
           textCapitalization: textCapitalization,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          maxLength: maxLength,
           readOnly: readOnly,
           enabled: enabled,
           autofocus: autofocus,
