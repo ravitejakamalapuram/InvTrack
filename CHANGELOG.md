@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Enforce input length limits on form fields (#47)
+
+## [3.7.2] - 2026-01-05
+
 ### ⚡ Performance
 
 - Optimize investment list sorting by skipping XIRR calculation (#46)
