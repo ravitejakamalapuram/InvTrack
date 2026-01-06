@@ -14,9 +14,10 @@ final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
 });
 
 /// Provider for the Firebase Analytics observer (for GoRouter)
-final analyticsObserverProvider = Provider<FirebaseAnalyticsObserver>((ref) {
+/// Returns null in test mode when FakeAnalyticsService is used
+final analyticsObserverProvider = Provider<FirebaseAnalyticsObserver?>((ref) {
   final analytics = ref.watch(analyticsServiceProvider);
-  return FirebaseAnalyticsObserver(analytics: analytics._analytics);
+  return analytics.getObserver();
 });
 
 /// Analytics event names - centralized for consistency
@@ -59,6 +60,12 @@ class AnalyticsEvents {
 /// Analytics service that wraps Firebase Analytics
 class AnalyticsService {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+
+  /// Get the analytics observer for navigation tracking
+  /// Returns null for fake implementations
+  FirebaseAnalyticsObserver? getObserver() {
+    return FirebaseAnalyticsObserver(analytics: _analytics);
+  }
 
   /// Log a custom event
   Future<void> logEvent({

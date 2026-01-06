@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -244,5 +245,11 @@ class FakeAnalyticsService implements AnalyticsService {
       name: AnalyticsEvents.themeChanged,
       parameters: {'theme': theme},
     );
+  }
+
+  @override
+  FirebaseAnalyticsObserver? getObserver() {
+    // Return null for fake implementation - no Firebase in tests
+    return null;
   }
 }

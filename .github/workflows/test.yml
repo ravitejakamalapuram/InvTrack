@@ -102,13 +102,6 @@ jobs:
             --device-id=${{ env.DEVICE_ID }} \
             --reporter=github || echo "Integration tests completed with issues"
 
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ios-screenshots
-          path: build/screenshots/
-
   # ============ ANDROID INTEGRATION TESTS ============
   integration-test-android:
     name: Integration Tests (Android)
@@ -150,13 +143,6 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             flutter test integration_test/app_test.dart --reporter=github || echo "Integration tests completed"
-
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: android-screenshots
-          path: build/screenshots/
 
   # ============ PERFORMANCE TESTS ============
   performance-test:

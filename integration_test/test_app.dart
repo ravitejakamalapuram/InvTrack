@@ -20,7 +20,7 @@ import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:local_auth_platform_interface/types/auth_messages.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'mocks/mock_analytics_service.dart';
@@ -28,8 +28,35 @@ import 'mocks/mock_goal_repository.dart';
 import 'mocks/mock_investment_repository.dart';
 import 'mocks/mock_notification_service.dart';
 
-/// Mock for LocalAuthentication
-class MockLocalAuthentication extends Mock implements LocalAuthentication {}
+/// Fake implementation of LocalAuthentication for testing.
+class FakeLocalAuthentication implements LocalAuthentication {
+  bool canCheckBiometricsValue = false;
+  bool isDeviceSupportedValue = false;
+  bool authenticateResult = false;
+
+  @override
+  Future<bool> get canCheckBiometrics async => canCheckBiometricsValue;
+
+  @override
+  Future<bool> isDeviceSupported() async => isDeviceSupportedValue;
+
+  @override
+  Future<List<BiometricType>> getAvailableBiometrics() async => [];
+
+  @override
+  Future<bool> authenticate({
+    required String localizedReason,
+    Iterable<AuthMessages> authMessages = const <AuthMessages>[],
+    bool biometricOnly = false,
+    bool sensitiveTransaction = true,
+    bool persistAcrossBackgrounding = false,
+  }) async {
+    return authenticateResult;
+  }
+
+  @override
+  Future<bool> stopAuthentication() async => true;
+}
 
 /// Fake FlutterSecureStorage for testing
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
@@ -90,7 +117,7 @@ class TestApp {
   final FakeAnalyticsService analyticsService;
   final FakeNotificationService notificationService;
   final FakeFlutterSecureStorage secureStorage;
-  final MockLocalAuthentication localAuth;
+  final FakeLocalAuthentication localAuth;
   late SharedPreferences sharedPreferences;
 
   TestApp._({
@@ -114,7 +141,7 @@ class TestApp {
       analyticsService: FakeAnalyticsService(),
       notificationService: FakeNotificationService(),
       secureStorage: FakeFlutterSecureStorage(),
-      localAuth: MockLocalAuthentication(),
+      localAuth: FakeLocalAuthentication(),
     );
 
     app.sharedPreferences = await SharedPreferences.getInstance();
@@ -163,7 +190,16 @@ class TestApp {
         child: const InvTrackerApp(),
       ),
     );
-    await tester.pumpAndSettle(const Duration(seconds: 3));
+    // Pump a fixed number of frames to let the UI settle
+    // Don't use pumpAndSettle as it can hang on infinite animations
+    await pumpFrames(30);
+  }
+
+  /// Pump a fixed number of frames
+  Future<void> pumpFrames([int frames = 20]) async {
+    for (var i = 0; i < frames; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 }
 

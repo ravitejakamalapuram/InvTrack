@@ -133,6 +133,37 @@ jobs:
             echo "size_warning=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Prepare What's New for Play Store
+        id: whatsnew
+        run: |
+          # Get version code from pubspec.yaml (build number after +)
+          VERSION_CODE=$(grep 'version:' pubspec.yaml | sed 's/.*+//')
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+          # Create the whatsnew directory structure expected by upload-google-play
+          mkdir -p whatsnew
+
+          # Look for changelog with this version code, or fall back to latest
+          CHANGELOG_FILE="android/fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt"
+
+          if [ -f "$CHANGELOG_FILE" ]; then
+            cp "$CHANGELOG_FILE" whatsnew/whatsnew-en-US
+            echo "✅ Using changelog for version code $VERSION_CODE"
+          else
+            # Find the latest changelog file
+            LATEST=$(ls -1 android/fastlane/metadata/android/en-US/changelogs/*.txt 2>/dev/null | sort -t/ -k7 -n | tail -1)
+            if [ -n "$LATEST" ]; then
+              cp "$LATEST" whatsnew/whatsnew-en-US
+              echo "⚠️ Using latest changelog: $LATEST"
+            else
+              echo "No changelog available for v${{ steps.version.outputs.version }}" > whatsnew/whatsnew-en-US
+              echo "⚠️ No changelog found, using placeholder"
+            fi
+          fi
+
+          echo "What's New content:"
+          cat whatsnew/whatsnew-en-US
+
       - name: Deploy to Google Play (Closed Testing)
         uses: r0adkll/upload-google-play@v1
         with:
@@ -142,13 +173,13 @@ jobs:
           track: alpha
           status: completed
           releaseName: v${{ steps.version.outputs.version }}
-          whatsNewDirectory: distribution/whatsnew
+          whatsNewDirectory: whatsnew
 
       - name: Get changelog for notifications
         id: changelog
         run: |
-          if [ -f "distribution/whatsnew/whatsnew-en-US" ]; then
-            CHANGELOG=$(cat distribution/whatsnew/whatsnew-en-US | head -20)
+          if [ -f "whatsnew/whatsnew-en-US" ]; then
+            CHANGELOG=$(cat whatsnew/whatsnew-en-US | head -20)
           else
             CHANGELOG="No changelog available"
           fi

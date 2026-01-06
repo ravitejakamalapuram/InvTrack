@@ -19,22 +19,25 @@ That's it. Simple but powerful.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🆕 NEW IN VERSION 3.2.8
+🆕 NEW IN VERSION 3.8.0
 
-� Privacy Mode
-Check your portfolio anywhere without revealing sensitive data. One tap to hide all amounts, returns, and percentages. Perfect for public places!
+📄 Document Viewer
+View PDFs and images directly in the app. Open in external apps when needed. Full document management for your investments.
+
+📥 Data Export & Import
+Backup your entire portfolio with one tap. Export to ZIP and import on any device. Your data, fully portable.
+
+📊 Enhanced Analytics
+Comprehensive tracking for your investment lifecycle. Better insights into your portfolio performance.
+
+🔒 Privacy Mode
+Check your portfolio anywhere without revealing sensitive data. One tap to hide all amounts.
 
 🎯 Financial Goals
-Set targets for your investments - whether it's reaching a corpus amount or generating monthly income. Track your progress with beautiful progress rings and milestone celebrations.
+Set targets and track progress with beautiful progress rings and milestone celebrations.
 
 🔔 Smart Notifications
-Never miss an income payment or maturity date. Get timely reminders for:
-• Upcoming income payments
-• Investment maturity dates
-• Weekly portfolio summaries
-
-📄 Document Management
-Attach receipts, contracts, and documents to your investments. Keep everything organized in one place.
+Never miss income payments or maturity dates. Get timely reminders.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

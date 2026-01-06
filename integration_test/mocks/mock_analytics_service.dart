@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 
 /// Fake implementation of AnalyticsService for integration tests.
@@ -15,6 +16,10 @@ class FakeAnalyticsService implements AnalyticsService {
   void _log(String event, [Map<String, dynamic>? params]) {
     _loggedEvents.add(event);
   }
+
+  /// Return null for observer in tests - we don't need navigation tracking
+  @override
+  FirebaseAnalyticsObserver? getObserver() => null;
 
   @override
   Future<void> logEvent({

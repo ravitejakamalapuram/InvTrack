@@ -7,7 +7,6 @@ on:
     paths-ignore:
       - '*.md'
       - 'docs/**'
-      - '.github/workflows/screenshots.yml'
 
 # Prevent concurrent releases
 concurrency:
@@ -140,7 +139,7 @@ jobs:
           NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
           BUILD_NUM="${{ steps.new_version.outputs.build_number }}"
           FULL_VERSION="${{ steps.new_version.outputs.new_version_full }}"
-          
+
           # Update version constants in about_screen.dart
           sed -i "s/const String _appVersion = '.*'/const String _appVersion = '$NEW_VERSION'/" \
             lib/features/settings/presentation/screens/about_screen.dart
@@ -148,21 +147,23 @@ jobs:
             lib/features/settings/presentation/screens/about_screen.dart
           sed -i "s|// matches pubspec.yaml version: .*|// matches pubspec.yaml version: $FULL_VERSION|" \
             lib/features/settings/presentation/screens/about_screen.dart
-          
+
           echo "Updated about_screen.dart"
 
-      - name: Create whatsnew for Play Store
+      - name: Update fastlane changelog
         run: |
-          mkdir -p distribution/whatsnew
-          cat > distribution/whatsnew/whatsnew-en-US <<EOF
-          ${{ steps.changelog.outputs.changelog }}
-          EOF
-          echo "Created whatsnew file"
+          BUILD_NUM="${{ steps.new_version.outputs.build_number }}"
+          CHANGELOG_FILE="android/fastlane/metadata/android/en-US/changelogs/${BUILD_NUM}.txt"
+
+          # Create changelog file for this version
+          echo "${{ steps.changelog.outputs.changelog }}" > "$CHANGELOG_FILE"
+          echo "Created changelog: $CHANGELOG_FILE"
 
       - name: Commit version bump
         run: |
-          git add pubspec.yaml CHANGELOG.md distribution/whatsnew/ \
-            lib/features/settings/presentation/screens/about_screen.dart
+          git add pubspec.yaml CHANGELOG.md \
+            lib/features/settings/presentation/screens/about_screen.dart \
+            android/fastlane/metadata/android/en-US/changelogs/
           git commit -m "chore(release): v${{ steps.new_version.outputs.new_version }} [skip-release]"
           git push
 

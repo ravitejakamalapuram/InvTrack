@@ -86,5 +86,27 @@ platform :android do
     build
     production
   end
+
+  desc "Update store metadata only (descriptions, screenshots)"
+  lane :update_metadata do
+    upload_to_play_store(
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
+
+  desc "Update screenshots only"
+  lane :update_screenshots do
+    upload_to_play_store(
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
 end
 
