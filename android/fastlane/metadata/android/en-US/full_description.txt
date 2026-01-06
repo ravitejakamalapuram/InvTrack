@@ -19,7 +19,7 @@ That's it. Simple but powerful.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🆕 NEW IN VERSION 3.8.0
+🆕 NEW IN VERSION 3.6.0
 
 📄 Document Viewer
 View PDFs and images directly in the app. Open in external apps when needed. Full document management for your investments.
