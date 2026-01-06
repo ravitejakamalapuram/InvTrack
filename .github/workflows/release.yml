@@ -1,4 +1,4 @@
-name: Auto Release
+name: "CD: Version & Changelog"
 
 on:
   push:
