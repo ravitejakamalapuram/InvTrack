@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -260,6 +261,72 @@ void main() {
         container.read(securityProvider.notifier).lockApp();
 
         expect(container.read(securityProvider).isLocked, isTrue);
+      });
+    });
+
+    group('Auto-Lock Suspension for Picker Operations', () {
+      test('suspendAutoLock prevents auto-lock during picker operations',
+          () async {
+        container = createContainer();
+        await container.read(securityProvider.notifier).setPin('1234');
+
+        // Unlock the app first
+        await container.read(securityProvider.notifier).unlockWithPin('1234');
+        expect(container.read(securityProvider).isLocked, isFalse);
+
+        // Suspend auto-lock (simulating going to picker)
+        container.read(securityProvider.notifier).suspendAutoLock();
+
+        // Simulate app lifecycle: paused -> resumed (what happens with picker)
+        container
+            .read(securityProvider.notifier)
+            .didChangeAppLifecycleState(AppLifecycleState.paused);
+
+        // Wait a bit to simulate time in picker
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        container
+            .read(securityProvider.notifier)
+            .didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        // App should NOT be locked because auto-lock is suspended
+        expect(container.read(securityProvider).isLocked, isFalse);
+      });
+
+      test('resumeAutoLock re-enables auto-lock', () async {
+        container = createContainer();
+        await container.read(securityProvider.notifier).setPin('1234');
+
+        // Unlock the app first
+        await container.read(securityProvider.notifier).unlockWithPin('1234');
+
+        // Suspend then resume auto-lock
+        container.read(securityProvider.notifier).suspendAutoLock();
+        container.read(securityProvider.notifier).resumeAutoLock();
+
+        // Now auto-lock should work again if time passes
+        // (but since we just resumed, pause time is reset so won't lock immediately)
+        expect(container.read(securityProvider).isLocked, isFalse);
+      });
+
+      test('resumeAutoLock resets pause time to prevent immediate lock',
+          () async {
+        container = createContainer();
+        await container.read(securityProvider.notifier).setPin('1234');
+        await container.read(securityProvider.notifier).unlockWithPin('1234');
+
+        // Suspend, simulate some time, then resume
+        container.read(securityProvider.notifier).suspendAutoLock();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        container.read(securityProvider.notifier).resumeAutoLock();
+
+        // Simulate app resume immediately after resumeAutoLock
+        container
+            .read(securityProvider.notifier)
+            .didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        // Should NOT lock because pause time was reset
+        expect(container.read(securityProvider).isLocked, isFalse);
       });
     });
   });

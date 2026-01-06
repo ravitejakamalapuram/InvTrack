@@ -62,6 +62,11 @@ class SecurityNotifier extends Notifier<SecurityState>
   // This prevents re-locking during app switches immediately after unlock
   static const Duration _unlockGracePeriod = Duration(seconds: 5);
 
+  // Flag to temporarily suspend auto-lock during system picker operations
+  // (camera, gallery, file picker) which take the app to background
+  bool _isAutoLockSuspended = false;
+  DateTime? _suspendedAt;
+
   @override
   SecurityState build() {
     WidgetsBinding.instance.addObserver(this);
@@ -117,6 +122,26 @@ class SecurityNotifier extends Notifier<SecurityState>
   void _checkAutoLock() {
     // Don't lock if no PIN or already locked
     if (!state.hasPin || state.isLocked) return;
+
+    // Check if auto-lock is suspended (e.g., during picker operations)
+    if (_isAutoLockSuspended) {
+      // Safety timeout: auto-expire suspension after 5 minutes
+      // to prevent indefinite suspension if resumeAutoLock wasn't called
+      if (_suspendedAt != null) {
+        final suspendDuration = DateTime.now().difference(_suspendedAt!);
+        if (suspendDuration.inMinutes >= 5) {
+          debugPrint('🔐 Auto-lock suspension expired after 5 minutes');
+          _isAutoLockSuspended = false;
+          _suspendedAt = null;
+        } else {
+          debugPrint('🔐 Auto-lock suspended for picker operation, skipping');
+          return;
+        }
+      } else {
+        debugPrint('🔐 Auto-lock suspended, skipping');
+        return;
+      }
+    }
 
     // Check if we're within the grace period after a successful unlock
     // This prevents the biometric dialog dismissal from triggering a re-lock
@@ -205,6 +230,31 @@ class SecurityNotifier extends Notifier<SecurityState>
       state = state.copyWith(isBiometricEnabled: false);
       // Note: We don't track biometric disable separately since it's a secondary auth method
     }
+  }
+
+  /// Temporarily suspends auto-lock to allow system picker operations
+  /// (camera, gallery, file picker) that take the app to background.
+  ///
+  /// Call [resumeAutoLock] when the picker operation completes.
+  /// Auto-lock will automatically resume after 5 minutes as a safety measure.
+  void suspendAutoLock() {
+    debugPrint('🔐 Suspending auto-lock for picker operation');
+    _isAutoLockSuspended = true;
+    _suspendedAt = DateTime.now();
+    // Reset pause time so we don't accumulate background time
+    _lastPausedTime = null;
+  }
+
+  /// Resumes auto-lock after a system picker operation completes.
+  ///
+  /// This should be called after [suspendAutoLock] when the picker
+  /// operation is complete (whether successful or cancelled).
+  void resumeAutoLock() {
+    debugPrint('🔐 Resuming auto-lock after picker operation');
+    _isAutoLockSuspended = false;
+    _suspendedAt = null;
+    // Reset pause time to current time so we don't immediately lock
+    _lastPausedTime = DateTime.now();
   }
 }
 

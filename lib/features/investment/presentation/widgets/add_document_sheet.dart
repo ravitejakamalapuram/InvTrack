@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 
 /// Bottom sheet for adding documents via camera, gallery, or file picker
 class AddDocumentSheet extends ConsumerStatefulWidget {
@@ -260,6 +261,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       return;
     }
 
+    // Suspend auto-lock during camera operation to prevent locking
+    // when returning from the camera app
+    ref.read(securityProvider.notifier).suspendAutoLock();
+
     final picker = ImagePicker();
     try {
       final image = await picker.pickImage(
@@ -278,6 +283,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       if (mounted) {
         AppFeedback.showError(context, 'Could not access camera');
       }
+    } finally {
+      // Resume auto-lock after camera operation completes
+      ref.read(securityProvider.notifier).resumeAutoLock();
     }
   }
 
@@ -291,6 +299,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     if (!_handlePermissionResult(result, 'photo library')) {
       return;
     }
+
+    // Suspend auto-lock during gallery picker to prevent locking
+    // when returning from the photo picker
+    ref.read(securityProvider.notifier).suspendAutoLock();
 
     final picker = ImagePicker();
     try {
@@ -310,11 +322,18 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       if (mounted) {
         AppFeedback.showError(context, 'Could not access photo library');
       }
+    } finally {
+      // Resume auto-lock after gallery operation completes
+      ref.read(securityProvider.notifier).resumeAutoLock();
     }
   }
 
   Future<void> _pickPdfFile() async {
     HapticFeedback.selectionClick();
+
+    // Suspend auto-lock during file picker to prevent locking
+    // when returning from the system file picker
+    ref.read(securityProvider.notifier).suspendAutoLock();
 
     // FilePicker uses SAF on Android, no explicit permission needed
     try {
@@ -335,6 +354,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       if (mounted) {
         AppFeedback.showError(context, 'Could not access file');
       }
+    } finally {
+      // Resume auto-lock after file picker operation completes
+      ref.read(securityProvider.notifier).resumeAutoLock();
     }
   }
 

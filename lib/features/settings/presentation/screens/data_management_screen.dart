@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
@@ -320,17 +321,28 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (confirmed != true || !context.mounted) return;
     }
 
-    // Pick ZIP file
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['zip'],
-      withData: true,
-    );
+    // Suspend auto-lock during file picker to prevent locking
+    // when returning from the system file picker
+    ref.read(securityProvider.notifier).suspendAutoLock();
 
-    if (result == null ||
-        result.files.isEmpty ||
-        result.files.first.bytes == null) {
-      return;
+    // Pick ZIP file
+    PlatformFile? selectedFile;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+        withData: true,
+      );
+
+      if (result == null ||
+          result.files.isEmpty ||
+          result.files.first.bytes == null) {
+        return;
+      }
+      selectedFile = result.files.first;
+    } finally {
+      // Resume auto-lock after file picker operation completes
+      ref.read(securityProvider.notifier).resumeAutoLock();
     }
 
     if (!context.mounted) return;
@@ -339,7 +351,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     try {
       final importResult = await ref
           .read(zipImportStateProvider.notifier)
-          .importFromZip(result.files.first.bytes!, strategy);
+          .importFromZip(selectedFile.bytes!, strategy);
 
       if (context.mounted) {
         if (importResult.hasErrors) {
