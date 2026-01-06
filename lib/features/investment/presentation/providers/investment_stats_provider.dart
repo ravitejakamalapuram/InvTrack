@@ -95,6 +95,49 @@ final archivedInvestmentBasicStatsProvider =
       );
     });
 
+/// XIRR ONLY provider for active investments (isolates expensive calculation).
+/// Use this in conjunction with basic stats to avoid re-calculating totals.
+final investmentXirrProvider = Provider.family<AsyncValue<double>, String>((
+  ref,
+  investmentId,
+) {
+  final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(investmentId));
+
+  return cashFlowsAsync.when(
+    data: (cashFlows) {
+      if (cashFlows.isEmpty) {
+        return const AsyncValue.data(0.0);
+      }
+      return AsyncValue.data(
+        FinancialCalculator.calculateXirrFromCashFlows(cashFlows),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
+
+/// XIRR ONLY provider for archived investments.
+final archivedInvestmentXirrProvider =
+    Provider.family<AsyncValue<double>, String>((ref, investmentId) {
+      final cashFlowsAsync = ref.watch(
+        archivedCashFlowsByInvestmentProvider(investmentId),
+      );
+
+      return cashFlowsAsync.when(
+        data: (cashFlows) {
+          if (cashFlows.isEmpty) {
+            return const AsyncValue.data(0.0);
+          }
+          return AsyncValue.data(
+            FinancialCalculator.calculateXirrFromCashFlows(cashFlows),
+          );
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    });
+
 // ============ AGGREGATE STATS PROVIDERS ============
 
 /// Global stats across all investments (derived from streams - auto-updates)
