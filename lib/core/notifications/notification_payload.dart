@@ -143,6 +143,20 @@ class NotificationPayload {
           },
         );
 
+      case 'goal_at_risk':
+        return NotificationPayload(
+          type: NotificationPayloadType.goalDetail,
+          goalId: parts.length > 1 ? parts[1] : null,
+          params: {'source': 'at_risk'},
+        );
+
+      case 'goal_stale':
+        return NotificationPayload(
+          type: NotificationPayloadType.goalDetail,
+          goalId: parts.length > 1 ? parts[1] : null,
+          params: {'source': 'stale'},
+        );
+
       case 'test_notification':
       case 'test_scheduled_notification':
         return const NotificationPayload(type: NotificationPayloadType.unknown);
@@ -195,6 +209,12 @@ class NotificationPayload {
   /// Create a payload string for goal milestone celebration
   static String goalMilestone(String goalId, int milestonePercent) =>
       'goal_milestone:$goalId:$milestonePercent';
+
+  /// Create a payload string for goal at-risk alert
+  static String goalAtRisk(String goalId) => 'goal_at_risk:$goalId';
+
+  /// Create a payload string for goal stale alert
+  static String goalStale(String goalId) => 'goal_stale:$goalId';
 
   @override
   String toString() =>

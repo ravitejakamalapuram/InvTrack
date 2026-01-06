@@ -96,6 +96,14 @@ class NotificationIds {
   /// Goal milestone notification ID based on goal ID and milestone percentage
   static int goalMilestone(String goalId, int milestonePercent) =>
       (goalId.hashCode.abs() % 20000) + 220000 + milestonePercent;
+
+  /// Goal at-risk alert notification ID
+  static int goalAtRisk(String goalId) =>
+      (goalId.hashCode.abs() % 10000) + 240000;
+
+  /// Goal stale alert notification ID
+  static int goalStale(String goalId) =>
+      (goalId.hashCode.abs() % 10000) + 250000;
 }
 
 /// Settings keys for notification preferences
@@ -113,6 +121,9 @@ class NotificationPrefsKeys {
   static const String idleAlertsEnabled = 'notifications_idle_alerts';
   static const String idleAlertDays = 'notifications_idle_alert_days';
   static const String fySummaryEnabled = 'notifications_fy_summary';
+  static const String goalAtRiskEnabled = 'notifications_goal_at_risk';
+  static const String goalStaleEnabled = 'notifications_goal_stale';
+  static const String goalStaleDays = 'notifications_goal_stale_days';
 
   /// Track which milestones have been shown (to avoid duplicates)
   static String milestoneShown(String investmentId, double moic) =>
@@ -125,6 +136,14 @@ class NotificationPrefsKeys {
   /// Track when idle alert was last shown for an investment
   static String idleAlertLastShown(String investmentId) =>
       'idle_alert_last_shown_$investmentId';
+
+  /// Track when at-risk alert was last shown for a goal (show max once per week)
+  static String goalAtRiskLastShown(String goalId) =>
+      'goal_at_risk_last_shown_$goalId';
+
+  /// Track when stale alert was last shown for a goal (show max once per month)
+  static String goalStaleLastShown(String goalId) =>
+      'goal_stale_last_shown_$goalId';
 }
 
 /// Notification service that wraps flutter_local_notifications
@@ -477,6 +496,30 @@ class NotificationService {
     }
   }
 
+  /// Goal at-risk alerts enabled (when goal is behind schedule)
+  bool get goalAtRiskEnabled =>
+      _prefs.getBool(NotificationPrefsKeys.goalAtRiskEnabled) ?? true;
+
+  Future<void> setGoalAtRiskEnabled(bool enabled) async {
+    await _prefs.setBool(NotificationPrefsKeys.goalAtRiskEnabled, enabled);
+  }
+
+  /// Goal stale alerts enabled (when no activity for X days)
+  bool get goalStaleEnabled =>
+      _prefs.getBool(NotificationPrefsKeys.goalStaleEnabled) ?? true;
+
+  Future<void> setGoalStaleEnabled(bool enabled) async {
+    await _prefs.setBool(NotificationPrefsKeys.goalStaleEnabled, enabled);
+  }
+
+  /// Number of days before a goal is considered "stale" (default: 60)
+  int get goalStaleDays =>
+      _prefs.getInt(NotificationPrefsKeys.goalStaleDays) ?? 60;
+
+  Future<void> setGoalStaleDays(int days) async {
+    await _prefs.setInt(NotificationPrefsKeys.goalStaleDays, days);
+  }
+
   /// Check if a milestone has already been shown for an investment
   bool isMilestoneShown(String investmentId, double moic) =>
       _prefs.getBool(
@@ -523,6 +566,40 @@ class NotificationService {
   Future<void> markIdleAlertShown(String investmentId) async {
     await _prefs.setString(
       NotificationPrefsKeys.idleAlertLastShown(investmentId),
+      DateTime.now().toIso8601String(),
+    );
+  }
+
+  /// Get last time goal at-risk alert was shown
+  DateTime? getGoalAtRiskLastShown(String goalId) {
+    final str = _prefs.getString(
+      NotificationPrefsKeys.goalAtRiskLastShown(goalId),
+    );
+    if (str == null) return null;
+    return DateTime.tryParse(str);
+  }
+
+  /// Mark goal at-risk alert as shown
+  Future<void> markGoalAtRiskShown(String goalId) async {
+    await _prefs.setString(
+      NotificationPrefsKeys.goalAtRiskLastShown(goalId),
+      DateTime.now().toIso8601String(),
+    );
+  }
+
+  /// Get last time goal stale alert was shown
+  DateTime? getGoalStaleLastShown(String goalId) {
+    final str = _prefs.getString(
+      NotificationPrefsKeys.goalStaleLastShown(goalId),
+    );
+    if (str == null) return null;
+    return DateTime.tryParse(str);
+  }
+
+  /// Mark goal stale alert as shown
+  Future<void> markGoalStaleShown(String goalId) async {
+    await _prefs.setString(
+      NotificationPrefsKeys.goalStaleLastShown(goalId),
       DateTime.now().toIso8601String(),
     );
   }
@@ -1419,6 +1496,136 @@ class NotificationService {
       debugPrint(
         '🔔 Goal milestone notification shown: $reachedMilestone% for $goalName',
       );
+    }
+  }
+
+  /// Show goal at-risk notification when goal is behind schedule.
+  ///
+  /// Rate-limited to once per week per goal.
+  Future<void> showGoalAtRiskNotification({
+    required String goalId,
+    required String goalName,
+    required double progressPercent,
+    required DateTime? targetDate,
+    required DateTime? projectedDate,
+  }) async {
+    await _ensureInitialized();
+    if (!goalAtRiskEnabled) return;
+    if (targetDate == null || projectedDate == null) return;
+
+    // Check rate limiting (once per week)
+    final lastShown = getGoalAtRiskLastShown(goalId);
+    if (lastShown != null) {
+      final daysSinceShown = DateTime.now().difference(lastShown).inDays;
+      if (daysSinceShown < 7) return;
+    }
+
+    if (!await _ensurePermissionsForShow()) return;
+
+    await markGoalAtRiskShown(goalId);
+
+    final daysOver = projectedDate.difference(targetDate).inDays;
+    final title = '⚠️ Goal At Risk';
+    final body =
+        '"$goalName" is ${progressPercent.toStringAsFixed(0)}% complete but projected to miss deadline by $daysOver days. Consider increasing contributions.';
+
+    final androidDetails = AndroidNotificationDetails(
+      NotificationChannels.goalMilestones,
+      'Goal Alerts',
+      channelDescription: 'Alerts when goals need attention',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
+      groupKey: NotificationGroups.goalMilestones,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      threadIdentifier: NotificationGroups.goalMilestones,
+    );
+
+    await _plugin.show(
+      NotificationIds.goalAtRisk(goalId),
+      title,
+      body,
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: NotificationPayload.goalAtRisk(goalId),
+    );
+
+    if (kDebugMode) {
+      debugPrint('🔔 Goal at-risk notification shown for $goalName');
+    }
+  }
+
+  /// Show goal stale notification when goal has no activity for X days.
+  ///
+  /// Rate-limited to once per month per goal.
+  Future<void> showGoalStaleNotification({
+    required String goalId,
+    required String goalName,
+    required DateTime? lastActivityDate,
+  }) async {
+    await _ensureInitialized();
+    if (!goalStaleEnabled) return;
+
+    final now = DateTime.now();
+    final threshold = now.subtract(Duration(days: goalStaleDays));
+
+    // Check if goal is stale
+    if (lastActivityDate != null && lastActivityDate.isAfter(threshold)) {
+      return; // Not stale yet
+    }
+
+    // Check rate limiting (once per month)
+    final lastShown = getGoalStaleLastShown(goalId);
+    if (lastShown != null) {
+      final daysSinceShown = now.difference(lastShown).inDays;
+      if (daysSinceShown < 30) return;
+    }
+
+    if (!await _ensurePermissionsForShow()) return;
+
+    await markGoalStaleShown(goalId);
+
+    final daysSinceActivity = lastActivityDate != null
+        ? now.difference(lastActivityDate).inDays
+        : goalStaleDays;
+    final title = '💤 Goal Needs Attention';
+    final body =
+        '"$goalName" has had no activity for $daysSinceActivity days. Add investments to make progress!';
+
+    final androidDetails = AndroidNotificationDetails(
+      NotificationChannels.goalMilestones,
+      'Goal Alerts',
+      channelDescription: 'Alerts when goals need attention',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      playSound: true,
+      visibility: NotificationVisibility.public,
+      groupKey: NotificationGroups.goalMilestones,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      threadIdentifier: NotificationGroups.goalMilestones,
+    );
+
+    await _plugin.show(
+      NotificationIds.goalStale(goalId),
+      title,
+      body,
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: NotificationPayload.goalStale(goalId),
+    );
+
+    if (kDebugMode) {
+      debugPrint('🔔 Goal stale notification shown for $goalName');
     }
   }
 

@@ -126,47 +126,47 @@ users/{userId}/goals/{goalId}
 
 ## 4. Implementation Phases
 
-### Phase 1: Core Infrastructure (Day 1-2)
-- [ ] Goal entity & enums
-- [ ] Goal model (Firestore serialization)
-- [ ] Goal repository interface
-- [ ] Goal repository implementation
-- [ ] Basic Riverpod providers
+### Phase 1: Core Infrastructure (Day 1-2) ✅ COMPLETE
+- [x] Goal entity & enums
+- [x] Goal model (Firestore serialization)
+- [x] Goal repository interface
+- [x] Goal repository implementation
+- [x] Basic Riverpod providers
 
-### Phase 2: Progress Calculation (Day 2-3)
-- [ ] GoalProgress entity
-- [ ] Progress calculation service
-- [ ] Milestone detection
-- [ ] Projection engine
-- [ ] Goal progress provider
+### Phase 2: Progress Calculation (Day 2-3) ✅ COMPLETE
+- [x] GoalProgress entity
+- [x] Progress calculation service
+- [x] Milestone detection
+- [x] Projection engine
+- [x] Goal progress provider
 
-### Phase 3: UI - List & Cards (Day 3-4)
-- [ ] Goals screen (list view)
-- [ ] Goal card widget
-- [ ] Progress ring widget
-- [ ] Empty state
-- [ ] Add to navigation
+### Phase 3: UI - List & Cards (Day 3-4) ✅ COMPLETE
+- [x] Goals screen (list view)
+- [x] Goal card widget
+- [x] Progress ring widget
+- [x] Empty state
+- [x] Add to navigation
 
-### Phase 4: UI - Create/Edit (Day 4-5)
-- [ ] Create goal screen
-- [ ] Investment selector widget
-- [ ] Type selector
-- [ ] Edit goal screen
-- [ ] Delete confirmation
+### Phase 4: UI - Create/Edit (Day 4-5) ✅ COMPLETE
+- [x] Create goal screen
+- [x] Investment selector widget
+- [x] Type selector
+- [x] Edit goal screen
+- [x] Delete confirmation
 
-### Phase 5: UI - Detail Screen (Day 5-6)
-- [ ] Goal detail screen
-- [ ] Linked investments list
-- [ ] Progress timeline
-- [ ] Milestone indicators
-- [ ] Actions (edit, archive, delete)
+### Phase 5: UI - Detail Screen (Day 5-6) ✅ COMPLETE
+- [x] Goal detail screen
+- [x] Linked investments list
+- [x] Progress timeline
+- [x] Milestone indicators
+- [x] Actions (edit, archive, delete)
 
-### Phase 6: Integration & Polish (Day 6-7)
-- [ ] Dashboard goal summary card
-- [ ] Goal notifications hooks
-- [ ] Analytics events
-- [ ] Error handling
-- [ ] Loading states
+### Phase 6: Integration & Polish (Day 6-7) ✅ COMPLETE
+- [x] Dashboard goal summary card
+- [x] Goal notifications hooks
+- [x] Analytics events
+- [x] Error handling
+- [x] Loading states
 
 ---
 
@@ -176,15 +176,14 @@ See wireframes in next section of this document.
 
 ---
 
-## 6. Notification Hooks (Prepared for Phase 2)
+## 6. Notification Hooks ✅ IMPLEMENTED
 
-| Event | Trigger | Data Needed |
-|-------|---------|-------------|
-| `goal_milestone_reached` | Progress crosses 25/50/75/90/100% | goalId, milestone, currentAmount |
-| `goal_monthly_update` | 1st of month | goalId, progress, monthlyChange |
-| `goal_at_risk` | Behind projection by >10% | goalId, daysBehi, projectedShortfall |
-| `goal_achieved` | 100% reached | goalId, completionDate, totalTime |
-| `goal_stale` | No linked activity 60 days | goalId, lastActivityDate |
+| Event | Trigger | Status |
+|-------|---------|--------|
+| `goal_milestone_reached` | Progress crosses 25/50/75/90/100% | ✅ Implemented |
+| `goal_at_risk` | Goal status is "behind" (>30 days behind projection) | ✅ Implemented (rate-limited: 1/week) |
+| `goal_stale` | No linked activity for 60 days | ✅ Implemented (rate-limited: 1/month) |
+| `goal_achieved` | 100% reached | ✅ Implemented (via milestone) |
 
 ---
 
@@ -201,10 +200,27 @@ See wireframes in next section of this document.
 
 ## 8. Premium Gating
 
-| Feature | Free | Pro |
-|---------|------|-----|
-| Number of goals | 2 | Unlimited |
-| Projections | ❌ | ✅ |
-| Milestone notifications | ❌ | ✅ |
-| Income goals | ❌ | ✅ |
+> **Note**: As of v1.0, all goal features are FREE with no premium gating.
 
+| Feature | Status |
+|---------|--------|
+| Number of goals | ✅ Unlimited |
+| Projections | ✅ Free |
+| Milestone notifications | ✅ Free |
+| Income goals | ✅ Free |
+| At-risk alerts | ✅ Free |
+| Stale reminders | ✅ Free |
+
+---
+
+## 9. Implementation Status
+
+**Feature Status: ✅ COMPLETE**
+
+All phases have been implemented:
+- Core infrastructure with Firestore persistence
+- Progress calculation with projections
+- Full UI (list, create, edit, detail screens)
+- Dashboard integration
+- All notification types (milestones, at-risk, stale)
+- Analytics events

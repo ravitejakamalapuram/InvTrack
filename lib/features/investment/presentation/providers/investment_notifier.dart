@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -731,7 +732,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       final notificationService = ref.read(notificationServiceProvider);
 
-      // Check each goal for milestone achievements
+      // Check each goal for milestone achievements and alerts
       for (final goal in goals) {
         final progress = GoalProgressCalculator.calculate(
           goal: goal,
@@ -739,12 +740,36 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           allCashFlows: cashFlows,
         );
 
+        // Check for milestone achievements
         await notificationService.checkAndShowGoalMilestone(
           goalId: goal.id,
           goalName: goal.name,
           progressPercent: progress.progressPercent,
           currentValue: progress.currentAmount,
           targetValue: goal.targetAmount,
+        );
+
+        // Check for at-risk goals (status is behind)
+        if (progress.status == GoalStatus.behind) {
+          await notificationService.showGoalAtRiskNotification(
+            goalId: goal.id,
+            goalName: goal.name,
+            progressPercent: progress.progressPercent,
+            targetDate: goal.targetDate,
+            projectedDate: progress.projectedCompletionDate,
+          );
+        }
+
+        // Check for stale goals (no activity for X days)
+        final lastActivityDate = GoalProgressCalculator.getLastActivityDate(
+          goal: goal,
+          allInvestments: investments,
+          allCashFlows: cashFlows,
+        );
+        await notificationService.showGoalStaleNotification(
+          goalId: goal.id,
+          goalName: goal.name,
+          lastActivityDate: lastActivityDate,
         );
       }
     } catch (e) {

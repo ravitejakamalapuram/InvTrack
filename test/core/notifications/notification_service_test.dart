@@ -1123,5 +1123,228 @@ void main() {
         expect(fakePlugin.shownNotifications.length, 0);
       },
     );
+
+    test(
+      'should not show goal at-risk notification when permissions denied',
+      () async {
+        fakePlugin.permissionsGranted = false;
+
+        await service.showGoalAtRiskNotification(
+          goalId: 'goal-no-perm',
+          goalName: 'No Permission Goal',
+          progressPercent: 40,
+          targetDate: DateTime.now().add(const Duration(days: 30)),
+          projectedDate: DateTime.now().add(const Duration(days: 90)),
+        );
+
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
+
+    test(
+      'should not show goal stale notification when permissions denied',
+      () async {
+        fakePlugin.permissionsGranted = false;
+
+        await service.showGoalStaleNotification(
+          goalId: 'goal-no-perm',
+          goalName: 'No Permission Goal',
+          lastActivityDate: DateTime.now().subtract(const Duration(days: 90)),
+        );
+
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
+  });
+
+  group('NotificationService - Goal At-Risk Alerts', () {
+    test('should show at-risk notification when goal is behind schedule',
+        () async {
+      await service.showGoalAtRiskNotification(
+        goalId: 'goal-at-risk',
+        goalName: 'Retirement Fund',
+        progressPercent: 40,
+        targetDate: DateTime.now().add(const Duration(days: 30)),
+        projectedDate: DateTime.now().add(const Duration(days: 90)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.title, contains('At Risk'));
+      expect(notification.body, contains('Retirement Fund'));
+      expect(notification.body, contains('40%'));
+    });
+
+    test('should not show at-risk notification when disabled', () async {
+      await service.setGoalAtRiskEnabled(false);
+
+      await service.showGoalAtRiskNotification(
+        goalId: 'goal-disabled',
+        goalName: 'Disabled Goal',
+        progressPercent: 40,
+        targetDate: DateTime.now().add(const Duration(days: 30)),
+        projectedDate: DateTime.now().add(const Duration(days: 90)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show at-risk notification when dates are null', () async {
+      await service.showGoalAtRiskNotification(
+        goalId: 'goal-no-dates',
+        goalName: 'No Dates Goal',
+        progressPercent: 40,
+        targetDate: null,
+        projectedDate: null,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should rate-limit at-risk notifications to once per week', () async {
+      // First notification should show
+      await service.showGoalAtRiskNotification(
+        goalId: 'goal-rate-limit',
+        goalName: 'Rate Limited Goal',
+        progressPercent: 40,
+        targetDate: DateTime.now().add(const Duration(days: 30)),
+        projectedDate: DateTime.now().add(const Duration(days: 90)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+
+      // Second notification within 7 days should not show
+      await service.showGoalAtRiskNotification(
+        goalId: 'goal-rate-limit',
+        goalName: 'Rate Limited Goal',
+        progressPercent: 35,
+        targetDate: DateTime.now().add(const Duration(days: 30)),
+        projectedDate: DateTime.now().add(const Duration(days: 100)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+    });
+
+    test('goal at-risk should be enabled by default', () {
+      expect(service.goalAtRiskEnabled, isTrue);
+    });
+
+    test('should persist goal at-risk preference', () async {
+      await service.setGoalAtRiskEnabled(false);
+      expect(service.goalAtRiskEnabled, isFalse);
+
+      await service.setGoalAtRiskEnabled(true);
+      expect(service.goalAtRiskEnabled, isTrue);
+    });
+  });
+
+  group('NotificationService - Goal Stale Reminders', () {
+    test('should show stale notification when no activity for 60+ days',
+        () async {
+      await service.showGoalStaleNotification(
+        goalId: 'goal-stale',
+        goalName: 'Neglected Fund',
+        lastActivityDate: DateTime.now().subtract(const Duration(days: 90)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.title, contains('Needs Attention'));
+      expect(notification.body, contains('Neglected Fund'));
+      expect(notification.body, contains('90 days'));
+    });
+
+    test('should not show stale notification when disabled', () async {
+      await service.setGoalStaleEnabled(false);
+
+      await service.showGoalStaleNotification(
+        goalId: 'goal-disabled',
+        goalName: 'Disabled Goal',
+        lastActivityDate: DateTime.now().subtract(const Duration(days: 90)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should not show stale notification when activity is recent',
+        () async {
+      await service.showGoalStaleNotification(
+        goalId: 'goal-recent',
+        goalName: 'Active Goal',
+        lastActivityDate: DateTime.now().subtract(const Duration(days: 30)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should show stale notification when lastActivityDate is null',
+        () async {
+      await service.showGoalStaleNotification(
+        goalId: 'goal-null-date',
+        goalName: 'New Goal',
+        lastActivityDate: null,
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(notification.body, contains('60 days'));
+    });
+
+    test('should rate-limit stale notifications to once per month', () async {
+      // First notification should show
+      await service.showGoalStaleNotification(
+        goalId: 'goal-rate-limit',
+        goalName: 'Rate Limited Goal',
+        lastActivityDate: DateTime.now().subtract(const Duration(days: 90)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+
+      // Second notification within 30 days should not show
+      await service.showGoalStaleNotification(
+        goalId: 'goal-rate-limit',
+        goalName: 'Rate Limited Goal',
+        lastActivityDate: DateTime.now().subtract(const Duration(days: 100)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+    });
+
+    test('goal stale should be enabled by default', () {
+      expect(service.goalStaleEnabled, isTrue);
+    });
+
+    test('should persist goal stale preference', () async {
+      await service.setGoalStaleEnabled(false);
+      expect(service.goalStaleEnabled, isFalse);
+
+      await service.setGoalStaleEnabled(true);
+      expect(service.goalStaleEnabled, isTrue);
+    });
+
+    test('should use default stale days of 60', () {
+      expect(service.goalStaleDays, 60);
+    });
+
+    test('should persist custom stale days', () async {
+      await service.setGoalStaleDays(45);
+      expect(service.goalStaleDays, 45);
+
+      await service.setGoalStaleDays(90);
+      expect(service.goalStaleDays, 90);
+    });
+
+    test('should respect custom stale days threshold', () async {
+      await service.setGoalStaleDays(30);
+
+      // Activity 45 days ago should trigger stale (threshold is 30)
+      await service.showGoalStaleNotification(
+        goalId: 'goal-custom-threshold',
+        goalName: 'Custom Threshold Goal',
+        lastActivityDate: DateTime.now().subtract(const Duration(days: 45)),
+      );
+
+      expect(fakePlugin.shownNotifications.length, 1);
+    });
   });
 }

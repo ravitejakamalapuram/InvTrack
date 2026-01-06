@@ -121,6 +121,35 @@ class FakeNotificationService implements NotificationService {
   @override
   bool get fySummaryEnabled => true;
 
+  @override
+  bool get goalAtRiskEnabled => true;
+
+  @override
+  bool get goalStaleEnabled => true;
+
+  @override
+  int get goalStaleDays => 60;
+
+  @override
+  Future<void> showGoalAtRiskNotification({
+    required String goalId,
+    required String goalName,
+    required double progressPercent,
+    required DateTime? targetDate,
+    required DateTime? projectedDate,
+  }) async {
+    _logShown('goal_at_risk_$goalId');
+  }
+
+  @override
+  Future<void> showGoalStaleNotification({
+    required String goalId,
+    required String goalName,
+    required DateTime? lastActivityDate,
+  }) async {
+    _logShown('goal_stale_$goalId');
+  }
+
   // Allow no-op for any methods not explicitly defined
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

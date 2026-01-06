@@ -192,6 +192,25 @@ class GoalProgressCalculator {
 
     return GoalStatus.onTrack;
   }
+
+  /// Get the last activity date for a goal (most recent cash flow date)
+  static DateTime? getLastActivityDate({
+    required GoalEntity goal,
+    required List<InvestmentEntity> allInvestments,
+    required List<CashFlowEntity> allCashFlows,
+  }) {
+    final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
+    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
+
+    final linkedCashFlows = allCashFlows
+        .where((cf) => linkedIds.contains(cf.investmentId))
+        .toList();
+
+    if (linkedCashFlows.isEmpty) return null;
+
+    linkedCashFlows.sort((a, b) => b.date.compareTo(a.date));
+    return linkedCashFlows.first.date;
+  }
 }
 
 /// Provider for a single goal's progress (works for any goal including archived)

@@ -347,15 +347,15 @@ User Flow:
 | **Effort** | 3 weeks |
 | **Status** | [ ] Not Started |
 
-#### Feature 3.4: Goal Tracking (P2 - Medium)
+#### Feature 3.4: Goal Tracking (P2 - Medium) ✅ COMPLETE
 
 | Attribute | Details |
 |-----------|---------|
 | **Description** | Set financial goals and track progress |
 | **Examples** | • "Retirement Fund: ₹2Cr goal, currently ₹85L (42.5%)"<br>• "Child Education: ₹50L by 2030" |
-| **Features** | • Link investments to goals<br>• Progress visualization<br>• Projected achievement date |
+| **Features** | • Link investments to goals<br>• Progress visualization<br>• Projected achievement date<br>• Milestone notifications (25/50/75/100%)<br>• At-risk alerts<br>• Stale goal reminders |
 | **Effort** | 2 weeks |
-| **Status** | [ ] Not Started |
+| **Status** | [x] Complete (Jan 2026) |
 
 #### Feature 3.5: What-If Scenarios (P2 - Medium)
 
@@ -374,7 +374,7 @@ User Flow:
 | Multi-Currency Support | P0 | 4 weeks | [ ] | May 2026 |
 | Benchmark Comparison | P1 | 3 weeks | [ ] | May 2026 |
 | Tax Reporting | P1 | 3 weeks | [ ] | Jun 2026 |
-| Goal Tracking | P2 | 2 weeks | [ ] | Jun 2026 |
+| Goal Tracking | P2 | 2 weeks | [x] | Jan 2026 ✅ |
 | What-If Scenarios | P2 | 2 weeks | [ ] | Jul 2026 |
 
 ---
@@ -1045,7 +1045,9 @@ lib/
   - [x] Tax deadline reminders (India-specific)
   - [x] FY summary notifications
   - [x] Idle investment alerts
-  - [ ] Goal notifications (Requires goals feature)
+  - [x] Goal milestone notifications (25/50/75/100%)
+  - [x] Goal at-risk alerts
+  - [x] Goal stale reminders
 
 - [ ] **Recurring Income Projections**
   - [ ] Pattern recognition algorithm
@@ -1089,12 +1091,16 @@ lib/
   - [ ] Excel export
   - [ ] CA-ready formatting
 
-- [ ] **Goal Tracking**
-  - [ ] Goal creation UI
-  - [ ] Link investments to goals
-  - [ ] Progress visualization
-  - [ ] Projected achievement date
-  - [ ] Goal notifications
+- [x] **Goal Tracking** ✅ COMPLETE (Jan 2026)
+  - [x] Goal creation UI (3 goal types: target amount, target date, income target)
+  - [x] Link investments to goals (3 tracking modes: all, by type, selected)
+  - [x] Progress visualization (progress ring, milestone indicators)
+  - [x] Projected achievement date (velocity-based projection)
+  - [x] Goal milestone notifications (25/50/75/100%)
+  - [x] Goal at-risk alerts (when behind schedule)
+  - [x] Goal stale reminders (no activity for 60 days)
+  - [x] Dashboard integration (goal summary card)
+  - [x] Goal detail screen with linked investments
 
 - [ ] **What-If Scenarios**
   - [ ] Scenario builder UI
