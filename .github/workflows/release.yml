@@ -112,8 +112,10 @@ jobs:
 
       - name: Install git-cliff
         run: |
-          wget -qO- https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz | tar xz
-          sudo mv git-cliff-2.4.0/git-cliff /usr/local/bin/
+          # Install git-cliff via Homebrew on macOS self-hosted runner
+          if ! command -v git-cliff &> /dev/null; then
+            brew install git-cliff
+          fi
 
       - name: Generate changelog
         id: changelog
@@ -130,7 +132,8 @@ jobs:
       - name: Update pubspec.yaml version
         run: |
           NEW_VERSION="${{ steps.new_version.outputs.new_version_full }}"
-          sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+          # macOS sed requires '' after -i
+          sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           echo "Updated pubspec.yaml to version $NEW_VERSION"
           grep "^version:" pubspec.yaml
 
@@ -140,12 +143,12 @@ jobs:
           BUILD_NUM="${{ steps.new_version.outputs.build_number }}"
           FULL_VERSION="${{ steps.new_version.outputs.new_version_full }}"
 
-          # Update version constants in about_screen.dart
-          sed -i "s/const String _appVersion = '.*'/const String _appVersion = '$NEW_VERSION'/" \
+          # Update version constants in about_screen.dart (macOS sed)
+          sed -i '' "s/const String _appVersion = '.*'/const String _appVersion = '$NEW_VERSION'/" \
             lib/features/settings/presentation/screens/about_screen.dart
-          sed -i "s/const String _buildNumber = '.*'/const String _buildNumber = '$BUILD_NUM'/" \
+          sed -i '' "s/const String _buildNumber = '.*'/const String _buildNumber = '$BUILD_NUM'/" \
             lib/features/settings/presentation/screens/about_screen.dart
-          sed -i "s|// matches pubspec.yaml version: .*|// matches pubspec.yaml version: $FULL_VERSION|" \
+          sed -i '' "s|// matches pubspec.yaml version: .*|// matches pubspec.yaml version: $FULL_VERSION|" \
             lib/features/settings/presentation/screens/about_screen.dart
 
           echo "Updated about_screen.dart"
