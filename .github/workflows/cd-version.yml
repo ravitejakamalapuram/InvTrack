@@ -180,7 +180,7 @@ jobs:
       # Trigger deploy workflow manually since GITHUB_TOKEN events don't trigger other workflows
       - name: Trigger deploy workflow
         run: |
-          gh workflow run deploy-android.yml -f tag=v${{ steps.new_version.outputs.new_version }}
+          gh workflow run cd-deploy-android.yml -f tag=v${{ steps.new_version.outputs.new_version }}
           echo "Triggered deploy workflow for v${{ steps.new_version.outputs.new_version }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
