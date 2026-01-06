@@ -14,7 +14,7 @@ jobs:
   # ============ UNIT TESTS ============
   test:
     name: Unit Tests & Analysis
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -74,7 +74,7 @@ jobs:
   # ============ iOS INTEGRATION TESTS ============
   integration-test-ios:
     name: Integration Tests (iOS)
-    runs-on: macos-latest
+    runs-on: self-hosted
     needs: test
 
     steps:
@@ -105,7 +105,7 @@ jobs:
   # ============ ANDROID INTEGRATION TESTS ============
   integration-test-android:
     name: Integration Tests (Android)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: test
 
     steps:
@@ -147,7 +147,7 @@ jobs:
   # ============ PERFORMANCE TESTS ============
   performance-test:
     name: Performance Benchmarks
-    runs-on: macos-latest
+    runs-on: self-hosted
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
