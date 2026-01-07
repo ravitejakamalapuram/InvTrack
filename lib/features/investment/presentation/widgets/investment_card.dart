@@ -42,7 +42,13 @@ class InvestmentCard extends ConsumerWidget {
     final typeColor = investment.type.color;
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
-    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+
+    // OPTIMIZATION: Use basic stats provider which skips expensive XIRR calculation
+    // for the main card render. Only calculate XIRR where strictly needed.
+    final statsAsync =
+        investment.isArchived
+            ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
+            : ref.watch(investmentBasicStatsProvider(investment.id));
 
     // Build accessibility label
     final semanticLabel = statsAsync.maybeWhen(
@@ -50,7 +56,9 @@ class InvestmentCard extends ConsumerWidget {
         name: investment.name,
         type: investment.type.displayName,
         currentValue: stats.netCashFlow,
-        returnPercent: stats.hasData ? stats.xirr * 100 : null,
+        // XIRR might be 0.0 if not calculated, which is acceptable for semantic label
+        // rather than blocking UI for calculation
+        returnPercent: stats.xirr != 0 ? stats.xirr * 100 : null,
         currencySymbol: currencySymbol,
         isClosed: isClosed,
       ),
@@ -93,6 +101,7 @@ class InvestmentCard extends ConsumerWidget {
                     // Stats
                     _InvestmentValueColumn(
                       investmentId: investment.id,
+                      isArchived: investment.isArchived,
                       isDark: isDark,
                     ),
                   ],
@@ -201,18 +210,31 @@ class InvestmentCard extends ConsumerWidget {
 /// Displays the investment value and return percentage.
 class _InvestmentValueColumn extends ConsumerWidget {
   final String investmentId;
+  final bool isArchived;
   final bool isDark;
 
   const _InvestmentValueColumn({
     required this.investmentId,
+    required this.isArchived,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
-    final statsAsync = ref.watch(investmentStatsProvider(investmentId));
     final isPrivacyMode = ref.watch(privacyModeProvider);
+
+    // Watch basic stats (fast)
+    final statsAsync =
+        isArchived
+            ? ref.watch(archivedInvestmentBasicStatsProvider(investmentId))
+            : ref.watch(investmentBasicStatsProvider(investmentId));
+
+    // Watch XIRR separately (slow)
+    final xirrAsync =
+        isArchived
+            ? ref.watch(archivedInvestmentXirrProvider(investmentId))
+            : ref.watch(investmentXirrProvider(investmentId));
 
     return statsAsync.when(
       data: (stats) {
@@ -229,10 +251,6 @@ class _InvestmentValueColumn extends ConsumerWidget {
         final plColor = isPositive
             ? AppColors.graphEmerald
             : AppColors.errorLight;
-        final xirrColor = stats.xirr >= 0
-            ? AppColors.graphEmerald
-            : AppColors.errorLight;
-        final xirrFormatted = formatXirr(stats.xirr);
 
         final valueStyle = AppTypography.bodyLarge.copyWith(
           fontWeight: FontWeight.w600,
@@ -259,27 +277,46 @@ class _InvestmentValueColumn extends ConsumerWidget {
                     style: valueStyle,
                   ),
             SizedBox(height: AppSpacing.xxs),
-            // XIRR - only show if valid
-            if (xirrFormatted != null)
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: isPrivacyMode ? 0.0 : 1.0,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: xirrColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '$xirrFormatted IRR',
-                    style: AppTypography.small.copyWith(
-                      color: xirrColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
+
+            // XIRR - only show if valid and loaded
+            xirrAsync.when(
+              data: (xirr) {
+                final xirrColor = xirr >= 0
+                    ? AppColors.graphEmerald
+                    : AppColors.errorLight;
+                final xirrFormatted = formatXirr(xirr);
+
+                if (xirrFormatted == null) return const SizedBox.shrink();
+
+                return AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isPrivacyMode ? 0.0 : 1.0,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: xirrColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '$xirrFormatted IRR',
+                      style: AppTypography.small.copyWith(
+                        color: xirrColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
-                ),
+                );
+              },
+              loading: () => SizedBox(
+                height: 14,
+                width: 40,
+                // Optional: show skeleton or nothing while loading XIRR
+                // Showing nothing avoids UI jumping if it loads fast
+                child: const SizedBox.shrink(),
               ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
           ],
         );
       },
@@ -309,7 +346,13 @@ class _InvestmentBottomStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
-    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+
+    // OPTIMIZATION: Use basic stats (no XIRR needed here)
+    final statsAsync =
+        investment.isArchived
+            ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
+            : ref.watch(investmentBasicStatsProvider(investment.id));
+
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Container(
