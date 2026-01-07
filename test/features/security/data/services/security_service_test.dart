@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +37,18 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('verifyPin returns true for correct PIN', () async {
+    test('setPin stores hashed PIN', () async {
+      const pin = '1234';
+      await service.setPin(pin);
+
+      final storedValue = fakeSecureStorage.storage['user_pin'];
+      final expectedHash = sha256.convert(utf8.encode(pin)).toString();
+
+      expect(storedValue, equals(expectedHash));
+      expect(storedValue?.length, equals(64));
+    });
+
+    test('verifyPin returns true for correct PIN (hashed storage)', () async {
       await service.setPin('1234');
       final result = await service.verifyPin('1234');
       expect(result, isTrue);
@@ -45,6 +58,21 @@ void main() {
       await service.setPin('1234');
       final result = await service.verifyPin('5678');
       expect(result, isFalse);
+    });
+
+    test('verifyPin upgrades legacy plaintext PIN to hash', () async {
+      // Setup: Manually store a plaintext PIN (legacy state)
+      const plaintextPin = '1234';
+      await fakeSecureStorage.write(key: 'user_pin', value: plaintextPin);
+
+      // Verify: Authenticate with the correct PIN
+      final result = await service.verifyPin(plaintextPin);
+      expect(result, isTrue);
+
+      // Check: Storage should now be hashed
+      final storedValue = fakeSecureStorage.storage['user_pin'];
+      final expectedHash = sha256.convert(utf8.encode(plaintextPin)).toString();
+      expect(storedValue, equals(expectedHash));
     });
 
     test('removePin removes the PIN and disables biometrics', () async {
