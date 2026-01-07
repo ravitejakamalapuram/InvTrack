@@ -158,10 +158,10 @@ class HeroCardContent extends ConsumerWidget {
   }
 
   Widget _buildToggleButton(WidgetRef ref) {
-    final VoidCallback onTap = () {
+    void onTap() {
       HapticFeedback.lightImpact();
       ref.read(showRealizedOnlyProvider.notifier).toggle();
-    };
+    }
 
     return Semantics(
       button: true,

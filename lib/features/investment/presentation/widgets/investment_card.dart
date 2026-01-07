@@ -315,7 +315,7 @@ class _InvestmentValueColumn extends ConsumerWidget {
                 // Showing nothing avoids UI jumping if it loads fast
                 child: const SizedBox.shrink(),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
           ],
         );
