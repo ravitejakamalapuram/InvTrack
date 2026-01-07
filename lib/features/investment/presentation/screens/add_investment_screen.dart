@@ -286,61 +286,68 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           ),
         ),
         SizedBox(height: AppSpacing.xs),
-        GestureDetector(
-          onTap: () => _selectMaturityDate(context, isDark),
-          child: GlassCard(
-            padding: AppSpacing.cardPadding,
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withValues(alpha: 0.1),
-                    borderRadius: AppSizes.borderRadiusMd,
-                  ),
-                  child: Icon(
-                    Icons.event_rounded,
-                    color: AppColors.primaryLight,
-                    size: AppSizes.iconSm,
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm + 2),
-                Expanded(
-                  child: Text(
-                    _maturityDate != null
-                        ? AppDateUtils.formatLong(_maturityDate!)
-                        : 'No maturity date set',
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: _maturityDate != null
-                          ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
+        Semantics(
+          button: true,
+          label: 'Select Maturity Date',
+          value: _maturityDate != null
+              ? AppDateUtils.formatLong(_maturityDate!)
+              : 'Not set',
+          child: GestureDetector(
+            onTap: () => _selectMaturityDate(context, isDark),
+            child: GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      borderRadius: AppSizes.borderRadiusMd,
+                    ),
+                    child: Icon(
+                      Icons.event_rounded,
+                      color: AppColors.primaryLight,
+                      size: AppSizes.iconSm,
                     ),
                   ),
-                ),
-                if (_maturityDate != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.clear_rounded,
+                  SizedBox(width: AppSpacing.sm + 2),
+                  Expanded(
+                    child: Text(
+                      _maturityDate != null
+                          ? AppDateUtils.formatLong(_maturityDate!)
+                          : 'No maturity date set',
+                      style: AppTypography.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: _maturityDate != null
+                            ? (isDark ? Colors.white : AppColors.neutral900Light)
+                            : (isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light),
+                      ),
+                    ),
+                  ),
+                  if (_maturityDate != null)
+                    IconButton(
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _maturityDate = null),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
                       color: isDark
                           ? AppColors.neutral400Dark
                           : AppColors.neutral400Light,
-                      size: 20,
                     ),
-                    onPressed: () => setState(() => _maturityDate = null),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  )
-                else
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral400Light,
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -399,80 +406,86 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     final isSelected = _incomeFrequency == frequency;
     final chipColor = color ?? AppColors.neutral500Light;
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _incomeFrequency = frequency);
-      },
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        builder: (context, progress, child) {
-          final backgroundColor = Color.lerp(
-            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            chipColor,
-            progress,
-          )!;
-          final borderColor = Color.lerp(
-            isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
-            Colors.transparent,
-            progress,
-          )!;
-          final iconBgColor = Color.lerp(
-            chipColor.withValues(alpha: 0.12),
-            Colors.white.withValues(alpha: 0.2),
-            progress,
-          )!;
-          final iconColor = Color.lerp(chipColor, Colors.white, progress)!;
-          final textColor = Color.lerp(
-            isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
-            Colors.white,
-            progress,
-          )!;
-
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor, width: 1.5),
-              boxShadow: progress > 0.1
-                  ? [
-                      BoxShadow(
-                        color: chipColor.withValues(alpha: progress * 0.35),
-                        blurRadius: 12 * progress,
-                        offset: Offset(0, 4 * progress),
-                        spreadRadius: -2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: iconBgColor,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(icon, size: 16, color: iconColor),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: AppTypography.body.copyWith(
-                    fontSize: 13,
-                    color: textColor,
-                    fontWeight:
-                        progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          );
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '$label income frequency',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _incomeFrequency = frequency);
         },
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          builder: (context, progress, child) {
+            final backgroundColor = Color.lerp(
+              isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+              chipColor,
+              progress,
+            )!;
+            final borderColor = Color.lerp(
+              isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+              Colors.transparent,
+              progress,
+            )!;
+            final iconBgColor = Color.lerp(
+              chipColor.withValues(alpha: 0.12),
+              Colors.white.withValues(alpha: 0.2),
+              progress,
+            )!;
+            final iconColor = Color.lerp(chipColor, Colors.white, progress)!;
+            final textColor = Color.lerp(
+              isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+              Colors.white,
+              progress,
+            )!;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor, width: 1.5),
+                boxShadow: progress > 0.1
+                    ? [
+                        BoxShadow(
+                          color: chipColor.withValues(alpha: progress * 0.35),
+                          blurRadius: 12 * progress,
+                          offset: Offset(0, 4 * progress),
+                          spreadRadius: -2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: iconBgColor,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(icon, size: 16, color: iconColor),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: AppTypography.body.copyWith(
+                      fontSize: 13,
+                      color: textColor,
+                      fontWeight:
+                          progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
