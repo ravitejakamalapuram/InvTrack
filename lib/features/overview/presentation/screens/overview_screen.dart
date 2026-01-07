@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
@@ -136,6 +137,11 @@ class OverviewScreen extends ConsumerWidget {
 
         // Goals Summary Card
         const GoalsDashboardCard(),
+
+        SizedBox(height: AppSpacing.xl),
+
+        // FIRE Progress Card
+        const FireDashboardCard(),
 
         SizedBox(height: AppSpacing.xl),
 
