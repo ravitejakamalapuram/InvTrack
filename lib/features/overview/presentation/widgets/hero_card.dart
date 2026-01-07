@@ -158,39 +158,49 @@ class HeroCardContent extends ConsumerWidget {
   }
 
   Widget _buildToggleButton(WidgetRef ref) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        ref.read(showRealizedOnlyProvider.notifier).toggle();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.3),
-            width: 1,
+    final VoidCallback onTap = () {
+      HapticFeedback.lightImpact();
+      ref.read(showRealizedOnlyProvider.notifier).toggle();
+    };
+
+    return Semantics(
+      button: true,
+      label: showRealizedOnly
+          ? 'Switch to all investments'
+          : 'Switch to realized investments only',
+      onTap: onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              showRealizedOnly ? Icons.check_circle : Icons.all_inclusive,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 14,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              showRealizedOnly ? 'Realized' : 'All',
-              style: TextStyle(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                showRealizedOnly ? Icons.check_circle : Icons.all_inclusive,
                 color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                size: 14,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Text(
+                showRealizedOnly ? 'Realized' : 'All',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
