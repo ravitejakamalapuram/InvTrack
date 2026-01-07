@@ -3,9 +3,14 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 
 /// Firestore model for FIRE Settings entity
 class FireSettingsModel {
+  /// Current schema version for FIRE settings.
+  /// Increment this when making breaking changes to the data structure.
+  static const int currentSchemaVersion = 1;
+
   /// Convert FireSettingsEntity to Firestore document
   static Map<String, dynamic> toFirestore(FireSettingsEntity settings) {
     return {
+      'schemaVersion': currentSchemaVersion,
       'monthlyExpenses': settings.monthlyExpenses,
       'safeWithdrawalRate': settings.safeWithdrawalRate,
       'currentAge': settings.currentAge,

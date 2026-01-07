@@ -21,6 +21,11 @@ class FireStatsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Theme-aware colors for FIRE type icons
+    final fireColor = isDark ? AppColors.accentDark : AppColors.accentLight;
+    final coastColor = isDark ? AppColors.successDark : AppColors.successLight;
+    final baristaColor = isDark ? AppColors.warningDark : AppColors.warningLight;
+
     return GlassCard(
       child: Column(
         children: [
@@ -28,7 +33,7 @@ class FireStatsCard extends StatelessWidget {
             context,
             isDark,
             icon: Icons.local_fire_department,
-            iconColor: Colors.orange,
+            iconColor: fireColor,
             label: 'FIRE Number',
             value: formatCompactIndian(calculation.fireNumber, symbol: currencySymbol),
             subtitle: 'Full financial independence target',
@@ -44,7 +49,7 @@ class FireStatsCard extends StatelessWidget {
             context,
             isDark,
             icon: Icons.beach_access_outlined,
-            iconColor: Colors.teal,
+            iconColor: coastColor,
             label: 'Coast FIRE',
             value: formatCompactIndian(calculation.coastFireNumber, symbol: currencySymbol),
             subtitle: 'Save this, then stop saving',
@@ -59,7 +64,7 @@ class FireStatsCard extends StatelessWidget {
             context,
             isDark,
             icon: Icons.coffee_outlined,
-            iconColor: Colors.brown,
+            iconColor: baristaColor,
             label: 'Barista FIRE',
             value: formatCompactIndian(calculation.baristaFireNumber, symbol: currencySymbol),
             subtitle: 'Part-time income covers the rest',

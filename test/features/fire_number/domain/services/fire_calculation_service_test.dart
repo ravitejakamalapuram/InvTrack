@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
-import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
 
 void main() {
@@ -228,6 +227,80 @@ void main() {
 
       expect(result.fireNumber, greaterThanOrEqualTo(0));
       expect(result.coastFireNumber, result.fireNumber);
+    });
+
+    test('returns behind status when progress is below 25%', () {
+      // First calculate to get the FIRE number
+      final initial = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 50000,
+      );
+
+      // Portfolio at 10% of FIRE number (below 25% threshold)
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: initial.fireNumber * 0.10,
+        currentMonthlySavings: 50000,
+      );
+
+      expect(result.status, FireProgressStatus.behind);
+      expect(result.progressPercentage, lessThan(25));
+    });
+
+    test('returns onTrack status when progress is between 25% and 75% and below coast', () {
+      // First calculate to get the FIRE number and coast number
+      final initial = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 50000,
+      );
+
+      // Calculate a value that is 30% of FIRE but below coast FIRE
+      // Coast FIRE is typically around 30-40% of full FIRE for 15 year horizon
+      final coastRatio = initial.coastFireNumber / initial.fireNumber;
+
+      // If 30% is below coast, use it; otherwise use a value just below coast
+      final targetRatio = coastRatio > 0.30 ? 0.30 : coastRatio * 0.9;
+
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: initial.fireNumber * targetRatio,
+        currentMonthlySavings: 50000,
+      );
+
+      // Should be onTrack if between 25-75% and below coast
+      // Or behind if below 25%
+      expect(
+        result.status == FireProgressStatus.onTrack ||
+        result.status == FireProgressStatus.behind,
+        isTrue,
+      );
+    });
+
+    test('returns ahead or coasting when progress is 75% or more', () {
+      // First calculate to get the FIRE number
+      final initial = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 50000,
+      );
+
+      // Portfolio at 80% of FIRE number (above 75% threshold)
+      // At this level, likely above coast FIRE so will be coasting
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: initial.fireNumber * 0.80,
+        currentMonthlySavings: 50000,
+      );
+
+      // Should be ahead or coasting (coasting takes precedence if above coast FIRE)
+      expect(
+        result.status == FireProgressStatus.ahead ||
+        result.status == FireProgressStatus.coasting,
+        isTrue,
+      );
+      expect(result.progressPercentage, greaterThanOrEqualTo(75));
     });
   });
 

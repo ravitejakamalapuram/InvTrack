@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 
@@ -22,12 +23,13 @@ void main() {
 
   group('FireProgressStatusUIExtension', () {
     test('color returns correct colors for each status', () {
-      expect(FireProgressStatus.notStarted.color, Colors.grey);
-      expect(FireProgressStatus.behind.color, Colors.orange);
-      expect(FireProgressStatus.onTrack.color, Colors.blue);
-      expect(FireProgressStatus.ahead.color, Colors.green);
-      expect(FireProgressStatus.achieved.color, Colors.green);
-      expect(FireProgressStatus.coasting.color, Colors.teal);
+      // Uses AppColors design system colors
+      expect(FireProgressStatus.notStarted.color, AppColors.neutral500Light);
+      expect(FireProgressStatus.behind.color, AppColors.warningLight);
+      expect(FireProgressStatus.onTrack.color, AppColors.accentLight);
+      expect(FireProgressStatus.ahead.color, AppColors.successLight);
+      expect(FireProgressStatus.achieved.color, AppColors.successLight);
+      expect(FireProgressStatus.coasting.color, AppColors.graphTeal);
     });
 
     test('all FireProgressStatus values have valid colors', () {

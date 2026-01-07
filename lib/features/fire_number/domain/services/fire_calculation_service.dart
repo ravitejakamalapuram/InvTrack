@@ -195,7 +195,15 @@ class FireCalculationService {
     return currentAge + (months / 12).ceil();
   }
 
-  /// Determine FIRE progress status
+  /// Determine FIRE progress status based on progress percentage and Coast FIRE
+  ///
+  /// Status determination logic:
+  /// - achieved: 100%+ of FIRE number reached
+  /// - coasting: Reached Coast FIRE (can stop saving, investments will grow to FIRE)
+  /// - ahead: 75%+ progress OR on track to reach FIRE 2+ years early
+  /// - onTrack: 25-75% progress with reasonable trajectory
+  /// - behind: <25% progress with significant time remaining
+  /// - notStarted: No investments yet
   FireProgressStatus _determineStatus({
     required double progressPercentage,
     required double currentValue,
@@ -212,16 +220,12 @@ class FireCalculationService {
       return FireProgressStatus.notStarted;
     }
 
-    // Calculate expected progress based on years
-    // Assuming linear progress for simplicity
-    final expectedProgress = yearsToFire > 0
-        ? 100 - (yearsToFire / (yearsToFire + 10) * 100)
-        : 100;
-
-    if (progressPercentage >= expectedProgress * 1.1) {
+    // Use progress percentage thresholds for status
+    // These thresholds are based on typical FIRE journey milestones
+    if (progressPercentage >= 75) {
       return FireProgressStatus.ahead;
     }
-    if (progressPercentage >= expectedProgress * 0.8) {
+    if (progressPercentage >= 25) {
       return FireProgressStatus.onTrack;
     }
     return FireProgressStatus.behind;

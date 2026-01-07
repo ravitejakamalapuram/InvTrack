@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
@@ -17,6 +18,9 @@ void main() async {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Initialize date formatting for intl package (required before using DateFormat)
+      await initializeDateFormatting();
 
       // Critical path: Firebase must be initialized before runApp
       // Run in parallel with SharedPreferences for faster startup

@@ -114,6 +114,16 @@ void main() {
       expect(settings.fireMultiplier, closeTo(33.33, 0.01));
     });
 
+    test('fireMultiplier returns default 25x when SWR is zero', () {
+      final settings = testSettings.copyWith(safeWithdrawalRate: 0);
+      expect(settings.fireMultiplier, 25.0);
+    });
+
+    test('fireMultiplier returns default 25x when SWR is negative', () {
+      final settings = testSettings.copyWith(safeWithdrawalRate: -1);
+      expect(settings.fireMultiplier, 25.0);
+    });
+
     test('defaults factory creates correct default settings', () {
       final defaults = FireSettingsEntity.defaults(
         id: 'default-1',
@@ -148,6 +158,20 @@ void main() {
       expect(updated.monthlyExpenses, 75000);
       expect(updated.fireType, FireType.fat);
       expect(updated.currentAge, testSettings.currentAge);
+    });
+
+    test('toJson returns correct map', () {
+      final json = testSettings.toJson();
+
+      expect(json['id'], 'fire-1');
+      expect(json['monthlyExpenses'], 50000);
+      expect(json['safeWithdrawalRate'], 4.0);
+      expect(json['currentAge'], 30);
+      expect(json['targetFireAge'], 45);
+      expect(json['fireType'], 'regular');
+      expect(json['isSetupComplete'], true);
+      expect(json['createdAt'], '2024-01-01T00:00:00.000');
+      expect(json['updatedAt'], '2024-01-01T00:00:00.000');
     });
   });
 }

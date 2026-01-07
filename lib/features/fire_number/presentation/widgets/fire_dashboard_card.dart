@@ -45,6 +45,8 @@ class FireDashboardCard extends ConsumerWidget {
   }
 
   Widget _buildSetupCard(BuildContext context, bool isDark) {
+    final accentColor = isDark ? AppColors.accentDark : AppColors.accentLight;
+
     return GlassCard(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -55,12 +57,12 @@ class FireDashboardCard extends ConsumerWidget {
           Container(
             padding: EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.15),
+              color: accentColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_fire_department,
-              color: Colors.orange,
+              color: accentColor,
               size: 28,
             ),
           ),

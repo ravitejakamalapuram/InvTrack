@@ -4,20 +4,27 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/fire_number/domain/services/fire_settings_validator.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Notifier for FIRE settings operations
 class FireSettingsNotifier extends Notifier<AsyncValue<void>> {
   final Uuid _uuid = const Uuid();
+  final FireSettingsValidator _validator = FireSettingsValidator();
 
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
 
-  /// Save or update FIRE settings
+  /// Save or update FIRE settings.
+  /// Validates settings before saving and throws [FireSettingsValidationException]
+  /// if validation fails.
   Future<void> saveSettings(FireSettingsEntity settings) async {
     state = const AsyncValue.loading();
     try {
+      // Validate settings before saving
+      _validator.validateOrThrow(settings);
+
       final repository = ref.read(fireSettingsRepositoryProvider);
       await repository.saveSettings(settings);
 

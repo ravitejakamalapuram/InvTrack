@@ -184,7 +184,9 @@ class FireSettingsEntity {
   double get annualExpenses => monthlyExpenses * 12;
 
   /// FIRE multiplier based on SWR (e.g., 4% → 25x)
-  double get fireMultiplier => 100 / safeWithdrawalRate;
+  /// Returns default 25x if SWR is zero or negative to prevent division errors.
+  double get fireMultiplier =>
+      safeWithdrawalRate > 0 ? 100 / safeWithdrawalRate : 25.0;
 
   /// Create default settings for new users
   factory FireSettingsEntity.defaults({
@@ -288,6 +290,29 @@ class FireSettingsEntity {
   String toString() {
     return 'FireSettingsEntity(id: $id, monthlyExpenses: $monthlyExpenses, '
         'fireType: $fireType, targetFireAge: $targetFireAge)';
+  }
+
+  /// Convert entity to JSON map for debugging and export purposes.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'monthlyExpenses': monthlyExpenses,
+      'safeWithdrawalRate': safeWithdrawalRate,
+      'currentAge': currentAge,
+      'targetFireAge': targetFireAge,
+      'lifeExpectancy': lifeExpectancy,
+      'inflationRate': inflationRate,
+      'preRetirementReturn': preRetirementReturn,
+      'postRetirementReturn': postRetirementReturn,
+      'healthcareBuffer': healthcareBuffer,
+      'emergencyMonths': emergencyMonths,
+      'fireType': fireType.name,
+      'monthlyPassiveIncome': monthlyPassiveIncome,
+      'expectedPension': expectedPension,
+      'isSetupComplete': isSetupComplete,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
   }
 }
 
