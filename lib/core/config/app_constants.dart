@@ -60,3 +60,27 @@ class BusinessConstants {
   /// Excel epoch date (1899-12-30) for serial date conversion
   static final DateTime excelEpoch = DateTime(1899, 12, 30);
 }
+
+/// FIRE feature UI constants
+class FireUiConstants {
+  FireUiConstants._();
+
+  /// Size of the progress ring in the hero card
+  static const double heroRingSize = 220;
+
+  /// Stroke width of the progress ring
+  static const double heroRingStrokeWidth = 16;
+
+  /// Default progress ring size for smaller displays
+  static const double defaultRingSize = 200;
+
+  /// Default ring stroke width
+  static const double defaultRingStrokeWidth = 14;
+
+  /// Border radius for hero card
+  static const double heroCardBorderRadius = 24;
+
+  /// Decorative circle sizes in hero card
+  static const double decorativeCircleLarge = 150;
+  static const double decorativeCircleSmall = 100;
+}

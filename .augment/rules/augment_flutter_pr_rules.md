@@ -155,11 +155,70 @@ PR description MUST include:
 
 ---
 
-## PR RULE 14: FINAL MERGE GATE
+## PR RULE 14: DATA LIFECYCLE VERIFICATION
+For PRs introducing new data storage (Firestore collections, local storage, etc.):
+
+### Delete Account Impact
+PR MUST confirm:
+- [ ] New collections/data identified
+- [ ] Delete account flow updated to purge new data
+- [ ] Cascading deletes tested
+- [ ] No orphaned data after account deletion
+
+### Export/Import Impact
+PR MUST confirm:
+- [ ] Decision documented: Include in ZIP export? (Yes/No with reason)
+- [ ] If Yes: Export service updated
+- [ ] If Yes: Import service updated
+- [ ] Version compatibility handled for old exports
+
+### Re-Signup Data Isolation
+PR MUST confirm:
+- [ ] Data properly scoped to user ID
+- [ ] Old data will NOT resurface on re-signup
+- [ ] Query filters exclude orphaned/deleted user data
+
+❌ New data storage without lifecycle verification → PR REJECTED
+
+---
+
+## PR RULE 15: MULTI-PERSPECTIVE REVIEW REQUIREMENT
+For new features or significant changes, PR MUST include evidence of:
+
+### Review Checklist
+- [ ] Architect Review completed
+  - Data model validated
+  - Scalability assessed
+  - Security reviewed
+- [ ] Product Manager Review completed
+  - User flow validated
+  - Edge cases handled
+  - UX patterns verified
+- [ ] Senior Flutter Dev Review completed
+  - Code quality verified
+  - Performance optimized
+  - Widget rebuilds scoped
+- [ ] Enterprise Rules Compliance verified
+  - All 18+ rules checked
+  - No violations found
+
+### Review Summary Required
+PR description MUST include:
+- Summary of each review perspective
+- List of issues found and resolved
+- Confirmation of 100% confidence in implementation
+
+❌ Missing multi-perspective review → PR BLOCKED
+
+---
+
+## PR RULE 16: FINAL MERGE GATE
 PR can be merged ONLY IF:
-- All rules above are satisfied
+- All rules above are satisfied (1-15)
 - No blocking comments from Augment
 - Architecture integrity preserved
 - Tests fully green
+- Data lifecycle verified (if applicable)
+- Multi-perspective review completed (for features)
 
 Violation of any rule = **NO MERGE**.

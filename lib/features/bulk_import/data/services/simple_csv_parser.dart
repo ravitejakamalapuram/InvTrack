@@ -64,26 +64,38 @@ class ParsedCsvResult {
 
 /// Simple CSV parser with smart date inference
 class SimpleCsvParser {
-  /// Common date formats to try (in order of priority)
-  static final List<DateFormat> _dateFormats = [
-    DateFormat('yyyy-MM-dd'),
-    DateFormat('dd-MM-yyyy'),
-    DateFormat('MM-dd-yyyy'),
-    DateFormat('dd/MM/yyyy'),
-    DateFormat('MM/dd/yyyy'),
-    DateFormat('yyyy/MM/dd'),
-    DateFormat('d-MMM-yyyy'),
-    DateFormat('dd-MMM-yyyy'),
-    DateFormat('MMM d, yyyy'),
-    DateFormat('MMMM d, yyyy'),
-    DateFormat('d/M/yyyy'),
-    DateFormat('M/d/yyyy'),
-    DateFormat('MMM-yy'), // Jan-21 format
-    DateFormat('MMMM-yy'), // January-21 format
-    DateFormat('MM-yy'), // 01-21 format
-    DateFormat('MM/yy'), // 01/21 format
+  /// Common date format patterns to try (in order of priority)
+  /// Note: We store patterns as strings and create DateFormat lazily to avoid
+  /// initialization errors when the class is loaded before initializeDateFormatting()
+  static const List<String> _dateFormatPatterns = [
+    'yyyy-MM-dd',
+    'dd-MM-yyyy',
+    'MM-dd-yyyy',
+    'dd/MM/yyyy',
+    'MM/dd/yyyy',
+    'yyyy/MM/dd',
+    'd-MMM-yyyy',
+    'dd-MMM-yyyy',
+    'MMM d, yyyy',
+    'MMMM d, yyyy',
+    'd/M/yyyy',
+    'M/d/yyyy',
+    'MMM-yy', // Jan-21 format
+    'MMMM-yy', // January-21 format
+    'MM-yy', // 01-21 format
+    'MM/yy', // 01/21 format
     // Excel serial date handled separately
   ];
+
+  /// Lazily initialized date formats - only created when first accessed
+  static List<DateFormat>? _dateFormatsCache;
+
+  /// Get date formats, creating them lazily
+  static List<DateFormat> get _dateFormats {
+    _dateFormatsCache ??=
+        _dateFormatPatterns.map((p) => DateFormat(p)).toList();
+    return _dateFormatsCache!;
+  }
 
   /// Parse CSV bytes into structured data
   static ParsedCsvResult parse(Uint8List bytes) {

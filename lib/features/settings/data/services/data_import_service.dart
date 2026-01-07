@@ -245,6 +245,11 @@ class DataImportService {
   // ============ Private Helper Methods ============
 
   /// Delete all existing data (for replace strategy)
+  ///
+  /// Note: FIRE settings are intentionally NOT deleted during import replace.
+  /// FIRE settings are user preferences/configuration, not investment data.
+  /// They are managed separately through the FIRE settings screen.
+  /// For full account deletion (including FIRE settings), see [DataManagementScreen].
   Future<void> _deleteAllExistingData() async {
     // Delete all investments (cascades to cashflows)
     final investments = await _investmentRepository.getAllInvestments();
