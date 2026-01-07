@@ -38,7 +38,8 @@ final fireCalculationServiceProvider = Provider<FireCalculationService>((ref) {
 
 /// Watch FIRE settings (real-time updates)
 /// Returns null if user hasn't set up FIRE settings yet
-final fireSettingsProvider = StreamProvider<FireSettingsEntity?>((ref) {
+/// Uses autoDispose to clean up when no longer needed
+final fireSettingsProvider = StreamProvider.autoDispose<FireSettingsEntity?>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value(null);
@@ -55,7 +56,8 @@ final isFireSetupCompleteProvider = Provider<bool>((ref) {
 // ============ CALCULATION PROVIDERS ============
 
 /// Calculate FIRE numbers based on settings and current portfolio
-final fireCalculationProvider = Provider<AsyncValue<FireCalculationResult>>((ref) {
+/// Uses autoDispose to clean up when no longer needed
+final fireCalculationProvider = Provider.autoDispose<AsyncValue<FireCalculationResult>>((ref) {
   final settingsAsync = ref.watch(fireSettingsProvider);
   final portfolioStatsAsync = ref.watch(globalStatsProvider);
 
@@ -102,7 +104,7 @@ double _estimateMonthlySavings(InvestmentStats stats) {
 }
 
 /// Provider for FIRE progress percentage
-final fireProgressProvider = Provider<double>((ref) {
+final fireProgressProvider = Provider.autoDispose<double>((ref) {
   final calculation = ref.watch(fireCalculationProvider);
   return calculation.when(
     data: (result) => result.progressPercentage,
@@ -112,7 +114,7 @@ final fireProgressProvider = Provider<double>((ref) {
 });
 
 /// Provider for FIRE status
-final fireStatusProvider = Provider<FireProgressStatus>((ref) {
+final fireStatusProvider = Provider.autoDispose<FireProgressStatus>((ref) {
   final calculation = ref.watch(fireCalculationProvider);
   return calculation.when(
     data: (result) => result.status,
@@ -122,7 +124,7 @@ final fireStatusProvider = Provider<FireProgressStatus>((ref) {
 });
 
 /// Provider for projection points (for charts)
-final fireProjectionsProvider = Provider<List<FireProjectionPoint>>((ref) {
+final fireProjectionsProvider = Provider.autoDispose<List<FireProjectionPoint>>((ref) {
   final settingsAsync = ref.watch(fireSettingsProvider);
   final calculationAsync = ref.watch(fireCalculationProvider);
   final portfolioStatsAsync = ref.watch(globalStatsProvider);

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
@@ -39,23 +40,27 @@ class FireProgressRing extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Background ring
-          CustomPaint(
-            size: Size(size, size),
-            painter: _FireRingPainter(
-              progress: 100,
-              color: bgColor,
-              strokeWidth: strokeWidth,
+          // Background ring - wrapped in RepaintBoundary to isolate repaints
+          RepaintBoundary(
+            child: CustomPaint(
+              size: Size(size, size),
+              painter: _FireRingPainter(
+                progress: 100,
+                color: bgColor,
+                strokeWidth: strokeWidth,
+              ),
             ),
           ),
-          // Progress ring with gradient
-          CustomPaint(
-            size: Size(size, size),
-            painter: _FireRingPainter(
-              progress: progress.clamp(0, 100),
-              color: progressColor,
-              strokeWidth: strokeWidth,
-              useGradient: true,
+          // Progress ring with gradient - wrapped in RepaintBoundary
+          RepaintBoundary(
+            child: CustomPaint(
+              size: Size(size, size),
+              painter: _FireRingPainter(
+                progress: progress.clamp(0, 100),
+                color: progressColor,
+                strokeWidth: strokeWidth,
+                useGradient: true,
+              ),
             ),
           ),
           // Center content
@@ -68,7 +73,7 @@ class FireProgressRing extends StatelessWidget {
                 size: 32,
                 color: progressColor,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: AppSpacing.xxs),
               // Percentage
               Text(
                 '${progress.toInt()}%',
@@ -77,7 +82,7 @@ class FireProgressRing extends StatelessWidget {
                   color: isDark ? Colors.white : AppColors.neutral900Light,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: AppSpacing.xxs),
               // Current value
               Text(
                 formatCompactIndian(currentValue, symbol: currencySymbol),

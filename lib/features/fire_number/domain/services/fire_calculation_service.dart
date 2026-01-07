@@ -12,13 +12,15 @@ class FireCalculationService {
     required double currentMonthlySavings,
   }) {
     // Calculate inflation-adjusted expenses at retirement
+    // Apply FIRE type expense multiplier (e.g., lean = 70%, fat = 150%)
+    final adjustedMonthlyExpenses = settings.monthlyExpenses * settings.fireType.expenseMultiplier;
     final yearsToFire = settings.yearsToFire;
     final inflationMultiplier = math.pow(
       1 + settings.inflationRate / 100,
       yearsToFire,
     );
     final inflationAdjustedMonthlyExpenses =
-        settings.monthlyExpenses * inflationMultiplier;
+        adjustedMonthlyExpenses * inflationMultiplier;
     final inflationAdjustedAnnualExpenses =
         inflationAdjustedMonthlyExpenses * 12;
 

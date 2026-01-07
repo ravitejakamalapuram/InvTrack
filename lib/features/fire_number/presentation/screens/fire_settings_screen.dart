@@ -217,15 +217,158 @@ class FireSettingsScreen extends ConsumerWidget {
   }
 
   void _showAgeEditor(BuildContext context, WidgetRef ref, FireSettingsEntity settings, {required bool isCurrentAge}) {
-    // Implementation for age editor dialog
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final title = isCurrentAge ? 'Current Age' : 'Target FIRE Age';
+    final currentValue = isCurrentAge ? settings.currentAge : settings.targetFireAge;
+    final minAge = isCurrentAge ? 18 : settings.currentAge + 5;
+    final maxAge = isCurrentAge ? 80 : 80;
+
+    int selectedAge = currentValue;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTypography.h3.copyWith(
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              )),
+              SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('$selectedAge years', style: AppTypography.h1.copyWith(
+                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                  )),
+                ],
+              ),
+              Slider(
+                value: selectedAge.toDouble(),
+                min: minAge.toDouble(),
+                max: maxAge.toDouble(),
+                divisions: maxAge - minAge,
+                label: '$selectedAge',
+                onChanged: (v) => setState(() => selectedAge = v.toInt()),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    final updated = isCurrentAge
+                        ? settings.copyWith(currentAge: selectedAge)
+                        : settings.copyWith(targetFireAge: selectedAge);
+                    await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showExpensesEditor(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
-    // Implementation for expenses editor dialog
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencySymbol = ref.read(currencySymbolProvider);
+    final controller = TextEditingController(text: settings.monthlyExpenses.toStringAsFixed(0));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+            MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Monthly Expenses', style: AppTypography.h3.copyWith(
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            )),
+            SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                prefixText: '$currencySymbol ',
+                labelText: 'Monthly Expenses',
+                border: const OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            SizedBox(height: AppSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final value = double.tryParse(controller.text) ?? settings.monthlyExpenses;
+                  final updated = settings.copyWith(monthlyExpenses: value);
+                  await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+                },
+                child: const Text('Save'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showFireTypeSelector(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
-    // Implementation for fire type selector
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Select FIRE Type', style: AppTypography.h3.copyWith(
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            )),
+            SizedBox(height: AppSpacing.md),
+            ...FireType.values.map((type) => ListTile(
+              leading: Icon(type.icon, color: isDark ? AppColors.primaryDark : AppColors.primaryLight),
+              title: Text(type.displayName),
+              subtitle: Text(type.description, style: AppTypography.small),
+              selected: settings.fireType == type,
+              selectedTileColor: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.1),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final updated = settings.copyWith(fireType: type);
+                await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+              },
+            )),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showSliderEditor(
@@ -238,7 +381,61 @@ class FireSettingsScreen extends ConsumerWidget {
     required double max,
     required FireSettingsEntity Function(double) onSave,
   }) {
-    // Implementation for slider editor dialog
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    double selectedValue = currentValue;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTypography.h3.copyWith(
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              )),
+              SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('${selectedValue.toStringAsFixed(1)}%', style: AppTypography.h1.copyWith(
+                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                  )),
+                ],
+              ),
+              Slider(
+                value: selectedValue,
+                min: min,
+                max: max,
+                divisions: ((max - min) * 10).toInt(),
+                label: '${selectedValue.toStringAsFixed(1)}%',
+                onChanged: (v) => setState(() => selectedValue = v),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    final updated = onSave(selectedValue);
+                    await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _confirmReset(BuildContext context, WidgetRef ref) {

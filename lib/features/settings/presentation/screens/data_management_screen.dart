@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
+import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
@@ -441,6 +442,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           '• All cash flow records\n'
           '• All goals\n'
           '• All attached documents\n'
+          '• Your FIRE settings\n'
           '• Your account\n\n'
           'This action cannot be undone.',
         ),
@@ -595,6 +597,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         await goalRepo.deleteGoal(goal.id);
       }
     }
+
+    // Delete FIRE settings (Rule 18: Data Lifecycle)
+    await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
   }
 }
 

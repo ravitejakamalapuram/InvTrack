@@ -29,7 +29,13 @@ class FireMilestoneCard extends StatelessWidget {
           final milestone = entry.value;
           final isLast = index == milestones.length - 1;
 
-          return _buildMilestoneRow(context, isDark, milestone, isLast);
+          return _buildMilestoneRow(
+            context,
+            isDark,
+            milestone,
+            isLast,
+            key: ValueKey('milestone_${milestone.type.name}'),
+          );
         }).toList(),
       ),
     );
@@ -39,14 +45,16 @@ class FireMilestoneCard extends StatelessWidget {
     BuildContext context,
     bool isDark,
     FireMilestone milestone,
-    bool isLast,
-  ) {
+    bool isLast, {
+    Key? key,
+  }) {
     final isAchieved = milestone.isAchieved;
     final progressColor = isAchieved
         ? (isDark ? AppColors.successDark : AppColors.successLight)
         : (isDark ? AppColors.neutral500Dark : AppColors.neutral400Light);
 
     return Padding(
+      key: key,
       padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.md),
       child: Row(
         children: [
@@ -115,7 +123,7 @@ class FireMilestoneCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: AppSpacing.xxs),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(

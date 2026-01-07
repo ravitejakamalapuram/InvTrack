@@ -186,20 +186,7 @@ class FireDashboardScreen extends ConsumerWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  const Color(0xFF1A1A2E),
-                  const Color(0xFF16213E),
-                  const Color(0xFF0F3460),
-                ]
-              : [
-                  const Color(0xFF667EEA),
-                  const Color(0xFF764BA2),
-                ],
-        ),
+        gradient: isDark ? AppColors.heroGradientDark : AppColors.heroGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -330,7 +317,9 @@ class FireDashboardScreen extends ConsumerWidget {
   ) {
     final yearsToFire = settings.targetFireAge - settings.currentAge;
     final projectedDate = calculation.projectedFireDate;
-    final dateFormat = DateFormat('MMM yyyy');
+    // Use locale-aware date formatting
+    final locale = Localizations.localeOf(context).languageCode;
+    final dateFormat = DateFormat.yMMM(locale);
 
     return Row(
       children: [
@@ -558,7 +547,12 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
   ) {
     final gap = calculation.portfolioGap;
-    final isPositiveGap = gap > 0;
+    // Positive gap = still need more money (danger/red)
+    // Negative gap = ahead of target (success/green)
+    final needsMore = gap > 0;
+    final gapLabel = needsMore
+        ? '-${formatCompactIndian(gap, symbol: currencySymbol)}'
+        : '+${formatCompactIndian(gap.abs(), symbol: currencySymbol)}';
 
     return GlassCard(
       child: Column(
@@ -581,9 +575,9 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${isPositiveGap ? '' : '+'}${formatCompactIndian(gap.abs(), symbol: currencySymbol)}',
+                gapLabel,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: isPositiveGap
+                  color: needsMore
                       ? (isDark ? AppColors.dangerDark : AppColors.dangerLight)
                       : (isDark ? AppColors.successDark : AppColors.successLight),
                   fontWeight: FontWeight.w600,
@@ -602,7 +596,7 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${calculation.projectedFireAge} years',
+                'Age ${calculation.projectedFireAge}',
                 style: AppTypography.bodyMedium.copyWith(
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   fontWeight: FontWeight.w600,
