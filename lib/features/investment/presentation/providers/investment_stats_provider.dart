@@ -2,6 +2,7 @@
 /// All stats derive from stream providers for automatic updates.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
@@ -94,6 +95,20 @@ final archivedInvestmentBasicStatsProvider =
         error: (e, st) => AsyncValue.error(e, st),
       );
     });
+
+/// Calculates ONLY the XIRR for a single investment in the background.
+/// Uses [compute] to run the expensive calculation in a separate isolate.
+final investmentXirrProvider =
+    FutureProvider.family<double, String>((ref, investmentId) async {
+  final cashFlows = await ref.watch(
+    cashFlowsByInvestmentProvider(investmentId).future,
+  );
+
+  if (cashFlows.isEmpty) return 0.0;
+
+  // Run heavy calculation in a separate isolate
+  return compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows);
+});
 
 // ============ AGGREGATE STATS PROVIDERS ============
 

@@ -42,7 +42,9 @@ class InvestmentCard extends ConsumerWidget {
     final typeColor = investment.type.color;
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
-    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+    final statsAsync = ref.watch(investmentBasicStatsProvider(investment.id));
+    // Fetch XIRR separately to avoid blocking UI
+    final xirrAsync = ref.watch(investmentXirrProvider(investment.id));
 
     // Build accessibility label
     final semanticLabel = statsAsync.maybeWhen(
@@ -50,7 +52,9 @@ class InvestmentCard extends ConsumerWidget {
         name: investment.name,
         type: investment.type.displayName,
         currentValue: stats.netCashFlow,
-        returnPercent: stats.hasData ? stats.xirr * 100 : null,
+        returnPercent: xirrAsync.asData?.value != null
+            ? xirrAsync.asData!.value * 100
+            : null,
         currencySymbol: currencySymbol,
         isClosed: isClosed,
       ),
@@ -211,7 +215,10 @@ class _InvestmentValueColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
-    final statsAsync = ref.watch(investmentStatsProvider(investmentId));
+    // Use basic stats to show net position immediately (fast)
+    final statsAsync = ref.watch(investmentBasicStatsProvider(investmentId));
+    // Load XIRR asynchronously (slow)
+    final xirrAsync = ref.watch(investmentXirrProvider(investmentId));
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return statsAsync.when(
@@ -229,10 +236,50 @@ class _InvestmentValueColumn extends ConsumerWidget {
         final plColor = isPositive
             ? AppColors.graphEmerald
             : AppColors.errorLight;
-        final xirrColor = stats.xirr >= 0
-            ? AppColors.graphEmerald
-            : AppColors.errorLight;
-        final xirrFormatted = formatXirr(stats.xirr);
+
+        // Handle XIRR display
+        Widget xirrWidget;
+
+        // Only show XIRR if we have it calculated
+        xirrWidget = xirrAsync.when(
+          data: (xirr) {
+            final xirrColor = xirr >= 0
+                ? AppColors.graphEmerald
+                : AppColors.errorLight;
+            final xirrFormatted = formatXirr(xirr);
+
+            if (xirrFormatted == null) return const SizedBox.shrink();
+
+            return AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: isPrivacyMode ? 0.0 : 1.0,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: xirrColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$xirrFormatted IRR',
+                  style: AppTypography.small.copyWith(
+                    color: xirrColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            );
+          },
+          loading: () => SizedBox(
+            width: 10,
+            height: 10,
+            child: Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: CircularProgressIndicator(strokeWidth: 1),
+            ),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+        );
 
         final valueStyle = AppTypography.bodyLarge.copyWith(
           fontWeight: FontWeight.w600,
@@ -259,27 +306,8 @@ class _InvestmentValueColumn extends ConsumerWidget {
                     style: valueStyle,
                   ),
             SizedBox(height: AppSpacing.xxs),
-            // XIRR - only show if valid
-            if (xirrFormatted != null)
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: isPrivacyMode ? 0.0 : 1.0,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: xirrColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '$xirrFormatted IRR',
-                    style: AppTypography.small.copyWith(
-                      color: xirrColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ),
+            // XIRR
+            xirrWidget,
           ],
         );
       },
@@ -309,7 +337,8 @@ class _InvestmentBottomStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
-    final statsAsync = ref.watch(investmentStatsProvider(investment.id));
+    // Use basic stats to avoid re-calculation
+    final statsAsync = ref.watch(investmentBasicStatsProvider(investment.id));
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Container(
