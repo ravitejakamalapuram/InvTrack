@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -32,12 +34,18 @@ class SecurityService {
     return pin != null;
   }
 
+  /// Hash PIN using SHA-256
+  String _hashPin(String pin) {
+    final bytes = utf8.encode(pin);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
   Future<void> setPin(String pin) async {
-    // In a real app, hash the PIN before storing.
-    // For MVP/Demo, we store as is in secure storage.
+    final hashedPin = _hashPin(pin);
     await _secureStorage.write(
       key: _pinKey,
-      value: pin,
+      value: hashedPin,
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
@@ -49,7 +57,22 @@ class SecurityService {
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
-    return storedPin == pin;
+
+    if (storedPin == null) return false;
+
+    // Check if stored PIN is hashed (SHA-256 is 64 chars hex)
+    if (storedPin.length == 64) {
+      final hashedInput = _hashPin(pin);
+      return storedPin == hashedInput;
+    } else {
+      // Legacy support: stored PIN is plaintext
+      final isMatch = storedPin == pin;
+      if (isMatch) {
+        // Upgrade to hashed storage
+        await setPin(pin);
+      }
+      return isMatch;
+    }
   }
 
   Future<void> removePin() async {

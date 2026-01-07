@@ -68,6 +68,7 @@ dependencies:
   timezone: ^0.10.1
   flutter_timezone: ^5.0.1
   archive: ^3.6.1
+  crypto: ^3.0.0
   encrypt: ^5.0.3
   url_launcher: ^6.3.2
   open_filex: ^4.7.0
