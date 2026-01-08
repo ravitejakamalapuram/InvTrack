@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **security**: Add privacy screen for background state
+
+## [3.8.2] - 2026-01-08
+
 ### 🐛 Bug Fixes
 
 - Add explicit tag_name for GitHub Release action
