@@ -79,10 +79,10 @@ class _FilterChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final onTap = () {
+    void onTap() {
       HapticFeedback.selectionClick();
       ref.read(investmentListStateProvider.notifier).setFilter(filter);
-    };
+    }
 
     return Semantics(
       button: true,

@@ -664,14 +664,12 @@ class _SourceButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isDark;
-  final bool fullWidth;
 
   const _SourceButton({
     required this.icon,
     required this.label,
     required this.onTap,
     required this.isDark,
-    this.fullWidth = false,
   });
 
   @override
