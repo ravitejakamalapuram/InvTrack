@@ -62,3 +62,25 @@ class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(currency: currency);
   }
 }
+
+/// Provider for storing the last file picker directory
+/// This allows the file picker to open at the last used location
+final lastFilePickerDirectoryProvider = Provider<String?>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return prefs.getString('lastFilePickerDirectory');
+});
+
+/// Update the last file picker directory
+void saveLastFilePickerDirectory(WidgetRef ref, String? path) {
+  if (path == null || path.isEmpty) return;
+
+  // Extract directory from file path
+  final lastSlash = path.lastIndexOf('/');
+  if (lastSlash > 0) {
+    final directory = path.substring(0, lastSlash);
+
+    // Persist to SharedPreferences (provider will be refreshed on next read)
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setString('lastFilePickerDirectory', directory);
+  }
+}

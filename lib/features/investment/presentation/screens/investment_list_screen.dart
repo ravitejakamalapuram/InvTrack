@@ -73,6 +73,22 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     );
   }
 
+  void _showTypeFilterOptions(bool isDark) {
+    final currentTypeFilter = ref.read(investmentListStateProvider).typeFilter;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _TypeFilterSheet(
+        isDark: isDark,
+        currentType: currentTypeFilter,
+        onTypeSelected: (type) {
+          ref.read(investmentListStateProvider.notifier).setTypeFilter(type);
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -121,6 +137,24 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                   : const InvestmentListFilterTabs(),
             ),
           ),
+
+          // Active Type Filter Chip
+          if (listState.hasTypeFilter)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                child: _ActiveTypeFilterChip(
+                  type: listState.typeFilter!,
+                  isDark: isDark,
+                  onClear: () {
+                    ref.read(investmentListStateProvider.notifier).clearTypeFilter();
+                  },
+                ),
+              ),
+            ),
 
           // Content
           _buildContent(isDark, listState, filteredAsync, allInvestmentsAsync),
@@ -211,6 +245,28 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           ),
         ),
         onPressed: () => _showSortOptions(isDark),
+      ),
+      // Type filter button
+      IconButton(
+        icon: Container(
+          padding: EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: listState.hasTypeFilter
+                ? AppColors.primaryLight
+                : (isDark ? Colors.white : AppColors.primaryLight).withValues(
+                    alpha: 0.1,
+                  ),
+            borderRadius: AppSizes.borderRadiusMd,
+          ),
+          child: Icon(
+            Icons.filter_list_rounded,
+            color: listState.hasTypeFilter
+                ? Colors.white
+                : (isDark ? Colors.white : AppColors.neutral700Light),
+            size: 20,
+          ),
+        ),
+        onPressed: () => _showTypeFilterOptions(isDark),
       ),
       IconButton(
         icon: Container(
@@ -369,6 +425,167 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           onRetry: () => ref.invalidate(allInvestmentsProvider),
         ),
       ),
+    );
+  }
+}
+
+/// Bottom sheet for selecting investment type filter
+class _TypeFilterSheet extends StatelessWidget {
+  final bool isDark;
+  final InvestmentType? currentType;
+  final ValueChanged<InvestmentType?> onTypeSelected;
+
+  const _TypeFilterSheet({
+    required this.isDark,
+    required this.currentType,
+    required this.onTypeSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.neutral600Dark
+                    : AppColors.neutral300Light,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  Text(
+                    'Filter by Type',
+                    style: AppTypography.h3.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (currentType != null)
+                    TextButton(
+                      onPressed: () => onTypeSelected(null),
+                      child: Text(
+                        'Clear',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.primaryLight,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Type options
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: InvestmentType.values.map((type) {
+                    final isSelected = currentType == type;
+                    return ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: type.color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(type.icon, color: type.color, size: 20),
+                      ),
+                      title: Text(
+                        type.displayName,
+                        style: AppTypography.body.copyWith(
+                          color: isDark ? Colors.white : AppColors.neutral900Light,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check_rounded, color: AppColors.primaryLight)
+                          : null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        onTypeSelected(type);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip showing the active type filter with clear button
+class _ActiveTypeFilterChip extends StatelessWidget {
+  final InvestmentType type;
+  final bool isDark;
+  final VoidCallback onClear;
+
+  const _ActiveTypeFilterChip({
+    required this.type,
+    required this.isDark,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: type.color.withValues(alpha: 0.15),
+            borderRadius: AppSizes.borderRadiusMd,
+            border: Border.all(
+              color: type.color.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(type.icon, color: type.color, size: 16),
+              SizedBox(width: AppSpacing.xs),
+              Text(
+                type.displayName,
+                style: AppTypography.caption.copyWith(
+                  color: type.color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(width: AppSpacing.xs),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onClear();
+                },
+                child: Icon(
+                  Icons.close_rounded,
+                  color: type.color,
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

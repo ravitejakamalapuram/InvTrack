@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/document_viewer_screen.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/edit_document_sheet.dart';
 
 /// Widget displaying documents for an investment with add/delete capabilities
 class DocumentListWidget extends ConsumerWidget {
@@ -204,6 +205,7 @@ class _DocumentCard extends ConsumerWidget {
                   onSelected: (value) => _handleMenuAction(context, ref, value),
                   itemBuilder: (context) => [
                     const PopupMenuItem(value: 'view', child: Text('View')),
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
                     const PopupMenuItem(
                       value: 'delete',
                       child: Text(
@@ -270,10 +272,23 @@ class _DocumentCard extends ConsumerWidget {
       case 'view':
         _openDocument(context, ref);
         break;
+      case 'edit':
+        _showEditSheet(context, ref);
+        break;
       case 'delete':
         await _confirmDelete(context, ref);
         break;
     }
+  }
+
+  void _showEditSheet(BuildContext context, WidgetRef ref) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EditDocumentSheet(document: document),
+    );
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {

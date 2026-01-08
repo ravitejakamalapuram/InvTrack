@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 
@@ -19,12 +20,14 @@ final dataImportServiceProvider = Provider<DataImportService?>((ref) {
   final goalRepository = ref.watch(goalRepositoryProvider);
   final documentRepository = ref.watch(documentRepositoryProvider);
   final documentStorageService = ref.watch(documentStorageServiceProvider);
+  final fireSettingsRepository = ref.watch(fireSettingsRepositoryProvider);
 
   return DataImportService(
     investmentRepository: investmentRepository,
     goalRepository: goalRepository,
     documentRepository: documentRepository,
     documentStorageService: documentStorageService,
+    fireSettingsRepository: fireSettingsRepository,
   );
 });
 

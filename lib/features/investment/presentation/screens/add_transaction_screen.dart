@@ -20,11 +20,13 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;
   final CashFlowEntity? cashFlowToEdit;
+  final CashFlowType? initialType;
 
   const AddTransactionScreen({
     super.key,
     required this.investmentId,
     this.cashFlowToEdit,
+    this.initialType,
   });
 
   bool get isEditing => cashFlowToEdit != null;
@@ -54,6 +56,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _notesController.text = cf.notes ?? '';
       _selectedDate = cf.date;
       _selectedType = cf.type;
+    } else if (widget.initialType != null) {
+      // Use initial type if provided (for quick actions)
+      _selectedType = widget.initialType!;
     }
 
     initScreenAnimation();
@@ -283,7 +288,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 controller: _amountController,
                 label: 'Amount',
                 hint: '0.00',
-                icon: Icons.attach_money_rounded,
+                icon: Icons.payments_rounded,
                 isDark: isDark,
                 prefix: currencySymbol,
                 validator: (value) {

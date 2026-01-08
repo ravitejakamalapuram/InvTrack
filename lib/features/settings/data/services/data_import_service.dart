@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -25,6 +27,7 @@ class ZipImportResult {
   final int cashflowsImported;
   final int goalsImported;
   final int documentsImported;
+  final bool fireSettingsImported;
   final List<String> errors;
   final List<String> warnings;
 
@@ -33,6 +36,7 @@ class ZipImportResult {
     required this.cashflowsImported,
     required this.goalsImported,
     required this.documentsImported,
+    this.fireSettingsImported = false,
     this.errors = const [],
     this.warnings = const [],
   });
@@ -50,6 +54,7 @@ class DataImportService {
   final GoalRepository _goalRepository;
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
+  final FireSettingsRepository? _fireSettingsRepository;
 
   static const _uuid = Uuid();
 
@@ -58,10 +63,12 @@ class DataImportService {
     required GoalRepository goalRepository,
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
+    FireSettingsRepository? fireSettingsRepository,
   })  : _investmentRepository = investmentRepository,
         _goalRepository = goalRepository,
         _documentRepository = documentRepository,
-        _documentStorageService = documentStorageService;
+        _documentStorageService = documentStorageService,
+        _fireSettingsRepository = fireSettingsRepository;
 
   /// Import data from a ZIP file
   Future<ZipImportResult> importFromZip(
@@ -224,12 +231,66 @@ class DataImportService {
       }
     }
 
+    // 6. Import FIRE settings if available (Rule 18: Data Lifecycle)
+    bool fireSettingsImported = false;
+    if (_fireSettingsRepository != null) {
+      final fireSettingsFile = archive.findFile('fire_settings.json');
+      if (fireSettingsFile != null) {
+        try {
+          final fireSettingsJson = jsonDecode(
+            utf8.decode(fireSettingsFile.content as List<int>),
+          ) as Map<String, dynamic>;
+
+          final fireSettings = FireSettingsEntity(
+            id: fireSettingsJson['id'] as String? ?? _uuid.v4(),
+            monthlyExpenses: (fireSettingsJson['monthlyExpenses'] as num).toDouble(),
+            safeWithdrawalRate:
+                (fireSettingsJson['safeWithdrawalRate'] as num?)?.toDouble() ?? 4.0,
+            currentAge: fireSettingsJson['currentAge'] as int,
+            targetFireAge: fireSettingsJson['targetFireAge'] as int,
+            lifeExpectancy: (fireSettingsJson['lifeExpectancy'] as int?) ?? 85,
+            inflationRate:
+                (fireSettingsJson['inflationRate'] as num?)?.toDouble() ?? 6.0,
+            preRetirementReturn:
+                (fireSettingsJson['preRetirementReturn'] as num?)?.toDouble() ?? 12.0,
+            postRetirementReturn:
+                (fireSettingsJson['postRetirementReturn'] as num?)?.toDouble() ?? 8.0,
+            healthcareBuffer:
+                (fireSettingsJson['healthcareBuffer'] as num?)?.toDouble() ?? 20.0,
+            emergencyMonths:
+                (fireSettingsJson['emergencyMonths'] as num?)?.toDouble() ?? 6,
+            fireType: FireType.fromString(
+              fireSettingsJson['fireType'] as String? ?? 'regular',
+            ),
+            monthlyPassiveIncome:
+                (fireSettingsJson['monthlyPassiveIncome'] as num?)?.toDouble() ?? 0,
+            expectedPension:
+                (fireSettingsJson['expectedPension'] as num?)?.toDouble() ?? 0,
+            isSetupComplete: fireSettingsJson['isSetupComplete'] as bool? ?? true,
+            createdAt: DateTime.tryParse(
+                    fireSettingsJson['createdAt'] as String? ?? '') ??
+                DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+          await _fireSettingsRepository.saveSettings(fireSettings);
+          fireSettingsImported = true;
+          if (kDebugMode) {
+            debugPrint('📥 FIRE settings imported successfully');
+          }
+        } catch (e) {
+          warnings.add('Failed to import FIRE settings: $e');
+        }
+      }
+    }
+
     if (kDebugMode) {
       debugPrint('📥 Import complete: '
           '$investmentsImported investments, '
           '$cashflowsImported cashflows, '
           '$goalsImported goals, '
-          '$documentsImported documents');
+          '$documentsImported documents, '
+          'FIRE settings: ${fireSettingsImported ? 'yes' : 'no'}');
     }
 
     return ZipImportResult(
@@ -237,6 +298,7 @@ class DataImportService {
       cashflowsImported: cashflowsImported,
       goalsImported: goalsImported,
       documentsImported: documentsImported,
+      fireSettingsImported: fireSettingsImported,
       errors: errors,
       warnings: warnings,
     );

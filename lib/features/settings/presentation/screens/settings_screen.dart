@@ -50,7 +50,7 @@ class SettingsScreen extends ConsumerWidget {
                     _navigateTo(context, const AppearanceSettingsScreen()),
               ),
               SettingsValueTile(
-                icon: Icons.attach_money,
+                icon: Icons.currency_exchange_rounded,
                 iconColor: AppColors.successLight,
                 title: 'Currency',
                 value: settings.currency,

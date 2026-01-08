@@ -68,13 +68,20 @@ class _ImportConfirmationScreenState
         final rows = entry.value;
         final investmentId = uuid.v4();
 
+        // Get investment type and status from the first row (if available)
+        // All rows for the same investment should have the same type/status
+        final firstRow = rows.first;
+        final investmentType = firstRow.investmentType ?? InvestmentType.other;
+        final investmentStatus =
+            firstRow.investmentStatus ?? InvestmentStatus.open;
+
         // Create investment entity
         investments.add(
           InvestmentEntity(
             id: investmentId,
             name: investmentName,
-            type: InvestmentType.other,
-            status: InvestmentStatus.open,
+            type: investmentType,
+            status: investmentStatus,
             createdAt: now,
             updatedAt: now,
           ),

@@ -148,6 +148,8 @@ class InvestmentCard extends ConsumerWidget {
   }
 
   Widget _buildNameAndType(bool isDark, Color typeColor, bool isClosed) {
+    final maturityInfo = _getMaturityInfo();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -200,11 +202,106 @@ class InvestmentCard extends ConsumerWidget {
                   ),
                 ),
               ),
+            if (maturityInfo != null && !isClosed)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: maturityInfo.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      maturityInfo.icon,
+                      size: 10,
+                      color: maturityInfo.color,
+                    ),
+                    SizedBox(width: 3),
+                    Text(
+                      maturityInfo.label,
+                      style: AppTypography.small.copyWith(
+                        color: maturityInfo.color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ],
     );
   }
+
+  /// Returns maturity info if the investment has an upcoming maturity date
+  _MaturityInfo? _getMaturityInfo() {
+    final maturityDate = investment.maturityDate;
+    if (maturityDate == null) return null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final maturity = DateTime(
+      maturityDate.year,
+      maturityDate.month,
+      maturityDate.day,
+    );
+    final daysUntilMaturity = maturity.difference(today).inDays;
+
+    // Already matured
+    if (daysUntilMaturity < 0) {
+      return _MaturityInfo(
+        label: 'MATURED',
+        color: AppColors.successLight,
+        icon: Icons.check_circle_rounded,
+      );
+    }
+
+    // Maturing today
+    if (daysUntilMaturity == 0) {
+      return _MaturityInfo(
+        label: 'MATURES TODAY',
+        color: AppColors.warningLight,
+        icon: Icons.schedule_rounded,
+      );
+    }
+
+    // Within 7 days - urgent
+    if (daysUntilMaturity <= 7) {
+      return _MaturityInfo(
+        label: '${daysUntilMaturity}d TO MATURITY',
+        color: AppColors.warningLight,
+        icon: Icons.schedule_rounded,
+      );
+    }
+
+    // Within 30 days - upcoming
+    if (daysUntilMaturity <= 30) {
+      return _MaturityInfo(
+        label: '${daysUntilMaturity}d TO MATURITY',
+        color: AppColors.accentLight,
+        icon: Icons.event_rounded,
+      );
+    }
+
+    return null;
+  }
+}
+
+/// Helper class for maturity badge info
+class _MaturityInfo {
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  const _MaturityInfo({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
 }
 
 /// Displays the investment value and return percentage.

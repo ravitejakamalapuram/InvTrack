@@ -323,4 +323,191 @@ void main() {
       expect(isNotArchivedFilter, true);
     });
   });
+
+  group('investmentListStateProvider - Type Filter', () {
+    test('should start with no type filter', () {
+      final state = container.read(investmentListStateProvider);
+      expect(state.typeFilter, isNull);
+      expect(state.hasTypeFilter, false);
+    });
+
+    test('should set type filter', () {
+      container
+          .read(investmentListStateProvider.notifier)
+          .setTypeFilter(InvestmentType.fixedDeposit);
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.typeFilter, InvestmentType.fixedDeposit);
+      expect(state.hasTypeFilter, true);
+    });
+
+    test('should update type filter to different type', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      notifier.setTypeFilter(InvestmentType.fixedDeposit);
+      expect(
+        container.read(investmentListStateProvider).typeFilter,
+        InvestmentType.fixedDeposit,
+      );
+
+      notifier.setTypeFilter(InvestmentType.p2pLending);
+      expect(
+        container.read(investmentListStateProvider).typeFilter,
+        InvestmentType.p2pLending,
+      );
+    });
+
+    test('should clear type filter using setTypeFilter(null)', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      notifier.setTypeFilter(InvestmentType.bonds);
+      expect(container.read(investmentListStateProvider).hasTypeFilter, true);
+
+      notifier.setTypeFilter(null);
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.typeFilter, isNull);
+      expect(state.hasTypeFilter, false);
+    });
+
+    test('should clear type filter using clearTypeFilter()', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      notifier.setTypeFilter(InvestmentType.stocks);
+      expect(container.read(investmentListStateProvider).hasTypeFilter, true);
+
+      notifier.clearTypeFilter();
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.typeFilter, isNull);
+      expect(state.hasTypeFilter, false);
+    });
+
+    test('should cycle through all investment types', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      for (final type in InvestmentType.values) {
+        notifier.setTypeFilter(type);
+        expect(container.read(investmentListStateProvider).typeFilter, type);
+      }
+    });
+  });
+
+  group('InvestmentListState - copyWith with typeFilter', () {
+    test('should copy with updated type filter', () {
+      const state = InvestmentListState();
+      final updated = state.copyWith(typeFilter: InvestmentType.gold);
+
+      expect(updated.typeFilter, InvestmentType.gold);
+      expect(updated.hasTypeFilter, true);
+    });
+
+    test('should clear type filter with clearTypeFilter flag', () {
+      final state = const InvestmentListState()
+          .copyWith(typeFilter: InvestmentType.crypto);
+      expect(state.hasTypeFilter, true);
+
+      final cleared = state.copyWith(clearTypeFilter: true);
+
+      expect(cleared.typeFilter, isNull);
+      expect(cleared.hasTypeFilter, false);
+    });
+
+    test('should preserve type filter when updating other fields', () {
+      final state = const InvestmentListState().copyWith(
+        typeFilter: InvestmentType.realEstate,
+        filter: InvestmentFilter.open,
+      );
+      final updated = state.copyWith(searchQuery: 'test');
+
+      expect(updated.typeFilter, InvestmentType.realEstate);
+      expect(updated.filter, InvestmentFilter.open);
+      expect(updated.searchQuery, 'test');
+    });
+  });
+
+  group('InvestmentSort enum', () {
+    test('should have maturityDateAsc sort option', () {
+      expect(
+        InvestmentSort.values,
+        contains(InvestmentSort.maturityDateAsc),
+      );
+    });
+
+    test('maturityDateAsc should have correct display name and icon', () {
+      expect(
+        InvestmentSort.maturityDateAsc.displayName,
+        'Maturity Date (Soonest)',
+      );
+      expect(InvestmentSort.maturityDateAsc.icon, isNotNull);
+    });
+
+    test('should have all expected sort options', () {
+      // Verify all sort options exist
+      expect(InvestmentSort.values, contains(InvestmentSort.lastActivity));
+      expect(InvestmentSort.values, contains(InvestmentSort.nameAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.nameDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.totalInvestedDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.totalInvestedAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.totalReturnsDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.totalReturnsAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.returnPercentDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.returnPercentAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.xirrDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.xirrAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.netPositionDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.netPositionAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.createdDesc));
+      expect(InvestmentSort.values, contains(InvestmentSort.createdAsc));
+      expect(InvestmentSort.values, contains(InvestmentSort.maturityDateAsc));
+    });
+  });
+
+  group('investmentListStateProvider - Sort', () {
+    test('should have default sort as lastActivity', () {
+      final state = container.read(investmentListStateProvider);
+      expect(state.sort, InvestmentSort.lastActivity);
+    });
+
+    test('should update sort when setSort is called', () {
+      container
+          .read(investmentListStateProvider.notifier)
+          .setSort(InvestmentSort.maturityDateAsc);
+      final state = container.read(investmentListStateProvider);
+
+      expect(state.sort, InvestmentSort.maturityDateAsc);
+    });
+
+    test('should set sort to maturityDateAsc', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      notifier.setSort(InvestmentSort.maturityDateAsc);
+      expect(
+        container.read(investmentListStateProvider).sort,
+        InvestmentSort.maturityDateAsc,
+      );
+    });
+
+    test('should cycle through sort options including maturityDateAsc', () {
+      final notifier = container.read(investmentListStateProvider.notifier);
+
+      notifier.setSort(InvestmentSort.nameAsc);
+      expect(
+        container.read(investmentListStateProvider).sort,
+        InvestmentSort.nameAsc,
+      );
+
+      notifier.setSort(InvestmentSort.maturityDateAsc);
+      expect(
+        container.read(investmentListStateProvider).sort,
+        InvestmentSort.maturityDateAsc,
+      );
+
+      notifier.setSort(InvestmentSort.lastActivity);
+      expect(
+        container.read(investmentListStateProvider).sort,
+        InvestmentSort.lastActivity,
+      );
+    });
+  });
 }

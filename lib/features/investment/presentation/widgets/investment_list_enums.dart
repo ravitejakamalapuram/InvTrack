@@ -22,7 +22,8 @@ enum InvestmentSort {
   netPositionDesc('Net Position (High)', Icons.trending_up),
   netPositionAsc('Net Position (Low)', Icons.trending_down),
   createdDesc('Date Created (Newest)', Icons.calendar_today),
-  createdAsc('Date Created (Oldest)', Icons.calendar_today);
+  createdAsc('Date Created (Oldest)', Icons.calendar_today),
+  maturityDateAsc('Maturity Date (Soonest)', Icons.event_rounded);
 
   final String displayName;
   final IconData icon;

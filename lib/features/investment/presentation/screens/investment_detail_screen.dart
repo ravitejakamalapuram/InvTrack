@@ -335,50 +335,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       ),
       floatingActionButton: isClosed
           ? null
-          : Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.heroGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryLight.withValues(alpha: 0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton.extended(
-                heroTag: 'investment_detail_fab',
-                onPressed: () {
-                  if (_selectedSegment == 0) {
-                    // Add Transaction
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => AddTransactionScreen(
-                          investmentId: widget.investment.id,
-                        ),
-                      ),
-                    );
-                  } else {
-                    // Add Document - trigger the document picker from DocumentListWidget
-                    // We'll use a callback approach by accessing the widget's add function
-                    _showAddDocumentSheet(context, isDark);
-                  }
-                },
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                icon: Icon(
-                  _selectedSegment == 0
-                      ? Icons.add_rounded
-                      : Icons.upload_file_rounded,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  _selectedSegment == 0 ? 'Add Transaction' : 'Add Document',
-                  style: AppTypography.button.copyWith(color: Colors.white),
-                ),
-              ),
-            ),
+          : _selectedSegment == 0
+              ? _buildTransactionFab(context, isDark)
+              : _buildDocumentFab(context, isDark),
     );
   }
 
@@ -596,7 +555,109 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ],
         ),
+        // Maturity date card (if applicable)
+        if (widget.investment.hasMaturityDate) ...[
+          const SizedBox(height: 10),
+          _buildMaturityCard(isDark),
+        ],
       ],
+    );
+  }
+
+  Widget _buildMaturityCard(bool isDark) {
+    final maturityDate = widget.investment.maturityDate!;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final maturity = DateTime(
+      maturityDate.year,
+      maturityDate.month,
+      maturityDate.day,
+    );
+    final daysUntilMaturity = maturity.difference(today).inDays;
+
+    // Determine status and color
+    final bool isMatured = daysUntilMaturity < 0;
+    final bool isUrgent = daysUntilMaturity >= 0 && daysUntilMaturity <= 7;
+    final bool isUpcoming = daysUntilMaturity > 7 && daysUntilMaturity <= 30;
+
+    final Color statusColor;
+    final IconData statusIcon;
+    final String statusText;
+
+    if (isMatured) {
+      statusColor = AppColors.successLight;
+      statusIcon = Icons.check_circle_rounded;
+      statusText = 'Matured ${-daysUntilMaturity} days ago';
+    } else if (daysUntilMaturity == 0) {
+      statusColor = AppColors.warningLight;
+      statusIcon = Icons.schedule_rounded;
+      statusText = 'Matures today!';
+    } else if (isUrgent) {
+      statusColor = AppColors.warningLight;
+      statusIcon = Icons.schedule_rounded;
+      statusText = '$daysUntilMaturity days until maturity';
+    } else if (isUpcoming) {
+      statusColor = AppColors.accentLight;
+      statusIcon = Icons.event_rounded;
+      statusText = '$daysUntilMaturity days until maturity';
+    } else {
+      statusColor = isDark ? AppColors.neutral400Dark : AppColors.neutral500Light;
+      statusIcon = Icons.event_rounded;
+      statusText = '$daysUntilMaturity days until maturity';
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(statusIcon, size: 18, color: statusColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Maturity Date',
+                  style: AppTypography.small.copyWith(
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  AppDateUtils.formatShort(maturityDate),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              statusText,
+              style: AppTypography.small.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -950,8 +1011,20 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         padding: const EdgeInsets.only(bottom: 10),
         child: Dismissible(
           key: Key(cashFlow.id),
-          direction: DismissDirection.endToStart,
+          direction: DismissDirection.horizontal,
+          // Swipe right (startToEnd) - Edit action
           background: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 24),
+            child: const Icon(Icons.edit_rounded, color: Colors.white),
+          ),
+          // Swipe left (endToStart) - Delete action
+          secondaryBackground: Container(
             margin: const EdgeInsets.symmetric(vertical: 4),
             decoration: BoxDecoration(
               gradient: AppColors.dangerGradient,
@@ -961,9 +1034,25 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             padding: const EdgeInsets.only(right: 24),
             child: const Icon(Icons.delete_rounded, color: Colors.white),
           ),
-          confirmDismiss: (direction) =>
-              _confirmDeleteCashFlow(context, isDark),
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.startToEnd) {
+              // Swipe right - Navigate to edit screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AddTransactionScreen(
+                    investmentId: widget.investment.id,
+                    cashFlowToEdit: cashFlow,
+                  ),
+                ),
+              );
+              return false; // Don't dismiss, just navigate
+            } else {
+              // Swipe left - Confirm delete
+              return _confirmDeleteCashFlow(context, isDark);
+            }
+          },
           onDismissed: (direction) {
+            // Only called for delete action
             ref
                 .read(investmentNotifierProvider.notifier)
                 .deleteCashFlow(cashFlow.id);
@@ -1247,6 +1336,109 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         );
       }
     }
+  }
+
+  Widget _buildTransactionFab(BuildContext context, bool isDark) {
+    return PopupMenuButton<CashFlowType?>(
+      onSelected: (type) {
+        HapticFeedback.selectionClick();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => AddTransactionScreen(
+              investmentId: widget.investment.id,
+              initialType: type,
+            ),
+          ),
+        );
+      },
+      offset: const Offset(0, -120),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      itemBuilder: (context) => [
+        PopupMenuItem<CashFlowType?>(
+          value: null,
+          child: Row(
+            children: [
+              Icon(Icons.add_rounded, color: AppColors.primaryLight),
+              const SizedBox(width: 12),
+              Text('Add Transaction', style: AppTypography.body),
+            ],
+          ),
+        ),
+        PopupMenuItem<CashFlowType>(
+          value: CashFlowType.income,
+          child: Row(
+            children: [
+              Icon(CashFlowType.income.iconData, color: CashFlowType.income.color),
+              const SizedBox(width: 12),
+              Text('Quick Income', style: AppTypography.body),
+            ],
+          ),
+        ),
+        PopupMenuItem<CashFlowType>(
+          value: CashFlowType.invest,
+          child: Row(
+            children: [
+              Icon(CashFlowType.invest.iconData, color: CashFlowType.invest.color),
+              const SizedBox(width: 12),
+              Text('Quick Invest', style: AppTypography.body),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.heroGradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryLight.withValues(alpha: 0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add_rounded, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(
+              'Add Transaction',
+              style: AppTypography.button.copyWith(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentFab(BuildContext context, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryLight.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        heroTag: 'investment_detail_fab',
+        onPressed: () => _showAddDocumentSheet(context, isDark),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        icon: const Icon(Icons.upload_file_rounded, color: Colors.white),
+        label: Text(
+          'Add Document',
+          style: AppTypography.button.copyWith(color: Colors.white),
+        ),
+      ),
+    );
   }
 
   void _showAddDocumentSheet(BuildContext context, bool isDark) {

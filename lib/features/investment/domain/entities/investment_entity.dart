@@ -106,6 +106,7 @@ enum InvestmentType {
   crypto,
   mutualFunds,
   stocks,
+  financing,
   other;
 
   String get displayName {
@@ -132,6 +133,8 @@ enum InvestmentType {
         return 'Mutual Funds';
       case InvestmentType.stocks:
         return 'Stocks';
+      case InvestmentType.financing:
+        return 'Financing';
       case InvestmentType.other:
         return 'Other';
     }
@@ -161,6 +164,8 @@ enum InvestmentType {
         return Icons.pie_chart_rounded;
       case InvestmentType.stocks:
         return Icons.show_chart_rounded;
+      case InvestmentType.financing:
+        return Icons.payments_rounded;
       case InvestmentType.other:
         return Icons.attach_money_rounded;
     }
@@ -190,6 +195,8 @@ enum InvestmentType {
         return const Color(0xFF3B82F6); // Blue
       case InvestmentType.stocks:
         return const Color(0xFF10B981); // Emerald
+      case InvestmentType.financing:
+        return const Color(0xFF14B8A6); // Teal
       case InvestmentType.other:
         return const Color(0xFF6B7280); // Gray
     }

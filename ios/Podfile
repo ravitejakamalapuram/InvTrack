@@ -1,5 +1,5 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# Define a global platform for your project
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -36,13 +36,13 @@ target 'Runner' do
   end
 end
 
-# Patrol E2E testing target
-target 'RunnerUITests' do
-  use_frameworks!
-  use_modular_headers!
-
-  pod 'patrol'
-end
+# Patrol E2E testing target (commented out - target doesn't exist yet)
+# target 'RunnerUITests' do
+#   use_frameworks!
+#   use_modular_headers!
+#
+#   pod 'patrol'
+# end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|

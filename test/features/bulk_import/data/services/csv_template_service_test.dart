@@ -15,8 +15,13 @@ void main() {
         expect(CsvTemplateService.headers, contains('Notes'));
       });
 
-      test('has exactly 5 headers', () {
-        expect(CsvTemplateService.headers.length, 5);
+      test('contains optional columns for investment metadata', () {
+        expect(CsvTemplateService.headers, contains('Investment Type'));
+        expect(CsvTemplateService.headers, contains('Investment Status'));
+      });
+
+      test('has exactly 7 headers', () {
+        expect(CsvTemplateService.headers.length, 7);
       });
     });
 
@@ -134,6 +139,17 @@ void main() {
 
         expect(desc, contains('outflow'));
         expect(desc, contains('inflow'));
+      });
+
+      test('documents optional investment type and status columns', () {
+        const desc = CsvTemplateService.typeDescription;
+
+        expect(desc, contains('Investment Type'));
+        expect(desc, contains('Investment Status'));
+        expect(desc, contains('optional'));
+        expect(desc, contains('p2p'));
+        expect(desc, contains('open'));
+        expect(desc, contains('closed'));
       });
     });
   });

@@ -6,6 +6,7 @@ import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -29,16 +30,19 @@ class DataExportService {
   final GoalRepository _goalRepository;
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
+  final FireSettingsRepository? _fireSettingsRepository;
 
   DataExportService({
     required InvestmentRepository investmentRepository,
     required GoalRepository goalRepository,
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
+    FireSettingsRepository? fireSettingsRepository,
   })  : _investmentRepository = investmentRepository,
         _goalRepository = goalRepository,
         _documentRepository = documentRepository,
-        _documentStorageService = documentStorageService;
+        _documentStorageService = documentStorageService,
+        _fireSettingsRepository = fireSettingsRepository;
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
@@ -149,6 +153,22 @@ class DataExportService {
       if (bytes != null) {
         final docPath = 'documents/${doc.investmentId}/${doc.fileName}';
         archive.addFile(ArchiveFile(docPath, bytes.length, bytes));
+      }
+    }
+
+    // Add FIRE settings if available (Rule 18: Data Lifecycle)
+    if (_fireSettingsRepository != null) {
+      final fireSettings = await _fireSettingsRepository.getSettings();
+      if (fireSettings != null) {
+        final fireSettingsBytes = utf8.encode(jsonEncode(fireSettings.toJson()));
+        archive.addFile(ArchiveFile(
+          'fire_settings.json',
+          fireSettingsBytes.length,
+          fireSettingsBytes,
+        ));
+        if (kDebugMode) {
+          debugPrint('📦 Added FIRE settings to export');
+        }
       }
     }
 

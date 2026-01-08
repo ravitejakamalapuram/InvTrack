@@ -14,6 +14,7 @@ class InvestmentListState {
   final InvestmentSort sort;
   final bool isSelectionMode;
   final Set<String> selectedIds;
+  final InvestmentType? typeFilter;
 
   const InvestmentListState({
     this.isSearching = false,
@@ -22,7 +23,11 @@ class InvestmentListState {
     this.sort = InvestmentSort.lastActivity,
     this.isSelectionMode = false,
     this.selectedIds = const {},
+    this.typeFilter,
   });
+
+  /// Whether a type filter is active
+  bool get hasTypeFilter => typeFilter != null;
 
   InvestmentListState copyWith({
     bool? isSearching,
@@ -31,6 +36,8 @@ class InvestmentListState {
     InvestmentSort? sort,
     bool? isSelectionMode,
     Set<String>? selectedIds,
+    InvestmentType? typeFilter,
+    bool clearTypeFilter = false,
   }) {
     return InvestmentListState(
       isSearching: isSearching ?? this.isSearching,
@@ -39,6 +46,7 @@ class InvestmentListState {
       sort: sort ?? this.sort,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       selectedIds: selectedIds ?? this.selectedIds,
+      typeFilter: clearTypeFilter ? null : (typeFilter ?? this.typeFilter),
     );
   }
 }
@@ -66,6 +74,18 @@ class InvestmentListNotifier extends Notifier<InvestmentListState> {
 
   void setSort(InvestmentSort sort) {
     state = state.copyWith(sort: sort);
+  }
+
+  void setTypeFilter(InvestmentType? type) {
+    if (type == null) {
+      state = state.copyWith(clearTypeFilter: true);
+    } else {
+      state = state.copyWith(typeFilter: type);
+    }
+  }
+
+  void clearTypeFilter() {
+    state = state.copyWith(clearTypeFilter: true);
   }
 
   void toggleSelectionMode() {
@@ -147,6 +167,13 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
         case InvestmentFilter.archived:
           // All archived investments (already filtered by stream)
           break;
+      }
+
+      // Apply type filter
+      if (listState.hasTypeFilter) {
+        filtered = filtered
+            .where((inv) => inv.type == listState.typeFilter)
+            .toList();
       }
 
       // Apply search filter
@@ -262,6 +289,20 @@ int _compareInvestments(
       comparison = b.createdAt.compareTo(a.createdAt);
     case InvestmentSort.createdAsc:
       comparison = a.createdAt.compareTo(b.createdAt);
+    case InvestmentSort.maturityDateAsc:
+      // Sort by maturity date (soonest first)
+      // Investments without maturity date go to the end
+      final maturityA = a.maturityDate;
+      final maturityB = b.maturityDate;
+      if (maturityA == null && maturityB == null) {
+        comparison = 0;
+      } else if (maturityA == null) {
+        comparison = 1; // A goes after B
+      } else if (maturityB == null) {
+        comparison = -1; // A goes before B
+      } else {
+        comparison = maturityA.compareTo(maturityB);
+      }
   }
 
   // Secondary sort by name if primary comparison is equal
