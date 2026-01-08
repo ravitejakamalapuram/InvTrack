@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Add actions:write permission to trigger deploy workflow
+
+## [3.7.0] - 2026-01-08
+
 ### ♻️ Refactoring
 
 - Consolidate store metadata and cleanup unnecessary workflows
@@ -69,7 +75,7 @@
 
 - Optimize investment list sorting by skipping XIRR calculation (#46)
 
-## [3.7.0] - 2026-01-05
+## [3.7.1] - 2026-01-05
 
 ### ✨ Features
 
