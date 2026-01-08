@@ -105,7 +105,7 @@ jobs:
   # ============ ANDROID INTEGRATION TESTS ============
   integration-test-android:
     name: Integration Tests (Android)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest  # Android emulator needs KVM which is available on GitHub-hosted Linux runners
     needs: test
 
     steps:
