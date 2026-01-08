@@ -114,8 +114,9 @@ jobs:
       - name: Install git-cliff
         run: |
           # Install git-cliff via Homebrew on macOS self-hosted runner
+          # Use arch -arm64 to ensure we're running in native ARM mode
           if ! command -v git-cliff &> /dev/null; then
-            brew install git-cliff
+            arch -arm64 brew install git-cliff
           fi
 
       - name: Generate changelog
