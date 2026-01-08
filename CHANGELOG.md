@@ -4,6 +4,16 @@
 
 ### 🐛 Bug Fixes
 
+- Use pubspec.yaml as single source of truth for versioning
+
+### 🔧 Miscellaneous
+
+- Disable iOS and Android integration tests temporarily
+
+## [3.7.1] - 2026-01-08
+
+### 🐛 Bug Fixes
+
 - Add actions:write permission to trigger deploy workflow
 
 ## [3.7.0] - 2026-01-08
@@ -65,20 +75,13 @@
 
 ## [3.8.0] - 2026-01-05
 
-### ✨ Features
-
-- Enforce input length limits on form fields (#47)
-
-## [3.7.2] - 2026-01-05
-
 ### ⚡ Performance
 
 - Optimize investment list sorting by skipping XIRR calculation (#46)
 
-## [3.7.1] - 2026-01-05
-
 ### ✨ Features
 
+- Enforce input length limits on form fields (#47)
 - **a11y**: Add semantics to investment list filters and search (#45)
 - Add CI/CD automation with Slack notifications
 
