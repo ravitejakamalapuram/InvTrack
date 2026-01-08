@@ -1,6 +1,8 @@
 /// Search field widget for the investment list screen.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -21,6 +23,7 @@ class _InvestmentListSearchFieldState
     extends ConsumerState<InvestmentListSearchField> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -33,9 +36,24 @@ class _InvestmentListSearchFieldState
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    if (_debounceTimer?.isActive ?? false) {
+      _debounceTimer!.cancel();
+    }
+
+    // Debounce the search input to avoid unnecessary filtering/sorting on every keystroke
+    // which can be expensive (O(N) operations)
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        ref.read(investmentListStateProvider.notifier).setSearchQuery(value);
+      }
+    });
   }
 
   @override
@@ -87,11 +105,7 @@ class _InvestmentListSearchFieldState
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
-              onChanged: (value) {
-                ref
-                    .read(investmentListStateProvider.notifier)
-                    .setSearchQuery(value);
-              },
+              onChanged: _onSearchChanged,
             ),
           ),
         ),
