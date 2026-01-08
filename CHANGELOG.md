@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Add explicit tag_name for GitHub Release action
+
+## [3.8.1] - 2026-01-08
+
+### 🐛 Bug Fixes
+
 - Use pubspec.yaml as single source of truth for versioning
 
 ### 🔧 Miscellaneous
