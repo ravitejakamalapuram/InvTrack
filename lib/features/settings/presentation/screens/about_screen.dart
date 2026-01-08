@@ -12,7 +12,7 @@ import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile
 import 'package:url_launcher/url_launcher.dart';
 
 /// App version info - matches pubspec.yaml version: 3.5.1+19
-const String _appVersion = '3.7.1';
+const String _appVersion = '3.7.2';
 const String _buildNumber = '1';
 
 /// Screen showing app information and legal documents.

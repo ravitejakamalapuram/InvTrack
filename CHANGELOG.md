@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🔧 Miscellaneous
+
+- Disable iOS and Android integration tests temporarily
+
+## [3.7.1] - 2026-01-08
+
 ### 🐛 Bug Fixes
 
 - Add actions:write permission to trigger deploy workflow
@@ -74,8 +80,6 @@
 ### ⚡ Performance
 
 - Optimize investment list sorting by skipping XIRR calculation (#46)
-
-## [3.7.1] - 2026-01-05
 
 ### ✨ Features
 
