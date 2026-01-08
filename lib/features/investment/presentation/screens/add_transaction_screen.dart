@@ -336,7 +336,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                 : AppColors.neutral500Light,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: AppSpacing.xxs),
                         ListenableBuilder(
                           listenable: _amountController,
                           builder: (context, _) {
@@ -362,19 +362,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         gradient: _selectedType.isOutflow
                             ? AppColors.dangerGradient
                             : AppColors.successGradient,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppSizes.borderRadiusMd,
                       ),
                       child: Icon(
                         _selectedType.isOutflow
                             ? Icons.arrow_upward_rounded
                             : Icons.arrow_downward_rounded,
                         color: Colors.white,
-                        size: 24,
+                        size: AppSizes.iconMd,
                       ),
                     ),
                   ],
