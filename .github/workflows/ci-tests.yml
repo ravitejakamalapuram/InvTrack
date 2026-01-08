@@ -107,6 +107,7 @@ jobs:
     name: Integration Tests (Android)
     runs-on: ubuntu-latest  # Android emulator needs KVM which is available on GitHub-hosted Linux runners
     needs: test
+    continue-on-error: true  # Don't fail the workflow if Android tests fail (e.g., billing issues)
 
     steps:
       - name: Checkout code
