@@ -79,16 +79,19 @@ class _FilterChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final onTap = () {
+      HapticFeedback.selectionClick();
+      ref.read(investmentListStateProvider.notifier).setFilter(filter);
+    };
+
     return Semantics(
       button: true,
       selected: isSelected,
       label: '$label, $count items',
       excludeSemantics: true,
+      onTap: onTap,
       child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          ref.read(investmentListStateProvider.notifier).setFilter(filter);
-        },
+        onTap: onTap,
         child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 200),
