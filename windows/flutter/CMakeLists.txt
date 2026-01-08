@@ -10,4 +10,4 @@ include(${EPHEMERAL_DIR}/generated_config.cmake)
 # https://github.com/flutter/flutter/issues/57146.
 set(WRAPPER_ROOT "${EPHEMERAL_DIR}/cpp_client_wrapper")
 
-include("${EPHEMERAL_DIR}/flutter_windows.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/flutter_windows.cmake")
