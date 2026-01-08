@@ -20,6 +20,7 @@
 
 ### 🐛 Bug Fixes
 
+- Handle existing tags in CD workflow
 - Use arch -arm64 for brew install on self-hosted runner
 - Make Android integration tests optional
 - Use GitHub-hosted runner for Android integration tests
