@@ -103,20 +103,31 @@ class TypeSelector<T> extends StatelessWidget {
   Widget _buildChip(T item, bool isDark, {bool expanded = false}) {
     final isSelected = selectedValue == item;
     final color = colorBuilder(item);
+    final itemLabel = labelBuilder(item);
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: itemLabel,
+      excludeSemantics: true,
       onTap: () {
         HapticFeedback.selectionClick();
         onSelected(item);
       },
-      child: _TypeSelectorChip(
-        isSelected: isSelected,
-        color: color,
-        isDark: isDark,
-        expanded: expanded,
-        compactMode: compactMode,
-        icon: iconBuilder(item),
-        label: labelBuilder(item),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onSelected(item);
+        },
+        child: _TypeSelectorChip(
+          isSelected: isSelected,
+          color: color,
+          isDark: isDark,
+          expanded: expanded,
+          compactMode: compactMode,
+          icon: iconBuilder(item),
+          label: itemLabel,
+        ),
       ),
     );
   }
