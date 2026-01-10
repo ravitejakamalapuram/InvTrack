@@ -417,6 +417,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         TextFormField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+          ],
+          maxLength: ValidationConstants.maxAmountLength,
           style: AppTypography.body.copyWith(
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
