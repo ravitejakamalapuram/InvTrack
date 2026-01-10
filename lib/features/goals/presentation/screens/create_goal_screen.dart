@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
+import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
@@ -210,6 +211,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               controller: _nameController,
               label: 'Goal Name',
               hint: 'e.g., Home Down Payment',
+              maxLength: ValidationConstants.maxNameLength,
               validator: (v) => v == null || v.isEmpty ? 'Required' : null,
             ),
             SizedBox(height: AppSpacing.md),
@@ -225,6 +227,10 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               hint: 'Enter target amount',
               prefixText: currencySymbol,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+              ],
+              maxLength: ValidationConstants.maxAmountLength,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Required';
                 if (double.tryParse(v) == null) return 'Invalid amount';
@@ -241,6 +247,10 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 hint: 'Enter monthly income target',
                 prefixText: currencySymbol,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+                maxLength: ValidationConstants.maxAmountLength,
               ),
               SizedBox(height: AppSpacing.md),
             ],

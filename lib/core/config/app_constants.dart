@@ -19,6 +19,9 @@ class ValidationConstants {
 
   /// Minimum investment amount
   static const double minInvestmentAmount = 0.01;
+
+  /// Maximum length for amount fields (prevents DoS/Overflow)
+  static const int maxAmountLength = 20;
 }
 
 /// Animation duration constants
