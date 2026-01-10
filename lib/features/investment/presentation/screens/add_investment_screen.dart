@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
+import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -174,7 +175,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               color: isDark ? Colors.white : AppColors.neutral700Light,
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safePop(),
         ),
         title: Text(
           widget.isEditing ? 'Edit Investment' : 'Add Investment',

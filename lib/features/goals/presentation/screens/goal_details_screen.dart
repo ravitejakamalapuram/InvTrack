@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -66,7 +66,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           ),
           SizedBox(height: AppSpacing.md),
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => context.safePop(),
             child: const Text('Go Back'),
           ),
         ],
@@ -93,7 +93,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           ),
           SizedBox(height: AppSpacing.md),
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => context.safePop(),
             child: const Text('Go Back'),
           ),
         ],
@@ -160,7 +160,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           : AppColors.backgroundLight,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => context.pop(),
+        onPressed: () => context.safePop(),
       ),
       actions: [
         IconButton(
@@ -574,7 +574,7 @@ class GoalDetailsScreen extends ConsumerWidget {
         await ref.read(goalNotifierProvider.notifier).archiveGoal(goal.id);
         if (context.mounted) {
           AppFeedback.showSuccess(context, 'Goal archived');
-          context.pop();
+          context.safePop();
         }
       }
     } catch (e) {
@@ -621,7 +621,7 @@ class GoalDetailsScreen extends ConsumerWidget {
         }
         if (context.mounted) {
           AppFeedback.showSuccess(context, 'Goal deleted');
-          context.pop();
+          context.safePop();
         }
       } catch (e) {
         if (context.mounted) {
