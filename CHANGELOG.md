@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### UX
+
+- Add clear button to AppTextField
+
+### ✨ Features
+
+- **security**: Add input length limits and validation to amount fields
+- **a11y**: Add semantics to TypeSelector chips
+
+### 👷 CI/CD
+
+- Use self-hosted runner for Augment PR workflows
+
+## [3.9.0] - 2026-01-08
+
 ### ✨ Features
 
 - **security**: Add privacy screen for background state
