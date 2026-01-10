@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 
 /// A styled text field widget following the app's design language.
 /// Supports both single-line and multi-line input with optional prefix icon and label.
-class AppTextField extends StatelessWidget {
+class AppTextField extends StatefulWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final String? label;
@@ -43,15 +44,89 @@ class AppTextField extends StatelessWidget {
   });
 
   @override
+  State<AppTextField> createState() => _AppTextFieldState();
+}
+
+class _AppTextFieldState extends State<AppTextField> {
+  late TextEditingController _internalController;
+  late bool _isInternalController;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller != null) {
+      _internalController = widget.controller!;
+      _isInternalController = false;
+    } else {
+      _internalController = TextEditingController();
+      _isInternalController = true;
+    }
+
+    _internalController.addListener(_handleTextChange);
+  }
+
+  @override
+  void didUpdateWidget(AppTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      // Remove listener from the old controller instance
+      if (oldWidget.controller != null) {
+         oldWidget.controller!.removeListener(_handleTextChange);
+      } else {
+        // If it was internal, we should remove listener from the internal one we created
+        // Note: _internalController is currently holding the "old" controller reference
+        _internalController.removeListener(_handleTextChange);
+      }
+
+      if (widget.controller != null) {
+        // Switching to new external controller
+        if (_isInternalController) {
+          // Dispose the old internal one
+          _internalController.dispose();
+        }
+        _internalController = widget.controller!;
+        _isInternalController = false;
+      } else {
+        // Switching to internal (from external)
+        _internalController = TextEditingController();
+        _isInternalController = true;
+      }
+      _internalController.addListener(_handleTextChange);
+    }
+  }
+
+  void _handleTextChange() {
+    // Rebuild to toggle clear button
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _internalController.removeListener(_handleTextChange);
+    if (_isInternalController) {
+      _internalController.dispose();
+    }
+    super.dispose();
+  }
+
+  void _clearText() {
+    _internalController.clear();
+    widget.onChanged?.call('');
+    HapticFeedback.lightImpact();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final showClearButton =
+        !widget.readOnly && widget.enabled && _internalController.text.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null) ...[
+        if (widget.label != null) ...[
           Text(
-            label!,
+            widget.label!,
             style: AppTypography.bodyLarge.copyWith(
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white : AppColors.neutral900Light,
@@ -60,39 +135,59 @@ class AppTextField extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         TextFormField(
-          controller: controller,
-          focusNode: focusNode,
-          textCapitalization: textCapitalization,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          maxLength: maxLength,
-          readOnly: readOnly,
-          enabled: enabled,
-          autofocus: autofocus,
+          controller: _internalController,
+          focusNode: widget.focusNode,
+          textCapitalization: widget.textCapitalization,
+          keyboardType: widget.keyboardType,
+          maxLines: widget.maxLines,
+          maxLength: widget.maxLength,
+          readOnly: widget.readOnly,
+          enabled: widget.enabled,
+          autofocus: widget.autofocus,
           style: AppTypography.body.copyWith(
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: widget.hint,
             hintStyle: AppTypography.body.copyWith(
               color: isDark
                   ? AppColors.neutral500Dark
                   : AppColors.neutral400Light,
             ),
-            prefixText: prefixText,
+            prefixText: widget.prefixText,
             prefixStyle: AppTypography.body.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
             ),
-            prefixIcon: prefixIcon != null
+            prefixIcon: widget.prefixIcon != null
                 ? Padding(
                     padding: EdgeInsets.only(
-                      bottom: maxLines > 1 ? (maxLines - 1) * 20.0 : 0,
+                      bottom:
+                          widget.maxLines > 1 ? (widget.maxLines - 1) * 20.0 : 0,
                     ),
                     child: Icon(
-                      prefixIcon,
+                      widget.prefixIcon,
                       color: isDark
                           ? AppColors.neutral400Dark
                           : AppColors.neutral500Light,
+                    ),
+                  )
+                : null,
+            suffixIcon: showClearButton
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      bottom:
+                          widget.maxLines > 1 ? (widget.maxLines - 1) * 20.0 : 0,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.cancel,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
+                        size: 20,
+                      ),
+                      tooltip: 'Clear text',
+                      onPressed: _clearText,
                     ),
                   )
                 : null,
@@ -131,9 +226,9 @@ class AppTextField extends StatelessWidget {
               vertical: 16,
             ),
           ),
-          validator: validator,
-          onFieldSubmitted: onSubmitted,
-          onChanged: onChanged,
+          validator: widget.validator,
+          onFieldSubmitted: widget.onSubmitted,
+          onChanged: widget.onChanged,
         ),
       ],
     );
