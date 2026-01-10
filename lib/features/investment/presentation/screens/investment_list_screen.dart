@@ -337,79 +337,84 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
               final isArchived = investment.isArchived;
               return StaggeredFadeIn(
                 index: index,
-                child: SwipeActions(
-                  itemKey: investment.id,
-                  enabled: !listState.isSelectionMode,
-                  deleteConfig: DeleteActionConfig(
-                    confirmTitle: 'Delete Investment?',
-                    confirmMessage:
-                        'This will permanently delete "${investment.name}" and all its transactions.',
-                    successMessage: 'Investment deleted',
-                    onDelete: () {
-                      if (isArchived) {
-                        ref
-                            .read(investmentNotifierProvider.notifier)
-                            .deleteArchivedInvestment(investment.id);
-                      } else {
-                        ref
-                            .read(investmentNotifierProvider.notifier)
-                            .deleteInvestment(investment.id);
-                      }
-                    },
-                  ),
-                  archiveConfig: ArchiveActionConfig(
-                    confirmTitle: isArchived
-                        ? 'Unarchive Investment?'
-                        : 'Archive Investment?',
-                    confirmMessage: isArchived
-                        ? '"${investment.name}" will be restored to your active investments.'
-                        : '"${investment.name}" will be hidden from your active investments.',
-                    successMessage: isArchived
-                        ? 'Investment restored'
-                        : 'Investment archived',
-                    isArchived: isArchived,
-                    onArchive: () {
-                      if (isArchived) {
-                        ref
-                            .read(investmentNotifierProvider.notifier)
-                            .unarchiveInvestment(investment.id);
-                      } else {
-                        ref
-                            .read(investmentNotifierProvider.notifier)
-                            .archiveInvestment(investment.id);
-                      }
-                    },
-                  ),
-                  child: InvestmentCard(
-                    investment: investment,
-                    isSelectionMode: listState.isSelectionMode,
-                    isSelected: listState.selectedIds.contains(investment.id),
-                    onTap: listState.isSelectionMode
-                        ? () => ref
-                              .read(investmentListStateProvider.notifier)
-                              .toggleSelection(investment.id)
-                        : () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => InvestmentDetailScreen(
-                                  investment: investment,
+                // OPTIMIZATION: Wrap in RepaintBoundary to isolate the expensive GlassCard
+                // repaint (BackdropFilter) from the rest of the list.
+                // This prevents the entire list from repainting during scroll or animations.
+                child: RepaintBoundary(
+                  child: SwipeActions(
+                    itemKey: investment.id,
+                    enabled: !listState.isSelectionMode,
+                    deleteConfig: DeleteActionConfig(
+                      confirmTitle: 'Delete Investment?',
+                      confirmMessage:
+                          'This will permanently delete "${investment.name}" and all its transactions.',
+                      successMessage: 'Investment deleted',
+                      onDelete: () {
+                        if (isArchived) {
+                          ref
+                              .read(investmentNotifierProvider.notifier)
+                              .deleteArchivedInvestment(investment.id);
+                        } else {
+                          ref
+                              .read(investmentNotifierProvider.notifier)
+                              .deleteInvestment(investment.id);
+                        }
+                      },
+                    ),
+                    archiveConfig: ArchiveActionConfig(
+                      confirmTitle: isArchived
+                          ? 'Unarchive Investment?'
+                          : 'Archive Investment?',
+                      confirmMessage: isArchived
+                          ? '"${investment.name}" will be restored to your active investments.'
+                          : '"${investment.name}" will be hidden from your active investments.',
+                      successMessage: isArchived
+                          ? 'Investment restored'
+                          : 'Investment archived',
+                      isArchived: isArchived,
+                      onArchive: () {
+                        if (isArchived) {
+                          ref
+                              .read(investmentNotifierProvider.notifier)
+                              .unarchiveInvestment(investment.id);
+                        } else {
+                          ref
+                              .read(investmentNotifierProvider.notifier)
+                              .archiveInvestment(investment.id);
+                        }
+                      },
+                    ),
+                    child: InvestmentCard(
+                      investment: investment,
+                      isSelectionMode: listState.isSelectionMode,
+                      isSelected: listState.selectedIds.contains(investment.id),
+                      onTap: listState.isSelectionMode
+                          ? () => ref
+                                .read(investmentListStateProvider.notifier)
+                                .toggleSelection(investment.id)
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => InvestmentDetailScreen(
+                                    investment: investment,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                    onLongPress: !listState.isSelectionMode
-                        ? () {
-                            ref
-                                .read(investmentListStateProvider.notifier)
-                                .toggleSelectionMode();
-                            ref
-                                .read(investmentListStateProvider.notifier)
-                                .toggleSelection(investment.id);
-                          }
-                        : null,
-                    onCheckboxChanged: (_) => ref
-                        .read(investmentListStateProvider.notifier)
-                        .toggleSelection(investment.id),
+                              );
+                            },
+                      onLongPress: !listState.isSelectionMode
+                          ? () {
+                              ref
+                                  .read(investmentListStateProvider.notifier)
+                                  .toggleSelectionMode();
+                              ref
+                                  .read(investmentListStateProvider.notifier)
+                                  .toggleSelection(investment.id);
+                            }
+                          : null,
+                      onCheckboxChanged: (_) => ref
+                          .read(investmentListStateProvider.notifier)
+                          .toggleSelection(investment.id),
+                    ),
                   ),
                 ),
               );
