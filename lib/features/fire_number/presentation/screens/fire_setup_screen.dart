@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -130,7 +131,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
               )
             : IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => context.pop(),
+                onPressed: () => context.safePop(),
               ),
       ),
       body: Form(

@@ -67,7 +67,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
               ),
               child: const Icon(Icons.share_rounded, color: Colors.white),
             ),
-            onPressed: _shareDocument,
+            onPressed: () => _shareDocument(context),
           ),
           IconButton(
             icon: Container(
@@ -154,7 +154,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           ),
           SizedBox(height: AppSpacing.md),
           TextButton.icon(
-            onPressed: _shareDocument,
+            onPressed: () => _shareDocument(context),
             icon: const Icon(Icons.share_rounded, color: Colors.white70),
             label: Text(
               'Share',
@@ -321,11 +321,39 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     }
   }
 
-  Future<void> _shareDocument() async {
+  Future<void> _shareDocument(BuildContext context) async {
     HapticFeedback.selectionClick();
-    final file = XFile(widget.document.localPath);
-    await SharePlus.instance.share(
-      ShareParams(files: [file], text: widget.document.name),
-    );
+
+    final filePath = widget.document.localPath;
+    final file = File(filePath);
+
+    // Check if file exists before trying to share
+    if (!await file.exists()) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('File not found. It may have been moved or deleted.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final xFile = XFile(filePath);
+      await SharePlus.instance.share(
+        ShareParams(files: [xFile], text: widget.document.name),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share document: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

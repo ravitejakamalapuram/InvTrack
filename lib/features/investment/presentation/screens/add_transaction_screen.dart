@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
+import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -141,7 +141,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ? 'Transaction updated successfully'
             : 'Transaction added successfully';
         AppFeedback.showSuccess(context, message);
-        context.pop();
+        context.safePop();
       }
     } catch (e) {
       if (mounted) {
@@ -184,7 +184,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               color: isDark ? Colors.white : AppColors.neutral700Light,
             ),
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.safePop(),
         ),
         title: Text(
           widget.isEditing ? 'Edit Cash Flow' : 'Add Cash Flow',

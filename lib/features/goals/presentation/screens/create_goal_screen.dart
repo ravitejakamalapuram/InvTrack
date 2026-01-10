@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -149,7 +149,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
       if (mounted) {
         final message = widget.isEditing ? 'Goal updated' : 'Goal created';
         AppFeedback.showSuccess(context, message);
-        context.pop();
+        context.safePop();
       }
     } catch (e) {
       if (mounted) {
@@ -186,7 +186,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
       ),
       leading: IconButton(
         icon: const Icon(Icons.close),
-        onPressed: () => context.pop(),
+        onPressed: () => context.safePop(),
       ),
     );
   }
