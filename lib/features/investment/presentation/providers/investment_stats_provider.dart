@@ -2,6 +2,7 @@
 /// All stats derive from stream providers for automatic updates.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
@@ -97,46 +98,45 @@ final archivedInvestmentBasicStatsProvider =
 
 /// XIRR ONLY provider for active investments (isolates expensive calculation).
 /// Use this in conjunction with basic stats to avoid re-calculating totals.
-final investmentXirrProvider = Provider.family<AsyncValue<double>, String>((
+/// Offloads calculation to a background isolate using [compute].
+final investmentXirrProvider = FutureProvider.family<double, String>((
   ref,
   investmentId,
-) {
-  final cashFlowsAsync = ref.watch(cashFlowsByInvestmentProvider(investmentId));
-
-  return cashFlowsAsync.when(
-    data: (cashFlows) {
-      if (cashFlows.isEmpty) {
-        return const AsyncValue.data(0.0);
-      }
-      return AsyncValue.data(
-        FinancialCalculator.calculateXirrFromCashFlows(cashFlows),
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
+) async {
+  // We use .selectAsync to get the future value of the stream.
+  // This suspends the FutureProvider until data is available,
+  // effectively propagating loading/error states.
+  final cashFlows = await ref.watch(
+    cashFlowsByInvestmentProvider(investmentId).selectAsync((data) => data),
   );
+
+  if (cashFlows.isEmpty) {
+    return 0.0;
+  }
+
+  // Offload expensive calculation to background isolate
+  return compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows);
 });
 
 /// XIRR ONLY provider for archived investments.
-final archivedInvestmentXirrProvider =
-    Provider.family<AsyncValue<double>, String>((ref, investmentId) {
-      final cashFlowsAsync = ref.watch(
-        archivedCashFlowsByInvestmentProvider(investmentId),
-      );
+/// Offloads calculation to a background isolate using [compute].
+final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
+  ref,
+  investmentId,
+) async {
+  final cashFlows = await ref.watch(
+    archivedCashFlowsByInvestmentProvider(investmentId).selectAsync(
+      (data) => data,
+    ),
+  );
 
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          if (cashFlows.isEmpty) {
-            return const AsyncValue.data(0.0);
-          }
-          return AsyncValue.data(
-            FinancialCalculator.calculateXirrFromCashFlows(cashFlows),
-          );
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    });
+  if (cashFlows.isEmpty) {
+    return 0.0;
+  }
+
+  // Offload expensive calculation to background isolate
+  return compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows);
+});
 
 // ============ AGGREGATE STATS PROVIDERS ============
 
