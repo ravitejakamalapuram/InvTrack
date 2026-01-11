@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Add document UX improvements - loading indicator and per-file type selector (#70)
+
+## [3.11.0] - 2026-01-11
+
+### ✨ Features
+
 - **ux**: Add clear button to investment search field (#67)
 - UX improvements batch 1 - Privacy mode, swipe actions, document management
 
