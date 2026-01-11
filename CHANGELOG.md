@@ -4,6 +4,17 @@
 
 ### ✨ Features
 
+- Add document UX improvements - loading indicator and per-file type selector
+
+### 👷 CI/CD
+
+- Simplify GitHub Actions for reliability (keep self-hosted)
+- Simplify GitHub Actions workflows for reliability
+
+## [3.12.0] - 2026-01-11
+
+### ✨ Features
+
 - Add document UX improvements - loading indicator and per-file type selector (#70)
 
 ## [3.11.0] - 2026-01-11
