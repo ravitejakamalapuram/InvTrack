@@ -1,14 +1,16 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 
 /// Animated progress ring for FIRE progress visualization
-class FireProgressRing extends StatelessWidget {
+class FireProgressRing extends ConsumerWidget {
   final double progress;
   final double fireNumber;
   final double currentValue;
@@ -29,7 +31,7 @@ class FireProgressRing extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.neutral700Dark : AppColors.neutral200Light;
     final progressColor = status.color;
@@ -83,17 +85,17 @@ class FireProgressRing extends StatelessWidget {
                 ),
               ),
               SizedBox(height: AppSpacing.xxs),
-              // Current value
-              Text(
-                formatCompactIndian(currentValue, symbol: currencySymbol),
+              // Current value - privacy aware
+              MaskedAmountText(
+                text: formatCompactIndian(currentValue, symbol: currencySymbol),
                 style: AppTypography.bodyMedium.copyWith(
                   color: progressColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              // Target
-              Text(
-                'of ${formatCompactIndian(fireNumber, symbol: currencySymbol)}',
+              // Target - privacy aware
+              MaskedAmountText(
+                text: 'of ${formatCompactIndian(fireNumber, symbol: currencySymbol)}',
                 style: AppTypography.small.copyWith(
                   color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),

@@ -107,7 +107,7 @@ class DocumentListWidget extends ConsumerWidget {
   }
 }
 
-/// Card displaying a single document with preview and actions
+/// Card displaying a single document with swipe actions
 class _DocumentCard extends ConsumerWidget {
   final DocumentEntity document;
   final bool isDark;
@@ -121,7 +121,7 @@ class _DocumentCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Material(
+    final cardContent = Material(
       color: isDark ? AppColors.surfaceDark : Colors.white,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
@@ -143,9 +143,7 @@ class _DocumentCard extends ConsumerWidget {
                     Text(
                       document.name,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.neutral900Light,
+                        color: isDark ? Colors.white : AppColors.neutral900Light,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -193,33 +191,101 @@ class _DocumentCard extends ConsumerWidget {
                 ),
               ),
 
-              // Actions
+              // Swipe hint icon (subtle indicator for swipe actions)
               if (!isReadOnly)
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert_rounded,
-                    color: (isDark ? Colors.white : Colors.black).withValues(
-                      alpha: 0.5,
-                    ),
-                  ),
-                  onSelected: (value) => _handleMenuAction(context, ref, value),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'view', child: Text('View')),
-                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.swipe_rounded,
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                  size: 18,
                 ),
             ],
           ),
         ),
       ),
     );
+
+    // If read-only, return card without swipe actions
+    if (isReadOnly) {
+      return cardContent;
+    }
+
+    // Wrap in Dismissible for swipe actions
+    return Dismissible(
+      key: Key(document.id),
+      direction: DismissDirection.horizontal,
+      // Swipe right (startToEnd) - Edit action
+      background: Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 24),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.edit_rounded, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Edit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+      // Swipe left (endToStart) - Delete action
+      secondaryBackground: Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          gradient: AppColors.dangerGradient,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            SizedBox(width: 8),
+            Icon(Icons.delete_rounded, color: Colors.white),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        HapticFeedback.selectionClick();
+        if (direction == DismissDirection.startToEnd) {
+          // Swipe right - Open edit sheet
+          _showEditSheet(context, ref);
+          return false; // Don't dismiss, just open edit
+        } else {
+          // Swipe left - Confirm delete
+          return _confirmDeleteSwipe(context);
+        }
+      },
+      onDismissed: (direction) async {
+        // Only called for delete action (after confirmation)
+        try {
+          await ref.read(documentNotifierProvider).deleteDocument(document.id);
+          if (context.mounted) {
+            AppFeedback.showSuccess(context, 'Document deleted');
+          }
+        } catch (e) {
+          if (context.mounted) {
+            AppFeedback.showError(context, 'Failed to delete document');
+          }
+        }
+      },
+      child: cardContent,
+    );
+  }
+
+  /// Confirm delete via swipe - uses AppFeedback for consistency
+  Future<bool> _confirmDeleteSwipe(BuildContext context) async {
+    final confirmed = await AppFeedback.showConfirmDialog(
+      context: context,
+      title: 'Delete Document?',
+      message: 'Are you sure you want to delete "${document.name}"? This cannot be undone.',
+      confirmText: 'Delete',
+    );
+    return confirmed;
   }
 
   Widget _buildThumbnail() {
@@ -263,24 +329,6 @@ class _DocumentCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleMenuAction(
-    BuildContext context,
-    WidgetRef ref,
-    String action,
-  ) async {
-    switch (action) {
-      case 'view':
-        _openDocument(context, ref);
-        break;
-      case 'edit':
-        _showEditSheet(context, ref);
-        break;
-      case 'delete':
-        await _confirmDelete(context, ref);
-        break;
-    }
-  }
-
   void _showEditSheet(BuildContext context, WidgetRef ref) {
     HapticFeedback.selectionClick();
     showModalBottomSheet(
@@ -289,39 +337,5 @@ class _DocumentCard extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => EditDocumentSheet(document: document),
     );
-  }
-
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Document'),
-        content: Text('Are you sure you want to delete "${document.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        await ref.read(documentNotifierProvider).deleteDocument(document.id);
-        if (context.mounted) {
-          AppFeedback.showSuccess(context, 'Document deleted');
-        }
-      } catch (e) {
-        if (context.mounted) {
-          AppFeedback.showError(context, 'Failed to delete document');
-        }
-      }
-    }
   }
 }

@@ -41,6 +41,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   List<_SelectedFile> _multipleFiles = [];
   bool _isMultiMode = false;
 
+  // Upload progress tracking
+  int _uploadedCount = 0;
+  int _totalToUpload = 0;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -110,50 +114,28 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   }
 
   Widget _buildSourceButtons(bool isDark) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _SourceButton(
-                icon: Icons.camera_alt_rounded,
-                label: 'Camera',
-                onTap: _pickFromCamera,
-                isDark: isDark,
-              ),
-            ),
-            SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _SourceButton(
-                icon: Icons.photo_library_rounded,
-                label: 'Gallery',
-                onTap: _pickFromGallery,
-                isDark: isDark,
-              ),
-            ),
-          ],
+        // Camera button - for quick capture
+        Expanded(
+          child: _SourceButton(
+            icon: Icons.camera_alt_rounded,
+            label: 'Camera',
+            subtitle: 'Take a photo',
+            onTap: _pickFromCamera,
+            isDark: isDark,
+          ),
         ),
-        SizedBox(height: AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: _SourceButton(
-                icon: Icons.insert_drive_file_rounded,
-                label: 'Single File',
-                onTap: _pickPdfFile,
-                isDark: isDark,
-              ),
-            ),
-            SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _SourceButton(
-                icon: Icons.file_copy_rounded,
-                label: 'Multiple Files',
-                onTap: _pickMultipleFiles,
-                isDark: isDark,
-              ),
-            ),
-          ],
+        SizedBox(width: AppSpacing.md),
+        // Select Files button - for any file type, any number
+        Expanded(
+          child: _SourceButton(
+            icon: Icons.folder_open_rounded,
+            label: 'Select Files',
+            subtitle: 'PDFs, images, etc.',
+            onTap: _pickFiles,
+            isDark: isDark,
+          ),
         ),
       ],
     );
@@ -350,47 +332,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     }
   }
 
-  Future<void> _pickPdfFile() async {
-    HapticFeedback.selectionClick();
-
-    // Suspend auto-lock during file picker to prevent locking
-    // when returning from the system file picker
-    ref.read(securityProvider.notifier).suspendAutoLock();
-
-    // Get last opened directory for better UX
-    final lastDirectory = ref.read(lastFilePickerDirectoryProvider);
-
-    // FilePicker uses SAF on Android, no explicit permission needed
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-        initialDirectory: lastDirectory,
-      );
-      if (result != null && result.files.single.path != null && mounted) {
-        final file = File(result.files.single.path!);
-        final bytes = await file.readAsBytes();
-
-        // Save the directory for next time
-        saveLastFilePickerDirectory(ref, result.files.single.path);
-
-        setState(() {
-          _selectedBytes = bytes;
-          _selectedFileName = result.files.single.name;
-          _nameController.text = _suggestName(result.files.single.name);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        AppFeedback.showError(context, 'Could not access file');
-      }
-    } finally {
-      // Resume auto-lock after file picker operation completes
-      ref.read(securityProvider.notifier).resumeAutoLock();
-    }
-  }
-
-  Future<void> _pickMultipleFiles() async {
+  /// Unified file picker - supports all file types and multiple selection
+  Future<void> _pickFiles() async {
     HapticFeedback.selectionClick();
 
     // Suspend auto-lock during file picker
@@ -402,7 +345,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'],
         allowMultiple: true,
         initialDirectory: lastDirectory,
       );
@@ -416,6 +359,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               bytes: bytes,
               fileName: platformFile.name,
               suggestedName: _suggestName(platformFile.name),
+              autoDetectedType: _detectDocumentType(platformFile.name),
             ));
           }
         }
@@ -423,10 +367,20 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
           // Save the directory from the first file for next time
           saveLastFilePickerDirectory(ref, result.files.first.path);
 
-          setState(() {
-            _multipleFiles = files;
-            _isMultiMode = true;
-          });
+          // If single file, use single file mode for simpler UX
+          if (files.length == 1) {
+            setState(() {
+              _selectedBytes = files.first.bytes;
+              _selectedFileName = files.first.fileName;
+              _nameController.text = files.first.suggestedName;
+              _selectedType = files.first.autoDetectedType;
+            });
+          } else {
+            setState(() {
+              _multipleFiles = files;
+              _isMultiMode = true;
+            });
+          }
         }
       }
     } catch (e) {
@@ -438,77 +392,192 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     }
   }
 
+  /// Auto-detect document type from file extension
+  DocumentType _detectDocumentType(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    if (DocumentMimeTypes.imageExtensions.contains(extension)) {
+      return DocumentType.image;
+    }
+    // Default to receipt for PDFs (most common use case)
+    return DocumentType.receipt;
+  }
+
   Widget _buildMultiFileForm(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Files list
+        // Summary header
+        Row(
+          children: [
+            Icon(
+              Icons.file_copy_rounded,
+              color: AppColors.primaryLight,
+              size: 20,
+            ),
+            SizedBox(width: AppSpacing.xs),
+            Text(
+              '${_multipleFiles.length} files selected',
+              style: AppTypography.bodyMedium.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.md),
+
+        // Files list with thumbnails
         Container(
-          constraints: BoxConstraints(maxHeight: 200),
-          child: ListView.builder(
+          constraints: BoxConstraints(maxHeight: 250),
+          child: ListView.separated(
             shrinkWrap: true,
             itemCount: _multipleFiles.length,
+            separatorBuilder: (_, __) => SizedBox(height: AppSpacing.xs),
             itemBuilder: (context, index) {
               final file = _multipleFiles[index];
               final isImage = DocumentMimeTypes.isImage(file.fileName);
-              return ListTile(
-                leading: Icon(
-                  isImage ? Icons.image_rounded : Icons.picture_as_pdf_rounded,
-                  color: isImage ? Colors.blue : Colors.red,
+              return Container(
+                padding: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                title: Text(
-                  file.suggestedName,
-                  style: AppTypography.body.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                  ),
-                ),
-                subtitle: Text(
-                  file.fileName,
-                  style: AppTypography.caption,
-                ),
-                trailing: IconButton(
-                  icon: Icon(Icons.close, size: 20),
-                  onPressed: () {
-                    setState(() {
-                      _multipleFiles.removeAt(index);
-                      if (_multipleFiles.isEmpty) {
-                        _isMultiMode = false;
-                      }
-                    });
-                  },
+                child: Row(
+                  children: [
+                    // Thumbnail preview
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: isImage
+                          ? Image.memory(
+                              file.bytes,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 48,
+                              height: 48,
+                              color: Colors.red.withValues(alpha: 0.1),
+                              child: Icon(
+                                Icons.picture_as_pdf_rounded,
+                                color: Colors.red,
+                                size: 24,
+                              ),
+                            ),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    // File info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            file.suggestedName,
+                            style: AppTypography.body.copyWith(
+                              color: isDark ? Colors.white : AppColors.neutral900Light,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: file.autoDetectedType.color.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  file.autoDetectedType.displayName,
+                                  style: AppTypography.caption.copyWith(
+                                    color: file.autoDetectedType.color,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: AppSpacing.xs),
+                              Text(
+                                _formatFileSize(file.bytes.length),
+                                style: AppTypography.caption.copyWith(
+                                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Remove button
+                    if (!_isLoading)
+                      IconButton(
+                        icon: Icon(Icons.close, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _multipleFiles.removeAt(index);
+                            if (_multipleFiles.isEmpty) {
+                              _isMultiMode = false;
+                            }
+                          });
+                        },
+                      ),
+                  ],
                 ),
               );
             },
           ),
         ),
-        SizedBox(height: AppSpacing.md),
-
-        // Shared type selector
-        TypeSelector<DocumentType>(
-          label: 'Document Type (for all files)',
-          subtitle: 'All files will be categorized as this type',
-          values: DocumentType.values,
-          selectedValue: _selectedType,
-          onSelected: (type) => setState(() => _selectedType = type),
-          labelBuilder: (type) => type.displayName,
-          iconBuilder: (type) => type.icon,
-          colorBuilder: (type) => type.color,
-          gridLayout: true,
-          compactMode: true,
-        ),
         SizedBox(height: AppSpacing.lg),
+
+        // Upload progress (shown during upload)
+        if (_isLoading && _totalToUpload > 0) ...[
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Uploading...',
+                    style: AppTypography.body.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
+                  Text(
+                    '$_uploadedCount / $_totalToUpload',
+                    style: AppTypography.body.copyWith(
+                      color: AppColors.primaryLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.xs),
+              LinearProgressIndicator(
+                value: _totalToUpload > 0 ? _uploadedCount / _totalToUpload : 0,
+                backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.lg),
+        ],
 
         // Action buttons
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    _multipleFiles.clear();
-                    _isMultiMode = false;
-                  });
-                },
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        setState(() {
+                          _multipleFiles.clear();
+                          _isMultiMode = false;
+                        });
+                      },
                 child: const Text('Cancel'),
               ),
             ),
@@ -517,10 +586,20 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               child: FilledButton(
                 onPressed: _isLoading ? null : _saveMultipleDocuments,
                 child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Saving...'),
+                        ],
                       )
                     : Text('Save ${_multipleFiles.length} Files'),
               ),
@@ -531,10 +610,21 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     );
   }
 
+  /// Format file size in human-readable format
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
   Future<void> _saveMultipleDocuments() async {
     if (_multipleFiles.isEmpty) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _uploadedCount = 0;
+      _totalToUpload = _multipleFiles.length;
+    });
 
     try {
       int successCount = 0;
@@ -543,10 +633,13 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               investmentId: widget.investmentId,
               name: file.suggestedName,
               fileName: file.fileName,
-              type: _selectedType,
+              type: file.autoDetectedType, // Use per-file auto-detected type
               bytes: file.bytes,
             );
         successCount++;
+        if (mounted) {
+          setState(() => _uploadedCount = successCount);
+        }
       }
 
       if (mounted) {
@@ -559,7 +652,11 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _uploadedCount = 0;
+          _totalToUpload = 0;
+        });
       }
     }
   }
@@ -662,12 +759,14 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 class _SourceButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final VoidCallback onTap;
   final bool isDark;
 
   const _SourceButton({
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.onTap,
     required this.isDark,
   });
@@ -688,23 +787,36 @@ class _SourceButton extends StatelessWidget {
             label,
             style: AppTypography.body.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          if (subtitle != null) ...[
+            SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: AppTypography.caption.copyWith(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// Represents a selected file for multi-file upload
+/// Represents a selected file for multi-file upload with auto-detected type
 class _SelectedFile {
   final Uint8List bytes;
   final String fileName;
   final String suggestedName;
+  final DocumentType autoDetectedType;
 
   const _SelectedFile({
     required this.bytes,
     required this.fileName,
     required this.suggestedName,
+    required this.autoDetectedType,
   });
 }

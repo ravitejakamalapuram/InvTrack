@@ -336,7 +336,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       floatingActionButton: isClosed
           ? null
           : _selectedSegment == 0
-              ? _buildTransactionFab(context, isDark)
+              ? _buildTransactionFab(context, isDark, cashFlowsAsync)
               : _buildDocumentFab(context, isDark),
     );
   }
@@ -1338,54 +1338,27 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     }
   }
 
-  Widget _buildTransactionFab(BuildContext context, bool isDark) {
-    return PopupMenuButton<CashFlowType?>(
-      onSelected: (type) {
+  Widget _buildTransactionFab(
+    BuildContext context,
+    bool isDark,
+    AsyncValue<List<CashFlowEntity>> cashFlowsAsync,
+  ) {
+    // Smart default: first transaction → invest, subsequent → income
+    final hasTransactions = cashFlowsAsync.value?.isNotEmpty ?? false;
+    final smartDefaultType = hasTransactions ? CashFlowType.income : CashFlowType.invest;
+
+    return GestureDetector(
+      onTap: () {
         HapticFeedback.selectionClick();
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => AddTransactionScreen(
               investmentId: widget.investment.id,
-              initialType: type,
+              initialType: smartDefaultType,
             ),
           ),
         );
       },
-      offset: const Offset(0, -120),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: isDark ? AppColors.surfaceDark : Colors.white,
-      itemBuilder: (context) => [
-        PopupMenuItem<CashFlowType?>(
-          value: null,
-          child: Row(
-            children: [
-              Icon(Icons.add_rounded, color: AppColors.primaryLight),
-              const SizedBox(width: 12),
-              Text('Add Transaction', style: AppTypography.body),
-            ],
-          ),
-        ),
-        PopupMenuItem<CashFlowType>(
-          value: CashFlowType.income,
-          child: Row(
-            children: [
-              Icon(CashFlowType.income.iconData, color: CashFlowType.income.color),
-              const SizedBox(width: 12),
-              Text('Quick Income', style: AppTypography.body),
-            ],
-          ),
-        ),
-        PopupMenuItem<CashFlowType>(
-          value: CashFlowType.invest,
-          child: Row(
-            children: [
-              Icon(CashFlowType.invest.iconData, color: CashFlowType.invest.color),
-              const SizedBox(width: 12),
-              Text('Quick Invest', style: AppTypography.body),
-            ],
-          ),
-        ),
-      ],
       child: Container(
         decoration: BoxDecoration(
           gradient: AppColors.heroGradient,
