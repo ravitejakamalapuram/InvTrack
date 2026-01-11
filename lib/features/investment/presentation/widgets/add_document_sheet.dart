@@ -41,6 +41,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   List<_SelectedFile> _multipleFiles = [];
   bool _isMultiMode = false;
 
+  // Loading state for file reading (separate from save loading)
+  bool _isReadingFiles = false;
+
   // Upload progress tracking
   int _uploadedCount = 0;
   int _totalToUpload = 0;
@@ -97,8 +100,11 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
             ),
             SizedBox(height: AppSpacing.lg),
 
-            // Source selection buttons
-            if (_selectedBytes == null && _multipleFiles.isEmpty) ...[
+            // Source selection buttons or loading or content
+            if (_isReadingFiles) ...[
+              // Loading state while reading files
+              _buildFileReadingLoader(isDark),
+            ] else if (_selectedBytes == null && _multipleFiles.isEmpty) ...[
               _buildSourceButtons(isDark),
             ] else if (_isMultiMode && _multipleFiles.isNotEmpty) ...[
               // Multi-file mode
@@ -109,6 +115,41 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// Loading indicator while reading selected files
+  Widget _buildFileReadingLoader(bool isDark) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.primaryLight,
+            ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          Text(
+            'Reading files...',
+            style: AppTypography.body.copyWith(
+              color: isDark ? Colors.white : AppColors.neutral900Light,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            'This may take a moment for large files',
+            style: AppTypography.caption.copyWith(
+              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -293,45 +334,6 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     }
   }
 
-  Future<void> _pickFromGallery() async {
-    HapticFeedback.selectionClick();
-
-    // Check and request photos permission
-    final result = await _permissionService.requestPhotos();
-    if (!mounted) return;
-
-    if (!_handlePermissionResult(result, 'photo library')) {
-      return;
-    }
-
-    // Suspend auto-lock during gallery picker to prevent locking
-    // when returning from the photo picker
-    ref.read(securityProvider.notifier).suspendAutoLock();
-
-    final picker = ImagePicker();
-    try {
-      final image = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
-      if (image != null && mounted) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          _selectedBytes = bytes;
-          _selectedFileName = image.name;
-          _nameController.text = _suggestName(image.name);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        AppFeedback.showError(context, 'Could not access photo library');
-      }
-    } finally {
-      // Resume auto-lock after gallery operation completes
-      ref.read(securityProvider.notifier).resumeAutoLock();
-    }
-  }
-
   /// Unified file picker - supports all file types and multiple selection
   Future<void> _pickFiles() async {
     HapticFeedback.selectionClick();
@@ -350,41 +352,52 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         initialDirectory: lastDirectory,
       );
       if (result != null && result.files.isNotEmpty && mounted) {
+        // Show loading indicator while reading files
+        setState(() => _isReadingFiles = true);
+
         final files = <_SelectedFile>[];
         for (final platformFile in result.files) {
           if (platformFile.path != null) {
             final file = File(platformFile.path!);
             final bytes = await file.readAsBytes();
+            final detectedType = _detectDocumentType(platformFile.name);
             files.add(_SelectedFile(
               bytes: bytes,
               fileName: platformFile.name,
               suggestedName: _suggestName(platformFile.name),
-              autoDetectedType: _detectDocumentType(platformFile.name),
+              autoDetectedType: detectedType,
+              selectedType: detectedType, // Initially same as auto-detected
             ));
           }
         }
-        if (files.isNotEmpty) {
-          // Save the directory from the first file for next time
-          saveLastFilePickerDirectory(ref, result.files.first.path);
 
-          // If single file, use single file mode for simpler UX
-          if (files.length == 1) {
-            setState(() {
-              _selectedBytes = files.first.bytes;
-              _selectedFileName = files.first.fileName;
-              _nameController.text = files.first.suggestedName;
-              _selectedType = files.first.autoDetectedType;
-            });
-          } else {
-            setState(() {
-              _multipleFiles = files;
-              _isMultiMode = true;
-            });
+        if (mounted) {
+          setState(() => _isReadingFiles = false);
+
+          if (files.isNotEmpty) {
+            // Save the directory from the first file for next time
+            saveLastFilePickerDirectory(ref, result.files.first.path);
+
+            // If single file, use single file mode for simpler UX
+            if (files.length == 1) {
+              setState(() {
+                _selectedBytes = files.first.bytes;
+                _selectedFileName = files.first.fileName;
+                _nameController.text = files.first.suggestedName;
+                _selectedType = files.first.selectedType;
+              });
+            } else {
+              setState(() {
+                _multipleFiles = files;
+                _isMultiMode = true;
+              });
+            }
           }
         }
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isReadingFiles = false);
         AppFeedback.showError(context, 'Could not access files');
       }
     } finally {
@@ -432,7 +445,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
           child: ListView.separated(
             shrinkWrap: true,
             itemCount: _multipleFiles.length,
-            separatorBuilder: (_, __) => SizedBox(height: AppSpacing.xs),
+            separatorBuilder: (_, _) => SizedBox(height: AppSpacing.xs),
             itemBuilder: (context, index) {
               final file = _multipleFiles[index];
               final isImage = DocumentMimeTypes.isImage(file.fileName);
@@ -483,17 +496,38 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                           SizedBox(height: 2),
                           Row(
                             children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: file.autoDetectedType.color.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  file.autoDetectedType.displayName,
-                                  style: AppTypography.caption.copyWith(
-                                    color: file.autoDetectedType.color,
-                                    fontWeight: FontWeight.w500,
+                              // Tappable type chip for per-file type selection
+                              GestureDetector(
+                                onTap: _isLoading
+                                    ? null
+                                    : () => _showTypePickerForFile(index, isDark),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: file.selectedType.color.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: file.selectedType.color.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        file.selectedType.displayName,
+                                        style: AppTypography.caption.copyWith(
+                                          color: file.selectedType.color,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      SizedBox(width: 2),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        size: 14,
+                                        color: file.selectedType.color,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -617,6 +651,105 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  /// Show type picker bottom sheet for a specific file
+  void _showTypePickerForFile(int fileIndex, bool isDark) {
+    HapticFeedback.selectionClick();
+    final file = _multipleFiles[fileIndex];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Text(
+              'Select Type',
+              style: AppTypography.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            SizedBox(height: AppSpacing.xs),
+            Text(
+              file.suggestedName,
+              style: AppTypography.caption.copyWith(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: AppSpacing.lg),
+
+            // Type options grid
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: DocumentType.values.map((type) {
+                final isSelected = file.selectedType == type;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _multipleFiles[fileIndex].selectedType = type;
+                    });
+                    Navigator.pop(context);
+                    HapticFeedback.selectionClick();
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? type.color.withValues(alpha: 0.15)
+                          : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? type.color
+                            : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          type.icon,
+                          size: 18,
+                          color: isSelected
+                              ? type.color
+                              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.6),
+                        ),
+                        SizedBox(width: AppSpacing.xs),
+                        Text(
+                          type.displayName,
+                          style: AppTypography.body.copyWith(
+                            color: isSelected
+                                ? type.color
+                                : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.8),
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: AppSpacing.lg + MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveMultipleDocuments() async {
     if (_multipleFiles.isEmpty) return;
 
@@ -633,7 +766,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               investmentId: widget.investmentId,
               name: file.suggestedName,
               fileName: file.fileName,
-              type: file.autoDetectedType, // Use per-file auto-detected type
+              type: file.selectedType, // Use user-selected type (or auto-detected)
               bytes: file.bytes,
             );
         successCount++;
@@ -812,11 +945,13 @@ class _SelectedFile {
   final String fileName;
   final String suggestedName;
   final DocumentType autoDetectedType;
+  DocumentType selectedType; // User can change this per-file
 
-  const _SelectedFile({
+  _SelectedFile({
     required this.bytes,
     required this.fileName,
     required this.suggestedName,
     required this.autoDetectedType,
-  });
+    DocumentType? selectedType,
+  }) : selectedType = selectedType ?? autoDetectedType;
 }

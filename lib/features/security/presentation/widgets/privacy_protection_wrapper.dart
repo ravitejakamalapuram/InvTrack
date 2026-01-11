@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
 
 /// A widget that overlays a privacy screen when the app goes into the background
 /// or becomes inactive (e.g. app switcher, notification shade).
 ///
 /// This protects sensitive data from being visible in the app switcher snapshot.
+/// Follows Android standard: solid brand color with centered app icon.
 class PrivacyProtectionWrapper extends StatefulWidget {
   final Widget child;
   final bool enabled;
@@ -15,7 +17,8 @@ class PrivacyProtectionWrapper extends StatefulWidget {
   });
 
   @override
-  State<PrivacyProtectionWrapper> createState() => _PrivacyProtectionWrapperState();
+  State<PrivacyProtectionWrapper> createState() =>
+      _PrivacyProtectionWrapperState();
 }
 
 class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
@@ -41,8 +44,8 @@ class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
     // inactive: App is transitioning (app switcher, control center, biometric auth)
     // paused: App is in background
     // detached: App is detached from engine
-    final shouldObscure = state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused;
+    final shouldObscure =
+        state == AppLifecycleState.inactive || state == AppLifecycleState.paused;
 
     if (_shouldObscure != shouldObscure) {
       setState(() {
@@ -53,39 +56,33 @@ class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Stack(
       children: [
         widget.child,
         if (_shouldObscure)
           Positioned.fill(
-            child: Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/icons/app_icon.png',
-                    width: 100,
-                    height: 100,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback if asset is missing
-                      return const Icon(
-                        Icons.security,
-                        size: 80,
-                        color: Colors.grey,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'InvTracker',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            child: ColoredBox(
+              // Solid brand color - professional Android standard
+              color: isDark ? AppColors.backgroundDark : AppColors.primaryLight,
+              child: Center(
+                child: Image.asset(
+                  'assets/icons/app_icon.png',
+                  width: 72,
+                  height: 72,
+                  // Use white tint for light mode (icon on primary color)
+                  color: isDark ? null : Colors.white,
+                  colorBlendMode: BlendMode.srcIn,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback icon matching app branding
+                    return Icon(
+                      Icons.shield_rounded,
+                      size: 72,
+                      color: isDark ? AppColors.primaryDark : Colors.white,
+                    );
+                  },
+                ),
               ),
             ),
           ),
