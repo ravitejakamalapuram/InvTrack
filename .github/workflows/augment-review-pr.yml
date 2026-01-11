@@ -1,4 +1,4 @@
-name: Pull Request Review
+name: PR Review
 
 on:
   pull_request:
@@ -10,12 +10,15 @@ permissions:
 
 jobs:
   review-pr:
-    name: Pull Request Review
+    name: Review PR
     runs-on: self-hosted
     if: github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+    continue-on-error: true
     steps:
-      - name: Generate PR Review
-        uses: augmentcode/review-pr@v0
+      - uses: augmentcode/review-pr@v0
+        if: env.HAS_SECRET == 'true'
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
         with:
           augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
