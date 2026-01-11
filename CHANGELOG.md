@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **ux**: Add clear button to investment search field (#67)
+- UX improvements batch 1 - Privacy mode, swipe actions, document management
+
+## [3.10.0] - 2026-01-10
+
 ### UX
 
 - Add clear button to AppTextField
