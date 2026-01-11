@@ -106,6 +106,7 @@ enum InvestmentType {
   crypto,
   mutualFunds,
   stocks,
+  invoiceDiscounting,
   financing,
   other;
 
@@ -133,6 +134,8 @@ enum InvestmentType {
         return 'Mutual Funds';
       case InvestmentType.stocks:
         return 'Stocks';
+      case InvestmentType.invoiceDiscounting:
+        return 'Invoice Discounting';
       case InvestmentType.financing:
         return 'Financing';
       case InvestmentType.other:
@@ -164,6 +167,8 @@ enum InvestmentType {
         return Icons.pie_chart_rounded;
       case InvestmentType.stocks:
         return Icons.show_chart_rounded;
+      case InvestmentType.invoiceDiscounting:
+        return Icons.receipt_long_rounded;
       case InvestmentType.financing:
         return Icons.payments_rounded;
       case InvestmentType.other:
@@ -195,6 +200,8 @@ enum InvestmentType {
         return const Color(0xFF3B82F6); // Blue
       case InvestmentType.stocks:
         return const Color(0xFF10B981); // Emerald
+      case InvestmentType.invoiceDiscounting:
+        return const Color(0xFF0EA5E9); // Sky Blue
       case InvestmentType.financing:
         return const Color(0xFF14B8A6); // Teal
       case InvestmentType.other:

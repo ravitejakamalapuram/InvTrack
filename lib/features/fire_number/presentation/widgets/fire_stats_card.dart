@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 
 /// Card displaying FIRE number breakdown
-class FireStatsCard extends StatelessWidget {
+class FireStatsCard extends ConsumerWidget {
   final FireCalculationResult calculation;
   final String currencySymbol;
 
@@ -18,7 +20,7 @@ class FireStatsCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme-aware colors for FIRE type icons
@@ -129,8 +131,8 @@ class FireStatsCard extends StatelessWidget {
             ],
           ),
         ),
-        Text(
-          value,
+        MaskedAmountText(
+          text: value,
           style: AppTypography.h3.copyWith(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             fontWeight: FontWeight.w700,

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 
 /// Card displaying FIRE milestones progress
-class FireMilestoneCard extends StatelessWidget {
+class FireMilestoneCard extends ConsumerWidget {
   final List<FireMilestone> milestones;
   final String currencySymbol;
 
@@ -18,7 +20,7 @@ class FireMilestoneCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GlassCard(
@@ -100,8 +102,8 @@ class FireMilestoneCard extends StatelessWidget {
                     fontWeight: isAchieved ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
-                Text(
-                  formatCompactIndian(milestone.targetAmount, symbol: currencySymbol),
+                MaskedAmountText(
+                  text: formatCompactIndian(milestone.targetAmount, symbol: currencySymbol),
                   style: AppTypography.small.copyWith(
                     color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),

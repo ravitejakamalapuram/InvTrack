@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
@@ -365,6 +366,7 @@ class FireDashboardScreen extends ConsumerWidget {
             label: 'Need/Month',
             value: formatCompactIndian(calculation.requiredMonthlySavings, symbol: currencySymbol),
             subtitle: 'To reach FIRE',
+            isSensitive: true,
           ),
         ),
       ],
@@ -379,7 +381,13 @@ class FireDashboardScreen extends ConsumerWidget {
     required String label,
     required String value,
     required String subtitle,
+    bool isSensitive = false,
   }) {
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      fontWeight: FontWeight.w700,
+    );
+
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.sm),
       child: Column(
@@ -401,13 +409,9 @@ class FireDashboardScreen extends ConsumerWidget {
             ],
           ),
           SizedBox(height: AppSpacing.xs),
-          Text(
-            value,
-            style: AppTypography.bodyMedium.copyWith(
-              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          isSensitive
+              ? MaskedAmountText(text: value, style: valueStyle)
+              : Text(value, style: valueStyle),
           Text(
             subtitle,
             style: AppTypography.small.copyWith(
@@ -467,14 +471,21 @@ class FireDashboardScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Text(
-                      isPositive
-                          ? 'Keep up your current investment rate.'
-                          : 'Invest ${formatCompactIndian(monthlyGap.abs(), symbol: currencySymbol)}/month more to stay on track.',
-                      style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                      ),
-                    ),
+                    isPositive
+                        ? Text(
+                            'Keep up your current investment rate.',
+                            style: AppTypography.small.copyWith(
+                              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                            ),
+                          )
+                        : PrivacyMask(
+                            child: Text(
+                              'Invest ${formatCompactIndian(monthlyGap.abs(), symbol: currencySymbol)}/month more to stay on track.',
+                              style: AppTypography.small.copyWith(
+                                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                              ),
+                            ),
+                          ),
                   ],
                 ),
               ),
@@ -511,8 +522,8 @@ class FireDashboardScreen extends ConsumerWidget {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            Text(
-                              '${formatCompactIndian(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol)} to go',
+                            MaskedAmountText(
+                              text: '${formatCompactIndian(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol)} to go',
                               style: AppTypography.small.copyWith(
                                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                                 fontSize: 11,
@@ -594,8 +605,8 @@ class FireDashboardScreen extends ConsumerWidget {
                   color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),
               ),
-              Text(
-                gapLabel,
+              MaskedAmountText(
+                text: gapLabel,
                 style: AppTypography.bodyMedium.copyWith(
                   color: hasShortfall
                       ? (isDark ? AppColors.dangerDark : AppColors.dangerLight)

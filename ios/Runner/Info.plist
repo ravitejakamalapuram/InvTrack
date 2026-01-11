@@ -64,5 +64,11 @@
 	<string>InvTracker needs permission to save captured documents to your photo library.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>mailto</string>
+	</array>
 </dict>
 </plist>

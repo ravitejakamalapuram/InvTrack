@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -150,36 +151,79 @@ class AboutScreen extends ConsumerWidget {
     const helpUrl = 'https://github.com/ravitejakamalapuram/InvTrack#readme';
     final uri = Uri.parse(helpUrl);
 
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open help page')),
+    try {
+      final canLaunch = await canLaunchUrl(uri);
+      if (canLaunch) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: copy URL to clipboard
+        await _copyToClipboardWithFeedback(
+          context,
+          helpUrl,
+          'Help URL copied to clipboard',
         );
       }
+    } catch (e) {
+      // Fallback: copy URL to clipboard
+      await _copyToClipboardWithFeedback(
+        context,
+        helpUrl,
+        'Help URL copied to clipboard',
+      );
     }
   }
 
   /// Opens the email client for support
   Future<void> _openSupportEmail(BuildContext context) async {
+    const supportEmail = 'support@invtracker.com';
     final uri = Uri(
       scheme: 'mailto',
-      path: 'support@invtracker.com',
+      path: supportEmail,
       query: _encodeQueryParameters({
         'subject': 'InvTrack Support Request (v$_appVersion)',
         'body': 'Please describe your issue or question:\n\n',
       }),
     );
 
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open email client')),
+    try {
+      final canLaunch = await canLaunchUrl(uri);
+      if (canLaunch) {
+        await launchUrl(uri);
+      } else {
+        // Fallback: copy email to clipboard
+        await _copyToClipboardWithFeedback(
+          context,
+          supportEmail,
+          'Email copied to clipboard: $supportEmail',
         );
       }
+    } catch (e) {
+      // Fallback: copy email to clipboard
+      await _copyToClipboardWithFeedback(
+        context,
+        supportEmail,
+        'Email copied to clipboard: $supportEmail',
+      );
+    }
+  }
+
+  /// Copies text to clipboard and shows success feedback
+  Future<void> _copyToClipboardWithFeedback(
+    BuildContext context,
+    String text,
+    String message,
+  ) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {},
+          ),
+        ),
+      );
     }
   }
 

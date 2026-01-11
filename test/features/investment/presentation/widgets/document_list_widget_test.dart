@@ -137,24 +137,24 @@ void main() {
     });
 
     group('Read Only Mode', () {
-      testWidgets('should hide menu button in read-only mode', (tester) async {
+      testWidgets('should hide swipe hint in read-only mode', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(documents: testDocuments, isReadOnly: true),
         );
         await tester.pumpAndSettle();
 
-        // More options menu should be hidden
-        expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+        // Swipe hint icon should be hidden in read-only mode
+        expect(find.byIcon(Icons.swipe_rounded), findsNothing);
       });
 
-      testWidgets('should show menu button in edit mode', (tester) async {
+      testWidgets('should show swipe hint in edit mode', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(documents: testDocuments, isReadOnly: false),
         );
         await tester.pumpAndSettle();
 
-        // More options menu should be visible (one per document)
-        expect(find.byIcon(Icons.more_vert_rounded), findsNWidgets(2));
+        // Swipe hint icon should be visible (one per document)
+        expect(find.byIcon(Icons.swipe_rounded), findsNWidgets(2));
       });
     });
   });
