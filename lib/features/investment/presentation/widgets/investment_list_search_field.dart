@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -28,6 +29,7 @@ class _InvestmentListSearchFieldState
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onTextChanged);
     // Auto-focus when the widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
@@ -37,9 +39,21 @@ class _InvestmentListSearchFieldState
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onTextChanged() {
+    // Rebuild to toggle clear button visibility
+    setState(() {});
+  }
+
+  void _clearText() {
+    _controller.clear();
+    _onSearchChanged('');
+    HapticFeedback.lightImpact();
   }
 
   void _onSearchChanged(String value) {
@@ -59,6 +73,7 @@ class _InvestmentListSearchFieldState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final showClearButton = _controller.text.isNotEmpty;
 
     return Row(
       children: [
@@ -104,6 +119,21 @@ class _InvestmentListSearchFieldState
                 filled: false,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
+                suffixIcon: showClearButton
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.cancel,
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral400Light,
+                          size: 20,
+                        ),
+                        tooltip: 'Clear text',
+                        onPressed: _clearText,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      )
+                    : null,
               ),
               onChanged: _onSearchChanged,
             ),
