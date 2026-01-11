@@ -38,24 +38,43 @@ class GlassCard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.05);
 
-    Widget cardContent = ClipRRect(
+    final decoration = BoxDecoration(
+      color: backgroundColor ?? defaultBgColor,
       borderRadius: BorderRadius.circular(borderRadius),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+      border: showBorder
+          ? Border.all(color: borderColor, width: 1)
+          : null,
+      boxShadow: isDark ? null : AppColors.cardShadowLight,
+    );
+
+    // OPTIMIZATION: Skip expensive BackdropFilter if blur is 0.
+    // BackdropFilter forces a saveLayer which triggers an offscreen render pass.
+    // When blur is not needed (or set to 0 for performance), we can render a simple container.
+    Widget cardContent;
+    if (blur > 0) {
+      cardContent = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Container(
+            padding: padding,
+            decoration: decoration,
+            child: child,
+          ),
+        ),
+      );
+    } else {
+      // Use ClipRRect to ensure child content is clipped to the border radius,
+      // matching the behavior of the blurred version.
+      cardContent = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
         child: Container(
           padding: padding,
-          decoration: BoxDecoration(
-            color: backgroundColor ?? defaultBgColor,
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: showBorder
-                ? Border.all(color: borderColor, width: 1)
-                : null,
-            boxShadow: isDark ? null : AppColors.cardShadowLight,
-          ),
+          decoration: decoration,
           child: child,
         ),
-      ),
-    );
+      );
+    }
 
     if (onTap != null || onLongPress != null) {
       return GestureDetector(
