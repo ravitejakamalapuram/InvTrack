@@ -1,4 +1,4 @@
-name: Pull Request Descriptor
+name: PR Description
 
 on:
   pull_request:
@@ -10,12 +10,15 @@ permissions:
 
 jobs:
   describe-pr:
-    name: Pull Request Descriptor
-    runs-on: self-hosted
+    name: Describe PR
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+    continue-on-error: true
     steps:
-      - name: Generate PR Description
-        uses: augmentcode/describe-pr@v0
+      - uses: augmentcode/describe-pr@v0
+        if: env.HAS_SECRET == 'true'
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
         with:
           augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
