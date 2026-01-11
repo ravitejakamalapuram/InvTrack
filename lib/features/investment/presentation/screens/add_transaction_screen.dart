@@ -208,10 +208,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 values: CashFlowType.values,
                 selectedValue: _selectedType,
                 onSelected: (type) => setState(() => _selectedType = type),
-                colorBuilder:
-                    (type) => type.isOutflow
-                        ? AppColors.errorLight
-                        : AppColors.successLight,
+                colorBuilder: (type) {
+                  if (type.isOutflow) {
+                    return isDark
+                        ? AppColors.errorDark
+                        : AppColors.errorLight;
+                  }
+                  return isDark
+                      ? AppColors.successDark
+                      : AppColors.successLight;
+                },
                 iconBuilder: (type) => type.iconData,
                 labelBuilder: (type) => type.displayName,
                 gridLayout: true,
@@ -347,13 +353,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             final formattedAmount = currencyFormat.format(
                               amount,
                             );
+                            final color = _selectedType.isOutflow
+                                ? (isDark
+                                    ? AppColors.errorDark
+                                    : AppColors.errorLight)
+                                : (isDark
+                                    ? AppColors.successDark
+                                    : AppColors.successLight);
 
                             return Text(
                               '$prefix$formattedAmount',
                               style: AppTypography.numberLarge.copyWith(
-                                color: _selectedType.isOutflow
-                                    ? AppColors.errorLight
-                                    : AppColors.successLight,
+                                color: color,
                                 fontWeight: FontWeight.w700,
                               ),
                             );
@@ -395,8 +406,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   }
 
   Widget _buildSubmitButton(bool isDark) {
-    final color =
-        _selectedType.isOutflow ? AppColors.errorLight : AppColors.successLight;
+    final color = _selectedType.isOutflow
+        ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+        : (isDark ? AppColors.successDark : AppColors.successLight);
 
     return GradientButton(
       onPressed: _submit,
