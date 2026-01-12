@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -34,15 +35,30 @@ class SecurityService {
     return pin != null;
   }
 
-  /// Hash PIN using SHA-256
-  String _hashPin(String pin) {
-    final bytes = utf8.encode(pin);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
+  /// Generate a random 16-byte salt encoded as hex
+  String _generateSalt() {
+    final random = Random.secure();
+    final values = List<int>.generate(16, (i) => random.nextInt(256));
+    return values.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// Hash PIN using SHA-256 with optional salt
+  /// Returns "salt:hash" if salt is provided/generated, or just "hash" for legacy
+  String _hashPin(String pin, {String? salt}) {
+    if (salt != null) {
+      final bytes = utf8.encode(salt + pin);
+      final digest = sha256.convert(bytes);
+      return '$salt:$digest';
+    } else {
+      final bytes = utf8.encode(pin);
+      final digest = sha256.convert(bytes);
+      return digest.toString();
+    }
   }
 
   Future<void> setPin(String pin) async {
-    final hashedPin = _hashPin(pin);
+    final salt = _generateSalt();
+    final hashedPin = _hashPin(pin, salt: salt);
     await _secureStorage.write(
       key: _pinKey,
       value: hashedPin,
@@ -60,19 +76,35 @@ class SecurityService {
 
     if (storedPin == null) return false;
 
-    // Check if stored PIN is hashed (SHA-256 is 64 chars hex)
+    // 1. Check for salted format (salt:hash)
+    if (storedPin.contains(':')) {
+      final parts = storedPin.split(':');
+      if (parts.length == 2) {
+        final salt = parts[0];
+        // Re-hash input with extracted salt to verify
+        final calculatedSaltedHash = _hashPin(pin, salt: salt);
+        return storedPin == calculatedSaltedHash;
+      }
+    }
+
+    // 2. Check if stored PIN is legacy unsalted hash (SHA-256 is 64 chars hex)
     if (storedPin.length == 64) {
       final hashedInput = _hashPin(pin);
-      return storedPin == hashedInput;
-    } else {
-      // Legacy support: stored PIN is plaintext
-      final isMatch = storedPin == pin;
+      final isMatch = storedPin == hashedInput;
       if (isMatch) {
-        // Upgrade to hashed storage
+        // Upgrade to salted hash
         await setPin(pin);
       }
       return isMatch;
     }
+
+    // 3. Legacy support: stored PIN is plaintext
+    final isMatch = storedPin == pin;
+    if (isMatch) {
+      // Upgrade to salted hash
+      await setPin(pin);
+    }
+    return isMatch;
   }
 
   Future<void> removePin() async {
