@@ -52,13 +52,18 @@ class GlassCard extends StatelessWidget {
     // When blur is not needed (or set to 0 for performance), we can render a simple container.
     Widget cardContent;
     if (blur > 0) {
+      // Create a decoration without shadow for the inner container.
+      // Shadows on the inner container are clipped by ClipRRect, so they are not visible
+      // but still incur rendering cost.
+      final innerDecoration = decoration.copyWith(boxShadow: []);
+
       cardContent = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
             padding: padding,
-            decoration: decoration,
+            decoration: innerDecoration,
             child: child,
           ),
         ),

@@ -13,3 +13,11 @@ Even with separate providers, performing iterative calculations (like XIRR) sync
 
 **Action:**
 Offloaded the calculation to a background isolate using `compute`. Converted the provider to a `FutureProvider` and used `ref.watch(provider.selectAsync(...))` to maintain reactivity while allowing the heavy lifting to happen in parallel.
+
+## 2024-05-24 - Hidden Shadow Rendering in Glass Cards
+
+**Learning:**
+When using `BackdropFilter` with `ClipRRect`, placing a `BoxShadow` on the inner container (inside the clip) results in the shadow being calculated and painted but immediately clipped out (invisible). This wastes GPU cycles, especially in long scrolling lists where every item has this "invisible" shadow.
+
+**Action:**
+Modified `GlassCard` to explicitly remove the `boxShadow` from the inner container when `blur > 0`. This ensures we don't pay the rendering cost for a shadow that the user can never see.
