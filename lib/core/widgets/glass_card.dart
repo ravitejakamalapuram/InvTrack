@@ -44,7 +44,9 @@ class GlassCard extends StatelessWidget {
       border: showBorder
           ? Border.all(color: borderColor, width: 1)
           : null,
-      boxShadow: isDark ? null : AppColors.cardShadowLight,
+      // OPTIMIZATION: Shadow is removed because it is clipped by ClipRRect and thus invisible.
+      // Calculating and painting an invisible shadow is a performance waste.
+      boxShadow: null,
     );
 
     // OPTIMIZATION: Skip expensive BackdropFilter if blur is 0.

@@ -72,6 +72,9 @@ class InvestmentCard extends ConsumerWidget {
       child: Padding(
         padding: EdgeInsets.only(bottom: AppSpacing.sm),
         child: GlassCard(
+          // OPTIMIZATION: Disable blur on list items to avoid expensive BackdropFilter/saveLayer.
+          // Since the background is solid, blurring it has no visual effect but high cost.
+          blur: 0,
           onTap: onTap,
           onLongPress: onLongPress,
           padding: EdgeInsets.zero,
