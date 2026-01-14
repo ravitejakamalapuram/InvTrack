@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
+
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -34,15 +36,30 @@ class SecurityService {
     return pin != null;
   }
 
-  /// Hash PIN using SHA-256
-  String _hashPin(String pin) {
+  /// Generate a random 16-byte salt
+  String _generateSalt() {
+    final random = Random.secure();
+    final values = List<int>.generate(16, (i) => random.nextInt(256));
+    return base64Url.encode(values);
+  }
+
+  /// Hash PIN using SHA-256 with optional salt
+  /// Returns "hash" if no salt provided, or "salt:hash" if salt provided.
+  String _hashPin(String pin, {String? salt}) {
+    if (salt != null) {
+      final bytes = utf8.encode(salt + pin);
+      final digest = sha256.convert(bytes);
+      return '$salt:$digest';
+    }
+    // Legacy unsalted hash
     final bytes = utf8.encode(pin);
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
 
   Future<void> setPin(String pin) async {
-    final hashedPin = _hashPin(pin);
+    final salt = _generateSalt();
+    final hashedPin = _hashPin(pin, salt: salt);
     await _secureStorage.write(
       key: _pinKey,
       value: hashedPin,
@@ -60,10 +77,25 @@ class SecurityService {
 
     if (storedPin == null) return false;
 
-    // Check if stored PIN is hashed (SHA-256 is 64 chars hex)
-    if (storedPin.length == 64) {
+    // Check if stored PIN is salted (contains ':')
+    if (storedPin.contains(':')) {
+      final parts = storedPin.split(':');
+      if (parts.length != 2) return false; // Invalid format
+
+      final salt = parts[0];
+      // Recalculate hash with extracted salt
+      final calculatedHash = _hashPin(pin, salt: salt);
+      return calculatedHash == storedPin;
+    }
+    // Check if stored PIN is legacy unsalted hashed (SHA-256 is 64 chars hex)
+    else if (storedPin.length == 64) {
       final hashedInput = _hashPin(pin);
-      return storedPin == hashedInput;
+      final isMatch = storedPin == hashedInput;
+      if (isMatch) {
+        // Upgrade to salted hash
+        await setPin(pin);
+      }
+      return isMatch;
     } else {
       // Legacy support: stored PIN is plaintext
       final isMatch = storedPin == pin;

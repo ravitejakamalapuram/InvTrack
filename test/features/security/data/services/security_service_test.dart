@@ -37,18 +37,26 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('setPin stores hashed PIN', () async {
+    test('setPin stores salted hashed PIN', () async {
       const pin = '1234';
       await service.setPin(pin);
 
       final storedValue = fakeSecureStorage.storage['user_pin'];
-      final expectedHash = sha256.convert(utf8.encode(pin)).toString();
+      expect(storedValue, isNotNull);
+      expect(storedValue, contains(':')); // Check for salt separator
 
-      expect(storedValue, equals(expectedHash));
-      expect(storedValue?.length, equals(64));
+      final parts = storedValue!.split(':');
+      expect(parts.length, equals(2));
+
+      final salt = parts[0];
+      final hash = parts[1];
+
+      // Verify the hash is correct for the extracted salt
+      final expectedHash = sha256.convert(utf8.encode(salt + pin)).toString();
+      expect(hash, equals(expectedHash));
     });
 
-    test('verifyPin returns true for correct PIN (hashed storage)', () async {
+    test('verifyPin returns true for correct PIN (salted hashed storage)', () async {
       await service.setPin('1234');
       final result = await service.verifyPin('1234');
       expect(result, isTrue);
@@ -60,7 +68,7 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('verifyPin upgrades legacy plaintext PIN to hash', () async {
+    test('verifyPin upgrades legacy plaintext PIN to salted hash', () async {
       // Setup: Manually store a plaintext PIN (legacy state)
       const plaintextPin = '1234';
       await fakeSecureStorage.write(key: 'user_pin', value: plaintextPin);
@@ -69,10 +77,28 @@ void main() {
       final result = await service.verifyPin(plaintextPin);
       expect(result, isTrue);
 
-      // Check: Storage should now be hashed
+      // Check: Storage should now be salted hash
       final storedValue = fakeSecureStorage.storage['user_pin'];
-      final expectedHash = sha256.convert(utf8.encode(plaintextPin)).toString();
-      expect(storedValue, equals(expectedHash));
+      expect(storedValue, contains(':'));
+
+      // Check it is NOT plaintext anymore
+      expect(storedValue, isNot(equals(plaintextPin)));
+    });
+
+    test('verifyPin upgrades legacy unsalted hash to salted hash', () async {
+      // Setup: Manually store an unsalted hash (legacy state)
+      const pin = '1234';
+      final unsaltedHash = sha256.convert(utf8.encode(pin)).toString();
+      await fakeSecureStorage.write(key: 'user_pin', value: unsaltedHash);
+
+      // Verify: Authenticate with the correct PIN
+      final result = await service.verifyPin(pin);
+      expect(result, isTrue);
+
+      // Check: Storage should now be SALTED hash
+      final storedValue = fakeSecureStorage.storage['user_pin'];
+      expect(storedValue, contains(':'));
+      expect(storedValue, isNot(equals(unsaltedHash)));
     });
 
     test('removePin removes the PIN and disables biometrics', () async {
@@ -229,4 +255,3 @@ void main() {
     });
   });
 }
-
