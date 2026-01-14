@@ -200,14 +200,24 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
           child: ListView(
             padding: AppSpacing.screenPadding,
             children: [
-              // Cash Flow Type Selector - Using grid layout for better UX
+              // Cash Flow Type Selector - Using TypeSelector widget for robustness
+              // The logic for colors and icons is passed via builders
               TypeSelector<CashFlowType>(
                 label: 'Cash Flow Type',
                 subtitle: 'Select the type of cash movement',
                 values: CashFlowType.values,
                 selectedValue: _selectedType,
                 onSelected: (type) => setState(() => _selectedType = type),
-                colorBuilder: (type) => type.color,
+                colorBuilder: (type) {
+                  if (type.isOutflow) {
+                    return isDark
+                        ? AppColors.errorDark
+                        : AppColors.errorLight;
+                  }
+                  return isDark
+                      ? AppColors.successDark
+                      : AppColors.successLight;
+                },
                 iconBuilder: (type) => type.iconData,
                 labelBuilder: (type) => type.displayName,
                 gridLayout: true,
@@ -288,25 +298,25 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 controller: _amountController,
                 label: 'Amount',
                 hint: '0.00',
-                icon: Icons.payments_rounded,
+                icon: Icons.attach_money_rounded,
                 isDark: isDark,
                 prefix: currencySymbol,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Required';
                   final parsed = double.tryParse(value);
                   if (parsed == null) return 'Invalid amount';
-                  if (parsed <= 0) return 'Must be greater than 0';
+                  if (parsed <= 0) return 'Must be positive';
                   return null;
                 },
               ),
 
               SizedBox(height: AppSpacing.formFieldSpacing),
 
-              // Notes Field - reduced to 2 lines for compact form
+              // Notes Field
               AppTextField(
                 controller: _notesController,
                 label: 'Notes (Optional)',
-                hint: 'Add any notes about this transaction...',
+                hint: 'Add any notes about this cash flow...',
                 prefixIcon: Icons.edit_note_rounded,
                 textCapitalization: TextCapitalization.sentences,
                 maxLines: 2,
@@ -338,12 +348,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                           builder: (context, _) {
                             final amount =
                                 double.tryParse(_amountController.text) ?? 0;
+                            // Format with prefix and proper currency formatting
+                            final prefix = _selectedType.isOutflow ? '-' : '+';
+                            final formattedAmount = currencyFormat.format(
+                              amount,
+                            );
+                            final color = _selectedType.isOutflow
+                                ? (isDark
+                                    ? AppColors.errorDark
+                                    : AppColors.errorLight)
+                                : (isDark
+                                    ? AppColors.successDark
+                                    : AppColors.successLight);
+
                             return Text(
-                              currencyFormat.format(amount),
+                              '$prefix$formattedAmount',
                               style: AppTypography.numberLarge.copyWith(
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.neutral900Light,
+                                color: color,
                                 fontWeight: FontWeight.w700,
                               ),
                             );
@@ -357,9 +378,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                         gradient: _selectedType.isOutflow
                             ? AppColors.dangerGradient
                             : AppColors.successGradient,
-                        borderRadius: BorderRadius.circular(
-                          AppSizes.radiusMd + 2,
-                        ),
+                        borderRadius: AppSizes.borderRadiusMd,
                       ),
                       child: Icon(
                         _selectedType.isOutflow
@@ -376,21 +395,29 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               SizedBox(height: AppSpacing.xxl),
 
               // Submit Button
-              GradientButton(
-                onPressed: _submit,
-                isLoading: _isLoading,
-                icon: _selectedType.iconData,
-                label: widget.isEditing
-                    ? 'Update ${_selectedType.displayName}'
-                    : 'Add ${_selectedType.displayName}',
-                color: _selectedType.color,
-              ),
+              _buildSubmitButton(isDark),
 
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSubmitButton(bool isDark) {
+    final color = _selectedType.isOutflow
+        ? (isDark ? AppColors.errorDark : AppColors.errorLight)
+        : (isDark ? AppColors.successDark : AppColors.successLight);
+
+    return GradientButton(
+      onPressed: _submit,
+      isLoading: _isLoading,
+      icon: _selectedType.isOutflow
+          ? Icons.arrow_upward_rounded
+          : Icons.arrow_downward_rounded,
+      label: 'Save Cash Flow',
+      color: color,
     );
   }
 
