@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Truncate changelog to 500 chars for Play Store limit
+
+## [3.14.1] - 2026-01-14
+
+### 🐛 Bug Fixes
+
 - CI/CD pipeline issues
 
 ## [3.14.0] - 2026-01-14
