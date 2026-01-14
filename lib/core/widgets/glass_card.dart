@@ -44,9 +44,7 @@ class GlassCard extends StatelessWidget {
       border: showBorder
           ? Border.all(color: borderColor, width: 1)
           : null,
-      // OPTIMIZATION: Shadow is removed because it is clipped by ClipRRect and thus invisible.
-      // Calculating and painting an invisible shadow is a performance waste.
-      boxShadow: null,
+      boxShadow: isDark ? null : AppColors.cardShadowLight,
     );
 
     // OPTIMIZATION: Skip expensive BackdropFilter if blur is 0.
@@ -60,7 +58,8 @@ class GlassCard extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
             padding: padding,
-            decoration: decoration,
+            // OPTIMIZATION: Remove shadow when blurred because ClipRRect clips it anyway.
+            decoration: decoration.copyWith(boxShadow: []),
             child: child,
           ),
         ),
