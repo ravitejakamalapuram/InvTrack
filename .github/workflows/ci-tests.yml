@@ -13,7 +13,7 @@ concurrency:
 jobs:
   test:
     name: Test & Analyze
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
