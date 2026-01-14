@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- CI/CD pipeline issues
+
+## [3.14.0] - 2026-01-14
+
 ### Revert
 
 - Restore self-hosted runners for workflows
