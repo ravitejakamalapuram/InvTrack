@@ -77,7 +77,6 @@ class InvestmentCard extends ConsumerWidget {
           blur: 0,
           onTap: onTap,
           onLongPress: onLongPress,
-          blur: 0, // Optimization: Disable expensive blur (BackdropFilter) for list performance
           padding: EdgeInsets.zero,
           child: Column(
             children: [
