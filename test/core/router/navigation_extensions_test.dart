@@ -8,7 +8,6 @@ void main() {
     group('safePop', () {
       testWidgets('pops when canPop returns true', (tester) async {
         bool didPop = false;
-        bool didGo = false;
 
         final router = GoRouter(
           initialLocation: '/first',
@@ -59,8 +58,6 @@ void main() {
 
       testWidgets('navigates to fallback when canPop returns false',
           (tester) async {
-        String? navigatedTo;
-
         final router = GoRouter(
           initialLocation: '/only',
           routes: [
