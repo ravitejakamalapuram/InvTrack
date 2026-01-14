@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+### Revert
+
+- Restore self-hosted runners for workflows
+
+### ⚡ Performance
+
+- Disable glass blur in InvestmentCard list items to improve scrolling (#75)
+
+### ✨ Features
+
+- Add GitHub Actions runner auto-start setup script
+- Improve accessibility of selection controls (#73)
+
+### 🐛 Bug Fixes
+
+- Remove unused variables in navigation_extensions_test
+
+### 👷 CI/CD
+
+- Switch Augment and CI workflows to GitHub-hosted runners
+
+## [3.13.0] - 2026-01-11
+
 ### ✨ Features
 
 - Add document UX improvements - loading indicator and per-file type selector
