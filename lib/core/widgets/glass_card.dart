@@ -58,7 +58,8 @@ class GlassCard extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
           child: Container(
             padding: padding,
-            decoration: decoration,
+            // OPTIMIZATION: Remove shadow when blurred because ClipRRect clips it anyway.
+            decoration: decoration.copyWith(boxShadow: []),
             child: child,
           ),
         ),
