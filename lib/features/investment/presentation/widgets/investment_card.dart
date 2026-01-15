@@ -66,24 +66,22 @@ class InvestmentCard extends ConsumerWidget {
           '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
     );
 
-    return Semantics(
-      label: semanticLabel,
-      button: true,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: AppSpacing.sm),
-        child: GlassCard(
-          // OPTIMIZATION: Disable blur on list items to avoid expensive BackdropFilter/saveLayer.
-          // Since the background is solid, blurring it has no visual effect but high cost.
-          blur: 0,
-          onTap: onTap,
-          onLongPress: onLongPress,
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  children: [
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppSpacing.sm),
+      child: GlassCard(
+        semanticLabel: semanticLabel,
+        // OPTIMIZATION: Disable blur on list items to avoid expensive BackdropFilter/saveLayer.
+        // Since the background is solid, blurring it has no visual effect but high cost.
+        blur: 0,
+        onTap: onTap,
+        onLongPress: onLongPress,
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
                     // Checkbox in selection mode
                     if (isSelectionMode) ...[
                       Checkbox(
@@ -115,7 +113,6 @@ class InvestmentCard extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 
