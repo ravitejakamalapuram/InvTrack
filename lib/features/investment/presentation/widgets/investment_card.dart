@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -42,6 +43,8 @@ class InvestmentCard extends ConsumerWidget {
     final typeColor = investment.type.color;
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyFormat = ref.watch(currencyFormatProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     // OPTIMIZATION: Use basic stats provider which skips expensive XIRR calculation
     // for the main card render. Only calculate XIRR where strictly needed.
@@ -94,11 +97,20 @@ class InvestmentCard extends ConsumerWidget {
                       SizedBox(width: AppSpacing.xs),
                     ],
                     // Icon with type icon
-                    _buildTypeIcon(typeColor, isClosed),
+                    _TypeIcon(
+                      typeColor: typeColor,
+                      isClosed: isClosed,
+                      icon: investment.type.icon,
+                    ),
                     SizedBox(width: AppSpacing.md),
                     // Name and type
                     Expanded(
-                      child: _buildNameAndType(isDark, typeColor, isClosed),
+                      child: _InvestmentInfo(
+                        investment: investment,
+                        isDark: isDark,
+                        typeColor: typeColor,
+                        isClosed: isClosed,
+                      ),
                     ),
                     SizedBox(width: AppSpacing.sm),
                     // Stats
@@ -106,20 +118,43 @@ class InvestmentCard extends ConsumerWidget {
                       investmentId: investment.id,
                       isArchived: investment.isArchived,
                       isDark: isDark,
+                      statsAsync: statsAsync,
+                      currencyFormat: currencyFormat,
+                      isPrivacyMode: isPrivacyMode,
                     ),
                   ],
                 ),
               ),
               // Bottom info strip with stats
-              _InvestmentBottomStrip(investment: investment, isDark: isDark),
+              _InvestmentBottomStrip(
+                investment: investment,
+                isDark: isDark,
+                statsAsync: statsAsync,
+                currencyFormat: currencyFormat,
+                isPrivacyMode: isPrivacyMode,
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildTypeIcon(Color typeColor, bool isClosed) {
+/// Extracted widget for type icon to avoid rebuilds during selection toggling.
+class _TypeIcon extends StatelessWidget {
+  final Color typeColor;
+  final bool isClosed;
+  final IconData icon;
+
+  const _TypeIcon({
+    required this.typeColor,
+    required this.isClosed,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: AppSizes.iconXl,
       height: AppSizes.iconXl,
@@ -142,15 +177,31 @@ class InvestmentCard extends ConsumerWidget {
       ),
       child: Center(
         child: Icon(
-          investment.type.icon,
+          icon,
           color: Colors.white,
           size: AppSizes.iconMd,
         ),
       ),
     );
   }
+}
 
-  Widget _buildNameAndType(bool isDark, Color typeColor, bool isClosed) {
+/// Extracted widget for name and type info to avoid rebuilds during selection toggling.
+class _InvestmentInfo extends StatelessWidget {
+  final InvestmentEntity investment;
+  final bool isDark;
+  final Color typeColor;
+  final bool isClosed;
+
+  const _InvestmentInfo({
+    required this.investment,
+    required this.isDark,
+    required this.typeColor,
+    required this.isClosed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final maturityInfo = _getMaturityInfo();
 
     return Column(
@@ -312,25 +363,25 @@ class _InvestmentValueColumn extends ConsumerWidget {
   final String investmentId;
   final bool isArchived;
   final bool isDark;
+  final AsyncValue<InvestmentStats> statsAsync;
+  final NumberFormat currencyFormat;
+  final bool isPrivacyMode;
 
   const _InvestmentValueColumn({
     required this.investmentId,
     required this.isArchived,
     required this.isDark,
+    required this.statsAsync,
+    required this.currencyFormat,
+    required this.isPrivacyMode,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currencyFormat = ref.watch(currencyFormatProvider);
-    final isPrivacyMode = ref.watch(privacyModeProvider);
+    // OPTIMIZATION: Removed redundant provider watches. Data is passed from parent.
+    // Also allows parent to manage rebuilds more effectively.
 
-    // Watch basic stats (fast)
-    final statsAsync =
-        isArchived
-            ? ref.watch(archivedInvestmentBasicStatsProvider(investmentId))
-            : ref.watch(investmentBasicStatsProvider(investmentId));
-
-    // Watch XIRR separately (slow)
+    // Watch XIRR separately (slow) - this must still be watched here as it's separate
     final xirrAsync =
         isArchived
             ? ref.watch(archivedInvestmentXirrProvider(investmentId))
@@ -434,26 +485,26 @@ class _InvestmentValueColumn extends ConsumerWidget {
 }
 
 /// Bottom strip showing investment stats.
-class _InvestmentBottomStrip extends ConsumerWidget {
+/// OPTIMIZATION: Converted to StatelessWidget to avoid unnecessary provider listeners.
+class _InvestmentBottomStrip extends StatelessWidget {
   final InvestmentEntity investment;
   final bool isDark;
+  final AsyncValue<InvestmentStats> statsAsync;
+  final NumberFormat currencyFormat;
+  final bool isPrivacyMode;
 
   const _InvestmentBottomStrip({
     required this.investment,
     required this.isDark,
+    required this.statsAsync,
+    required this.currencyFormat,
+    required this.isPrivacyMode,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final currencyFormat = ref.watch(currencyFormatProvider);
-
-    // OPTIMIZATION: Use basic stats (no XIRR needed here)
-    final statsAsync =
-        investment.isArchived
-            ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
-            : ref.watch(investmentBasicStatsProvider(investment.id));
-
-    final isPrivacyMode = ref.watch(privacyModeProvider);
+  Widget build(BuildContext context) {
+    // OPTIMIZATION: Using passed data instead of watching providers again.
+    // This reduces listener count by ~3 per list item.
 
     return Container(
       padding: EdgeInsets.symmetric(
