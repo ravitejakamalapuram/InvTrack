@@ -8,3 +8,11 @@
    - Verify using the old method.
    - If successful, re-hash using the new method (salt + hash) and overwrite the storage.
    - This seamlessly upgrades users as they log in.
+
+## 2024-05-24 - [Information Leakage in Logs]
+**Vulnerability:** Authentication repository was logging full stack traces and PII (emails) to `debugPrint`.
+**Learning:** Developers often add verbose logging for debugging complex auth flows (like Google Sign-In) but forget to sanitize or remove it, leading to PII and internal implementation details leaking into production logs.
+**Prevention:**
+1. Never log PII (emails, names, tokens) in production.
+2. Avoid `stackTrace` logging unless directed to a secure crash reporting service (like Crashlytics).
+3. Use structured logging that can be stripped in release builds.

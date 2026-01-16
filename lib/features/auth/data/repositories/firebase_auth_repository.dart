@@ -44,7 +44,7 @@ class FirebaseAuthRepository implements AuthRepository {
       // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
       final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
 
-      debugPrint('FirebaseAuth: Got Google user: ${googleUser.email}');
+      debugPrint('FirebaseAuth: Got Google user');
 
       // Get Google auth credentials using the new API
       // In v7, authentication provides idToken, and we get accessToken through authorization
@@ -63,7 +63,7 @@ class FirebaseAuthRepository implements AuthRepository {
         credential,
       );
 
-      debugPrint('FirebaseAuth: Signed in as ${userCredential.user?.email}');
+      debugPrint('FirebaseAuth: Signed in successfully');
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
@@ -74,9 +74,8 @@ class FirebaseAuthRepository implements AuthRepository {
       }
       debugPrint('FirebaseAuth: GoogleSignInException - ${e.code}');
       rethrow;
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('FirebaseAuth: Error - $e');
-      debugPrint('FirebaseAuth: StackTrace - $stackTrace');
       rethrow;
     }
   }
@@ -128,9 +127,8 @@ class FirebaseAuthRepository implements AuthRepository {
       }
       debugPrint('FirebaseAuth: GoogleSignInException during reauth - ${e.code}');
       rethrow;
-    } catch (e, stackTrace) {
+    } catch (e) {
       debugPrint('FirebaseAuth: Re-authentication error - $e');
-      debugPrint('FirebaseAuth: StackTrace - $stackTrace');
       rethrow;
     }
   }
