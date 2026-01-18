@@ -16,6 +16,10 @@ class SecurityService {
   static const String _pinKey = 'user_pin';
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _autoLockDurationKey = 'auto_lock_duration';
+  static const String _failedAttemptsKey = 'pin_failed_attempts';
+  static const String _lockoutTimestampKey = 'pin_lockout_timestamp';
+  static const int _maxAttempts = 5;
+  static const int _lockoutDurationSeconds = 30;
 
   SecurityService(this._secureStorage, this._localAuth, this._prefs);
 
@@ -68,7 +72,31 @@ class SecurityService {
     );
   }
 
+  Future<int?> getLockoutRemainingSeconds() async {
+    final lockoutTimestamp = _prefs.getInt(_lockoutTimestampKey);
+    if (lockoutTimestamp == null) return null;
+
+    final lockoutTime = DateTime.fromMillisecondsSinceEpoch(lockoutTimestamp);
+    final now = DateTime.now();
+    final difference = now.difference(lockoutTime).inSeconds;
+
+    if (difference < _lockoutDurationSeconds) {
+      return _lockoutDurationSeconds - difference;
+    } else {
+      // Lockout expired, reset attempts
+      await _prefs.remove(_lockoutTimestampKey);
+      await _prefs.remove(_failedAttemptsKey);
+      return null;
+    }
+  }
+
   Future<bool> verifyPin(String pin) async {
+    // Check lockout first
+    final remainingLockout = await getLockoutRemainingSeconds();
+    if (remainingLockout != null) {
+      return false; // Still locked out
+    }
+
     final storedPin = await _secureStorage.read(
       key: _pinKey,
       aOptions: _getAndroidOptions(),
@@ -76,6 +104,8 @@ class SecurityService {
     );
 
     if (storedPin == null) return false;
+
+    bool isMatch = false;
 
     // v2: Salted Hash (contains ':')
     if (storedPin.contains(':')) {
@@ -86,29 +116,40 @@ class SecurityService {
         // Re-hash input with extracted salt
         final bytes = utf8.encode(pin + salt);
         final actualHash = sha256.convert(bytes).toString();
-        return actualHash == expectedHash;
+        isMatch = actualHash == expectedHash;
       }
     }
-
     // v1: Unsalted Hash (SHA-256 is 64 chars hex)
-    if (storedPin.length == 64) {
+    else if (storedPin.length == 64) {
       final hashedInput = _hashPinLegacy(pin);
-      final isMatch = storedPin == hashedInput;
+      isMatch = storedPin == hashedInput;
       if (isMatch) {
-        // Upgrade to salted hash
-        await setPin(pin);
+        await setPin(pin); // Upgrade
       }
-      return isMatch;
     }
-
     // v0: Plaintext (Legacy)
     else {
-      final isMatch = storedPin == pin;
+      isMatch = storedPin == pin;
       if (isMatch) {
-        // Upgrade to salted hash
-        await setPin(pin);
+        await setPin(pin); // Upgrade
       }
-      return isMatch;
+    }
+
+    if (isMatch) {
+      // Reset failed attempts on success
+      await _prefs.remove(_failedAttemptsKey);
+      await _prefs.remove(_lockoutTimestampKey);
+      return true;
+    } else {
+      // Handle failure
+      int failedAttempts = (_prefs.getInt(_failedAttemptsKey) ?? 0) + 1;
+      await _prefs.setInt(_failedAttemptsKey, failedAttempts);
+
+      if (failedAttempts >= _maxAttempts) {
+        await _prefs.setInt(
+            _lockoutTimestampKey, DateTime.now().millisecondsSinceEpoch);
+      }
+      return false;
     }
   }
 
