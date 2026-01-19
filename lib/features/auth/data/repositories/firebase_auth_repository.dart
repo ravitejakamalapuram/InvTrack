@@ -38,13 +38,17 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<UserEntity?> signInWithGoogle() async {
     try {
-      debugPrint('FirebaseAuth: Starting Google Sign-In...');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Starting Google Sign-In...');
+      }
 
       // Use authenticate() in google_sign_in v7
       // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
       final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
 
-      debugPrint('FirebaseAuth: Got Google user: ${googleUser.email}');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Got Google user');
+      }
 
       // Get Google auth credentials using the new API
       // In v7, authentication provides idToken, and we get accessToken through authorization
@@ -58,25 +62,36 @@ class FirebaseAuthRepository implements AuthRepository {
       );
 
       // Sign in to Firebase with Google credentials
-      debugPrint('FirebaseAuth: Signing in to Firebase...');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Signing in to Firebase...');
+      }
       final userCredential = await _firebaseAuth.signInWithCredential(
         credential,
       );
 
-      debugPrint('FirebaseAuth: Signed in as ${userCredential.user?.email}');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Signed in successfully');
+      }
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        debugPrint('FirebaseAuth: User cancelled sign-in');
+        if (kDebugMode) {
+          debugPrint('FirebaseAuth: User cancelled sign-in');
+        }
         return null;
       }
-      debugPrint('FirebaseAuth: GoogleSignInException - ${e.code}');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: GoogleSignInException - ${e.code}');
+      }
       rethrow;
     } catch (e, stackTrace) {
-      debugPrint('FirebaseAuth: Error - $e');
-      debugPrint('FirebaseAuth: StackTrace - $stackTrace');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Error - $e');
+        // Do not log stack trace in production to prevent leakage of internal structure
+        debugPrint('FirebaseAuth: StackTrace - $stackTrace');
+      }
       rethrow;
     }
   }
@@ -97,11 +112,15 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<bool> reauthenticateWithGoogle() async {
     try {
-      debugPrint('FirebaseAuth: Re-authenticating with Google...');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Re-authenticating with Google...');
+      }
 
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        debugPrint('FirebaseAuth: No current user for re-authentication');
+        if (kDebugMode) {
+          debugPrint('FirebaseAuth: No current user for re-authentication');
+        }
         return false;
       }
 
@@ -119,18 +138,28 @@ class FirebaseAuthRepository implements AuthRepository {
       );
 
       await user.reauthenticateWithCredential(credential);
-      debugPrint('FirebaseAuth: Re-authentication successful');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Re-authentication successful');
+      }
       return true;
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        debugPrint('FirebaseAuth: User cancelled re-authentication');
+        if (kDebugMode) {
+          debugPrint('FirebaseAuth: User cancelled re-authentication');
+        }
         return false;
       }
-      debugPrint('FirebaseAuth: GoogleSignInException during reauth - ${e.code}');
+      if (kDebugMode) {
+        debugPrint(
+          'FirebaseAuth: GoogleSignInException during reauth - ${e.code}',
+        );
+      }
       rethrow;
     } catch (e, stackTrace) {
-      debugPrint('FirebaseAuth: Re-authentication error - $e');
-      debugPrint('FirebaseAuth: StackTrace - $stackTrace');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Re-authentication error - $e');
+        debugPrint('FirebaseAuth: StackTrace - $stackTrace');
+      }
       rethrow;
     }
   }
@@ -145,7 +174,9 @@ class FirebaseAuthRepository implements AuthRepository {
       );
     }
 
-    debugPrint('FirebaseAuth: Deleting user account...');
+    if (kDebugMode) {
+      debugPrint('FirebaseAuth: Deleting user account...');
+    }
 
     try {
       // Sign out from Google first
@@ -154,10 +185,14 @@ class FirebaseAuthRepository implements AuthRepository {
       // Delete the Firebase Auth account
       await user.delete();
 
-      debugPrint('FirebaseAuth: Account deleted successfully');
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Account deleted successfully');
+      }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        debugPrint('FirebaseAuth: Re-authentication required for deletion');
+        if (kDebugMode) {
+          debugPrint('FirebaseAuth: Re-authentication required for deletion');
+        }
       }
       rethrow;
     }

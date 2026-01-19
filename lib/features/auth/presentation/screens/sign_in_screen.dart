@@ -81,13 +81,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      debugPrint('SignInScreen: Starting Google Sign-In...');
+      if (kDebugMode) {
+        debugPrint('SignInScreen: Starting Google Sign-In...');
+      }
 
       // Ensure Google Sign-In is initialized before attempting auth
       await ref.read(googleSignInInitializedProvider.future);
 
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-      debugPrint('SignInScreen: Sign-in result: $user');
+      if (kDebugMode) {
+        debugPrint(
+          'SignInScreen: Sign-in result: ${user != null ? 'Success' : 'Failed'}',
+        );
+      }
 
       if (user != null) {
         // Track successful sign-in in Analytics
@@ -101,8 +107,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {
-      debugPrint('SignInScreen: Error - $e');
-      debugPrint('SignInScreen: Stack trace - $st');
+      if (kDebugMode) {
+        debugPrint('SignInScreen: Error - $e');
+        debugPrint('SignInScreen: Stack trace - $st');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
