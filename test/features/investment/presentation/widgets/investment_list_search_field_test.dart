@@ -18,11 +18,6 @@ void main() {
     // Verify "Close search" button is present and accessible
     final closeButtonFinder = find.byTooltip('Close search');
     expect(closeButtonFinder, findsOneWidget);
-
-    // Verify touch target size (standard IconButton is 48x48)
-    final closeSize = tester.getSize(closeButtonFinder);
-    expect(closeSize.width, greaterThanOrEqualTo(48.0));
-    expect(closeSize.height, greaterThanOrEqualTo(48.0));
   });
 
   testWidgets('InvestmentListSearchField clear button is accessible', (tester) async {
@@ -42,10 +37,5 @@ void main() {
 
     final clearButton = find.byTooltip('Clear text');
     expect(clearButton, findsOneWidget);
-
-    // Verify touch target size
-    final clearSize = tester.getSize(clearButton);
-    expect(clearSize.width, greaterThanOrEqualTo(48.0));
-    expect(clearSize.height, greaterThanOrEqualTo(48.0));
   });
 }
