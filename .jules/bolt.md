@@ -21,3 +21,11 @@ The `GlassCard` widget defaults to `blur: 10`, which triggers `BackdropFilter` a
 
 **Action:**
 Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypasses the expensive filter pipeline while maintaining the semi-transparent "glass" look via alpha blending.
+
+## 2024-05-25 - Unoptimized Image Thumbnails
+
+**Learning:**
+`Image.file` decodes images at their native resolution by default. For a document list displaying 12MP photos in 48x48 thumbnails, this causes massive memory usage (approx 48MB per image) and decoding overhead, leading to OOMs and scroll jank.
+
+**Action:**
+Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
