@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+
+- Optimize AppTextField rebuilds on text change (#87)
+
+### ✨ Features
+
+- **core**: Add semantic support to GlassCard widget (#79)
+
+### 🔧 Miscellaneous
+
+- **ux**: Improve accessibility and consistency in add transaction screen (#82)
+
+## [3.14.3] - 2026-01-19
+
 ### 🐛 Bug Fixes
 
 - Escape changelog content for Slack JSON payload
