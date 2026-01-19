@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.15.0] - 2026-01-19
 
 ### ⚡ Performance
 
