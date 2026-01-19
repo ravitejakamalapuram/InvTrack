@@ -127,39 +127,6 @@ void main() {
       expect(await service.hasPin(), isFalse);
       expect(service.isBiometricEnabled, isFalse);
     });
-
-    test('verifyPin throws exception when max attempts exceeded', () async {
-      await service.setPin('1234');
-
-      // Fail 5 times
-      for (int i = 0; i < 5; i++) {
-        await service.verifyPin('0000');
-      }
-
-      // 6th attempt should throw
-      expect(
-        () => service.verifyPin('0000'),
-        throwsA(isA<String>()),
-      );
-    });
-
-    test('verifyPin resets attempts on success', () async {
-      await service.setPin('1234');
-
-      // Fail 4 times
-      for (int i = 0; i < 4; i++) {
-        await service.verifyPin('0000');
-      }
-
-      // Success
-      await service.verifyPin('1234');
-
-      // Fail 1 more time (total 5 failures but interrupted by success)
-      await service.verifyPin('0000');
-
-      // Should not throw because counter was reset
-      expect(await service.verifyPin('0000'), isFalse);
-    });
   });
 
   group('SecurityService - Biometrics', () {

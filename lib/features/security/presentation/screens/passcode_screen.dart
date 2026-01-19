@@ -205,20 +205,13 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
     switch (widget.mode) {
       case PasscodeMode.unlock:
-        try {
-          final success = await ref
-              .read(securityProvider.notifier)
-              .unlockWithPin(pin);
-          if (success) {
-            widget.onSuccess?.call();
-          } else {
-            _showError('Incorrect PIN');
-          }
-        } catch (e) {
-          _showError(e.toString());
-          setState(() {
-            _input = '';
-          });
+        final success = await ref
+            .read(securityProvider.notifier)
+            .unlockWithPin(pin);
+        if (success) {
+          widget.onSuccess?.call();
+        } else {
+          _showError('Incorrect PIN');
         }
         break;
 
@@ -247,21 +240,14 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
       case PasscodeMode.verify:
         // Used for changing settings etc.
-        try {
-          final success = await ref
-              .read(securityProvider.notifier)
-              .unlockWithPin(pin); // Re-use unlock logic for verification
-          if (success) {
-            widget.onSuccess?.call();
-            if (mounted) context.safePop();
-          } else {
-            _showError('Incorrect PIN');
-          }
-        } catch (e) {
-          _showError(e.toString());
-          setState(() {
-            _input = '';
-          });
+        final success = await ref
+            .read(securityProvider.notifier)
+            .unlockWithPin(pin); // Re-use unlock logic for verification
+        if (success) {
+          widget.onSuccess?.call();
+          if (mounted) context.safePop();
+        } else {
+          _showError('Incorrect PIN');
         }
         break;
     }

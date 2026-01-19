@@ -16,11 +16,6 @@ class SecurityService {
   static const String _pinKey = 'user_pin';
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _autoLockDurationKey = 'auto_lock_duration';
-  static const String _pinAttemptsKey = 'pin_attempts';
-  static const String _pinLockoutKey = 'pin_lockout_end';
-
-  static const int _maxAttempts = 5;
-  static const Duration _lockoutDuration = Duration(seconds: 30);
 
   SecurityService(this._secureStorage, this._localAuth, this._prefs);
 
@@ -74,54 +69,6 @@ class SecurityService {
   }
 
   Future<bool> verifyPin(String pin) async {
-    await _checkLockout();
-
-    final result = await _verifyPinInternal(pin);
-
-    if (result) {
-      await _resetLockout();
-    } else {
-      await _recordFailure();
-    }
-
-    return result;
-  }
-
-  Future<void> _checkLockout() async {
-    final lockoutStr = await _secureStorage.read(key: _pinLockoutKey);
-    if (lockoutStr != null) {
-      final lockoutEnd =
-          DateTime.fromMillisecondsSinceEpoch(int.parse(lockoutStr));
-      if (DateTime.now().isBefore(lockoutEnd)) {
-        final remaining = lockoutEnd.difference(DateTime.now()).inSeconds;
-        throw 'Too many attempts. Try again in ${remaining}s.';
-      } else {
-        await _resetLockout();
-      }
-    }
-  }
-
-  Future<void> _recordFailure() async {
-    final attemptsStr = await _secureStorage.read(key: _pinAttemptsKey) ?? '0';
-    int attempts = int.tryParse(attemptsStr) ?? 0;
-    attempts++;
-
-    if (attempts >= _maxAttempts) {
-      final lockoutEnd =
-          DateTime.now().add(_lockoutDuration).millisecondsSinceEpoch;
-      await _secureStorage.write(
-          key: _pinLockoutKey, value: lockoutEnd.toString());
-    }
-    await _secureStorage.write(
-        key: _pinAttemptsKey, value: attempts.toString());
-  }
-
-  Future<void> _resetLockout() async {
-    await _secureStorage.delete(key: _pinAttemptsKey);
-    await _secureStorage.delete(key: _pinLockoutKey);
-  }
-
-  Future<bool> _verifyPinInternal(String pin) async {
     final storedPin = await _secureStorage.read(
       key: _pinKey,
       aOptions: _getAndroidOptions(),
