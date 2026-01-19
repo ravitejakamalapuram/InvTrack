@@ -21,3 +21,11 @@ The `GlassCard` widget defaults to `blur: 10`, which triggers `BackdropFilter` a
 
 **Action:**
 Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypasses the expensive filter pipeline while maintaining the semi-transparent "glass" look via alpha blending.
+
+## 2024-05-25 - Redundant Provider Watches in List Items
+
+**Learning:**
+In `InvestmentCard`, the parent widget and two of its children (`_InvestmentValueColumn` and `_InvestmentBottomStrip`) were ALL watching the same `investmentBasicStatsProvider`. This created 3x the number of listeners per list item. While Riverpod handles this efficiently, it still adds overhead and potential for redundant rebuilds if not properly memoized.
+
+**Action:**
+Hoisted the `ref.watch` to the parent `InvestmentCard` and passed the resulting `AsyncValue` down to the children as a constructor parameter. This reduces the number of subscriptions and ensures all parts of the card update in sync.

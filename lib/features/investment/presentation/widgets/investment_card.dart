@@ -106,12 +106,20 @@ class InvestmentCard extends ConsumerWidget {
                       investmentId: investment.id,
                       isArchived: investment.isArchived,
                       isDark: isDark,
+                      // OPTIMIZATION: Pass the already loaded stats from parent to avoid
+                      // redundant ref.watch and rebuilds in the child widget.
+                      statsAsync: statsAsync,
                     ),
                   ],
                 ),
               ),
               // Bottom info strip with stats
-              _InvestmentBottomStrip(investment: investment, isDark: isDark),
+              _InvestmentBottomStrip(
+                investment: investment,
+                isDark: isDark,
+                // OPTIMIZATION: Pass the already loaded stats from parent
+                statsAsync: statsAsync,
+              ),
             ],
           ),
         ),
@@ -312,11 +320,13 @@ class _InvestmentValueColumn extends ConsumerWidget {
   final String investmentId;
   final bool isArchived;
   final bool isDark;
+  final AsyncValue<InvestmentStats> statsAsync;
 
   const _InvestmentValueColumn({
     required this.investmentId,
     required this.isArchived,
     required this.isDark,
+    required this.statsAsync,
   });
 
   @override
@@ -324,11 +334,8 @@ class _InvestmentValueColumn extends ConsumerWidget {
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
-    // Watch basic stats (fast)
-    final statsAsync =
-        isArchived
-            ? ref.watch(archivedInvestmentBasicStatsProvider(investmentId))
-            : ref.watch(investmentBasicStatsProvider(investmentId));
+    // Note: We use the passed statsAsync from parent to avoid watching the
+    // basic stats provider here, which would cause double rebuilds.
 
     // Watch XIRR separately (slow)
     final xirrAsync =
@@ -437,21 +444,20 @@ class _InvestmentValueColumn extends ConsumerWidget {
 class _InvestmentBottomStrip extends ConsumerWidget {
   final InvestmentEntity investment;
   final bool isDark;
+  final AsyncValue<InvestmentStats> statsAsync;
 
   const _InvestmentBottomStrip({
     required this.investment,
     required this.isDark,
+    required this.statsAsync,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currencyFormat = ref.watch(currencyFormatProvider);
 
-    // OPTIMIZATION: Use basic stats (no XIRR needed here)
-    final statsAsync =
-        investment.isArchived
-            ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
-            : ref.watch(investmentBasicStatsProvider(investment.id));
+    // Note: We use the passed statsAsync from parent to avoid watching the
+    // basic stats provider here, which would cause double rebuilds.
 
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
