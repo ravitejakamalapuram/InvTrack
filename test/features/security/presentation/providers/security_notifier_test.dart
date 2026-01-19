@@ -153,16 +153,29 @@ void main() {
       });
 
       test('unlockWithPin returns false for incorrect PIN', () async {
+        // Pre-set PIN so _init will lock the app naturally
+        await fakeSecureStorage.write(key: 'user_pin', value: '1234');
         container = createContainer();
-        await container.read(securityProvider.notifier).setPin('1234');
-        container.read(securityProvider.notifier).lockApp();
+
+        // Wait for initialization to lock the app
+        final completer = Completer<void>();
+        final subscription = container.listen(securityProvider, (previous, next) {
+          if (next.isLocked) {
+            completer.complete();
+          }
+        });
+
+        // Wait for lock (with timeout)
+        await completer.future.timeout(const Duration(seconds: 1));
+        subscription.close();
 
         final result = await container
             .read(securityProvider.notifier)
             .unlockWithPin('5678');
 
-        expect(result, isFalse);
-        expect(container.read(securityProvider).isLocked, isTrue);
+        expect(result, isFalse, reason: 'Incorrect PIN should return false');
+        expect(container.read(securityProvider).isLocked, isTrue,
+            reason: 'App should remain locked');
       });
 
       test('unlockWithBiometrics returns false when biometrics disabled',
