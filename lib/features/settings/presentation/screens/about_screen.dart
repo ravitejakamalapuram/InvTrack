@@ -13,8 +13,8 @@ import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile
 import 'package:url_launcher/url_launcher.dart';
 
 /// App version info - matches pubspec.yaml version: 3.5.1+19
-const String _appVersion = '3.15.1';
-const String _buildNumber = '31';
+const String _appVersion = '3.15.2';
+const String _buildNumber = '32';
 
 /// Screen showing app information and legal documents.
 class AboutScreen extends ConsumerWidget {
