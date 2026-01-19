@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Escape changelog content for Slack JSON payload
+
+## [3.14.2] - 2026-01-14
+
+### 🐛 Bug Fixes
+
 - Truncate changelog to 500 chars for Play Store limit
 
 ## [3.14.1] - 2026-01-14
