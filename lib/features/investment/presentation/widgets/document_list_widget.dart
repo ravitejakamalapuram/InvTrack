@@ -296,6 +296,10 @@ class _DocumentCard extends ConsumerWidget {
           File(document.localPath),
           width: 48,
           height: 48,
+          // OPTIMIZATION: Resize image to thumbnail size to save memory.
+          // Without this, full resolution images (e.g. 12MP photos) are decoded
+          // into memory even for this tiny 48x48 box, causing massive memory usage.
+          cacheWidth: 150, // ~3x the display size for high-DPI screens
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => _buildIconThumbnail(),
         ),

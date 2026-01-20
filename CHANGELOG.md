@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+### 🔧 Miscellaneous
+
+- Add script for setting up parallel GitHub Actions runners
+
+## [3.15.3] - 2026-01-20
+
+### 🐛 Bug Fixes
+
+- Resolve infinite reload loop and Firestore permission issues
+
+## [3.15.0] - 2026-01-19
+
+### ⚡ Performance
+
+- Optimize AppTextField rebuilds on text change (#87)
+
+### ✨ Features
+
+- **core**: Add semantic support to GlassCard widget (#79)
+
+### 🔧 Miscellaneous
+
+- **ux**: Improve accessibility and consistency in add transaction screen (#82)
+
+## [3.14.3] - 2026-01-19
+
+### 🐛 Bug Fixes
+
+- Escape changelog content for Slack JSON payload
+
+## [3.14.2] - 2026-01-14
+
 ### 🐛 Bug Fixes
 
 - Truncate changelog to 500 chars for Play Store limit

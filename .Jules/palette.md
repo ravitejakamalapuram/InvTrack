@@ -13,3 +13,7 @@
 ## 2025-01-28 - [Accessibility: ExcludeSemantics Trap]
 **Learning:** When using `Semantics(excludeSemantics: true, ...)` to wrap a `GestureDetector`, the gesture detector's semantics (including `onTap`) are excluded from the tree. The custom Semantics widget MUST provide the `onTap` callback explicitly, otherwise the element becomes unclickable for screen reader users.
 **Action:** Always pass `onTap`, `onLongPress`, etc., to the `Semantics` widget when `excludeSemantics` is true.
+
+## 2026-01-15 - [Accessibility: Default Semantics for Reusable Cards]
+**Learning:** Reusable container widgets (like `GlassCard`) that accept `onTap` often get used as buttons but lack semantics, making them invisible to screen readers. Relying on developers to wrap them in `Semantics` leads to inconsistent accessibility.
+**Action:** Embed `Semantics(button: true, ...)` directly into reusable interactive widgets when `onTap` is present. Expose a `semanticLabel` parameter to allow overriding the announcement, but ensure the "button" role is there by default.

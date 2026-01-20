@@ -179,13 +179,18 @@ jobs:
         id: changelog
         run: |
           if [ -f "whatsnew/whatsnew-en-US" ]; then
-            CHANGELOG=$(cat whatsnew/whatsnew-en-US | head -20)
+            CHANGELOG=$(cat whatsnew/whatsnew-en-US | head -10)
           else
             CHANGELOG="No changelog available"
           fi
+          # Store raw content for GitHub Release
           echo "content<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+          # Create JSON-escaped version for Slack (replace newlines with \n, escape quotes)
+          SLACK_CHANGELOG=$(echo "$CHANGELOG" | sed 's/"/\\"/g' | tr '\n' '␤' | sed 's/␤/\\n/g')
+          echo "slack_content=$SLACK_CHANGELOG" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -241,7 +246,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Changes:*\n${{ steps.changelog.outputs.content }}"
+                    "text": "*Changes:*\n${{ steps.changelog.outputs.slack_content }}"
                   }
                 },
                 {

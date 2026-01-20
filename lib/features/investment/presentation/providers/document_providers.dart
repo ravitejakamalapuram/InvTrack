@@ -1,6 +1,7 @@
 /// Providers for document management.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -18,7 +19,10 @@ final documentsByInvestmentProvider =
       }
       return ref
           .watch(documentRepositoryProvider)
-          .watchDocumentsByInvestment(investmentId);
+          .watchDocumentsByInvestment(investmentId)
+          .handleError((error, stackTrace) {
+            debugPrint('documentsByInvestmentProvider: ERROR - $error');
+          });
     });
 
 /// Get document count for an investment

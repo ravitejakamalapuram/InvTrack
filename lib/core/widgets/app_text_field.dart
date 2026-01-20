@@ -52,6 +52,7 @@ class AppTextField extends StatefulWidget {
 class _AppTextFieldState extends State<AppTextField> {
   late TextEditingController _internalController;
   late bool _isInternalController;
+  late bool _wasClearButtonVisible;
 
   @override
   void initState() {
@@ -65,6 +66,7 @@ class _AppTextFieldState extends State<AppTextField> {
     }
 
     _internalController.addListener(_handleTextChange);
+    _wasClearButtonVisible = _shouldShowClearButton;
   }
 
   @override
@@ -73,7 +75,7 @@ class _AppTextFieldState extends State<AppTextField> {
     if (widget.controller != oldWidget.controller) {
       // Remove listener from the old controller instance
       if (oldWidget.controller != null) {
-         oldWidget.controller!.removeListener(_handleTextChange);
+        oldWidget.controller!.removeListener(_handleTextChange);
       } else {
         // If it was internal, we should remove listener from the internal one we created
         // Note: _internalController is currently holding the "old" controller reference
@@ -97,9 +99,18 @@ class _AppTextFieldState extends State<AppTextField> {
     }
   }
 
+  bool get _shouldShowClearButton =>
+      !widget.readOnly && widget.enabled && _internalController.text.isNotEmpty;
+
   void _handleTextChange() {
-    // Rebuild to toggle clear button
-    if (mounted) setState(() {});
+    // OPTIMIZATION: Only rebuild if the visibility of the clear button needs to change.
+    // Previously, this called setState on every character change, causing
+    // the entire widget (including InputDecoration and borders) to rebuild unnecessarily.
+    final shouldShow = _shouldShowClearButton;
+    if (_wasClearButtonVisible != shouldShow) {
+      _wasClearButtonVisible = shouldShow;
+      if (mounted) setState(() {});
+    }
   }
 
   @override
@@ -120,8 +131,10 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final showClearButton =
-        !widget.readOnly && widget.enabled && _internalController.text.isNotEmpty;
+
+    // Sync state in case parent rebuilt us (e.g. readOnly changed)
+    _wasClearButtonVisible = _shouldShowClearButton;
+    final showClearButton = _wasClearButtonVisible;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

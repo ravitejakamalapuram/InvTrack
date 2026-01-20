@@ -129,6 +129,75 @@ void main() {
     });
   });
 
+  group('SecurityService - Rate Limiting', () {
+     test('verifyPin increments failed attempts on incorrect PIN', () async {
+      await service.setPin('1234');
+
+      await service.verifyPin('5678'); // 1st attempt
+      await service.verifyPin('5678'); // 2nd attempt
+
+      final failedAttempts = prefs.getInt('pin_failed_attempts');
+      expect(failedAttempts, equals(2));
+    });
+
+    test('verifyPin resets failed attempts on correct PIN', () async {
+      await service.setPin('1234');
+
+      await service.verifyPin('5678'); // 1st attempt
+      await service.verifyPin('5678'); // 2nd attempt
+
+      expect(prefs.getInt('pin_failed_attempts'), equals(2));
+
+      await service.verifyPin('1234'); // Correct PIN
+
+      expect(prefs.containsKey('pin_failed_attempts'), isFalse);
+    });
+
+    test('verifyPin locks out after max attempts', () async {
+      await service.setPin('1234');
+
+      // Fail 4 times
+      for (int i = 0; i < 4; i++) {
+        await service.verifyPin('5678');
+      }
+      expect(await service.getLockoutRemainingSeconds(), isNull);
+
+      // Fail 5th time -> Lockout
+      await service.verifyPin('5678');
+
+      expect(await service.getLockoutRemainingSeconds(), isNotNull);
+
+      // Even correct PIN should fail during lockout
+      final result = await service.verifyPin('1234');
+      expect(result, isFalse);
+    });
+
+    test('Lockout expires after duration', () async {
+      await service.setPin('1234');
+
+      // Trigger lockout
+      for (int i = 0; i < 5; i++) {
+        await service.verifyPin('5678');
+      }
+
+      // Verify lockout is active
+      expect(await service.getLockoutRemainingSeconds(), isNotNull);
+
+      // Simulate time passing (31 seconds later)
+      // Note: Since we can't easily mock DateTime.now() inside the service without dependency injection,
+      // we can manually modify the stored timestamp to be in the past.
+      final lockoutTime = DateTime.now().subtract(const Duration(seconds: 31));
+      await prefs.setInt('pin_lockout_timestamp', lockoutTime.millisecondsSinceEpoch);
+
+      // Verify lockout is expired
+      expect(await service.getLockoutRemainingSeconds(), isNull);
+
+      // Correct PIN should now work
+      final result = await service.verifyPin('1234');
+      expect(result, isTrue);
+    });
+  });
+
   group('SecurityService - Biometrics', () {
     test('isBiometricAvailable returns true when device supports biometrics',
         () async {
@@ -270,4 +339,3 @@ void main() {
     });
   });
 }
-

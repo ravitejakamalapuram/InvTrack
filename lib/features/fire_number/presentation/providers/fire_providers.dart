@@ -2,6 +2,7 @@
 /// Handles FIRE settings, calculations, and projections.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -44,7 +45,12 @@ final fireSettingsProvider = StreamProvider.autoDispose<FireSettingsEntity?>((re
   if (!isAuthenticated) {
     return Stream.value(null);
   }
-  return ref.watch(fireSettingsRepositoryProvider).watchSettings();
+  return ref.watch(fireSettingsRepositoryProvider).watchSettings().handleError((
+    error,
+    stackTrace,
+  ) {
+    debugPrint('fireSettingsProvider: ERROR - $error');
+  });
 });
 
 /// Check if FIRE setup is complete
