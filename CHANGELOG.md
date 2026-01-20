@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🔧 Miscellaneous
+
+- Add script for setting up parallel GitHub Actions runners
+
+## [3.15.3] - 2026-01-20
+
 ### 🐛 Bug Fixes
 
 - Resolve infinite reload loop and Firestore permission issues
