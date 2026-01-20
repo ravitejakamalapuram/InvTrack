@@ -95,6 +95,9 @@ void main() {
       // Should show dot pattern instead of actual text
       expect(find.text('\$1,234.56'), findsNothing);
       expect(find.textContaining('•'), findsOneWidget);
+
+      // Verify expensive ShaderMask is not used
+      expect(find.byType(ShaderMask), findsNothing);
     });
 
     testWidgets('should apply text style to masked text', (tester) async {

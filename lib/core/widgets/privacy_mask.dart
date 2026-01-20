@@ -170,27 +170,16 @@ class _MaskedText extends StatelessWidget {
     final dotCount = fontSize > 24 ? 6 : 5;
     final maskedPattern = '•' * dotCount;
 
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        return const LinearGradient(
-          colors: [
-            Colors.white,
-            Colors.white70,
-            Colors.white,
-          ],
-          stops: [0.0, 0.5, 1.0],
-        ).createShader(bounds);
-      },
-      blendMode: BlendMode.srcIn,
-      child: Text(
-        maskedPattern,
-        style: effectiveStyle.copyWith(
-          letterSpacing: 2,
-        ),
-        maxLines: maxLines,
-        overflow: overflow,
-        textAlign: textAlign,
+    // OPTIMIZATION: Removed ShaderMask which triggers saveLayer and is expensive in lists.
+    // Also fixed bug where dots were white-on-white in light mode.
+    return Text(
+      maskedPattern,
+      style: effectiveStyle.copyWith(
+        letterSpacing: 2,
       ),
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
     );
   }
 }
