@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -33,7 +34,12 @@ final activeGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(goalRepositoryProvider).watchActiveGoals();
+  return ref.watch(goalRepositoryProvider).watchActiveGoals().handleError((
+    error,
+    stackTrace,
+  ) {
+    debugPrint('activeGoalsProvider: ERROR - $error');
+  });
 });
 
 /// Stream provider for all goals (active only with separate collections)
@@ -45,7 +51,12 @@ final allGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(goalRepositoryProvider).watchAllGoals();
+  return ref.watch(goalRepositoryProvider).watchAllGoals().handleError((
+    error,
+    stackTrace,
+  ) {
+    debugPrint('allGoalsProvider: ERROR - $error');
+  });
 });
 
 /// Stream provider for archived goals
@@ -56,7 +67,12 @@ final archivedGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(goalRepositoryProvider).watchArchivedGoals();
+  return ref.watch(goalRepositoryProvider).watchArchivedGoals().handleError((
+    error,
+    stackTrace,
+  ) {
+    debugPrint('archivedGoalsProvider: ERROR - $error');
+  });
 });
 
 /// Provider for goal counts by filter (for filter tabs)
@@ -92,7 +108,12 @@ final watchGoalByIdProvider = StreamProvider.family<GoalEntity?, String>((
   if (!isAuthenticated) {
     return Stream.value(null);
   }
-  return ref.watch(goalRepositoryProvider).watchGoalById(id);
+  return ref.watch(goalRepositoryProvider).watchGoalById(id).handleError((
+    error,
+    stackTrace,
+  ) {
+    debugPrint('watchGoalByIdProvider: ERROR - $error');
+  });
 });
 
 /// Notifier for goal operations
