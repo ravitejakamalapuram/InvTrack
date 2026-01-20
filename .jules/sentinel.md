@@ -9,6 +9,14 @@
    - If successful, re-hash using the new method (salt + hash) and overwrite the storage.
    - This seamlessly upgrades users as they log in.
 
+## 2024-05-23 - [Debug Logging Exposure]
+**Vulnerability:** PII (emails) and stack traces were logged via `debugPrint` without guards, potentially exposing them in system logs (logcat) in release builds.
+**Learning:** In Flutter, `debugPrint` is not automatically stripped in release mode and writes to system logs, which can be accessible to other applications or physical attackers.
+**Prevention:**
+1. Wrap all debug logging in `if (kDebugMode)`.
+2. Never log PII (emails, auth tokens, user objects), even in debug mode.
+3. Consider using a custom logger that is compiled out or disabled in release builds.
+
 ## 2025-05-24 - [PIN Rate Limiting]
 **Vulnerability:** The PIN verification logic lacked rate limiting, allowing unlimited attempts. This made the application vulnerable to brute-force attacks, especially since the verification happens locally.
 **Learning:** Local authentication mechanisms must enforce rate limiting just like remote ones. Using `SharedPreferences` to persist the failure count and lockout timestamp ensures the protection survives app restarts.

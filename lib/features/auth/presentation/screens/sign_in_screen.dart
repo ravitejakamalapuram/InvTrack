@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -81,7 +82,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      debugPrint('SignInScreen: Starting Google Sign-In...');
+      if (kDebugMode) {
+        debugPrint('SignInScreen: Starting Google Sign-In...');
+      }
 
       // Ensure Google Sign-In is initialized before attempting auth
       await ref.read(googleSignInInitializedProvider.future);
@@ -90,7 +93,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (!mounted) return;
 
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-      debugPrint('SignInScreen: Sign-in result: $user');
+      if (kDebugMode) {
+        debugPrint(
+          'SignInScreen: Sign-in result: ${user != null ? 'Success' : 'Failed'}',
+        );
+      }
 
       // Check if widget is still mounted after sign-in completes
       if (!mounted) return;
@@ -110,8 +117,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {
-      debugPrint('SignInScreen: Error - $e');
-      debugPrint('SignInScreen: Stack trace - $st');
+      if (kDebugMode) {
+        debugPrint('SignInScreen: Error - $e');
+        debugPrint('SignInScreen: Stack trace - $st');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
