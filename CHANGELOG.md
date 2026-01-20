@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.15.4] - 2026-01-20
 
 ### 🔧 Miscellaneous
 
@@ -28,9 +28,21 @@
 
 ## [3.14.3] - 2026-01-19
 
+### ✨ Features
+
+- **ux**: Improve MergeInvestmentsDialog accessibility and interaction
+- **security**: Remove PII logging and guard debug prints
+
 ### 🐛 Bug Fixes
 
 - Escape changelog content for Slack JSON payload
+- Add missing foundation import for kDebugMode
+- Add missing foundation import for kDebugMode
+
+### 🔧 Miscellaneous
+
+- Re-trigger ci
+- Trigger ci rebuild
 
 ## [3.14.2] - 2026-01-14
 
