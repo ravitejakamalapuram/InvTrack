@@ -82,6 +82,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  void _goToPage(int index) {
+    HapticFeedback.selectionClick();
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -212,28 +221,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildDot(int index, bool isDark) {
     final isActive = index == _currentPage;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        final width =
-            AppSpacing.xs + (AppSpacing.xl - AppSpacing.xs) * value;
-        final color = Color.lerp(
-          isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
-          AppColors.primaryLight,
-          value,
-        )!;
-        return Container(
-          margin: EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-          width: width,
-          height: AppSpacing.xs,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(AppSizes.radiusXs),
+    return Tooltip(
+      message: 'Go to page ${index + 1}',
+      child: Semantics(
+        button: true,
+        label: 'Page ${index + 1} of ${_pages.length}',
+        selected: isActive,
+        excludeSemantics: true,
+        onTap: () => _goToPage(index),
+        child: GestureDetector(
+          onTap: () => _goToPage(index),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            // Increased touch target size for better accessibility
+            padding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 4.0,
+            ),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                final width =
+                    AppSpacing.xs + (AppSpacing.xl - AppSpacing.xs) * value;
+                final color = Color.lerp(
+                  isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+                  AppColors.primaryLight,
+                  value,
+                )!;
+                return Container(
+                  // Removing previous horizontal margin since we use padding now
+                  width: width,
+                  height: AppSpacing.xs,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusXs),
+                  ),
+                );
+              },
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
