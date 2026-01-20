@@ -205,13 +205,31 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
     switch (widget.mode) {
       case PasscodeMode.unlock:
+        // Check for lockout first
+        final lockoutRemaining = await ref
+            .read(securityServiceProvider)
+            .getLockoutRemainingSeconds();
+
+        if (lockoutRemaining != null) {
+          _showError('Locked out. Try again in ${lockoutRemaining}s');
+          return;
+        }
+
         final success = await ref
             .read(securityProvider.notifier)
             .unlockWithPin(pin);
         if (success) {
           widget.onSuccess?.call();
         } else {
-          _showError('Incorrect PIN');
+          // Check if we are now locked out
+           final newLockout = await ref
+            .read(securityServiceProvider)
+            .getLockoutRemainingSeconds();
+          if (newLockout != null) {
+             _showError('Locked out. Try again in ${newLockout}s');
+          } else {
+            _showError('Incorrect PIN');
+          }
         }
         break;
 

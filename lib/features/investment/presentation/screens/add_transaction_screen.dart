@@ -237,56 +237,62 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 ),
               ),
               SizedBox(height: AppSpacing.xs),
-              GestureDetector(
-                onTap: () => _selectDate(context, isDark),
-                child: GlassCard(
-                  padding: AppSpacing.cardPadding,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.1),
-                          borderRadius: AppSizes.borderRadiusMd,
-                        ),
-                        child: Icon(
-                          Icons.calendar_today_rounded,
-                          color: AppColors.primaryLight,
-                          size: AppSizes.iconSm,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.sm + 2),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppDateUtils.formatDayOfWeek(_selectedDate),
-                              style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.neutral400Dark
-                                    : AppColors.neutral500Light,
-                              ),
+              Semantics(
+                button: true,
+                label: 'Select transaction date',
+                child: GestureDetector(
+                  onTap: () => _selectDate(context, isDark),
+                  child: GlassCard(
+                    padding: AppSpacing.cardPadding,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight.withValues(
+                              alpha: 0.1,
                             ),
-                            Text(
-                              AppDateUtils.formatLong(_selectedDate),
-                              style: AppTypography.bodyLarge.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.neutral900Light,
-                              ),
-                            ),
-                          ],
+                            borderRadius: AppSizes.borderRadiusMd,
+                          ),
+                          child: Icon(
+                            Icons.calendar_today_rounded,
+                            color: AppColors.primaryLight,
+                            size: AppSizes.iconSm,
+                          ),
                         ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral400Light,
-                      ),
-                    ],
+                        SizedBox(width: AppSpacing.sm + 2),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                AppDateUtils.formatDayOfWeek(_selectedDate),
+                                style: AppTypography.small.copyWith(
+                                  color: isDark
+                                      ? AppColors.neutral400Dark
+                                      : AppColors.neutral500Light,
+                                ),
+                              ),
+                              Text(
+                                AppDateUtils.formatLong(_selectedDate),
+                                style: AppTypography.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.neutral900Light,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral400Light,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -294,13 +300,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               SizedBox(height: AppSpacing.sectionSpacing),
 
               // Amount Field
-              _buildNumberField(
+              AppTextField(
                 controller: _amountController,
                 label: 'Amount',
                 hint: '0.00',
-                icon: Icons.attach_money_rounded,
-                isDark: isDark,
-                prefix: currencySymbol,
+                prefixIcon: Icons.attach_money_rounded,
+                prefixText: currencySymbol,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+                maxLength: ValidationConstants.maxAmountLength,
+                onChanged: (_) => setState(() {}),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Required';
                   final parsed = double.tryParse(value);
@@ -421,88 +434,4 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     );
   }
 
-  Widget _buildNumberField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    required bool isDark,
-    String? prefix,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTypography.bodyLarge.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-          ],
-          maxLength: ValidationConstants.maxAmountLength,
-          style: AppTypography.body.copyWith(
-            color: isDark ? Colors.white : AppColors.neutral900Light,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral500Dark
-                  : AppColors.neutral400Light,
-            ),
-            prefixText: prefix,
-            prefixStyle: AppTypography.body.copyWith(
-              color: isDark ? Colors.white : AppColors.neutral900Light,
-            ),
-            prefixIcon: Icon(
-              icon,
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
-            filled: true,
-            fillColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.neutral700Dark
-                    : AppColors.neutral200Light,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.neutral700Dark
-                    : AppColors.neutral200Light,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: AppColors.primaryLight, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: AppColors.errorLight),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          validator: validator,
-          onChanged: (_) => setState(() {}),
-        ),
-      ],
-    );
-  }
 }

@@ -130,8 +130,6 @@ class _InvestmentListSearchFieldState
                         ),
                         tooltip: 'Clear text',
                         onPressed: _clearText,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
                       )
                     : null,
               ),
@@ -140,21 +138,14 @@ class _InvestmentListSearchFieldState
           ),
         ),
         // Close button
-        Semantics(
-          button: true,
-          label: 'Close search',
-          child: GestureDetector(
-            onTap: () {
-              ref.read(investmentListStateProvider.notifier).toggleSearch();
-            },
-            child: Icon(
-              Icons.close_rounded,
-              size: 20,
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
-          ),
+        IconButton(
+          icon: const Icon(Icons.close_rounded),
+          iconSize: 20,
+          color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          tooltip: 'Close search',
+          onPressed: () {
+            ref.read(investmentListStateProvider.notifier).toggleSearch();
+          },
         ),
       ],
     );

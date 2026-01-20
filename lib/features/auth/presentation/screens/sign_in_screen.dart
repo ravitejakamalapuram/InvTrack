@@ -89,6 +89,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       // Ensure Google Sign-In is initialized before attempting auth
       await ref.read(googleSignInInitializedProvider.future);
 
+      // Check if widget is still mounted after async operation
+      if (!mounted) return;
+
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
       if (kDebugMode) {
         debugPrint(
@@ -96,11 +99,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         );
       }
 
+      // Check if widget is still mounted after sign-in completes
+      if (!mounted) return;
+
       if (user != null) {
         // Track successful sign-in in Analytics
         final analytics = ref.read(analyticsServiceProvider);
         await analytics.logSignIn(method: 'google');
         await analytics.setUserId(user.id);
+
+        // Check mounted again before accessing crashlytics
+        if (!mounted) return;
 
         // Set user identifier in Crashlytics for crash reports
         final crashlytics = ref.read(crashlyticsServiceProvider);

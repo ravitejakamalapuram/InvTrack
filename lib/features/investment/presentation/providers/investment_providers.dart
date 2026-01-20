@@ -2,6 +2,7 @@
 /// These are the single source of truth - all other providers derive from these.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -19,13 +20,22 @@ export 'package:inv_tracker/core/di/database_module.dart'
 
 /// Watch all investments (reactive).
 /// Returns empty list if user is not authenticated.
+/// Handles permission errors gracefully to prevent infinite retry loops.
 final allInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(investmentRepositoryProvider).watchAllInvestments();
+
+  return ref
+      .watch(investmentRepositoryProvider)
+      .watchAllInvestments()
+      .handleError((error, stackTrace) {
+        // Log the error but don't rethrow - prevents infinite retry loops
+        // on permission errors (e.g., expired Firestore security rules)
+        debugPrint('allInvestmentsProvider: ERROR - $error');
+      });
 });
 
 /// Watch investments by status.
@@ -42,7 +52,10 @@ final investmentsByStatusProvider =
       }
       return ref
           .watch(investmentRepositoryProvider)
-          .watchInvestmentsByStatus(status);
+          .watchInvestmentsByStatus(status)
+          .handleError((error, stackTrace) {
+            debugPrint('investmentsByStatusProvider: ERROR - $error');
+          });
     });
 
 /// Get a single investment by ID.
@@ -71,7 +84,10 @@ final cashFlowsByInvestmentProvider =
       }
       return ref
           .watch(investmentRepositoryProvider)
-          .watchCashFlowsByInvestment(investmentId);
+          .watchCashFlowsByInvestment(investmentId)
+          .handleError((error, stackTrace) {
+            debugPrint('cashFlowsByInvestmentProvider: ERROR - $error');
+          });
     });
 
 /// Watch all cash flows (reactive stream - single source of truth).
@@ -82,7 +98,12 @@ final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(investmentRepositoryProvider).watchAllCashFlows();
+  return ref
+      .watch(investmentRepositoryProvider)
+      .watchAllCashFlows()
+      .handleError((error, stackTrace) {
+        debugPrint('allCashFlowsStreamProvider: ERROR - $error');
+      });
 });
 
 /// Active (non-archived) investments only.
@@ -105,7 +126,12 @@ final archivedInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(investmentRepositoryProvider).watchArchivedInvestments();
+  return ref
+      .watch(investmentRepositoryProvider)
+      .watchArchivedInvestments()
+      .handleError((error, stackTrace) {
+        debugPrint('archivedInvestmentsProvider: ERROR - $error');
+      });
 });
 
 /// Watch archived cash flows for an investment (reactive).
@@ -118,7 +144,10 @@ final archivedCashFlowsByInvestmentProvider =
       }
       return ref
           .watch(investmentRepositoryProvider)
-          .watchArchivedCashFlowsByInvestment(investmentId);
+          .watchArchivedCashFlowsByInvestment(investmentId)
+          .handleError((error, stackTrace) {
+            debugPrint('archivedCashFlowsByInvestmentProvider: ERROR - $error');
+          });
     });
 
 /// Filtered cash flows for valid investments only (derived from streams)

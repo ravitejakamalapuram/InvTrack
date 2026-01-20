@@ -76,14 +76,14 @@ class FirebaseAuthRepository implements AuthRepository {
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: GoogleSignInException - code: ${e.code}');
+      }
       if (e.code == GoogleSignInExceptionCode.canceled) {
         if (kDebugMode) {
           debugPrint('FirebaseAuth: User cancelled sign-in');
         }
         return null;
-      }
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: GoogleSignInException - ${e.code}');
       }
       rethrow;
     } catch (e, stackTrace) {

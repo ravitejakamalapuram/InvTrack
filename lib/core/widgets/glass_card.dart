@@ -13,6 +13,7 @@ class GlassCard extends StatelessWidget {
   final Color? backgroundColor;
   final double blur;
   final bool showBorder;
+  final String? semanticLabel;
 
   const GlassCard({
     super.key,
@@ -24,6 +25,7 @@ class GlassCard extends StatelessWidget {
     this.backgroundColor,
     this.blur = 10,
     this.showBorder = true,
+    this.semanticLabel,
   });
 
   @override
@@ -78,10 +80,14 @@ class GlassCard extends StatelessWidget {
     }
 
     if (onTap != null || onLongPress != null) {
-      return GestureDetector(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: cardContent,
+      return Semantics(
+        button: true,
+        label: semanticLabel,
+        child: GestureDetector(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: cardContent,
+        ),
       );
     }
 
