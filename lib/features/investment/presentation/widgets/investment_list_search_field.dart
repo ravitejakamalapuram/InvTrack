@@ -25,10 +25,13 @@ class _InvestmentListSearchFieldState
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   Timer? _debounceTimer;
+  bool _showClearButton = false;
 
   @override
   void initState() {
     super.initState();
+    // Initialize state based on initial text
+    _showClearButton = _controller.text.isNotEmpty;
     _controller.addListener(_onTextChanged);
     // Auto-focus when the widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,8 +49,14 @@ class _InvestmentListSearchFieldState
   }
 
   void _onTextChanged() {
-    // Rebuild to toggle clear button visibility
-    setState(() {});
+    final shouldShow = _controller.text.isNotEmpty;
+    // OPTIMIZATION: Only rebuild if the clear button visibility state actually changes.
+    // Previously, this rebuilt the entire widget on every keystroke.
+    if (_showClearButton != shouldShow) {
+      setState(() {
+        _showClearButton = shouldShow;
+      });
+    }
   }
 
   void _clearText() {
@@ -73,7 +82,6 @@ class _InvestmentListSearchFieldState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final showClearButton = _controller.text.isNotEmpty;
 
     return Row(
       children: [
@@ -119,7 +127,7 @@ class _InvestmentListSearchFieldState
                 filled: false,
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
-                suffixIcon: showClearButton
+                suffixIcon: _showClearButton
                     ? IconButton(
                         icon: Icon(
                           Icons.cancel,
