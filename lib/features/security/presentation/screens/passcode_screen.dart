@@ -300,21 +300,26 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               ),
             ),
             const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: index < _input.length
-                        ? AppColors.primaryLight
-                        : AppColors.neutral300Light,
-                  ),
-                );
-              }),
+            Semantics(
+              label: 'PIN input',
+              value: '${_input.length} of 4 digits entered',
+              excludeSemantics: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(4, (index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: index < _input.length
+                          ? AppColors.primaryLight
+                          : AppColors.neutral300Light,
+                    ),
+                  );
+                }),
+              ),
             ),
             const Spacer(),
             _buildKeypad(),
@@ -358,6 +363,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                         size: 32,
                         color: AppColors.primaryLight,
                       ),
+                      tooltip: 'Authenticate with biometrics',
                       onPressed: _onBiometricButtonPressed,
                     )
                   : IconButton(
@@ -368,6 +374,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                             ? AppColors.textPrimaryLight
                             : AppColors.neutral300Light,
                       ),
+                      tooltip: 'Clear all',
                       onPressed: _input.isNotEmpty ? _onClear : null,
                     ),
             );
@@ -384,6 +391,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                       ? AppColors.textPrimaryLight
                       : AppColors.neutral300Light,
                 ),
+                tooltip: 'Delete last digit',
                 onPressed: _input.isNotEmpty ? _onDelete : null,
               ),
             );

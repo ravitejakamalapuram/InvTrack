@@ -17,3 +17,7 @@
 ## 2026-01-15 - [Accessibility: Default Semantics for Reusable Cards]
 **Learning:** Reusable container widgets (like `GlassCard`) that accept `onTap` often get used as buttons but lack semantics, making them invisible to screen readers. Relying on developers to wrap them in `Semantics` leads to inconsistent accessibility.
 **Action:** Embed `Semantics(button: true, ...)` directly into reusable interactive widgets when `onTap` is present. Expose a `semanticLabel` parameter to allow overriding the announcement, but ensure the "button" role is there by default.
+
+## 2026-02-10 - [Accessibility: Custom Keypad Semantics]
+**Learning:** Custom numeric keypads (like in PIN screens) often lack context about input progress (e.g., "2 of 4 digits entered") and clear labels for auxiliary buttons, making them confusing for screen reader users.
+**Action:** Wrap progress indicators in `Semantics(value: "X of Y entered", label: "PIN Input")` and ensure every icon-only auxiliary button has a descriptive `tooltip`.
