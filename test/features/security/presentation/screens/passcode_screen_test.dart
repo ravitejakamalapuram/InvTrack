@@ -34,13 +34,15 @@ class FakeSecurityNotifierNoBio extends SecurityNotifier {
 void main() {
   testWidgets('PasscodeScreen has accessible tooltips and semantics', (tester) async {
     // Set a larger surface size to prevent overflow in tests
-    await tester.binding.setSurfaceSize(const Size(400, 800));
+    await tester.binding.setSurfaceSize(const Size(600, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final mockSecurityService = MockSecurityService();
     // Default mock behavior
     when(() => mockSecurityService.getLockoutRemainingSeconds())
         .thenAnswer((_) async => null);
+    when(() => mockSecurityService.authenticateWithBiometrics())
+        .thenAnswer((_) async => false);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -53,6 +55,8 @@ void main() {
         ),
       ),
     );
+    // Allow the initial biometric auto-check timer (300ms) to run
+    await tester.pumpAndSettle();
 
     // Verify Biometric button tooltip
     expect(find.byTooltip('Authenticate with biometrics'), findsOneWidget);
@@ -73,7 +77,7 @@ void main() {
 
   testWidgets('PasscodeScreen shows Clear button when biometrics disabled', (tester) async {
     // Set a larger surface size to prevent overflow in tests
-    await tester.binding.setSurfaceSize(const Size(400, 800));
+    await tester.binding.setSurfaceSize(const Size(600, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final mockSecurityService = MockSecurityService();
