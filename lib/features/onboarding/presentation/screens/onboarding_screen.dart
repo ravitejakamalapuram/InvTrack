@@ -212,28 +212,60 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildDot(int index, bool isDark) {
     final isActive = index == _currentPage;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        final width =
-            AppSpacing.xs + (AppSpacing.xl - AppSpacing.xs) * value;
-        final color = Color.lerp(
-          isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
-          AppColors.primaryLight,
-          value,
-        )!;
-        return Container(
-          margin: EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-          width: width,
-          height: AppSpacing.xs,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(AppSizes.radiusXs),
-          ),
+
+    // Make dots interactive and accessible
+    return Semantics(
+      button: true,
+      label: 'Page ${index + 1} of ${_pages.length}',
+      selected: isActive,
+      onTap: () {
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
         );
       },
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+          );
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          // Use transparent padding to increase touch target size (approx 48px height)
+          // while maintaining visual spacing
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.xxs,
+            vertical: AppSpacing.lg,
+          ),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: isActive ? 1.0 : 0.0),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              final width =
+                  AppSpacing.xs + (AppSpacing.xl - AppSpacing.xs) * value;
+              final color = Color.lerp(
+                isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+                AppColors.primaryLight,
+                value,
+              )!;
+              return Container(
+                width: width,
+                height: AppSpacing.xs,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXs),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 
