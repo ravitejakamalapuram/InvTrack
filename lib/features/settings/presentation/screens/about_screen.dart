@@ -157,6 +157,7 @@ class AboutScreen extends ConsumerWidget {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback: copy URL to clipboard
+        if (!context.mounted) return;
         await _copyToClipboardWithFeedback(
           context,
           helpUrl,
@@ -165,6 +166,7 @@ class AboutScreen extends ConsumerWidget {
       }
     } catch (e) {
       // Fallback: copy URL to clipboard
+      if (!context.mounted) return;
       await _copyToClipboardWithFeedback(
         context,
         helpUrl,
@@ -191,6 +193,7 @@ class AboutScreen extends ConsumerWidget {
         await launchUrl(uri);
       } else {
         // Fallback: copy email to clipboard
+        if (!context.mounted) return;
         await _copyToClipboardWithFeedback(
           context,
           supportEmail,
@@ -199,6 +202,7 @@ class AboutScreen extends ConsumerWidget {
       }
     } catch (e) {
       // Fallback: copy email to clipboard
+      if (!context.mounted) return;
       await _copyToClipboardWithFeedback(
         context,
         supportEmail,
