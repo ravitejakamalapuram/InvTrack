@@ -29,3 +29,11 @@ Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypa
 
 **Action:**
 Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
+
+## 2025-01-22 - Unoptimized Custom Search Fields
+
+**Learning:**
+While shared components like `AppTextField` are optimized to avoid rebuilds on every keystroke (only rebuilding when suffix icons change), custom implementations like `InvestmentListSearchField` often miss this pattern, causing unnecessary UI churn during typing.
+
+**Action:**
+When implementing custom text input controllers with conditional icons (like 'clear text'), always track the visibility state explicitly and only call `setState` when that state changes, rather than blindly listening to all controller changes.

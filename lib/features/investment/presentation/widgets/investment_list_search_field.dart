@@ -25,6 +25,7 @@ class _InvestmentListSearchFieldState
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   Timer? _debounceTimer;
+  bool _wasClearButtonVisible = false;
 
   @override
   void initState() {
@@ -46,8 +47,14 @@ class _InvestmentListSearchFieldState
   }
 
   void _onTextChanged() {
-    // Rebuild to toggle clear button visibility
-    setState(() {});
+    // OPTIMIZATION: Only rebuild if the visibility of the clear button needs to change.
+    // Previously, this called setState on every character change, causing
+    // unnecessary rebuilds of the entire widget tree below this point.
+    final shouldShow = _controller.text.isNotEmpty;
+    if (_wasClearButtonVisible != shouldShow) {
+      _wasClearButtonVisible = shouldShow;
+      if (mounted) setState(() {});
+    }
   }
 
   void _clearText() {
@@ -73,7 +80,10 @@ class _InvestmentListSearchFieldState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final showClearButton = _controller.text.isNotEmpty;
+
+    // Sync state in case parent rebuilt us or initial state
+    _wasClearButtonVisible = _controller.text.isNotEmpty;
+    final showClearButton = _wasClearButtonVisible;
 
     return Row(
       children: [
