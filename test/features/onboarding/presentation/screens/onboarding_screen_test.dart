@@ -36,14 +36,14 @@ void main() {
 
     // Verify properties of the first dot
     final dot1Semantics = tester.getSemantics(dot1Finder);
-    expect(dot1Semantics.isSelected, isTrue);
-    expect(dot1Semantics.isButton, isTrue);
+    expect(dot1Semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
+    expect(dot1Semantics.hasFlag(SemanticsFlag.isButton), isTrue);
 
     // Find the second dot
     final dot2Finder = find.bySemanticsLabel('Page 2 of 4');
     expect(dot2Finder, findsOneWidget);
     final dot2Semantics = tester.getSemantics(dot2Finder);
-    expect(dot2Semantics.isSelected, isFalse);
+    expect(dot2Semantics.hasFlag(SemanticsFlag.isSelected), isFalse);
 
     // Tap the second dot
     await tester.tap(dot2Finder);
@@ -56,7 +56,7 @@ void main() {
     final dot1SemanticsAfter = tester.getSemantics(find.bySemanticsLabel('Page 1 of 4'));
     final dot2SemanticsAfter = tester.getSemantics(find.bySemanticsLabel('Page 2 of 4'));
 
-    expect(dot1SemanticsAfter.isSelected, isFalse);
-    expect(dot2SemanticsAfter.isSelected, isTrue);
+    expect(dot1SemanticsAfter.hasFlag(SemanticsFlag.isSelected), isFalse);
+    expect(dot2SemanticsAfter.hasFlag(SemanticsFlag.isSelected), isTrue);
   });
 }
