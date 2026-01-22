@@ -95,6 +95,8 @@ void main() {
         ),
       ),
     );
+    // Allow the initial biometric auto-check timer (300ms) to run
+    await tester.pumpAndSettle();
 
     // Enter a digit so Clear button is enabled
     await tester.tap(find.text('1'));
