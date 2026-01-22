@@ -38,11 +38,15 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final mockSecurityService = MockSecurityService();
-    // Default mock behavior
+    // Comprehensive mocking to prevent missing stub errors
     when(() => mockSecurityService.getLockoutRemainingSeconds())
         .thenAnswer((_) async => null);
     when(() => mockSecurityService.authenticateWithBiometrics())
         .thenAnswer((_) async => false);
+    when(() => mockSecurityService.isBiometricAvailable())
+        .thenAnswer((_) async => true);
+    when(() => mockSecurityService.hasPin())
+        .thenAnswer((_) async => true);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -81,8 +85,15 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final mockSecurityService = MockSecurityService();
+    // Comprehensive mocking to prevent missing stub errors
     when(() => mockSecurityService.getLockoutRemainingSeconds())
         .thenAnswer((_) async => null);
+    when(() => mockSecurityService.authenticateWithBiometrics())
+        .thenAnswer((_) async => false);
+    when(() => mockSecurityService.isBiometricAvailable())
+        .thenAnswer((_) async => true);
+    when(() => mockSecurityService.hasPin())
+        .thenAnswer((_) async => true);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -95,6 +106,7 @@ void main() {
         ),
       ),
     );
+
     // Allow the initial biometric auto-check timer (300ms) to run
     await tester.pumpAndSettle();
 
