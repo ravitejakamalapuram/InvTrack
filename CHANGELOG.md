@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Add mounted checks for async BuildContext usage in about_screen.dart
+
+### 🔧 Miscellaneous
+
+- Update dependencies (31 packages including Firebase suite)
+- Regenerate golden test images for glass_card
+
 ## [3.15.4] - 2026-01-20
 
 ### 🔧 Miscellaneous
