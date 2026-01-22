@@ -175,7 +175,9 @@ class SecurityService {
       // Check if biometrics are available before attempting auth
       final isAvailable = await isBiometricAvailable();
       if (!isAvailable) {
-        debugPrint('🔐 Biometrics not available on this device');
+        if (kDebugMode) {
+          debugPrint('🔐 Biometrics not available on this device');
+        }
         return false;
       }
 
@@ -194,10 +196,14 @@ class SecurityService {
         sensitiveTransaction: false, // Don't require re-auth for app resume
       );
 
-      debugPrint('🔐 Biometric auth result: $result');
+      if (kDebugMode) {
+        debugPrint('🔐 Biometric auth result: $result');
+      }
       return result;
     } on PlatformException catch (e) {
-      debugPrint('🔐 Biometric platform error: ${e.code} - ${e.message}');
+      if (kDebugMode) {
+        debugPrint('🔐 Biometric platform error: ${e.code} - ${e.message}');
+      }
       // Handle specific error codes
       if (e.code == 'NotAvailable' || e.code == 'NotEnrolled') {
         return false;
@@ -205,7 +211,9 @@ class SecurityService {
       // For other errors (like user cancelled), just return false
       return false;
     } catch (e) {
-      debugPrint('🔐 Biometric auth error: $e');
+      if (kDebugMode) {
+        debugPrint('🔐 Biometric auth error: $e');
+      }
       return false;
     }
   }
