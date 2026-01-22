@@ -60,6 +60,8 @@ void main() {
       ),
     );
     // Allow the initial biometric auto-check timer (300ms) to run
+    // Explicitly pump past the 300ms delay + buffer to ensure the callback fires
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.pumpAndSettle();
 
     // Verify Biometric button tooltip
@@ -108,6 +110,8 @@ void main() {
     );
 
     // Allow the initial biometric auto-check timer (300ms) to run
+    // Explicitly pump past the 300ms delay + buffer to ensure the callback fires
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.pumpAndSettle();
 
     // Enter a digit so Clear button is enabled
