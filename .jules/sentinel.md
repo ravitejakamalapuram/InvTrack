@@ -24,3 +24,10 @@
 1. Implement attempt counters for all authentication methods.
 2. Enforce exponential backoff or fixed lockout periods after max attempts.
 3. Persist lockout state to prevent bypass via app restart.
+
+## 2025-05-25 - [Insecure Android Backup Configuration]
+**Vulnerability:** The Android application configuration allowed backups (`allowBackup="true"` by default). This enabled attackers with physical access and enabled USB debugging to extract application data via `adb backup`, including sensitive cached investment data and unencrypted `SharedPreferences` (bypassing rate limits).
+**Learning:** Default Android configurations prioritize convenience over security. Explicitly disabling backups is crucial for financial or sensitive applications to prevent data exfiltration.
+**Prevention:**
+1. Explicitly set `android:allowBackup="false"` in `AndroidManifest.xml`.
+2. Set `android:fullBackupContent="false"` to prevent cloud backups of sensitive data.
