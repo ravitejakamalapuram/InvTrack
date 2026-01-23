@@ -313,7 +313,7 @@ void main() {
           .map((n) => n.title)
           .toList();
       expect(titles, contains('📅 Investment Maturing Soon'));
-      expect(titles, contains('⚠️ Investment Matures Tomorrow'));
+      expect(titles, contains('⏰ Maturity Tomorrow!'));
     });
 
     test(
@@ -330,7 +330,7 @@ void main() {
         expect(fakePlugin.scheduledNotifications.length, 1);
         expect(
           fakePlugin.scheduledNotifications.first.title,
-          '⚠️ Investment Matures Tomorrow',
+          '⏰ Maturity Tomorrow!',
         );
       },
     );
