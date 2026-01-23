@@ -76,10 +76,11 @@ jobs:
         id: analyze
         run: |
           RESULT=$(flutter analyze 2>&1) || true
-          if echo "$RESULT" | grep -q "No issues found"; then
+          if echo "$RESULT" | grep -qi "no issues found"; then
             echo "status=✅" >> $GITHUB_OUTPUT
           else
             echo "status=❌" >> $GITHUB_OUTPUT
+            echo "Analysis output: $RESULT"
           fi
 
       - name: File Size Limits
@@ -146,13 +147,15 @@ jobs:
         id: test
         run: |
           RESULT=$(flutter test --exclude-tags=golden 2>&1) || true
-          if echo "$RESULT" | grep -q "All tests passed"; then
+          if echo "$RESULT" | grep -qi "all tests passed"; then
             COUNT=$(echo "$RESULT" | grep -oE '\+[0-9]+' | tail -1 | tr -d '+')
             echo "status=✅" >> $GITHUB_OUTPUT
             echo "count=$COUNT" >> $GITHUB_OUTPUT
           else
             echo "status=❌" >> $GITHUB_OUTPUT
             echo "count=0" >> $GITHUB_OUTPUT
+            echo "Test output (last 20 lines):"
+            echo "$RESULT" | tail -20
           fi
 
       - name: Bug Fix Test Check
