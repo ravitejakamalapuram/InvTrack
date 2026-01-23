@@ -43,9 +43,7 @@ class GlassCard extends StatelessWidget {
     final decoration = BoxDecoration(
       color: backgroundColor ?? defaultBgColor,
       borderRadius: BorderRadius.circular(borderRadius),
-      border: showBorder
-          ? Border.all(color: borderColor, width: 1)
-          : null,
+      border: showBorder ? Border.all(color: borderColor, width: 1) : null,
       boxShadow: isDark ? null : AppColors.cardShadowLight,
     );
 
@@ -102,6 +100,7 @@ class GlassHeroCard extends StatelessWidget {
   final double borderRadius;
   final LinearGradient? gradient;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   const GlassHeroCard({
     super.key,
@@ -110,6 +109,7 @@ class GlassHeroCard extends StatelessWidget {
     this.borderRadius = 24,
     this.gradient,
     this.onTap,
+    this.semanticLabel,
   });
 
   @override
@@ -148,7 +148,11 @@ class GlassHeroCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: cardContent);
+      return Semantics(
+        button: true,
+        label: semanticLabel,
+        child: GestureDetector(onTap: onTap, child: cardContent),
+      );
     }
 
     return cardContent;
