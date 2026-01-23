@@ -214,7 +214,9 @@ jobs:
       - name: Augment Review
         uses: augmentcode/review-pr@v0
         continue-on-error: true
-        if: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
+        if: env.HAS_SECRET == 'true'
         with:
           augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
