@@ -203,15 +203,27 @@ jobs:
           # Check if deleteUserData mentions new collections
           echo "status=⚠️" >> $GITHUB_OUTPUT
 
-  # ============ AUGMENT AI REVIEW ============
-  augment-review:
-    name: AI Review
+  # ============ AUGMENT AI ============
+  augment-ai:
+    name: AI (Describe + Review)
     runs-on: self-hosted
-    needs: [pre-checks, code-health, tests]
-    if: always() && needs.pre-checks.result == 'success'
+    needs: pre-checks
+    if: github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
 
     steps:
-      - name: Augment Review
+      - name: Describe PR
+        uses: augmentcode/describe-pr@v0
+        continue-on-error: true
+        if: github.event.action == 'opened' || github.event.action == 'ready_for_review'
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
+        with:
+          augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pull_number: ${{ github.event.pull_request.number }}
+          repo_name: ${{ github.repository }}
+
+      - name: Review PR
         uses: augmentcode/review-pr@v0
         continue-on-error: true
         env:
