@@ -17,6 +17,7 @@ import flutter_secure_storage_darwin
 import flutter_timezone
 import google_sign_in_ios
 import local_auth_darwin
+import path_provider_foundation
 import patrol
 import share_plus
 import shared_preferences_foundation
@@ -35,6 +36,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FlutterTimezonePlugin.register(with: registry.registrar(forPlugin: "FlutterTimezonePlugin"))
   FLTGoogleSignInPlugin.register(with: registry.registrar(forPlugin: "FLTGoogleSignInPlugin"))
   LocalAuthPlugin.register(with: registry.registrar(forPlugin: "LocalAuthPlugin"))
+  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   PatrolPlugin.register(with: registry.registrar(forPlugin: "PatrolPlugin"))
   SharePlusMacosPlugin.register(with: registry.registrar(forPlugin: "SharePlusMacosPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
