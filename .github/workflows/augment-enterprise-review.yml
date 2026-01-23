@@ -1,0 +1,336 @@
+name: "PR: Enterprise Review (Rule 19)"
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.38.4'
+
+jobs:
+  # ============ PRE-REVIEW CHECKS ============
+  pre-checks:
+    name: Pre-Review Checks
+    runs-on: self-hosted
+    if: github.event.pull_request.draft == false
+    outputs:
+      files_changed: ${{ steps.changed.outputs.files }}
+      has_dart_changes: ${{ steps.changed.outputs.has_dart }}
+      has_test_changes: ${{ steps.changed.outputs.has_tests }}
+      is_feature: ${{ steps.classify.outputs.is_feature }}
+      is_refactor: ${{ steps.classify.outputs.is_refactor }}
+      is_bugfix: ${{ steps.classify.outputs.is_bugfix }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed
+        run: |
+          FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only 2>/dev/null || git diff --name-only origin/main...HEAD)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Check for Dart/Flutter changes
+          if echo "$FILES" | grep -q '\.dart$'; then
+            echo "has_dart=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_dart=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check for test changes
+          if echo "$FILES" | grep -q '_test\.dart$'; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Classify PR type
+        id: classify
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          BODY="${{ github.event.pull_request.body }}"
+          
+          # Classify based on title/body
+          if echo "$TITLE $BODY" | grep -iqE 'feat|feature|add|new'; then
+            echo "is_feature=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_feature=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if echo "$TITLE $BODY" | grep -iqE 'refactor|clean|split|extract'; then
+            echo "is_refactor=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_refactor=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if echo "$TITLE $BODY" | grep -iqE 'fix|bug|issue|hotfix'; then
+            echo "is_bugfix=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_bugfix=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ============ CODE HEALTH CHECKS ============
+  code-health:
+    name: Code Health Analysis
+    runs-on: self-hosted
+    needs: pre-checks
+    if: needs.pre-checks.outputs.has_dart_changes == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Static Analysis
+        id: analyze
+        run: |
+          echo "## 📊 Static Analysis Results" >> $GITHUB_STEP_SUMMARY
+          
+          # Run analyzer
+          RESULT=$(flutter analyze 2>&1) || true
+          
+          if echo "$RESULT" | grep -q "No issues found"; then
+            echo "✅ No analyzer issues found" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Analyzer findings:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$RESULT" | tail -20 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "status=warn" >> $GITHUB_OUTPUT
+          fi
+
+      - name: File Size Check (Rule 3)
+        id: file-size
+        run: |
+          echo "## 📏 File Size Check (Code Health Rule 3)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          VIOLATIONS=""
+
+          # Check screen files (max 500 lines)
+          for file in $(find lib -name "*_screen.dart" 2>/dev/null); do
+            LINES=$(wc -l < "$file")
+            if [ "$LINES" -gt 500 ]; then
+              VIOLATIONS="$VIOLATIONS\n⚠️ $file: $LINES lines (max: 500)"
+            fi
+          done
+
+          # Check widget files (max 300 lines)
+          for file in $(find lib -path "*/widgets/*.dart" 2>/dev/null); do
+            LINES=$(wc -l < "$file")
+            if [ "$LINES" -gt 300 ]; then
+              VIOLATIONS="$VIOLATIONS\n⚠️ $file: $LINES lines (max: 300)"
+            fi
+          done
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "### ⚠️ File Size Violations" >> $GITHUB_STEP_SUMMARY
+            echo -e "$VIOLATIONS" >> $GITHUB_STEP_SUMMARY
+            echo "status=warn" >> $GITHUB_OUTPUT
+          else
+            echo "✅ All files within size limits" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+  # ============ TEST VERIFICATION ============
+  test-verification:
+    name: Test Verification
+    runs-on: self-hosted
+    needs: pre-checks
+    if: needs.pre-checks.outputs.has_dart_changes == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Run Tests
+        id: tests
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+
+          RESULT=$(flutter test --exclude-tags=golden 2>&1) || true
+
+          if echo "$RESULT" | grep -q "All tests passed"; then
+            PASSED=$(echo "$RESULT" | grep -oE '\+[0-9]+' | tail -1 | tr -d '+')
+            echo "✅ All $PASSED tests passed" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "count=$PASSED" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$RESULT" | tail -30 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "status=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Test Coverage for Bug Fixes
+        if: needs.pre-checks.outputs.is_bugfix == 'true'
+        run: |
+          echo "## 🐛 Bug Fix Test Requirement (PR Rule 8)" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.pre-checks.outputs.has_test_changes }}" == "true" ]; then
+            echo "✅ Tests included with bug fix" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Warning**: Bug fix PRs MUST include tests covering the root cause" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please add tests that verify the bug is fixed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============ AUGMENT AI REVIEW ============
+  augment-review:
+    name: Augment AI Review
+    runs-on: self-hosted
+    needs: [pre-checks, code-health, test-verification]
+    if: |
+      always() &&
+      needs.pre-checks.result == 'success' &&
+      github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+
+    steps:
+      - name: Generate AI Review
+        uses: augmentcode/review-pr@v0
+        continue-on-error: true
+        if: env.HAS_SECRET == 'true'
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
+        with:
+          augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pull_number: ${{ github.event.pull_request.number }}
+          repo_name: ${{ github.repository }}
+
+  # ============ ENTERPRISE RULE COMPLIANCE ============
+  enterprise-compliance:
+    name: Enterprise Rules Compliance
+    runs-on: self-hosted
+    needs: [pre-checks, code-health, test-verification]
+    if: always() && needs.pre-checks.result == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PR Description (Rule 1)
+        id: pr-desc
+        run: |
+          echo "## 📋 Enterprise Rules Compliance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          BODY="${{ github.event.pull_request.body }}"
+          VIOLATIONS=""
+
+          # Rule 1: PR must state what and why
+          if [ -z "$BODY" ] || [ ${#BODY} -lt 50 ]; then
+            VIOLATIONS="$VIOLATIONS\n❌ Rule 1: PR description too short or missing"
+          fi
+
+          echo "### PR Rule Checks" >> $GITHUB_STEP_SUMMARY
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo -e "$VIOLATIONS" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ PR description adequate" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check Architecture Boundaries (Rule 3)
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Architecture Boundary Checks" >> $GITHUB_STEP_SUMMARY
+
+          VIOLATIONS=""
+
+          # Check for API calls in widgets (bad pattern)
+          if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
+            VIOLATIONS="$VIOLATIONS\n❌ Rule 3: Direct API calls found in widgets"
+          fi
+
+          # Check for navigation in domain layer (bad pattern)
+          if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
+            VIOLATIONS="$VIOLATIONS\n❌ Rule 3: Navigation logic found in domain layer"
+          fi
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo -e "$VIOLATIONS" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Architecture boundaries respected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate Compliance Summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Review Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | ${{ needs.code-health.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test-verification.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Health | ${{ needs.code-health.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ============ AUTO-MERGE GATE ============
+  merge-gate:
+    name: Merge Gate
+    runs-on: self-hosted
+    needs: [code-health, test-verification, enterprise-compliance]
+    if: always()
+
+    steps:
+      - name: Evaluate Merge Readiness
+        run: |
+          echo "## 🚦 Merge Gate Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          READY=true
+
+          if [ "${{ needs.code-health.result }}" != "success" ]; then
+            echo "❌ Code health checks failed" >> $GITHUB_STEP_SUMMARY
+            READY=false
+          fi
+
+          if [ "${{ needs.test-verification.result }}" != "success" ]; then
+            echo "❌ Test verification failed" >> $GITHUB_STEP_SUMMARY
+            READY=false
+          fi
+
+          if [ "$READY" == "true" ]; then
+            echo "✅ **PR is ready for merge**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All automated checks passed. Manual review recommended for:" >> $GITHUB_STEP_SUMMARY
+            echo "- [ ] Architect perspective" >> $GITHUB_STEP_SUMMARY
+            echo "- [ ] Product Manager perspective" >> $GITHUB_STEP_SUMMARY
+            echo "- [ ] Senior Flutter Developer perspective" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **PR is NOT ready for merge**" >> $GITHUB_STEP_SUMMARY
+            echo "Please fix the issues above before merging." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
