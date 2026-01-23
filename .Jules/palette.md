@@ -17,3 +17,7 @@
 ## 2026-01-15 - [Accessibility: Default Semantics for Reusable Cards]
 **Learning:** Reusable container widgets (like `GlassCard`) that accept `onTap` often get used as buttons but lack semantics, making them invisible to screen readers. Relying on developers to wrap them in `Semantics` leads to inconsistent accessibility.
 **Action:** Embed `Semantics(button: true, ...)` directly into reusable interactive widgets when `onTap` is present. Expose a `semanticLabel` parameter to allow overriding the announcement, but ensure the "button" role is there by default.
+
+## 2026-01-22 - [Accessibility: Page Indicators]
+**Learning:** Page indicators (dots) are often implemented as purely visual elements, but users expect them to be interactive. Making them tappable with transparent padding for touch targets and full semantics (label "Page X of Y", selected state) significantly improves navigation and accessibility.
+**Action:** Wrap page indicator dots in `Semantics(button: true, ...)` and `GestureDetector` with transparent padding to ensure a 48px touch target.
