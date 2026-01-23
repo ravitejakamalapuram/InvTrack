@@ -69,7 +69,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+          cache: false  # Self-hosted runners have Flutter installed locally
       - run: flutter pub get
 
       - name: Static Analysis
@@ -139,7 +139,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true
+          cache: false  # Self-hosted runners have Flutter installed locally
       - run: flutter pub get
 
       - name: Run Tests

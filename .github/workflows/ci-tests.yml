@@ -20,7 +20,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.4'
-          cache: true
+          cache: false  # Self-hosted runners have Flutter installed locally
 
       - run: flutter pub get
 
