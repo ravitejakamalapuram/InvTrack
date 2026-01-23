@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### ♻️ Refactoring
+
+- Code health maintenance - reduce file sizes per Code Health… (#103)
+
 ## [3.16.2] - 2026-01-22
 
 ### 🐛 Bug Fixes
