@@ -1,0 +1,331 @@
+name: "PR: Enterprise Review"
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.38.4'
+
+jobs:
+  # ============ PRE-REVIEW CHECKS ============
+  pre-checks:
+    name: Pre-Review
+    runs-on: self-hosted
+    if: github.event.pull_request.draft == false
+    outputs:
+      has_dart: ${{ steps.changed.outputs.has_dart }}
+      has_tests: ${{ steps.changed.outputs.has_tests }}
+      has_widgets: ${{ steps.changed.outputs.has_widgets }}
+      has_new_storage: ${{ steps.changed.outputs.has_new_storage }}
+      is_bugfix: ${{ steps.classify.outputs.is_bugfix }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Analyze changes
+        id: changed
+        run: |
+          FILES=$(gh pr diff ${{ github.event.pull_request.number }} --name-only 2>/dev/null || git diff --name-only origin/main...HEAD)
+
+          echo "has_dart=$([[ "$FILES" == *".dart"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "has_tests=$([[ "$FILES" == *"_test.dart"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "has_widgets=$([[ "$FILES" == *"/widgets/"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "has_new_storage=$([[ "$FILES" == *"repository"* || "$FILES" == *"firestore"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Classify PR
+        id: classify
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "is_bugfix=$([[ "$TITLE" =~ (fix|bug|hotfix) ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+  # ============ CODE HEALTH & SECURITY ============
+  code-health:
+    name: Code Health & Security
+    runs-on: self-hosted
+    needs: pre-checks
+    if: needs.pre-checks.outputs.has_dart == 'true'
+    outputs:
+      analysis: ${{ steps.analyze.outputs.status }}
+      file_size: ${{ steps.size.outputs.status }}
+      security: ${{ steps.security.outputs.status }}
+      accessibility: ${{ steps.a11y.outputs.status }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true  # Ensure clean workspace on self-hosted runners
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: false  # Self-hosted runners have Flutter installed locally
+      - run: flutter clean && flutter pub get
+
+      - name: Static Analysis
+        id: analyze
+        run: |
+          flutter analyze --no-fatal-infos 2>&1 && echo "status=✅" >> $GITHUB_OUTPUT || echo "status=❌" >> $GITHUB_OUTPUT
+
+      - name: File Size Limits
+        id: size
+        run: |
+          FAIL=false
+          for f in $(find lib -name "*_screen.dart" 2>/dev/null); do
+            [ $(wc -l < "$f") -gt 500 ] && FAIL=true
+          done
+          for f in $(find lib -path "*/widgets/*.dart" 2>/dev/null); do
+            [ $(wc -l < "$f") -gt 300 ] && FAIL=true
+          done
+          echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
+
+      - name: Security Anti-Patterns
+        id: security
+        run: |
+          FAIL=false
+          # Check for hardcoded secrets
+          if grep -rn "api[_-]key\|secret\|password" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "// " 2>/dev/null; then
+            FAIL=true
+          fi
+          # Check for print statements in production
+          if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
+            FAIL=true
+          fi
+          # Check for disabled SSL
+          if grep -rn "badCertificateCallback\|allowInsecure" lib/ 2>/dev/null; then
+            FAIL=true
+          fi
+          echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
+
+      - name: Accessibility Check
+        id: a11y
+        if: needs.pre-checks.outputs.has_widgets == 'true'
+        run: |
+          FAIL=false
+          # Check images without semantics
+          if grep -rn "Image\.\|Image(" lib/ --include="*.dart" | grep -v "semanticLabel\|Semantics" 2>/dev/null | head -5; then
+            FAIL=true
+          fi
+          echo "status=$([[ "$FAIL" == "true" ]] && echo ⚠️ || echo ✅)" >> $GITHUB_OUTPUT
+
+  # ============ TESTS ============
+  tests:
+    name: Tests
+    runs-on: self-hosted
+    needs: pre-checks
+    if: needs.pre-checks.outputs.has_dart == 'true'
+    outputs:
+      status: ${{ steps.test.outputs.status }}
+      count: ${{ steps.test.outputs.count }}
+      bugfix_has_test: ${{ steps.bugfix.outputs.status }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true  # Ensure clean workspace on self-hosted runners
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: false  # Self-hosted runners have Flutter installed locally
+      - run: flutter clean && flutter pub get
+
+      - name: Run Tests
+        id: test
+        run: |
+          set +e
+          RESULT=$(flutter test --exclude-tags=golden 2>&1)
+          EXIT_CODE=$?
+          set -e
+          echo "$RESULT"
+          if [ $EXIT_CODE -eq 0 ]; then
+            COUNT=$(echo "$RESULT" | grep -oE '\+[0-9]+' | tail -1 | tr -d '+' || echo "0")
+            echo "status=✅" >> $GITHUB_OUTPUT
+            echo "count=${COUNT:-0}" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bug Fix Test Check
+        id: bugfix
+        if: needs.pre-checks.outputs.is_bugfix == 'true'
+        run: |
+          if [ "${{ needs.pre-checks.outputs.has_tests }}" == "true" ]; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=⚠️" >> $GITHUB_OUTPUT
+          fi
+
+  # ============ ARCHITECTURE ============
+  architecture:
+    name: Architecture
+    runs-on: self-hosted
+    needs: pre-checks
+    if: needs.pre-checks.outputs.has_dart == 'true'
+    outputs:
+      boundaries: ${{ steps.bounds.outputs.status }}
+      data_lifecycle: ${{ steps.lifecycle.outputs.status }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Layer Boundaries
+        id: bounds
+        run: |
+          FAIL=false
+          # API in widgets
+          if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
+            FAIL=true
+          fi
+          # Navigation in domain
+          if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
+            FAIL=true
+          fi
+          # ref.read in build
+          if grep -rn "ref\.read" lib/ --include="*.dart" | grep "Widget build\|build(" 2>/dev/null; then
+            FAIL=true
+          fi
+          echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
+
+      - name: Data Lifecycle
+        id: lifecycle
+        if: needs.pre-checks.outputs.has_new_storage == 'true'
+        run: |
+          # Check if deleteUserData mentions new collections
+          echo "status=⚠️" >> $GITHUB_OUTPUT
+
+  # ============ AUGMENT AI ============
+  augment-ai:
+    name: AI (Describe + Review)
+    runs-on: self-hosted
+    needs: pre-checks
+    if: github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+
+    steps:
+      - name: Describe PR
+        uses: augmentcode/describe-pr@v0
+        continue-on-error: true
+        if: github.event.action == 'opened' || github.event.action == 'ready_for_review'
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
+        with:
+          augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pull_number: ${{ github.event.pull_request.number }}
+          repo_name: ${{ github.repository }}
+
+      - name: Review PR
+        uses: augmentcode/review-pr@v0
+        continue-on-error: true
+        env:
+          HAS_SECRET: ${{ secrets.AUGMENT_SESSION_AUTH != '' }}
+        if: env.HAS_SECRET == 'true'
+        with:
+          augment_session_auth: ${{ secrets.AUGMENT_SESSION_AUTH }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pull_number: ${{ github.event.pull_request.number }}
+          repo_name: ${{ github.repository }}
+
+  # ============ POST CHECKLIST COMMENT ============
+  checklist:
+    name: Review Checklist
+    runs-on: self-hosted
+    needs: [pre-checks, code-health, tests, architecture]
+    if: always() && needs.pre-checks.result == 'success'
+
+    steps:
+      - name: Post Checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const analysis = '${{ needs.code-health.outputs.analysis }}' || '⏭️';
+            const fileSize = '${{ needs.code-health.outputs.file_size }}' || '⏭️';
+            const security = '${{ needs.code-health.outputs.security }}' || '⏭️';
+            const a11y = '${{ needs.code-health.outputs.accessibility }}' || '⏭️';
+            const tests = '${{ needs.tests.outputs.status }}' || '⏭️';
+            const testCount = '${{ needs.tests.outputs.count }}' || '0';
+            const bugfixTest = '${{ needs.tests.outputs.bugfix_has_test }}' || '⏭️';
+            const boundaries = '${{ needs.architecture.outputs.boundaries }}' || '⏭️';
+            const lifecycle = '${{ needs.architecture.outputs.data_lifecycle }}' || '⏭️';
+
+            const body = `## 🔍 Enterprise Review Checklist
+
+            | Category | Check | Status |
+            |----------|-------|--------|
+            | **Code Health** | Static Analysis | ${analysis} |
+            | | File Size Limits | ${fileSize} |
+            | **Security** | Anti-Pattern Scan | ${security} |
+            | **Accessibility** | Semantic Labels | ${a11y} |
+            | **Testing** | All Tests Pass (${testCount}) | ${tests} |
+            | | Bug Fix Has Test | ${bugfixTest} |
+            | **Architecture** | Layer Boundaries | ${boundaries} |
+            | | Data Lifecycle | ${lifecycle} |
+
+            ---
+
+            ### Manual Review Required
+            - [ ] **Architect**: Data model, scalability, decoupling
+            - [ ] **Product**: User flow, edge cases, analytics
+            - [ ] **Flutter Dev**: Widget rebuilds, memory, performance
+            - [ ] **Compliance**: GDPR, WCAG, OWASP MASVS
+
+            ---
+            *Auto-generated by Enterprise Review CI • [Rules](.augment/rules/invtrack_rules.md)*`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.data.find(c => c.body.includes('Enterprise Review Checklist'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  # ============ MERGE GATE ============
+  merge-gate:
+    name: Merge Gate
+    runs-on: self-hosted
+    needs: [code-health, tests, architecture]
+    if: always()
+
+    steps:
+      - name: Evaluate
+        run: |
+          PASS=true
+          [[ "${{ needs.code-health.outputs.analysis }}" == "❌" ]] && PASS=false
+          [[ "${{ needs.tests.outputs.status }}" == "❌" ]] && PASS=false
+          [[ "${{ needs.architecture.outputs.boundaries }}" == "❌" ]] && PASS=false
+
+          if [[ "$PASS" == "false" ]]; then
+            echo "❌ PR has blocking issues"
+            exit 1
+          fi
+          echo "✅ All automated checks passed"
