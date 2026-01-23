@@ -2,9 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, 'feature/**']
-  pull_request:
     branches: [main, develop]
+  # PRs are covered by PR: Enterprise Review workflow
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
