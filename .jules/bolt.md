@@ -29,3 +29,11 @@ Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypa
 
 **Action:**
 Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
+
+## 2024-05-26 - Invisible Shadows in GlassCard
+
+**Learning:**
+When using `GlassCard` with `blur: 0` for list items (to avoid BackdropFilter), the shadow was still being calculated and laid out by the inner Container but then clipped by the wrapping `ClipRRect`. This wasted layout cycles for invisible shadows in long lists.
+
+**Action:**
+Explicitly set `boxShadow: []` in `GlassCard` when `blur: 0`. Shadows should be handled by the parent container if needed, not calculated internally just to be clipped.
