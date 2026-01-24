@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -130,15 +131,21 @@ class SecurityNotifier extends Notifier<SecurityState>
       if (_suspendedAt != null) {
         final suspendDuration = DateTime.now().difference(_suspendedAt!);
         if (suspendDuration.inMinutes >= 5) {
-          debugPrint('🔐 Auto-lock suspension expired after 5 minutes');
+          if (kDebugMode) {
+            debugPrint('🔐 Auto-lock suspension expired after 5 minutes');
+          }
           _isAutoLockSuspended = false;
           _suspendedAt = null;
         } else {
-          debugPrint('🔐 Auto-lock suspended for picker operation, skipping');
+          if (kDebugMode) {
+            debugPrint('🔐 Auto-lock suspended for picker operation, skipping');
+          }
           return;
         }
       } else {
-        debugPrint('🔐 Auto-lock suspended, skipping');
+        if (kDebugMode) {
+          debugPrint('🔐 Auto-lock suspended, skipping');
+        }
         return;
       }
     }
@@ -148,7 +155,9 @@ class SecurityNotifier extends Notifier<SecurityState>
     if (_lastUnlockTime != null) {
       final timeSinceUnlock = DateTime.now().difference(_lastUnlockTime!);
       if (timeSinceUnlock < _unlockGracePeriod) {
-        debugPrint('🔐 Within unlock grace period, skipping auto-lock');
+        if (kDebugMode) {
+          debugPrint('🔐 Within unlock grace period, skipping auto-lock');
+        }
         return;
       }
     }
@@ -158,7 +167,11 @@ class SecurityNotifier extends Notifier<SecurityState>
       final autoLockSeconds = _service.autoLockDurationSeconds;
 
       if (duration.inSeconds >= autoLockSeconds) {
-        debugPrint('🔐 Auto-locking app after ${duration.inSeconds}s (threshold: ${autoLockSeconds}s)');
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 Auto-locking app after ${duration.inSeconds}s (threshold: ${autoLockSeconds}s)',
+          );
+        }
         lockApp();
       }
     }
@@ -238,7 +251,9 @@ class SecurityNotifier extends Notifier<SecurityState>
   /// Call [resumeAutoLock] when the picker operation completes.
   /// Auto-lock will automatically resume after 5 minutes as a safety measure.
   void suspendAutoLock() {
-    debugPrint('🔐 Suspending auto-lock for picker operation');
+    if (kDebugMode) {
+      debugPrint('🔐 Suspending auto-lock for picker operation');
+    }
     _isAutoLockSuspended = true;
     _suspendedAt = DateTime.now();
     // Reset pause time so we don't accumulate background time
@@ -250,7 +265,9 @@ class SecurityNotifier extends Notifier<SecurityState>
   /// This should be called after [suspendAutoLock] when the picker
   /// operation is complete (whether successful or cancelled).
   void resumeAutoLock() {
-    debugPrint('🔐 Resuming auto-lock after picker operation');
+    if (kDebugMode) {
+      debugPrint('🔐 Resuming auto-lock after picker operation');
+    }
     _isAutoLockSuspended = false;
     _suspendedAt = null;
     // Reset pause time to current time so we don't immediately lock
