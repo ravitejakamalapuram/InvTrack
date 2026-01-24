@@ -29,3 +29,19 @@ Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypa
 
 **Action:**
 Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
+
+## 2024-05-26 - Unbounded Animation Delays in Infinite Lists
+
+**Learning:**
+Widgets that calculate animation delays based on their list index (e.g., `delay * index`) without clamping cause excessive wait times for items deeper in the list. For a 100-item list, the 100th item waits 5 seconds to appear, creating a "broken" UX where users see empty space.
+
+**Action:**
+Always clamp delay calculations to a small maximum (e.g., first 5-10 items) or use modulo arithmetic to ensure items further down the list appear promptly while maintaining the stagger effect for the initial screen.
+
+## 2024-05-26 - Invisible Shadows in Clipped Containers
+
+**Learning:**
+`ClipRRect` clips the painted output of its child. If the child is a `Container` with `boxShadow`, the shadow is painted outside the box and immediately clipped (making it invisible). However, the engine still calculates the shadow blur (e.g., radius 24), wasting GPU cycles for no visual benefit.
+
+**Action:**
+Explicitly remove `boxShadow` (set to `[]`) when a container is wrapped in `ClipRRect`, unless the shadow is applied to a parent widget outside the clip.
