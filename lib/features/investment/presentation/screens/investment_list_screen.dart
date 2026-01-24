@@ -199,6 +199,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     return [
       // Selection mode toggle
       IconButton(
+        tooltip: 'Toggle selection mode',
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
@@ -226,6 +227,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       ),
       // Sort button
       IconButton(
+        tooltip: 'Sort investments',
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
@@ -248,6 +250,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       ),
       // Type filter button
       IconButton(
+        tooltip: 'Filter investments',
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
@@ -269,6 +272,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         onPressed: () => _showTypeFilterOptions(isDark),
       ),
       IconButton(
+        tooltip: 'Search investments',
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
@@ -576,15 +580,25 @@ class _ActiveTypeFilterChip extends StatelessWidget {
                 ),
               ),
               SizedBox(width: AppSpacing.xs),
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onClear();
-                },
-                child: Icon(
-                  Icons.close_rounded,
-                  color: type.color,
-                  size: 16,
+              Semantics(
+                button: true,
+                label: 'Clear ${type.displayName} filter',
+                onTap: onClear,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onClear();
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: type.color,
+                      size: 16,
+                    ),
+                  ),
                 ),
               ),
             ],
