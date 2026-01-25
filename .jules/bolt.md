@@ -29,3 +29,11 @@ Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypa
 
 **Action:**
 Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
+
+## 2024-05-30 - Scroll Lag from Staggered Animations
+
+**Learning:**
+`StaggeredFadeIn` was using the absolute list index to calculate delay (`index * 50ms`). For lists with >100 items, items appearing during scroll would have massive delays (e.g. 5 seconds), appearing as blank space to the user.
+
+**Action:**
+Capped the staggered delay to the first 15 items. Items with index >= 15 now appear immediately (`delay: 0`), ensuring smooth scrolling while preserving the entrance animation for the initial screen.

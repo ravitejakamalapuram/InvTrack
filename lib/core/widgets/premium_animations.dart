@@ -189,7 +189,13 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    Future.delayed(widget.delay * widget.index, () {
+    // Optimization: Limit staggering to the first 15 items (approx. 1-2 screens).
+    // Items beyond this are likely appearing during scroll and should show immediately
+    // to avoid a "laggy" feel where content takes seconds to appear.
+    // e.g. Index 100 would otherwise wait 5 seconds (100 * 50ms).
+    final effectiveIndex = widget.index < 15 ? widget.index : 0;
+
+    Future.delayed(widget.delay * effectiveIndex, () {
       if (mounted) _controller.forward();
     });
   }
