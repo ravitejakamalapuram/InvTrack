@@ -25,10 +25,16 @@ void main() {
       expect(CsvUtils.sanitizeField('\rDangerous'), "'\rDangerous");
     });
 
-    test('sanitizeField does not prepend quote if dangerous char is not at start', () {
-      expect(CsvUtils.sanitizeField('Safe = Not at start'), 'Safe = Not at start');
-      expect(CsvUtils.sanitizeField('Value+More'), 'Value+More');
-    });
+    test(
+      'sanitizeField does not prepend quote if dangerous char is not at start',
+      () {
+        expect(
+          CsvUtils.sanitizeField('Safe = Not at start'),
+          'Safe = Not at start',
+        );
+        expect(CsvUtils.sanitizeField('Value+More'), 'Value+More');
+      },
+    );
 
     test('sanitizeField handles empty strings', () {
       expect(CsvUtils.sanitizeField(''), '');
