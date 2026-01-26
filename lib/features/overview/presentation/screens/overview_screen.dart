@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -11,6 +12,7 @@ import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
@@ -19,6 +21,8 @@ import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dar
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/quick_stat_card.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 
 class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
@@ -125,6 +129,9 @@ class OverviewScreen extends ConsumerWidget {
   ) {
     return SliverList(
       delegate: SliverChildListDelegate([
+        // Sample Data Mode Banner (shows when active)
+        const SampleDataBanner(),
+
         // Hero Card - Global Summary with toggle
         HeroCardWithToggle(
           globalStats: globalStats,
@@ -208,6 +215,14 @@ class OverviewScreen extends ConsumerWidget {
     NumberFormat currencyFormat,
     bool isDark,
   ) {
+    // Track empty state view for analytics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(analyticsServiceProvider).logEvent(
+        name: 'empty_state_viewed',
+        parameters: {'screen': 'overview'},
+      );
+    });
+
     return SliverList(
       delegate: SliverChildListDelegate([
         // Hero Card - shows zeros
@@ -220,8 +235,71 @@ class OverviewScreen extends ConsumerWidget {
 
         const SizedBox(height: 32),
 
-        // Beautiful empty state
-        const OverviewEmptyState(),
+        // Enhanced empty state with callbacks
+        OverviewEmptyState(
+          onAddManual: () {
+            HapticFeedback.mediumImpact();
+            ref
+                .read(analyticsServiceProvider)
+                .logEmptyStateActionTapped(action: 'add_manual');
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddInvestmentScreen()),
+            );
+          },
+          onImportCsv: () {
+            HapticFeedback.mediumImpact();
+            ref
+                .read(analyticsServiceProvider)
+                .logEmptyStateActionTapped(action: 'import_csv');
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BulkImportScreen()),
+            );
+          },
+          onTemplateSelected: (template) {
+            HapticFeedback.selectionClick();
+            ref.read(analyticsServiceProvider).logEmptyStateActionTapped(
+              action: 'template_${template.id}',
+            );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AddInvestmentScreen(
+                  preselectedTemplate: template,
+                ),
+              ),
+            );
+          },
+          onTrySampleData: () async {
+            HapticFeedback.mediumImpact();
+
+            // Activate sample data mode
+            final success = await ref
+                .read(sampleDataModeProvider.notifier)
+                .activateSampleData();
+
+            if (!context.mounted) return;
+
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🧪 Sample data loaded! Explore the app.'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to load sample data. Please try again.'),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
 
         // Bottom padding for FAB
         const SizedBox(height: 80),

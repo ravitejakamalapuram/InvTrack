@@ -1,5 +1,178 @@
 import 'package:flutter/material.dart';
 
+// ============ NEW ENUMS FOR ENHANCED DATA CAPTURE ============
+
+/// How interest/income is paid out
+enum InterestPayoutMode {
+  cumulative, // Reinvested, paid at maturity
+  periodic, // Paid at regular intervals
+  atMaturity; // Single payout at end
+
+  String get displayName {
+    switch (this) {
+      case InterestPayoutMode.cumulative:
+        return 'Cumulative';
+      case InterestPayoutMode.periodic:
+        return 'Periodic';
+      case InterestPayoutMode.atMaturity:
+        return 'At Maturity';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case InterestPayoutMode.cumulative:
+        return 'Interest reinvested, paid at maturity';
+      case InterestPayoutMode.periodic:
+        return 'Interest paid at regular intervals';
+      case InterestPayoutMode.atMaturity:
+        return 'Full amount paid at maturity';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case InterestPayoutMode.cumulative:
+        return Icons.trending_up_rounded;
+      case InterestPayoutMode.periodic:
+        return Icons.repeat_rounded;
+      case InterestPayoutMode.atMaturity:
+        return Icons.event_available_rounded;
+    }
+  }
+
+  static InterestPayoutMode? fromString(String? value) {
+    if (value == null) return null;
+    return InterestPayoutMode.values.cast<InterestPayoutMode?>().firstWhere(
+          (e) => e?.name == value,
+          orElse: () => null,
+        );
+  }
+}
+
+/// Risk level of the investment
+enum RiskLevel {
+  low,
+  medium,
+  high,
+  veryHigh;
+
+  String get displayName {
+    switch (this) {
+      case RiskLevel.low:
+        return 'Low Risk';
+      case RiskLevel.medium:
+        return 'Medium Risk';
+      case RiskLevel.high:
+        return 'High Risk';
+      case RiskLevel.veryHigh:
+        return 'Very High Risk';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case RiskLevel.low:
+        return 'Capital protection, stable returns (FDs, Govt Bonds)';
+      case RiskLevel.medium:
+        return 'Moderate risk with better returns (Corporate Bonds, P2P)';
+      case RiskLevel.high:
+        return 'Higher risk for higher returns (Stocks, MFs)';
+      case RiskLevel.veryHigh:
+        return 'Speculative, potential for significant loss (Crypto, Angel)';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case RiskLevel.low:
+        return Icons.shield_rounded;
+      case RiskLevel.medium:
+        return Icons.speed_rounded;
+      case RiskLevel.high:
+        return Icons.warning_amber_rounded;
+      case RiskLevel.veryHigh:
+        return Icons.whatshot_rounded;
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case RiskLevel.low:
+        return const Color(0xFF10B981); // Green
+      case RiskLevel.medium:
+        return const Color(0xFFF59E0B); // Amber
+      case RiskLevel.high:
+        return const Color(0xFFF97316); // Orange
+      case RiskLevel.veryHigh:
+        return const Color(0xFFEF4444); // Red
+    }
+  }
+
+  static RiskLevel? fromString(String? value) {
+    if (value == null) return null;
+    return RiskLevel.values.cast<RiskLevel?>().firstWhere(
+          (e) => e?.name == value,
+          orElse: () => null,
+        );
+  }
+}
+
+/// How often interest is compounded
+enum CompoundingFrequency {
+  daily,
+  monthly,
+  quarterly,
+  semiAnnual,
+  annual,
+  none; // Simple interest
+
+  String get displayName {
+    switch (this) {
+      case CompoundingFrequency.daily:
+        return 'Daily';
+      case CompoundingFrequency.monthly:
+        return 'Monthly';
+      case CompoundingFrequency.quarterly:
+        return 'Quarterly';
+      case CompoundingFrequency.semiAnnual:
+        return 'Semi-Annual';
+      case CompoundingFrequency.annual:
+        return 'Annual';
+      case CompoundingFrequency.none:
+        return 'Simple Interest';
+    }
+  }
+
+  /// Number of compounding periods per year
+  int get periodsPerYear {
+    switch (this) {
+      case CompoundingFrequency.daily:
+        return 365;
+      case CompoundingFrequency.monthly:
+        return 12;
+      case CompoundingFrequency.quarterly:
+        return 4;
+      case CompoundingFrequency.semiAnnual:
+        return 2;
+      case CompoundingFrequency.annual:
+        return 1;
+      case CompoundingFrequency.none:
+        return 0; // Simple interest
+    }
+  }
+
+  static CompoundingFrequency? fromString(String? value) {
+    if (value == null) return null;
+    return CompoundingFrequency.values.cast<CompoundingFrequency?>().firstWhere(
+          (e) => e?.name == value,
+          orElse: () => null,
+        );
+  }
+}
+
+// ============ EXISTING ENUMS ============
+
 /// Income frequency for investments that pay regular income
 enum IncomeFrequency {
   monthly,
@@ -237,6 +410,35 @@ class InvestmentEntity {
   /// Whether this investment is archived (hidden from active view)
   final bool isArchived;
 
+  // ============ NEW ENHANCED DATA CAPTURE FIELDS ============
+
+  /// Start date of the investment (when principal was invested)
+  final DateTime? startDate;
+
+  /// Expected/advertised rate of return (annual %)
+  /// e.g., FD at 7.5%, P2P platform promising 12%
+  final double? expectedRate;
+
+  /// Investment tenure in months
+  /// e.g., 12 months FD, 36 months bond
+  final int? tenureMonths;
+
+  /// Platform/institution name
+  /// e.g., "SBI", "LenDenClub", "Grip Invest"
+  final String? platform;
+
+  /// How interest/income is paid out
+  final InterestPayoutMode? interestPayoutMode;
+
+  /// Whether auto-renewal is enabled (for FDs, bonds)
+  final bool? autoRenewal;
+
+  /// Risk level of the investment
+  final RiskLevel? riskLevel;
+
+  /// How often interest is compounded
+  final CompoundingFrequency? compoundingFrequency;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -249,6 +451,15 @@ class InvestmentEntity {
     this.maturityDate,
     this.incomeFrequency,
     this.isArchived = false,
+    // New fields - all optional for backward compatibility
+    this.startDate,
+    this.expectedRate,
+    this.tenureMonths,
+    this.platform,
+    this.interestPayoutMode,
+    this.autoRenewal,
+    this.riskLevel,
+    this.compoundingFrequency,
   });
 
   bool get isOpen => status == InvestmentStatus.open;
@@ -259,6 +470,40 @@ class InvestmentEntity {
 
   /// Whether this investment pays regular income
   bool get hasIncomeSchedule => incomeFrequency != null;
+
+  /// Whether this investment has start date set
+  bool get hasStartDate => startDate != null;
+
+  /// Whether this investment has expected rate set
+  bool get hasExpectedRate => expectedRate != null && expectedRate! > 0;
+
+  /// Whether this investment has tenure defined
+  bool get hasTenure => tenureMonths != null && tenureMonths! > 0;
+
+  /// Whether this investment has platform info
+  bool get hasPlatform => platform != null && platform!.isNotEmpty;
+
+  /// Calculate maturity date from startDate + tenureMonths if not set directly
+  DateTime? get calculatedMaturityDate {
+    if (maturityDate != null) return maturityDate;
+    if (startDate != null && tenureMonths != null) {
+      return DateTime(
+        startDate!.year,
+        startDate!.month + tenureMonths!,
+        startDate!.day,
+      );
+    }
+    return null;
+  }
+
+  /// Get remaining tenure in days (null if no maturity info)
+  int? get remainingDays {
+    final maturity = calculatedMaturityDate;
+    if (maturity == null) return null;
+    final now = DateTime.now();
+    if (maturity.isBefore(now)) return 0;
+    return maturity.difference(now).inDays;
+  }
 
   InvestmentEntity copyWith({
     String? id,
@@ -272,6 +517,15 @@ class InvestmentEntity {
     DateTime? maturityDate,
     IncomeFrequency? incomeFrequency,
     bool? isArchived,
+    // New fields
+    DateTime? startDate,
+    double? expectedRate,
+    int? tenureMonths,
+    String? platform,
+    InterestPayoutMode? interestPayoutMode,
+    bool? autoRenewal,
+    RiskLevel? riskLevel,
+    CompoundingFrequency? compoundingFrequency,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -285,6 +539,15 @@ class InvestmentEntity {
       maturityDate: maturityDate ?? this.maturityDate,
       incomeFrequency: incomeFrequency ?? this.incomeFrequency,
       isArchived: isArchived ?? this.isArchived,
+      // New fields
+      startDate: startDate ?? this.startDate,
+      expectedRate: expectedRate ?? this.expectedRate,
+      tenureMonths: tenureMonths ?? this.tenureMonths,
+      platform: platform ?? this.platform,
+      interestPayoutMode: interestPayoutMode ?? this.interestPayoutMode,
+      autoRenewal: autoRenewal ?? this.autoRenewal,
+      riskLevel: riskLevel ?? this.riskLevel,
+      compoundingFrequency: compoundingFrequency ?? this.compoundingFrequency,
     );
   }
 
@@ -302,21 +565,41 @@ class InvestmentEntity {
         other.updatedAt == updatedAt &&
         other.maturityDate == maturityDate &&
         other.incomeFrequency == incomeFrequency &&
-        other.isArchived == isArchived;
+        other.isArchived == isArchived &&
+        // New fields
+        other.startDate == startDate &&
+        other.expectedRate == expectedRate &&
+        other.tenureMonths == tenureMonths &&
+        other.platform == platform &&
+        other.interestPayoutMode == interestPayoutMode &&
+        other.autoRenewal == autoRenewal &&
+        other.riskLevel == riskLevel &&
+        other.compoundingFrequency == compoundingFrequency;
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        name.hashCode ^
-        type.hashCode ^
-        status.hashCode ^
-        notes.hashCode ^
-        createdAt.hashCode ^
-        closedAt.hashCode ^
-        updatedAt.hashCode ^
-        maturityDate.hashCode ^
-        incomeFrequency.hashCode ^
-        isArchived.hashCode;
+    return Object.hash(
+      id,
+      name,
+      type,
+      status,
+      notes,
+      createdAt,
+      closedAt,
+      updatedAt,
+      maturityDate,
+      incomeFrequency,
+      isArchived,
+      // New fields
+      startDate,
+      expectedRate,
+      tenureMonths,
+      platform,
+      interestPayoutMode,
+      autoRenewal,
+      riskLevel,
+      compoundingFrequency,
+    );
   }
 }

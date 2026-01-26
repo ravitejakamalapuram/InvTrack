@@ -55,6 +55,24 @@ class AnalyticsEvents {
 
   // Error tracking
   static const String errorOccurred = 'error_occurred';
+
+  // Template & Quick-Add events
+  static const String templateSelected = 'template_selected';
+
+  // Sample Data Mode events
+  static const String sampleDataActivated = 'sample_data_activated';
+  static const String sampleDataKept = 'sample_data_kept';
+  static const String sampleDataCleared = 'sample_data_cleared';
+
+  // Empty State Interaction events
+  static const String emptyStateActionTapped = 'empty_state_action_tapped';
+
+  // Projection & Smart Defaults events
+  static const String projectionViewed = 'projection_viewed';
+  static const String smartDefaultApplied = 'smart_default_applied';
+
+  // Enhanced Fields usage
+  static const String enhancedFieldsUsed = 'enhanced_fields_used';
 }
 
 /// Analytics service that wraps Firebase Analytics
@@ -323,5 +341,131 @@ class AnalyticsService {
       name: AnalyticsEvents.themeChanged,
       parameters: {'theme': theme},
     );
+  }
+
+  // ============ Template & Quick-Add Events ============
+
+  /// Log template selected from template selector
+  Future<void> logTemplateSelected({
+    required String templateId,
+    required String templateName,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.templateSelected,
+      parameters: {
+        'template_id': templateId,
+        'template_name': templateName,
+      },
+    );
+  }
+
+  // ============ Sample Data Mode Events ============
+
+  /// Log sample data mode activated
+  Future<void> logSampleDataActivated({
+    required int investmentCount,
+    required int goalCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.sampleDataActivated,
+      parameters: {
+        'investments': investmentCount,
+        'goals': goalCount,
+      },
+    );
+  }
+
+  /// Log sample data kept (user decides to keep sample data as real)
+  Future<void> logSampleDataKept({
+    required int investmentCount,
+    required int goalCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.sampleDataKept,
+      parameters: {
+        'investments': investmentCount,
+        'goals': goalCount,
+      },
+    );
+  }
+
+  /// Log sample data cleared
+  Future<void> logSampleDataCleared({
+    required int investmentCount,
+    required int goalCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.sampleDataCleared,
+      parameters: {
+        'investments': investmentCount,
+        'goals': goalCount,
+      },
+    );
+  }
+
+  // ============ Empty State Events ============
+
+  /// Log empty state action tapped
+  Future<void> logEmptyStateActionTapped({required String action}) async {
+    await logEvent(
+      name: AnalyticsEvents.emptyStateActionTapped,
+      parameters: {'action': action},
+    );
+  }
+
+  // ============ Projection & Smart Defaults Events ============
+
+  /// Log projection card viewed
+  Future<void> logProjectionViewed({
+    required String investmentType,
+    required double expectedRate,
+    required int tenureMonths,
+    String? compounding,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.projectionViewed,
+      parameters: {
+        'investment_type': investmentType,
+        'expected_rate_range': _getRateRange(expectedRate),
+        'tenure_months': tenureMonths,
+        if (compounding != null) 'compounding': compounding,
+      },
+    );
+  }
+
+  /// Log smart default applied (e.g., auto-calculated maturity date)
+  Future<void> logSmartDefaultApplied({required String fieldName}) async {
+    await logEvent(
+      name: AnalyticsEvents.smartDefaultApplied,
+      parameters: {'field': fieldName},
+    );
+  }
+
+  // ============ Enhanced Fields Events ============
+
+  /// Log enhanced fields used when creating investment
+  Future<void> logEnhancedFieldsUsed({
+    required String investmentType,
+    required List<String> fieldsUsed,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.enhancedFieldsUsed,
+      parameters: {
+        'investment_type': investmentType,
+        'fields_count': fieldsUsed.length,
+        'fields': fieldsUsed.take(10).join(','), // Limit to 10 for param size
+      },
+    );
+  }
+
+  // ============ Helper Methods ============
+
+  /// Get rate range bucket for analytics (avoid logging exact rates)
+  String _getRateRange(double rate) {
+    if (rate < 5) return 'under_5';
+    if (rate < 8) return '5_to_8';
+    if (rate < 12) return '8_to_12';
+    if (rate < 15) return '12_to_15';
+    return 'over_15';
   }
 }

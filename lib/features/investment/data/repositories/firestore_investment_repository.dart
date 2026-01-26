@@ -521,6 +521,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
           : null,
       'incomeFrequency': investment.incomeFrequency?.name,
       'isArchived': investment.isArchived,
+      // New enhanced data capture fields
+      'startDate': investment.startDate != null
+          ? Timestamp.fromDate(investment.startDate!)
+          : null,
+      'expectedRate': investment.expectedRate,
+      'tenureMonths': investment.tenureMonths,
+      'platform': investment.platform,
+      'interestPayoutMode': investment.interestPayoutMode?.name,
+      'autoRenewal': investment.autoRenewal,
+      'riskLevel': investment.riskLevel?.name,
+      'compoundingFrequency': investment.compoundingFrequency?.name,
     };
   }
 
@@ -548,6 +559,21 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
         data['incomeFrequency'] as String?,
       ),
       isArchived: data['isArchived'] as bool? ?? false,
+      // New enhanced data capture fields
+      startDate: data['startDate'] != null
+          ? (data['startDate'] as Timestamp).toDate()
+          : null,
+      expectedRate: (data['expectedRate'] as num?)?.toDouble(),
+      tenureMonths: data['tenureMonths'] as int?,
+      platform: data['platform'] as String?,
+      interestPayoutMode: InterestPayoutMode.fromString(
+        data['interestPayoutMode'] as String?,
+      ),
+      autoRenewal: data['autoRenewal'] as bool?,
+      riskLevel: RiskLevel.fromString(data['riskLevel'] as String?),
+      compoundingFrequency: CompoundingFrequency.fromString(
+        data['compoundingFrequency'] as String?,
+      ),
     );
   }
 

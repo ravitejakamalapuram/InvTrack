@@ -99,12 +99,71 @@ class _NotificationSyncInitializerState
     ) {
       // Only process when data is available
       final investments = next.value;
-      if (investments != null && investments.isNotEmpty) {
-        _scheduleNotificationsDebounced(investments);
+      if (investments != null) {
+        if (investments.isNotEmpty) {
+          _scheduleNotificationsDebounced(investments);
+          // User has investments, cancel activation nudges
+          _cancelActivationSequenceIfNeeded();
+        } else {
+          // User has no investments, schedule activation nudges for new users
+          _scheduleActivationSequenceIfNeeded();
+        }
       }
     });
 
     // Render child immediately without waiting for notifications
     return widget.child;
+  }
+
+  /// Schedule activation sequence for new users with no investments
+  void _scheduleActivationSequenceIfNeeded() {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+
+      // Only schedule if this is a new user (no signup date set yet)
+      if (notificationService.userSignupDate == null) {
+        Future(() async {
+          try {
+            // Set signup date to now
+            await notificationService.setUserSignupDate(DateTime.now());
+            // Schedule the activation notification sequence
+            await notificationService.scheduleActivationSequence();
+            if (kDebugMode) {
+              debugPrint('🔔 New user detected - activation sequence scheduled');
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('🔔 Error scheduling activation sequence: $e');
+            }
+          }
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('🔔 NotificationService not available for activation: $e');
+      }
+    }
+  }
+
+  /// Cancel activation sequence when user adds investments
+  void _cancelActivationSequenceIfNeeded() {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+
+      // Cancel any pending activation notifications
+      Future(() async {
+        try {
+          await notificationService.cancelActivationSequence();
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('🔔 Error cancelling activation sequence: $e');
+          }
+        }
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('🔔 NotificationService not available for cancellation: $e');
+      }
+    }
   }
 }

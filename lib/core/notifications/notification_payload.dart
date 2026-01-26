@@ -161,6 +161,17 @@ class NotificationPayload {
       case 'test_scheduled_notification':
         return const NotificationPayload(type: NotificationPayloadType.unknown);
 
+      // New user activation sequence - all navigate to overview/add investment
+      case 'activation_day_0':
+      case 'activation_day_1':
+      case 'activation_day_3':
+      case 'activation_day_7':
+      case 'activation_day_14':
+        return NotificationPayload(
+          type: NotificationPayloadType.overview,
+          params: {'source': 'activation', 'day': type.split('_').last},
+        );
+
       default:
         // Try to extract investment ID from unknown formats
         if (parts.length > 1 && parts[1].isNotEmpty) {
@@ -215,6 +226,23 @@ class NotificationPayload {
 
   /// Create a payload string for goal stale alert
   static String goalStale(String goalId) => 'goal_stale:$goalId';
+
+  // ============ New User Activation Payloads ============
+
+  /// Create a payload string for Day 0 activation (welcome)
+  static String get activationDay0 => 'activation_day_0';
+
+  /// Create a payload string for Day 1 activation (first investment nudge)
+  static String get activationDay1 => 'activation_day_1';
+
+  /// Create a payload string for Day 3 activation (import reminder)
+  static String get activationDay3 => 'activation_day_3';
+
+  /// Create a payload string for Day 7 activation (tips & benefits)
+  static String get activationDay7 => 'activation_day_7';
+
+  /// Create a payload string for Day 14 activation (social proof)
+  static String get activationDay14 => 'activation_day_14';
 
   @override
   String toString() =>
