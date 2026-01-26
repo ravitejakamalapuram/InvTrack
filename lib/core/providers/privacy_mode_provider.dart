@@ -44,4 +44,3 @@ final privacyModeProvider = NotifierProvider<PrivacyModeNotifier, bool>(
 final isPrivacyModeActiveProvider = Provider<bool>((ref) {
   return ref.watch(privacyModeProvider);
 });
-

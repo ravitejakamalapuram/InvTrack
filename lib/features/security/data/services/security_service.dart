@@ -147,7 +147,9 @@ class SecurityService {
 
       if (failedAttempts >= _maxAttempts) {
         await _prefs.setInt(
-            _lockoutTimestampKey, DateTime.now().millisecondsSinceEpoch);
+          _lockoutTimestampKey,
+          DateTime.now().millisecondsSinceEpoch,
+        );
       }
       return false;
     }
@@ -192,7 +194,8 @@ class SecurityService {
       final result = await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock InvTracker',
         biometricOnly: true,
-        persistAcrossBackgrounding: true, // Keep auth valid across app lifecycle changes
+        persistAcrossBackgrounding:
+            true, // Keep auth valid across app lifecycle changes
         sensitiveTransaction: false, // Don't require re-auth for app resume
       );
 

@@ -30,7 +30,9 @@ void main() {
       });
 
       test('returns months ago for dates within a year', () {
-        final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
+        final threeMonthsAgo = DateTime.now().subtract(
+          const Duration(days: 90),
+        );
         expect(AppDateUtils.formatRelative(threeMonthsAgo), '3 months ago');
       });
 
@@ -69,9 +71,18 @@ void main() {
       });
 
       test('formats all months correctly', () {
-        expect(AppDateUtils.formatLong(DateTime(2024, 1, 1)), contains('January'));
-        expect(AppDateUtils.formatLong(DateTime(2024, 6, 15)), contains('June'));
-        expect(AppDateUtils.formatLong(DateTime(2024, 12, 31)), contains('December'));
+        expect(
+          AppDateUtils.formatLong(DateTime(2024, 1, 1)),
+          contains('January'),
+        );
+        expect(
+          AppDateUtils.formatLong(DateTime(2024, 6, 15)),
+          contains('June'),
+        );
+        expect(
+          AppDateUtils.formatLong(DateTime(2024, 12, 31)),
+          contains('December'),
+        );
       });
     });
 
@@ -118,4 +129,3 @@ void main() {
     });
   });
 }
-

@@ -57,4 +57,3 @@ class FakeFireSettingsRepository implements FireSettingsRepository {
     _controller.close();
   }
 }
-

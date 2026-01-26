@@ -51,4 +51,3 @@ extension SafeNavigationExtension on BuildContext {
     }
   }
 }
-

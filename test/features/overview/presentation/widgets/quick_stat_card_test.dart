@@ -20,17 +20,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(home: Scaffold(body: child)),
       ),
     );
   }
 
   group('QuickStatCard', () {
-    testWidgets('should display value when privacy mode is off',
-        (tester) async {
+    testWidgets('should display value when privacy mode is off', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const QuickStatCard(
@@ -46,8 +45,9 @@ void main() {
       expect(find.text('2.5x'), findsOneWidget);
     });
 
-    testWidgets('should mask sensitive value when privacy mode is on',
-        (tester) async {
+    testWidgets('should mask sensitive value when privacy mode is on', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const QuickStatCard(
@@ -68,8 +68,9 @@ void main() {
       expect(find.textContaining('•'), findsOneWidget);
     });
 
-    testWidgets('should NOT mask value when isSensitive is false',
-        (tester) async {
+    testWidgets('should NOT mask value when isSensitive is false', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const QuickStatCard(
@@ -88,8 +89,9 @@ void main() {
       expect(find.text('42'), findsOneWidget);
     });
 
-    testWidgets('should hide subtitle when privacy mode is on and sensitive',
-        (tester) async {
+    testWidgets('should hide subtitle when privacy mode is on and sensitive', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const QuickStatCard(
@@ -114,8 +116,9 @@ void main() {
       expect(animatedOpacity.opacity, 0.0);
     });
 
-    testWidgets('should show subtitle when privacy mode is off',
-        (tester) async {
+    testWidgets('should show subtitle when privacy mode is off', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const QuickStatCard(
@@ -139,4 +142,3 @@ void main() {
     });
   });
 }
-

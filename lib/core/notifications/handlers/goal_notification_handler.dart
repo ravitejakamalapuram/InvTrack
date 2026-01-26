@@ -27,8 +27,8 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     required this.ensureInitialized,
     required this.ensurePermissionsForShow,
     required this.formatCurrency,
-  })  : _plugin = plugin,
-        _prefs = prefs;
+  }) : _plugin = plugin,
+       _prefs = prefs;
 
   @override
   SharedPreferences get prefs => _prefs;
@@ -248,4 +248,3 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     }
   }
 }
-

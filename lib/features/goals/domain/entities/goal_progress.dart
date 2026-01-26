@@ -172,11 +172,7 @@ class GoalProgress {
   /// without the currency symbol prefix (symbol is added separately in getProgressMessage)
   String _formatAmount(double amount) {
     // Use centralized formatter but strip the symbol since we add it separately
-    final formatted = formatCompactIndian(
-      amount,
-      symbol: '',
-      maxDecimals: 2,
-    );
+    final formatted = formatCompactIndian(amount, symbol: '', maxDecimals: 2);
     return formatted;
   }
 

@@ -5,7 +5,8 @@ void main() {
   group('GoalsCsvParser', () {
     group('parseString - Basic Parsing', () {
       test('parses valid CSV with all required columns', () {
-        const csv = '''Name,Type,Target Amount,Target Monthly Income,Target Date,Tracking Mode,Linked Investment IDs,Linked Types,Icon,Color
+        const csv =
+            '''Name,Type,Target Amount,Target Monthly Income,Target Date,Tracking Mode,Linked Investment IDs,Linked Types,Icon,Color
 Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765
 Emergency Fund,targetAmount,50000,,,all,,,💰,4294951175''';
 
@@ -129,7 +130,11 @@ Multi-Link Goal,targetAmount,50000,inv-1;inv-2;inv-3''';
         final result = GoalsCsvParser.parseString(csv);
 
         expect(result.validRows, 1);
-        expect(result.rows.first.linkedInvestmentNames, ['inv-1', 'inv-2', 'inv-3']);
+        expect(result.rows.first.linkedInvestmentNames, [
+          'inv-1',
+          'inv-2',
+          'inv-3',
+        ]);
       });
 
       test('parses linked types with semicolon separator', () {
@@ -143,7 +148,8 @@ Type Goal,targetAmount,50000,stock;bond;mutualFund''';
       });
 
       test('handles empty linked fields', () {
-        const csv = '''Name,Type,Target Amount,Linked Investment IDs,Linked Types
+        const csv =
+            '''Name,Type,Target Amount,Linked Investment IDs,Linked Types
 No Links,targetAmount,50000,,''';
 
         final result = GoalsCsvParser.parseString(csv);
@@ -155,4 +161,3 @@ No Links,targetAmount,50000,,''';
     });
   });
 }
-

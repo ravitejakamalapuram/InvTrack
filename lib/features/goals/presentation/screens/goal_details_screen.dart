@@ -422,8 +422,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                       currencySymbol: currencySymbol,
                       style: valueStyle,
                     ),
-              if (suffix != null)
-                Text(suffix, style: valueStyle),
+              if (suffix != null) Text(suffix, style: valueStyle),
             ],
           ),
         ],

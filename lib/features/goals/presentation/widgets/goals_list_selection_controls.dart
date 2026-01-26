@@ -37,4 +37,3 @@ class GoalsListSelectionControls extends ConsumerWidget {
     );
   }
 }
-

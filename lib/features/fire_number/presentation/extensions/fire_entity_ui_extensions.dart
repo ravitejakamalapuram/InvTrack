@@ -118,4 +118,3 @@ extension FireProgressStatusUI on FireProgressStatus {
     }
   }
 }
-

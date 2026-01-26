@@ -158,7 +158,9 @@ class SecurityNotifier extends Notifier<SecurityState>
       final autoLockSeconds = _service.autoLockDurationSeconds;
 
       if (duration.inSeconds >= autoLockSeconds) {
-        debugPrint('🔐 Auto-locking app after ${duration.inSeconds}s (threshold: ${autoLockSeconds}s)');
+        debugPrint(
+          '🔐 Auto-locking app after ${duration.inSeconds}s (threshold: ${autoLockSeconds}s)',
+        );
         lockApp();
       }
     }

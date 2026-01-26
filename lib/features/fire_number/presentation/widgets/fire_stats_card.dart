@@ -26,7 +26,9 @@ class FireStatsCard extends ConsumerWidget {
     // Theme-aware colors for FIRE type icons
     final fireColor = isDark ? AppColors.accentDark : AppColors.accentLight;
     final coastColor = isDark ? AppColors.successDark : AppColors.successLight;
-    final baristaColor = isDark ? AppColors.warningDark : AppColors.warningLight;
+    final baristaColor = isDark
+        ? AppColors.warningDark
+        : AppColors.warningLight;
 
     return GlassCard(
       child: Column(
@@ -37,15 +39,21 @@ class FireStatsCard extends ConsumerWidget {
             icon: Icons.local_fire_department,
             iconColor: fireColor,
             label: 'FIRE Number',
-            value: formatCompactIndian(calculation.fireNumber, symbol: currencySymbol),
+            value: formatCompactIndian(
+              calculation.fireNumber,
+              symbol: currencySymbol,
+            ),
             subtitle: 'Full financial independence target',
-            tooltip: 'The total amount needed to retire and live off investment returns. '
+            tooltip:
+                'The total amount needed to retire and live off investment returns. '
                 'Based on ${(100 / calculation.fireNumber * calculation.coreRetirementCorpus * 25).toStringAsFixed(0)}x '
                 'your inflation-adjusted annual expenses.',
           ),
           Divider(
             height: AppSpacing.lg,
-            color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+            color: isDark
+                ? AppColors.neutral700Dark
+                : AppColors.neutral200Light,
           ),
           _buildStatRow(
             context,
@@ -53,14 +61,20 @@ class FireStatsCard extends ConsumerWidget {
             icon: Icons.beach_access_outlined,
             iconColor: coastColor,
             label: 'Coast FIRE',
-            value: formatCompactIndian(calculation.coastFireNumber, symbol: currencySymbol),
+            value: formatCompactIndian(
+              calculation.coastFireNumber,
+              symbol: currencySymbol,
+            ),
             subtitle: 'Save this, then stop saving',
-            tooltip: 'If you have this amount today, you can stop saving entirely. '
+            tooltip:
+                'If you have this amount today, you can stop saving entirely. '
                 'Your investments will grow to your FIRE Number by retirement age through compound growth.',
           ),
           Divider(
             height: AppSpacing.lg,
-            color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+            color: isDark
+                ? AppColors.neutral700Dark
+                : AppColors.neutral200Light,
           ),
           _buildStatRow(
             context,
@@ -68,9 +82,13 @@ class FireStatsCard extends ConsumerWidget {
             icon: Icons.coffee_outlined,
             iconColor: baristaColor,
             label: 'Barista FIRE',
-            value: formatCompactIndian(calculation.baristaFireNumber, symbol: currencySymbol),
+            value: formatCompactIndian(
+              calculation.baristaFireNumber,
+              symbol: currencySymbol,
+            ),
             subtitle: 'Part-time income covers the rest',
-            tooltip: '50% of your FIRE Number. With this amount, you could retire from full-time work '
+            tooltip:
+                '50% of your FIRE Number. With this amount, you could retire from full-time work '
                 'and cover the gap with part-time or freelance work.',
           ),
         ],
@@ -108,7 +126,9 @@ class FireStatsCard extends ConsumerWidget {
                   Text(
                     label,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -117,7 +137,9 @@ class FireStatsCard extends ConsumerWidget {
                     Icon(
                       Icons.info_outline,
                       size: 14,
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
                     ),
                   ],
                 ],
@@ -125,7 +147,9 @@ class FireStatsCard extends ConsumerWidget {
               Text(
                 subtitle,
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],
@@ -134,7 +158,9 @@ class FireStatsCard extends ConsumerWidget {
         MaskedAmountText(
           text: value,
           style: AppTypography.h3.copyWith(
-            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            color: isDark
+                ? AppColors.textPrimaryDark
+                : AppColors.textPrimaryLight,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -153,4 +179,3 @@ class FireStatsCard extends ConsumerWidget {
     return row;
   }
 }
-

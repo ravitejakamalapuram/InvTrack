@@ -145,8 +145,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Fetch investment first for analytics
-      final investment =
-          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).closeInvestment(id);
       // Cancel income reminder for closed investment
       await _cancelIncomeReminder(id);
@@ -204,8 +205,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Fetch investment first for analytics
-      final investment =
-          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).archiveInvestment(id);
       // Cancel notifications for archived investment
       await _cancelIncomeReminder(id);
@@ -262,8 +264,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Fetch investment first for analytics
-      final investment =
-          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       // Cancel all reminders before deleting
       await _cancelIncomeReminder(id);
       await _cancelMaturityReminders(id);

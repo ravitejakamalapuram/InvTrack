@@ -73,7 +73,8 @@ class SelectionListActionBar extends StatelessWidget {
                 ),
             // Action buttons
             ...actions.map((action) {
-              final isEnabled = action.onPressed != null &&
+              final isEnabled =
+                  action.onPressed != null &&
                   (action.minSelection == null ||
                       selectedCount >= action.minSelection!);
               return Padding(
@@ -94,4 +95,3 @@ class SelectionListActionBar extends StatelessWidget {
     );
   }
 }
-

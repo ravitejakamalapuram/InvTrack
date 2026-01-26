@@ -1158,22 +1158,24 @@ void main() {
   });
 
   group('NotificationService - Goal At-Risk Alerts', () {
-    test('should show at-risk notification when goal is behind schedule',
-        () async {
-      await service.showGoalAtRiskNotification(
-        goalId: 'goal-at-risk',
-        goalName: 'Retirement Fund',
-        progressPercent: 40,
-        targetDate: DateTime.now().add(const Duration(days: 30)),
-        projectedDate: DateTime.now().add(const Duration(days: 90)),
-      );
+    test(
+      'should show at-risk notification when goal is behind schedule',
+      () async {
+        await service.showGoalAtRiskNotification(
+          goalId: 'goal-at-risk',
+          goalName: 'Retirement Fund',
+          progressPercent: 40,
+          targetDate: DateTime.now().add(const Duration(days: 30)),
+          projectedDate: DateTime.now().add(const Duration(days: 90)),
+        );
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('At Risk'));
-      expect(notification.body, contains('Retirement Fund'));
-      expect(notification.body, contains('40%'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.title, contains('At Risk'));
+        expect(notification.body, contains('Retirement Fund'));
+        expect(notification.body, contains('40%'));
+      },
+    );
 
     test('should not show at-risk notification when disabled', () async {
       await service.setGoalAtRiskEnabled(false);
@@ -1239,20 +1241,22 @@ void main() {
   });
 
   group('NotificationService - Goal Stale Reminders', () {
-    test('should show stale notification when no activity for 60+ days',
-        () async {
-      await service.showGoalStaleNotification(
-        goalId: 'goal-stale',
-        goalName: 'Neglected Fund',
-        lastActivityDate: DateTime.now().subtract(const Duration(days: 90)),
-      );
+    test(
+      'should show stale notification when no activity for 60+ days',
+      () async {
+        await service.showGoalStaleNotification(
+          goalId: 'goal-stale',
+          goalName: 'Neglected Fund',
+          lastActivityDate: DateTime.now().subtract(const Duration(days: 90)),
+        );
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.title, contains('Needs Attention'));
-      expect(notification.body, contains('Neglected Fund'));
-      expect(notification.body, contains('90 days'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.title, contains('Needs Attention'));
+        expect(notification.body, contains('Neglected Fund'));
+        expect(notification.body, contains('90 days'));
+      },
+    );
 
     test('should not show stale notification when disabled', () async {
       await service.setGoalStaleEnabled(false);
@@ -1266,29 +1270,33 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 0);
     });
 
-    test('should not show stale notification when activity is recent',
-        () async {
-      await service.showGoalStaleNotification(
-        goalId: 'goal-recent',
-        goalName: 'Active Goal',
-        lastActivityDate: DateTime.now().subtract(const Duration(days: 30)),
-      );
+    test(
+      'should not show stale notification when activity is recent',
+      () async {
+        await service.showGoalStaleNotification(
+          goalId: 'goal-recent',
+          goalName: 'Active Goal',
+          lastActivityDate: DateTime.now().subtract(const Duration(days: 30)),
+        );
 
-      expect(fakePlugin.shownNotifications.length, 0);
-    });
+        expect(fakePlugin.shownNotifications.length, 0);
+      },
+    );
 
-    test('should show stale notification when lastActivityDate is null',
-        () async {
-      await service.showGoalStaleNotification(
-        goalId: 'goal-null-date',
-        goalName: 'New Goal',
-        lastActivityDate: null,
-      );
+    test(
+      'should show stale notification when lastActivityDate is null',
+      () async {
+        await service.showGoalStaleNotification(
+          goalId: 'goal-null-date',
+          goalName: 'New Goal',
+          lastActivityDate: null,
+        );
 
-      expect(fakePlugin.shownNotifications.length, 1);
-      final notification = fakePlugin.shownNotifications.first;
-      expect(notification.body, contains('60 days'));
-    });
+        expect(fakePlugin.shownNotifications.length, 1);
+        final notification = fakePlugin.shownNotifications.first;
+        expect(notification.body, contains('60 days'));
+      },
+    );
 
     test('should rate-limit stale notifications to once per month', () async {
       // First notification should show

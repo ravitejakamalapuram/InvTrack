@@ -65,9 +65,7 @@ final investmentBasicStatsProvider =
             return AsyncValue.data(InvestmentStats.empty());
           }
           // Optimization: Skip XIRR calculation
-          return AsyncValue.data(
-            calculateStats(cashFlows, includeXirr: false),
-          );
+          return AsyncValue.data(calculateStats(cashFlows, includeXirr: false));
         },
         loading: () => const AsyncValue.loading(),
         error: (e, st) => AsyncValue.error(e, st),
@@ -87,9 +85,7 @@ final archivedInvestmentBasicStatsProvider =
             return AsyncValue.data(InvestmentStats.empty());
           }
           // Optimization: Skip XIRR calculation
-          return AsyncValue.data(
-            calculateStats(cashFlows, includeXirr: false),
-          );
+          return AsyncValue.data(calculateStats(cashFlows, includeXirr: false));
         },
         loading: () => const AsyncValue.loading(),
         error: (e, st) => AsyncValue.error(e, st),
@@ -125,9 +121,9 @@ final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
   investmentId,
 ) async {
   final cashFlows = await ref.watch(
-    archivedCashFlowsByInvestmentProvider(investmentId).selectAsync(
-      (data) => data,
-    ),
+    archivedCashFlowsByInvestmentProvider(
+      investmentId,
+    ).selectAsync((data) => data),
   );
 
   if (cashFlows.isEmpty) {
@@ -265,10 +261,9 @@ InvestmentStats calculateStats(
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
 
   // Skip XIRR calculation if not requested (performance optimization)
-  final xirr =
-      includeXirr
-          ? FinancialCalculator.calculateXirrFromCashFlows(cashFlows)
-          : 0.0;
+  final xirr = includeXirr
+      ? FinancialCalculator.calculateXirrFromCashFlows(cashFlows)
+      : 0.0;
 
   return InvestmentStats(
     totalInvested: totalInvested,

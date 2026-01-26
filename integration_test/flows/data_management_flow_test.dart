@@ -90,25 +90,28 @@ void main() {
       final settings = SettingsRobot(tester);
 
       // Seed some test data
-      testApp.seedInvestments([
-        InvestmentEntity(
-          id: 'inv-1',
-          name: 'Test Investment',
-          type: InvestmentType.stocks,
-          status: InvestmentStatus.open,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      ], [
-        CashFlowEntity(
-          id: 'cf-1',
-          investmentId: 'inv-1',
-          type: CashFlowType.invest,
-          amount: 10000,
-          date: DateTime.now(),
-          createdAt: DateTime.now(),
-        ),
-      ]);
+      testApp.seedInvestments(
+        [
+          InvestmentEntity(
+            id: 'inv-1',
+            name: 'Test Investment',
+            type: InvestmentType.stocks,
+            status: InvestmentStatus.open,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ],
+        [
+          CashFlowEntity(
+            id: 'cf-1',
+            investmentId: 'inv-1',
+            type: CashFlowType.invest,
+            amount: 10000,
+            date: DateTime.now(),
+            createdAt: DateTime.now(),
+          ),
+        ],
+      );
 
       testApp.seedGoals([
         GoalEntity(
@@ -148,4 +151,3 @@ void main() {
     });
   });
 }
-

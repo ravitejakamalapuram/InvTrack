@@ -39,9 +39,7 @@ void main() {
 
   Widget buildTestWidget(DocumentEntity document) {
     return ProviderScope(
-      child: MaterialApp(
-        home: DocumentViewerScreen(document: document),
-      ),
+      child: MaterialApp(home: DocumentViewerScreen(document: document)),
     );
   }
 
@@ -94,15 +92,14 @@ void main() {
         expect(find.text('Test PDF Document'), findsWidgets);
       });
 
-      testWidgets(
-        'should display "Open in PDF Viewer" button for PDF',
-        (tester) async {
-          await tester.pumpWidget(buildTestWidget(testPdfDocument));
+      testWidgets('should display "Open in PDF Viewer" button for PDF', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(testPdfDocument));
 
-          expect(find.text('Open in PDF Viewer'), findsOneWidget);
-          expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
-        },
-      );
+        expect(find.text('Open in PDF Viewer'), findsOneWidget);
+        expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      });
 
       testWidgets('should display share button for PDF', (tester) async {
         await tester.pumpWidget(buildTestWidget(testPdfDocument));
@@ -119,23 +116,21 @@ void main() {
     });
 
     group('Image Document View', () {
-      testWidgets(
-        'should display InteractiveViewer for image documents',
-        (tester) async {
-          await tester.pumpWidget(buildTestWidget(testImageDocument));
+      testWidgets('should display InteractiveViewer for image documents', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(testImageDocument));
 
-          expect(find.byType(InteractiveViewer), findsOneWidget);
-        },
-      );
+        expect(find.byType(InteractiveViewer), findsOneWidget);
+      });
 
-      testWidgets(
-        'should not show PDF viewer button for image documents',
-        (tester) async {
-          await tester.pumpWidget(buildTestWidget(testImageDocument));
+      testWidgets('should not show PDF viewer button for image documents', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget(testImageDocument));
 
-          expect(find.text('Open in PDF Viewer'), findsNothing);
-        },
-      );
+        expect(find.text('Open in PDF Viewer'), findsNothing);
+      });
     });
 
     group('Info Overlay', () {
@@ -169,8 +164,9 @@ void main() {
     });
 
     group('Navigation', () {
-      testWidgets('should close screen when close button is tapped',
-          (tester) async {
+      testWidgets('should close screen when close button is tapped', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
@@ -217,19 +213,23 @@ void main() {
         expect(find.text('Receipt'), findsOneWidget);
       });
 
-      testWidgets('should show correct color for contract type',
-          (tester) async {
-        final contractDoc =
-            testPdfDocument.copyWith(type: DocumentType.contract);
+      testWidgets('should show correct color for contract type', (
+        tester,
+      ) async {
+        final contractDoc = testPdfDocument.copyWith(
+          type: DocumentType.contract,
+        );
         await tester.pumpWidget(buildTestWidget(contractDoc));
 
         expect(find.text('Contract'), findsOneWidget);
       });
 
-      testWidgets('should show correct color for certificate type',
-          (tester) async {
-        final certDoc =
-            testPdfDocument.copyWith(type: DocumentType.certificate);
+      testWidgets('should show correct color for certificate type', (
+        tester,
+      ) async {
+        final certDoc = testPdfDocument.copyWith(
+          type: DocumentType.certificate,
+        );
         await tester.pumpWidget(buildTestWidget(certDoc));
 
         expect(find.text('Certificate'), findsOneWidget);
@@ -267,4 +267,3 @@ void main() {
     });
   });
 }
-

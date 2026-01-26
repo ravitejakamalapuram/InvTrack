@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 
 void main() {
-  testWidgets('TypeSelector chips have correct semantics', (WidgetTester tester) async {
+  testWidgets('TypeSelector chips have correct semantics', (
+    WidgetTester tester,
+  ) async {
     String selectedValue = 'A';
 
     await tester.pumpWidget(

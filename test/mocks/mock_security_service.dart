@@ -142,4 +142,3 @@ class FakeLocalAuthentication implements LocalAuthentication {
     return true;
   }
 }
-

@@ -201,15 +201,13 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
         final AsyncValue<InvestmentStats> statsAsync;
 
         if (inv.isArchived) {
-          statsAsync =
-              requiresXirr
-                  ? ref.watch(archivedInvestmentStatsProvider(inv.id))
-                  : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
+          statsAsync = requiresXirr
+              ? ref.watch(archivedInvestmentStatsProvider(inv.id))
+              : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
         } else {
-          statsAsync =
-              requiresXirr
-                  ? ref.watch(investmentStatsProvider(inv.id))
-                  : ref.watch(investmentBasicStatsProvider(inv.id));
+          statsAsync = requiresXirr
+              ? ref.watch(investmentStatsProvider(inv.id))
+              : ref.watch(investmentBasicStatsProvider(inv.id));
         }
 
         statsCache[inv.id] = statsAsync.value;
