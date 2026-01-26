@@ -40,9 +40,7 @@ final fireCalculationServiceProvider = Provider<FireCalculationService>((ref) {
 /// Watch FIRE settings (real-time updates)
 /// Returns null if user hasn't set up FIRE settings yet
 /// Uses autoDispose to clean up when no longer needed
-final fireSettingsProvider = StreamProvider.autoDispose<FireSettingsEntity?>((
-  ref,
-) {
+final fireSettingsProvider = StreamProvider.autoDispose<FireSettingsEntity?>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value(null);
@@ -67,47 +65,48 @@ final isFireSetupCompleteProvider = Provider<bool>((ref) {
 
 /// Calculate FIRE numbers based on settings and current portfolio
 /// Uses autoDispose to clean up when no longer needed
-final fireCalculationProvider =
-    Provider.autoDispose<AsyncValue<FireCalculationResult>>((ref) {
-      final settingsAsync = ref.watch(fireSettingsProvider);
-      final portfolioStatsAsync = ref.watch(globalStatsProvider);
+final fireCalculationProvider = Provider.autoDispose<AsyncValue<FireCalculationResult>>((ref) {
+  final settingsAsync = ref.watch(fireSettingsProvider);
+  final portfolioStatsAsync = ref.watch(globalStatsProvider);
 
-      return settingsAsync.when(
-        data: (settings) {
-          if (settings == null || !settings.isSetupComplete) {
-            return AsyncValue.data(FireCalculationResult.empty());
-          }
+  return settingsAsync.when(
+    data: (settings) {
+      if (settings == null || !settings.isSetupComplete) {
+        return AsyncValue.data(FireCalculationResult.empty());
+      }
 
-          return portfolioStatsAsync.when(
-            data: (stats) {
-              final service = ref.read(fireCalculationServiceProvider);
-              // Use totalInvested as portfolio value since it represents
-              // accumulated savings/capital, NOT netCashFlow which is profit/loss.
-              // For FIRE calculation, we need total accumulated wealth.
-              final currentPortfolioValue = stats.totalInvested;
-              final result = service.calculate(
-                settings: settings,
-                currentPortfolioValue: currentPortfolioValue,
-                currentMonthlySavings: _estimateMonthlySavings(stats),
-              );
-              return AsyncValue.data(result);
-            },
-            loading: () => const AsyncValue.loading(),
-            error: (e, st) => AsyncValue.error(e, st),
+      return portfolioStatsAsync.when(
+        data: (stats) {
+          final service = ref.read(fireCalculationServiceProvider);
+          // Use totalInvested as portfolio value since it represents
+          // accumulated savings/capital, NOT netCashFlow which is profit/loss.
+          // For FIRE calculation, we need total accumulated wealth.
+          final currentPortfolioValue = stats.totalInvested;
+          final result = service.calculate(
+            settings: settings,
+            currentPortfolioValue: currentPortfolioValue,
+            currentMonthlySavings: _estimateMonthlySavings(stats),
           );
+          return AsyncValue.data(result);
         },
         loading: () => const AsyncValue.loading(),
         error: (e, st) => AsyncValue.error(e, st),
       );
-    });
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
 
 /// Estimate monthly savings from portfolio stats
 double _estimateMonthlySavings(InvestmentStats stats) {
   if (stats.firstCashFlowDate == null || stats.lastCashFlowDate == null) {
     return 0;
   }
-  final months =
-      stats.lastCashFlowDate!.difference(stats.firstCashFlowDate!).inDays / 30;
+  final months = stats.lastCashFlowDate!
+          .difference(stats.firstCashFlowDate!)
+          .inDays /
+      30;
   if (months <= 0) return 0;
   return stats.totalInvested / months;
 }
@@ -133,26 +132,24 @@ final fireStatusProvider = Provider.autoDispose<FireProgressStatus>((ref) {
 });
 
 /// Provider for projection points (for charts)
-final fireProjectionsProvider = Provider.autoDispose<List<FireProjectionPoint>>(
-  (ref) {
-    final settingsAsync = ref.watch(fireSettingsProvider);
-    final calculationAsync = ref.watch(fireCalculationProvider);
-    final portfolioStatsAsync = ref.watch(globalStatsProvider);
+final fireProjectionsProvider = Provider.autoDispose<List<FireProjectionPoint>>((ref) {
+  final settingsAsync = ref.watch(fireSettingsProvider);
+  final calculationAsync = ref.watch(fireCalculationProvider);
+  final portfolioStatsAsync = ref.watch(globalStatsProvider);
 
-    final settings = settingsAsync.value;
-    final calculation = calculationAsync.value;
-    final stats = portfolioStatsAsync.value;
+  final settings = settingsAsync.value;
+  final calculation = calculationAsync.value;
+  final stats = portfolioStatsAsync.value;
 
-    if (settings == null || calculation == null || stats == null) {
-      return [];
-    }
+  if (settings == null || calculation == null || stats == null) {
+    return [];
+  }
 
-    final service = ref.read(fireCalculationServiceProvider);
-    return service.generateProjections(
-      settings: settings,
-      currentPortfolioValue: stats.totalInvested,
-      monthlySavings: _estimateMonthlySavings(stats),
-      fireNumber: calculation.fireNumber,
-    );
-  },
-);
+  final service = ref.read(fireCalculationServiceProvider);
+  return service.generateProjections(
+    settings: settings,
+    currentPortfolioValue: stats.totalInvested,
+    monthlySavings: _estimateMonthlySavings(stats),
+    fireNumber: calculation.fireNumber,
+  );
+});

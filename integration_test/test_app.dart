@@ -149,10 +149,7 @@ class TestApp {
   }
 
   /// Seed investments for testing
-  void seedInvestments(
-    List<InvestmentEntity> investments, [
-    List<CashFlowEntity>? cashFlows,
-  ]) {
+  void seedInvestments(List<InvestmentEntity> investments, [List<CashFlowEntity>? cashFlows]) {
     investmentRepository.seed(investments: investments, cashFlows: cashFlows);
   }
 
@@ -175,17 +172,13 @@ class TestApp {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          onboardingCompleteProvider.overrideWith(
-            (ref) async => !showOnboarding,
-          ),
+          onboardingCompleteProvider.overrideWith((ref) async => !showOnboarding),
           authStateProvider.overrideWith(
-            (ref) => Stream.value(
-              const UserEntity(
-                id: 'test_user',
-                email: 'test@example.com',
-                displayName: 'Test User',
-              ),
-            ),
+            (ref) => Stream.value(const UserEntity(
+              id: 'test_user',
+              email: 'test@example.com',
+              displayName: 'Test User',
+            )),
           ),
           flutterSecureStorageProvider.overrideWithValue(secureStorage),
           localAuthProvider.overrideWithValue(localAuth),

@@ -29,9 +29,7 @@ void main() {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
-                Text(
-                  'This is card content that demonstrates the glass effect.',
-                ),
+                Text('This is card content that demonstrates the glass effect.'),
               ],
             ),
           ),
@@ -60,9 +58,7 @@ void main() {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
-                Text(
-                  'This is card content that demonstrates the glass effect.',
-                ),
+                Text('This is card content that demonstrates the glass effect.'),
               ],
             ),
           ),
@@ -90,10 +86,7 @@ void main() {
                     color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.account_balance_wallet,
-                    color: Colors.blue,
-                  ),
+                  child: const Icon(Icons.account_balance_wallet, color: Colors.blue),
                 ),
                 const SizedBox(width: 16),
                 const Expanded(
@@ -108,10 +101,7 @@ void main() {
                       SizedBox(height: 4),
                       Text(
                         '₹12,50,000',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),

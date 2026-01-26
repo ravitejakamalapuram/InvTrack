@@ -52,18 +52,14 @@ void main() async {
     print('   Run: flutter pub run flutter_launcher_icons');
   } else {
     print('❌ app_icon.png not found');
-    print(
-      '   Please create your icon and save it to: assets/icons/app_icon.png',
-    );
+    print('   Please create your icon and save it to: assets/icons/app_icon.png');
   }
 
   final foregroundFile = File('assets/icons/app_icon_foreground.png');
   if (await foregroundFile.exists()) {
     print('✅ app_icon_foreground.png found!');
   } else {
-    print(
-      '⚠️  app_icon_foreground.png not found (optional for Android adaptive icons)',
-    );
+    print('⚠️  app_icon_foreground.png not found (optional for Android adaptive icons)');
     print('   If not provided, app_icon.png will be used for all icons.');
   }
 }

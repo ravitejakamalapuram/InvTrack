@@ -140,15 +140,11 @@ void main() {
           flutterSecureStorageProvider.overrideWithValue(fakeSecureStorage),
           localAuthProvider.overrideWithValue(mockLocalAuth),
           // Mock repositories
-          investmentRepositoryProvider.overrideWithValue(
-            fakeInvestmentRepository,
-          ),
+          investmentRepositoryProvider.overrideWithValue(fakeInvestmentRepository),
           goalRepositoryProvider.overrideWithValue(fakeGoalRepository),
           // Mock services
           analyticsServiceProvider.overrideWithValue(fakeAnalyticsService),
-          notificationServiceProvider.overrideWithValue(
-            fakeNotificationService,
-          ),
+          notificationServiceProvider.overrideWithValue(fakeNotificationService),
         ],
         child: const InvTrackerApp(),
       ),

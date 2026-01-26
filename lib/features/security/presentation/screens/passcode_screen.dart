@@ -67,8 +67,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     super.didChangeAppLifecycleState(state);
     // When app resumes from background, try biometrics again if we're on unlock screen
     // BUT only if we haven't exceeded max attempts and aren't in cooldown
-    if (state == AppLifecycleState.resumed &&
-        widget.mode == PasscodeMode.unlock) {
+    if (state == AppLifecycleState.resumed && widget.mode == PasscodeMode.unlock) {
       // Don't auto-retry if we've had too many failed attempts
       if (_biometricAttemptCount >= _maxBiometricAttempts) {
         if (kDebugMode) {
@@ -247,11 +246,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
           widget.onSuccess?.call();
         } else {
           // Check if we are now locked out
-          final newLockout = await ref
-              .read(securityServiceProvider)
-              .getLockoutRemainingSeconds();
+           final newLockout = await ref
+            .read(securityServiceProvider)
+            .getLockoutRemainingSeconds();
           if (newLockout != null) {
-            _showError('Locked out. Try again in ${newLockout}s');
+             _showError('Locked out. Try again in ${newLockout}s');
           } else {
             _showError('Incorrect PIN');
           }

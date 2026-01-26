@@ -25,13 +25,15 @@ class FakeAnalyticsService implements AnalyticsService {
   Future<void> logEvent({
     required String name,
     Map<String, Object>? parameters,
-  }) async => _log(name, parameters?.cast<String, dynamic>());
+  }) async =>
+      _log(name, parameters?.cast<String, dynamic>());
 
   @override
   Future<void> logScreenView({
     required String screenName,
     String? screenClass,
-  }) async => _log('screen_view', {'screen_name': screenName});
+  }) async =>
+      _log('screen_view', {'screen_name': screenName});
 
   @override
   Future<void> setUserId(String? userId) async {}
@@ -54,25 +56,22 @@ class FakeAnalyticsService implements AnalyticsService {
   Future<void> logInvestmentCreated({
     required String investmentType,
     bool hasNotes = false,
-  }) async => _log('investment_created', {
-    'type': investmentType,
-    'has_notes': hasNotes,
-  });
+  }) async =>
+      _log('investment_created', {'type': investmentType, 'has_notes': hasNotes});
 
   @override
   Future<void> logCashFlowAdded({
     required String flowType,
     required String amountRange,
-  }) async => _log('cash_flow_added', {'type': flowType, 'range': amountRange});
+  }) async =>
+      _log('cash_flow_added', {'type': flowType, 'range': amountRange});
 
   @override
   Future<void> logCsvImportCompleted({
     required int rowCount,
     required int successCount,
-  }) async => _log('csv_import_completed', {
-    'row_count': rowCount,
-    'success_count': successCount,
-  });
+  }) async =>
+      _log('csv_import_completed', {'row_count': rowCount, 'success_count': successCount});
 
   @override
   Future<void> logExportGenerated({required String format}) async =>
@@ -109,20 +108,15 @@ class FakeAnalyticsService implements AnalyticsService {
   Future<void> logGoalMilestoneReached({
     required String goalId,
     required int milestone,
-  }) async => _log('goal_milestone_reached', {
-    'goal_id': goalId,
-    'milestone': milestone,
-  });
+  }) async =>
+      _log('goal_milestone_reached', {'goal_id': goalId, 'milestone': milestone});
 
   @override
   void trackDocumentAdded({
     required String documentType,
     required String fileType,
   }) {
-    _log('document_added', {
-      'document_type': documentType,
-      'file_type': fileType,
-    });
+    _log('document_added', {'document_type': documentType, 'file_type': fileType});
   }
 
   // ============ Investment Lifecycle Events ============
@@ -140,9 +134,7 @@ class FakeAnalyticsService implements AnalyticsService {
       _log('investment_archived', {'investment_type': investmentType});
 
   @override
-  Future<void> logInvestmentUnarchived({
-    required String investmentType,
-  }) async =>
+  Future<void> logInvestmentUnarchived({required String investmentType}) async =>
       _log('investment_unarchived', {'investment_type': investmentType});
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 
 /// A text widget that displays amounts in compact format (e.g., ₹1.05Cr)
 /// with long-press to reveal full amount and copy functionality.
@@ -160,23 +161,36 @@ class CompactAmountText extends ConsumerWidget {
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     if (isPrivacyMode) {
-      return Text(
-        '•••••',
-        style: style,
-        maxLines: maxLines,
-        overflow: overflow,
-        textAlign: textAlign,
+      return Semantics(
+        label: 'Hidden amount',
+        excludeSemantics: true,
+        child: Text(
+          '•••••',
+          style: style,
+          maxLines: maxLines,
+          overflow: overflow,
+          textAlign: textAlign,
+        ),
       );
     }
 
-    return GestureDetector(
+    return Semantics(
+      label: AccessibilityUtils.formatCurrencyForScreenReader(
+        amount,
+        currencySymbol,
+      ),
+      hint: 'Double tap and hold to copy exact amount',
       onLongPress: () => _showFullAmount(context),
-      child: Text(
-        _displayText,
-        style: style,
-        maxLines: maxLines,
-        overflow: overflow,
-        textAlign: textAlign,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onLongPress: () => _showFullAmount(context),
+        child: Text(
+          _displayText,
+          style: style,
+          maxLines: maxLines,
+          overflow: overflow,
+          textAlign: textAlign,
+        ),
       ),
     );
   }

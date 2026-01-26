@@ -222,26 +222,24 @@ void main() {
       fakeRepository.reset();
     });
 
-    test(
-      'should return empty stats for non-existent archived investment',
-      () async {
-        // Wait for stream to emit
-        await Future.delayed(const Duration(milliseconds: 50));
+    test('should return empty stats for non-existent archived investment',
+        () async {
+      // Wait for stream to emit
+      await Future.delayed(const Duration(milliseconds: 50));
 
-        final statsAsync = container.read(
-          archivedInvestmentStatsProvider('non-existent-id'),
-        );
+      final statsAsync = container.read(
+        archivedInvestmentStatsProvider('non-existent-id'),
+      );
 
-        statsAsync.when(
-          data: (stats) {
-            expect(stats.hasData, false);
-            expect(stats.totalInvested, 0);
-          },
-          loading: () {}, // Stream may still be initializing
-          error: (e, st) => fail('Should not error: $e'),
-        );
-      },
-    );
+      statsAsync.when(
+        data: (stats) {
+          expect(stats.hasData, false);
+          expect(stats.totalInvested, 0);
+        },
+        loading: () {}, // Stream may still be initializing
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
 
     test('should calculate stats correctly for archived investment', () async {
       // Give provider time to process stream
@@ -353,7 +351,8 @@ void main() {
       });
     });
 
-    test('investmentStatsProvider should not find archived cash flows', () async {
+    test('investmentStatsProvider should not find archived cash flows',
+        () async {
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Using investmentStatsProvider on archived investment should return empty
@@ -366,20 +365,18 @@ void main() {
       });
     });
 
-    test(
-      'archivedInvestmentStatsProvider should not find active cash flows',
-      () async {
-        await Future.delayed(const Duration(milliseconds: 50));
+    test('archivedInvestmentStatsProvider should not find active cash flows',
+        () async {
+      await Future.delayed(const Duration(milliseconds: 50));
 
-        // Using archivedInvestmentStatsProvider on active investment returns empty
-        final wrongProviderAsync = container.read(
-          archivedInvestmentStatsProvider('active-inv-1'),
-        );
-        wrongProviderAsync.whenData((stats) {
-          expect(stats.hasData, false);
-          expect(stats.totalInvested, 0);
-        });
-      },
-    );
+      // Using archivedInvestmentStatsProvider on active investment returns empty
+      final wrongProviderAsync = container.read(
+        archivedInvestmentStatsProvider('active-inv-1'),
+      );
+      wrongProviderAsync.whenData((stats) {
+        expect(stats.hasData, false);
+        expect(stats.totalInvested, 0);
+      });
+    });
   });
 }

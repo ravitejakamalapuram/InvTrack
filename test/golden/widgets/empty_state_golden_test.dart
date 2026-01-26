@@ -20,8 +20,7 @@ void main() {
       await tester.pumpGoldenWidget(
         const EmptyStateWidget(
           title: 'No Investments Yet',
-          message:
-              'Start tracking your portfolio by adding your first investment.',
+          message: 'Start tracking your portfolio by adding your first investment.',
           icon: Icons.account_balance_wallet_outlined,
         ),
         isDark: false,
@@ -38,8 +37,7 @@ void main() {
       await tester.pumpGoldenWidget(
         const EmptyStateWidget(
           title: 'No Investments Yet',
-          message:
-              'Start tracking your portfolio by adding your first investment.',
+          message: 'Start tracking your portfolio by adding your first investment.',
           icon: Icons.account_balance_wallet_outlined,
         ),
         isDark: true,

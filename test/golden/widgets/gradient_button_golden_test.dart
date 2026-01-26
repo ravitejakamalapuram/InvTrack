@@ -19,7 +19,10 @@ void main() {
       await tester.pumpGoldenWidget(
         Padding(
           padding: const EdgeInsets.all(16),
-          child: GradientButton(onPressed: () {}, label: 'Add Investment'),
+          child: GradientButton(
+            onPressed: () {},
+            label: 'Add Investment',
+          ),
         ),
         isDark: false,
         size: GoldenTestConfig.buttonSize,
@@ -35,7 +38,10 @@ void main() {
       await tester.pumpGoldenWidget(
         Padding(
           padding: const EdgeInsets.all(16),
-          child: GradientButton(onPressed: () {}, label: 'Add Investment'),
+          child: GradientButton(
+            onPressed: () {},
+            label: 'Add Investment',
+          ),
         ),
         isDark: true,
         size: GoldenTestConfig.buttonSize,

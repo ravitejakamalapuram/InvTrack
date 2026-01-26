@@ -248,38 +248,35 @@ void main() {
       expect(result.progressPercentage, lessThan(25));
     });
 
-    test(
-      'returns onTrack status when progress is between 25% and 75% and below coast',
-      () {
-        // First calculate to get the FIRE number and coast number
-        final initial = service.calculate(
-          settings: testSettings,
-          currentPortfolioValue: 0,
-          currentMonthlySavings: 50000,
-        );
+    test('returns onTrack status when progress is between 25% and 75% and below coast', () {
+      // First calculate to get the FIRE number and coast number
+      final initial = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 50000,
+      );
 
-        // Calculate a value that is 30% of FIRE but below coast FIRE
-        // Coast FIRE is typically around 30-40% of full FIRE for 15 year horizon
-        final coastRatio = initial.coastFireNumber / initial.fireNumber;
+      // Calculate a value that is 30% of FIRE but below coast FIRE
+      // Coast FIRE is typically around 30-40% of full FIRE for 15 year horizon
+      final coastRatio = initial.coastFireNumber / initial.fireNumber;
 
-        // If 30% is below coast, use it; otherwise use a value just below coast
-        final targetRatio = coastRatio > 0.30 ? 0.30 : coastRatio * 0.9;
+      // If 30% is below coast, use it; otherwise use a value just below coast
+      final targetRatio = coastRatio > 0.30 ? 0.30 : coastRatio * 0.9;
 
-        final result = service.calculate(
-          settings: testSettings,
-          currentPortfolioValue: initial.fireNumber * targetRatio,
-          currentMonthlySavings: 50000,
-        );
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: initial.fireNumber * targetRatio,
+        currentMonthlySavings: 50000,
+      );
 
-        // Should be onTrack if between 25-75% and below coast
-        // Or behind if below 25%
-        expect(
-          result.status == FireProgressStatus.onTrack ||
-              result.status == FireProgressStatus.behind,
-          isTrue,
-        );
-      },
-    );
+      // Should be onTrack if between 25-75% and below coast
+      // Or behind if below 25%
+      expect(
+        result.status == FireProgressStatus.onTrack ||
+        result.status == FireProgressStatus.behind,
+        isTrue,
+      );
+    });
 
     test('returns ahead or coasting when progress is 75% or more', () {
       // First calculate to get the FIRE number
@@ -300,7 +297,7 @@ void main() {
       // Should be ahead or coasting (coasting takes precedence if above coast FIRE)
       expect(
         result.status == FireProgressStatus.ahead ||
-            result.status == FireProgressStatus.coasting,
+        result.status == FireProgressStatus.coasting,
         isTrue,
       );
       expect(result.progressPercentage, greaterThanOrEqualTo(75));

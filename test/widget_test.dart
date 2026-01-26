@@ -85,7 +85,9 @@ void main() {
           // Override analytics providers to avoid Firebase initialization
           analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
           analyticsObserverProvider.overrideWithValue(
-            FirebaseAnalyticsObserver(analytics: _FakeFirebaseAnalytics()),
+            FirebaseAnalyticsObserver(
+              analytics: _FakeFirebaseAnalytics(),
+            ),
           ),
         ],
         child: const InvTrackerApp(),

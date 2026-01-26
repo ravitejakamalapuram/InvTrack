@@ -13,8 +13,7 @@ class FireCalculationService {
   }) {
     // Calculate inflation-adjusted expenses at retirement
     // Apply FIRE type expense multiplier (e.g., lean = 70%, fat = 150%)
-    final adjustedMonthlyExpenses =
-        settings.monthlyExpenses * settings.fireType.expenseMultiplier;
+    final adjustedMonthlyExpenses = settings.monthlyExpenses * settings.fireType.expenseMultiplier;
     final yearsToFire = settings.yearsToFire;
     final inflationMultiplier = math.pow(
       1 + settings.inflationRate / 100,
@@ -45,8 +44,8 @@ class FireCalculationService {
     final annualPassiveIncome = settings.monthlyPassiveIncome * 12;
     final annualPension = settings.expectedPension * 12;
     final totalOtherIncome = annualPassiveIncome + annualPension;
-    final adjustedFireNumber =
-        fireNumber - (totalOtherIncome * settings.fireMultiplier);
+    final adjustedFireNumber = fireNumber -
+        (totalOtherIncome * settings.fireMultiplier);
     final finalFireNumber = adjustedFireNumber > 0 ? adjustedFireNumber : 0.0;
 
     // Calculate Coast FIRE number
@@ -102,11 +101,12 @@ class FireCalculationService {
       currentValue: currentPortfolioValue,
     );
 
-    final achievedMilestones = milestones.where((m) => m.isAchieved).toList();
+    final achievedMilestones =
+        milestones.where((m) => m.isAchieved).toList();
     final nextMilestone = milestones.cast<FireMilestone?>().firstWhere(
-      (m) => !m!.isAchieved,
-      orElse: () => null,
-    );
+          (m) => !m!.isAchieved,
+          orElse: () => null,
+        );
 
     return FireCalculationResult(
       fireNumber: finalFireNumber,
@@ -275,15 +275,13 @@ class FireCalculationService {
       final age = settings.currentAge + year;
       final date = DateTime.now().add(Duration(days: year * 365));
 
-      points.add(
-        FireProjectionPoint(
-          date: date,
-          age: age,
-          projectedValue: balance,
-          targetValue: fireNumber,
-          isHistorical: year == 0,
-        ),
-      );
+      points.add(FireProjectionPoint(
+        date: date,
+        age: age,
+        projectedValue: balance,
+        targetValue: fireNumber,
+        isHistorical: year == 0,
+      ));
 
       // Compound for next year
       for (var month = 0; month < 12; month++) {

@@ -88,9 +88,7 @@ void main() {
     });
 
     test('saveFailed factory creates correct message', () {
-      final exception = DataException.saveFailed(
-        operation: 'create investment',
-      );
+      final exception = DataException.saveFailed(operation: 'create investment');
       expect(exception.userMessage, contains('Failed to save'));
     });
 

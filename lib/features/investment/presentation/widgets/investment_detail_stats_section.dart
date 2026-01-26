@@ -50,9 +50,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
               child: _MiniStatCard(
                 label: 'XIRR',
                 value: xirrFormatted,
-                color: xirrIsPositive
-                    ? AppColors.graphCyan
-                    : AppColors.errorLight,
+                color: xirrIsPositive ? AppColors.graphCyan : AppColors.errorLight,
                 isDark: isDark,
                 isPrivacyMode: isPrivacyMode,
               ),
@@ -73,7 +71,10 @@ class InvestmentDetailStatsSection extends StatelessWidget {
         // Maturity date card (if applicable)
         if (investment.hasMaturityDate) ...[
           const SizedBox(height: 10),
-          _MaturityCard(maturityDate: investment.maturityDate!, isDark: isDark),
+          _MaturityCard(
+            maturityDate: investment.maturityDate!,
+            isDark: isDark,
+          ),
         ],
       ],
     );
@@ -92,15 +93,12 @@ class InvestmentDetailStatsSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color:
-                  (isPositive ? AppColors.successLight : AppColors.errorLight)
-                      .withValues(alpha: 0.1),
+              color: (isPositive ? AppColors.successLight : AppColors.errorLight)
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
-              isPositive
-                  ? Icons.trending_up_rounded
-                  : Icons.trending_down_rounded,
+              isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
               size: 28,
               color: isPositive ? AppColors.successLight : AppColors.errorLight,
             ),
@@ -126,9 +124,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                       )
                     : CompactAmountText(
                         amount: stats.netCashFlow,
-                        compactText: currencyFormat.formatSmart(
-                          stats.netCashFlow,
-                        ),
+                        compactText: currencyFormat.formatSmart(stats.netCashFlow),
                         currencySymbol: currencyFormat.currencySymbol,
                         style: netPositionStyle,
                       ),
@@ -182,11 +178,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
       child: Row(
         children: [
           // Cash Out
-          Icon(
-            Icons.arrow_upward_rounded,
-            size: 16,
-            color: AppColors.errorLight,
-          ),
+          Icon(Icons.arrow_upward_rounded, size: 16, color: AppColors.errorLight),
           const SizedBox(width: 4),
           isPrivacyMode
               ? MaskedAmountText(
@@ -195,27 +187,19 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                 )
               : CompactAmountText(
                   amount: stats.totalInvested,
-                  compactText: currencyFormat.formatCompact(
-                    stats.totalInvested,
-                  ),
+                  compactText: currencyFormat.formatCompact(stats.totalInvested),
                   currencySymbol: currencyFormat.currencySymbol,
                   style: cashFlowStyle,
                 ),
           Text(
             ' out',
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
           const SizedBox(width: 16),
           // Cash In
-          Icon(
-            Icons.arrow_downward_rounded,
-            size: 16,
-            color: AppColors.successLight,
-          ),
+          Icon(Icons.arrow_downward_rounded, size: 16, color: AppColors.successLight),
           const SizedBox(width: 4),
           isPrivacyMode
               ? MaskedAmountText(
@@ -224,27 +208,21 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                 )
               : CompactAmountText(
                   amount: stats.totalReturned,
-                  compactText: currencyFormat.formatCompact(
-                    stats.totalReturned,
-                  ),
+                  compactText: currencyFormat.formatCompact(stats.totalReturned),
                   currencySymbol: currencyFormat.currencySymbol,
                   style: cashFlowStyle,
                 ),
           Text(
             ' in',
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
           const Spacer(),
           Text(
             '${stats.cashFlowCount} txns',
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
         ],
@@ -285,9 +263,7 @@ class _MiniStatCard extends StatelessWidget {
           Text(
             label,
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               fontSize: 11,
             ),
           ),
@@ -319,22 +295,19 @@ class _MaturityCard extends StatelessWidget {
   final DateTime maturityDate;
   final bool isDark;
 
-  const _MaturityCard({required this.maturityDate, required this.isDark});
+  const _MaturityCard({
+    required this.maturityDate,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final maturity = DateTime(
-      maturityDate.year,
-      maturityDate.month,
-      maturityDate.day,
-    );
+    final maturity = DateTime(maturityDate.year, maturityDate.month, maturityDate.day);
     final daysUntilMaturity = maturity.difference(today).inDays;
 
-    final (statusColor, statusIcon, statusText) = _getMaturityStatus(
-      daysUntilMaturity,
-    );
+    final (statusColor, statusIcon, statusText) = _getMaturityStatus(daysUntilMaturity);
 
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -356,9 +329,7 @@ class _MaturityCard extends StatelessWidget {
                 Text(
                   'Maturity Date',
                   style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
+                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -397,25 +368,13 @@ class _MaturityCard extends StatelessWidget {
     final bool isUpcoming = daysUntilMaturity > 7 && daysUntilMaturity <= 30;
 
     if (isMatured) {
-      return (
-        AppColors.successLight,
-        Icons.check_circle_rounded,
-        'Matured ${-daysUntilMaturity} days ago',
-      );
+      return (AppColors.successLight, Icons.check_circle_rounded, 'Matured ${-daysUntilMaturity} days ago');
     } else if (daysUntilMaturity == 0) {
       return (AppColors.warningLight, Icons.schedule_rounded, 'Matures today!');
     } else if (isUrgent) {
-      return (
-        AppColors.warningLight,
-        Icons.schedule_rounded,
-        '$daysUntilMaturity days until maturity',
-      );
+      return (AppColors.warningLight, Icons.schedule_rounded, '$daysUntilMaturity days until maturity');
     } else if (isUpcoming) {
-      return (
-        AppColors.accentLight,
-        Icons.event_rounded,
-        '$daysUntilMaturity days until maturity',
-      );
+      return (AppColors.accentLight, Icons.event_rounded, '$daysUntilMaturity days until maturity');
     } else {
       return (
         isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,

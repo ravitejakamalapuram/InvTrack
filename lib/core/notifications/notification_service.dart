@@ -210,10 +210,8 @@ class NotificationService with NotificationPreferencesMixin {
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
     // Android 13+ permissions
-    final androidPlugin = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
     final androidResult = await androidPlugin?.requestNotificationsPermission();
 
     // Note: We intentionally do NOT request SCHEDULE_EXACT_ALARM permission
@@ -415,13 +413,14 @@ class NotificationService with NotificationPreferencesMixin {
     required double totalTDS,
     required String? topPerformer,
     String currency = 'INR',
-  }) => _scheduledHandler.showFYSummary(
-    previousFY: previousFY,
-    totalIncome: totalIncome,
-    totalTDS: totalTDS,
-    topPerformer: topPerformer,
-    currency: currency,
-  );
+  }) =>
+      _scheduledHandler.showFYSummary(
+        previousFY: previousFY,
+        totalIncome: totalIncome,
+        totalTDS: totalTDS,
+        topPerformer: topPerformer,
+        currency: currency,
+      );
 
   // --- Utility Methods ---
 
@@ -557,12 +556,13 @@ class NotificationService with NotificationPreferencesMixin {
     required String investmentName,
     required int monthsBetweenPayments,
     DateTime? lastIncomeDate,
-  }) => _investmentHandler.scheduleIncomeReminder(
-    investmentId: investmentId,
-    investmentName: investmentName,
-    monthsBetweenPayments: monthsBetweenPayments,
-    lastIncomeDate: lastIncomeDate,
-  );
+  }) =>
+      _investmentHandler.scheduleIncomeReminder(
+        investmentId: investmentId,
+        investmentName: investmentName,
+        monthsBetweenPayments: monthsBetweenPayments,
+        lastIncomeDate: lastIncomeDate,
+      );
 
   /// Cancel income reminder for a specific investment
   Future<void> cancelIncomeReminder(String investmentId) =>
@@ -577,22 +577,25 @@ class NotificationService with NotificationPreferencesMixin {
     double? investedAmount,
     double? currentValue,
     String currency = 'INR',
-  }) => _investmentHandler.scheduleMaturityReminders(
-    investmentId: investmentId,
-    investmentName: investmentName,
-    maturityDate: maturityDate,
-    investmentType: investmentType,
-    investedAmount: investedAmount,
-    currentValue: currentValue,
-    currency: currency,
-  );
+  }) =>
+      _investmentHandler.scheduleMaturityReminders(
+        investmentId: investmentId,
+        investmentName: investmentName,
+        maturityDate: maturityDate,
+        investmentType: investmentType,
+        investedAmount: investedAmount,
+        currentValue: currentValue,
+        currency: currency,
+      );
 
   /// Cancel maturity reminders for a specific investment
   Future<void> cancelMaturityReminders(String investmentId) =>
       _investmentHandler.cancelMaturityReminders(investmentId);
 
   /// Re-schedule all notifications for the given investments
-  Future<void> rescheduleAllNotifications(List<InvestmentEntity> investments) =>
+  Future<void> rescheduleAllNotifications(
+    List<InvestmentEntity> investments,
+  ) =>
       _investmentHandler.rescheduleAllNotifications(investments);
 
   /// Show grouped summary notification for income reminders
@@ -610,14 +613,15 @@ class NotificationService with NotificationPreferencesMixin {
     required double totalInvested,
     required double totalReturned,
     String currency = 'INR',
-  }) => _investmentHandler.checkAndShowMilestone(
-    investmentId: investmentId,
-    investmentName: investmentName,
-    totalInvested: totalInvested,
-    totalReturned: totalReturned,
-    formatCurrency: _formatCurrency,
-    currency: currency,
-  );
+  }) =>
+      _investmentHandler.checkAndShowMilestone(
+        investmentId: investmentId,
+        investmentName: investmentName,
+        totalInvested: totalInvested,
+        totalReturned: totalReturned,
+        formatCurrency: _formatCurrency,
+        currency: currency,
+      );
 
   // --- Goal Notifications ---
 
@@ -629,14 +633,15 @@ class NotificationService with NotificationPreferencesMixin {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
-  }) => _goalHandler.checkAndShowGoalMilestone(
-    goalId: goalId,
-    goalName: goalName,
-    progressPercent: progressPercent,
-    currentValue: currentValue,
-    targetValue: targetValue,
-    currency: currency,
-  );
+  }) =>
+      _goalHandler.checkAndShowGoalMilestone(
+        goalId: goalId,
+        goalName: goalName,
+        progressPercent: progressPercent,
+        currentValue: currentValue,
+        targetValue: targetValue,
+        currency: currency,
+      );
 
   /// Show goal at-risk notification when goal is behind schedule
   Future<void> showGoalAtRiskNotification({
@@ -645,24 +650,26 @@ class NotificationService with NotificationPreferencesMixin {
     required double progressPercent,
     required DateTime? targetDate,
     required DateTime? projectedDate,
-  }) => _goalHandler.showGoalAtRiskNotification(
-    goalId: goalId,
-    goalName: goalName,
-    progressPercent: progressPercent,
-    targetDate: targetDate,
-    projectedDate: projectedDate,
-  );
+  }) =>
+      _goalHandler.showGoalAtRiskNotification(
+        goalId: goalId,
+        goalName: goalName,
+        progressPercent: progressPercent,
+        targetDate: targetDate,
+        projectedDate: projectedDate,
+      );
 
   /// Show goal stale notification when goal has no activity
   Future<void> showGoalStaleNotification({
     required String goalId,
     required String goalName,
     required DateTime? lastActivityDate,
-  }) => _goalHandler.showGoalStaleNotification(
-    goalId: goalId,
-    goalName: goalName,
-    lastActivityDate: lastActivityDate,
-  );
+  }) =>
+      _goalHandler.showGoalStaleNotification(
+        goalId: goalId,
+        goalName: goalName,
+        lastActivityDate: lastActivityDate,
+      );
 
   // --- Alert Notifications ---
 
@@ -671,11 +678,12 @@ class NotificationService with NotificationPreferencesMixin {
     required String alertType,
     required String title,
     required String body,
-  }) => _alertHandler.showRiskAlert(
-    alertType: alertType,
-    title: title,
-    body: body,
-  );
+  }) =>
+      _alertHandler.showRiskAlert(
+        alertType: alertType,
+        title: title,
+        body: body,
+      );
 
   /// Check for idle investments and show alerts
   Future<void> checkIdleInvestments(List<IdleInvestmentInfo> investments) =>

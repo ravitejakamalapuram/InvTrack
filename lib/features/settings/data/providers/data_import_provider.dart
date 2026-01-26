@@ -34,8 +34,8 @@ final dataImportServiceProvider = Provider<DataImportService?>((ref) {
 /// State for ZIP import operation
 final zipImportStateProvider =
     NotifierProvider<ZipImportNotifier, AsyncValue<ZipImportResult?>>(
-      ZipImportNotifier.new,
-    );
+  ZipImportNotifier.new,
+);
 
 class ZipImportNotifier extends Notifier<AsyncValue<ZipImportResult?>> {
   @override

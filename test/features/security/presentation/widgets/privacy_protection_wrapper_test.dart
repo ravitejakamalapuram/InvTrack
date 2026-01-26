@@ -16,13 +16,13 @@ void main() {
       );
     }
 
-    testWidgets('shows overlay when inactive/paused', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('shows overlay when inactive/paused', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PrivacyProtectionWrapper(
-            child: Scaffold(body: Center(child: Text('Content'))),
+            child: Scaffold(
+              body: Center(child: Text('Content')),
+            ),
           ),
         ),
       );
@@ -58,7 +58,9 @@ void main() {
         const MaterialApp(
           home: PrivacyProtectionWrapper(
             enabled: false,
-            child: Scaffold(body: Center(child: Text('Content'))),
+            child: Scaffold(
+              body: Center(child: Text('Content')),
+            ),
           ),
         ),
       );
@@ -70,13 +72,14 @@ void main() {
       expect(findPrivacyOverlay(), findsNothing);
     });
 
-    testWidgets('overlay contains ColoredBox with app colors', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('overlay contains ColoredBox with app colors',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PrivacyProtectionWrapper(
-            child: Scaffold(body: Center(child: Text('Content'))),
+            child: Scaffold(
+              body: Center(child: Text('Content')),
+            ),
           ),
         ),
       );
@@ -92,13 +95,14 @@ void main() {
       expect(positionedWidget.child, isA<ColoredBox>());
     });
 
-    testWidgets('child widget remains in tree when overlay is shown', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('child widget remains in tree when overlay is shown',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PrivacyProtectionWrapper(
-            child: Scaffold(body: Center(child: Text('Sensitive Content'))),
+            child: Scaffold(
+              body: Center(child: Text('Sensitive Content')),
+            ),
           ),
         ),
       );
@@ -116,7 +120,9 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: PrivacyProtectionWrapper(
-            child: Scaffold(body: Center(child: Text('Content'))),
+            child: Scaffold(
+              body: Center(child: Text('Content')),
+            ),
           ),
         ),
       );

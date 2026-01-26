@@ -196,8 +196,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 // Investment Type Selector - Using grid layout for cleaner 2-column arrangement
                 TypeSelector<InvestmentType>(
                   label: 'Investment Type',
-                  subtitle:
-                      'Select the category that best describes this investment',
+                  subtitle: 'Select the category that best describes this investment',
                   values: InvestmentType.values,
                   selectedValue: _selectedType,
                   onSelected: (type) => setState(() => _selectedType = type),
@@ -321,12 +320,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w500,
                         color: _maturityDate != null
-                            ? (isDark
-                                  ? Colors.white
-                                  : AppColors.neutral900Light)
+                            ? (isDark ? Colors.white : AppColors.neutral900Light)
                             : (isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light),
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light),
                       ),
                     ),
                   ),
@@ -481,9 +478,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     style: AppTypography.body.copyWith(
                       fontSize: 13,
                       color: textColor,
-                      fontWeight: progress > 0.5
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight:
+                          progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                 ],

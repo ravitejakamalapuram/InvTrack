@@ -78,7 +78,11 @@ void main() {
       final goals = GoalsRobot(tester);
 
       testApp.seedGoals([
-        createTestGoal(id: 'goal-1', name: 'Test Goal', targetAmount: 100000),
+        createTestGoal(
+          id: 'goal-1',
+          name: 'Test Goal',
+          targetAmount: 100000,
+        ),
       ]);
 
       await testApp.pumpApp();

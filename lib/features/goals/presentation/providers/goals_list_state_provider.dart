@@ -14,7 +14,10 @@ class GoalsListState {
     this.selectedIds = const {},
   });
 
-  GoalsListState copyWith({bool? isSelectionMode, Set<String>? selectedIds}) {
+  GoalsListState copyWith({
+    bool? isSelectionMode,
+    Set<String>? selectedIds,
+  }) {
     return GoalsListState(
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       selectedIds: selectedIds ?? this.selectedIds,
@@ -65,4 +68,6 @@ class GoalsListNotifier extends Notifier<GoalsListState> {
 
 /// Provider for goals list state
 final goalsListStateProvider =
-    NotifierProvider<GoalsListNotifier, GoalsListState>(GoalsListNotifier.new);
+    NotifierProvider<GoalsListNotifier, GoalsListState>(
+      GoalsListNotifier.new,
+    );

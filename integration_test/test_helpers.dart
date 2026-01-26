@@ -45,7 +45,9 @@ Future<ProviderScope> createTestApp({
   return ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-      authStateProvider.overrideWith((ref) => Stream.value(user ?? testUser)),
+      authStateProvider.overrideWith(
+        (ref) => Stream.value(user ?? testUser),
+      ),
       investmentRepositoryProvider.overrideWithValue(invRepo),
       goalRepositoryProvider.overrideWithValue(goalRepo),
       analyticsServiceProvider.overrideWithValue(analytics),
@@ -98,14 +100,16 @@ extension WidgetTesterExtensions on WidgetTester {
     final field = find.widgetWithText(TextFormField, label);
     if (field.evaluate().isEmpty) {
       // Try finding by looking for TextField with matching label/hint
-      final hintField = find.byWidgetPredicate((widget) {
-        if (widget is TextField) {
-          final decoration = widget.decoration;
-          return decoration?.labelText == label ||
-              decoration?.hintText == label;
-        }
-        return false;
-      });
+      final hintField = find.byWidgetPredicate(
+        (widget) {
+          if (widget is TextField) {
+            final decoration = widget.decoration;
+            return decoration?.labelText == label ||
+                decoration?.hintText == label;
+          }
+          return false;
+        },
+      );
       await enterText(hintField.first, text);
     } else {
       await enterText(field.first, text);

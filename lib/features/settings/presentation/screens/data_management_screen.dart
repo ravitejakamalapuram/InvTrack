@@ -149,9 +149,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                 icon: Icons.delete_forever,
                 iconColor: AppColors.errorLight,
                 title: 'Delete Account',
-                subtitle: _isDeleting
-                    ? 'Deleting...'
-                    : 'Permanently delete all data',
+                subtitle:
+                    _isDeleting ? 'Deleting...' : 'Permanently delete all data',
                 trailing: _isDeleting
                     ? const SizedBox(
                         width: 20,
@@ -183,11 +182,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.warning_amber,
-                    color: AppColors.errorLight,
-                    size: 20,
-                  ),
+                  Icon(Icons.warning_amber,
+                      color: AppColors.errorLight, size: 20),
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -214,9 +210,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     await ref.read(exportStateProvider.notifier).exportCsv();
     final state = ref.read(exportStateProvider);
     if (state.hasError && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Export failed: ${state.error}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: ${state.error}')),
+      );
     } else {
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
     }
@@ -279,7 +275,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               iconColor: AppColors.warningLight,
               title: 'Replace',
               description: 'Delete existing data first',
-              onTap: () => Navigator.pop(dialogContext, ImportStrategy.replace),
+              onTap: () =>
+                  Navigator.pop(dialogContext, ImportStrategy.replace),
               isDangerous: true,
             ),
           ],
@@ -361,9 +358,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         if (importResult.hasErrors) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Import completed with errors: ${importResult.errors.first}',
-              ),
+              content: Text('Import completed with errors: ${importResult.errors.first}'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -493,9 +488,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       } on FirebaseAuthException catch (e) {
         // If requires-recent-login, try to re-authenticate and retry
         if (e.code == 'requires-recent-login') {
-          debugPrint(
-            'Account deletion requires recent login, attempting re-auth...',
-          );
+          debugPrint('Account deletion requires recent login, attempting re-auth...');
 
           try {
             final reauthenticated = await authRepo.reauthenticateWithGoogle();
@@ -581,9 +574,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Delete all investments (which cascades to cash flows and documents)
     final investmentRepo = ref.read(investmentRepositoryProvider);
     final investments = await investmentRepo.getAllInvestments();
-    final archivedInvestments = await investmentRepo
-        .watchArchivedInvestments()
-        .first;
+    final archivedInvestments =
+        await investmentRepo.watchArchivedInvestments().first;
 
     for (final inv in [...investments, ...archivedInvestments]) {
       if (inv.isArchived) {
@@ -702,8 +694,8 @@ class _ImportOptionTile extends StatelessWidget {
               color: isDangerous
                   ? AppColors.warningLight.withValues(alpha: 0.5)
                   : (isDark
-                        ? AppColors.neutral700Dark
-                        : AppColors.neutral200Light),
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light),
               width: 1.5,
             ),
             borderRadius: BorderRadius.circular(12),
@@ -727,9 +719,7 @@ class _ImportOptionTile extends StatelessWidget {
                       title,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.neutral900Light,
+                        color: isDark ? Colors.white : AppColors.neutral900Light,
                       ),
                     ),
                     const SizedBox(height: 2),

@@ -150,9 +150,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                   type: listState.typeFilter!,
                   isDark: isDark,
                   onClear: () {
-                    ref
-                        .read(investmentListStateProvider.notifier)
-                        .clearTypeFilter();
+                    ref.read(investmentListStateProvider.notifier).clearTypeFilter();
                   },
                 ),
               ),
@@ -302,7 +300,8 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   ) {
     // Get counts to check if there are ANY investments (active or archived)
     final counts = ref.watch(investmentCountsProvider);
-    final hasAnyInvestments = counts.all > 0 || counts.archived > 0;
+    final hasAnyInvestments =
+        counts.all > 0 || counts.archived > 0;
 
     return filteredAsync.when(
       data: (filteredInvestments) {
@@ -512,19 +511,12 @@ class _TypeFilterSheet extends StatelessWidget {
                       title: Text(
                         type.displayName,
                         style: AppTypography.body.copyWith(
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.neutral900Light,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          color: isDark ? Colors.white : AppColors.neutral900Light,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                       trailing: isSelected
-                          ? Icon(
-                              Icons.check_rounded,
-                              color: AppColors.primaryLight,
-                            )
+                          ? Icon(Icons.check_rounded, color: AppColors.primaryLight)
                           : null,
                       onTap: () {
                         HapticFeedback.selectionClick();
@@ -567,7 +559,9 @@ class _ActiveTypeFilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: type.color.withValues(alpha: 0.15),
             borderRadius: AppSizes.borderRadiusMd,
-            border: Border.all(color: type.color.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: type.color.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -587,7 +581,11 @@ class _ActiveTypeFilterChip extends StatelessWidget {
                   HapticFeedback.selectionClick();
                   onClear();
                 },
-                child: Icon(Icons.close_rounded, color: type.color, size: 16),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: type.color,
+                  size: 16,
+                ),
               ),
             ],
           ),

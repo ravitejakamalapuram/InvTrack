@@ -21,7 +21,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
         child: MaterialApp(home: Scaffold(body: child)),
       ),
     );
@@ -38,9 +40,8 @@ void main() {
       expect(find.text('Secret Amount'), findsOneWidget);
     });
 
-    testWidgets('should hide child with blur when privacy mode is on', (
-      tester,
-    ) async {
+    testWidgets('should hide child with blur when privacy mode is on',
+        (tester) async {
       await pumpWithPrivacyMode(
         tester,
         const PrivacyMask(child: Text('Secret Amount')),
@@ -52,9 +53,8 @@ void main() {
       expect(find.byType(ImageFiltered), findsOneWidget);
     });
 
-    testWidgets('should show masked text when useTextMask is true', (
-      tester,
-    ) async {
+    testWidgets('should show masked text when useTextMask is true',
+        (tester) async {
       await pumpWithPrivacyMode(
         tester,
         const PrivacyMask(
@@ -72,9 +72,8 @@ void main() {
   });
 
   group('MaskedAmountText', () {
-    testWidgets('should show actual text when privacy mode is off', (
-      tester,
-    ) async {
+    testWidgets('should show actual text when privacy mode is off',
+        (tester) async {
       await pumpWithPrivacyMode(
         tester,
         const MaskedAmountText(text: '\$1,234.56'),
@@ -84,9 +83,8 @@ void main() {
       expect(find.text('\$1,234.56'), findsOneWidget);
     });
 
-    testWidgets('should show masked pattern when privacy mode is on', (
-      tester,
-    ) async {
+    testWidgets('should show masked pattern when privacy mode is on',
+        (tester) async {
       await pumpWithPrivacyMode(
         tester,
         const MaskedAmountText(text: '\$1,234.56'),
@@ -146,7 +144,9 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
 
       final container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
       );
 
       // Initially privacy mode is off

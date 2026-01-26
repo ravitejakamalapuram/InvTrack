@@ -4,12 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_search_field.dart';
 
 void main() {
-  testWidgets('InvestmentListSearchField has accessible buttons', (
-    tester,
-  ) async {
+  testWidgets('InvestmentListSearchField has accessible buttons', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: InvestmentListSearchField())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: InvestmentListSearchField(),
+          ),
+        ),
       ),
     );
 
@@ -18,12 +20,14 @@ void main() {
     expect(closeButtonFinder, findsOneWidget);
   });
 
-  testWidgets('InvestmentListSearchField clear button is accessible', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
+  testWidgets('InvestmentListSearchField clear button is accessible', (tester) async {
+     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: InvestmentListSearchField())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: InvestmentListSearchField(),
+          ),
+        ),
       ),
     );
 

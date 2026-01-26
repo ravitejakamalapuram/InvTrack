@@ -56,15 +56,16 @@ void main() {
         expect(didPop, isTrue);
       });
 
-      testWidgets('navigates to fallback when canPop returns false', (
-        tester,
-      ) async {
+      testWidgets('navigates to fallback when canPop returns false',
+          (tester) async {
         final router = GoRouter(
           initialLocation: '/only',
           routes: [
             GoRoute(
               path: '/',
-              builder: (context, state) => const Scaffold(body: Text('Home')),
+              builder: (context, state) => const Scaffold(
+                body: Text('Home'),
+              ),
             ),
             GoRoute(
               path: '/only',
@@ -99,12 +100,15 @@ void main() {
           routes: [
             GoRoute(
               path: '/',
-              builder: (context, state) => const Scaffold(body: Text('Home')),
+              builder: (context, state) => const Scaffold(
+                body: Text('Home'),
+              ),
             ),
             GoRoute(
               path: '/dashboard',
-              builder: (context, state) =>
-                  const Scaffold(body: Text('Dashboard')),
+              builder: (context, state) => const Scaffold(
+                body: Text('Dashboard'),
+              ),
             ),
             GoRoute(
               path: '/start',
@@ -180,40 +184,41 @@ void main() {
       });
 
       testWidgets(
-        'navigates to fallback (discarding result) when canPop returns false',
-        (tester) async {
-          final router = GoRouter(
-            initialLocation: '/only',
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (context, state) => const Scaffold(body: Text('Home')),
+          'navigates to fallback (discarding result) when canPop returns false',
+          (tester) async {
+        final router = GoRouter(
+          initialLocation: '/only',
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const Scaffold(
+                body: Text('Home'),
               ),
-              GoRoute(
-                path: '/only',
-                builder: (context, state) => Scaffold(
-                  body: ElevatedButton(
-                    key: const Key('pop_button'),
-                    // Result 'data' will be discarded when falling back
-                    onPressed: () => context.safePopWithResult('data'),
-                    child: const Text('Safe Pop with Result'),
-                  ),
+            ),
+            GoRoute(
+              path: '/only',
+              builder: (context, state) => Scaffold(
+                body: ElevatedButton(
+                  key: const Key('pop_button'),
+                  // Result 'data' will be discarded when falling back
+                  onPressed: () => context.safePopWithResult('data'),
+                  child: const Text('Safe Pop with Result'),
                 ),
               ),
-            ],
-          );
+            ),
+          ],
+        );
 
-          await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpAndSettle();
 
-          // Try to pop with result - should navigate to fallback
-          await tester.tap(find.byKey(const Key('pop_button')));
-          await tester.pumpAndSettle();
+        // Try to pop with result - should navigate to fallback
+        await tester.tap(find.byKey(const Key('pop_button')));
+        await tester.pumpAndSettle();
 
-          // Should be on home (fallback), result was discarded
-          expect(find.text('Home'), findsOneWidget);
-        },
-      );
+        // Should be on home (fallback), result was discarded
+        expect(find.text('Home'), findsOneWidget);
+      });
     });
   });
 }

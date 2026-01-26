@@ -11,18 +11,24 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: ListView(children: [widget])),
+        home: Scaffold(
+          body: ListView(
+            children: [widget],
+          ),
+        ),
       ),
     );
   }
 
   group('SwipeActions - Configuration', () {
-    testWidgets('should render child when no actions configured', (
-      tester,
-    ) async {
+    testWidgets('should render child when no actions configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
-        const SwipeActions(itemKey: 'test-item', child: Text('Test Item')),
+        const SwipeActions(
+          itemKey: 'test-item',
+          child: Text('Test Item'),
+        ),
       );
 
       expect(find.text('Test Item'), findsOneWidget);
@@ -49,9 +55,8 @@ void main() {
       expect(find.byType(Dismissible), findsNothing);
     });
 
-    testWidgets('should wrap with Dismissible when delete action configured', (
-      tester,
-    ) async {
+    testWidgets('should wrap with Dismissible when delete action configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -69,9 +74,8 @@ void main() {
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('should wrap with Dismissible when archive action configured', (
-      tester,
-    ) async {
+    testWidgets('should wrap with Dismissible when archive action configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -89,9 +93,8 @@ void main() {
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('should wrap with Dismissible when both actions configured', (
-      tester,
-    ) async {
+    testWidgets('should wrap with Dismissible when both actions configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -117,9 +120,8 @@ void main() {
   });
 
   group('SwipeActions - Direction', () {
-    testWidgets('should allow only endToStart when only delete configured', (
-      tester,
-    ) async {
+    testWidgets('should allow only endToStart when only delete configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -138,9 +140,8 @@ void main() {
       expect(dismissible.direction, DismissDirection.endToStart);
     });
 
-    testWidgets('should allow only startToEnd when only archive configured', (
-      tester,
-    ) async {
+    testWidgets('should allow only startToEnd when only archive configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -159,9 +160,8 @@ void main() {
       expect(dismissible.direction, DismissDirection.startToEnd);
     });
 
-    testWidgets('should allow horizontal when both actions configured', (
-      tester,
-    ) async {
+    testWidgets('should allow horizontal when both actions configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(

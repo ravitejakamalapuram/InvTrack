@@ -15,9 +15,13 @@ void main() {
 
   Widget buildTestWidget(Widget child) {
     return ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
       child: MaterialApp(
-        home: Scaffold(body: Center(child: child)),
+        home: Scaffold(
+          body: Center(child: child),
+        ),
       ),
     );
   }

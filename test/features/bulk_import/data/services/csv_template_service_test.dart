@@ -120,10 +120,7 @@ void main() {
         // Check first row matches expected
         final firstRow = result.rows.first;
         expect(firstRow.investmentName, CsvTemplateService.sampleRows[0][1]);
-        expect(
-          firstRow.amount,
-          double.parse(CsvTemplateService.sampleRows[0][3]),
-        );
+        expect(firstRow.amount, double.parse(CsvTemplateService.sampleRows[0][3]));
       });
     });
 
