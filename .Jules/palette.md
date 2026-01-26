@@ -21,3 +21,7 @@
 ## 2026-01-22 - [Accessibility: Page Indicators]
 **Learning:** Page indicators (dots) are often implemented as purely visual elements, but users expect them to be interactive. Making them tappable with transparent padding for touch targets and full semantics (label "Page X of Y", selected state) significantly improves navigation and accessibility.
 **Action:** Wrap page indicator dots in `Semantics(button: true, ...)` and `GestureDetector` with transparent padding to ensure a 48px touch target.
+
+## 2026-01-25 - [Accessibility: Loading State Semantics]
+**Learning:** Custom buttons (like `InkWell` wrapped in `Container`) that replace text with a `CircularProgressIndicator` during loading often lose their accessible label and button role, causing screen readers to announce nothing or just "disabled" without context.
+**Action:** Wrap the button in `Semantics(button: true, excludeSemantics: true, ...)` and dynamically update the `label` to include the action status (e.g., "Signing in...") while maintaining the `enabled` state logic (or explicitly communicating it via label if `onTap` is null).
