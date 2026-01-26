@@ -15,7 +15,10 @@ class GoalsListActionBar extends ConsumerWidget {
   /// Whether the goals being displayed are archived
   final bool isArchived;
 
-  const GoalsListActionBar({super.key, this.isArchived = false});
+  const GoalsListActionBar({
+    super.key,
+    this.isArchived = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -142,7 +142,11 @@ void main() {
       });
 
       test('uses full format below threshold', () {
-        final result = formatSmartCurrency(50000, symbol: '₹', locale: 'en_IN');
+        final result = formatSmartCurrency(
+          50000,
+          symbol: '₹',
+          locale: 'en_IN',
+        );
         expect(result, contains('50,000'));
         expect(result, isNot(contains('K')));
       });

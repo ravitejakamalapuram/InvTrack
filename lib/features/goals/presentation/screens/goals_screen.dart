@@ -62,10 +62,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     final isSelectionMode = listState.isSelectionMode;
 
     // Get filtered goals for selection controls
-    final filteredGoals = _getFilteredGoals(
-      activeGoalsAsync,
-      archivedGoalsAsync,
-    );
+    final filteredGoals = _getFilteredGoals(activeGoalsAsync, archivedGoalsAsync);
 
     return Scaffold(
       backgroundColor: isDark
@@ -115,9 +112,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           ),
         ],
       ),
-      floatingActionButton: isSelectionMode
-          ? null
-          : _buildFab(activeGoalsAsync),
+      floatingActionButton: isSelectionMode ? null : _buildFab(activeGoalsAsync),
       bottomNavigationBar: isSelectionMode
           ? GoalsListActionBar(isArchived: _filter == GoalsFilter.archived)
           : null,
@@ -238,15 +233,13 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                     },
                   ),
                   archiveConfig: ArchiveActionConfig(
-                    confirmTitle: isArchived
-                        ? 'Unarchive Goal?'
-                        : 'Archive Goal?',
+                    confirmTitle:
+                        isArchived ? 'Unarchive Goal?' : 'Archive Goal?',
                     confirmMessage: isArchived
                         ? '"${goal.name}" will be restored to your active goals.'
                         : '"${goal.name}" will be hidden from your active goals.',
-                    successMessage: isArchived
-                        ? 'Goal restored'
-                        : 'Goal archived',
+                    successMessage:
+                        isArchived ? 'Goal restored' : 'Goal archived',
                     isArchived: isArchived,
                     onArchive: () {
                       if (isArchived) {
@@ -319,9 +312,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                 curve: Curves.easeOutCubic,
                 builder: (context, value, child) {
                   final bgColor = Color.lerp(
-                    (isDark ? Colors.white : Colors.black).withValues(
-                      alpha: 0.05,
-                    ),
+                    (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.05),
                     AppColors.primaryLight,
                     value,
                   )!;
@@ -334,9 +326,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                       ? FontWeight.w600
                       : FontWeight.w500;
                   final badgeBgColor = Color.lerp(
-                    (isDark ? Colors.white : AppColors.primaryLight).withValues(
-                      alpha: 0.15,
-                    ),
+                    (isDark ? Colors.white : AppColors.primaryLight)
+                        .withValues(alpha: 0.15),
                     Colors.white.withValues(alpha: 0.2),
                     value,
                   )!;
@@ -544,4 +535,5 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
       orElse: () => null,
     );
   }
+
 }

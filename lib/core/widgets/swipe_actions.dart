@@ -151,9 +151,7 @@ class SwipeActions extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        gradient: isArchived
-            ? AppColors.successGradient
-            : AppColors.archiveGradient,
+        gradient: isArchived ? AppColors.successGradient : AppColors.archiveGradient,
         borderRadius: BorderRadius.circular(16),
       ),
       alignment: Alignment.centerLeft,

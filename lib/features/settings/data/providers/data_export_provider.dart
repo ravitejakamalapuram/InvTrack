@@ -32,8 +32,8 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
 /// State for ZIP export operation
 final zipExportStateProvider =
     NotifierProvider<ZipExportNotifier, AsyncValue<void>>(
-      ZipExportNotifier.new,
-    );
+  ZipExportNotifier.new,
+);
 
 class ZipExportNotifier extends Notifier<AsyncValue<void>> {
   @override

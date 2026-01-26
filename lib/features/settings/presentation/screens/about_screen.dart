@@ -222,7 +222,10 @@ class AboutScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(label: 'OK', onPressed: () {}),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {},
+          ),
         ),
       );
     }
@@ -231,10 +234,8 @@ class AboutScreen extends ConsumerWidget {
   /// Encodes query parameters for mailto URI
   String? _encodeQueryParameters(Map<String, String> params) {
     return params.entries
-        .map(
-          (e) =>
-              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
-        )
+        .map((e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
         .join('&');
   }
 }

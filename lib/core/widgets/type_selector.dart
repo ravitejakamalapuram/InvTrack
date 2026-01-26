@@ -212,9 +212,8 @@ class _TypeSelectorChip extends StatelessWidget {
           ),
           child: Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
-            mainAxisAlignment: expanded
-                ? MainAxisAlignment.start
-                : MainAxisAlignment.center,
+            mainAxisAlignment:
+                expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
             children: [
               // Icon container
               Container(
@@ -236,9 +235,10 @@ class _TypeSelectorChip extends StatelessWidget {
                   style: AppTypography.body.copyWith(
                     fontSize: compactMode ? 13 : 14,
                     color: textColor,
-                    fontWeight: selectionProgress > 0.5
-                        ? FontWeight.w600
-                        : FontWeight.w500,
+                    fontWeight:
+                        selectionProgress > 0.5
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

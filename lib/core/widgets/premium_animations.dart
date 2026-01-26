@@ -189,10 +189,7 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    // OPTIMIZATION: Clamp delay to first 5 items (250ms max) to prevent excessive
-    // latency for items further down the list during scrolling.
-    final effectiveIndex = widget.index > 5 ? 5 : widget.index;
-    Future.delayed(widget.delay * effectiveIndex, () {
+    Future.delayed(widget.delay * widget.index, () {
       if (mounted) _controller.forward();
     });
   }

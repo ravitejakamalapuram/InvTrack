@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:csv/csv.dart';
-import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:path_provider/path_provider.dart';
@@ -60,15 +59,11 @@ class ExportService {
       final investment = item['investment'];
 
       rows.add([
-        CsvUtils.sanitizeField(
-          cf.date.toIso8601String().split('T').first,
-        ), // yyyy-MM-dd format
-        CsvUtils.sanitizeField(investment.name),
-        CsvUtils.sanitizeField(
-          _typeToExportString(cf.type),
-        ), // INVEST, INCOME, RETURN, FEE
-        CsvUtils.sanitizeField(cf.amount),
-        CsvUtils.sanitizeField(cf.notes ?? ''),
+        cf.date.toIso8601String().split('T').first, // yyyy-MM-dd format
+        investment.name,
+        _typeToExportString(cf.type), // INVEST, INCOME, RETURN, FEE
+        cf.amount,
+        cf.notes ?? '',
       ]);
     }
 

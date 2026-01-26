@@ -52,9 +52,7 @@ void main() {
       investments.verifyValidationError('Please enter a name');
     });
 
-    testWidgets('should successfully add investment with all fields', (
-      tester,
-    ) async {
+    testWidgets('should successfully add investment with all fields', (tester) async {
       testApp = await TestApp.create(tester);
       await testApp.pumpApp();
 

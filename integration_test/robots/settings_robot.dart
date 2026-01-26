@@ -22,18 +22,12 @@ class SettingsRobot extends BaseRobot {
 
   /// Verify data section
   void verifyDataSection() {
-    verifyExists(
-      find.text('Export Data'),
-      reason: 'Export Data option should exist',
-    );
+    verifyExists(find.text('Export Data'), reason: 'Export Data option should exist');
   }
 
   /// Verify security section
   void verifySecuritySection() {
-    verifyExists(
-      find.textContaining('Security'),
-      reason: 'Security section should exist',
-    );
+    verifyExists(find.textContaining('Security'), reason: 'Security section should exist');
   }
 
   // ============ THEME SWITCHING ============

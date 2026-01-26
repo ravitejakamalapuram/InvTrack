@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 
 void main() {
-  testWidgets('AppTextField shows clear button only when text is not empty', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('AppTextField shows clear button only when text is not empty', (WidgetTester tester) async {
     // Create a controller to check text updates
     final controller = TextEditingController();
 
@@ -22,10 +20,7 @@ void main() {
     );
 
     // Initial state: empty, no clear button
-    expect(
-      find.byType(TextField),
-      findsOneWidget,
-    ); // AppTextField uses TextFormField which uses TextField
+    expect(find.byType(TextField), findsOneWidget); // AppTextField uses TextFormField which uses TextField
     expect(find.byIcon(Icons.cancel), findsNothing);
 
     // Enter text "a"
@@ -61,15 +56,16 @@ void main() {
     expect(find.byIcon(Icons.cancel), findsNothing);
   });
 
-  testWidgets('AppTextField does not show clear button when readOnly is true', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('AppTextField does not show clear button when readOnly is true', (WidgetTester tester) async {
     final controller = TextEditingController(text: 'test');
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: AppTextField(controller: controller, readOnly: true),
+          body: AppTextField(
+            controller: controller,
+            readOnly: true,
+          ),
         ),
       ),
     );

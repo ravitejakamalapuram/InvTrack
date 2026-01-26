@@ -147,9 +147,7 @@ void main() {
     });
 
     test('should toggle selection mode on', () {
-      container
-          .read(investmentListStateProvider.notifier)
-          .toggleSelectionMode();
+      container.read(investmentListStateProvider.notifier).toggleSelectionMode();
       final state = container.read(investmentListStateProvider);
       expect(state.isSelectionMode, true);
     });
@@ -405,9 +403,8 @@ void main() {
     });
 
     test('should clear type filter with clearTypeFilter flag', () {
-      final state = const InvestmentListState().copyWith(
-        typeFilter: InvestmentType.crypto,
-      );
+      final state = const InvestmentListState()
+          .copyWith(typeFilter: InvestmentType.crypto);
       expect(state.hasTypeFilter, true);
 
       final cleared = state.copyWith(clearTypeFilter: true);
@@ -431,7 +428,10 @@ void main() {
 
   group('InvestmentSort enum', () {
     test('should have maturityDateAsc sort option', () {
-      expect(InvestmentSort.values, contains(InvestmentSort.maturityDateAsc));
+      expect(
+        InvestmentSort.values,
+        contains(InvestmentSort.maturityDateAsc),
+      );
     });
 
     test('maturityDateAsc should have correct display name and icon', () {

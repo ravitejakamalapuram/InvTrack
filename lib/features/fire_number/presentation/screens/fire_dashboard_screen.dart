@@ -29,9 +29,7 @@ class FireDashboardScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
         title: const Text('FIRE Journey'),
         backgroundColor: Colors.transparent,
@@ -56,8 +54,13 @@ class FireDashboardScreen extends ConsumerWidget {
           }
 
           return calculationAsync.when(
-            data: (calculation) =>
-                _buildDashboard(context, ref, isDark, settings, calculation),
+            data: (calculation) => _buildDashboard(
+              context,
+              ref,
+              isDark,
+              settings,
+              calculation,
+            ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
           );
@@ -84,9 +87,7 @@ class FireDashboardScreen extends ConsumerWidget {
             Text(
               'Calculate Your FIRE Number',
               style: AppTypography.h1.copyWith(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
               ),
               textAlign: TextAlign.center,
             ),
@@ -94,9 +95,7 @@ class FireDashboardScreen extends ConsumerWidget {
             Text(
               'Set up your financial independence goals and track your progress towards early retirement.',
               style: AppTypography.body.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
               textAlign: TextAlign.center,
             ),
@@ -133,57 +132,33 @@ class FireDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Premium hero card with centered progress ring
-          _buildPremiumHeroCard(
-            context,
-            isDark,
-            calculation,
-            settings,
-            currencySymbol,
-          ),
+          _buildPremiumHeroCard(context, isDark, calculation, settings, currencySymbol),
           SizedBox(height: AppSpacing.lg),
 
           // Quick insights row
-          _buildQuickInsightsRow(
-            context,
-            isDark,
-            calculation,
-            settings,
-            currencySymbol,
-          ),
+          _buildQuickInsightsRow(context, isDark, calculation, settings, currencySymbol),
           SizedBox(height: AppSpacing.lg),
 
           // Actionable insight card
-          _buildActionableInsightCard(
-            context,
-            isDark,
-            calculation,
-            currencySymbol,
-          ),
+          _buildActionableInsightCard(context, isDark, calculation, currencySymbol),
           SizedBox(height: AppSpacing.lg),
 
           // FIRE Numbers breakdown
           Text(
             'Your FIRE Numbers',
             style: AppTypography.h3.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             ),
           ),
           SizedBox(height: AppSpacing.sm),
-          FireStatsCard(
-            calculation: calculation,
-            currencySymbol: currencySymbol,
-          ),
+          FireStatsCard(calculation: calculation, currencySymbol: currencySymbol),
           SizedBox(height: AppSpacing.lg),
 
           // Milestones
           Text(
             'Milestones',
             style: AppTypography.h3.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             ),
           ),
           SizedBox(height: AppSpacing.sm),
@@ -217,9 +192,7 @@ class FireDashboardScreen extends ConsumerWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: isDark ? AppColors.heroGradientDark : AppColors.heroGradient,
-        borderRadius: BorderRadius.circular(
-          FireUiConstants.heroCardBorderRadius,
-        ),
+        borderRadius: BorderRadius.circular(FireUiConstants.heroCardBorderRadius),
         boxShadow: [
           BoxShadow(
             color: statusColor.withValues(alpha: 0.3),
@@ -299,10 +272,7 @@ class FireDashboardScreen extends ConsumerWidget {
       isDark ? Brightness.dark : Brightness.light,
     );
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: statusColor.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
@@ -325,17 +295,12 @@ class FireDashboardScreen extends ConsumerWidget {
     );
   }
 
-  String _getMotivationalMessage(
-    FireCalculationResult calculation,
-    FireSettingsEntity settings,
-  ) {
+  String _getMotivationalMessage(FireCalculationResult calculation, FireSettingsEntity settings) {
     switch (calculation.status) {
       case FireProgressStatus.notStarted:
         return 'Every journey begins with a single step. Start investing today!';
       case FireProgressStatus.behind:
-        final monthlyNeeded =
-            calculation.requiredMonthlySavings -
-            calculation.currentMonthlySavingsRate;
+        final monthlyNeeded = calculation.requiredMonthlySavings - calculation.currentMonthlySavingsRate;
         if (monthlyNeeded > 0) {
           return 'Boost your monthly investments to get back on track.';
         }
@@ -387,9 +352,7 @@ class FireDashboardScreen extends ConsumerWidget {
               isDark ? Brightness.dark : Brightness.light,
             ),
             label: 'Projected',
-            value: projectedDate != null
-                ? dateFormat.format(projectedDate)
-                : 'N/A',
+            value: projectedDate != null ? dateFormat.format(projectedDate) : 'N/A',
             subtitle: calculation.status.shortSubtitle,
           ),
         ),
@@ -401,10 +364,7 @@ class FireDashboardScreen extends ConsumerWidget {
             icon: Icons.savings_outlined,
             iconColor: isDark ? AppColors.warningDark : AppColors.warningLight,
             label: 'Need/Month',
-            value: formatCompactIndian(
-              calculation.requiredMonthlySavings,
-              symbol: currencySymbol,
-            ),
+            value: formatCompactIndian(calculation.requiredMonthlySavings, symbol: currencySymbol),
             subtitle: 'To reach FIRE',
             isSensitive: true,
           ),
@@ -441,9 +401,7 @@ class FireDashboardScreen extends ConsumerWidget {
                 child: Text(
                   label,
                   style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
+                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -457,9 +415,7 @@ class FireDashboardScreen extends ConsumerWidget {
           Text(
             subtitle,
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral500Dark
-                  : AppColors.neutral400Light,
+              color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
               fontSize: 10,
             ),
           ),
@@ -498,9 +454,7 @@ class FireDashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isPositive
-                      ? Icons.check_circle_outline
-                      : Icons.lightbulb_outline,
+                  isPositive ? Icons.check_circle_outline : Icons.lightbulb_outline,
                   color: statusColor,
                   size: 24,
                 ),
@@ -511,13 +465,9 @@ class FireDashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isPositive
-                          ? 'You\'re ${status.shortSubtitle.toLowerCase()}!'
-                          : 'Action Needed',
+                      isPositive ? 'You\'re ${status.shortSubtitle.toLowerCase()}!' : 'Action Needed',
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark
-                            ? AppColors.textPrimaryDark
-                            : AppColors.textPrimaryLight,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -525,18 +475,14 @@ class FireDashboardScreen extends ConsumerWidget {
                         ? Text(
                             'Keep up your current investment rate.',
                             style: AppTypography.small.copyWith(
-                              color: isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light,
+                              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                             ),
                           )
                         : PrivacyMask(
                             child: Text(
                               'Invest ${formatCompactIndian(monthlyGap.abs(), symbol: currencySymbol)}/month more to stay on track.',
                               style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.neutral400Dark
-                                    : AppColors.neutral500Light,
+                                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                               ),
                             ),
                           ),
@@ -549,16 +495,12 @@ class FireDashboardScreen extends ConsumerWidget {
             SizedBox(height: AppSpacing.md),
             Builder(
               builder: (context) {
-                final milestoneColor = isDark
-                    ? AppColors.warningDark
-                    : AppColors.warningLight;
+                final milestoneColor = isDark ? AppColors.warningDark : AppColors.warningLight;
                 return Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.neutral800Dark
-                        : AppColors.neutral100Light,
+                    color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -576,19 +518,14 @@ class FireDashboardScreen extends ConsumerWidget {
                             Text(
                               'Next Milestone: ${nextMilestone.label}',
                               style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.textPrimaryDark
-                                    : AppColors.textPrimaryLight,
+                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             MaskedAmountText(
-                              text:
-                                  '${formatCompactIndian(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol)} to go',
+                              text: '${formatCompactIndian(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol)} to go',
                               style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.neutral400Dark
-                                    : AppColors.neutral500Light,
+                                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                                 fontSize: 11,
                               ),
                             ),
@@ -605,19 +542,13 @@ class FireDashboardScreen extends ConsumerWidget {
                             CircularProgressIndicator(
                               value: nextMilestone.currentProgress / 100,
                               strokeWidth: 4,
-                              backgroundColor: isDark
-                                  ? AppColors.neutral700Dark
-                                  : AppColors.neutral200Light,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                milestoneColor,
-                              ),
+                              backgroundColor: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                              valueColor: AlwaysStoppedAnimation<Color>(milestoneColor),
                             ),
                             Text(
                               '${nextMilestone.currentProgress.toInt()}%',
                               style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.textPrimaryDark
-                                    : AppColors.textPrimaryLight,
+                                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 10,
                               ),
@@ -661,9 +592,7 @@ class FireDashboardScreen extends ConsumerWidget {
           Text(
             'Gap Analysis',
             style: AppTypography.h4.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             ),
           ),
           SizedBox(height: AppSpacing.md),
@@ -673,9 +602,7 @@ class FireDashboardScreen extends ConsumerWidget {
               Text(
                 gapDescription,
                 style: AppTypography.body.copyWith(
-                  color: isDark
-                      ? AppColors.neutral400Dark
-                      : AppColors.neutral500Light,
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),
               ),
               MaskedAmountText(
@@ -683,9 +610,7 @@ class FireDashboardScreen extends ConsumerWidget {
                 style: AppTypography.bodyMedium.copyWith(
                   color: hasShortfall
                       ? (isDark ? AppColors.dangerDark : AppColors.dangerLight)
-                      : (isDark
-                            ? AppColors.successDark
-                            : AppColors.successLight),
+                      : (isDark ? AppColors.successDark : AppColors.successLight),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -698,17 +623,13 @@ class FireDashboardScreen extends ConsumerWidget {
               Text(
                 'Projected FIRE Age',
                 style: AppTypography.body.copyWith(
-                  color: isDark
-                      ? AppColors.neutral400Dark
-                      : AppColors.neutral500Light,
+                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),
               ),
               Text(
                 'Age ${calculation.projectedFireAge}',
                 style: AppTypography.bodyMedium.copyWith(
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   fontWeight: FontWeight.w600,
                 ),
               ),

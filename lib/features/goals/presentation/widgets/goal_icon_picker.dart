@@ -204,9 +204,8 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                         curve: Curves.easeOutCubic,
                         builder: (context, value, child) {
                           final bgColor = Color.lerp(
-                            (isDark ? Colors.white : Colors.black).withValues(
-                              alpha: 0.05,
-                            ),
+                            (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.05),
                             _currentColor.withValues(alpha: 0.2),
                             value,
                           )!;

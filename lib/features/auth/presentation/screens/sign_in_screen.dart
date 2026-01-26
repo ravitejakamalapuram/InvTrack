@@ -364,67 +364,58 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       ),
       child: Material(
         color: Colors.transparent,
-        child: Semantics(
-          button: true,
-          enabled: !_isLoading,
-          label: _isLoading ? 'Signing in with Google' : 'Continue with Google',
+        child: InkWell(
           onTap: _isLoading ? null : _signInWithGoogle,
-          excludeSemantics: true,
-          child: InkWell(
-            onTap: _isLoading ? null : _signInWithGoogle,
-            borderRadius: AppSizes.borderRadiusLg,
-            child: Center(
-              child: _isLoading
-                  ? SizedBox(
-                      width: AppSizes.iconMd,
-                      height: AppSizes.iconMd,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: isDark ? AppColors.primaryLight : Colors.white,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Google "G" icon
-                        Container(
-                          width: AppSizes.iconLg,
-                          height: AppSizes.iconLg,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.primaryLight
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(
-                              AppSizes.radiusSm - 2,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'G',
-                              style: AppTypography.buttonLarge.copyWith(
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.primaryLight,
-                                fontWeight: FontWeight.w800,
-                                fontSize: AppSizes.iconXs,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: AppSpacing.sm + 2),
-                        Text(
-                          'Continue with Google',
-                          style: AppTypography.buttonLarge.copyWith(
-                            color: isDark
-                                ? AppColors.neutral900Light
-                                : Colors.white,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
+          borderRadius: AppSizes.borderRadiusLg,
+          child: Center(
+            child: _isLoading
+                ? SizedBox(
+                    width: AppSizes.iconMd,
+                    height: AppSizes.iconMd,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: isDark ? AppColors.primaryLight : Colors.white,
                     ),
-            ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Google "G" icon
+                      Container(
+                        width: AppSizes.iconLg,
+                        height: AppSizes.iconLg,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.primaryLight : Colors.white,
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSm - 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'G',
+                            style: AppTypography.buttonLarge.copyWith(
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.primaryLight,
+                              fontWeight: FontWeight.w800,
+                              fontSize: AppSizes.iconXs,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.sm + 2),
+                      Text(
+                        'Continue with Google',
+                        style: AppTypography.buttonLarge.copyWith(
+                          color: isDark
+                              ? AppColors.neutral900Light
+                              : Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),

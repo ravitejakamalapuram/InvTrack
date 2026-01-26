@@ -153,9 +153,7 @@ class CashFlowCardWidget extends StatelessWidget {
         Text(
           AppDateUtils.formatShort(cashFlow.date),
           style: AppTypography.small.copyWith(
-            color: isDark
-                ? AppColors.neutral400Dark
-                : AppColors.neutral500Light,
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
           ),
         ),
         if (cashFlow.notes != null && cashFlow.notes!.isNotEmpty) ...[
@@ -163,9 +161,7 @@ class CashFlowCardWidget extends StatelessWidget {
           Text(
             cashFlow.notes!,
             style: AppTypography.small.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               fontStyle: FontStyle.italic,
             ),
             maxLines: 1,

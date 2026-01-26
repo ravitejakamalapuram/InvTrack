@@ -22,10 +22,6 @@
 **Learning:** Page indicators (dots) are often implemented as purely visual elements, but users expect them to be interactive. Making them tappable with transparent padding for touch targets and full semantics (label "Page X of Y", selected state) significantly improves navigation and accessibility.
 **Action:** Wrap page indicator dots in `Semantics(button: true, ...)` and `GestureDetector` with transparent padding to ensure a 48px touch target.
 
-## 2026-01-25 - [Accessibility: Loading State Semantics]
-**Learning:** Custom buttons (like `InkWell` wrapped in `Container`) that replace text with a `CircularProgressIndicator` during loading often lose their accessible label and button role, causing screen readers to announce nothing or just "disabled" without context.
-**Action:** Wrap the button in `Semantics(button: true, excludeSemantics: true, ...)` and dynamically update the `label` to include the action status (e.g., "Signing in...") while maintaining the `enabled` state logic (or explicitly communicating it via label if `onTap` is null).
-
 ## 2026-02-15 - [Accessibility: Privacy Masking & Compact Text]
 **Learning:** Privacy masking using bullets ("•••••") results in verbose "bullet bullet..." announcements. Similarly, compact financial notation ("1.5L") is often ambiguous to screen readers.
 **Action:** For privacy masks, use `Semantics(label: 'Hidden amount', excludeSemantics: true)`. For compact values, provide the full expanded value in the semantic label (e.g., "1,50,000 rupees") to offer better context than the visual abbreviation.

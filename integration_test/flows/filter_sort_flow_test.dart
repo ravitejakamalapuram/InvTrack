@@ -98,9 +98,7 @@ void main() {
       investments.verifyInvestmentDisplayed('Closed Investment');
     });
 
-    testWidgets('should show investments sorted by recent first', (
-      tester,
-    ) async {
+    testWidgets('should show investments sorted by recent first', (tester) async {
       testApp = await TestApp.create(tester);
 
       final now = DateTime.now();

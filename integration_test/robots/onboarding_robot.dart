@@ -47,13 +47,19 @@ class OnboardingRobot extends BaseRobot {
 
   /// Swipe to next page
   Future<void> swipeToNextPage() async {
-    await tester.drag(find.byType(PageView), const Offset(-300, 0));
+    await tester.drag(
+      find.byType(PageView),
+      const Offset(-300, 0),
+    );
     await pumpAndSettle();
   }
 
   /// Swipe to previous page
   Future<void> swipeToPreviousPage() async {
-    await tester.drag(find.byType(PageView), const Offset(300, 0));
+    await tester.drag(
+      find.byType(PageView),
+      const Offset(300, 0),
+    );
     await pumpAndSettle();
   }
 

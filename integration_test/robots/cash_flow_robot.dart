@@ -108,10 +108,7 @@ class CashFlowRobot extends BaseRobot {
 
   /// Verify a transaction is displayed
   void verifyTransactionDisplayed(String amount) {
-    verifyTextDisplayed(
-      amount,
-      reason: 'Transaction with amount "$amount" should be visible',
-    );
+    verifyTextDisplayed(amount, reason: 'Transaction with amount "$amount" should be visible');
   }
 
   /// Tap on a transaction to edit

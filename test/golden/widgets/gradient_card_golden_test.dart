@@ -27,7 +27,10 @@ void main() {
               children: [
                 Text(
                   'Total Portfolio',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
                 ),
                 SizedBox(height: 8),
                 Text(

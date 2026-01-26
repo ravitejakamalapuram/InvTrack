@@ -20,9 +20,7 @@ void main() {
     late InvestmentRobot investments;
     late CashFlowRobot cashFlows;
 
-    testWidgets('should open add cash flow screen from investment detail', (
-      tester,
-    ) async {
+    testWidgets('should open add cash flow screen from investment detail', (tester) async {
       testApp = await TestApp.create(tester);
 
       // Seed an investment
@@ -54,9 +52,7 @@ void main() {
       cashFlows.verifyOnAddCashFlowScreen();
     });
 
-    testWidgets('should show validation error for empty amount', (
-      tester,
-    ) async {
+    testWidgets('should show validation error for empty amount', (tester) async {
       testApp = await TestApp.create(tester);
 
       final now = DateTime.now();

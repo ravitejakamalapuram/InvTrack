@@ -84,8 +84,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     try {
       final settings = FireSettingsEntity(
         id: const Uuid().v4(),
-        monthlyExpenses:
-            double.tryParse(_monthlyExpensesController.text) ?? 50000,
+        monthlyExpenses: double.tryParse(_monthlyExpensesController.text) ?? 50000,
         currentAge: _currentAge,
         targetFireAge: _targetFireAge,
         fireType: _selectedFireType,
@@ -97,18 +96,16 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
         updatedAt: DateTime.now(),
       );
 
-      await ref
-          .read(fireSettingsNotifierProvider.notifier)
-          .saveSettings(settings);
+      await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(settings);
 
       if (mounted) {
         context.go('/fire');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     } finally {
       if (mounted) {
@@ -122,9 +119,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
         title: Text('FIRE Setup', style: AppTypography.h2),
         backgroundColor: Colors.transparent,
@@ -168,10 +163,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
 
   Widget _buildProgressIndicator(bool isDark) {
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: List.generate(4, (index) {
           final isActive = index <= _currentStep;
@@ -182,9 +174,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
               decoration: BoxDecoration(
                 color: isActive
                     ? (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                    : (isDark
-                          ? AppColors.neutral700Dark
-                          : AppColors.neutral200Light),
+                    : (isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -200,21 +190,14 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Age',
-            style: AppTypography.h1.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
+          Text('Your Age', style: AppTypography.h1.copyWith(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           Text(
             'Tell us about your current age and when you want to achieve FIRE.',
             style: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
           SizedBox(height: AppSpacing.xl),
@@ -223,36 +206,25 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Current Age',
-                  style: AppTypography.h4.copyWith(
-                    color: isDark
-                        ? AppColors.textPrimaryDark
-                        : AppColors.textPrimaryLight,
-                  ),
-                ),
+                Text('Current Age', style: AppTypography.h4.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                )),
                 SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: _currentAge > 18
-                          ? () => setState(() => _currentAge--)
-                          : null,
+                      onPressed: _currentAge > 18 ? () => setState(() => _currentAge--) : null,
                       icon: const Icon(Icons.remove_circle_outline),
                     ),
                     Text(
                       '$_currentAge',
                       style: AppTypography.displaySmall.copyWith(
-                        color: isDark
-                            ? AppColors.textPrimaryDark
-                            : AppColors.textPrimaryLight,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                       ),
                     ),
                     IconButton(
-                      onPressed: _currentAge < 70
-                          ? () => setState(() => _currentAge++)
-                          : null,
+                      onPressed: _currentAge < 70 ? () => setState(() => _currentAge++) : null,
                       icon: const Icon(Icons.add_circle_outline),
                     ),
                   ],
@@ -273,14 +245,9 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Target FIRE Age',
-                  style: AppTypography.h4.copyWith(
-                    color: isDark
-                        ? AppColors.textPrimaryDark
-                        : AppColors.textPrimaryLight,
-                  ),
-                ),
+                Text('Target FIRE Age', style: AppTypography.h4.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                )),
                 SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -294,15 +261,11 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                     Text(
                       '$_targetFireAge',
                       style: AppTypography.displaySmall.copyWith(
-                        color: isDark
-                            ? AppColors.textPrimaryDark
-                            : AppColors.textPrimaryLight,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                       ),
                     ),
                     IconButton(
-                      onPressed: _targetFireAge < 70
-                          ? () => setState(() => _targetFireAge++)
-                          : null,
+                      onPressed: _targetFireAge < 70 ? () => setState(() => _targetFireAge++) : null,
                       icon: const Icon(Icons.add_circle_outline),
                     ),
                   ],
@@ -318,9 +281,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                   child: Text(
                     '${_targetFireAge - _currentAge} years from now',
                     style: AppTypography.small.copyWith(
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
+                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                     ),
                   ),
                 ),
@@ -340,21 +301,14 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Monthly Expenses',
-            style: AppTypography.h1.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
+          Text('Monthly Expenses', style: AppTypography.h1.copyWith(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           Text(
             'How much do you spend monthly? This helps calculate your FIRE number.',
             style: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
           SizedBox(height: AppSpacing.xl),
@@ -381,21 +335,14 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'FIRE Type',
-            style: AppTypography.h1.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
+          Text('FIRE Type', style: AppTypography.h1.copyWith(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           Text(
             'Choose your FIRE lifestyle. This affects your target number.',
             style: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
           SizedBox(height: AppSpacing.xl),
@@ -415,51 +362,30 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
           setState(() => _selectedFireType = type);
         },
         backgroundColor: isSelected
-            ? (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                  .withValues(alpha: 0.1)
+            ? (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.1)
             : null,
         child: Row(
           children: [
-            Icon(
-              type.icon,
-              color: isSelected
-                  ? (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                  : (isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light),
-            ),
+            Icon(type.icon, color: isSelected
+                ? (isDark ? AppColors.primaryDark : AppColors.primaryLight)
+                : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light)),
             SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    type.displayName,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: isDark
-                          ? AppColors.textPrimaryDark
-                          : AppColors.textPrimaryLight,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
-                  ),
-                  Text(
-                    type.description,
-                    style: AppTypography.small.copyWith(
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
-                    ),
-                  ),
+                  Text(type.displayName, style: AppTypography.bodyMedium.copyWith(
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  )),
+                  Text(type.description, style: AppTypography.small.copyWith(
+                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  )),
                 ],
               ),
             ),
             if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
-              ),
+              Icon(Icons.check_circle, color: isDark ? AppColors.primaryDark : AppColors.primaryLight),
           ],
         ),
       ),
@@ -472,29 +398,21 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Advanced Settings',
-            style: AppTypography.h1.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
+          Text('Advanced Settings', style: AppTypography.h1.copyWith(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           Text(
             'Fine-tune your assumptions. These are pre-filled with recommended values.',
             style: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
           ),
           SizedBox(height: AppSpacing.xl),
           _buildSliderSetting(
             isDark,
             label: 'Safe Withdrawal Rate',
-            description:
-                'The percentage of your portfolio you can withdraw annually. '
+            description: 'The percentage of your portfolio you can withdraw annually. '
                 '4% is the classic rule, but 3-3.5% is safer for early retirement.',
             value: _safeWithdrawalRate,
             min: 2.5,
@@ -506,8 +424,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
           _buildSliderSetting(
             isDark,
             label: 'Expected Inflation',
-            description:
-                'Assumed annual inflation rate. Higher inflation means '
+            description: 'Assumed annual inflation rate. Higher inflation means '
                 'you\'ll need a larger FIRE corpus. India averages 5-7%.',
             value: _inflationRate,
             min: 4.0,
@@ -519,8 +436,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
           _buildSliderSetting(
             isDark,
             label: 'Pre-retirement Return',
-            description:
-                'Expected annual return on investments before retirement. '
+            description: 'Expected annual return on investments before retirement. '
                 'This affects how fast your portfolio grows. 10-12% is typical for equity.',
             value: _preRetirementReturn,
             min: 8.0,
@@ -550,22 +466,12 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
-                ),
-              ),
-              Text(
-                '${value.toStringAsFixed(1)}$suffix',
-                style: AppTypography.h4.copyWith(
-                  color: isDark
-                      ? AppColors.primaryDark
-                      : AppColors.primaryLight,
-                ),
-              ),
+              Text(label, style: AppTypography.bodyMedium.copyWith(
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              )),
+              Text('${value.toStringAsFixed(1)}$suffix', style: AppTypography.h4.copyWith(
+                color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+              )),
             ],
           ),
           if (description != null) ...[
@@ -573,9 +479,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             Text(
               description,
               style: AppTypography.small.copyWith(
-                color: isDark
-                    ? AppColors.neutral400Dark
-                    : AppColors.neutral500Light,
+                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
             ),
           ],

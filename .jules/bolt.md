@@ -29,11 +29,3 @@ Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypa
 
 **Action:**
 Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
-
-## 2024-05-26 - Unbounded Animation Delays in Infinite Lists
-
-**Learning:**
-Widgets that calculate animation delays based on their list index (e.g., `delay * index`) without clamping cause excessive wait times for items deeper in the list. For a 100-item list, the 100th item waits 5 seconds to appear, creating a "broken" UX where users see empty space.
-
-**Action:**
-Always clamp delay calculations to a small maximum (e.g., first 5-10 items) or use modulo arithmetic to ensure items further down the list appear promptly while maintaining the stagger effect for the initial screen.

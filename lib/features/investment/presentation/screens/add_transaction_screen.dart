@@ -210,7 +210,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 onSelected: (type) => setState(() => _selectedType = type),
                 colorBuilder: (type) {
                   if (type.isOutflow) {
-                    return isDark ? AppColors.errorDark : AppColors.errorLight;
+                    return isDark
+                        ? AppColors.errorDark
+                        : AppColors.errorLight;
                   }
                   return isDark
                       ? AppColors.successDark
@@ -366,11 +368,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             );
                             final color = _selectedType.isOutflow
                                 ? (isDark
-                                      ? AppColors.errorDark
-                                      : AppColors.errorLight)
+                                    ? AppColors.errorDark
+                                    : AppColors.errorLight)
                                 : (isDark
-                                      ? AppColors.successDark
-                                      : AppColors.successLight);
+                                    ? AppColors.successDark
+                                    : AppColors.successLight);
 
                             return Text(
                               '$prefix$formattedAmount',
@@ -431,4 +433,5 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       color: color,
     );
   }
+
 }

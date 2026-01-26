@@ -149,5 +149,5 @@ class FireSettingsNotifier extends Notifier<AsyncValue<void>> {
 /// Provider for FIRE settings notifier
 final fireSettingsNotifierProvider =
     NotifierProvider<FireSettingsNotifier, AsyncValue<void>>(
-      FireSettingsNotifier.new,
-    );
+  FireSettingsNotifier.new,
+);

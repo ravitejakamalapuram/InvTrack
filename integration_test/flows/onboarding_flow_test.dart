@@ -33,9 +33,7 @@ void main() {
       onboarding.verifyTextDisplayed('Next');
     });
 
-    testWidgets('should navigate through all pages with Next button', (
-      tester,
-    ) async {
+    testWidgets('should navigate through all pages with Next button', (tester) async {
       testApp = await TestApp.create(tester);
       await testApp.pumpApp(showOnboarding: true);
 
@@ -105,9 +103,7 @@ void main() {
       navigation.verifyOnOverview();
     });
 
-    testWidgets('should complete onboarding and go to main app', (
-      tester,
-    ) async {
+    testWidgets('should complete onboarding and go to main app', (tester) async {
       testApp = await TestApp.create(tester);
       await testApp.pumpApp(showOnboarding: true);
 
