@@ -1,6 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [3.16.5] - 2026-01-26
+
+### ⚡ Performance
+
+- Fix excessive animation delay in long lists (#112)
+
+## [3.16.4] - 2026-01-23
 
 ### ♻️ Refactoring
 
