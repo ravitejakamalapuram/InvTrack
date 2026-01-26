@@ -38,7 +38,9 @@ final activeGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
     error,
     stackTrace,
   ) {
-    debugPrint('activeGoalsProvider: ERROR - $error');
+    if (kDebugMode) {
+      debugPrint('activeGoalsProvider: ERROR - $error');
+    }
   });
 });
 
@@ -55,7 +57,9 @@ final allGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
     error,
     stackTrace,
   ) {
-    debugPrint('allGoalsProvider: ERROR - $error');
+    if (kDebugMode) {
+      debugPrint('allGoalsProvider: ERROR - $error');
+    }
   });
 });
 
@@ -71,7 +75,9 @@ final archivedGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
     error,
     stackTrace,
   ) {
-    debugPrint('archivedGoalsProvider: ERROR - $error');
+    if (kDebugMode) {
+      debugPrint('archivedGoalsProvider: ERROR - $error');
+    }
   });
 });
 
@@ -112,7 +118,9 @@ final watchGoalByIdProvider = StreamProvider.family<GoalEntity?, String>((
     error,
     stackTrace,
   ) {
-    debugPrint('watchGoalByIdProvider: ERROR - $error');
+    if (kDebugMode) {
+      debugPrint('watchGoalByIdProvider: ERROR - $error');
+    }
   });
 });
 
