@@ -143,7 +143,9 @@ class _DocumentCard extends ConsumerWidget {
                     Text(
                       document.name,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -195,7 +197,9 @@ class _DocumentCard extends ConsumerWidget {
               if (!isReadOnly)
                 Icon(
                   Icons.swipe_rounded,
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.2,
+                  ),
                   size: 18,
                 ),
             ],
@@ -227,7 +231,13 @@ class _DocumentCard extends ConsumerWidget {
           children: [
             Icon(Icons.edit_rounded, color: Colors.white),
             SizedBox(width: 8),
-            Text('Edit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            Text(
+              'Edit',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -243,7 +253,13 @@ class _DocumentCard extends ConsumerWidget {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             SizedBox(width: 8),
             Icon(Icons.delete_rounded, color: Colors.white),
           ],
@@ -282,7 +298,8 @@ class _DocumentCard extends ConsumerWidget {
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: 'Delete Document?',
-      message: 'Are you sure you want to delete "${document.name}"? This cannot be undone.',
+      message:
+          'Are you sure you want to delete "${document.name}"? This cannot be undone.',
       confirmText: 'Delete',
     );
     return confirmed;

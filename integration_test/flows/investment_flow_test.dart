@@ -19,7 +19,9 @@ void main() {
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
 
   group('Investment CRUD Flow', () {
-    testWidgets('should display empty state when no investments', (tester) async {
+    testWidgets('should display empty state when no investments', (
+      tester,
+    ) async {
       final testApp = await TestApp.create(tester);
       final nav = NavigationRobot(tester);
       final inv = InvestmentRobot(tester);
@@ -127,4 +129,3 @@ void main() {
     });
   });
 }
-

@@ -27,9 +27,7 @@ class InvTrackerApp extends ConsumerWidget {
           themeMode: settings.themeMode,
           routerConfig: router,
           builder: (context, child) {
-            return PrivacyProtectionWrapper(
-              child: child!,
-            );
+            return PrivacyProtectionWrapper(child: child!);
           },
         ),
       ),

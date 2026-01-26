@@ -39,10 +39,7 @@ void main() {
         final result = SimpleCsvParser.parseString(csv);
 
         expect(result.hasErrors, true);
-        expect(
-          result.errors.first,
-          contains('Missing required columns'),
-        );
+        expect(result.errors.first, contains('Missing required columns'));
       });
 
       test('handles column header variations', () {
@@ -361,4 +358,3 @@ bad-date,Bad,invest,1000
     });
   });
 }
-

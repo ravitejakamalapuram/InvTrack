@@ -66,10 +66,13 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     super.didChangeAppLifecycleState(state);
     // When app resumes from background, try biometrics again if we're on unlock screen
     // BUT only if we haven't exceeded max attempts and aren't in cooldown
-    if (state == AppLifecycleState.resumed && widget.mode == PasscodeMode.unlock) {
+    if (state == AppLifecycleState.resumed &&
+        widget.mode == PasscodeMode.unlock) {
       // Don't auto-retry if we've had too many failed attempts
       if (_biometricAttemptCount >= _maxBiometricAttempts) {
-        debugPrint('🔐 Max biometric attempts reached, user must enter PIN or tap fingerprint');
+        debugPrint(
+          '🔐 Max biometric attempts reached, user must enter PIN or tap fingerprint',
+        );
         return;
       }
 
@@ -115,7 +118,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     }
 
     final securityState = ref.read(securityProvider);
-    if (!securityState.isBiometricEnabled || !securityState.isBiometricAvailable) {
+    if (!securityState.isBiometricEnabled ||
+        !securityState.isBiometricAvailable) {
       debugPrint('🔐 Biometrics not enabled or not available');
       return;
     }
@@ -130,7 +134,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     _lastBiometricAttempt = DateTime.now();
 
     try {
-      debugPrint('🔐 Starting biometric authentication (auto: $isAutoAttempt, attempt: ${_biometricAttemptCount + 1})');
+      debugPrint(
+        '🔐 Starting biometric authentication (auto: $isAutoAttempt, attempt: ${_biometricAttemptCount + 1})',
+      );
 
       final success = await ref
           .read(securityProvider.notifier)
@@ -222,11 +228,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
           widget.onSuccess?.call();
         } else {
           // Check if we are now locked out
-           final newLockout = await ref
-            .read(securityServiceProvider)
-            .getLockoutRemainingSeconds();
+          final newLockout = await ref
+              .read(securityServiceProvider)
+              .getLockoutRemainingSeconds();
           if (newLockout != null) {
-             _showError('Locked out. Try again in ${newLockout}s');
+            _showError('Locked out. Try again in ${newLockout}s');
           } else {
             _showError('Incorrect PIN');
           }

@@ -47,19 +47,13 @@ class OnboardingRobot extends BaseRobot {
 
   /// Swipe to next page
   Future<void> swipeToNextPage() async {
-    await tester.drag(
-      find.byType(PageView),
-      const Offset(-300, 0),
-    );
+    await tester.drag(find.byType(PageView), const Offset(-300, 0));
     await pumpAndSettle();
   }
 
   /// Swipe to previous page
   Future<void> swipeToPreviousPage() async {
-    await tester.drag(
-      find.byType(PageView),
-      const Offset(300, 0),
-    );
+    await tester.drag(find.byType(PageView), const Offset(300, 0));
     await pumpAndSettle();
   }
 
@@ -78,13 +72,13 @@ class OnboardingRobot extends BaseRobot {
   Future<void> completeFullOnboarding() async {
     verifyOnFirstPage();
     await goToNextPage();
-    
+
     verifyOnSecondPage();
     await goToNextPage();
-    
+
     verifyOnThirdPage();
     await goToNextPage();
-    
+
     verifyOnLastPage();
     await completeOnboarding();
   }
@@ -93,15 +87,14 @@ class OnboardingRobot extends BaseRobot {
   Future<void> completeBySwipe() async {
     verifyOnFirstPage();
     await swipeToNextPage();
-    
+
     verifyOnSecondPage();
     await swipeToNextPage();
-    
+
     verifyOnThirdPage();
     await swipeToNextPage();
-    
+
     verifyOnLastPage();
     await completeOnboarding();
   }
 }
-

@@ -69,10 +69,7 @@ class FireMilestoneCard extends ConsumerWidget {
               color: isAchieved
                   ? progressColor.withValues(alpha: 0.2)
                   : Colors.transparent,
-              border: Border.all(
-                color: progressColor,
-                width: 2,
-              ),
+              border: Border.all(color: progressColor, width: 2),
             ),
             child: isAchieved
                 ? Icon(Icons.check, size: 18, color: progressColor)
@@ -97,15 +94,24 @@ class FireMilestoneCard extends ConsumerWidget {
                   milestone.label,
                   style: AppTypography.bodyMedium.copyWith(
                     color: isAchieved
-                        ? (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)
-                        : (isDark ? AppColors.neutral400Dark : AppColors.neutral500Light),
+                        ? (isDark
+                              ? AppColors.textPrimaryDark
+                              : AppColors.textPrimaryLight)
+                        : (isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral500Light),
                     fontWeight: isAchieved ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
                 MaskedAmountText(
-                  text: formatCompactIndian(milestone.targetAmount, symbol: currencySymbol),
+                  text: formatCompactIndian(
+                    milestone.targetAmount,
+                    symbol: currencySymbol,
+                  ),
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
               ],
@@ -121,7 +127,9 @@ class FireMilestoneCard extends ConsumerWidget {
                   Text(
                     '${milestone.currentProgress.toInt()}%',
                     style: AppTypography.small.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -143,14 +151,9 @@ class FireMilestoneCard extends ConsumerWidget {
               ),
             ),
           if (isAchieved)
-            Icon(
-              Icons.celebration_outlined,
-              size: 20,
-              color: progressColor,
-            ),
+            Icon(Icons.celebration_outlined, size: 20, color: progressColor),
         ],
       ),
     );
   }
 }
-

@@ -16,12 +16,15 @@ class FirestoreFireSettingsRepository implements FireSettingsRepository {
   FirestoreFireSettingsRepository({
     required FirebaseFirestore firestore,
     required String userId,
-  })  : _firestore = firestore,
-        _userId = userId;
+  }) : _firestore = firestore,
+       _userId = userId;
 
   /// FIRE settings document reference (single document per user)
-  DocumentReference<Map<String, dynamic>> get _settingsRef =>
-      _firestore.collection('users').doc(_userId).collection('fireSettings').doc('settings');
+  DocumentReference<Map<String, dynamic>> get _settingsRef => _firestore
+      .collection('users')
+      .doc(_userId)
+      .collection('fireSettings')
+      .doc('settings');
 
   /// Execute write with timeout (offline-first pattern)
   Future<void> _executeWrite(Future<void> Function() writeOperation) async {
@@ -72,4 +75,3 @@ class FirestoreFireSettingsRepository implements FireSettingsRepository {
     return settings?.isSetupComplete ?? false;
   }
 }
-

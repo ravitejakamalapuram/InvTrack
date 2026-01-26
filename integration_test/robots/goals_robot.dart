@@ -100,4 +100,3 @@ class GoalsRobot extends BaseRobot {
     await tapText('Delete');
   }
 }
-

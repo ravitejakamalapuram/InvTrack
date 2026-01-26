@@ -76,4 +76,3 @@ class SwipeToDelete extends StatelessWidget {
     );
   }
 }
-

@@ -174,4 +174,3 @@ class FireScenario {
     required this.finalCorpus,
   });
 }
-

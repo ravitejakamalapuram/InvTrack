@@ -136,9 +136,7 @@ mixin NotificationPreferencesMixin {
 
   /// Check if a milestone has already been shown for an investment
   bool isMilestoneShown(String investmentId, double moic) =>
-      prefs.getBool(
-        NotificationPrefsKeys.milestoneShown(investmentId, moic),
-      ) ??
+      prefs.getBool(NotificationPrefsKeys.milestoneShown(investmentId, moic)) ??
       false;
 
   /// Mark a milestone as shown
@@ -220,4 +218,3 @@ mixin NotificationPreferencesMixin {
     );
   }
 }
-

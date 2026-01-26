@@ -27,10 +27,10 @@ void main() {
 
       // Navigate to investments
       await navigation.goToInvestments();
-      
+
       // Open add investment form
       await investments.openAddInvestment();
-      
+
       // Verify form is displayed
       investments.verifyOnAddInvestmentScreen();
     });
@@ -44,15 +44,17 @@ void main() {
 
       await navigation.goToInvestments();
       await investments.openAddInvestment();
-      
+
       // Try to submit without entering name
       await investments.tapSave();
-      
+
       // Verify validation error
       investments.verifyValidationError('Please enter a name');
     });
 
-    testWidgets('should successfully add investment with all fields', (tester) async {
+    testWidgets('should successfully add investment with all fields', (
+      tester,
+    ) async {
       testApp = await TestApp.create(tester);
       await testApp.pumpApp();
 
@@ -60,14 +62,14 @@ void main() {
       investments = InvestmentRobot(tester);
 
       await navigation.goToInvestments();
-      
+
       // Add investment with type, name, and notes
       await investments.addInvestment(
         name: 'My New FD',
         type: InvestmentType.fixedDeposit,
         notes: 'Test investment notes',
       );
-      
+
       // Verify investment is now in the list
       investments.verifyInvestmentDisplayed('My New FD');
     });
@@ -81,16 +83,16 @@ void main() {
 
       await navigation.goToInvestments();
       await investments.openAddInvestment();
-      
+
       // Verify default type is P2P Lending
       investments.verifyTextDisplayed('P2P Lending');
-      
+
       // Select Fixed Deposit
       await investments.selectType(InvestmentType.fixedDeposit);
-      
+
       // Select Bonds
       await investments.selectType(InvestmentType.bonds);
-      
+
       // Select Real Estate
       await investments.selectType(InvestmentType.realEstate);
     });
@@ -110,33 +112,32 @@ void main() {
           updatedAt: now,
         ),
       ]);
-      
+
       await testApp.pumpApp();
 
       navigation = NavigationRobot(tester);
       investments = InvestmentRobot(tester);
 
       await navigation.goToInvestments();
-      
+
       // Tap on the investment
       await investments.tapInvestment('Original FD');
-      
+
       // Open edit screen
       await investments.openEdit();
-      
+
       // Verify edit screen
       investments.verifyOnEditInvestmentScreen();
-      
+
       // Update the name
       await investments.clearName();
       await investments.enterName('Updated FD');
-      
+
       // Save changes
       await investments.tapSave();
-      
+
       // Verify the updated name is shown
       investments.verifyTextDisplayed('Updated FD');
     });
   });
 }
-

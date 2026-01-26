@@ -162,4 +162,3 @@ class _SegmentTab extends StatelessWidget {
     );
   }
 }
-

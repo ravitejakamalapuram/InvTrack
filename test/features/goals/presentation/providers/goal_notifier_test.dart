@@ -220,26 +220,29 @@ void main() {
       fakeRepository.seed(archivedGoals: [archivedGoal1, archivedGoal2]);
       final notifier = container.read(goalNotifierProvider.notifier);
 
-      final deletedCount = await notifier.bulkDelete(
-        [archivedGoal1.id, archivedGoal2.id],
-        isArchived: true,
-      );
+      final deletedCount = await notifier.bulkDelete([
+        archivedGoal1.id,
+        archivedGoal2.id,
+      ], isArchived: true);
 
       expect(deletedCount, 2);
       expect(fakeRepository.archivedGoals, isEmpty);
     });
 
-    test('should delete active goals when isArchived is false (default)', () async {
-      fakeRepository.seed(goals: [testGoal1, testGoal2]);
-      final notifier = container.read(goalNotifierProvider.notifier);
+    test(
+      'should delete active goals when isArchived is false (default)',
+      () async {
+        fakeRepository.seed(goals: [testGoal1, testGoal2]);
+        final notifier = container.read(goalNotifierProvider.notifier);
 
-      final deletedCount = await notifier.bulkDelete(
-        [testGoal1.id, testGoal2.id],
-      );
+        final deletedCount = await notifier.bulkDelete([
+          testGoal1.id,
+          testGoal2.id,
+        ]);
 
-      expect(deletedCount, 2);
-      expect(fakeRepository.goals, isEmpty);
-    });
+        expect(deletedCount, 2);
+        expect(fakeRepository.goals, isEmpty);
+      },
+    );
   });
 }
-

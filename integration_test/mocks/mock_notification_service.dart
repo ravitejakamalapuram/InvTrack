@@ -154,4 +154,3 @@ class FakeNotificationService implements NotificationService {
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
-

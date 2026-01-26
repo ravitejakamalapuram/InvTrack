@@ -44,10 +44,7 @@ class PrivacyMask extends ConsumerWidget {
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
       transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
       child: isPrivacyMode
           ? _buildMaskedContent(context)
@@ -174,13 +171,10 @@ class _MaskedText extends StatelessWidget {
     // Also fixed bug where dots were white-on-white in light mode.
     return Text(
       maskedPattern,
-      style: effectiveStyle.copyWith(
-        letterSpacing: 2,
-      ),
+      style: effectiveStyle.copyWith(letterSpacing: 2),
       maxLines: maxLines,
       overflow: overflow,
       textAlign: textAlign,
     );
   }
 }
-

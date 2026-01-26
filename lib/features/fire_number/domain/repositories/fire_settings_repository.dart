@@ -17,4 +17,3 @@ abstract class FireSettingsRepository {
   /// Check if user has completed FIRE setup
   Future<bool> hasCompletedSetup();
 }
-

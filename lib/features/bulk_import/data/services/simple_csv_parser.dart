@@ -92,8 +92,9 @@ class SimpleCsvParser {
 
   /// Get date formats, creating them lazily
   static List<DateFormat> get _dateFormats {
-    _dateFormatsCache ??=
-        _dateFormatPatterns.map((p) => DateFormat(p)).toList();
+    _dateFormatsCache ??= _dateFormatPatterns
+        .map((p) => DateFormat(p))
+        .toList();
     return _dateFormatsCache!;
   }
 
@@ -448,6 +449,7 @@ class ParsedGoalRow {
   final double? targetMonthlyIncome;
   final DateTime? targetDate;
   final String trackingMode;
+
   /// Linked investment names (used for remapping to IDs during import)
   final List<String> linkedInvestmentNames;
   final List<String> linkedTypes;
@@ -473,16 +475,16 @@ class ParsedGoalRow {
   bool get isValid => error == null;
 
   ParsedGoalRow.withError({required this.rowNumber, required this.error})
-      : name = '',
-        type = 'targetAmount',
-        targetAmount = 0,
-        targetMonthlyIncome = null,
-        targetDate = null,
-        trackingMode = 'all',
-        linkedInvestmentNames = const [],
-        linkedTypes = const [],
-        icon = '🎯',
-        colorValue = 0xFF4CAF50;
+    : name = '',
+      type = 'targetAmount',
+      targetAmount = 0,
+      targetMonthlyIncome = null,
+      targetDate = null,
+      trackingMode = 'all',
+      linkedInvestmentNames = const [],
+      linkedTypes = const [],
+      icon = '🎯',
+      colorValue = 0xFF4CAF50;
 }
 
 /// Result of parsing a Goals CSV file
@@ -500,7 +502,8 @@ class ParsedGoalsResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedGoalRow> get validRowsOnly => rows.where((r) => r.isValid).toList();
+  List<ParsedGoalRow> get validRowsOnly =>
+      rows.where((r) => r.isValid).toList();
 }
 
 /// Parser for Goals CSV files
@@ -607,20 +610,30 @@ class GoalsCsvParser {
       final targetAmountStr = _getValue(values, columnMap['targetAmount']!);
 
       if (name.isEmpty) {
-        return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Missing name');
+        return ParsedGoalRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing name',
+        );
       }
       if (type.isEmpty) {
-        return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Missing type');
+        return ParsedGoalRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing type',
+        );
       }
       if (targetAmountStr.isEmpty) {
         return ParsedGoalRow.withError(
-            rowNumber: rowNum, error: 'Missing target amount');
+          rowNumber: rowNum,
+          error: 'Missing target amount',
+        );
       }
 
       final targetAmount = double.tryParse(targetAmountStr);
       if (targetAmount == null) {
         return ParsedGoalRow.withError(
-            rowNumber: rowNum, error: 'Invalid target amount: $targetAmountStr');
+          rowNumber: rowNum,
+          error: 'Invalid target amount: $targetAmountStr',
+        );
       }
 
       // Optional fields
@@ -648,7 +661,10 @@ class GoalsCsvParser {
       if (columnMap.containsKey('linkedInvestmentNames')) {
         final str = _getValue(values, columnMap['linkedInvestmentNames']!);
         if (str.isNotEmpty) {
-          linkedInvestmentNames = str.split(';').where((s) => s.isNotEmpty).toList();
+          linkedInvestmentNames = str
+              .split(';')
+              .where((s) => s.isNotEmpty)
+              .toList();
         }
       }
 
@@ -660,8 +676,9 @@ class GoalsCsvParser {
         }
       }
 
-      final icon =
-          columnMap.containsKey('icon') ? _getValue(values, columnMap['icon']!) : '🎯';
+      final icon = columnMap.containsKey('icon')
+          ? _getValue(values, columnMap['icon']!)
+          : '🎯';
 
       int colorValue = 0xFF4CAF50;
       if (columnMap.containsKey('color')) {
@@ -685,7 +702,10 @@ class GoalsCsvParser {
         colorValue: colorValue,
       );
     } catch (e) {
-      return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Parse error: $e');
+      return ParsedGoalRow.withError(
+        rowNumber: rowNum,
+        error: 'Parse error: $e',
+      );
     }
   }
 }

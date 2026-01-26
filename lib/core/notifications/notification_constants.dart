@@ -155,4 +155,3 @@ class IdleInvestmentInfo {
     this.isClosed = false,
   });
 }
-

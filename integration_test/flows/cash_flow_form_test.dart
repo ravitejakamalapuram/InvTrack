@@ -20,9 +20,11 @@ void main() {
     late InvestmentRobot investments;
     late CashFlowRobot cashFlows;
 
-    testWidgets('should open add cash flow screen from investment detail', (tester) async {
+    testWidgets('should open add cash flow screen from investment detail', (
+      tester,
+    ) async {
       testApp = await TestApp.create(tester);
-      
+
       // Seed an investment
       final now = DateTime.now();
       testApp.seedInvestments([
@@ -35,7 +37,7 @@ void main() {
           updatedAt: now,
         ),
       ]);
-      
+
       await testApp.pumpApp();
 
       navigation = NavigationRobot(tester);
@@ -44,15 +46,17 @@ void main() {
 
       await navigation.goToInvestments();
       await investments.tapInvestment('Test Investment');
-      
+
       // Open add transaction
       await investments.openAddTransaction();
-      
+
       // Verify on add cash flow screen
       cashFlows.verifyOnAddCashFlowScreen();
     });
 
-    testWidgets('should show validation error for empty amount', (tester) async {
+    testWidgets('should show validation error for empty amount', (
+      tester,
+    ) async {
       testApp = await TestApp.create(tester);
 
       final now = DateTime.now();
@@ -66,7 +70,7 @@ void main() {
           updatedAt: now,
         ),
       ]);
-      
+
       await testApp.pumpApp();
 
       navigation = NavigationRobot(tester);
@@ -76,10 +80,10 @@ void main() {
       await navigation.goToInvestments();
       await investments.tapInvestment('Test Investment');
       await investments.openAddTransaction();
-      
+
       // Try to submit without entering amount
       await cashFlows.tapSave();
-      
+
       // Verify validation error
       cashFlows.verifyAmountRequired();
     });
@@ -98,7 +102,7 @@ void main() {
           updatedAt: now,
         ),
       ]);
-      
+
       await testApp.pumpApp();
 
       navigation = NavigationRobot(tester);
@@ -108,14 +112,14 @@ void main() {
       await navigation.goToInvestments();
       await investments.tapInvestment('My FD');
       await investments.openAddTransaction();
-      
+
       // Add an investment cash flow
       await cashFlows.addCashFlow(
         type: CashFlowType.invest,
         amount: '10000',
         notes: 'Initial deposit',
       );
-      
+
       // Verify we're back on detail screen
       investments.verifyOnDetailScreen('My FD');
     });
@@ -185,4 +189,3 @@ void main() {
     });
   });
 }
-
