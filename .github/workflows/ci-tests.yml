@@ -16,6 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for diff analysis
 
       - uses: subosito/flutter-action@v2
         with:
@@ -30,3 +32,102 @@ jobs:
       - name: Test
         run: flutter test --exclude-tags=golden
 
+  code-quality:
+    name: Code Quality Checks
+    runs-on: self-hosted
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for TODOs in new code
+        run: |
+          echo "🔍 Checking for TODOs in changed files..."
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*.dart' | grep -v '_test.dart$' || true)
+          if [ -n "$CHANGED_FILES" ]; then
+            TODO_COUNT=$(echo "$CHANGED_FILES" | xargs grep -n "TODO\|FIXME\|HACK" 2>/dev/null | wc -l || echo "0")
+            if [ "$TODO_COUNT" -gt 0 ]; then
+              echo "⚠️ Found $TODO_COUNT TODO/FIXME/HACK comments in changed files:"
+              echo "$CHANGED_FILES" | xargs grep -n "TODO\|FIXME\|HACK" 2>/dev/null || true
+              echo ""
+              echo "Please resolve or document these before merging."
+            else
+              echo "✅ No TODOs found in changed files"
+            fi
+          else
+            echo "✅ No Dart files changed"
+          fi
+
+      - name: Check for print statements
+        run: |
+          echo "🔍 Checking for debug print statements..."
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'lib/*.dart' | grep -v '_test.dart$' || true)
+          if [ -n "$CHANGED_FILES" ]; then
+            # Look for print( but not debugPrint( and not in comments
+            PRINT_COUNT=$(echo "$CHANGED_FILES" | xargs grep -n "^\s*print(" 2>/dev/null | wc -l || echo "0")
+            if [ "$PRINT_COUNT" -gt 0 ]; then
+              echo "❌ Found $PRINT_COUNT bare print() statements (use debugPrint instead):"
+              echo "$CHANGED_FILES" | xargs grep -n "^\s*print(" 2>/dev/null || true
+              exit 1
+            else
+              echo "✅ No bare print statements found"
+            fi
+          fi
+
+      - name: Verify test coverage for new files
+        run: |
+          echo "🔍 Checking test coverage for new files..."
+          NEW_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'lib/*.dart' | grep -v '_test.dart$' || true)
+          MISSING_TESTS=""
+          for file in $NEW_FILES; do
+            # Skip generated files, models, entities (often tested indirectly)
+            if [[ "$file" == *.g.dart ]] || [[ "$file" == *.freezed.dart ]]; then
+              continue
+            fi
+            # Check if corresponding test exists
+            TEST_FILE=$(echo "$file" | sed 's|lib/|test/|' | sed 's|\.dart$|_test.dart|')
+            if [ ! -f "$TEST_FILE" ]; then
+              # Check if it's a new file (not just modified)
+              if ! git show origin/${{ github.base_ref }}:"$file" > /dev/null 2>&1; then
+                MISSING_TESTS="$MISSING_TESTS\n  - $file (expected: $TEST_FILE)"
+              fi
+            fi
+          done
+          if [ -n "$MISSING_TESTS" ]; then
+            echo "⚠️ New files without dedicated test files:"
+            echo -e "$MISSING_TESTS"
+            echo ""
+            echo "Consider adding tests for these files."
+          else
+            echo "✅ All new files have corresponding test files or are exempt"
+          fi
+
+      - name: Check file size limits
+        run: |
+          echo "🔍 Checking file size limits..."
+          LARGE_FILES=""
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'lib/*.dart' || true)
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ]; then
+              LINES=$(wc -l < "$file" | tr -d ' ')
+              # Widget files: 300 lines, other files: 400 lines
+              if [[ "$file" == *"widget"* ]] || [[ "$file" == *"screen"* ]]; then
+                LIMIT=300
+              else
+                LIMIT=400
+              fi
+              if [ "$LINES" -gt "$LIMIT" ]; then
+                LARGE_FILES="$LARGE_FILES\n  - $file: $LINES lines (limit: $LIMIT)"
+              fi
+            fi
+          done
+          if [ -n "$LARGE_FILES" ]; then
+            echo "⚠️ Files exceeding size limits:"
+            echo -e "$LARGE_FILES"
+            echo ""
+            echo "Consider splitting these files."
+          else
+            echo "✅ All files within size limits"
+          fi
