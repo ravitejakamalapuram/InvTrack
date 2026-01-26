@@ -51,7 +51,9 @@ final fireSettingsProvider = StreamProvider.autoDispose<FireSettingsEntity?>((
     error,
     stackTrace,
   ) {
-    debugPrint('fireSettingsProvider: ERROR - $error');
+    if (kDebugMode) {
+      debugPrint('fireSettingsProvider: ERROR - $error');
+    }
   });
 });
 

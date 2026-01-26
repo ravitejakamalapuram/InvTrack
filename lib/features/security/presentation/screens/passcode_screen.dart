@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
@@ -70,9 +71,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
         widget.mode == PasscodeMode.unlock) {
       // Don't auto-retry if we've had too many failed attempts
       if (_biometricAttemptCount >= _maxBiometricAttempts) {
-        debugPrint(
-          '🔐 Max biometric attempts reached, user must enter PIN or tap fingerprint',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            '🔐 Max biometric attempts reached, user must enter PIN or tap fingerprint',
+          );
+        }
         return;
       }
 
@@ -80,7 +83,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
       if (_lastBiometricAttempt != null) {
         final elapsed = DateTime.now().difference(_lastBiometricAttempt!);
         if (elapsed < _biometricCooldown) {
-          debugPrint('🔐 Biometric cooldown active, skipping auto-retry');
+          if (kDebugMode) {
+            debugPrint('🔐 Biometric cooldown active, skipping auto-retry');
+          }
           return;
         }
       }
@@ -113,20 +118,26 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   Future<void> _tryBiometrics({bool isAutoAttempt = false}) async {
     // Prevent multiple simultaneous biometric prompts
     if (_biometricInProgress) {
-      debugPrint('🔐 Biometric auth already in progress, skipping');
+      if (kDebugMode) {
+        debugPrint('🔐 Biometric auth already in progress, skipping');
+      }
       return;
     }
 
     final securityState = ref.read(securityProvider);
     if (!securityState.isBiometricEnabled ||
         !securityState.isBiometricAvailable) {
-      debugPrint('🔐 Biometrics not enabled or not available');
+      if (kDebugMode) {
+        debugPrint('🔐 Biometrics not enabled or not available');
+      }
       return;
     }
 
     // For auto-attempts, check if we've exceeded max attempts
     if (isAutoAttempt && _biometricAttemptCount >= _maxBiometricAttempts) {
-      debugPrint('🔐 Max biometric attempts reached for auto-retry');
+      if (kDebugMode) {
+        debugPrint('🔐 Max biometric attempts reached for auto-retry');
+      }
       return;
     }
 
@@ -134,21 +145,27 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     _lastBiometricAttempt = DateTime.now();
 
     try {
-      debugPrint(
-        '🔐 Starting biometric authentication (auto: $isAutoAttempt, attempt: ${_biometricAttemptCount + 1})',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          '🔐 Starting biometric authentication (auto: $isAutoAttempt, attempt: ${_biometricAttemptCount + 1})',
+        );
+      }
 
       final success = await ref
           .read(securityProvider.notifier)
           .unlockWithBiometrics();
 
       if (success && mounted) {
-        debugPrint('🔐 Biometric auth SUCCESS');
+        if (kDebugMode) {
+          debugPrint('🔐 Biometric auth SUCCESS');
+        }
         // Reset attempt counter on success
         _biometricAttemptCount = 0;
         widget.onSuccess?.call();
       } else if (mounted) {
-        debugPrint('🔐 Biometric auth failed or cancelled');
+        if (kDebugMode) {
+          debugPrint('🔐 Biometric auth failed or cancelled');
+        }
         // Only increment counter for auto attempts to allow manual retries
         if (isAutoAttempt) {
           _biometricAttemptCount++;
@@ -156,7 +173,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
       }
     } catch (e) {
       // Biometric auth failed or was cancelled - user can retry or use PIN
-      debugPrint('🔐 Biometric auth exception: $e');
+      if (kDebugMode) {
+        debugPrint('🔐 Biometric auth exception: $e');
+      }
       if (isAutoAttempt) {
         _biometricAttemptCount++;
       }
@@ -250,9 +269,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
             await ref.read(securityProvider.notifier).setPin(pin);
             if (mounted) {
               context.safePop(); // Close screen
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('App Lock enabled')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('App Lock enabled')),
+              );
             }
           } else {
             _tempPin = null;
@@ -315,9 +334,10 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                   height: 16,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: index < _input.length
-                        ? AppColors.primaryLight
-                        : AppColors.neutral300Light,
+                    color:
+                        index < _input.length
+                            ? AppColors.primaryLight
+                            : AppColors.neutral300Light,
                   ),
                 );
               }),
@@ -357,25 +377,27 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
             return SizedBox(
               width: 80,
               height: 80,
-              child: showBiometric
-                  ? IconButton(
-                      icon: Icon(
-                        Icons.fingerprint,
-                        size: 32,
-                        color: AppColors.primaryLight,
+              child:
+                  showBiometric
+                      ? IconButton(
+                        icon: Icon(
+                          Icons.fingerprint,
+                          size: 32,
+                          color: AppColors.primaryLight,
+                        ),
+                        onPressed: _onBiometricButtonPressed,
+                      )
+                      : IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          size: 28,
+                          color:
+                              _input.isNotEmpty
+                                  ? AppColors.textPrimaryLight
+                                  : AppColors.neutral300Light,
+                        ),
+                        onPressed: _input.isNotEmpty ? _onClear : null,
                       ),
-                      onPressed: _onBiometricButtonPressed,
-                    )
-                  : IconButton(
-                      icon: Icon(
-                        Icons.clear,
-                        size: 28,
-                        color: _input.isNotEmpty
-                            ? AppColors.textPrimaryLight
-                            : AppColors.neutral300Light,
-                      ),
-                      onPressed: _input.isNotEmpty ? _onClear : null,
-                    ),
             );
           }
           if (key == 'backspace') {
@@ -386,9 +408,10 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                 icon: Icon(
                   Icons.backspace_outlined,
                   size: 28,
-                  color: _input.isNotEmpty
-                      ? AppColors.textPrimaryLight
-                      : AppColors.neutral300Light,
+                  color:
+                      _input.isNotEmpty
+                          ? AppColors.textPrimaryLight
+                          : AppColors.neutral300Light,
                 ),
                 onPressed: _input.isNotEmpty ? _onDelete : null,
               ),
