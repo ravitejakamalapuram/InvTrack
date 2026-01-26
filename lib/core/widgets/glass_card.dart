@@ -71,7 +71,9 @@ class GlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         child: Container(
           padding: padding,
-          decoration: decoration,
+          // OPTIMIZATION: Remove shadow when blur is 0 because ClipRRect clips it anyway.
+          // This avoids calculating expensive shadows (blur radius 24) that are invisible.
+          decoration: decoration.copyWith(boxShadow: []),
           child: child,
         ),
       );

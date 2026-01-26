@@ -29,3 +29,11 @@ Explicitly set `blur: 0` on `GlassCard` when used in scrollable lists. This bypa
 
 **Action:**
 Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine to decode the image to a specified width (approx 3x display size for high-DPI screens), reducing memory usage by >99% for large photos while maintaining visual quality.
+
+## 2024-05-26 - Invisible Shadows in Clipped Containers
+
+**Learning:**
+`ClipRRect` clips the painted output of its child. If the child is a `Container` with `boxShadow`, the shadow is painted outside the box and immediately clipped (making it invisible). However, the engine still calculates the shadow blur (e.g., radius 24), wasting GPU cycles for no visual benefit.
+
+**Action:**
+Explicitly remove `boxShadow` (set to `[]`) when a container is wrapped in `ClipRRect`, unless the shadow is applied to a parent widget outside the clip.
