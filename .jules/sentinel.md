@@ -31,3 +31,10 @@
 **Prevention:**
 1. Explicitly set `android:allowBackup="false"` in `AndroidManifest.xml`.
 2. Set `android:fullBackupContent="false"` to prevent cloud backups of sensitive data.
+
+## 2025-05-26 - [CSV Formula Injection]
+**Vulnerability:** User input (names, notes) was exported to CSV without sanitization, allowing Formula Injection (CSV Injection) if the input started with `=`, `+`, `-`, `@`.
+**Learning:** Export features often trust internal data, but if that data comes from user input, it must be sanitized for the *destination* format (CSV/Excel), not just the source (DB).
+**Prevention:**
+1. Use a centralized `CsvUtils` to sanitize all string fields during export.
+2. Prepend `'` to strings starting with dangerous characters (`=`, `+`, `-`, `@`, `\t`, `\r`).

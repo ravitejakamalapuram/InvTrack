@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -231,13 +232,15 @@ class DataExportService {
     // Data rows
     for (final item in items) {
       rows.add([
-        item.cashFlow.date.toIso8601String().split('T').first,
-        item.investment.name,
-        _typeToExportString(item.cashFlow.type),
-        item.cashFlow.amount,
-        item.cashFlow.notes ?? '',
-        item.investment.type.name,
-        item.investment.status.name,
+        CsvUtils.sanitizeField(
+          item.cashFlow.date.toIso8601String().split('T').first,
+        ),
+        CsvUtils.sanitizeField(item.investment.name),
+        CsvUtils.sanitizeField(_typeToExportString(item.cashFlow.type)),
+        CsvUtils.sanitizeField(item.cashFlow.amount),
+        CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
+        CsvUtils.sanitizeField(item.investment.type.name),
+        CsvUtils.sanitizeField(item.investment.status.name),
       ]);
     }
 
@@ -279,16 +282,18 @@ class DataExportService {
           .toList();
 
       rows.add([
-        goal.name,
-        goal.type.name,
-        goal.targetAmount,
-        goal.targetMonthlyIncome ?? '',
-        goal.targetDate?.toIso8601String().split('T').first ?? '',
-        goal.trackingMode.name,
-        linkedNames.join(';'),
-        goal.linkedTypes.map((t) => t.name).join(';'),
-        goal.icon,
-        goal.colorValue,
+        CsvUtils.sanitizeField(goal.name),
+        CsvUtils.sanitizeField(goal.type.name),
+        CsvUtils.sanitizeField(goal.targetAmount),
+        CsvUtils.sanitizeField(goal.targetMonthlyIncome ?? ''),
+        CsvUtils.sanitizeField(
+          goal.targetDate?.toIso8601String().split('T').first ?? '',
+        ),
+        CsvUtils.sanitizeField(goal.trackingMode.name),
+        CsvUtils.sanitizeField(linkedNames.join(';')),
+        CsvUtils.sanitizeField(goal.linkedTypes.map((t) => t.name).join(';')),
+        CsvUtils.sanitizeField(goal.icon),
+        CsvUtils.sanitizeField(goal.colorValue),
       ]);
     }
 
