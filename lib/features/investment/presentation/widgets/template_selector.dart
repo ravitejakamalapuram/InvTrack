@@ -153,13 +153,15 @@ class _TemplateCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(template.emoji, style: const TextStyle(fontSize: 24)),
-            SizedBox(height: AppSpacing.xs),
+            Text(template.emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(height: 4),
             Text(
               template.name,
               style: AppTypography.label.copyWith(
                 fontWeight: FontWeight.w600,
+                fontSize: 12,
                 color: isSelected
                     ? template.color
                     : (isDark ? Colors.white : AppColors.neutral900Light),
@@ -168,14 +170,14 @@ class _TemplateCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             if (template.typicalRate != null) ...[
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
                 '~${template.typicalRate!.toStringAsFixed(0)}% p.a.',
                 style: AppTypography.caption.copyWith(
                   color: isDark
                       ? AppColors.neutral400Dark
                       : AppColors.neutral500Light,
-                  fontSize: 11,
+                  fontSize: 10,
                 ),
               ),
             ],
