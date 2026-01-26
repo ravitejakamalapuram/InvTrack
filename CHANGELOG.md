@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+
+- Fix excessive animation delay in long lists (#112)
+
+## [3.16.4] - 2026-01-23
+
 ### ♻️ Refactoring
 
 - Code health maintenance - reduce file sizes per Code Health… (#103)
