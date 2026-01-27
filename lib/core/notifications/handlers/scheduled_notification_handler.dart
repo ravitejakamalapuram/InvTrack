@@ -50,7 +50,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -103,7 +103,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -208,7 +208,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
     );
 
     const iosDetails = DarwinNotificationDetails(
