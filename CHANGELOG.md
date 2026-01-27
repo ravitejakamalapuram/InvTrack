@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Fix
+
+- Prevent duplicate semantics in GlassCard when label is provided (#115)
+
+### ✨ Features
+
+- **security**: Hide sensitive notification content on lock screen (#114)
+
 ## [3.16.5] - 2026-01-26
 
 ### ⚡ Performance
