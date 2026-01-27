@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.17.0] - 2026-01-27
 
 ### Fix
 
