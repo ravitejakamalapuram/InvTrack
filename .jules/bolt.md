@@ -37,3 +37,11 @@ Added `cacheWidth: 150` to `Image.file` in list items. This instructs the engine
 
 **Action:**
 Explicitly remove `boxShadow` (set to `[]`) when a container is wrapped in `ClipRRect`, unless the shadow is applied to a parent widget outside the clip.
+
+## 2024-05-27 - Uncapped Staggered Animation Delays
+
+**Learning:**
+Using `index * delay` for staggered animations in a virtualized list (`SliverList`) causes massive delays for items deep in the list (e.g., index 50 = 2.5s delay), making them appear blank initially.
+
+**Action:**
+Clamp the index used for delay calculation (e.g., `min(index, 5)`) so that items deep in the list animate in quickly (relative to their appearance time) while still preserving the stagger effect for the initial batch.
