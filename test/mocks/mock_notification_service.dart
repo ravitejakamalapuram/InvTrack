@@ -1,11 +1,126 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Mock implementation of FlutterLocalNotificationsPlugin for testing.
 class MockFlutterLocalNotificationsPlugin extends Mock
     implements FlutterLocalNotificationsPlugin {}
+
+/// Fake implementation of NotificationService for testing.
+/// This is a no-op implementation that can be used to override [notificationServiceProvider].
+class FakeNotificationService implements NotificationService {
+  final List<String> scheduledIncomeReminders = [];
+  final List<String> scheduledMaturityReminders = [];
+  final List<String> cancelledIncomeReminders = [];
+  final List<String> cancelledMaturityReminders = [];
+  final List<String> shownMilestones = [];
+  final List<String> shownGoalMilestones = [];
+  final List<String> shownGoalAtRiskNotifications = [];
+  final List<String> shownGoalStaleNotifications = [];
+
+  void reset() {
+    scheduledIncomeReminders.clear();
+    scheduledMaturityReminders.clear();
+    cancelledIncomeReminders.clear();
+    cancelledMaturityReminders.clear();
+    shownMilestones.clear();
+    shownGoalMilestones.clear();
+    shownGoalAtRiskNotifications.clear();
+    shownGoalStaleNotifications.clear();
+  }
+
+  @override
+  Future<void> scheduleIncomeReminder({
+    required String investmentId,
+    required String investmentName,
+    required int monthsBetweenPayments,
+    DateTime? lastIncomeDate,
+  }) async {
+    scheduledIncomeReminders.add(investmentId);
+  }
+
+  @override
+  Future<void> cancelIncomeReminder(String investmentId) async {
+    cancelledIncomeReminders.add(investmentId);
+  }
+
+  @override
+  Future<void> scheduleMaturityReminders({
+    required String investmentId,
+    required String investmentName,
+    required DateTime maturityDate,
+    String? investmentType,
+    double? investedAmount,
+    double? currentValue,
+    String currency = 'INR',
+  }) async {
+    scheduledMaturityReminders.add(investmentId);
+  }
+
+  @override
+  Future<void> cancelMaturityReminders(String investmentId) async {
+    cancelledMaturityReminders.add(investmentId);
+  }
+
+  @override
+  Future<void> checkAndShowMilestone({
+    required String investmentId,
+    required String investmentName,
+    required double totalInvested,
+    required double totalReturned,
+    String currency = 'INR',
+  }) async {
+    shownMilestones.add(investmentId);
+  }
+
+  @override
+  Future<void> checkAndShowGoalMilestone({
+    required String goalId,
+    required String goalName,
+    required double progressPercent,
+    required double currentValue,
+    required double targetValue,
+    String currency = 'INR',
+  }) async {
+    shownGoalMilestones.add(goalId);
+  }
+
+  @override
+  Future<void> showGoalAtRiskNotification({
+    required String goalId,
+    required String goalName,
+    required double progressPercent,
+    required DateTime? targetDate,
+    required DateTime? projectedDate,
+  }) async {
+    shownGoalAtRiskNotifications.add(goalId);
+  }
+
+  @override
+  Future<void> showGoalStaleNotification({
+    required String goalId,
+    required String goalName,
+    required DateTime? lastActivityDate,
+  }) async {
+    shownGoalStaleNotifications.add(goalId);
+  }
+
+  // Implement all other required methods with no-op stubs
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    // For Future-returning methods, return completed future
+    final memberName = invocation.memberName.toString();
+    if (memberName.contains('get ')) {
+      // Handle getters - return sensible defaults
+      if (memberName.contains('Enabled')) return true;
+      return null;
+    }
+    // For async methods, return completed Future
+    return Future<void>.value();
+  }
+}
 
 /// Fake implementation of FlutterLocalNotificationsPlugin for testing.
 /// Records all notifications for verification without actually showing them.

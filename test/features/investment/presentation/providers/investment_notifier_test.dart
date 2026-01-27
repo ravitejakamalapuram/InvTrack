@@ -4,24 +4,29 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import '../../data/repositories/mock_investment_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
+import '../../../../mocks/mock_notification_service.dart';
 
 void main() {
   late FakeInvestmentRepository fakeRepository;
   late FakeAnalyticsService fakeAnalytics;
+  late FakeNotificationService fakeNotificationService;
   late ProviderContainer container;
 
   setUp(() {
     fakeRepository = FakeInvestmentRepository();
     fakeAnalytics = FakeAnalyticsService();
+    fakeNotificationService = FakeNotificationService();
     container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(fakeRepository),
         analyticsServiceProvider.overrideWithValue(fakeAnalytics),
+        notificationServiceProvider.overrideWithValue(fakeNotificationService),
       ],
     );
   });
@@ -30,6 +35,7 @@ void main() {
     container.dispose();
     fakeRepository.reset();
     fakeAnalytics.reset();
+    fakeNotificationService.reset();
   });
 
   group('InvestmentNotifier - addInvestment', () {
