@@ -89,7 +89,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
       groupKey: NotificationGroups.goalMilestones,
     );
 
@@ -155,7 +155,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
       groupKey: NotificationGroups.goalMilestones,
     );
 
@@ -224,7 +224,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
       playSound: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
       groupKey: NotificationGroups.goalMilestones,
     );
 

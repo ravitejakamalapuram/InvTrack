@@ -92,7 +92,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
       groupKey: NotificationGroups.incomeReminders,
     );
 
@@ -169,7 +169,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
       groupKey: NotificationGroups.maturityReminders,
     );
 
@@ -480,7 +480,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
-      visibility: NotificationVisibility.public,
+      visibility: NotificationVisibility.private,
       groupKey: NotificationGroups.milestones,
     );
 
