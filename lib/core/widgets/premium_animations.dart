@@ -189,7 +189,9 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    Future.delayed(widget.delay * widget.index, () {
+    // Optimization: Clamp index to prevent huge delays for items deep in the list
+    final effectiveIndex = widget.index > 5 ? 5 : widget.index;
+    Future.delayed(widget.delay * effectiveIndex, () {
       if (mounted) _controller.forward();
     });
   }
