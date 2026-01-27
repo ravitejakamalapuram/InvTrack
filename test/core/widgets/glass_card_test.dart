@@ -36,6 +36,35 @@ void main() {
       expect(semantics.hasFlag(SemanticsFlag.isButton), isFalse);
       handle.dispose();
     });
+
+    testWidgets('excludes child semantics when semanticLabel is provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GlassCard(
+              onTap: () {},
+              semanticLabel: 'Custom Label',
+              child: const Text('Child Content'),
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+
+      // Should match the custom label exactly, implying child text is excluded/overridden
+      expect(
+        tester.getSemantics(find.byType(GlassCard)),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label: 'Custom Label',
+        ),
+      );
+      handle.dispose();
+    });
   });
 
   group('GlassHeroCard', () {
@@ -53,10 +82,42 @@ void main() {
 
       final handle = tester.ensureSemantics();
       // This verifies that the card identifies itself as a button to accessibility services
-      // This is expected to FAIL until we fix GlassHeroCard
       expect(
         tester.getSemantics(find.byType(GlassHeroCard)),
-        matchesSemantics(isButton: true, hasTapAction: true),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label: 'Hero Content',
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('excludes child semantics when semanticLabel is provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GlassHeroCard(
+              onTap: () {},
+              semanticLabel: 'Hero Custom Label',
+              child: const Text('Hero Child Content'),
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+
+      // Should match the custom label exactly
+      expect(
+        tester.getSemantics(find.byType(GlassHeroCard)),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label: 'Hero Custom Label',
+        ),
       );
       handle.dispose();
     });

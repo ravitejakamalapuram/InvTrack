@@ -80,9 +80,13 @@ class GlassCard extends StatelessWidget {
     }
 
     if (onTap != null || onLongPress != null) {
+      final bool hasCustomLabel = semanticLabel != null;
       return Semantics(
         button: true,
         label: semanticLabel,
+        excludeSemantics: hasCustomLabel,
+        onTap: hasCustomLabel ? onTap : null,
+        onLongPress: hasCustomLabel ? onLongPress : null,
         child: GestureDetector(
           onTap: onTap,
           onLongPress: onLongPress,
@@ -150,9 +154,12 @@ class GlassHeroCard extends StatelessWidget {
     );
 
     if (onTap != null) {
+      final bool hasCustomLabel = semanticLabel != null;
       return Semantics(
         button: true,
         label: semanticLabel,
+        excludeSemantics: hasCustomLabel,
+        onTap: hasCustomLabel ? onTap : null,
         child: GestureDetector(onTap: onTap, child: cardContent),
       );
     }
