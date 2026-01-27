@@ -33,6 +33,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String? notes,
     DateTime? maturityDate,
     IncomeFrequency? incomeFrequency,
+    // New enhanced data capture fields
+    DateTime? startDate,
+    double? expectedRate,
+    int? tenureMonths,
+    String? platform,
+    InterestPayoutMode? interestPayoutMode,
+    bool? autoRenewal,
+    RiskLevel? riskLevel,
+    CompoundingFrequency? compoundingFrequency,
   }) async {
     // Input validation
     _validateName(name);
@@ -50,6 +59,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         updatedAt: DateTime.now(),
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
+        // New enhanced data capture fields
+        startDate: startDate,
+        expectedRate: expectedRate,
+        tenureMonths: tenureMonths,
+        platform: platform,
+        interestPayoutMode: interestPayoutMode,
+        autoRenewal: autoRenewal,
+        riskLevel: riskLevel,
+        compoundingFrequency: compoundingFrequency,
       );
       await ref.read(investmentRepositoryProvider).createInvestment(investment);
 
@@ -71,6 +89,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         await _scheduleMaturityReminders(investment);
       }
 
+      // Cancel new user activation nudges since user has added an investment
+      await ref.read(notificationServiceProvider).cancelActivationSequence();
+
       _invalidateAll();
       state = const AsyncValue.data(null);
       return investment;
@@ -89,6 +110,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     String? notes,
     DateTime? maturityDate,
     IncomeFrequency? incomeFrequency,
+    // New enhanced data capture fields
+    DateTime? startDate,
+    double? expectedRate,
+    int? tenureMonths,
+    String? platform,
+    InterestPayoutMode? interestPayoutMode,
+    bool? autoRenewal,
+    RiskLevel? riskLevel,
+    CompoundingFrequency? compoundingFrequency,
   }) async {
     // Input validation
     _validateName(name);
@@ -108,6 +138,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         updatedAt: DateTime.now(),
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
+        // New enhanced data capture fields
+        startDate: startDate,
+        expectedRate: expectedRate,
+        tenureMonths: tenureMonths,
+        platform: platform,
+        interestPayoutMode: interestPayoutMode,
+        autoRenewal: autoRenewal,
+        riskLevel: riskLevel,
+        compoundingFrequency: compoundingFrequency,
       );
       final repo = ref.read(investmentRepositoryProvider);
       if (existing.isArchived) {

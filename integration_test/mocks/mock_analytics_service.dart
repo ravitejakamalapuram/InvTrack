@@ -153,4 +153,67 @@ class FakeAnalyticsService implements AnalyticsService {
   @override
   Future<void> logThemeChanged({required String theme}) async =>
       _log('theme_changed', {'theme': theme});
+
+  // ============ New Feature Analytics Events ============
+
+  @override
+  Future<void> logTemplateSelected({
+    required String templateId,
+    required String templateName,
+  }) async =>
+      _log('template_selected', {'template_id': templateId, 'template_name': templateName});
+
+  @override
+  Future<void> logSampleDataActivated({
+    required int investmentCount,
+    required int goalCount,
+  }) async =>
+      _log('sample_data_activated', {'investments': investmentCount, 'goals': goalCount});
+
+  @override
+  Future<void> logSampleDataKept({
+    required int investmentCount,
+    required int goalCount,
+  }) async =>
+      _log('sample_data_kept', {'investments': investmentCount, 'goals': goalCount});
+
+  @override
+  Future<void> logSampleDataCleared({
+    required int investmentCount,
+    required int goalCount,
+  }) async =>
+      _log('sample_data_cleared', {'investments': investmentCount, 'goals': goalCount});
+
+  @override
+  Future<void> logEmptyStateActionTapped({required String action}) async =>
+      _log('empty_state_action_tapped', {'action': action});
+
+  @override
+  Future<void> logProjectionViewed({
+    required String investmentType,
+    required double expectedRate,
+    required int tenureMonths,
+    String? compounding,
+  }) async =>
+      _log('projection_viewed', {
+        'investment_type': investmentType,
+        'expected_rate': expectedRate,
+        'tenure_months': tenureMonths,
+        'compounding': compounding,
+      });
+
+  @override
+  Future<void> logSmartDefaultApplied({required String fieldName}) async =>
+      _log('smart_default_applied', {'field': fieldName});
+
+  @override
+  Future<void> logEnhancedFieldsUsed({
+    required String investmentType,
+    required List<String> fieldsUsed,
+  }) async =>
+      _log('enhanced_fields_used', {
+        'investment_type': investmentType,
+        'fields_count': fieldsUsed.length,
+        'fields': fieldsUsed.take(10).join(','),
+      });
 }

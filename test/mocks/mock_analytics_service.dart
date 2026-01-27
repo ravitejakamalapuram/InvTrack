@@ -247,6 +247,101 @@ class FakeAnalyticsService implements AnalyticsService {
     );
   }
 
+  // ============ New Feature Analytics Events ============
+
+  @override
+  Future<void> logTemplateSelected({
+    required String templateId,
+    required String templateName,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.templateSelected,
+      parameters: {'template_id': templateId, 'template_name': templateName},
+    );
+  }
+
+  @override
+  Future<void> logSampleDataActivated({
+    required int investmentCount,
+    required int goalCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.sampleDataActivated,
+      parameters: {'investments': investmentCount, 'goals': goalCount},
+    );
+  }
+
+  @override
+  Future<void> logSampleDataKept({
+    required int investmentCount,
+    required int goalCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.sampleDataKept,
+      parameters: {'investments': investmentCount, 'goals': goalCount},
+    );
+  }
+
+  @override
+  Future<void> logSampleDataCleared({
+    required int investmentCount,
+    required int goalCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.sampleDataCleared,
+      parameters: {'investments': investmentCount, 'goals': goalCount},
+    );
+  }
+
+  @override
+  Future<void> logEmptyStateActionTapped({required String action}) async {
+    await logEvent(
+      name: AnalyticsEvents.emptyStateActionTapped,
+      parameters: {'action': action},
+    );
+  }
+
+  @override
+  Future<void> logProjectionViewed({
+    required String investmentType,
+    required double expectedRate,
+    required int tenureMonths,
+    String? compounding,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.projectionViewed,
+      parameters: {
+        'investment_type': investmentType,
+        'expected_rate': expectedRate,
+        'tenure_months': tenureMonths,
+        if (compounding != null) 'compounding': compounding,
+      },
+    );
+  }
+
+  @override
+  Future<void> logSmartDefaultApplied({required String fieldName}) async {
+    await logEvent(
+      name: AnalyticsEvents.smartDefaultApplied,
+      parameters: {'field': fieldName},
+    );
+  }
+
+  @override
+  Future<void> logEnhancedFieldsUsed({
+    required String investmentType,
+    required List<String> fieldsUsed,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.enhancedFieldsUsed,
+      parameters: {
+        'investment_type': investmentType,
+        'fields_count': fieldsUsed.length,
+        'fields': fieldsUsed.take(10).join(','),
+      },
+    );
+  }
+
   @override
   FirebaseAnalyticsObserver? getObserver() {
     // Return null for fake implementation - no Firebase in tests

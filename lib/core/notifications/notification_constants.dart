@@ -18,6 +18,7 @@ class NotificationChannels {
   static const String idleAlerts = 'idle_alerts';
   static const String fySummary = 'fy_summary';
   static const String general = 'general'; // For test notifications
+  static const String activation = 'activation'; // New user activation nudges
 }
 
 /// Notification group keys for Android grouping
@@ -84,6 +85,13 @@ class NotificationIds {
   /// Goal stale alert notification ID
   static int goalStale(String goalId) =>
       (goalId.hashCode.abs() % 10000) + 250000;
+
+  /// New user activation sequence IDs (Day 0, 1, 3, 7, 14)
+  static const int activationDay0 = 3000; // Welcome, 1 hour after signup
+  static const int activationDay1 = 3001; // First investment nudge
+  static const int activationDay3 = 3002; // Import reminder
+  static const int activationDay7 = 3003; // Tips & benefits
+  static const int activationDay14 = 3004; // Social proof / last chance
 }
 
 /// Settings keys for notification preferences
@@ -124,6 +132,22 @@ class NotificationPrefsKeys {
   /// Track when stale alert was last shown for a goal (show max once per month)
   static String goalStaleLastShown(String goalId) =>
       'goal_stale_last_shown_$goalId';
+
+  // ============ New User Activation Sequence Keys ============
+
+  /// Whether activation notifications are enabled (default: true for new users)
+  static const String activationNotificationsEnabled =
+      'notifications_activation_enabled';
+
+  /// User signup date (ISO8601 string) - used to calculate notification timing
+  static const String userSignupDate = 'user_signup_date';
+
+  /// Track which activation notifications have been sent
+  static const String activationDay0Sent = 'activation_day_0_sent';
+  static const String activationDay1Sent = 'activation_day_1_sent';
+  static const String activationDay3Sent = 'activation_day_3_sent';
+  static const String activationDay7Sent = 'activation_day_7_sent';
+  static const String activationDay14Sent = 'activation_day_14_sent';
 }
 
 /// Helper class for tax reminders

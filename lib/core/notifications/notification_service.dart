@@ -685,7 +685,233 @@ class NotificationService with NotificationPreferencesMixin {
         body: body,
       );
 
-  /// Check for idle investments and show alerts
+/// Check for idle investments and show alerts
   Future<void> checkIdleInvestments(List<IdleInvestmentInfo> investments) =>
       _alertHandler.checkIdleInvestments(investments);
+
+  // ============ New User Activation Sequence ============
+
+  /// Whether activation notifications are enabled
+  bool get activationNotificationsEnabled =>
+      _prefs.getBool(NotificationPrefsKeys.activationNotificationsEnabled) ??
+      true;
+
+  Future<void> setActivationNotificationsEnabled(bool enabled) async {
+    await _prefs.setBool(
+      NotificationPrefsKeys.activationNotificationsEnabled,
+      enabled,
+    );
+    if (!enabled) {
+      await cancelActivationSequence();
+    }
+  }
+
+  /// Get user signup date (when they first registered)
+  DateTime? get userSignupDate {
+    final str = _prefs.getString(NotificationPrefsKeys.userSignupDate);
+    if (str == null) return null;
+    return DateTime.tryParse(str);
+  }
+
+  /// Set user signup date (call when user first signs up)
+  Future<void> setUserSignupDate(DateTime date) async {
+    await _prefs.setString(
+      NotificationPrefsKeys.userSignupDate,
+      date.toIso8601String(),
+    );
+  }
+
+  /// Check if activation day notification has been sent
+  bool _isActivationDaySent(int day) {
+    switch (day) {
+      case 0:
+        return _prefs.getBool(NotificationPrefsKeys.activationDay0Sent) ??
+            false;
+      case 1:
+        return _prefs.getBool(NotificationPrefsKeys.activationDay1Sent) ??
+            false;
+      case 3:
+        return _prefs.getBool(NotificationPrefsKeys.activationDay3Sent) ??
+            false;
+      case 7:
+        return _prefs.getBool(NotificationPrefsKeys.activationDay7Sent) ??
+            false;
+      case 14:
+        return _prefs.getBool(NotificationPrefsKeys.activationDay14Sent) ??
+            false;
+      default:
+        return false;
+    }
+  }
+
+  /// Mark activation day notification as sent
+  Future<void> _markActivationDaySent(int day) async {
+    switch (day) {
+      case 0:
+        await _prefs.setBool(NotificationPrefsKeys.activationDay0Sent, true);
+      case 1:
+        await _prefs.setBool(NotificationPrefsKeys.activationDay1Sent, true);
+      case 3:
+        await _prefs.setBool(NotificationPrefsKeys.activationDay3Sent, true);
+      case 7:
+        await _prefs.setBool(NotificationPrefsKeys.activationDay7Sent, true);
+      case 14:
+        await _prefs.setBool(NotificationPrefsKeys.activationDay14Sent, true);
+    }
+  }
+
+  /// Schedule the new user activation notification sequence.
+  ///
+  /// This schedules notifications for Day 0 (1 hour), Day 1, Day 3, Day 7, Day 14
+  /// after signup to encourage users to add their first investment.
+  ///
+  /// Call this when user first signs up AND has no investments.
+  Future<void> scheduleActivationSequence() async {
+    await _ensureInitialized();
+    if (!activationNotificationsEnabled) return;
+
+    final signupDate = userSignupDate ?? DateTime.now();
+    final now = DateTime.now();
+
+    const androidDetails = AndroidNotificationDetails(
+      NotificationChannels.activation,
+      'Activation',
+      channelDescription: 'New user activation nudges',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    // Day 0: Welcome (1 hour after signup)
+    final day0Time = signupDate.add(const Duration(hours: 1));
+    if (day0Time.isAfter(now) && !_isActivationDaySent(0)) {
+      await _plugin.zonedSchedule(
+        NotificationIds.activationDay0,
+        '🎉 Welcome to InvTrack!',
+        'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
+        tz.TZDateTime.from(day0Time, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: NotificationPayload.activationDay0,
+      );
+      await _markActivationDaySent(0);
+      if (kDebugMode) {
+        debugPrint('🔔 Activation Day 0 scheduled for $day0Time');
+      }
+    }
+
+    // Day 1: First investment nudge (24 hours after signup, at 10 AM)
+    final day1Date = signupDate.add(const Duration(days: 1));
+    final day1Time = DateTime(day1Date.year, day1Date.month, day1Date.day, 10);
+    if (day1Time.isAfter(now) && !_isActivationDaySent(1)) {
+      await _plugin.zonedSchedule(
+        NotificationIds.activationDay1,
+        '📊 Add Your First Investment',
+        'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
+        tz.TZDateTime.from(day1Time, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: NotificationPayload.activationDay1,
+      );
+      await _markActivationDaySent(1);
+      if (kDebugMode) {
+        debugPrint('🔔 Activation Day 1 scheduled for $day1Time');
+      }
+    }
+
+    // Day 3: Import reminder (3 days after signup, at 6 PM)
+    final day3Date = signupDate.add(const Duration(days: 3));
+    final day3Time = DateTime(day3Date.year, day3Date.month, day3Date.day, 18);
+    if (day3Time.isAfter(now) && !_isActivationDaySent(3)) {
+      await _plugin.zonedSchedule(
+        NotificationIds.activationDay3,
+        '📥 Import Your Investments',
+        'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
+        tz.TZDateTime.from(day3Time, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: NotificationPayload.activationDay3,
+      );
+      await _markActivationDaySent(3);
+      if (kDebugMode) {
+        debugPrint('🔔 Activation Day 3 scheduled for $day3Time');
+      }
+    }
+
+    // Day 7: Tips & benefits (7 days after signup, at 11 AM)
+    final day7Date = signupDate.add(const Duration(days: 7));
+    final day7Time = DateTime(day7Date.year, day7Date.month, day7Date.day, 11);
+    if (day7Time.isAfter(now) && !_isActivationDaySent(7)) {
+      await _plugin.zonedSchedule(
+        NotificationIds.activationDay7,
+        '💡 Did You Know?',
+        'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
+        tz.TZDateTime.from(day7Time, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: NotificationPayload.activationDay7,
+      );
+      await _markActivationDaySent(7);
+      if (kDebugMode) {
+        debugPrint('🔔 Activation Day 7 scheduled for $day7Time');
+      }
+    }
+
+    // Day 14: Social proof / last chance (14 days after signup, at 10 AM)
+    final day14Date = signupDate.add(const Duration(days: 14));
+    final day14Time =
+        DateTime(day14Date.year, day14Date.month, day14Date.day, 10);
+    if (day14Time.isAfter(now) && !_isActivationDaySent(14)) {
+      await _plugin.zonedSchedule(
+        NotificationIds.activationDay14,
+        '📈 Join Smart Investors',
+        'Thousands of investors track their real returns with InvTrack. Add your first investment and join them!',
+        tz.TZDateTime.from(day14Time, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: NotificationPayload.activationDay14,
+      );
+      await _markActivationDaySent(14);
+      if (kDebugMode) {
+        debugPrint('🔔 Activation Day 14 scheduled for $day14Time');
+      }
+    }
+  }
+
+  /// Cancel all activation sequence notifications.
+  ///
+  /// Call this when user adds their first investment to stop sending nudges.
+  Future<void> cancelActivationSequence() async {
+    await _plugin.cancel(NotificationIds.activationDay0);
+    await _plugin.cancel(NotificationIds.activationDay1);
+    await _plugin.cancel(NotificationIds.activationDay3);
+    await _plugin.cancel(NotificationIds.activationDay7);
+    await _plugin.cancel(NotificationIds.activationDay14);
+
+    if (kDebugMode) {
+      debugPrint('🔔 Activation sequence cancelled');
+    }
+  }
+
+  /// Reset activation sequence state (for testing or re-onboarding).
+  Future<void> resetActivationSequence() async {
+    await _prefs.remove(NotificationPrefsKeys.userSignupDate);
+    await _prefs.remove(NotificationPrefsKeys.activationDay0Sent);
+    await _prefs.remove(NotificationPrefsKeys.activationDay1Sent);
+    await _prefs.remove(NotificationPrefsKeys.activationDay3Sent);
+    await _prefs.remove(NotificationPrefsKeys.activationDay7Sent);
+    await _prefs.remove(NotificationPrefsKeys.activationDay14Sent);
+    await cancelActivationSequence();
+  }
 }

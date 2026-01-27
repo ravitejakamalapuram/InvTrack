@@ -21,6 +21,7 @@ import 'package:inv_tracker/features/settings/data/providers/data_import_provide
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 
@@ -600,6 +601,12 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
     // Delete FIRE settings (Rule 18: Data Lifecycle)
     await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
+
+    // Clear sample data mode preferences (Rule 18: Data Lifecycle)
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.remove('sample_data_mode_active');
+    await prefs.remove('sample_data_investment_ids');
+    await prefs.remove('sample_data_goal_ids');
   }
 }
 
