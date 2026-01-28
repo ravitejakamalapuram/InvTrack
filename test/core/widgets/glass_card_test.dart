@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 
@@ -32,8 +31,7 @@ void main() {
       final handle = tester.ensureSemantics();
       final semantics = tester.getSemantics(find.byType(GlassCard));
       // Should not be a button
-      // ignore: deprecated_member_use
-      expect(semantics.hasFlag(SemanticsFlag.isButton), isFalse);
+      expect(semantics.flagsCollection.isButton, isFalse);
       handle.dispose();
     });
 

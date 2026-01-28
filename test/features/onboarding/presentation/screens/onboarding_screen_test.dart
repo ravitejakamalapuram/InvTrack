@@ -1,5 +1,6 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -37,14 +38,14 @@ void main() {
 
     // Verify properties of the first dot
     final dot1Semantics = tester.getSemantics(dot1Finder);
-    expect(dot1Semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
-    expect(dot1Semantics.hasFlag(SemanticsFlag.isButton), isTrue);
+    expect(dot1Semantics.flagsCollection.isSelected, equals(Tristate.isTrue));
+    expect(dot1Semantics.flagsCollection.isButton, isTrue);
 
     // Find the second dot
     final dot2Finder = find.bySemanticsLabel('Page 2 of 4');
     expect(dot2Finder, findsOneWidget);
     final dot2Semantics = tester.getSemantics(dot2Finder);
-    expect(dot2Semantics.hasFlag(SemanticsFlag.isSelected), isFalse);
+    expect(dot2Semantics.flagsCollection.isSelected, isNot(equals(Tristate.isTrue)));
 
     // Tap the second dot
     await tester.tap(dot2Finder);
@@ -57,7 +58,7 @@ void main() {
     final dot1SemanticsAfter = tester.getSemantics(find.bySemanticsLabel('Page 1 of 4'));
     final dot2SemanticsAfter = tester.getSemantics(find.bySemanticsLabel('Page 2 of 4'));
 
-    expect(dot1SemanticsAfter.hasFlag(SemanticsFlag.isSelected), isFalse);
-    expect(dot2SemanticsAfter.hasFlag(SemanticsFlag.isSelected), isTrue);
+    expect(dot1SemanticsAfter.flagsCollection.isSelected, isNot(equals(Tristate.isTrue)));
+    expect(dot2SemanticsAfter.flagsCollection.isSelected, equals(Tristate.isTrue));
   });
 }

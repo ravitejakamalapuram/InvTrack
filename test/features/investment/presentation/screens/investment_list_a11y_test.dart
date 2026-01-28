@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
@@ -102,7 +101,7 @@ void main() {
       // Also verify it's a button
       final semantics = tester.getSemantics(clearFilterSemantics);
       expect(
-        semantics.hasFlag(SemanticsFlag.isButton),
+        semantics.flagsCollection.isButton,
         isTrue,
         reason: 'Filter chip close button should be identified as a button'
       );
