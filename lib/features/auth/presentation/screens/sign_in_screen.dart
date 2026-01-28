@@ -345,77 +345,85 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   }
 
   Widget _buildGoogleButton(bool isDark) {
-    return Container(
-      width: double.infinity,
-      height: AppSizes.buttonHeightXl + 4, // 60px for extra prominence
-      decoration: BoxDecoration(
-        gradient: isDark ? null : AppColors.heroGradient,
-        color: isDark ? Colors.white : null,
-        borderRadius: AppSizes.borderRadiusLg,
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.white : AppColors.primaryLight).withValues(
-              alpha: 0.3,
-            ),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : _signInWithGoogle,
+    return Semantics(
+      button: true,
+      enabled: !_isLoading,
+      label: _isLoading ? 'Signing in...' : 'Continue with Google',
+      excludeSemantics: true,
+      onTap: _isLoading ? null : _signInWithGoogle,
+      child: Container(
+        width: double.infinity,
+        height: AppSizes.buttonHeightXl + 4, // 60px for extra prominence
+        decoration: BoxDecoration(
+          gradient: isDark ? null : AppColors.heroGradient,
+          color: isDark ? Colors.white : null,
           borderRadius: AppSizes.borderRadiusLg,
-          child: Center(
-            child: _isLoading
-                ? SizedBox(
-                    width: AppSizes.iconMd,
-                    height: AppSizes.iconMd,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: isDark ? AppColors.primaryLight : Colors.white,
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Google "G" icon
-                      Container(
-                        width: AppSizes.iconLg,
-                        height: AppSizes.iconLg,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.primaryLight : Colors.white,
-                          borderRadius: BorderRadius.circular(
-                            AppSizes.radiusSm - 2,
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.white : AppColors.primaryLight)
+                  .withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _isLoading ? null : _signInWithGoogle,
+            borderRadius: AppSizes.borderRadiusLg,
+            child: Center(
+              child: _isLoading
+                  ? SizedBox(
+                      width: AppSizes.iconMd,
+                      height: AppSizes.iconMd,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: isDark ? AppColors.primaryLight : Colors.white,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Google "G" icon
+                        Container(
+                          width: AppSizes.iconLg,
+                          height: AppSizes.iconLg,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.primaryLight
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm - 2,
+                            ),
                           ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'G',
-                            style: AppTypography.buttonLarge.copyWith(
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.primaryLight,
-                              fontWeight: FontWeight.w800,
-                              fontSize: AppSizes.iconXs,
+                          child: Center(
+                            child: Text(
+                              'G',
+                              style: AppTypography.buttonLarge.copyWith(
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.primaryLight,
+                                fontWeight: FontWeight.w800,
+                                fontSize: AppSizes.iconXs,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: AppSpacing.sm + 2),
-                      Text(
-                        'Continue with Google',
-                        style: AppTypography.buttonLarge.copyWith(
-                          color: isDark
-                              ? AppColors.neutral900Light
-                              : Colors.white,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
+                        SizedBox(width: AppSpacing.sm + 2),
+                        Text(
+                          'Continue with Google',
+                          style: AppTypography.buttonLarge.copyWith(
+                            color: isDark
+                                ? AppColors.neutral900Light
+                                : Colors.white,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
