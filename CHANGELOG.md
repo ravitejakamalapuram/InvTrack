@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- **android**: Use ApplicationInfo.FLAG_DEBUGGABLE instead of BuildConfig.DEBUG
+
+## [3.19.0] - 2026-01-28
+
 ### ✨ Features
 
 - **android**: Enable FLAG_SECURE in release builds (#118)
