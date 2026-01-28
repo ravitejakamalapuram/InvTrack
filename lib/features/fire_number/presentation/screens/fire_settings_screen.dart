@@ -331,7 +331,7 @@ class FireSettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ).whenComplete(() => controller.dispose());
   }
 
   void _showFireTypeSelector(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
