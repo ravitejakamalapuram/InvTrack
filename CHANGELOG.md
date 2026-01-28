@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- **android**: Enable FLAG_SECURE in release builds (#118)
+- **a11y**: Improve sign-in button semantics for loading state (#117)
+
 ## [3.17.0] - 2026-01-27
 
 ### Fix
