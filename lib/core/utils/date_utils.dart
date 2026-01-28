@@ -28,28 +28,37 @@ class AppDateUtils {
     }
   }
 
+  // OPTIMIZATION: Cache DateFormat instances to avoid expensive parsing and allocation on every call.
+  // Note: These static instances capture the locale at the time of first access.
+  // If the app supports dynamic locale switching, these would need to be re-initialized.
+  static final _shortFormat = DateFormat('MMM d, y');
+  static final _longFormat = DateFormat('MMMM d, yyyy');
+  static final _dayOfWeekFormat = DateFormat('EEEE');
+  static final _monthYearFormat = DateFormat('MMM yyyy');
+  static final _monthFormat = DateFormat('MMM');
+
   /// Formats a date as "MMM d, y" (e.g., "Dec 19, 2025")
   static String formatShort(DateTime date) {
-    return DateFormat('MMM d, y').format(date);
+    return _shortFormat.format(date);
   }
 
   /// Formats a date as "MMMM d, yyyy" (e.g., "December 19, 2025")
   static String formatLong(DateTime date) {
-    return DateFormat('MMMM d, yyyy').format(date);
+    return _longFormat.format(date);
   }
 
   /// Formats a date as "EEEE" (e.g., "Friday")
   static String formatDayOfWeek(DateTime date) {
-    return DateFormat('EEEE').format(date);
+    return _dayOfWeekFormat.format(date);
   }
 
   /// Formats a date as "MMM yyyy" (e.g., "Dec 2025") - useful for charts
   static String formatMonthYear(DateTime date) {
-    return DateFormat('MMM yyyy').format(date);
+    return _monthYearFormat.format(date);
   }
 
   /// Formats a date as "MMM" (e.g., "Dec") - useful for compact charts
   static String formatMonth(DateTime date) {
-    return DateFormat('MMM').format(date);
+    return _monthFormat.format(date);
   }
 }

@@ -45,3 +45,11 @@ Using `index * delay` for staggered animations in a virtualized list (`SliverLis
 
 **Action:**
 Clamp the index used for delay calculation (e.g., `min(index, 5)`) so that items deep in the list animate in quickly (relative to their appearance time) while still preserving the stagger effect for the initial batch.
+
+## 2024-05-28 - DateFormat Instantiation Overhead
+
+**Learning:**
+Creating a new `DateFormat` instance (e.g., `DateFormat('MMM d, y')`) involves parsing the pattern string and loading locale data, which is computationally expensive. Doing this inside a list item build method (or a frequently called utility) causes significant CPU overhead and garbage collection pressure, reducing scroll performance.
+
+**Action:**
+Cache `DateFormat` instances as `static final` fields in utility classes. This reduces the cost from O(Parsing) to O(1). Note: Cached instances capture the locale at initialization time, which is acceptable for single-locale apps but requires invalidation logic for dynamic locale switching.
