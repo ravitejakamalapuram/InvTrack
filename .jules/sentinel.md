@@ -31,3 +31,10 @@
 **Prevention:**
 1. Explicitly set `android:allowBackup="false"` in `AndroidManifest.xml`.
 2. Set `android:fullBackupContent="false"` to prevent cloud backups of sensitive data.
+
+## 2025-05-26 - [Missing Android Screen Protection]
+**Vulnerability:** The application did not prevent screenshots, screen recording, or task switcher previews on Android. This could lead to sensitive financial data being leaked via accidental screenshots, malware screen recording, or shoulder surfing the Recents screen.
+**Learning:** For financial applications, preventing data leakage via screen capture is critical. While Flutter provides lifecycle hooks to hide content in the task switcher, it doesn't prevent active screen recording or screenshots by the user/malware. Native `FLAG_SECURE` is the only robust solution.
+**Prevention:**
+1. Enable `WindowManager.LayoutParams.FLAG_SECURE` in `MainActivity.kt` (or `AppDelegate.swift`).
+2. Conditionally apply it only in release builds (`!BuildConfig.DEBUG`) to allow development debugging.
