@@ -74,12 +74,14 @@ class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
                   // Use white tint for light mode (icon on primary color)
                   color: isDark ? null : Colors.white,
                   colorBlendMode: BlendMode.srcIn,
+                  semanticLabel: 'App icon - privacy screen active',
                   errorBuilder: (context, error, stackTrace) {
                     // Fallback icon matching app branding
                     return Icon(
                       Icons.shield_rounded,
                       size: 72,
                       color: isDark ? AppColors.primaryDark : Colors.white,
+                      semanticLabel: 'Privacy screen active',
                     );
                   },
                 ),

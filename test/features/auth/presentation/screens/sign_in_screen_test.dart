@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -85,7 +84,7 @@ void main() {
     if (tester.any(loadingSemantics)) {
       // If it passes, check properties
       final semantics = tester.getSemantics(loadingSemantics);
-      expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(semantics.flagsCollection.isButton, isTrue);
       // And it should probably be disabled (or at least not actionable in a way that restarts the process)
       // But the main goal is the label.
     } else {

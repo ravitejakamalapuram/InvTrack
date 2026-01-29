@@ -467,7 +467,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
     // Second confirmation with text input
     final confirmText = await showDialog<String>(
-      // ignore: use_build_context_synchronously
+      // ignore: use_build_context_synchronously - Context is checked via mounted guard above (line 466)
       context: context,
       builder: (dialogContext) => _DeleteConfirmationDialog(),
     );

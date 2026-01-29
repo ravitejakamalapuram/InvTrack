@@ -47,17 +47,19 @@ class FirebaseAuthRepository implements AuthRepository {
       final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
 
       if (kDebugMode) {
-        debugPrint('FirebaseAuth: Got Google user');
+        debugPrint('FirebaseAuth: Got Google user: ${googleUser.email}');
       }
 
-      // Get Google auth credentials using the new API
-      // In v7, authentication provides idToken, and we get accessToken through authorization
+      // Get Google auth credentials
+      // In google_sign_in v7, authentication only provides idToken
+      // For Firebase Auth, idToken is sufficient (accessToken is optional)
       final googleAuth = googleUser.authentication;
-      final authorization = await googleUser.authorizationClient
-          .authorizationForScopes(['email']);
+
+      if (kDebugMode) {
+        debugPrint('FirebaseAuth: Got authentication tokens');
+      }
 
       final credential = GoogleAuthProvider.credential(
-        accessToken: authorization?.accessToken,
         idToken: googleAuth.idToken,
       );
 
@@ -70,7 +72,7 @@ class FirebaseAuthRepository implements AuthRepository {
       );
 
       if (kDebugMode) {
-        debugPrint('FirebaseAuth: Signed in successfully');
+        debugPrint('FirebaseAuth: Signed in as ${userCredential.user?.email}');
       }
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
@@ -129,11 +131,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
       final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
       final googleAuth = googleUser.authentication;
-      final authorization = await googleUser.authorizationClient
-          .authorizationForScopes(['email']);
 
       final credential = GoogleAuthProvider.credential(
-        accessToken: authorization?.accessToken,
         idToken: googleAuth.idToken,
       );
 
