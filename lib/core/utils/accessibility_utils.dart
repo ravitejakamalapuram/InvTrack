@@ -3,10 +3,13 @@ import 'package:intl/intl.dart';
 
 /// Utility class for accessibility helpers
 class AccessibilityUtils {
+  // OPTIMIZATION: Cache formatters to avoid expensive parsing and allocation on every call.
+  static final _currencyFormatter = NumberFormat.decimalPattern();
+  static final _dateFormatter = DateFormat('MMMM d, y');
+
   /// Formats currency for screen readers
   static String formatCurrencyForScreenReader(double amount, String symbol) {
-    final formatter = NumberFormat.decimalPattern();
-    final formattedAmount = formatter.format(amount.abs());
+    final formattedAmount = _currencyFormatter.format(amount.abs());
     final sign = amount < 0 ? 'negative' : '';
     return '$sign $formattedAmount ${_currencyName(symbol)}';
   }
@@ -38,7 +41,7 @@ class AccessibilityUtils {
 
   /// Formats date for screen readers
   static String formatDateForScreenReader(DateTime date) {
-    return DateFormat('MMMM d, y').format(date);
+    return _dateFormatter.format(date);
   }
 
   /// Creates a semantic label for investment cards
