@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Update support email to invtrack_support@googlegroups.com
+
+## [3.21.0] - 2026-01-30
+
+### ✨ Features
+
 - Enable screenshots - remove FLAG_SECURE restriction
 
 ## [3.20.0] - 2026-01-30
