@@ -111,7 +111,7 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.email_outlined,
                 iconColor: Colors.teal,
                 title: 'Contact Support',
-                subtitle: 'support@invtracker.com',
+                subtitle: 'invtrack_support@googlegroups.com',
                 onTap: () => _openSupportEmail(context),
               ),
             ],
@@ -177,7 +177,7 @@ class AboutScreen extends ConsumerWidget {
 
   /// Opens the email client for support
   Future<void> _openSupportEmail(BuildContext context) async {
-    const supportEmail = 'support@invtracker.com';
+    const supportEmail = 'invtrack_support@googlegroups.com';
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
@@ -258,7 +258,7 @@ Last updated: December 05, 2025
    We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.
 
 5. **Contact Us**
-   If you have questions about this Privacy Policy, please contact us at support@invtracker.com.
+   If you have questions about this Privacy Policy, please contact us at invtrack_support@googlegroups.com.
 ''';
 
 const String _termsOfService = '''
