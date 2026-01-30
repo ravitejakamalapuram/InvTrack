@@ -14,6 +14,7 @@ class GlassCard extends StatelessWidget {
   final double blur;
   final bool showBorder;
   final String? semanticLabel;
+  final bool? selected;
 
   const GlassCard({
     super.key,
@@ -26,6 +27,7 @@ class GlassCard extends StatelessWidget {
     this.blur = 10,
     this.showBorder = true,
     this.semanticLabel,
+    this.selected,
   });
 
   @override
@@ -84,6 +86,7 @@ class GlassCard extends StatelessWidget {
       return Semantics(
         button: true,
         label: semanticLabel,
+        selected: selected,
         excludeSemantics: hasCustomLabel,
         onTap: hasCustomLabel ? onTap : null,
         onLongPress: hasCustomLabel ? onLongPress : null,
@@ -107,6 +110,7 @@ class GlassHeroCard extends StatelessWidget {
   final LinearGradient? gradient;
   final VoidCallback? onTap;
   final String? semanticLabel;
+  final bool? selected;
 
   const GlassHeroCard({
     super.key,
@@ -116,6 +120,7 @@ class GlassHeroCard extends StatelessWidget {
     this.gradient,
     this.onTap,
     this.semanticLabel,
+    this.selected,
   });
 
   @override
@@ -158,6 +163,7 @@ class GlassHeroCard extends StatelessWidget {
       return Semantics(
         button: true,
         label: semanticLabel,
+        selected: selected,
         excludeSemantics: hasCustomLabel,
         onTap: hasCustomLabel ? onTap : null,
         child: GestureDetector(onTap: onTap, child: cardContent),

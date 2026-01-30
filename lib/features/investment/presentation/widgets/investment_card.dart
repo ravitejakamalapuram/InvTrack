@@ -48,13 +48,12 @@ class InvestmentCard extends ConsumerWidget {
 
     // OPTIMIZATION: Use basic stats provider which skips expensive XIRR calculation
     // for the main card render. Only calculate XIRR where strictly needed.
-    final statsAsync =
-        investment.isArchived
-            ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
-            : ref.watch(investmentBasicStatsProvider(investment.id));
+    final statsAsync = investment.isArchived
+        ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
+        : ref.watch(investmentBasicStatsProvider(investment.id));
 
     // Build accessibility label
-    final semanticLabel = statsAsync.maybeWhen(
+    final baseLabel = statsAsync.maybeWhen(
       data: (stats) => AccessibilityUtils.investmentCardLabel(
         name: investment.name,
         type: investment.type.displayName,
@@ -69,10 +68,15 @@ class InvestmentCard extends ConsumerWidget {
           '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
     );
 
+    final semanticLabel = isSelectionMode
+        ? '${isSelected ? "Selected" : "Not selected"}, $baseLabel'
+        : baseLabel;
+
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: GlassCard(
         semanticLabel: semanticLabel,
+        selected: isSelectionMode ? isSelected : null,
         // OPTIMIZATION: Disable blur on list items to avoid expensive BackdropFilter/saveLayer.
         // Since the background is solid, blurring it has no visual effect but high cost.
         blur: 0,
@@ -85,55 +89,55 @@ class InvestmentCard extends ConsumerWidget {
               padding: EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                    // Checkbox in selection mode
-                    if (isSelectionMode) ...[
-                      Checkbox(
-                        value: isSelected,
-                        onChanged: onCheckboxChanged,
-                        activeColor: AppColors.primaryLight,
-                      ),
-                      SizedBox(width: AppSpacing.xs),
-                    ],
-                    // Icon with type icon
-                    _TypeIcon(
+                  // Checkbox in selection mode
+                  if (isSelectionMode) ...[
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: onCheckboxChanged,
+                      activeColor: AppColors.primaryLight,
+                    ),
+                    SizedBox(width: AppSpacing.xs),
+                  ],
+                  // Icon with type icon
+                  _TypeIcon(
+                    typeColor: typeColor,
+                    isClosed: isClosed,
+                    icon: investment.type.icon,
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  // Name and type
+                  Expanded(
+                    child: _InvestmentInfo(
+                      investment: investment,
+                      isDark: isDark,
                       typeColor: typeColor,
                       isClosed: isClosed,
-                      icon: investment.type.icon,
                     ),
-                    SizedBox(width: AppSpacing.md),
-                    // Name and type
-                    Expanded(
-                      child: _InvestmentInfo(
-                        investment: investment,
-                        isDark: isDark,
-                        typeColor: typeColor,
-                        isClosed: isClosed,
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    // Stats
-                    _InvestmentValueColumn(
-                      investmentId: investment.id,
-                      isArchived: investment.isArchived,
-                      isDark: isDark,
-                      statsAsync: statsAsync,
-                      currencyFormat: currencyFormat,
-                      isPrivacyMode: isPrivacyMode,
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  // Stats
+                  _InvestmentValueColumn(
+                    investmentId: investment.id,
+                    isArchived: investment.isArchived,
+                    isDark: isDark,
+                    statsAsync: statsAsync,
+                    currencyFormat: currencyFormat,
+                    isPrivacyMode: isPrivacyMode,
+                  ),
+                ],
               ),
-              // Bottom info strip with stats
-              _InvestmentBottomStrip(
-                investment: investment,
-                isDark: isDark,
-                statsAsync: statsAsync,
-                currencyFormat: currencyFormat,
-                isPrivacyMode: isPrivacyMode,
-              ),
-            ],
-          ),
+            ),
+            // Bottom info strip with stats
+            _InvestmentBottomStrip(
+              investment: investment,
+              isDark: isDark,
+              statsAsync: statsAsync,
+              currencyFormat: currencyFormat,
+              isPrivacyMode: isPrivacyMode,
+            ),
+          ],
         ),
+      ),
     );
   }
 }
@@ -173,11 +177,7 @@ class _TypeIcon extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: AppSizes.iconMd,
-        ),
+        child: Icon(icon, color: Colors.white, size: AppSizes.iconMd),
       ),
     );
   }
@@ -379,10 +379,9 @@ class _InvestmentValueColumn extends ConsumerWidget {
     // Also allows parent to manage rebuilds more effectively.
 
     // Watch XIRR separately (slow) - this must still be watched here as it's separate
-    final xirrAsync =
-        isArchived
-            ? ref.watch(archivedInvestmentXirrProvider(investmentId))
-            : ref.watch(investmentXirrProvider(investmentId));
+    final xirrAsync = isArchived
+        ? ref.watch(archivedInvestmentXirrProvider(investmentId))
+        : ref.watch(investmentXirrProvider(investmentId));
 
     return statsAsync.when(
       data: (stats) {

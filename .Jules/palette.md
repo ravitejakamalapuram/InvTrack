@@ -33,3 +33,7 @@
 ## 2026-05-21 - [Accessibility: IconButtons & Small Targets]
 **Learning:** `IconButton` widgets often lack the `tooltip` property, making them inaccessible to screen readers and confusing for mouse users. Also, small custom actions inside chips (like "clear filter") are often implemented with raw `GestureDetector`s that are too small to touch reliably and invisible to accessibility tools.
 **Action:** Always provide a descriptive `tooltip` for `IconButton`. For small custom actions, wrap them in `Semantics(button: true, label: ...)` and use transparent padding or containers to expand the touch target to at least 48x48px (or close to it) without disrupting the visual layout.
+
+## 2026-06-10 - [Accessibility: Selection State on Custom Cards]
+**Learning:** When using custom card widgets (like `GlassCard`) in a selectable list, the internal checkbox is often hidden from accessibility when `excludeSemantics` is used on the card. Screen readers need explicit state information on the card itself.
+**Action:** Add a `selected` property to the custom card widget that maps to `Semantics(selected: true)`. Additionally, for maximum compatibility, prepend "Selected" or "Not selected" to the semantic label so the state is clear even if the semantic flag is not announced.

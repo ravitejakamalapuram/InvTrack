@@ -64,25 +64,22 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('GlassCard with blur: 0 removes shadows for performance', (tester) async {
+    testWidgets('GlassCard with blur: 0 removes shadows for performance', (
+      tester,
+    ) async {
       // Build GlassCard with blur: 0 (list mode)
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: GlassCard(
-              blur: 0,
-              child: const Text('Test'),
-            ),
-          ),
+          home: Scaffold(body: GlassCard(blur: 0, child: const Text('Test'))),
         ),
       );
 
       // Find the container that holds the decoration
       final containerFinder = find.descendant(
         of: find.byType(GlassCard),
-        matching: find.byWidgetPredicate((widget) =>
-            widget is Container &&
-            widget.decoration is BoxDecoration),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Container && widget.decoration is BoxDecoration,
+        ),
       );
 
       // Verify we found at least one container
@@ -93,16 +90,47 @@ void main() {
 
       // Look for the container that matches the GlassCard structure.
       for (final container in containers) {
-         if (container.decoration is BoxDecoration) {
-           decoration = container.decoration as BoxDecoration;
-           break;
-         }
+        if (container.decoration is BoxDecoration) {
+          decoration = container.decoration as BoxDecoration;
+          break;
+        }
       }
 
       // OPTIMIZED STATE ASSERTION:
       // The decoration should exist (for color/border), but shadows must be empty/null.
       expect(decoration, isNotNull);
-      expect(decoration!.boxShadow, anyOf(isNull, isEmpty), reason: 'Shadows should be removed for performance');
+      expect(
+        decoration!.boxShadow,
+        anyOf(isNull, isEmpty),
+        reason: 'Shadows should be removed for performance',
+      );
+    });
+
+    testWidgets('supports selected state', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GlassCard(
+              onTap: () {},
+              selected: true,
+              child: const Text('Content'),
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.byType(GlassCard)),
+        matchesSemantics(
+          isButton: true,
+          isSelected: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+          label: 'Content',
+        ),
+      );
+      handle.dispose();
     });
   });
 
@@ -156,6 +184,33 @@ void main() {
           isButton: true,
           hasTapAction: true,
           label: 'Hero Custom Label',
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('supports selected state', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GlassHeroCard(
+              onTap: () {},
+              selected: true,
+              child: const Text('Hero Content'),
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.byType(GlassHeroCard)),
+        matchesSemantics(
+          isButton: true,
+          isSelected: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+          label: 'Hero Content',
         ),
       );
       handle.dispose();
