@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
@@ -21,6 +23,9 @@ class VersionCheckInitializer extends ConsumerStatefulWidget {
 class _VersionCheckInitializerState
     extends ConsumerState<VersionCheckInitializer> {
   bool _hasShownDialog = false;
+  Timer? _checkTimer;
+  Timer? _dialogTimer;
+  Timer? _retryTimer;
 
   @override
   void initState() {
@@ -31,9 +36,21 @@ class _VersionCheckInitializerState
     });
   }
 
+  @override
+  void dispose() {
+    _checkTimer?.cancel();
+    _dialogTimer?.cancel();
+    _retryTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _checkForUpdates() async {
     // Wait a bit for the app to settle
-    await Future.delayed(const Duration(seconds: 2));
+    final completer = Completer<void>();
+    _checkTimer = Timer(const Duration(seconds: 2), () {
+      completer.complete();
+    });
+    await completer.future;
 
     if (!mounted) return;
 
@@ -58,13 +75,13 @@ class _VersionCheckInitializerState
     _hasShownDialog = true;
 
     // Wait for Navigator to be ready
-    Future.delayed(const Duration(milliseconds: 500), () {
+    _dialogTimer = Timer(const Duration(milliseconds: 500), () {
       if (!mounted) return;
 
       final navigatorContext = rootNavigatorKey.currentContext;
       if (navigatorContext == null) {
         // Navigator still not ready, try one more time
-        Future.delayed(const Duration(milliseconds: 500), () {
+        _retryTimer = Timer(const Duration(milliseconds: 500), () {
           if (!mounted) return;
 
           final retryContext = rootNavigatorKey.currentContext;
