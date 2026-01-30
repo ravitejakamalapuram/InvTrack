@@ -1,7 +1,6 @@
 /// Providers for document management.
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -11,18 +10,17 @@ export 'package:inv_tracker/features/investment/domain/entities/document_entity.
 
 /// Watch documents for an investment (reactive stream)
 /// Returns empty list if user is not authenticated
+/// Errors propagate to UI for proper error state display
 final documentsByInvestmentProvider =
     StreamProvider.family<List<DocumentEntity>, String>((ref, investmentId) {
       final isAuthenticated = ref.watch(isAuthenticatedProvider);
       if (!isAuthenticated) {
         return Stream.value([]);
       }
+      // Let errors propagate to UI - document widgets handle AsyncValue.error properly
       return ref
           .watch(documentRepositoryProvider)
-          .watchDocumentsByInvestment(investmentId)
-          .handleError((error, stackTrace) {
-            debugPrint('documentsByInvestmentProvider: ERROR - $error');
-          });
+          .watchDocumentsByInvestment(investmentId);
     });
 
 /// Get document count for an investment

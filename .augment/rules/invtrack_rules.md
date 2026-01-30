@@ -72,7 +72,117 @@
 ```
 
 ### 3.3 Error Handling
-Always handle `AsyncValue` states: `data`, `loading`, `error`
+
+**All async operations MUST have proper error handling with user-friendly feedback.**
+
+#### 3.3.1 AsyncValue States
+Always handle all `AsyncValue` states: `data`, `loading`, `error`
+
+```dart
+// ✅ GOOD: Handle all states
+asyncValue.when(
+  data: (data) => DataWidget(data),
+  loading: () => LoadingIndicator(),
+  error: (error, stack) => ErrorWidget(error),
+);
+
+// ❌ BAD: Only handling data
+final data = asyncValue.value;
+```
+
+#### 3.3.2 StreamProvider Error Handling
+**Never use `handleError()` to swallow errors** - let them propagate to UI
+
+```dart
+// ✅ GOOD: Errors propagate to UI
+final dataProvider = StreamProvider<List<Data>>((ref) {
+  return repository.watchData();
+});
+
+// ❌ BAD: Errors swallowed with only debug logging
+final dataProvider = StreamProvider<List<Data>>((ref) {
+  return repository.watchData().handleError((e, st) {
+    debugPrint('Error: $e'); // User never sees this!
+  });
+});
+```
+
+#### 3.3.3 User-Facing Operations
+All user-facing operations MUST use centralized error handling:
+
+```dart
+// ✅ GOOD: Use ErrorHandler for proper error mapping
+try {
+  await operation();
+} catch (e, st) {
+  if (!mounted) return;
+  ErrorHandler.handle(e, st, context: context, showFeedback: true);
+}
+
+// ❌ BAD: Raw exception shown to user
+try {
+  await operation();
+} catch (e) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Error: $e')), // Shows raw exception!
+  );
+}
+```
+
+#### 3.3.4 Error Types and User Messages
+Use appropriate `AppException` types with user-friendly messages:
+
+| Error Type | When to Use | User Message Example |
+|------------|-------------|---------------------|
+| `NetworkException.noConnection()` | No internet | "No internet connection" |
+| `NetworkException.timeout()` | Request timeout | "Request timed out" |
+| `AuthException.signInCancelled()` | User cancelled | "Sign in was cancelled" |
+| `AuthException.signInFailed()` | Auth failed | "Sign in failed" |
+| `DataException.saveFailed()` | Save failed | "Failed to save data" |
+| `ValidationException` | User input error | "Invalid amount" |
+
+#### 3.3.5 Error State UI Requirements
+All error states MUST include:
+- ✅ User-friendly error message (no raw exceptions)
+- ✅ Error icon (e.g., `Icons.cloud_off_rounded` for network errors)
+- ✅ Retry button for transient failures
+- ✅ Proper error logging (Crashlytics for non-validation errors)
+
+```dart
+// ✅ GOOD: Complete error state
+Widget _buildErrorState() {
+  return Center(
+    child: Column(
+      children: [
+        Icon(Icons.cloud_off_rounded, size: 64, color: AppColors.errorLight),
+        Text('Connection Error', style: AppTypography.h3),
+        Text('Failed to load data. Please try again.'),
+        TextButton(
+          onPressed: () => ref.invalidate(dataProvider),
+          child: const Text('Retry'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+#### 3.3.6 Offline Operations
+Offline operations with timeout MUST inform users:
+- ✅ Show success feedback immediately (optimistic UI)
+- ✅ Data syncs automatically when online (Firestore offline-first)
+- ❌ Don't show "pending sync" warnings (confuses users)
+
+#### 3.3.7 Error Handling Checklist
+Before submitting PR, verify:
+- [ ] All `AsyncValue` states handled (`data`, `loading`, `error`)
+- [ ] No `handleError()` in StreamProviders (let errors propagate)
+- [ ] All user-facing errors use `ErrorHandler.handle()`
+- [ ] Error messages are user-friendly (no raw exceptions)
+- [ ] Error states include retry buttons for transient failures
+- [ ] Network errors show "No internet" message
+- [ ] Auth errors differentiate between cancelled vs failed
+- [ ] Validation errors don't report to Crashlytics
 
 ---
 

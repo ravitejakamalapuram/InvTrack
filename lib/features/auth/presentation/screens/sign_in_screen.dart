@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -117,19 +119,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('SignInScreen: Error - $e');
-        debugPrint('SignInScreen: Stack trace - $st');
-      }
+      if (!mounted) return;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign in failed: $e'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.dangerLight,
-          ),
-        );
+      // Use centralized error handler for proper error mapping and user feedback
+      final appException = ErrorHandler.handle(
+        e,
+        st,
+        context: context,
+        showFeedback: true,
+      );
+
+      // Don't show error for cancelled sign-in (user action, not an error)
+      if (appException is AuthException &&
+          appException.userMessage == 'Sign in was cancelled.') {
+        // User cancelled - no error feedback needed
+        if (kDebugMode) {
+          debugPrint('SignInScreen: User cancelled sign-in');
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

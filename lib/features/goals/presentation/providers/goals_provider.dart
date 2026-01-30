@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
@@ -28,57 +27,42 @@ final goalRepositoryProvider = Provider<GoalRepository>((ref) {
 
 /// Stream provider for all active goals
 /// Returns empty list if user is not authenticated
+/// Errors propagate to UI for proper error state display
 final activeGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(goalRepositoryProvider).watchActiveGoals().handleError((
-    error,
-    stackTrace,
-  ) {
-    if (kDebugMode) {
-      debugPrint('activeGoalsProvider: ERROR - $error');
-    }
-  });
+  // Let errors propagate to UI - goals_screen handles AsyncValue.error properly
+  return ref.watch(goalRepositoryProvider).watchActiveGoals();
 });
 
 /// Stream provider for all goals (active only with separate collections)
 /// Returns empty list if user is not authenticated
 /// Note: With separate collections, this is the same as activeGoalsProvider
+/// Errors propagate to UI for proper error state display
 final allGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(goalRepositoryProvider).watchAllGoals().handleError((
-    error,
-    stackTrace,
-  ) {
-    if (kDebugMode) {
-      debugPrint('allGoalsProvider: ERROR - $error');
-    }
-  });
+  // Let errors propagate to UI - goals_screen handles AsyncValue.error properly
+  return ref.watch(goalRepositoryProvider).watchAllGoals();
 });
 
 /// Stream provider for archived goals
 /// Returns empty list if user is not authenticated
+/// Errors propagate to UI for proper error state display
 final archivedGoalsProvider = StreamProvider<List<GoalEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref.watch(goalRepositoryProvider).watchArchivedGoals().handleError((
-    error,
-    stackTrace,
-  ) {
-    if (kDebugMode) {
-      debugPrint('archivedGoalsProvider: ERROR - $error');
-    }
-  });
+  // Let errors propagate to UI - goals_screen handles AsyncValue.error properly
+  return ref.watch(goalRepositoryProvider).watchArchivedGoals();
 });
 
 /// Provider for goal counts by filter (for filter tabs)
@@ -105,6 +89,7 @@ final goalByIdProvider = FutureProvider.family<GoalEntity?, String>((
 
 /// Stream provider for watching a single goal by ID (real-time updates)
 /// Returns null if user is not authenticated
+/// Errors propagate to UI for proper error state display
 final watchGoalByIdProvider = StreamProvider.family<GoalEntity?, String>((
   ref,
   id,
@@ -114,14 +99,8 @@ final watchGoalByIdProvider = StreamProvider.family<GoalEntity?, String>((
   if (!isAuthenticated) {
     return Stream.value(null);
   }
-  return ref.watch(goalRepositoryProvider).watchGoalById(id).handleError((
-    error,
-    stackTrace,
-  ) {
-    if (kDebugMode) {
-      debugPrint('watchGoalByIdProvider: ERROR - $error');
-    }
-  });
+  // Let errors propagate to UI - goal_details_screen handles AsyncValue.error properly
+  return ref.watch(goalRepositoryProvider).watchGoalById(id);
 });
 
 /// Notifier for goal operations
