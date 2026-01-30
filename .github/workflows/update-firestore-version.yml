@@ -1,0 +1,160 @@
+name: "Update Firestore Version Info"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 3.24.0)'
+        required: true
+        type: string
+      build_number:
+        description: 'Build number (e.g., 56)'
+        required: true
+        type: string
+      release_date:
+        description: 'Release date (ISO 8601, e.g., 2026-02-03T10:00:00Z) or leave empty for now'
+        required: false
+        type: string
+      update_message:
+        description: 'Update message'
+        required: false
+        default: 'New version available!'
+        type: string
+      whats_new:
+        description: 'What''s new (use \n for line breaks)'
+        required: false
+        default: '- Bug fixes and improvements'
+        type: string
+
+jobs:
+  update-firestore:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install Firebase Admin SDK
+        run: npm install firebase-admin
+      
+      - name: Update Firestore
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          RELEASE_DATE: ${{ inputs.release_date }}
+          UPDATE_MESSAGE: ${{ inputs.update_message }}
+          WHATS_NEW: ${{ inputs.whats_new }}
+        run: |
+          node << 'EOF'
+          const admin = require('firebase-admin');
+          
+          async function updateFirestore() {
+            try {
+              // Initialize Firebase Admin
+              const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              });
+              
+              const db = admin.firestore();
+              
+              // Prepare update data
+              const version = process.env.VERSION;
+              const buildNumber = parseInt(process.env.BUILD_NUMBER);
+              const releaseDate = process.env.RELEASE_DATE || new Date().toISOString();
+              const updateMessage = process.env.UPDATE_MESSAGE;
+              const whatsNew = process.env.WHATS_NEW;
+              
+              console.log('📝 Updating Firestore with:');
+              console.log('   Version:', version);
+              console.log('   Build Number:', buildNumber);
+              console.log('   Release Date:', releaseDate);
+              console.log('   Update Message:', updateMessage);
+              console.log('   What\'s New:', whatsNew);
+              
+              // Update Firestore
+              await db.collection('app_config').doc('version_info').update({
+                latestVersion: version,
+                latestBuildNumber: buildNumber,
+                releaseDate: releaseDate,
+                updateMessage: updateMessage,
+                whatsNew: whatsNew,
+              });
+              
+              console.log('✅ Firestore updated successfully!');
+              
+              // Verify the update
+              const doc = await db.collection('app_config').doc('version_info').get();
+              console.log('📋 Current Firestore data:', JSON.stringify(doc.data(), null, 2));
+              
+            } catch (error) {
+              console.error('❌ Error updating Firestore:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          updateFirestore();
+          EOF
+      
+      - name: Notify Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "✅ Firestore Version Updated",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {"type": "mrkdwn", "text": "*Version:*\n${{ inputs.version }}"},
+                    {"type": "mrkdwn", "text": "*Build:*\n${{ inputs.build_number }}"}
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Release Date:*\n${{ inputs.release_date || 'Now' }}\n\n*Message:*\n${{ inputs.update_message }}\n\n*What's New:*\n${{ inputs.whats_new }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Users will now see the update dialog when they open the app!"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Summary
+        run: |
+          echo "## ✅ Firestore Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ inputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Number | ${{ inputs.build_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Date | ${{ inputs.release_date || 'Now' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Update Message | ${{ inputs.update_message }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What's New" >> $GITHUB_STEP_SUMMARY
+          echo "${{ inputs.whats_new }}" >> $GITHUB_STEP_SUMMARY
+
