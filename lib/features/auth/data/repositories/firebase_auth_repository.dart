@@ -47,7 +47,7 @@ class FirebaseAuthRepository implements AuthRepository {
       final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
 
       if (kDebugMode) {
-        debugPrint('FirebaseAuth: Got Google user: ${googleUser.email}');
+        debugPrint('FirebaseAuth: Got Google user');
       }
 
       // Get Google auth credentials
@@ -72,7 +72,7 @@ class FirebaseAuthRepository implements AuthRepository {
       );
 
       if (kDebugMode) {
-        debugPrint('FirebaseAuth: Signed in as ${userCredential.user?.email}');
+        debugPrint('FirebaseAuth: Signed in successfully');
       }
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
