@@ -49,13 +49,37 @@ class AccessibilityUtils {
     required double? returnPercent,
     required String currencySymbol,
     required bool isClosed,
+    DateTime? maturityDate,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = formatCurrencyForScreenReader(currentValue, currencySymbol);
     final returns = returnPercent != null
         ? 'Returns: ${formatPercentageForScreenReader(returnPercent)}'
         : '';
-    return '$status: $name, Type: $type, Current value: $value. $returns';
+
+    String maturityInfo = '';
+    if (maturityDate != null && !isClosed) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final maturity = DateTime(
+        maturityDate.year,
+        maturityDate.month,
+        maturityDate.day,
+      );
+      final daysUntilMaturity = maturity.difference(today).inDays;
+
+      if (daysUntilMaturity < 0) {
+        maturityInfo = 'Matured';
+      } else if (daysUntilMaturity == 0) {
+        maturityInfo = 'Matures today';
+      } else if (daysUntilMaturity <= 30) {
+        maturityInfo = 'Matures in $daysUntilMaturity days';
+      }
+    }
+
+    final mainLabel =
+        '$status: $name, Type: $type, Current value: $value. $returns';
+    return maturityInfo.isNotEmpty ? '$mainLabel. $maturityInfo' : mainLabel;
   }
 
   /// Creates a semantic label for transaction/cash flow items

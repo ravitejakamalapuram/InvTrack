@@ -63,6 +63,7 @@ class InvestmentCard extends ConsumerWidget {
         returnPercent: stats.xirr != 0 ? stats.xirr * 100 : null,
         currencySymbol: currencySymbol,
         isClosed: isClosed,
+        maturityDate: investment.maturityDate,
       ),
       orElse: () =>
           '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
