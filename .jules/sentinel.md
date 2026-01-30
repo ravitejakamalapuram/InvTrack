@@ -38,3 +38,10 @@
 **Prevention:**
 1. Enable `WindowManager.LayoutParams.FLAG_SECURE` in `MainActivity.kt` (or `AppDelegate.swift`).
 2. Conditionally apply it only in release builds (`!BuildConfig.DEBUG`) to allow development debugging.
+
+## 2026-01-29 - [Missing iOS Screen Protection]
+**Vulnerability:** The application did not conceal sensitive content in the iOS App Switcher. This allowed sensitive financial data to be visible when the user switched apps or if an attacker gained physical access to the unlocked device and viewed the Recents list.
+**Learning:** While Android has `FLAG_SECURE`, iOS requires manual implementation of a blur or overlay view in `AppDelegate` to achieve the same privacy protection in the App Switcher.
+**Prevention:**
+1. Override `applicationWillResignActive` in `AppDelegate.swift` to add a blur effect (e.g., `UIVisualEffectView`) over the main window.
+2. Override `applicationDidBecomeActive` to remove the blur effect.

@@ -4,6 +4,8 @@ import flutter_local_notifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
+  private var blurView: UIVisualEffectView?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -19,5 +21,23 @@ import flutter_local_notifications
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func applicationWillResignActive(_ application: UIApplication) {
+    if blurView == nil {
+      let blurEffect = UIBlurEffect(style: .regular)
+      blurView = UIVisualEffectView(effect: blurEffect)
+      blurView?.frame = window?.frame ?? UIScreen.main.bounds
+      if let blurView = blurView {
+        window?.addSubview(blurView)
+      }
+    }
+    super.applicationWillResignActive(application)
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    blurView?.removeFromSuperview()
+    blurView = nil
+    super.applicationDidBecomeActive(application)
   }
 }
