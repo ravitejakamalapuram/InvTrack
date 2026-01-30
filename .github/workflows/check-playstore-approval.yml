@@ -1,0 +1,257 @@
+name: "Auto-Check Play Store Approval"
+
+on:
+  # Run every hour
+  schedule:
+    - cron: '0 * * * *'  # Every hour at minute 0
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  check-approval:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package.json'
+
+      - name: Install dependencies
+        continue-on-error: false
+        env:
+          # Environment-scoped npm config (doesn't affect system)
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+          NPM_CONFIG_PREFER_OFFLINE: true
+          NPM_CONFIG_NO_AUDIT: true
+          NPM_CONFIG_NO_FUND: true
+        run: |
+          echo "📦 Installing dependencies (googleapis, firebase-admin)..."
+
+          # Strategy 1: Try local install with cache preference
+          if npm install googleapis firebase-admin 2>/dev/null; then
+            echo "✅ Installed from npm registry (or cache)"
+            exit 0
+          fi
+
+          echo "⚠️ Local install failed, trying fallback strategies..."
+
+          # Strategy 2: Check if globally installed
+          if npm list -g googleapis firebase-admin 2>/dev/null; then
+            echo "✅ Using globally installed packages"
+            export NODE_PATH=$(npm root -g)
+            echo "NODE_PATH=$NODE_PATH" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Strategy 3: Try with verbose logging for debugging
+          echo "⚠️ Attempting install with verbose logging..."
+          if npm install googleapis firebase-admin --verbose; then
+            echo "✅ Installed with verbose mode"
+            exit 0
+          fi
+
+          # Strategy 4: All failed
+          echo "❌ All installation strategies failed!"
+          echo "💡 Solutions:"
+          echo "   1. Pre-install globally: npm install -g googleapis firebase-admin"
+          echo "   2. Check npm registry access"
+          echo "   3. See docs/NPM_REGISTRY_TROUBLESHOOTING.md"
+          exit 1
+
+      - name: Check Play Store Release Status
+        id: check_status
+        env:
+          PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+        run: |
+          node << 'EOF'
+          const { google } = require('googleapis');
+          const admin = require('firebase-admin');
+          const fs = require('fs');
+
+          async function checkPlayStoreStatus() {
+            try {
+              // Initialize Firebase Admin
+              const firebaseAuth = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+              admin.initializeApp({
+                credential: admin.credential.cert(firebaseAuth)
+              });
+
+              const db = admin.firestore();
+
+              // STEP 1: Check if there's a pending release
+              console.log('🔍 Checking for pending release...');
+              const versionDoc = await db.collection('app_config').doc('version_info').get();
+              const versionData = versionDoc.data();
+
+              if (!versionData.pendingRelease) {
+                console.log('✅ No pending release. Exiting...');
+                console.log('ℹ️  This workflow will activate automatically after next deployment.');
+                return;
+              }
+
+              console.log('⏳ Pending release found:');
+              console.log('   Version:', versionData.pendingVersion);
+              console.log('   Build Number:', versionData.pendingBuildNumber);
+              console.log('   Uploaded At:', versionData.uploadedAt);
+
+              // STEP 2: Check Play Store API for approval status
+              console.log('\n📱 Checking Play Store API...');
+
+              const playStoreAuth = JSON.parse(process.env.PLAY_STORE_CREDENTIALS);
+              const auth = new google.auth.GoogleAuth({
+                credentials: playStoreAuth,
+                scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+              });
+
+              const androidPublisher = google.androidpublisher({
+                version: 'v3',
+                auth: auth,
+              });
+
+              const packageName = 'com.invtracker.inv_tracker';
+
+              // Create an edit to query tracks
+              const editResponse = await androidPublisher.edits.insert({
+                packageName: packageName,
+              });
+
+              const editId = editResponse.data.id;
+
+              // Get alpha track info (matching your deploy workflow)
+              const trackResponse = await androidPublisher.edits.tracks.get({
+                packageName: packageName,
+                editId: editId,
+                track: 'alpha',  // Matches your deploy workflow
+              });
+
+              // Delete the edit (we're just reading)
+              await androidPublisher.edits.delete({
+                packageName: packageName,
+                editId: editId,
+              });
+
+              const releases = trackResponse.data.releases || [];
+
+              if (releases.length === 0) {
+                console.log('⚠️  No releases found in alpha track');
+                console.log('⏳ Will check again next hour...');
+                return;
+              }
+
+              // Get the latest release
+              const latestRelease = releases[0];
+              const versionCode = latestRelease.versionCodes?.[0];
+              const status = latestRelease.status;  // 'completed', 'inProgress', 'draft', 'halted'
+
+              console.log('📋 Latest Play Store release:');
+              console.log('   Version Code:', versionCode);
+              console.log('   Status:', status);
+              console.log('   Name:', latestRelease.name);
+
+              // STEP 3: Check if this is our pending version and if it's approved
+              const isPendingVersion = versionCode === versionData.pendingBuildNumber;
+              const isApproved = status === 'completed';
+
+              if (!isPendingVersion) {
+                console.log('ℹ️  Play Store version does not match pending version');
+                console.log('   Expected:', versionData.pendingBuildNumber);
+                console.log('   Found:', versionCode);
+                console.log('⏳ Will check again next hour...');
+                return;
+              }
+
+              if (!isApproved) {
+                console.log('⏳ Version is still under review');
+                console.log('   Status:', status);
+                console.log('⏳ Will check again next hour...');
+                return;
+              }
+
+              // STEP 4: Version is approved! Update Firestore
+              console.log('\n🎉 VERSION APPROVED! Updating Firestore...');
+
+              const releaseDate = new Date().toISOString();
+              const whatsNew = latestRelease.releaseNotes?.[0]?.text || '- Bug fixes and improvements';
+
+              await db.collection('app_config').doc('version_info').update({
+                latestVersion: versionData.pendingVersion,
+                latestBuildNumber: versionData.pendingBuildNumber,
+                releaseDate: releaseDate,
+                updateMessage: 'New version available!',
+                whatsNew: whatsNew,
+                pendingRelease: false,  // Clear the flag
+                // Keep pending fields for reference
+                lastApprovedAt: releaseDate,
+              });
+
+              console.log('✅ Firestore updated successfully!');
+              console.log('   Version:', versionData.pendingVersion);
+              console.log('   Build Number:', versionData.pendingBuildNumber);
+              console.log('   Release Date:', releaseDate);
+              console.log('   Pending Flag: CLEARED');
+              console.log('\n🎉 Users will now see the update dialog!');
+
+              // Set output for Slack notification
+              fs.writeFileSync(
+                process.env.GITHUB_OUTPUT,
+                `updated=true\nversion=${versionData.pendingVersion}\nbuild=${versionData.pendingBuildNumber}\n`,
+                { flag: 'a' }
+              );
+
+            } catch (error) {
+              console.error('❌ Error:', error.message);
+              if (error.response) {
+                console.error('Response:', JSON.stringify(error.response.data, null, 2));
+              }
+              // Don't exit with error - let it retry next hour
+              console.log('\n⚠️  Will retry next hour...');
+            }
+          }
+
+          checkPlayStoreStatus();
+          EOF
+      
+      # Notify Slack if Firestore was updated
+      - name: Notify Slack - Version Updated
+        if: steps.check_status.outputs.updated == 'true'
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🎉 Firestore Version Updated!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {"type": "mrkdwn", "text": "*Version:*\n${{ steps.check_status.outputs.version }}"},
+                    {"type": "mrkdwn", "text": "*Build:*\n${{ steps.check_status.outputs.build }}"}
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Play Store version was approved and Firestore has been automatically updated. Users will now see the update dialog!"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
