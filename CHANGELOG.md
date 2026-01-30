@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- **a11y**: Add maturity info to investment card semantics (#124)
+- Add semantic selection state to GlassCard and InvestmentCard (#126)
+- **ios**: Add App Switcher privacy screen (#127)
+
 ## [3.19.1] - 2026-01-28
 
 ### 🐛 Bug Fixes
