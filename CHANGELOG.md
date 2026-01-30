@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Enable screenshots - remove FLAG_SECURE restriction
+
+## [3.20.0] - 2026-01-30
+
+### ✨ Features
+
 - **a11y**: Add maturity info to investment card semantics (#124)
 - Add semantic selection state to GlassCard and InvestmentCard (#126)
 - **ios**: Add App Switcher privacy screen (#127)
