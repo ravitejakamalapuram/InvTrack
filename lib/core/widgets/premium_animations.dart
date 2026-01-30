@@ -49,6 +49,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
 
     return AnimatedBuilder(
       animation: _controller,
+      child: widget.child,
       builder: (context, child) {
         return ShaderMask(
           shaderCallback: (bounds) {
@@ -64,7 +65,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
             ).createShader(bounds);
           },
           blendMode: BlendMode.srcATop,
-          child: widget.child,
+          child: child,
         );
       },
     );
@@ -206,12 +207,13 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
+      child: widget.child,
       builder: (context, child) {
         return Opacity(
           opacity: _fadeAnimation.value,
           child: Transform.translate(
             offset: _slideAnimation.value,
-            child: widget.child,
+            child: child,
           ),
         );
       },
@@ -264,10 +266,11 @@ class _PulseAnimationState extends State<PulseAnimation>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _scaleAnimation,
+      child: widget.child,
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: widget.child,
+          child: child,
         );
       },
     );
@@ -317,10 +320,11 @@ class _FloatingAnimationState extends State<FloatingAnimation>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _animation,
+      child: widget.child,
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(0, _animation.value),
-          child: widget.child,
+          child: child,
         );
       },
     );
@@ -372,6 +376,7 @@ class _GlowEffectState extends State<GlowEffect>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _animation,
+      child: widget.child,
       builder: (context, child) {
         return Container(
           decoration: BoxDecoration(
@@ -383,7 +388,7 @@ class _GlowEffectState extends State<GlowEffect>
               ),
             ],
           ),
-          child: widget.child,
+          child: child,
         );
       },
     );
@@ -435,8 +440,21 @@ class _AnimatedGradientBorderState extends State<AnimatedGradientBorder>
 
   @override
   Widget build(BuildContext context) {
+    // Optimization: Build static parts outside the builder to prevent rebuilds
+    final innerContent = Container(
+      margin: EdgeInsets.all(widget.borderWidth),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(
+          widget.borderRadius - widget.borderWidth,
+        ),
+        color: Theme.of(context).scaffoldBackgroundColor,
+      ),
+      child: widget.child,
+    );
+
     return AnimatedBuilder(
       animation: _controller,
+      child: innerContent,
       builder: (context, child) {
         return Container(
           decoration: BoxDecoration(
@@ -448,16 +466,7 @@ class _AnimatedGradientBorderState extends State<AnimatedGradientBorder>
               transform: GradientRotation(_controller.value * math.pi * 2),
             ),
           ),
-          child: Container(
-            margin: EdgeInsets.all(widget.borderWidth),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(
-                widget.borderRadius - widget.borderWidth,
-              ),
-              color: Theme.of(context).scaffoldBackgroundColor,
-            ),
-            child: widget.child,
-          ),
+          child: child,
         );
       },
     );

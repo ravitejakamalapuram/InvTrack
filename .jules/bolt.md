@@ -53,3 +53,11 @@ Creating a new `DateFormat` instance (e.g., `DateFormat('MMM d, y')`) involves p
 
 **Action:**
 Cache `DateFormat` instances as `static final` fields in utility classes. This reduces the cost from O(Parsing) to O(1). Note: Cached instances capture the locale at initialization time, which is acceptable for single-locale apps but requires invalidation logic for dynamic locale switching.
+
+## 2026-01-30 - Rebuilding Static Subtrees in Animations
+
+**Learning:**
+`AnimatedBuilder` rebuilds its builder closure on every animation tick. If `widget.child` (or a complex static subtree) is accessed directly inside the closure, it conceptually re-inserts the widget into the tree. While Flutter's element diffing handles this, constructing the widget tree (e.g. `Container(decoration: ... child: widget.child)`) inside the builder adds CPU overhead on every frame.
+
+**Action:**
+Pass static subtrees (like `widget.child` or pre-built `Container`s) to the `child` parameter of `AnimatedBuilder`. This allows the builder to reuse the same widget instance, and in the case of hoisted subtrees, prevents `BoxDecoration` and other objects from being recreated 60 times per second.
