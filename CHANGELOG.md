@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Remove npm cache config from Node.js setup in workflows
+
+## [3.23.0] - 2026-01-31
+
 ### ✨ Features
 
 - Add automated Play Store approval monitoring (#129)
