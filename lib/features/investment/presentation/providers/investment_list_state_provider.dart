@@ -189,30 +189,34 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
       // This ensures the list re-sorts when stats become available
       final statsCache = <String, InvestmentStats?>{};
 
-      // Check if current sort criteria actually needs XIRR
-      final requiresXirr =
-          listState.sort == InvestmentSort.xirrAsc ||
-          listState.sort == InvestmentSort.xirrDesc;
+      // OPTIMIZATION: Only watch stats if the current sort requires them.
+      // This prevents O(N) subscriptions and unnecessary rebuilds for simple sorts (Name, Date).
+      if (listState.sort.requiresStats) {
+        // Check if current sort criteria actually needs XIRR
+        final requiresXirr =
+            listState.sort == InvestmentSort.xirrAsc ||
+            listState.sort == InvestmentSort.xirrDesc;
 
-      for (final inv in filtered) {
-        // PERFORMANCE OPTIMIZATION:
-        // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
-        // Also correctly handle archived vs active investments.
-        final AsyncValue<InvestmentStats> statsAsync;
+        for (final inv in filtered) {
+          // PERFORMANCE OPTIMIZATION:
+          // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
+          // Also correctly handle archived vs active investments.
+          final AsyncValue<InvestmentStats> statsAsync;
 
-        if (inv.isArchived) {
-          statsAsync =
-              requiresXirr
-                  ? ref.watch(archivedInvestmentStatsProvider(inv.id))
-                  : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
-        } else {
-          statsAsync =
-              requiresXirr
-                  ? ref.watch(investmentStatsProvider(inv.id))
-                  : ref.watch(investmentBasicStatsProvider(inv.id));
+          if (inv.isArchived) {
+            statsAsync =
+                requiresXirr
+                    ? ref.watch(archivedInvestmentStatsProvider(inv.id))
+                    : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
+          } else {
+            statsAsync =
+                requiresXirr
+                    ? ref.watch(investmentStatsProvider(inv.id))
+                    : ref.watch(investmentBasicStatsProvider(inv.id));
+          }
+
+          statsCache[inv.id] = statsAsync.value;
         }
-
-        statsCache[inv.id] = statsAsync.value;
       }
 
       // Apply sorting

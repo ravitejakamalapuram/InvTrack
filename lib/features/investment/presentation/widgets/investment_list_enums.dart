@@ -28,4 +28,19 @@ enum InvestmentSort {
   final String displayName;
   final IconData icon;
   const InvestmentSort(this.displayName, this.icon);
+
+  /// Whether this sort option requires investment statistics (like values, returns, XIRR).
+  /// Optimization: If false, we can skip watching stats providers in the list.
+  bool get requiresStats {
+    switch (this) {
+      case InvestmentSort.nameAsc:
+      case InvestmentSort.nameDesc:
+      case InvestmentSort.createdDesc:
+      case InvestmentSort.createdAsc:
+      case InvestmentSort.maturityDateAsc:
+        return false;
+      default:
+        return true;
+    }
+  }
 }
