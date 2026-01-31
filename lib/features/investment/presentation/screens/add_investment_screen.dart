@@ -85,7 +85,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     _incomeFrequency = investment?.incomeFrequency;
 
     // Initialize new field controllers
-    _platformController = TextEditingController(text: investment?.platform ?? '');
+    _platformController = TextEditingController(
+      text: investment?.platform ?? '',
+    );
     _expectedRateController = TextEditingController(
       text: investment?.expectedRate != null
           ? investment!.expectedRate!.toString()
@@ -183,10 +185,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     });
 
     // Track analytics
-    ref.read(analyticsServiceProvider).logTemplateSelected(
-      templateId: template.id,
-      templateName: template.name,
-    );
+    ref
+        .read(analyticsServiceProvider)
+        .logTemplateSelected(
+          templateId: template.id,
+          templateName: template.name,
+        );
   }
 
   @override
@@ -307,17 +311,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         if (_compoundingFrequency != null) enhancedFields.add('compounding');
 
         if (enhancedFields.isNotEmpty) {
-          ref.read(analyticsServiceProvider).logEnhancedFieldsUsed(
-            investmentType: _selectedType.name,
-            fieldsUsed: enhancedFields,
-          );
+          ref
+              .read(analyticsServiceProvider)
+              .logEnhancedFieldsUsed(
+                investmentType: _selectedType.name,
+                fieldsUsed: enhancedFields,
+              );
         }
 
         // Track smart default usage
         if (_maturityDateAutoCalculated && _maturityDate != null) {
-          ref.read(analyticsServiceProvider).logSmartDefaultApplied(
-            fieldName: 'maturity_date',
-          );
+          ref
+              .read(analyticsServiceProvider)
+              .logSmartDefaultApplied(fieldName: 'maturity_date');
         }
       }
 
@@ -367,6 +373,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               color: isDark ? Colors.white : AppColors.neutral700Light,
             ),
           ),
+          tooltip: 'Close',
           onPressed: () => context.safePop(),
         ),
         title: Text(
@@ -415,10 +422,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       // Investment Type Selector
                       TypeSelector<InvestmentType>(
                         label: 'Investment Type',
-                        subtitle: 'Select the category that best describes this investment',
+                        subtitle:
+                            'Select the category that best describes this investment',
                         values: InvestmentType.values,
                         selectedValue: _selectedType,
-                        onSelected: (type) => setState(() => _selectedType = type),
+                        onSelected: (type) =>
+                            setState(() => _selectedType = type),
                         colorBuilder: (type) => type.color,
                         iconBuilder: (type) => type.icon,
                         labelBuilder: (type) => type.displayName,
@@ -488,7 +497,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         icon: widget.isEditing
                             ? Icons.save_rounded
                             : Icons.add_rounded,
-                        label: widget.isEditing ? 'Save Changes' : 'Add Investment',
+                        label: widget.isEditing
+                            ? 'Save Changes'
+                            : 'Add Investment',
                       ),
 
                       SizedBox(height: AppSpacing.lg),
@@ -622,8 +633,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         'Estimated Returns',
                         style: AppTypography.label.copyWith(
                           fontWeight: FontWeight.w600,
-                          color:
-                              isDark ? Colors.white : AppColors.neutral900Light,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
                         ),
                       ),
                     ),
@@ -727,10 +739,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           value,
           style: (isHighlighted ? AppTypography.h4 : AppTypography.bodyLarge)
               .copyWith(
-            fontWeight: FontWeight.w600,
-            color: valueColor ??
-                (isDark ? Colors.white : AppColors.neutral900Light),
-          ),
+                fontWeight: FontWeight.w600,
+                color:
+                    valueColor ??
+                    (isDark ? Colors.white : AppColors.neutral900Light),
+              ),
         ),
       ],
     );
@@ -777,8 +790,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       color: _startDate != null
                           ? (isDark ? Colors.white : AppColors.neutral900Light)
                           : (isDark
-                              ? AppColors.neutral400Dark
-                              : AppColors.neutral500Light),
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light),
                     ),
                   ),
                 ),
@@ -791,9 +804,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                           : AppColors.neutral400Light,
                       size: 20,
                     ),
+                    tooltip: 'Clear start date',
                     onPressed: () => setState(() => _startDate = null),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   )
                 else
                   Icon(
@@ -896,16 +908,18 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: InterestPayoutMode.values.map(
-            (mode) => _buildEnumChip<InterestPayoutMode>(
-              value: mode,
-              isSelected: _interestPayoutMode == mode,
-              label: mode.displayName,
-              icon: mode.icon,
-              onTap: () => setState(() => _interestPayoutMode = mode),
-              isDark: isDark,
-            ),
-          ).toList(),
+          children: InterestPayoutMode.values
+              .map(
+                (mode) => _buildEnumChip<InterestPayoutMode>(
+                  value: mode,
+                  isSelected: _interestPayoutMode == mode,
+                  label: mode.displayName,
+                  icon: mode.icon,
+                  onTap: () => setState(() => _interestPayoutMode = mode),
+                  isDark: isDark,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -935,16 +949,18 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: CompoundingFrequency.values.map(
-            (freq) => _buildEnumChip<CompoundingFrequency>(
-              value: freq,
-              isSelected: _compoundingFrequency == freq,
-              label: freq.displayName,
-              icon: Icons.autorenew_rounded,
-              onTap: () => setState(() => _compoundingFrequency = freq),
-              isDark: isDark,
-            ),
-          ).toList(),
+          children: CompoundingFrequency.values
+              .map(
+                (freq) => _buildEnumChip<CompoundingFrequency>(
+                  value: freq,
+                  isSelected: _compoundingFrequency == freq,
+                  label: freq.displayName,
+                  icon: Icons.autorenew_rounded,
+                  onTap: () => setState(() => _compoundingFrequency = freq),
+                  isDark: isDark,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -974,17 +990,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: RiskLevel.values.map(
-            (risk) => _buildEnumChip<RiskLevel>(
-              value: risk,
-              isSelected: _riskLevel == risk,
-              label: risk.displayName,
-              icon: risk.icon,
-              color: risk.color,
-              onTap: () => setState(() => _riskLevel = risk),
-              isDark: isDark,
-            ),
-          ).toList(),
+          children: RiskLevel.values
+              .map(
+                (risk) => _buildEnumChip<RiskLevel>(
+                  value: risk,
+                  isSelected: _riskLevel == risk,
+                  label: risk.displayName,
+                  icon: risk.icon,
+                  color: risk.color,
+                  onTap: () => setState(() => _riskLevel = risk),
+                  isDark: isDark,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -1122,8 +1140,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   style: AppTypography.body.copyWith(
                     fontSize: 13,
                     color: textColor,
-                    fontWeight:
-                        progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: progress > 0.5
+                        ? FontWeight.w600
+                        : FontWeight.w500,
                   ),
                 ),
               ],
@@ -1215,10 +1234,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w500,
                         color: _maturityDate != null
-                            ? (isDark ? Colors.white : AppColors.neutral900Light)
+                            ? (isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
                             : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
                       ),
                     ),
                   ),
@@ -1231,12 +1252,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                             : AppColors.neutral400Light,
                         size: 20,
                       ),
+                      tooltip: 'Clear maturity date',
                       onPressed: () => setState(() {
                         _maturityDate = null;
                         _maturityDateAutoCalculated = false;
                       }),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
                     )
                   else
                     Icon(
@@ -1376,8 +1396,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     style: AppTypography.body.copyWith(
                       fontSize: 13,
                       color: textColor,
-                      fontWeight:
-                          progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: progress > 0.5
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ],
