@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Use globally installed npm packages in workflows
+
+## [3.23.1] - 2026-01-31
+
+### 🐛 Bug Fixes
+
 - Remove npm cache config from Node.js setup in workflows
 
 ## [3.23.0] - 2026-01-31
