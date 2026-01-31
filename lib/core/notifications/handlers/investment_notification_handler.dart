@@ -366,6 +366,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       groupKey: NotificationGroups.incomeReminders,
       setAsGroupSummary: true,
+      visibility: NotificationVisibility.private,
       styleInformation: InboxStyleInformation(
         investmentNames.take(5).toList(),
         contentTitle: title,
@@ -410,6 +411,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       priority: Priority.max,
       groupKey: NotificationGroups.maturityReminders,
       setAsGroupSummary: true,
+      visibility: NotificationVisibility.private,
       styleInformation: InboxStyleInformation(
         investmentNames.take(5).toList(),
         contentTitle: title,

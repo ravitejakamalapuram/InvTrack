@@ -228,7 +228,14 @@ void main() {
       expect(fakePlugin.scheduledNotifications.length, 1);
       final scheduled = fakePlugin.scheduledNotifications.first;
       final now = DateTime.now();
-      expect(scheduled.scheduledDate.month, (now.month + 3 - 1) % 12 + 1);
+
+      // Verify scheduled date is roughly 3 months in the future
+      // We use a range because adding months to dates like Jan 31 can overflow to May 1
+      final minDate = now.add(const Duration(days: 80)); // ~3 months - buffer
+      final maxDate = now.add(const Duration(days: 100)); // ~3 months + buffer
+
+      expect(scheduled.scheduledDate.isAfter(minDate), isTrue);
+      expect(scheduled.scheduledDate.isBefore(maxDate), isTrue);
     });
 
     test('should not schedule when income reminders disabled', () async {
