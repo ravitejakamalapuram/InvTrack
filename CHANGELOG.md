@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add auto-merge to PR review workflow (event-based)
+
+## [3.24.2] - 2026-01-31
+
 ### ♻️ Refactoring
 
 - Increase PR review frequency to every 2 hours
