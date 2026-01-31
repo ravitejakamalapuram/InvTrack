@@ -182,47 +182,27 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Firebase Admin SDK
+      - name: Setup Firebase Admin SDK
         if: success()
-        continue-on-error: false
-        env:
-          # Environment-scoped npm config (doesn't affect system)
-          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-          NPM_CONFIG_PREFER_OFFLINE: true
-          NPM_CONFIG_NO_AUDIT: true
-          NPM_CONFIG_NO_FUND: true
         run: |
-          echo "📦 Installing Firebase Admin SDK..."
+          echo "📦 Setting up Firebase Admin SDK..."
 
-          # Strategy 1: Try local install with cache preference
-          if npm install firebase-admin 2>/dev/null; then
-            echo "✅ Installed from npm registry (or cache)"
-            exit 0
-          fi
-
-          echo "⚠️ Local install failed, trying fallback strategies..."
-
-          # Strategy 2: Check if globally installed
-          if npm list -g firebase-admin 2>/dev/null; then
+          # Check if package is globally installed
+          if npm list -g firebase-admin >/dev/null 2>&1; then
             echo "✅ Using globally installed firebase-admin"
             export NODE_PATH=$(npm root -g)
             echo "NODE_PATH=$NODE_PATH" >> $GITHUB_ENV
             exit 0
           fi
 
-          # Strategy 3: Try with verbose logging for debugging
-          echo "⚠️ Attempting install with verbose logging..."
-          if npm install firebase-admin --verbose; then
-            echo "✅ Installed with verbose mode"
-            exit 0
-          fi
-
-          # Strategy 4: All failed
-          echo "❌ All installation strategies failed!"
-          echo "💡 Solutions:"
-          echo "   1. Pre-install globally: npm install -g firebase-admin"
-          echo "   2. Check npm registry access"
-          echo "   3. See docs/NPM_REGISTRY_TROUBLESHOOTING.md"
+          # If not globally installed, provide instructions
+          echo "❌ firebase-admin not found globally"
+          echo ""
+          echo "📋 One-time setup required:"
+          echo "   Run this command on the self-hosted runner:"
+          echo "   npm install -g firebase-admin"
+          echo ""
+          echo "💡 This is a one-time setup. The package will be reused for all future runs."
           exit 1
 
       - name: Set pending release flag in Firestore
