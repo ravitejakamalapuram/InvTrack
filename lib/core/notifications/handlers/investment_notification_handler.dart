@@ -57,31 +57,24 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     final now = DateTime.now();
     DateTime nextIncomeDate;
 
+    // Set time to 9 AM for consistency
+    final baseDate = lastIncomeDate != null
+        ? DateTime(
+            lastIncomeDate.year,
+            lastIncomeDate.month,
+            lastIncomeDate.day,
+            9,
+            0,
+          )
+        : DateTime(now.year, now.month, now.day, 9, 0);
+
     if (lastIncomeDate != null) {
-      nextIncomeDate = DateTime(
-        lastIncomeDate.year,
-        lastIncomeDate.month + monthsBetweenPayments,
-        lastIncomeDate.day,
-        9,
-        0,
-      );
+      nextIncomeDate = _addMonthsSafely(baseDate, monthsBetweenPayments);
       while (nextIncomeDate.isBefore(now)) {
-        nextIncomeDate = DateTime(
-          nextIncomeDate.year,
-          nextIncomeDate.month + monthsBetweenPayments,
-          nextIncomeDate.day,
-          9,
-          0,
-        );
+        nextIncomeDate = _addMonthsSafely(nextIncomeDate, monthsBetweenPayments);
       }
     } else {
-      nextIncomeDate = DateTime(
-        now.year,
-        now.month + monthsBetweenPayments,
-        now.day,
-        9,
-        0,
-      );
+      nextIncomeDate = _addMonthsSafely(baseDate, monthsBetweenPayments);
     }
 
     final androidDetails = AndroidNotificationDetails(
@@ -126,6 +119,44 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     if (kDebugMode) {
       debugPrint('🔔 Income reminder cancelled for investment $investmentId');
     }
+  }
+
+  /// Safely add months to a date, handling end-of-month overflow.
+  /// e.g. Jan 31 + 1 month -> Feb 28 (or 29) instead of Mar 3.
+  DateTime _addMonthsSafely(DateTime date, int months) {
+    // Calculate target year and month
+    var targetYear = date.year;
+    var targetMonth = date.month + months;
+
+    // Handle year rollover
+    final yearsToAdd = (targetMonth - 1) ~/ 12;
+    targetYear += yearsToAdd;
+    targetMonth = (targetMonth - 1) % 12 + 1;
+
+    // Determine last day of target month
+    final isLeapYear = (targetYear % 4 == 0) &&
+        ((targetYear % 100 != 0) || (targetYear % 400 == 0));
+    final daysInMonth = [
+      0,
+      31,
+      isLeapYear ? 29 : 28,
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31,
+      30,
+      31
+    ];
+    final maxDay = daysInMonth[targetMonth];
+
+    // Cap day to max day of month
+    final targetDay = date.day > maxDay ? maxDay : date.day;
+
+    return DateTime(targetYear, targetMonth, targetDay, date.hour, date.minute);
   }
 
   // ============ Maturity Reminders ============
