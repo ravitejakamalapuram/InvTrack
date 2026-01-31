@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Type mismatch in version comparison (string vs number)
+
+## [3.25.1] - 2026-01-31
+
+### 🐛 Bug Fixes
+
 - Auto-clear stale pending release flags in Play Store check
 
 ## [3.25.0] - 2026-01-31
