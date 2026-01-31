@@ -97,6 +97,9 @@ void main() {
       ),
     );
 
+    // Allow pending timers (like NotificationSyncInitializer) to complete
+    await tester.pumpAndSettle();
+
     // Verify that the app title is displayed (on Sign In screen or Home).
     expect(find.byType(InvTrackerApp), findsOneWidget);
   });

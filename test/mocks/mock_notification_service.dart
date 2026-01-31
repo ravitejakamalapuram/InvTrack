@@ -109,6 +109,9 @@ class FakeNotificationService implements NotificationService {
 
   // Implement all other required methods with no-op stubs
   @override
+  DateTime? get userSignupDate => null;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) {
     // For Future-returning methods, return completed future
     final memberName = invocation.memberName.toString();
