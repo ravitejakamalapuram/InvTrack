@@ -58,29 +58,23 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     DateTime nextIncomeDate;
 
     if (lastIncomeDate != null) {
-      nextIncomeDate = DateTime(
-        lastIncomeDate.year,
-        lastIncomeDate.month + monthsBetweenPayments,
-        lastIncomeDate.day,
-        9,
-        0,
+      nextIncomeDate = _addMonthsSafely(
+        lastIncomeDate,
+        monthsBetweenPayments,
+        hour: 9,
       );
       while (nextIncomeDate.isBefore(now)) {
-        nextIncomeDate = DateTime(
-          nextIncomeDate.year,
-          nextIncomeDate.month + monthsBetweenPayments,
-          nextIncomeDate.day,
-          9,
-          0,
+        nextIncomeDate = _addMonthsSafely(
+          nextIncomeDate,
+          monthsBetweenPayments,
+          hour: 9,
         );
       }
     } else {
-      nextIncomeDate = DateTime(
-        now.year,
-        now.month + monthsBetweenPayments,
-        now.day,
-        9,
-        0,
+      nextIncomeDate = _addMonthsSafely(
+        now,
+        monthsBetweenPayments,
+        hour: 9,
       );
     }
 
@@ -504,5 +498,36 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         '🔔 Milestone notification shown: ${reachedMilestone}x for $investmentName',
       );
     }
+  }
+
+  // ============ Helper Methods ============
+
+  /// Safely add months to a date, handling day overflow.
+  ///
+  /// When adding months to a date like January 31 + 3 months, the naive
+  /// DateTime(2026, 4, 31) would overflow to May 1 since April has only 30 days.
+  /// This method clamps the day to the last valid day of the target month.
+  ///
+  /// Example:
+  /// - Jan 31 + 3 months = Apr 30 (not May 1)
+  /// - Jan 31 + 1 month = Feb 28/29 (not Mar 3)
+  DateTime _addMonthsSafely(
+    DateTime date,
+    int months, {
+    int hour = 0,
+    int minute = 0,
+  }) {
+    final targetYear = date.year + (date.month + months - 1) ~/ 12;
+    final targetMonth = (date.month + months - 1) % 12 + 1;
+
+    // Get the last day of the target month
+    final lastDayOfTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
+
+    // Clamp the day to the last valid day of the target month
+    final targetDay = date.day > lastDayOfTargetMonth
+        ? lastDayOfTargetMonth
+        : date.day;
+
+    return DateTime(targetYear, targetMonth, targetDay, hour, minute);
   }
 }
