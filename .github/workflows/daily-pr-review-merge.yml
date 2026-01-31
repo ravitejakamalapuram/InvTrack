@@ -2,8 +2,9 @@ name: "Daily: Auto Review & Merge PRs"
 
 on:
   schedule:
-    # Runs every day at 1pm UTC (adjust timezone as needed)
-    - cron: '0 13 * * *'
+    # Review PRs during business hours: 10:30am, 1:30pm, 4:30pm UTC
+    # Adjust times based on your timezone and work schedule
+    - cron: '30 10,13,16 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
