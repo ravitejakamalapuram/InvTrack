@@ -4,6 +4,12 @@
 
 ### ♻️ Refactoring
 
+- Increase PR review frequency to every 2 hours
+
+## [3.24.1] - 2026-01-31
+
+### ♻️ Refactoring
+
 - Optimize scheduled workflows for self-hosted runner
 
 ## [3.24.0] - 2026-01-31
