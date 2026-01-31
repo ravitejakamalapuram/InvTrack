@@ -4,6 +4,13 @@
 
 ### ✨ Features
 
+- Add automated Play Store approval monitoring (#129)
+- Update support email to invtrack_support@googlegroups.com (#128)
+
+## [3.22.0] - 2026-01-30
+
+### ✨ Features
+
 - Update support email to invtrack_support@googlegroups.com
 
 ## [3.21.0] - 2026-01-30
