@@ -122,7 +122,13 @@ jobs:
 
               if (releases.length === 0) {
                 console.log('⚠️  No releases found in alpha track');
-                console.log('⏳ Will check again next hour...');
+                console.log('🧹 Clearing stale pending flag (no releases in Play Store)...');
+
+                await db.collection('app_config').doc('version_info').update({
+                  pendingRelease: false,
+                });
+
+                console.log('✅ Stale flag cleared!');
                 return;
               }
 
@@ -140,17 +146,65 @@ jobs:
               const isPendingVersion = versionCode === versionData.pendingBuildNumber;
               const isApproved = status === 'completed';
 
+              // Check if pending release is stale (older than 7 days)
+              const uploadedAt = new Date(versionData.uploadedAt);
+              const now = new Date();
+              const hoursSinceUpload = (now - uploadedAt) / (1000 * 60 * 60);
+              const isStale = hoursSinceUpload > 168; // 7 days
+
               if (!isPendingVersion) {
                 console.log('ℹ️  Play Store version does not match pending version');
                 console.log('   Expected:', versionData.pendingBuildNumber);
                 console.log('   Found:', versionCode);
+
+                // If Play Store has a NEWER version, clear the pending flag
+                if (versionCode > versionData.pendingBuildNumber) {
+                  console.log('🧹 Play Store has newer version - clearing outdated pending flag...');
+
+                  await db.collection('app_config').doc('version_info').update({
+                    pendingRelease: false,
+                  });
+
+                  console.log('✅ Outdated flag cleared!');
+                  console.log('💡 Note: You may want to manually update latestVersion/latestBuildNumber if needed.');
+                  return;
+                }
+
+                // If pending for >7 days, clear as stale
+                if (isStale) {
+                  console.log(`⚠️  Pending release is stale (${Math.floor(hoursSinceUpload / 24)} days old)`);
+                  console.log('🧹 Clearing stale pending flag...');
+
+                  await db.collection('app_config').doc('version_info').update({
+                    pendingRelease: false,
+                  });
+
+                  console.log('✅ Stale flag cleared!');
+                  return;
+                }
+
                 console.log('⏳ Will check again next hour...');
                 return;
               }
 
               if (!isApproved) {
+                // Check if stale even though version matches
+                if (isStale) {
+                  console.log(`⚠️  Version still under review after ${Math.floor(hoursSinceUpload / 24)} days`);
+                  console.log('🧹 Clearing stale pending flag...');
+
+                  await db.collection('app_config').doc('version_info').update({
+                    pendingRelease: false,
+                  });
+
+                  console.log('✅ Stale flag cleared!');
+                  console.log('💡 Please check Play Store Console manually.');
+                  return;
+                }
+
                 console.log('⏳ Version is still under review');
                 console.log('   Status:', status);
+                console.log(`   Time since upload: ${Math.floor(hoursSinceUpload)} hours`);
                 console.log('⏳ Will check again next hour...');
                 return;
               }
