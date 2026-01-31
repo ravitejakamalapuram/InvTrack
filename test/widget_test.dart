@@ -6,6 +6,7 @@ import 'package:inv_tracker/app/app.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mock_analytics_service.dart';
+import 'mocks/mock_notification_service.dart';
 
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
   final Map<String, String> _storage = {};
@@ -89,6 +91,10 @@ void main() {
               analytics: _FakeFirebaseAnalytics(),
             ),
           ),
+          // Override notification provider to avoid UnimplementedError
+          notificationServiceProvider.overrideWithValue(
+            FakeNotificationService(),
+          ),
         ],
         child: const InvTrackerApp(),
       ),
@@ -96,6 +102,9 @@ void main() {
 
     // Verify that the app title is displayed (on Sign In screen or Home).
     expect(find.byType(InvTrackerApp), findsOneWidget);
+
+    // Pump to allow any background timers/futures to complete
+    await tester.pumpAndSettle();
   });
 }
 

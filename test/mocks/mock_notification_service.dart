@@ -107,6 +107,24 @@ class FakeNotificationService implements NotificationService {
     shownGoalStaleNotifications.add(goalId);
   }
 
+  @override
+  DateTime? get userSignupDate => null;
+
+  @override
+  Future<void> setUserSignupDate(DateTime date) async {}
+
+  @override
+  Future<void> scheduleActivationSequence() async {}
+
+  @override
+  Future<void> cancelActivationSequence() async {}
+
+  @override
+  Future<void> rescheduleAllNotifications(
+    // ignore: avoid_annotating_with_dynamic
+    dynamic investments,
+  ) async {}
+
   // Implement all other required methods with no-op stubs
   @override
   dynamic noSuchMethod(Invocation invocation) {

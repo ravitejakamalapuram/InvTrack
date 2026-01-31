@@ -228,7 +228,14 @@ void main() {
       expect(fakePlugin.scheduledNotifications.length, 1);
       final scheduled = fakePlugin.scheduledNotifications.first;
       final now = DateTime.now();
-      expect(scheduled.scheduledDate.month, (now.month + 3 - 1) % 12 + 1);
+      final expectedDate = DateTime(
+        now.year,
+        now.month + 3,
+        now.day,
+        9,
+        0,
+      );
+      expect(scheduled.scheduledDate.month, expectedDate.month);
     });
 
     test('should not schedule when income reminders disabled', () async {
