@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Auto-clear stale pending release flags in Play Store check
+
+## [3.25.0] - 2026-01-31
+
 ### ✨ Features
 
 - Add auto-merge to PR review workflow (event-based)
