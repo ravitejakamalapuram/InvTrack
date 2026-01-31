@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Use system global npm packages instead of setup-node packages
+
+## [3.23.2] - 2026-01-31
+
+### 🐛 Bug Fixes
+
 - Use globally installed npm packages in workflows
 
 ## [3.23.1] - 2026-01-31
