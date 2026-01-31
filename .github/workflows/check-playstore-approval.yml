@@ -143,7 +143,8 @@ jobs:
               console.log('   Name:', latestRelease.name);
 
               // STEP 3: Check if this is our pending version and if it's approved
-              const isPendingVersion = versionCode === versionData.pendingBuildNumber;
+              // Convert both to numbers to avoid type mismatch (string vs number)
+              const isPendingVersion = Number(versionCode) === Number(versionData.pendingBuildNumber);
               const isApproved = status === 'completed';
 
               // Check if pending release is stale (older than 7 days)
@@ -158,7 +159,7 @@ jobs:
                 console.log('   Found:', versionCode);
 
                 // If Play Store has a NEWER version, clear the pending flag
-                if (versionCode > versionData.pendingBuildNumber) {
+                if (Number(versionCode) > Number(versionData.pendingBuildNumber)) {
                   console.log('🧹 Play Store has newer version - clearing outdated pending flag...');
 
                   await db.collection('app_config').doc('version_info').update({
