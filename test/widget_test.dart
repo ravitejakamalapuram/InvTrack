@@ -6,14 +6,17 @@ import 'package:inv_tracker/app/app.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mock_analytics_service.dart';
+import 'mocks/mock_notification_service.dart';
 
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
   final Map<String, String> _storage = {};
@@ -89,6 +92,14 @@ void main() {
               analytics: _FakeFirebaseAnalytics(),
             ),
           ),
+          // Override notification service to avoid plugin initialization
+          notificationServiceProvider.overrideWithValue(
+            FakeNotificationService(),
+          ),
+          // Override version check provider to avoid Firestore dependency
+          versionCheckProvider.overrideWith(() {
+            return _FakeVersionCheckNotifier();
+          }),
         ],
         child: const InvTrackerApp(),
       ),
@@ -115,4 +126,27 @@ class _FakeFirebaseAnalytics extends Fake implements FirebaseAnalytics {
     Map<String, Object?>? parameters,
     AnalyticsCallOptions? callOptions,
   }) async {}
+}
+
+/// Fake VersionCheckNotifier for testing that doesn't require Firestore
+class _FakeVersionCheckNotifier extends VersionCheckNotifier {
+  @override
+  VersionCheckState build() {
+    // Return a simple state without checking for updates
+    return const VersionCheckState(
+      currentVersion: '1.0.0',
+      currentBuildNumber: 1,
+      hasChecked: true,
+    );
+  }
+
+  @override
+  Future<void> checkForUpdates() async {
+    // Do nothing in tests
+  }
+
+  @override
+  Future<void> dismissUpdate() async {
+    // Do nothing in tests
+  }
 }

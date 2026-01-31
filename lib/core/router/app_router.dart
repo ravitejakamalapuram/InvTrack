@@ -19,8 +19,8 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
 
-// Private navigator key - only root needs one
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+// Root navigator key - used for showing dialogs from anywhere in the app
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -29,7 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final analyticsObserver = ref.watch(analyticsObserverProvider);
 
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
     observers: [if (analyticsObserver != null) analyticsObserver],

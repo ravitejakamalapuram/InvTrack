@@ -165,6 +165,7 @@ jobs:
           cat whatsnew/whatsnew-en-US
 
       - name: Deploy to Google Play (Closed Testing)
+        id: deploy
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
@@ -174,6 +175,106 @@ jobs:
           status: completed
           releaseName: v${{ steps.version.outputs.version }}
           whatsNewDirectory: whatsnew
+
+      - name: Setup Node.js for Firestore update
+        if: success()
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package.json'
+
+      - name: Install Firebase Admin SDK
+        if: success()
+        continue-on-error: false
+        env:
+          # Environment-scoped npm config (doesn't affect system)
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+          NPM_CONFIG_PREFER_OFFLINE: true
+          NPM_CONFIG_NO_AUDIT: true
+          NPM_CONFIG_NO_FUND: true
+        run: |
+          echo "📦 Installing Firebase Admin SDK..."
+
+          # Strategy 1: Try local install with cache preference
+          if npm install firebase-admin 2>/dev/null; then
+            echo "✅ Installed from npm registry (or cache)"
+            exit 0
+          fi
+
+          echo "⚠️ Local install failed, trying fallback strategies..."
+
+          # Strategy 2: Check if globally installed
+          if npm list -g firebase-admin 2>/dev/null; then
+            echo "✅ Using globally installed firebase-admin"
+            export NODE_PATH=$(npm root -g)
+            echo "NODE_PATH=$NODE_PATH" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          # Strategy 3: Try with verbose logging for debugging
+          echo "⚠️ Attempting install with verbose logging..."
+          if npm install firebase-admin --verbose; then
+            echo "✅ Installed with verbose mode"
+            exit 0
+          fi
+
+          # Strategy 4: All failed
+          echo "❌ All installation strategies failed!"
+          echo "💡 Solutions:"
+          echo "   1. Pre-install globally: npm install -g firebase-admin"
+          echo "   2. Check npm registry access"
+          echo "   3. See docs/NPM_REGISTRY_TROUBLESHOOTING.md"
+          exit 1
+
+      - name: Set pending release flag in Firestore
+        if: success()
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ steps.whatsnew.outputs.version_code }}
+        run: |
+          node << 'EOF'
+          const admin = require('firebase-admin');
+
+          async function setPendingFlag() {
+            try {
+              // Initialize Firebase Admin
+              const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              });
+
+              const db = admin.firestore();
+              const version = process.env.VERSION;
+              const buildNumber = parseInt(process.env.BUILD_NUMBER);
+              const uploadedAt = new Date().toISOString();
+
+              console.log('📝 Setting pending release flag in Firestore...');
+              console.log('   Version:', version);
+              console.log('   Build Number:', buildNumber);
+              console.log('   Uploaded At:', uploadedAt);
+
+              // Set pending release flag
+              await db.collection('app_config').doc('version_info').update({
+                pendingRelease: true,
+                pendingVersion: version,
+                pendingBuildNumber: buildNumber,
+                uploadedAt: uploadedAt,
+              });
+
+              console.log('✅ Pending release flag set successfully!');
+              console.log('⏳ Automated monitoring will check Play Store approval every hour.');
+
+            } catch (error) {
+              console.error('❌ Error setting pending flag:', error.message);
+              // Don't fail the workflow if this step fails
+              console.log('⚠️ Continuing anyway - you can manually trigger version update later.');
+            }
+          }
+
+          setPendingFlag();
+          EOF
 
       - name: Get changelog for notifications
         id: changelog
