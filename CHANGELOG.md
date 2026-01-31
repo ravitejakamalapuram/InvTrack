@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ♻️ Refactoring
+
+- Optimize scheduled workflows for self-hosted runner
+
+## [3.24.0] - 2026-01-31
+
 ### ✨ Features
 
 - Add daily automated PR review and merge workflow
