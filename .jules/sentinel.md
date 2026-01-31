@@ -45,3 +45,10 @@
 **Prevention:**
 1. Override `applicationWillResignActive` in `AppDelegate.swift` to add a blur effect (e.g., `UIVisualEffectView`) over the main window.
 2. Override `applicationDidBecomeActive` to remove the blur effect.
+
+## 2026-02-01 - [Data Leakage via Lock Screen Notifications]
+**Vulnerability:** Sensitive financial summaries (e.g., "Income: ₹5,00,000") and lists of investment names were displayed in local notifications without `visibility: NotificationVisibility.private`. This allowed anyone to view this data on a locked Android device.
+**Learning:** By default, Android notifications may show content on the lock screen depending on user settings. Explicitly setting `NotificationVisibility.private` ensures the content is hidden (showing "Contents hidden") on secure lock screens, regardless of some user defaults.
+**Prevention:**
+1. Always categorize notifications: Public (safe), Private (sensitive), Secret (never show).
+2. For any notification containing PII or financial data, explicitly set `visibility: NotificationVisibility.private` in `AndroidNotificationDetails`.
