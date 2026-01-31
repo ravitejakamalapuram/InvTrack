@@ -187,19 +187,20 @@ jobs:
         run: |
           echo "📦 Setting up Firebase Admin SDK..."
 
-          # Check if package is globally installed
-          if npm list -g firebase-admin >/dev/null 2>&1; then
-            echo "✅ Using globally installed firebase-admin"
-            export NODE_PATH=$(npm root -g)
-            echo "NODE_PATH=$NODE_PATH" >> $GITHUB_ENV
+          # Check system's global npm packages (Homebrew installation)
+          SYSTEM_NODE_MODULES="/opt/homebrew/lib/node_modules"
+
+          if [ -d "$SYSTEM_NODE_MODULES/firebase-admin" ]; then
+            echo "✅ Using system globally installed firebase-admin"
+            echo "NODE_PATH=$SYSTEM_NODE_MODULES" >> $GITHUB_ENV
             exit 0
           fi
 
-          # If not globally installed, provide instructions
-          echo "❌ firebase-admin not found globally"
+          # If not found, provide instructions
+          echo "❌ firebase-admin not found in $SYSTEM_NODE_MODULES"
           echo ""
           echo "📋 One-time setup required:"
-          echo "   Run this command on the self-hosted runner:"
+          echo "   Run this command on your Mac (not in the runner):"
           echo "   npm install -g firebase-admin"
           echo ""
           echo "💡 This is a one-time setup. The package will be reused for all future runs."
