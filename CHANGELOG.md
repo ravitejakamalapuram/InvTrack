@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add daily automated PR review and merge workflow
+
+## [3.23.3] - 2026-01-31
+
 ### 🐛 Bug Fixes
 
 - Use system global npm packages instead of setup-node packages
