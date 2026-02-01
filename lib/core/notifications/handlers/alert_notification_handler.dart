@@ -116,6 +116,7 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
         playSound: true,
+        visibility: NotificationVisibility.private,
       );
 
       const iosDetails = DarwinNotificationDetails(
