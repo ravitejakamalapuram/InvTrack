@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add workflow to fix stuck release state
+
+## [3.26.1] - 2026-02-01
+
 ### 🐛 Bug Fixes
 
 - Update Firestore immediately with future releaseDate for rollout delay
