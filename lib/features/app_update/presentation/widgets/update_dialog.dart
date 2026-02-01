@@ -97,25 +97,6 @@ class UpdateDialog extends ConsumerWidget {
                 ],
               ),
             ),
-            if (versionInfo.whatsNew != null) ...[
-              SizedBox(height: AppSpacing.md),
-              Text(
-                "What's New:",
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                ),
-              ),
-              SizedBox(height: AppSpacing.xs),
-              Text(
-                versionInfo.whatsNew!,
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral300Dark
-                      : AppColors.neutral700Light,
-                ),
-              ),
-            ],
           ],
         ),
         actions: [
