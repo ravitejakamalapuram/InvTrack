@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Remove 'What's New' section from update dialog
+
+## [3.28.1] - 2026-02-01
+
 ### 🔧 Miscellaneous
 
 - Remove unnecessary debugging workflows and scripts
