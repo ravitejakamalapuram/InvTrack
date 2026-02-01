@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Auto-merge PRs from repo owner without approval requirement
+
+## [3.29.0] - 2026-02-01
+
+### ✨ Features
+
 - Remove 'What's New' section from update dialog
 
 ## [3.28.1] - 2026-02-01
