@@ -92,7 +92,21 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final listState = ref.watch(investmentListStateProvider);
+
+    // PERFORMANCE: Use ref.select to rebuild only when specific fields change
+    final isSearching = ref.watch(
+      investmentListStateProvider.select((s) => s.isSearching),
+    );
+    final isSelectionMode = ref.watch(
+      investmentListStateProvider.select((s) => s.isSelectionMode),
+    );
+    final hasTypeFilter = ref.watch(
+      investmentListStateProvider.select((s) => s.hasTypeFilter),
+    );
+    final typeFilter = ref.watch(
+      investmentListStateProvider.select((s) => s.typeFilter),
+    );
+
     final filteredAsync = ref.watch(filteredInvestmentsProvider);
     final allInvestmentsAsync = ref.watch(allInvestmentsProvider);
 
@@ -104,14 +118,14 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         slivers: [
           // Premium App Bar with Search
           SliverAppBar(
-            expandedHeight: listState.isSearching ? 60 : 56,
+            expandedHeight: isSearching ? 60 : 56,
             floating: true,
             pinned: true,
             backgroundColor: isDark
                 ? AppColors.surfaceDark
                 : AppColors.surfaceLight,
             titleSpacing: AppSpacing.md,
-            title: listState.isSearching
+            title: isSearching
                 ? const InvestmentListSearchField()
                 : Text(
                     'Investments',
@@ -120,9 +134,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       fontSize: 22,
                     ),
                   ),
-            actions: listState.isSearching
+            actions: isSearching
                 ? null
-                : _buildAppBarActions(isDark, listState),
+                : _buildAppBarActions(isDark),
           ),
 
           // Filter Tabs or Selection Controls
@@ -132,14 +146,14 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.xs,
               ),
-              child: listState.isSelectionMode
+              child: isSelectionMode
                   ? const InvestmentListSelectionControls()
                   : const InvestmentListFilterTabs(),
             ),
           ),
 
           // Active Type Filter Chip
-          if (listState.hasTypeFilter)
+          if (hasTypeFilter)
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(
@@ -147,7 +161,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                   vertical: AppSpacing.xs,
                 ),
                 child: _ActiveTypeFilterChip(
-                  type: listState.typeFilter!,
+                  type: typeFilter!,
                   isDark: isDark,
                   onClear: () {
                     ref.read(investmentListStateProvider.notifier).clearTypeFilter();
@@ -157,10 +171,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             ),
 
           // Content
-          _buildContent(isDark, listState, filteredAsync, allInvestmentsAsync),
+          _buildContent(isDark, filteredAsync, allInvestmentsAsync),
         ],
       ),
-      floatingActionButton: listState.isSelectionMode
+      floatingActionButton: isSelectionMode
           ? null
           : ScaleTransition(
               scale: _fabScale,
@@ -189,13 +203,24 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 ),
               ),
             ),
-      bottomNavigationBar: listState.isSelectionMode
+      bottomNavigationBar: isSelectionMode
           ? const InvestmentListActionBar()
           : null,
     );
   }
 
-  List<Widget> _buildAppBarActions(bool isDark, InvestmentListState listState) {
+  List<Widget> _buildAppBarActions(bool isDark) {
+    // PERFORMANCE: Use ref.select for specific fields to avoid rebuilding entire app bar
+    final isSelectionMode = ref.watch(
+      investmentListStateProvider.select((s) => s.isSelectionMode),
+    );
+    final sort = ref.watch(
+      investmentListStateProvider.select((s) => s.sort),
+    );
+    final hasTypeFilter = ref.watch(
+      investmentListStateProvider.select((s) => s.hasTypeFilter),
+    );
+
     return [
       // Selection mode toggle
       IconButton(
@@ -203,7 +228,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: listState.isSelectionMode
+            color: isSelectionMode
                 ? AppColors.primaryLight
                 : (isDark ? Colors.white : AppColors.primaryLight).withValues(
                     alpha: 0.1,
@@ -211,10 +236,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             borderRadius: AppSizes.borderRadiusMd,
           ),
           child: Icon(
-            listState.isSelectionMode
+            isSelectionMode
                 ? Icons.close_rounded
                 : Icons.checklist_rounded,
-            color: listState.isSelectionMode
+            color: isSelectionMode
                 ? Colors.white
                 : (isDark ? Colors.white : AppColors.neutral700Light),
             size: 20,
@@ -231,7 +256,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: listState.sort != InvestmentSort.lastActivity
+            color: sort != InvestmentSort.lastActivity
                 ? AppColors.primaryLight
                 : (isDark ? Colors.white : AppColors.primaryLight).withValues(
                     alpha: 0.1,
@@ -240,7 +265,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           ),
           child: Icon(
             Icons.sort_rounded,
-            color: listState.sort != InvestmentSort.lastActivity
+            color: sort != InvestmentSort.lastActivity
                 ? Colors.white
                 : (isDark ? Colors.white : AppColors.neutral700Light),
             size: 20,
@@ -254,7 +279,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: listState.hasTypeFilter
+            color: hasTypeFilter
                 ? AppColors.primaryLight
                 : (isDark ? Colors.white : AppColors.primaryLight).withValues(
                     alpha: 0.1,
@@ -263,7 +288,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           ),
           child: Icon(
             Icons.filter_list_rounded,
-            color: listState.hasTypeFilter
+            color: hasTypeFilter
                 ? Colors.white
                 : (isDark ? Colors.white : AppColors.neutral700Light),
             size: 20,
@@ -298,10 +323,23 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   Widget _buildContent(
     bool isDark,
-    InvestmentListState listState,
     AsyncValue<List<InvestmentEntity>> filteredAsync,
     AsyncValue<List<InvestmentEntity>> allInvestmentsAsync,
   ) {
+    // PERFORMANCE: Use ref.select for specific fields needed in this method
+    final searchQuery = ref.watch(
+      investmentListStateProvider.select((s) => s.searchQuery),
+    );
+    final filter = ref.watch(
+      investmentListStateProvider.select((s) => s.filter),
+    );
+    final isSelectionMode = ref.watch(
+      investmentListStateProvider.select((s) => s.isSelectionMode),
+    );
+    final selectedIds = ref.watch(
+      investmentListStateProvider.select((s) => s.selectedIds),
+    );
+
     // Get counts to check if there are ANY investments (active or archived)
     final counts = ref.watch(investmentCountsProvider);
     final hasAnyInvestments =
@@ -327,8 +365,8 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             hasScrollBody: false,
             child: InvestmentNoResultsState(
               isDark: isDark,
-              isSearching: listState.searchQuery.isNotEmpty,
-              isArchivedFilter: listState.filter == InvestmentFilter.archived,
+              isSearching: searchQuery.isNotEmpty,
+              isArchivedFilter: filter == InvestmentFilter.archived,
             ),
           );
         }
@@ -347,7 +385,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                 child: RepaintBoundary(
                   child: SwipeActions(
                     itemKey: investment.id,
-                    enabled: !listState.isSelectionMode,
+                    enabled: !isSelectionMode,
                     deleteConfig: DeleteActionConfig(
                       confirmTitle: 'Delete Investment?',
                       confirmMessage:
@@ -390,9 +428,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     ),
                     child: InvestmentCard(
                       investment: investment,
-                      isSelectionMode: listState.isSelectionMode,
-                      isSelected: listState.selectedIds.contains(investment.id),
-                      onTap: listState.isSelectionMode
+                      isSelectionMode: isSelectionMode,
+                      isSelected: selectedIds.contains(investment.id),
+                      onTap: isSelectionMode
                           ? () => ref
                                 .read(investmentListStateProvider.notifier)
                                 .toggleSelection(investment.id)
@@ -405,7 +443,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                                 ),
                               );
                             },
-                      onLongPress: !listState.isSelectionMode
+                      onLongPress: !isSelectionMode
                           ? () {
                               ref
                                   .read(investmentListStateProvider.notifier)
