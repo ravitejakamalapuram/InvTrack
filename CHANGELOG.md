@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add workflow to debug Firestore state
+
+## [3.27.1] - 2026-02-01
+
 ### 🐛 Bug Fixes
 
 - Remove duplicate 'now' variable declaration
