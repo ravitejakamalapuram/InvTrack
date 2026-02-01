@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Remove duplicate 'now' variable declaration
+
+## [3.27.0] - 2026-02-01
+
 ### ✨ Features
 
 - Add workflow to fix stuck release state
