@@ -1,3 +1,4 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -696,6 +697,26 @@ void main() {
       );
 
       expect(fakePlugin.shownNotifications.length, 0);
+    });
+
+    test('should use private visibility for idle alerts', () async {
+      final oldDate = DateTime.now().subtract(const Duration(days: 100));
+
+      await service.checkIdleInvestments([
+        IdleInvestmentInfo(
+          id: 'inv-private',
+          name: 'Private Investment',
+          lastActivityDate: oldDate,
+          isClosed: false,
+        ),
+      ]);
+
+      expect(fakePlugin.shownNotifications.length, 1);
+      final notification = fakePlugin.shownNotifications.first;
+      expect(
+        notification.notificationDetails?.android?.visibility,
+        NotificationVisibility.private,
+      );
     });
   });
 

@@ -52,3 +52,10 @@
 **Prevention:**
 1. Always categorize notifications: Public (safe), Private (sensitive), Secret (never show).
 2. For any notification containing PII or financial data, explicitly set `visibility: NotificationVisibility.private` in `AndroidNotificationDetails`.
+
+## 2026-02-02 - [Idle Alert Privacy Leak]
+**Vulnerability:** "Idle Investment" alerts exposed specific investment names (e.g., "HDFC FD") on the lock screen because they defaulted to `NotificationVisibility.public`.
+**Learning:** Even seemingly benign notifications like "idle alerts" can leak sensitive financial metadata (names of assets owned). Consistency in privacy settings across all notification types is crucial.
+**Prevention:**
+1. Audit all notification types for PII or sensitive metadata.
+2. Default to `visibility: NotificationVisibility.private` for any notification that includes dynamic user content, unless explicitly verified as public-safe.

@@ -165,7 +165,13 @@ class FakeFlutterLocalNotificationsPlugin
     String? payload,
   }) async {
     shownNotifications.add(
-      FakeNotification(id: id, title: title, body: body, payload: payload),
+      FakeNotification(
+        id: id,
+        title: title,
+        body: body,
+        payload: payload,
+        notificationDetails: notificationDetails,
+      ),
     );
     if (kDebugMode) {
       debugPrint('🔔 FakeNotificationPlugin: show($id, $title, $body)');
@@ -258,8 +264,15 @@ class FakeNotification {
   final String? title;
   final String? body;
   final String? payload;
+  final NotificationDetails? notificationDetails;
 
-  FakeNotification({required this.id, this.title, this.body, this.payload});
+  FakeNotification({
+    required this.id,
+    this.title,
+    this.body,
+    this.payload,
+    this.notificationDetails,
+  });
 }
 
 /// Represents a notification that was scheduled for later
