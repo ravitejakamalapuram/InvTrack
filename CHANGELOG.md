@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Update Firestore immediately with future releaseDate for rollout delay
+
+## [3.26.0] - 2026-02-01
+
 ### ✨ Features
 
 - Add 30-minute rollout delay before notifying users
