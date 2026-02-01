@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add 30-minute rollout delay before notifying users
+
+## [3.25.2] - 2026-01-31
+
 ### 🐛 Bug Fixes
 
 - Type mismatch in version comparison (string vs number)
