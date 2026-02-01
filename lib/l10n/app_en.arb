@@ -1,0 +1,147 @@
+{
+  "@@locale": "en",
+  "appTitle": "InvTrack",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "overview": "Overview",
+  "@overview": {
+    "description": "Overview tab label"
+  },
+  
+  "investments": "Investments",
+  "@investments": {
+    "description": "Investments tab label"
+  },
+  
+  "goals": "Goals",
+  "@goals": {
+    "description": "Goals tab label"
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings tab label"
+  },
+  
+  "currency": "Currency",
+  "@currency": {
+    "description": "Currency label"
+  },
+  
+  "selectCurrency": "Select Currency",
+  "@selectCurrency": {
+    "description": "Select currency dialog title"
+  },
+  
+  "locale": "Language & Region",
+  "@locale": {
+    "description": "Locale settings label"
+  },
+  
+  "dateFormat": "Date Format",
+  "@dateFormat": {
+    "description": "Date format settings label"
+  },
+  
+  "today": "today",
+  "@today": {
+    "description": "Today label for relative dates"
+  },
+  
+  "yesterday": "yesterday",
+  "@yesterday": {
+    "description": "Yesterday label for relative dates"
+  },
+  
+  "daysAgo": "{count} days ago",
+  "@daysAgo": {
+    "description": "Days ago label for relative dates",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  
+  "weeksAgo": "{count} weeks ago",
+  "@weeksAgo": {
+    "description": "Weeks ago label for relative dates",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  
+  "monthsAgo": "{count} months ago",
+  "@monthsAgo": {
+    "description": "Months ago label for relative dates",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  
+  "yearsAgo": "{count} years ago",
+  "@yearsAgo": {
+    "description": "Years ago label for relative dates",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  
+  "signIn": "Sign In",
+  "@signIn": {
+    "description": "Sign in button label"
+  },
+  
+  "signOut": "Sign Out",
+  "@signOut": {
+    "description": "Sign out button label"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button label"
+  },
+  
+  "save": "Save",
+  "@save": {
+    "description": "Save button label"
+  },
+  
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button label"
+  },
+  
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button label"
+  },
+  
+  "add": "Add",
+  "@add": {
+    "description": "Add button label"
+  },
+  
+  "done": "Done",
+  "@done": {
+    "description": "Done button label"
+  },
+  
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip button label"
+  }
+}
+

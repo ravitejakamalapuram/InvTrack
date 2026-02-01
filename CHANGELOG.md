@@ -15,6 +15,74 @@
 ### 🐛 Bug Fixes
 
 - **security**: Increase PIN lockout duration to 15 minutes (#139)
+## [Unreleased]
+
+### ✨ Features - Enterprise Localization & Internationalization
+
+#### 🌍 Automatic Locale Detection
+- Detect user's country and language on first login
+- Auto-select currency based on detected country (40+ currencies supported)
+- Configure number formatting based on locale (Indian lakh system, European formatting, etc.)
+- Set appropriate date format (MDY for US, DMY for UK/India, YMD for Japan/China)
+
+#### 💰 Multi-Currency Support
+- Expanded from 5 to 40+ supported currencies
+- **Americas**: USD, CAD, BRL, MXN, ARS, CLP, COP, PEN
+- **Europe**: EUR, GBP, CHF, SEK, NOK, DKK, PLN, CZK, HUF, RON
+- **Asia**: INR, JPY, CNY, KRW, SGD, HKD, TWD, THB, MYR, IDR, PHP, VND, BDT, PKR, LKR, AED, SAR, ILS, TRY
+- **Oceania**: AUD, NZD
+- **Africa**: ZAR, NGN, KES, EGP
+
+#### 🔢 Locale-Aware Number Formatting
+- Indian numbering system: 1,00,000 (1 lakh), 1,00,00,000 (1 crore)
+- US/International: 1,000,000
+- European: 1.000.000
+- Compact notation: $1.2M (US), ₹1.2Cr (India), €1,2M (Europe)
+
+#### 📅 Regional Date Formatting
+- MDY (US): 12/31/2026, Dec 31, 2026
+- DMY (UK/India): 31/12/2026, 31 Dec 2026
+- YMD (ISO/Japan): 2026-12-31
+
+#### 💾 User Profile Storage
+- New Firestore collection: `users/{userId}/profile/settings`
+- Stores: currency, locale, country, language, date format preferences
+- Synced to SharedPreferences for offline access
+- Automatic migration for existing users (preserves current currency)
+
+#### ⚙️ Enhanced Settings UI
+- Improved currency picker with 40+ currencies
+- Searchable currency list with symbols
+- Better visual design with DraggableScrollableSheet
+
+#### 🧪 Comprehensive Testing
+- 100% test coverage for new features
+- Unit tests for locale detection service
+- Unit tests for user profile entity and model
+- Integration tests for settings provider
+- Tests for date and number formatting
+
+### 📚 Documentation
+- New `docs/LOCALIZATION.md` - Comprehensive localization guide
+- New `docs/LOCALIZATION_MIGRATION.md` - Migration guide for existing users
+- Updated `README.md` with localization features
+- Updated `TODO.md` to mark localization as complete
+
+### 🔧 Technical Improvements
+- Added `flutter_localizations` dependency
+- Created `l10n.yaml` configuration
+- Added `lib/l10n/app_en.arb` for English strings
+- Enhanced `currency_utils.dart` with 35+ new currencies
+- Enhanced `date_utils.dart` with locale-aware formatting
+- New `LocaleDetectionService` for country/currency mapping
+- New `UserProfileEntity` and repository for Firestore storage
+- New `ProfileInitializer` widget for automatic setup
+
+### 🔄 Backward Compatibility
+- ✅ 100% backward compatible
+- ✅ Existing users' currency settings preserved
+- ✅ No breaking changes
+- ✅ Automatic migration on first launch after update
 
 ## [3.30.0] - 2026-02-01
 

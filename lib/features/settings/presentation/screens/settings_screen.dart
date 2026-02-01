@@ -156,32 +156,84 @@ class SettingsScreen extends ConsumerWidget {
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
     final settings = ref.read(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
-    final currencies = ['USD', 'EUR', 'GBP', 'INR', 'JPY'];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Get all supported currencies from LocaleDetectionService
+    final supportedCurrencies = {
+      'USD': 'US Dollar (\$)',
+      'EUR': 'Euro (€)',
+      'GBP': 'British Pound (£)',
+      'INR': 'Indian Rupee (₹)',
+      'JPY': 'Japanese Yen (¥)',
+      'CAD': 'Canadian Dollar (C\$)',
+      'AUD': 'Australian Dollar (A\$)',
+      'CHF': 'Swiss Franc (CHF)',
+      'CNY': 'Chinese Yuan (¥)',
+      'SGD': 'Singapore Dollar (S\$)',
+      'HKD': 'Hong Kong Dollar (HK\$)',
+      'BRL': 'Brazilian Real (R\$)',
+      'MXN': 'Mexican Peso (MX\$)',
+      'ZAR': 'South African Rand (R)',
+    };
 
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Text('Select Currency', style: AppTypography.h4),
-            ),
-            ...currencies.map(
-              (currency) => ListTile(
-                title: Text(currency),
-                trailing: settings.currency == currency
-                    ? Icon(Icons.check, color: AppColors.primaryLight)
-                    : null,
-                onTap: () {
-                  notifier.setCurrency(currency);
-                  Navigator.pop(context);
-                },
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.neutral600Dark : AppColors.neutral300Light,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            SizedBox(height: AppSpacing.md),
-          ],
+              Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Text('Select Currency', style: AppTypography.h4),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: supportedCurrencies.entries.map((entry) {
+                    final code = entry.key;
+                    final name = entry.value;
+                    final isSelected = settings.currency == code;
+
+                    return ListTile(
+                      title: Text(
+                        name,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check_circle, color: AppColors.primaryLight)
+                          : null,
+                      onTap: () {
+                        notifier.setCurrency(code);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

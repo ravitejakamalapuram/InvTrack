@@ -1,12 +1,13 @@
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/services/locale_detection_service.dart';
 
 /// Utility class for date formatting and manipulation
 class AppDateUtils {
   AppDateUtils._();
 
   /// Formats a date as a relative string (e.g., "today", "yesterday", "3 days ago")
-  /// Falls back to "MMM d, y" format for dates older than a week
-  static String formatRelative(DateTime date) {
+  /// Falls back to locale-aware short format for dates older than a week
+  static String formatRelative(DateTime date, {String? locale}) {
     final now = DateTime.now();
     final diff = now.difference(date);
 
@@ -28,37 +29,84 @@ class AppDateUtils {
     }
   }
 
-  // OPTIMIZATION: Cache DateFormat instances to avoid expensive parsing and allocation on every call.
-  // Note: These static instances capture the locale at the time of first access.
-  // If the app supports dynamic locale switching, these would need to be re-initialized.
-  static final _shortFormat = DateFormat('MMM d, y');
-  static final _longFormat = DateFormat('MMMM d, yyyy');
-  static final _dayOfWeekFormat = DateFormat('EEEE');
-  static final _monthYearFormat = DateFormat('MMM yyyy');
-  static final _monthFormat = DateFormat('MMM');
-
   /// Formats a date as "MMM d, y" (e.g., "Dec 19, 2025")
-  static String formatShort(DateTime date) {
-    return _shortFormat.format(date);
+  /// Locale-aware: uses provided locale or defaults to system locale
+  static String formatShort(DateTime date, {String? locale}) {
+    final format = DateFormat('MMM d, y', locale);
+    return format.format(date);
   }
 
   /// Formats a date as "MMMM d, yyyy" (e.g., "December 19, 2025")
-  static String formatLong(DateTime date) {
-    return _longFormat.format(date);
+  /// Locale-aware: uses provided locale or defaults to system locale
+  static String formatLong(DateTime date, {String? locale}) {
+    final format = DateFormat('MMMM d, yyyy', locale);
+    return format.format(date);
   }
 
   /// Formats a date as "EEEE" (e.g., "Friday")
-  static String formatDayOfWeek(DateTime date) {
-    return _dayOfWeekFormat.format(date);
+  /// Locale-aware: uses provided locale or defaults to system locale
+  static String formatDayOfWeek(DateTime date, {String? locale}) {
+    final format = DateFormat('EEEE', locale);
+    return format.format(date);
   }
 
   /// Formats a date as "MMM yyyy" (e.g., "Dec 2025") - useful for charts
-  static String formatMonthYear(DateTime date) {
-    return _monthYearFormat.format(date);
+  /// Locale-aware: uses provided locale or defaults to system locale
+  static String formatMonthYear(DateTime date, {String? locale}) {
+    final format = DateFormat('MMM yyyy', locale);
+    return format.format(date);
   }
 
   /// Formats a date as "MMM" (e.g., "Dec") - useful for compact charts
-  static String formatMonth(DateTime date) {
-    return _monthFormat.format(date);
+  /// Locale-aware: uses provided locale or defaults to system locale
+  static String formatMonth(DateTime date, {String? locale}) {
+    final format = DateFormat('MMM', locale);
+    return format.format(date);
+  }
+
+  /// Format date based on user's preferred date format pattern
+  /// Returns date in format based on DateFormatPattern (MDY, DMY, or YMD)
+  static String formatByPattern(
+    DateTime date,
+    DateFormatPattern pattern, {
+    String? locale,
+  }) {
+    switch (pattern) {
+      case DateFormatPattern.mdy:
+        // US format: MM/DD/YYYY
+        final format = DateFormat('MM/dd/yyyy', locale);
+        return format.format(date);
+      case DateFormatPattern.dmy:
+        // UK/India format: DD/MM/YYYY
+        final format = DateFormat('dd/MM/yyyy', locale);
+        return format.format(date);
+      case DateFormatPattern.ymd:
+        // ISO/Japan format: YYYY-MM-DD
+        final format = DateFormat('yyyy-MM-dd', locale);
+        return format.format(date);
+    }
+  }
+
+  /// Format date for display in UI (short, readable format)
+  /// Automatically uses the correct pattern based on user's locale
+  static String formatForDisplay(
+    DateTime date,
+    DateFormatPattern pattern, {
+    String? locale,
+  }) {
+    switch (pattern) {
+      case DateFormatPattern.mdy:
+        // US format: Dec 19, 2025
+        return formatShort(date, locale: locale);
+      case DateFormatPattern.dmy:
+        // UK/India format: 19 Dec 2025
+        final format = DateFormat('d MMM yyyy', locale);
+        return format.format(date);
+      case DateFormatPattern.ymd:
+        // ISO/Japan format: 2025-12-19
+        final format = DateFormat('yyyy-MM-dd', locale);
+        return format.format(date);
+    }
   }
 }
+

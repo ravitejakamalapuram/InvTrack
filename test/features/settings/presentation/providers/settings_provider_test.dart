@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,8 @@ void main() {
       const state = SettingsState();
       expect(state.themeMode, ThemeMode.system);
       expect(state.currency, 'INR');
+      expect(state.locale, 'en_IN');
+      expect(state.dateFormatPattern, DateFormatPattern.dmy);
     });
 
     test('copyWith preserves unchanged values', () {
@@ -132,6 +135,72 @@ void main() {
         final state = container.read(settingsProvider);
         expect(state.currency, currency);
       }
+    });
+
+    test('setLocale updates state and persists', () async {
+      final notifier = container.read(settingsProvider.notifier);
+
+      await notifier.setLocale('en_US');
+
+      final state = container.read(settingsProvider);
+      expect(state.locale, 'en_US');
+      expect(prefs.getString('locale'), 'en_US');
+    });
+
+    test('setLocale works for different locales', () async {
+      final notifier = container.read(settingsProvider.notifier);
+      const locales = ['en_US', 'en_IN', 'en_GB', 'de_DE', 'ja_JP'];
+
+      for (final locale in locales) {
+        await notifier.setLocale(locale);
+        final state = container.read(settingsProvider);
+        expect(state.locale, locale);
+      }
+    });
+
+    test('setDateFormatPattern updates state and persists', () async {
+      final notifier = container.read(settingsProvider.notifier);
+
+      await notifier.setDateFormatPattern(DateFormatPattern.mdy);
+
+      final state = container.read(settingsProvider);
+      expect(state.dateFormatPattern, DateFormatPattern.mdy);
+      expect(prefs.getString('dateFormatPattern'), 'mdy');
+    });
+
+    test('setDateFormatPattern works for all patterns', () async {
+      final notifier = container.read(settingsProvider.notifier);
+
+      for (final pattern in DateFormatPattern.values) {
+        await notifier.setDateFormatPattern(pattern);
+        final state = container.read(settingsProvider);
+        expect(state.dateFormatPattern, pattern);
+      }
+    });
+
+    test('loads locale and date format from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({
+        'themeMode': ThemeMode.dark.index,
+        'currency': 'USD',
+        'locale': 'en_US',
+        'dateFormatPattern': 'mdy',
+      });
+      final newPrefs = await SharedPreferences.getInstance();
+
+      final newContainer = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(newPrefs),
+          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
+        ],
+      );
+      addTearDown(newContainer.dispose);
+
+      final state = newContainer.read(settingsProvider);
+
+      expect(state.themeMode, ThemeMode.dark);
+      expect(state.currency, 'USD');
+      expect(state.locale, 'en_US');
+      expect(state.dateFormatPattern, DateFormatPattern.mdy);
     });
   });
 }

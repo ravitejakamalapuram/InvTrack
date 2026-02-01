@@ -1,0 +1,35 @@
+# Flutter localization configuration
+# This file configures the localization generation for the app
+
+# ARB files directory
+arb-dir: lib/l10n
+
+# Template ARB file (English is the source language)
+template-arb-file: app_en.arb
+
+# Output directory for generated localization files
+output-dir: lib/l10n/generated
+
+# Output localization file name
+output-localization-file: app_localizations.dart
+
+# Output class name
+output-class: AppLocalizations
+
+# Preferred supported locales (in order of preference)
+# Start with English, can add more languages later
+preferred-supported-locales:
+  - en
+
+# Generate synthetic package (recommended)
+synthetic-package: false
+
+# Use escaping for special characters
+use-escaping: true
+
+# Generate nullable getters
+nullable-getter: false
+
+# Format (default is true, uses intl package)
+format: true
+
