@@ -210,71 +210,38 @@ jobs:
                 return;
               }
 
-              // STEP 4: Version is approved! Check if we should wait before notifying users
-              console.log('\n🎉 VERSION APPROVED!');
+              // STEP 4: Version is approved! Update Firestore with rollout delay
+              console.log('\n🎉 VERSION APPROVED! Updating Firestore...');
 
               const now = new Date();
               const approvalTime = now.toISOString();
 
-              // Check if we already recorded the approval time
-              const existingApprovalTime = versionData.lastApprovedAt;
-              let shouldNotifyUsers = false;
-
               // Rollout delay: 30 minutes (average time for alpha track propagation)
               // Research shows alpha/closed testing typically takes 15-30 minutes to propagate
               const rolloutDelayMinutes = 30;
-
-              if (existingApprovalTime) {
-                // Calculate time since approval
-                const approvedAt = new Date(existingApprovalTime);
-                const minutesSinceApproval = (now - approvedAt) / (1000 * 60);
-
-                console.log(`⏰ Release was approved ${Math.floor(minutesSinceApproval)} minutes ago`);
-
-                if (minutesSinceApproval >= rolloutDelayMinutes) {
-                  console.log(`✅ ${rolloutDelayMinutes}-minute rollout delay has passed - notifying users now!`);
-                  shouldNotifyUsers = true;
-                } else {
-                  const minutesRemaining = Math.ceil(rolloutDelayMinutes - minutesSinceApproval);
-                  console.log(`⏳ Waiting ${minutesRemaining} more minutes for Play Store rollout...`);
-                  console.log('💡 Users will be notified after the delay period.');
-                }
-              } else {
-                // First time detecting approval - record the time but don't notify yet
-                console.log(`📝 First approval detection - starting ${rolloutDelayMinutes}-minute rollout delay...`);
-                console.log(`⏳ Users will be notified in ~${rolloutDelayMinutes} minutes to allow Play Store rollout.`);
-              }
+              const releaseDate = new Date(Date.now() + (rolloutDelayMinutes * 60 * 1000));
 
               const whatsNew = latestRelease.releaseNotes?.[0]?.text || '- Bug fixes and improvements';
 
-              if (shouldNotifyUsers) {
-                // Update Firestore to notify users
-                await db.collection('app_config').doc('version_info').update({
-                  latestVersion: versionData.pendingVersion,
-                  latestBuildNumber: versionData.pendingBuildNumber,
-                  releaseDate: approvalTime,
-                  updateMessage: 'New version available!',
-                  whatsNew: whatsNew,
-                  pendingRelease: false,
-                });
+              // Update Firestore immediately with future releaseDate
+              // App will check releaseDate and only show dialog after delay
+              await db.collection('app_config').doc('version_info').update({
+                latestVersion: versionData.pendingVersion,
+                latestBuildNumber: versionData.pendingBuildNumber,
+                releaseDate: releaseDate.toISOString(),  // 30 minutes from now
+                updateMessage: 'New version available!',
+                whatsNew: whatsNew,
+                pendingRelease: false,  // Clear pending flag
+                lastApprovedAt: approvalTime,
+              });
 
-                console.log('\n✅ Firestore updated - users will now see update dialog!');
-                console.log('   Version:', versionData.pendingVersion);
-                console.log('   Build Number:', versionData.pendingBuildNumber);
-                console.log('   Release Date:', approvalTime);
-              } else {
-                // Just record the approval time, don't notify users yet
-                await db.collection('app_config').doc('version_info').update({
-                  lastApprovedAt: existingApprovalTime || approvalTime,
-                  pendingRelease: false,  // Clear pending flag
-                });
-
-                console.log('\n✅ Approval recorded - waiting for rollout delay');
-                console.log('   Version:', versionData.pendingVersion);
-                console.log('   Build Number:', versionData.pendingBuildNumber);
-                console.log('   Approval Time:', existingApprovalTime || approvalTime);
-                console.log('   Next check: Will notify users after 1-hour delay');
-              }
+              console.log('\n✅ Firestore updated successfully!');
+              console.log('   Version:', versionData.pendingVersion);
+              console.log('   Build Number:', versionData.pendingBuildNumber);
+              console.log('   Approval Time:', approvalTime);
+              console.log('   Release Date:', releaseDate.toISOString());
+              console.log(`   ⏰ Users will see update dialog after ${rolloutDelayMinutes} minutes (${releaseDate.toLocaleTimeString()})`);
+              console.log('   💡 App checks releaseDate before showing dialog');
 
               // Set output for Slack notification
               fs.writeFileSync(
