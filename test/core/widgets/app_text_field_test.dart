@@ -73,4 +73,78 @@ void main() {
     // Initial state: has text, but readOnly, so no clear button
     expect(find.byIcon(Icons.cancel), findsNothing);
   });
+
+  testWidgets('AppTextField external FocusNode focus test', (WidgetTester tester) async {
+    final focusNode = FocusNode();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AppTextField(
+            label: 'Click Me',
+            focusNode: focusNode,
+          ),
+        ),
+      ),
+    );
+
+    expect(focusNode.hasFocus, isFalse);
+
+    // find.text finds both the external label and the internal hidden label of InputDecorator.
+    // The external label is the first child of the Column.
+    await tester.tap(find.text('Click Me').first);
+    await tester.pump();
+
+    expect(focusNode.hasFocus, isTrue);
+  });
+
+  testWidgets('AppTextField internal FocusNode focus test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AppTextField(
+            label: 'Click Me Internal',
+          ),
+        ),
+      ),
+    );
+
+    final editableTextFinder = find.byType(EditableText);
+    expect(editableTextFinder, findsOneWidget);
+
+    // Tap the external label (first occurrence)
+    await tester.tap(find.text('Click Me Internal').first);
+    await tester.pump();
+
+    // Verify it has focus
+    final editableText = tester.widget<EditableText>(editableTextFinder);
+    expect(editableText.focusNode.hasFocus, isTrue);
+  });
+
+  testWidgets('AppTextField semantics test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AppTextField(
+            label: 'Semantic Label',
+          ),
+        ),
+      ),
+    );
+
+    // We expect 2 Text widgets:
+    // 1. The visible external label
+    // 2. The internal (hidden but present) label in InputDecorator
+    expect(find.text('Semantic Label'), findsNWidgets(2));
+
+    // Ensure semantics are generated
+    final handle = tester.ensureSemantics();
+
+    // find.bySemanticsLabel should find multiple nodes with this label.
+    // This confirms that the TextField (via InputDecorator) is now announcing the label.
+    final finder = find.bySemanticsLabel('Semantic Label');
+    expect(finder, findsAtLeastNWidgets(2));
+
+    handle.dispose();
+  });
 }

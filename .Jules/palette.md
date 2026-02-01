@@ -37,3 +37,7 @@
 ## 2026-06-10 - [Accessibility: Selection State on Custom Cards]
 **Learning:** When using custom card widgets (like `GlassCard`) in a selectable list, the internal checkbox is often hidden from accessibility when `excludeSemantics` is used on the card. Screen readers need explicit state information on the card itself.
 **Action:** Add a `selected` property to the custom card widget that maps to `Semantics(selected: true)`. Additionally, for maximum compatibility, prepend "Selected" or "Not selected" to the semantic label so the state is clear even if the semantic flag is not announced.
+
+## 2026-10-27 - [Accessibility: Disassociated Labels]
+**Learning:** When rendering form labels manually outside of `TextField` (e.g. using a `Column` with `Text` + `TextField`), the label is not programmatically associated with the input field for screen readers. Users land on the field without context.
+**Action:** Use `InputDecoration.labelText` with `FloatingLabelBehavior.never` to pass the label to the semantic tree without duplicating it visually. Also, wrap the external visual label in a `GestureDetector` that requests focus on the field to mimic standard `htmlFor` behavior.
