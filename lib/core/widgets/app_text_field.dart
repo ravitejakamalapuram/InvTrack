@@ -54,6 +54,12 @@ class _AppTextFieldState extends State<AppTextField> {
   late bool _isInternalController;
   late bool _wasClearButtonVisible;
 
+  // Focus node management to support clicking label to focus
+  FocusNode? _internalFocusNode;
+  bool _isInternalFocusNode = false;
+
+  FocusNode get _focusNode => widget.focusNode ?? _internalFocusNode!;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +69,13 @@ class _AppTextFieldState extends State<AppTextField> {
     } else {
       _internalController = TextEditingController();
       _isInternalController = true;
+    }
+
+    if (widget.focusNode != null) {
+      _isInternalFocusNode = false;
+    } else {
+      _internalFocusNode = FocusNode();
+      _isInternalFocusNode = true;
     }
 
     _internalController.addListener(_handleTextChange);
@@ -97,6 +110,22 @@ class _AppTextFieldState extends State<AppTextField> {
       }
       _internalController.addListener(_handleTextChange);
     }
+
+    // Handle FocusNode updates
+    if (widget.focusNode != oldWidget.focusNode) {
+      if (widget.focusNode != null) {
+        // Switching to new external focus node
+        if (_isInternalFocusNode) {
+          _internalFocusNode?.dispose();
+          _internalFocusNode = null;
+        }
+        _isInternalFocusNode = false;
+      } else {
+        // Switching to internal (from external)
+        _internalFocusNode = FocusNode();
+        _isInternalFocusNode = true;
+      }
+    }
   }
 
   bool get _shouldShowClearButton =>
@@ -119,6 +148,9 @@ class _AppTextFieldState extends State<AppTextField> {
     if (_isInternalController) {
       _internalController.dispose();
     }
+    if (_isInternalFocusNode) {
+      _internalFocusNode?.dispose();
+    }
     super.dispose();
   }
 
@@ -140,18 +172,26 @@ class _AppTextFieldState extends State<AppTextField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null) ...[
-          Text(
-            widget.label!,
-            style: AppTypography.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : AppColors.neutral900Light,
+          GestureDetector(
+            onTap: () {
+              // UX: Allow clicking the label to focus the text field
+              if (widget.enabled && !widget.readOnly) {
+                _focusNode.requestFocus();
+              }
+            },
+            child: Text(
+              widget.label!,
+              style: AppTypography.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
             ),
           ),
           const SizedBox(height: 8),
         ],
         TextFormField(
           controller: _internalController,
-          focusNode: widget.focusNode,
+          focusNode: _focusNode,
           textCapitalization: widget.textCapitalization,
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,
@@ -164,6 +204,10 @@ class _AppTextFieldState extends State<AppTextField> {
             color: isDark ? Colors.white : AppColors.neutral900Light,
           ),
           decoration: InputDecoration(
+            // Accessibility: Associate label with input but hide it visually
+            // to preserve the design (since label is rendered outside).
+            labelText: widget.label,
+            floatingLabelBehavior: FloatingLabelBehavior.never,
             hintText: widget.hint,
             hintStyle: AppTypography.body.copyWith(
               color: isDark
