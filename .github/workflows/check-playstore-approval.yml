@@ -213,8 +213,7 @@ jobs:
               // STEP 4: Version is approved! Update Firestore with rollout delay
               console.log('\n🎉 VERSION APPROVED! Updating Firestore...');
 
-              const now = new Date();
-              const approvalTime = now.toISOString();
+              const approvalTime = new Date().toISOString();
 
               // Rollout delay: 30 minutes (average time for alpha track propagation)
               // Research shows alpha/closed testing typically takes 15-30 minutes to propagate
