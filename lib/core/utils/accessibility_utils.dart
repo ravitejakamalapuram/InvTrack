@@ -3,10 +3,34 @@ import 'package:intl/intl.dart';
 
 /// Utility class for accessibility helpers
 class AccessibilityUtils {
+  // OPTIMIZATION: Cache formatters to avoid expensive parsing on every call.
+  // We check Intl.defaultLocale to ensure we respect dynamic language changes.
+  static String? _lastLocale;
+  static NumberFormat? _cachedCurrencyFormatter;
+  static DateFormat? _cachedDateFormatter;
+
+  static void _checkLocale() {
+    final currentLocale = Intl.defaultLocale;
+    if (_lastLocale != currentLocale) {
+      _lastLocale = currentLocale;
+      _cachedCurrencyFormatter = null;
+      _cachedDateFormatter = null;
+    }
+  }
+
+  static NumberFormat get _currencyFormatter {
+    _checkLocale();
+    return _cachedCurrencyFormatter ??= NumberFormat.decimalPattern();
+  }
+
+  static DateFormat get _dateFormatter {
+    _checkLocale();
+    return _cachedDateFormatter ??= DateFormat('MMMM d, y');
+  }
+
   /// Formats currency for screen readers
   static String formatCurrencyForScreenReader(double amount, String symbol) {
-    final formatter = NumberFormat.decimalPattern();
-    final formattedAmount = formatter.format(amount.abs());
+    final formattedAmount = _currencyFormatter.format(amount.abs());
     final sign = amount < 0 ? 'negative' : '';
     return '$sign $formattedAmount ${_currencyName(symbol)}';
   }
@@ -38,7 +62,7 @@ class AccessibilityUtils {
 
   /// Formats date for screen readers
   static String formatDateForScreenReader(DateTime date) {
-    return DateFormat('MMMM d, y').format(date);
+    return _dateFormatter.format(date);
   }
 
   /// Creates a semantic label for investment cards
