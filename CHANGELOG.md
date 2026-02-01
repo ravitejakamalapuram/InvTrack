@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🔧 Miscellaneous
+
+- Remove unnecessary debugging workflows and scripts
+
+## [3.28.0] - 2026-02-01
+
 ### ✨ Features
 
 - Add workflow to debug Firestore state
