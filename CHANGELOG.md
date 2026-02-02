@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚡ Performance
+
+- Optimize investment list stats using map provider (#140)
+
+### 🐛 Bug Fixes
+
+- **security**: Increase PIN lockout duration to 15 minutes (#139)
+
 ## [3.30.0] - 2026-02-01
 
 ### ✨ Features
