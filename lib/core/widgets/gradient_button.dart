@@ -67,13 +67,17 @@ class GradientButton extends StatelessWidget {
           ),
         ),
         child: isLoading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isDark ? Colors.white : AppColors.neutral700Light,
+            ? Semantics(
+                label: 'Loading $label',
+                excludeSemantics: true,
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? Colors.white : AppColors.neutral700Light,
+                    ),
                   ),
                 ),
               )
