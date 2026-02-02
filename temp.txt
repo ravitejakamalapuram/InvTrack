@@ -13,4 +13,3 @@ can we enhance FIRE number monthly expenses to calculate from entries like emis,
 upcoming inv notification is not working as expected. check it. it is showing income reminder for 15 days investment also which should not come
 frist time installers or users with out any data added yet we need to plan fro the user enaggement via notifications
 we need to a market research to re think how better and easy to ass and track invetments and what all points need to be captured while adding an investment like what is the rate of interest, time line etc
-

@@ -55,11 +55,18 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Use separate providers for active and archived goals
     final activeGoalsAsync = ref.watch(activeGoalsProvider);
     final archivedGoalsAsync = ref.watch(archivedGoalsProvider);
-    final listState = ref.watch(goalsListStateProvider);
-    final isSelectionMode = listState.isSelectionMode;
+
+    // PERFORMANCE: Use ref.select to rebuild only when specific fields change
+    final isSelectionMode = ref.watch(
+      goalsListStateProvider.select((s) => s.isSelectionMode),
+    );
+    final selectedIds = ref.watch(
+      goalsListStateProvider.select((s) => s.selectedIds),
+    );
 
     // Get filtered goals for selection controls
     final filteredGoals = _getFilteredGoals(activeGoalsAsync, archivedGoalsAsync);
@@ -108,7 +115,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             activeGoalsAsync: activeGoalsAsync,
             archivedGoalsAsync: archivedGoalsAsync,
             isSelectionMode: isSelectionMode,
-            selectedIds: listState.selectedIds,
+            selectedIds: selectedIds,
           ),
         ],
       ),

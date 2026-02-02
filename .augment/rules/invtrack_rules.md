@@ -414,4 +414,323 @@ The enterprise review workflow verifies:
 - [ ] No architecture violations
 - [ ] Bug fixes include tests
 - [ ] PR description adequate
+- [ ] Localization requirements met
+- [ ] Privacy features handled correctly
+- [ ] No stale code being merged
+
+---
+
+## 16. LOCALIZATION REQUIREMENTS
+
+### 16.1 String Externalization
+**All user-facing strings MUST be in ARB files** (`.arb` in `lib/l10n/`)
+
+❌ **REJECT:**
+```dart
+Text('Add Investment')  // Hardcoded string
+```
+
+✅ **ACCEPT:**
+```dart
+Text(AppLocalizations.of(context)!.addInvestment)
+```
+
+### 16.2 Localization Checklist
+Before submitting PR, verify:
+- [ ] No hardcoded user-facing strings in UI code
+- [ ] All new strings added to `app_en.arb`
+- [ ] Placeholders use proper syntax: `{variableName}`
+- [ ] Dates formatted with `DateFormat` (locale-aware)
+- [ ] Numbers formatted with `NumberFormat` (locale-aware)
+- [ ] Currency formatted with `NumberFormat.currency()`
+- [ ] No string concatenation for sentences (use placeholders)
+
+### 16.3 Common Violations
+❌ **Hardcoded strings:**
+```dart
+'Total: $amount'  // Wrong
+AppBar(title: Text('Settings'))  // Wrong
+```
+
+❌ **String concatenation:**
+```dart
+'You have ' + count.toString() + ' investments'  // Wrong
+```
+
+❌ **Non-locale-aware formatting:**
+```dart
+Text('${DateTime.now()}')  // Wrong
+Text('${amount.toStringAsFixed(2)}')  // Wrong
+```
+
+✅ **Correct approach:**
+```dart
+Text(l10n.totalAmount(amount))  // ARB: "totalAmount": "Total: {amount}"
+Text(DateFormat.yMMMd(locale).format(date))
+Text(NumberFormat.currency(locale: locale, symbol: '₹').format(amount))
+```
+
+### 16.4 ARB File Structure
+```json
+{
+  "@@locale": "en",
+  "addInvestment": "Add Investment",
+  "@addInvestment": {
+    "description": "Button text to add a new investment"
+  },
+  "totalAmount": "Total: {amount}",
+  "@totalAmount": {
+    "description": "Shows total amount",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 17. PRIVACY FEATURE HANDLING
+
+### 17.1 Privacy Mode Requirements
+**All financial data displays MUST respect privacy mode**
+
+Use `PrivacyProtectionWrapper` for:
+- ✅ Investment amounts
+- ✅ Returns/gains/losses
+- ✅ Goal targets
+- ✅ Portfolio values
+- ✅ Transaction amounts
+- ✅ Income/dividend amounts
+
+### 17.2 Privacy Mode Checklist
+Before submitting PR, verify:
+- [ ] All amount displays wrapped in `PrivacyProtectionWrapper`
+- [ ] All percentage displays wrapped (if showing gains/losses)
+- [ ] Charts/graphs respect privacy mode
+- [ ] Export/share features mask data in privacy mode
+- [ ] Screenshots don't leak data in privacy mode
+- [ ] Analytics don't send exact amounts (use ranges)
+
+### 17.3 Implementation Pattern
+❌ **REJECT:**
+```dart
+Text('₹${investment.currentValue}')  // No privacy protection
+```
+
+✅ **ACCEPT:**
+```dart
+PrivacyProtectionWrapper(
+  child: Text('₹${NumberFormat.currency(locale: locale, symbol: '₹').format(investment.currentValue)}'),
+)
+```
+
+### 17.4 Privacy-Sensitive Data
+**NEVER log or track:**
+- ❌ Exact investment amounts
+- ❌ Exact returns/gains
+- ❌ Account numbers
+- ❌ User names/emails
+- ❌ Phone numbers
+- ❌ Addresses
+
+**Use ranges for analytics:**
+```dart
+// ✅ GOOD
+final amountRange = amount < 1000 ? 'under_1k'
+  : amount < 10000 ? '1k_10k'
+  : amount < 100000 ? '10k_100k'
+  : 'over_100k';
+AnalyticsService().logEvent('investment_created', {'amount_range': amountRange});
+
+// ❌ BAD
+AnalyticsService().logEvent('investment_created', {'amount': amount});
+```
+
+### 17.5 Privacy Mode Testing
+**Required tests for privacy-sensitive features:**
+```dart
+testWidgets('respects privacy mode', (tester) async {
+  // Test with privacy mode ON
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        privacyModeProvider.overrideWith((ref) => true),
+      ],
+      child: MyWidget(),
+    ),
+  );
+
+  // Verify amounts are masked
+  expect(find.text('₹1,234.56'), findsNothing);
+  expect(find.text('••••••'), findsOneWidget);
+});
+```
+
+---
+
+## 18. STALE CODE PREVENTION
+
+### 18.1 PR Freshness Requirements
+**PRs MUST be based on latest `main` branch**
+
+Before submitting PR:
+- [ ] Rebase on latest `main`: `git rebase origin/main`
+- [ ] Resolve any conflicts
+- [ ] Re-run tests after rebase
+- [ ] Verify no duplicate/conflicting changes
+
+### 18.2 Auto-Merge Disabled
+**Manual review required for all PRs**
+
+Auto-merge is temporarily disabled to prevent:
+- ❌ Stale code being merged
+- ❌ Conflicting changes from multiple PRs
+- ❌ Outdated dependencies
+- ❌ Missed breaking changes
+
+### 18.3 Review Checklist
+Reviewer MUST verify:
+- [ ] PR is based on latest `main`
+- [ ] No merge conflicts
+- [ ] All CI checks passing
+- [ ] Code follows InvTrack Enterprise Rules
+- [ ] Localization requirements met
+- [ ] Privacy features handled correctly
+- [ ] Tests cover new functionality
+- [ ] No breaking changes (or documented)
+
+### 18.4 Merge Process
+1. **Developer:** Create PR, ensure all checks pass
+2. **CI:** Run automated checks (tests, analysis, architecture)
+3. **Reviewer:** Manual code review
+4. **Developer:** Address feedback, rebase if needed
+5. **Reviewer:** Approve PR
+6. **Developer:** Manually merge using squash merge
+7. **CI:** Delete branch after merge
+
+---
+
+## 19. ADDITIONAL REVIEW POINTS
+
+### 19.1 User Input Validation
+**All user inputs MUST be validated**
+
+Required validations:
+- [ ] Amount fields: positive numbers, max 15 digits
+- [ ] Date fields: valid dates, not in far future
+- [ ] Text fields: max length, no special chars (if applicable)
+- [ ] Dropdown selections: valid enum values
+- [ ] File uploads: size limits, allowed types
+
+### 19.2 Error Messages
+**All error messages MUST be user-friendly**
+
+❌ **REJECT:**
+```dart
+'Exception: Null check operator used on a null value'
+'FirebaseException: permission-denied'
+```
+
+✅ **ACCEPT:**
+```dart
+'Failed to save investment. Please try again.'
+'No internet connection. Changes will sync when online.'
+```
+
+### 19.3 Loading States
+**All async operations MUST show loading indicators**
+
+Required for:
+- [ ] Data fetching (Firestore queries)
+- [ ] Form submissions
+- [ ] File uploads
+- [ ] Authentication operations
+- [ ] Export/import operations
+
+### 19.4 Empty States
+**All lists MUST have empty state UI**
+
+Required elements:
+- [ ] Descriptive icon
+- [ ] Helpful message
+- [ ] Call-to-action button (if applicable)
+
+Example:
+```dart
+if (investments.isEmpty) {
+  return EmptyState(
+    icon: Icons.account_balance_wallet_outlined,
+    title: l10n.noInvestmentsTitle,
+    message: l10n.noInvestmentsMessage,
+    actionLabel: l10n.addFirstInvestment,
+    onAction: () => context.push('/add-investment'),
+  );
+}
+```
+
+### 19.5 Offline Behavior
+**All features MUST work offline (where applicable)**
+
+Required:
+- [ ] Firestore operations use offline persistence
+- [ ] Write operations timeout after 5 seconds (cached locally)
+- [ ] Read operations show cached data
+- [ ] No "offline" warnings (confuses users)
+- [ ] Sync happens automatically when online
+
+### 19.6 Performance Considerations
+**All screens MUST load within 2 seconds**
+
+Optimization checklist:
+- [ ] Use `ref.select` for specific fields
+- [ ] Use `const` constructors where possible
+- [ ] Use `ListView.builder` for long lists
+- [ ] Avoid expensive operations in `build()`
+- [ ] Dispose controllers/subscriptions
+- [ ] Use `.autoDispose` for screen-specific providers
+
+---
+
+## 20. FINAL PR SUBMISSION CHECKLIST
+
+Before marking PR as ready for review:
+
+### Code Quality
+- [ ] Zero `flutter analyze` errors/warnings
+- [ ] All tests passing (`flutter test`)
+- [ ] Code formatted (`dart format .`)
+- [ ] No debug print statements
+- [ ] No commented-out code
+- [ ] No TODOs without owner/date/issue
+
+### Functionality
+- [ ] Feature works as expected
+- [ ] Edge cases handled
+- [ ] Error states tested
+- [ ] Loading states implemented
+- [ ] Empty states implemented
+- [ ] Offline behavior verified
+
+### Compliance
+- [ ] Localization: All strings in ARB files
+- [ ] Privacy: Financial data wrapped in `PrivacyProtectionWrapper`
+- [ ] Security: No sensitive data in logs/analytics
+- [ ] Accessibility: Semantic labels, touch targets ≥44dp
+- [ ] Architecture: Clean layer boundaries
+- [ ] Testing: Unit tests for business logic
+
+### Documentation
+- [ ] PR description explains what/why
+- [ ] Breaking changes documented
+- [ ] New dependencies justified
+- [ ] Data lifecycle handled (if new storage)
+
+### Review
+- [ ] PR based on latest `main`
+- [ ] No merge conflicts
+- [ ] All CI checks passing
+- [ ] Ready for manual review
 
