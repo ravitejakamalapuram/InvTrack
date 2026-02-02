@@ -194,6 +194,14 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
           listState.sort == InvestmentSort.xirrAsc ||
           listState.sort == InvestmentSort.xirrDesc;
 
+      // OPTIMIZATION: Get basic stats map directly for active investments
+      // This avoids N ref.watches inside the loop
+      final basicStatsMapAsync =
+          !requiresXirr && listState.filter != InvestmentFilter.archived
+              ? ref.watch(activeInvestmentBasicStatsMapProvider)
+              : null;
+      final basicStatsMap = basicStatsMapAsync?.value;
+
       for (final inv in filtered) {
         // PERFORMANCE OPTIMIZATION:
         // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
@@ -205,14 +213,23 @@ final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>
               requiresXirr
                   ? ref.watch(archivedInvestmentStatsProvider(inv.id))
                   : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
+          statsCache[inv.id] = statsAsync.value;
         } else {
-          statsAsync =
-              requiresXirr
-                  ? ref.watch(investmentStatsProvider(inv.id))
-                  : ref.watch(investmentBasicStatsProvider(inv.id));
+          if (requiresXirr) {
+            statsAsync = ref.watch(investmentStatsProvider(inv.id));
+            statsCache[inv.id] = statsAsync.value;
+          } else {
+            // Use map lookup if available for O(1) access without creating listeners
+            if (basicStatsMap != null) {
+              final stats = basicStatsMap[inv.id] ?? InvestmentStats.empty();
+              statsCache[inv.id] = stats;
+            } else {
+              // Fallback (should rarely be reached for active investments)
+              statsAsync = ref.watch(investmentBasicStatsProvider(inv.id));
+              statsCache[inv.id] = statsAsync.value;
+            }
+          }
         }
-
-        statsCache[inv.id] = statsAsync.value;
       }
 
       // Apply sorting

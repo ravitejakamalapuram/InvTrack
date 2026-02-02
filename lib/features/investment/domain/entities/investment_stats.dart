@@ -103,6 +103,35 @@ class InvestmentStats {
       lastCashFlowDate: lastCashFlowDate ?? this.lastCashFlowDate,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is InvestmentStats &&
+        other.totalInvested == totalInvested &&
+        other.totalReturned == totalReturned &&
+        other.netCashFlow == netCashFlow &&
+        other.absoluteReturn == absoluteReturn &&
+        other.moic == moic &&
+        other.xirr == xirr &&
+        other.cashFlowCount == cashFlowCount &&
+        other.firstCashFlowDate == firstCashFlowDate &&
+        other.lastCashFlowDate == lastCashFlowDate;
+  }
+
+  @override
+  int get hashCode {
+    return totalInvested.hashCode ^
+        totalReturned.hashCode ^
+        netCashFlow.hashCode ^
+        absoluteReturn.hashCode ^
+        moic.hashCode ^
+        xirr.hashCode ^
+        cashFlowCount.hashCode ^
+        firstCashFlowDate.hashCode ^
+        lastCashFlowDate.hashCode;
+  }
 }
 
 /// Monthly cash flow data for trend visualization.
