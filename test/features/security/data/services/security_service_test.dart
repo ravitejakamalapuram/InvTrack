@@ -90,7 +90,9 @@ void main() {
       final salt = parts[0];
       final hash = parts[1];
 
-      final expectedHash = sha256.convert(utf8.encode(plaintextPin + salt)).toString();
+      final expectedHash = sha256
+          .convert(utf8.encode(plaintextPin + salt))
+          .toString();
       expect(hash, equals(expectedHash));
     });
 
@@ -130,7 +132,7 @@ void main() {
   });
 
   group('SecurityService - Rate Limiting', () {
-     test('verifyPin increments failed attempts on incorrect PIN', () async {
+    test('verifyPin increments failed attempts on incorrect PIN', () async {
       await service.setPin('1234');
 
       await service.verifyPin('5678'); // 1st attempt
@@ -183,11 +185,26 @@ void main() {
       // Verify lockout is active
       expect(await service.getLockoutRemainingSeconds(), isNotNull);
 
-      // Simulate time passing (31 seconds later)
+      // Simulate time passing (899 seconds later - still locked)
       // Note: Since we can't easily mock DateTime.now() inside the service without dependency injection,
       // we can manually modify the stored timestamp to be in the past.
-      final lockoutTime = DateTime.now().subtract(const Duration(seconds: 31));
-      await prefs.setInt('pin_lockout_timestamp', lockoutTime.millisecondsSinceEpoch);
+      final lockoutTimeStillLocked = DateTime.now().subtract(
+        const Duration(seconds: 899),
+      );
+      await prefs.setInt(
+        'pin_lockout_timestamp',
+        lockoutTimeStillLocked.millisecondsSinceEpoch,
+      );
+      expect(await service.getLockoutRemainingSeconds(), isNotNull);
+
+      // Simulate time passing (901 seconds later - unlocked)
+      final lockoutTimeUnlocked = DateTime.now().subtract(
+        const Duration(seconds: 901),
+      );
+      await prefs.setInt(
+        'pin_lockout_timestamp',
+        lockoutTimeUnlocked.millisecondsSinceEpoch,
+      );
 
       // Verify lockout is expired
       expect(await service.getLockoutRemainingSeconds(), isNull);
@@ -199,46 +216,54 @@ void main() {
   });
 
   group('SecurityService - Biometrics', () {
-    test('isBiometricAvailable returns true when device supports biometrics',
-        () async {
-      fakeLocalAuth.canCheckBiometricsValue = true;
-      fakeLocalAuth.isDeviceSupportedValue = true;
+    test(
+      'isBiometricAvailable returns true when device supports biometrics',
+      () async {
+        fakeLocalAuth.canCheckBiometricsValue = true;
+        fakeLocalAuth.isDeviceSupportedValue = true;
 
-      final result = await service.isBiometricAvailable();
+        final result = await service.isBiometricAvailable();
 
-      expect(result, isTrue);
-    });
+        expect(result, isTrue);
+      },
+    );
 
-    test('isBiometricAvailable returns false when canCheckBiometrics is false',
-        () async {
-      fakeLocalAuth.canCheckBiometricsValue = false;
-      fakeLocalAuth.isDeviceSupportedValue = true;
+    test(
+      'isBiometricAvailable returns false when canCheckBiometrics is false',
+      () async {
+        fakeLocalAuth.canCheckBiometricsValue = false;
+        fakeLocalAuth.isDeviceSupportedValue = true;
 
-      final result = await service.isBiometricAvailable();
+        final result = await service.isBiometricAvailable();
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
 
-    test('isBiometricAvailable returns false when device is not supported',
-        () async {
-      fakeLocalAuth.canCheckBiometricsValue = true;
-      fakeLocalAuth.isDeviceSupportedValue = false;
+    test(
+      'isBiometricAvailable returns false when device is not supported',
+      () async {
+        fakeLocalAuth.canCheckBiometricsValue = true;
+        fakeLocalAuth.isDeviceSupportedValue = false;
 
-      final result = await service.isBiometricAvailable();
+        final result = await service.isBiometricAvailable();
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
 
-    test('authenticateWithBiometrics returns true on successful auth',
-        () async {
-      fakeLocalAuth.authenticateResult = true;
+    test(
+      'authenticateWithBiometrics returns true on successful auth',
+      () async {
+        fakeLocalAuth.authenticateResult = true;
 
-      final result = await service.authenticateWithBiometrics();
+        final result = await service.authenticateWithBiometrics();
 
-      expect(result, isTrue);
-      expect(fakeLocalAuth.stopAuthenticationCallCount, equals(1));
-      expect(fakeLocalAuth.authenticateCallCount, equals(1));
-    });
+        expect(result, isTrue);
+        expect(fakeLocalAuth.stopAuthenticationCallCount, equals(1));
+        expect(fakeLocalAuth.authenticateCallCount, equals(1));
+      },
+    );
 
     test('authenticateWithBiometrics returns false on failed auth', () async {
       fakeLocalAuth.authenticateResult = false;
@@ -249,68 +274,75 @@ void main() {
     });
 
     test(
-        'authenticateWithBiometrics returns false when biometrics not available',
-        () async {
-      fakeLocalAuth.canCheckBiometricsValue = false;
+      'authenticateWithBiometrics returns false when biometrics not available',
+      () async {
+        fakeLocalAuth.canCheckBiometricsValue = false;
 
-      final result = await service.authenticateWithBiometrics();
+        final result = await service.authenticateWithBiometrics();
 
-      expect(result, isFalse);
-      // Should not call authenticate if biometrics not available
-      expect(fakeLocalAuth.authenticateCallCount, equals(0));
-    });
-
-    test(
-        'authenticateWithBiometrics calls stopAuthentication before authenticate',
-        () async {
-      fakeLocalAuth.authenticateResult = true;
-
-      await service.authenticateWithBiometrics();
-
-      expect(fakeLocalAuth.stopAuthenticationCallCount, equals(1));
-    });
+        expect(result, isFalse);
+        // Should not call authenticate if biometrics not available
+        expect(fakeLocalAuth.authenticateCallCount, equals(0));
+      },
+    );
 
     test(
-        'authenticateWithBiometrics returns false on PlatformException (NotAvailable)',
-        () async {
-      fakeLocalAuth.shouldThrowPlatformException = true;
-      fakeLocalAuth.platformExceptionCode = 'NotAvailable';
+      'authenticateWithBiometrics calls stopAuthentication before authenticate',
+      () async {
+        fakeLocalAuth.authenticateResult = true;
 
-      final result = await service.authenticateWithBiometrics();
+        await service.authenticateWithBiometrics();
 
-      expect(result, isFalse);
-    });
-
-    test(
-        'authenticateWithBiometrics returns false on PlatformException (NotEnrolled)',
-        () async {
-      fakeLocalAuth.shouldThrowPlatformException = true;
-      fakeLocalAuth.platformExceptionCode = 'NotEnrolled';
-
-      final result = await service.authenticateWithBiometrics();
-
-      expect(result, isFalse);
-    });
+        expect(fakeLocalAuth.stopAuthenticationCallCount, equals(1));
+      },
+    );
 
     test(
-        'authenticateWithBiometrics returns false on PlatformException (user cancelled)',
-        () async {
-      fakeLocalAuth.shouldThrowPlatformException = true;
-      fakeLocalAuth.platformExceptionCode = 'UserCancelled';
+      'authenticateWithBiometrics returns false on PlatformException (NotAvailable)',
+      () async {
+        fakeLocalAuth.shouldThrowPlatformException = true;
+        fakeLocalAuth.platformExceptionCode = 'NotAvailable';
 
-      final result = await service.authenticateWithBiometrics();
+        final result = await service.authenticateWithBiometrics();
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
 
-    test('authenticateWithBiometrics returns false on generic exception',
-        () async {
-      fakeLocalAuth.shouldThrowGenericException = true;
+    test(
+      'authenticateWithBiometrics returns false on PlatformException (NotEnrolled)',
+      () async {
+        fakeLocalAuth.shouldThrowPlatformException = true;
+        fakeLocalAuth.platformExceptionCode = 'NotEnrolled';
 
-      final result = await service.authenticateWithBiometrics();
+        final result = await service.authenticateWithBiometrics();
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'authenticateWithBiometrics returns false on PlatformException (user cancelled)',
+      () async {
+        fakeLocalAuth.shouldThrowPlatformException = true;
+        fakeLocalAuth.platformExceptionCode = 'UserCancelled';
+
+        final result = await service.authenticateWithBiometrics();
+
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'authenticateWithBiometrics returns false on generic exception',
+      () async {
+        fakeLocalAuth.shouldThrowGenericException = true;
+
+        final result = await service.authenticateWithBiometrics();
+
+        expect(result, isFalse);
+      },
+    );
 
     test('isBiometricEnabled returns false by default', () {
       expect(service.isBiometricEnabled, isFalse);

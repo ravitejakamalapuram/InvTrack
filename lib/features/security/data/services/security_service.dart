@@ -19,7 +19,7 @@ class SecurityService {
   static const String _failedAttemptsKey = 'pin_failed_attempts';
   static const String _lockoutTimestampKey = 'pin_lockout_timestamp';
   static const int _maxAttempts = 5;
-  static const int _lockoutDurationSeconds = 30;
+  static const int _lockoutDurationSeconds = 900; // 15 minutes
 
   SecurityService(this._secureStorage, this._localAuth, this._prefs);
 
@@ -147,7 +147,9 @@ class SecurityService {
 
       if (failedAttempts >= _maxAttempts) {
         await _prefs.setInt(
-            _lockoutTimestampKey, DateTime.now().millisecondsSinceEpoch);
+          _lockoutTimestampKey,
+          DateTime.now().millisecondsSinceEpoch,
+        );
       }
       return false;
     }
@@ -192,7 +194,8 @@ class SecurityService {
       final result = await _localAuth.authenticate(
         localizedReason: 'Authenticate to unlock InvTracker',
         biometricOnly: true,
-        persistAcrossBackgrounding: true, // Keep auth valid across app lifecycle changes
+        persistAcrossBackgrounding:
+            true, // Keep auth valid across app lifecycle changes
         sensitiveTransaction: false, // Don't require re-auth for app resume
       );
 
