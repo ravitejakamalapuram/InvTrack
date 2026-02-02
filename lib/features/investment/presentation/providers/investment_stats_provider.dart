@@ -13,11 +13,67 @@ export 'package:inv_tracker/features/investment/domain/entities/investment_stats
 
 // ============ INDIVIDUAL INVESTMENT STATS ============
 
+/// Map of all active investment stats (basic only, no XIRR)
+/// Computed from a single stream to avoid N+1 stream problem.
+final activeInvestmentBasicStatsMapProvider =
+    Provider<AsyncValue<Map<String, InvestmentStats>>>((ref) {
+      final investmentsAsync = ref.watch(activeInvestmentsProvider);
+      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+      // Wait for both to load
+      if (investmentsAsync.isLoading || cashFlowsAsync.isLoading) {
+        return const AsyncValue.loading();
+      }
+
+      if (investmentsAsync.hasError) {
+        return AsyncValue.error(
+          investmentsAsync.error!,
+          investmentsAsync.stackTrace!,
+        );
+      }
+      if (cashFlowsAsync.hasError) {
+        return AsyncValue.error(
+          cashFlowsAsync.error!,
+          cashFlowsAsync.stackTrace!,
+        );
+      }
+
+      final investments = investmentsAsync.value ?? [];
+      final cashFlows = cashFlowsAsync.value ?? [];
+
+      // Group cash flows by investment ID
+      final cashFlowsMap = <String, List<CashFlowEntity>>{};
+      for (final cf in cashFlows) {
+        cashFlowsMap.putIfAbsent(cf.investmentId, () => []).add(cf);
+      }
+
+      // Calculate stats for each investment
+      final statsMap = <String, InvestmentStats>{};
+      for (final inv in investments) {
+        final flows = cashFlowsMap[inv.id] ?? [];
+        if (flows.isEmpty) {
+          statsMap[inv.id] = InvestmentStats.empty();
+        } else {
+          // Optimization: Skip XIRR calculation
+          statsMap[inv.id] = calculateStats(flows, includeXirr: false);
+        }
+      }
+
+      return AsyncValue.data(statsMap);
+    });
+
 /// Calculate stats for a single active investment (reactive - watches the stream)
 final investmentStatsProvider =
     Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
+      // Use filtered stream to avoid opening per-investment stream
       final cashFlowsAsync = ref.watch(
-        cashFlowsByInvestmentProvider(investmentId),
+        validCashFlowsProvider.select((async) {
+          return async.whenData((allFlows) {
+            return allFlows
+                .where((cf) => cf.investmentId == investmentId)
+                .toList();
+          });
+        }),
       );
 
       return cashFlowsAsync.when(
@@ -55,22 +111,13 @@ final archivedInvestmentStatsProvider =
 /// Use this provider when sorting by date, name, or simple sums.
 final investmentBasicStatsProvider =
     Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
-      final cashFlowsAsync = ref.watch(
-        cashFlowsByInvestmentProvider(investmentId),
-      );
-
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          if (cashFlows.isEmpty) {
-            return AsyncValue.data(InvestmentStats.empty());
-          }
-          // Optimization: Skip XIRR calculation
-          return AsyncValue.data(
-            calculateStats(cashFlows, includeXirr: false),
-          );
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
+      // O(1) lookup from the pre-computed map using select to avoid rebuilds
+      return ref.watch(
+        activeInvestmentBasicStatsMapProvider.select((mapAsync) {
+          return mapAsync.whenData((map) {
+            return map[investmentId] ?? InvestmentStats.empty();
+          });
+        }),
       );
     });
 
