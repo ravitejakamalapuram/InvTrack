@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/user_profile/domain/entities/user_profile_entity.dart';
 import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
 
 /// Widget that initializes user profile on first login
