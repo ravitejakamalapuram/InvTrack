@@ -39,38 +39,58 @@ class UserProfileCard extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              // Avatar
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: photoUrl == null
-                      ? LinearGradient(
-                          colors: [
-                            AppColors.primaryLight,
-                            AppColors.primaryLight.withValues(alpha: 0.7),
-                          ],
-                        )
-                      : null,
-                  image: photoUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(photoUrl),
+              // Avatar with error handling for network images
+              ClipOval(
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: photoUrl != null
+                      ? Image.network(
+                          photoUrl,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to initials avatar on network error
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primaryLight,
+                                    AppColors.primaryLight.withValues(alpha: 0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _getInitials(displayName),
+                                  style: AppTypography.h3.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         )
-                      : null,
-                ),
-                child: photoUrl == null
-                    ? Center(
-                        child: Text(
-                          _getInitials(displayName),
-                          style: AppTypography.h3.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                      : Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primaryLight,
+                                AppColors.primaryLight.withValues(alpha: 0.7),
+                              ],
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _getInitials(displayName),
+                              style: AppTypography.h3.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                      )
-                    : null,
+                ),
               ),
               SizedBox(width: AppSpacing.md),
               // User info
