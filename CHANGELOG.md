@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Add error handling for network image loading in user profile
+
+## [3.30.4] - 2026-02-02
+
 ### ⚡ Performance
 
 - Optimize investment list stats using map provider (#140)
