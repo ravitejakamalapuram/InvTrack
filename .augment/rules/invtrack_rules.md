@@ -17,14 +17,11 @@
 - Screens: `lib/features/{feature}/presentation/screens/`
 - Widgets: `lib/features/{feature}/presentation/widgets/`
 
-### 1.3 File Size Limits
-| Type | Max Lines |
-|------|-----------|
-| Screen | 500 |
-| Widget | 300 |
-| Provider | 200 |
-| Repository | 400 |
-| Model | 150 |
+### 1.3 Complexity Guidelines
+- Keep functions focused and single-purpose
+- Cyclomatic complexity: <15 decision points per 100 lines
+- Large files (>300 lines) should be reviewed for refactoring opportunities
+- Complex logic should be extracted to separate functions/classes
 
 ---
 
@@ -35,18 +32,30 @@
 - No `// ignore:` without documented justification
 - Run `dart fix --apply` before commit
 
-### 2.2 Naming
+### 2.2 Cyclomatic Complexity
+- Measures decision points (if/else, loops, switch, &&, ||, ??)
+- Target: <15 decision points per 100 lines
+- High complexity indicates need for refactoring
+- Extract complex logic into smaller, testable functions
+
+### 2.3 Code Coverage
+- Target: ≥80% coverage for new code
+- Minimum: ≥60% coverage
+- All business logic must be tested
+- Bug fixes must include regression tests
+
+### 2.5 Naming
 - Files: `snake_case.dart`
 - Classes: `PascalCase`
 - Variables: `camelCase`
 - Providers: `camelCaseProvider`
 
-### 2.3 Strong Typing
+### 2.6 Strong Typing
 - Use enums for states/actions (no magic strings)
 - No boolean explosion patterns
 - Explicit return types on all functions
 
-### 2.4 Documentation
+### 2.7 Documentation
 - Document public APIs and complex logic
 - TODOs must include: owner, date, issue reference
 
