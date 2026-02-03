@@ -7,7 +7,8 @@ class XirrSolver {
   /// Calculates XIRR for a series of cash flows.
   /// [dates] and [amounts] must be of the same length.
   /// Amounts should be negative for outflows (investments) and positive for inflows (returns/current value).
-  static double calculateXirr(List<DateTime> dates, List<double> amounts) {
+  /// Returns null if the cash flows are invalid (e.g., all inflows or all outflows).
+  static double? calculateXirr(List<DateTime> dates, List<double> amounts) {
     if (dates.length != amounts.length) {
       throw ArgumentError('Dates and amounts must have the same length');
     }
@@ -23,12 +24,23 @@ class XirrSolver {
     // Calculate total inflows and outflows to determine initial guess direction
     double totalInflows = 0;
     double totalOutflows = 0;
+    bool hasNonNegativeAmount = false;
+    bool hasNegativeAmount = false;
+
     for (final amount in amounts) {
-      if (amount > 0) {
+      if (amount >= 0) {
         totalInflows += amount;
+        hasNonNegativeAmount = true;
       } else {
         totalOutflows += amount.abs();
+        hasNegativeAmount = true;
       }
+    }
+
+    // Invalid scenarios: all inflows or all outflows
+    // Note: 0.0 is treated as a valid inflow (e.g., total loss scenario)
+    if (!hasNonNegativeAmount || !hasNegativeAmount) {
+      return null;
     }
 
     // Try Newton-Raphson with multiple initial guesses

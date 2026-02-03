@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Auto-generated localization files
+lib/l10n/generated/
+
 # Symbolication related
 app.*.symbols
 

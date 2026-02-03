@@ -22,6 +22,7 @@ class FireMilestoneCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final locale = ref.watch(currencyLocaleProvider);
 
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.md),
@@ -36,6 +37,7 @@ class FireMilestoneCard extends ConsumerWidget {
             isDark,
             milestone,
             isLast,
+            locale,
             key: ValueKey('milestone_${milestone.type.name}'),
           );
         }).toList(),
@@ -47,7 +49,8 @@ class FireMilestoneCard extends ConsumerWidget {
     BuildContext context,
     bool isDark,
     FireMilestone milestone,
-    bool isLast, {
+    bool isLast,
+    String locale, {
     Key? key,
   }) {
     final isAchieved = milestone.isAchieved;
@@ -103,7 +106,7 @@ class FireMilestoneCard extends ConsumerWidget {
                   ),
                 ),
                 MaskedAmountText(
-                  text: formatCompactIndian(milestone.targetAmount, symbol: currencySymbol),
+                  text: formatCompactCurrency(milestone.targetAmount, symbol: currencySymbol, locale: locale),
                   style: AppTypography.small.copyWith(
                     color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),

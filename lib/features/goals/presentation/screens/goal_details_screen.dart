@@ -109,6 +109,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   ) {
     final progress = ref.watch(goalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return CustomScrollView(
@@ -125,6 +126,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                 isDark,
                 currencySymbol,
                 isPrivacyMode,
+                locale,
               ),
               SizedBox(height: AppSpacing.lg),
               _buildDetailsSection(
@@ -133,6 +135,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                 isDark,
                 currencySymbol,
                 isPrivacyMode,
+                locale,
               ),
               SizedBox(height: AppSpacing.lg),
               _buildMilestonesSection(context, progress, isDark),
@@ -228,10 +231,11 @@ class GoalDetailsScreen extends ConsumerWidget {
     bool isDark,
     String currencySymbol,
     bool isPrivacyMode,
+    String locale,
   ) {
     final percent = progress?.progressPercent ?? 0;
     final progressText =
-        progress?.getProgressMessage(currencySymbol) ?? 'Calculating...';
+        progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
     final progressTextStyle = AppTypography.bodyLarge.copyWith(
       color: isDark ? Colors.white : AppColors.neutral900Light,
       fontWeight: FontWeight.w600,
@@ -307,6 +311,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     bool isDark,
     String currencySymbol,
     bool isPrivacyMode,
+    String locale,
   ) {
     return GlassCard(
       padding: EdgeInsets.all(AppSpacing.md),
@@ -327,6 +332,7 @@ class GoalDetailsScreen extends ConsumerWidget {
             currencySymbol,
             isDark,
             isPrivacyMode: isPrivacyMode,
+            locale: locale,
           ),
           if (goal.targetMonthlyIncome != null)
             _buildAmountDetailRow(
@@ -336,6 +342,7 @@ class GoalDetailsScreen extends ConsumerWidget {
               isDark,
               suffix: '/mo',
               isPrivacyMode: isPrivacyMode,
+              locale: locale,
             ),
           if (goal.targetDate != null)
             _buildDetailRow(
@@ -387,11 +394,12 @@ class GoalDetailsScreen extends ConsumerWidget {
     bool isDark, {
     String? suffix,
     bool isPrivacyMode = false,
+    String locale = 'en_US',
   }) {
-    final compactText = formatCompactIndian(
+    final compactText = formatCompactCurrency(
       amount,
       symbol: currencySymbol,
-      maxDecimals: 2,
+      locale: locale,
     );
     final valueStyle = AppTypography.bodyMedium.copyWith(
       color: isDark ? Colors.white : AppColors.neutral900Light,

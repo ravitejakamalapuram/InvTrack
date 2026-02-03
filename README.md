@@ -24,6 +24,14 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 - **Document Attachments** - Store investment documents securely in Firebase Storage
 - **Bulk Import** - Import historical data via CSV files
 
+### 🌍 Localization & Internationalization
+- **Multi-Currency Support**: 40+ currencies with automatic locale detection
+- **Smart Date Formatting**: Adapts to your region (US, UK, India, Japan, etc.)
+- **Locale-Aware Number Formatting**: Indian lakh/crore system, European formatting, etc.
+- **Automatic Setup**: Detects your country on first login and configures currency, number format, and date format
+
+See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
+
 ### 🎯 Goal Tracking
 - **Target Amount Goals** - Track progress towards financial targets
 - **Monthly Income Goals** - Plan for passive income streams
@@ -44,6 +52,7 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 - And more...
 
 ### 🔒 Privacy & Security
+- **Privacy Mode** - Hide sensitive amounts with one tap
 - **Offline-First** - Works 100% without internet (Firestore offline persistence)
 - **Your Data, Your Control** - Data stored in your own Firebase account
 - **Encrypted Storage** - FlutterSecureStorage for sensitive data
@@ -273,7 +282,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Investment insights & recommendations
 
 ### Phase 3: Portfolio Intelligence (Q2 2026)
-- [ ] Multi-currency support
 - [ ] Benchmark comparison (Nifty, S&P 500)
 - [ ] Tax reporting
 - [ ] What-if scenarios

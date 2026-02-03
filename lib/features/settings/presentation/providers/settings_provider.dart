@@ -1,21 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsState {
   final ThemeMode themeMode;
   final String currency;
+  final String locale;
+  final DateFormatPattern dateFormatPattern;
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.currency = 'INR',
+    this.locale = 'en_IN',
+    this.dateFormatPattern = DateFormatPattern.dmy,
   });
 
-  SettingsState copyWith({ThemeMode? themeMode, String? currency}) {
+  SettingsState copyWith({
+    ThemeMode? themeMode,
+    String? currency,
+    String? locale,
+    DateFormatPattern? dateFormatPattern,
+  }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
       currency: currency ?? this.currency,
+      locale: locale ?? this.locale,
+      dateFormatPattern: dateFormatPattern ?? this.dateFormatPattern,
     );
   }
 }
@@ -38,13 +50,26 @@ class SettingsNotifier extends Notifier<SettingsState> {
   SettingsState _loadSettings(SharedPreferences prefs) {
     final themeIndex = prefs.getInt('themeMode');
     final currency = prefs.getString('currency') ?? 'INR';
+    final locale = prefs.getString('locale') ?? 'en_IN';
+    final dateFormatStr = prefs.getString('dateFormatPattern') ?? 'dmy';
 
     ThemeMode themeMode = ThemeMode.system;
     if (themeIndex != null) {
       themeMode = ThemeMode.values[themeIndex];
     }
 
-    return SettingsState(themeMode: themeMode, currency: currency);
+    // Parse date format pattern
+    final dateFormat = DateFormatPattern.values.firstWhere(
+      (e) => e.name == dateFormatStr,
+      orElse: () => DateFormatPattern.dmy,
+    );
+
+    return SettingsState(
+      themeMode: themeMode,
+      currency: currency,
+      locale: locale,
+      dateFormatPattern: dateFormat,
+    );
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -58,8 +83,72 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> setCurrency(String currency) async {
     final prefs = ref.read(sharedPreferencesProvider);
+
+    // Get the appropriate locale for this currency
+    final locale = _getLocaleForCurrency(currency);
+
+    // Update both currency and locale together
     await prefs.setString('currency', currency);
-    state = state.copyWith(currency: currency);
+    await prefs.setString('locale', locale);
+
+    state = state.copyWith(
+      currency: currency,
+      locale: locale,
+    );
+
+    // Track analytics
+    ref.read(analyticsServiceProvider).logEvent(
+      name: 'currency_changed',
+      parameters: {'currency': currency, 'locale': locale},
+    );
+  }
+
+  /// Map currency to its appropriate locale for number formatting
+  String _getLocaleForCurrency(String currency) {
+    const currencyToLocaleMap = {
+      'USD': 'en_US',
+      'EUR': 'de_DE',
+      'GBP': 'en_GB',
+      'INR': 'en_IN', // Indian numbering: 1,00,000 (lakhs)
+      'JPY': 'ja_JP',
+      'CAD': 'en_CA',
+      'AUD': 'en_AU',
+      'CHF': 'de_CH',
+      'CNY': 'zh_CN',
+      'SGD': 'en_SG',
+      'HKD': 'zh_HK',
+      'AED': 'ar_AE',
+      'SAR': 'ar_SA',
+      'BRL': 'pt_BR',
+      'MXN': 'es_MX',
+      'ZAR': 'en_ZA',
+    };
+
+    return currencyToLocaleMap[currency] ?? 'en_US';
+  }
+
+  Future<void> setLocale(String locale) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString('locale', locale);
+    state = state.copyWith(locale: locale);
+
+    // Track analytics
+    ref.read(analyticsServiceProvider).logEvent(
+      name: 'locale_changed',
+      parameters: {'locale': locale},
+    );
+  }
+
+  Future<void> setDateFormatPattern(DateFormatPattern pattern) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString('dateFormatPattern', pattern.name);
+    state = state.copyWith(dateFormatPattern: pattern);
+
+    // Track analytics
+    ref.read(analyticsServiceProvider).logEvent(
+      name: 'date_format_changed',
+      parameters: {'pattern': pattern.name},
+    );
   }
 }
 

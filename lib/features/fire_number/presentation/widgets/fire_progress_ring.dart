@@ -35,6 +35,7 @@ class FireProgressRing extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.neutral700Dark : AppColors.neutral200Light;
     final progressColor = status.color;
+    final locale = ref.watch(currencyLocaleProvider);
 
     return SizedBox(
       width: size,
@@ -87,7 +88,7 @@ class FireProgressRing extends ConsumerWidget {
               SizedBox(height: AppSpacing.xxs),
               // Current value - privacy aware
               MaskedAmountText(
-                text: formatCompactIndian(currentValue, symbol: currencySymbol),
+                text: formatCompactCurrency(currentValue, symbol: currencySymbol, locale: locale),
                 style: AppTypography.bodyMedium.copyWith(
                   color: progressColor,
                   fontWeight: FontWeight.w600,
@@ -95,7 +96,7 @@ class FireProgressRing extends ConsumerWidget {
               ),
               // Target - privacy aware
               MaskedAmountText(
-                text: 'of ${formatCompactIndian(fireNumber, symbol: currencySymbol)}',
+                text: 'of ${formatCompactCurrency(fireNumber, symbol: currencySymbol, locale: locale)}',
                 style: AppTypography.small.copyWith(
                   color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),

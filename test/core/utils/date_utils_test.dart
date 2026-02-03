@@ -1,7 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 
 void main() {
+  setUpAll(() async {
+    // Initialize date formatting for all locales used in tests
+    await initializeDateFormatting();
+  });
+
   group('AppDateUtils', () {
     group('formatRelative', () {
       test('returns "today" for current date', () {
@@ -114,6 +121,62 @@ void main() {
       test('returns 3-letter abbreviation', () {
         expect(AppDateUtils.formatMonth(DateTime(2024, 1, 1)), 'Jan');
         expect(AppDateUtils.formatMonth(DateTime(2024, 9, 15)), 'Sep');
+      });
+    });
+
+    group('formatByPattern', () {
+      final testDate = DateTime(2024, 12, 25);
+
+      test('formats as MDY for US pattern', () {
+        final result = AppDateUtils.formatByPattern(
+          testDate,
+          DateFormatPattern.mdy,
+        );
+        expect(result, '12/25/2024');
+      });
+
+      test('formats as DMY for UK/India pattern', () {
+        final result = AppDateUtils.formatByPattern(
+          testDate,
+          DateFormatPattern.dmy,
+        );
+        expect(result, '25/12/2024');
+      });
+
+      test('formats as YMD for ISO/Japan pattern', () {
+        final result = AppDateUtils.formatByPattern(
+          testDate,
+          DateFormatPattern.ymd,
+        );
+        expect(result, '2024-12-25');
+      });
+    });
+
+    group('formatForDisplay', () {
+      final testDate = DateTime(2024, 12, 25);
+
+      test('formats for US display', () {
+        final result = AppDateUtils.formatForDisplay(
+          testDate,
+          DateFormatPattern.mdy,
+        );
+        expect(result, 'Dec 25, 2024');
+      });
+
+      test('formats for UK/India display', () {
+        final result = AppDateUtils.formatForDisplay(
+          testDate,
+          DateFormatPattern.dmy,
+        );
+        expect(result, '25 Dec 2024');
+      });
+
+      test('formats for ISO/Japan display', () {
+        final result = AppDateUtils.formatForDisplay(
+          testDate,
+          DateFormatPattern.ymd,
+        );
+        expect(result, '2024-12-25');
       });
     });
   });

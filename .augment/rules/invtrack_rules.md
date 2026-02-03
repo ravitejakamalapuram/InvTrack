@@ -17,14 +17,11 @@
 - Screens: `lib/features/{feature}/presentation/screens/`
 - Widgets: `lib/features/{feature}/presentation/widgets/`
 
-### 1.3 File Size Limits
-| Type | Max Lines |
-|------|-----------|
-| Screen | 500 |
-| Widget | 300 |
-| Provider | 200 |
-| Repository | 400 |
-| Model | 150 |
+### 1.3 Complexity Guidelines
+- Keep functions focused and single-purpose
+- Cyclomatic complexity: <15 decision points per 100 lines
+- Large files (>300 lines) should be reviewed for refactoring opportunities
+- Complex logic should be extracted to separate functions/classes
 
 ---
 
@@ -35,18 +32,30 @@
 - No `// ignore:` without documented justification
 - Run `dart fix --apply` before commit
 
-### 2.2 Naming
+### 2.2 Cyclomatic Complexity
+- Measures decision points (if/else, loops, switch, &&, ||, ??)
+- Target: <15 decision points per 100 lines
+- High complexity indicates need for refactoring
+- Extract complex logic into smaller, testable functions
+
+### 2.3 Code Coverage
+- Target: ≥80% coverage for new code
+- Minimum: ≥60% coverage
+- All business logic must be tested
+- Bug fixes must include regression tests
+
+### 2.5 Naming
 - Files: `snake_case.dart`
 - Classes: `PascalCase`
 - Variables: `camelCase`
 - Providers: `camelCaseProvider`
 
-### 2.3 Strong Typing
+### 2.6 Strong Typing
 - Use enums for states/actions (no magic strings)
 - No boolean explosion patterns
 - Explicit return types on all functions
 
-### 2.4 Documentation
+### 2.7 Documentation
 - Document public APIs and complex logic
 - TODOs must include: owner, date, issue reference
 
@@ -490,6 +499,71 @@ Text(NumberFormat.currency(locale: locale, symbol: '₹').format(amount))
 }
 ```
 
+### 16.5 Currency Localization
+**All currency amounts MUST respect locale settings**
+
+InvTrack supports 35+ currencies with locale-aware formatting:
+- **Indian locale (en_IN)**: Shows 1L, 10L, 1Cr (lakhs/crores)
+- **Western locales (en_US, en_GB, de_DE)**: Shows 100K, 1M, 10M (thousands/millions)
+
+#### 16.5.1 Required Utilities
+Always use `formatCompactCurrency()` from `lib/core/utils/currency_utils.dart`:
+
+❌ **REJECT:**
+```dart
+// Hardcoded Indian notation
+formatCompactIndian(amount, symbol: '₹')
+
+// No locale parameter
+Text('₹${amount.toStringAsFixed(2)}')
+```
+
+✅ **ACCEPT:**
+```dart
+// Locale-aware formatting
+final locale = ref.watch(currencyLocaleProvider);
+final symbol = ref.watch(currencySymbolProvider);
+formatCompactCurrency(amount, symbol: symbol, locale: locale)
+```
+
+#### 16.5.2 Currency Localization Checklist
+Before submitting PR, verify:
+- [ ] All currency amounts use `formatCompactCurrency()` with locale parameter
+- [ ] No direct calls to `formatCompactIndian()` (deprecated for multi-locale support)
+- [ ] All presentation layer widgets watch `currencyLocaleProvider`
+- [ ] Domain entities accept locale as method parameter (no provider access)
+- [ ] Tested currency switching (USD → EUR → INR) to verify correct notation
+- [ ] Compact notation changes correctly (K/M for Western, L/Cr for Indian)
+
+#### 16.5.3 Common Violations
+❌ **Hardcoded Indian notation:**
+```dart
+formatCompactIndian(amount)  // Always shows L/Cr
+```
+
+❌ **Missing locale parameter:**
+```dart
+formatCompactCurrency(amount, symbol: '₹')  // Defaults to en_US
+```
+
+❌ **Domain layer accessing providers:**
+```dart
+// In domain/entities/goal_progress.dart
+final locale = ref.watch(currencyLocaleProvider);  // ❌ Domain can't access providers
+```
+
+✅ **Correct approach:**
+```dart
+// Presentation layer
+final locale = ref.watch(currencyLocaleProvider);
+final message = progress.getProgressMessage(currencySymbol, locale);
+
+// Domain layer
+String getProgressMessage(String symbol, String locale) {
+  return formatCompactCurrency(amount, symbol: symbol, locale: locale);
+}
+```
+
 ---
 
 ## 17. PRIVACY FEATURE HANDLING
@@ -716,6 +790,9 @@ Before marking PR as ready for review:
 
 ### Compliance
 - [ ] Localization: All strings in ARB files
+- [ ] Currency: All amounts use `formatCompactCurrency()` with locale parameter
+- [ ] Currency: No direct calls to `formatCompactIndian()` (deprecated)
+- [ ] Currency: Tested with different currencies (USD, EUR, INR) for correct notation
 - [ ] Privacy: Financial data wrapped in `PrivacyProtectionWrapper`
 - [ ] Security: No sensitive data in logs/analytics
 - [ ] Accessibility: Semantic labels, touch targets ≥44dp

@@ -125,6 +125,7 @@ class FireDashboardScreen extends ConsumerWidget {
     FireCalculationResult calculation,
   ) {
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
 
     return SingleChildScrollView(
       padding: AppSpacing.paddingMd,
@@ -132,15 +133,15 @@ class FireDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Premium hero card with centered progress ring
-          _buildPremiumHeroCard(context, isDark, calculation, settings, currencySymbol),
+          _buildPremiumHeroCard(context, isDark, calculation, settings, currencySymbol, locale),
           SizedBox(height: AppSpacing.lg),
 
           // Quick insights row
-          _buildQuickInsightsRow(context, isDark, calculation, settings, currencySymbol),
+          _buildQuickInsightsRow(context, isDark, calculation, settings, currencySymbol, locale),
           SizedBox(height: AppSpacing.lg),
 
           // Actionable insight card
-          _buildActionableInsightCard(context, isDark, calculation, currencySymbol),
+          _buildActionableInsightCard(context, isDark, calculation, currencySymbol, locale),
           SizedBox(height: AppSpacing.lg),
 
           // FIRE Numbers breakdown
@@ -169,7 +170,7 @@ class FireDashboardScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg),
 
           // Gap analysis
-          _buildGapAnalysis(context, isDark, calculation, currencySymbol),
+          _buildGapAnalysis(context, isDark, calculation, currencySymbol, locale),
           SizedBox(height: AppSpacing.xl),
         ],
       ),
@@ -182,6 +183,7 @@ class FireDashboardScreen extends ConsumerWidget {
     FireCalculationResult calculation,
     FireSettingsEntity settings,
     String currencySymbol,
+    String locale,
   ) {
     final statusColor = calculation.status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
@@ -322,6 +324,7 @@ class FireDashboardScreen extends ConsumerWidget {
     FireCalculationResult calculation,
     FireSettingsEntity settings,
     String currencySymbol,
+    String locale,
   ) {
     final yearsToFire = settings.targetFireAge - settings.currentAge;
     final projectedDate = calculation.projectedFireDate;
@@ -364,7 +367,7 @@ class FireDashboardScreen extends ConsumerWidget {
             icon: Icons.savings_outlined,
             iconColor: isDark ? AppColors.warningDark : AppColors.warningLight,
             label: 'Need/Month',
-            value: formatCompactIndian(calculation.requiredMonthlySavings, symbol: currencySymbol),
+            value: formatCompactCurrency(calculation.requiredMonthlySavings, symbol: currencySymbol, locale: locale),
             subtitle: 'To reach FIRE',
             isSensitive: true,
           ),
@@ -429,6 +432,7 @@ class FireDashboardScreen extends ConsumerWidget {
     bool isDark,
     FireCalculationResult calculation,
     String currencySymbol,
+    String locale,
   ) {
     final monthlyGap = calculation.monthlyGap;
     final status = calculation.status;
@@ -480,7 +484,7 @@ class FireDashboardScreen extends ConsumerWidget {
                           )
                         : PrivacyMask(
                             child: Text(
-                              'Invest ${formatCompactIndian(monthlyGap.abs(), symbol: currencySymbol)}/month more to stay on track.',
+                              'Invest ${formatCompactCurrency(monthlyGap.abs(), symbol: currencySymbol, locale: locale)}/month more to stay on track.',
                               style: AppTypography.small.copyWith(
                                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                               ),
@@ -523,7 +527,7 @@ class FireDashboardScreen extends ConsumerWidget {
                               ),
                             ),
                             MaskedAmountText(
-                              text: '${formatCompactIndian(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol)} to go',
+                              text: '${formatCompactCurrency(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale)} to go',
                               style: AppTypography.small.copyWith(
                                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                                 fontSize: 11,
@@ -572,6 +576,7 @@ class FireDashboardScreen extends ConsumerWidget {
     bool isDark,
     FireCalculationResult calculation,
     String currencySymbol,
+    String locale,
   ) {
     final gap = calculation.portfolioGap;
     // portfolioGap = fireNumber - currentPortfolioValue
@@ -580,8 +585,8 @@ class FireDashboardScreen extends ConsumerWidget {
     final hasShortfall = gap > 0;
     // Display: shortfall as negative, surplus as positive
     final gapLabel = hasShortfall
-        ? '-${formatCompactIndian(gap, symbol: currencySymbol)}'
-        : '+${formatCompactIndian(gap.abs(), symbol: currencySymbol)}';
+        ? '-${formatCompactCurrency(gap, symbol: currencySymbol, locale: locale)}'
+        : '+${formatCompactCurrency(gap.abs(), symbol: currencySymbol, locale: locale)}';
     // Label changes based on whether user has shortfall or surplus
     final gapDescription = hasShortfall ? 'Shortfall' : 'Surplus';
 

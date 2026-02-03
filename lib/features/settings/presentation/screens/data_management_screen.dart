@@ -24,6 +24,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/seed_data_p
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
 
 /// Unified screen for data import/export and account management.
 class DataManagementScreen extends ConsumerStatefulWidget {
@@ -443,6 +444,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           '• All cash flow records\n'
           '• All goals\n'
           '• All attached documents\n'
+          '• Your user profile\n'
           '• Your FIRE settings\n'
           '• Your account\n\n'
           'This action cannot be undone.',
@@ -572,6 +574,13 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _deleteAllUserData() async {
+    // Get current user ID
+    final authState = ref.read(authStateProvider);
+    final user = authState.value;
+    if (user == null) {
+      throw StateError('User not authenticated');
+    }
+
     // Delete all investments (which cascades to cash flows and documents)
     final investmentRepo = ref.read(investmentRepositoryProvider);
     final investments = await investmentRepo.getAllInvestments();
@@ -598,6 +607,10 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         await goalRepo.deleteGoal(goal.id);
       }
     }
+
+    // Delete user profile (Rule 18: Data Lifecycle)
+    final userProfileRepo = ref.read(userProfileRepositoryProvider(user.id));
+    await userProfileRepo.deleteProfile();
 
     // Delete FIRE settings (Rule 18: Data Lifecycle)
     await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
