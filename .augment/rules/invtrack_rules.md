@@ -499,6 +499,71 @@ Text(NumberFormat.currency(locale: locale, symbol: '₹').format(amount))
 }
 ```
 
+### 16.5 Currency Localization
+**All currency amounts MUST respect locale settings**
+
+InvTrack supports 35+ currencies with locale-aware formatting:
+- **Indian locale (en_IN)**: Shows 1L, 10L, 1Cr (lakhs/crores)
+- **Western locales (en_US, en_GB, de_DE)**: Shows 100K, 1M, 10M (thousands/millions)
+
+#### 16.5.1 Required Utilities
+Always use `formatCompactCurrency()` from `lib/core/utils/currency_utils.dart`:
+
+❌ **REJECT:**
+```dart
+// Hardcoded Indian notation
+formatCompactIndian(amount, symbol: '₹')
+
+// No locale parameter
+Text('₹${amount.toStringAsFixed(2)}')
+```
+
+✅ **ACCEPT:**
+```dart
+// Locale-aware formatting
+final locale = ref.watch(currencyLocaleProvider);
+final symbol = ref.watch(currencySymbolProvider);
+formatCompactCurrency(amount, symbol: symbol, locale: locale)
+```
+
+#### 16.5.2 Currency Localization Checklist
+Before submitting PR, verify:
+- [ ] All currency amounts use `formatCompactCurrency()` with locale parameter
+- [ ] No direct calls to `formatCompactIndian()` (deprecated for multi-locale support)
+- [ ] All presentation layer widgets watch `currencyLocaleProvider`
+- [ ] Domain entities accept locale as method parameter (no provider access)
+- [ ] Tested currency switching (USD → EUR → INR) to verify correct notation
+- [ ] Compact notation changes correctly (K/M for Western, L/Cr for Indian)
+
+#### 16.5.3 Common Violations
+❌ **Hardcoded Indian notation:**
+```dart
+formatCompactIndian(amount)  // Always shows L/Cr
+```
+
+❌ **Missing locale parameter:**
+```dart
+formatCompactCurrency(amount, symbol: '₹')  // Defaults to en_US
+```
+
+❌ **Domain layer accessing providers:**
+```dart
+// In domain/entities/goal_progress.dart
+final locale = ref.watch(currencyLocaleProvider);  // ❌ Domain can't access providers
+```
+
+✅ **Correct approach:**
+```dart
+// Presentation layer
+final locale = ref.watch(currencyLocaleProvider);
+final message = progress.getProgressMessage(currencySymbol, locale);
+
+// Domain layer
+String getProgressMessage(String symbol, String locale) {
+  return formatCompactCurrency(amount, symbol: symbol, locale: locale);
+}
+```
+
 ---
 
 ## 17. PRIVACY FEATURE HANDLING
@@ -725,6 +790,9 @@ Before marking PR as ready for review:
 
 ### Compliance
 - [ ] Localization: All strings in ARB files
+- [ ] Currency: All amounts use `formatCompactCurrency()` with locale parameter
+- [ ] Currency: No direct calls to `formatCompactIndian()` (deprecated)
+- [ ] Currency: Tested with different currencies (USD, EUR, INR) for correct notation
 - [ ] Privacy: Financial data wrapped in `PrivacyProtectionWrapper`
 - [ ] Security: No sensitive data in logs/analytics
 - [ ] Accessibility: Semantic labels, touch targets ≥44dp

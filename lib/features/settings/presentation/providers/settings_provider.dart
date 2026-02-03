@@ -83,14 +83,48 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> setCurrency(String currency) async {
     final prefs = ref.read(sharedPreferencesProvider);
+
+    // Get the appropriate locale for this currency
+    final locale = _getLocaleForCurrency(currency);
+
+    // Update both currency and locale together
     await prefs.setString('currency', currency);
-    state = state.copyWith(currency: currency);
+    await prefs.setString('locale', locale);
+
+    state = state.copyWith(
+      currency: currency,
+      locale: locale,
+    );
 
     // Track analytics
     ref.read(analyticsServiceProvider).logEvent(
       name: 'currency_changed',
-      parameters: {'currency': currency},
+      parameters: {'currency': currency, 'locale': locale},
     );
+  }
+
+  /// Map currency to its appropriate locale for number formatting
+  String _getLocaleForCurrency(String currency) {
+    const currencyToLocaleMap = {
+      'USD': 'en_US',
+      'EUR': 'de_DE',
+      'GBP': 'en_GB',
+      'INR': 'en_IN', // Indian numbering: 1,00,000 (lakhs)
+      'JPY': 'ja_JP',
+      'CAD': 'en_CA',
+      'AUD': 'en_AU',
+      'CHF': 'de_CH',
+      'CNY': 'zh_CN',
+      'SGD': 'en_SG',
+      'HKD': 'zh_HK',
+      'AED': 'ar_AE',
+      'SAR': 'ar_SA',
+      'BRL': 'pt_BR',
+      'MXN': 'es_MX',
+      'ZAR': 'en_ZA',
+    };
+
+    return currencyToLocaleMap[currency] ?? 'en_US';
   }
 
   Future<void> setLocale(String locale) async {

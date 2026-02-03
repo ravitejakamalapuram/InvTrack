@@ -129,19 +129,19 @@ class GoalProgress {
     return projectedCompletionDate!.isAfter(goal.targetDate!);
   }
 
-  /// Progress message for display (with optional currency symbol override)
-  String getProgressMessage([String symbol = '₹']) {
+  /// Progress message for display (with optional currency symbol and locale override)
+  String getProgressMessage([String symbol = '₹', String locale = 'en_IN']) {
     if (status == GoalStatus.achieved) {
       return 'Congratulations! You\'ve reached your goal!';
     }
     if (goal.isIncomeGoal) {
       final target = goal.targetMonthlyIncome ?? goal.targetAmount;
-      return '$symbol${_formatAmount(monthlyIncome)}/mo of $symbol${_formatAmount(target)}/mo';
+      return '$symbol${_formatAmount(monthlyIncome, locale)}/mo of $symbol${_formatAmount(target, locale)}/mo';
     }
-    return '$symbol${_formatAmount(currentAmount)} of $symbol${_formatAmount(targetAmount)}';
+    return '$symbol${_formatAmount(currentAmount, locale)} of $symbol${_formatAmount(targetAmount, locale)}';
   }
 
-  /// Progress message for display (default ₹)
+  /// Progress message for display (default ₹, en_IN)
   String get progressMessage => getProgressMessage();
 
   /// Status message
@@ -168,14 +168,14 @@ class GoalProgress {
     }
   }
 
-  /// Formats amount using centralized compact Indian notation (K, L, Cr)
+  /// Formats amount using locale-aware compact notation (100K/1M for Western, 1L/1Cr for Indian)
   /// without the currency symbol prefix (symbol is added separately in getProgressMessage)
-  String _formatAmount(double amount) {
-    // Use centralized formatter but strip the symbol since we add it separately
-    final formatted = formatCompactIndian(
+  String _formatAmount(double amount, String locale) {
+    // Use locale-aware formatter but strip the symbol since we add it separately
+    final formatted = formatCompactCurrency(
       amount,
       symbol: '',
-      maxDecimals: 2,
+      locale: locale,
     );
     return formatted;
   }

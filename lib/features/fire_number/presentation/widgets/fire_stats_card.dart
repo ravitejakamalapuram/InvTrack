@@ -22,6 +22,7 @@ class FireStatsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final locale = ref.watch(currencyLocaleProvider);
 
     // Theme-aware colors for FIRE type icons
     final fireColor = isDark ? AppColors.accentDark : AppColors.accentLight;
@@ -37,7 +38,7 @@ class FireStatsCard extends ConsumerWidget {
             icon: Icons.local_fire_department,
             iconColor: fireColor,
             label: 'FIRE Number',
-            value: formatCompactIndian(calculation.fireNumber, symbol: currencySymbol),
+            value: formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
             subtitle: 'Full financial independence target',
             tooltip: 'The total amount needed to retire and live off investment returns. '
                 'Based on ${(100 / calculation.fireNumber * calculation.coreRetirementCorpus * 25).toStringAsFixed(0)}x '
@@ -53,7 +54,7 @@ class FireStatsCard extends ConsumerWidget {
             icon: Icons.beach_access_outlined,
             iconColor: coastColor,
             label: 'Coast FIRE',
-            value: formatCompactIndian(calculation.coastFireNumber, symbol: currencySymbol),
+            value: formatCompactCurrency(calculation.coastFireNumber, symbol: currencySymbol, locale: locale),
             subtitle: 'Save this, then stop saving',
             tooltip: 'If you have this amount today, you can stop saving entirely. '
                 'Your investments will grow to your FIRE Number by retirement age through compound growth.',
@@ -68,7 +69,7 @@ class FireStatsCard extends ConsumerWidget {
             icon: Icons.coffee_outlined,
             iconColor: baristaColor,
             label: 'Barista FIRE',
-            value: formatCompactIndian(calculation.baristaFireNumber, symbol: currencySymbol),
+            value: formatCompactCurrency(calculation.baristaFireNumber, symbol: currencySymbol, locale: locale),
             subtitle: 'Part-time income covers the rest',
             tooltip: '50% of your FIRE Number. With this amount, you could retire from full-time work '
                 'and cover the gap with part-time or freelance work.',

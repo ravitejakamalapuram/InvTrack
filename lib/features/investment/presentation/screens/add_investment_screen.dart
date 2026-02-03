@@ -562,6 +562,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   /// Builds the live projection card showing estimated maturity value
   Widget _buildProjectionCard(bool isDark) {
     final config = InvestmentFormConfig.forType(_selectedType);
+    final locale = ref.watch(currencyLocaleProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
 
     // Only show projection if this investment type supports expected rate and tenure
     if (!config.showExpectedRate || !config.showTenure) {
@@ -578,7 +580,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
     // Use a placeholder principal for the projection display
     // Since we don't have cashflows yet, use a standard amount for illustration
-    const illustrativePrincipal = 100000.0; // ₹1 Lakh for illustration
+    const illustrativePrincipal = 100000.0; // 100K for illustration
 
     final projection = InvestmentProjector.getProjectionSummary(
       principal: illustrativePrincipal,
@@ -637,7 +639,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         borderRadius: AppSizes.borderRadiusSm,
                       ),
                       child: Text(
-                        'Per ₹1L',
+                        'Per ${formatCompactCurrency(illustrativePrincipal, symbol: currencySymbol, locale: locale)}',
                         style: AppTypography.caption.copyWith(
                           color: AppColors.primaryLight,
                           fontWeight: FontWeight.w500,
@@ -652,7 +654,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 _buildProjectionRow(
                   isDark: isDark,
                   label: 'Maturity Value',
-                  value: formatCompactIndian(projection.maturityValue),
+                  value: formatCompactCurrency(projection.maturityValue, symbol: currencySymbol, locale: locale),
                   isHighlighted: true,
                 ),
                 SizedBox(height: AppSpacing.xs),
@@ -661,7 +663,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 _buildProjectionRow(
                   isDark: isDark,
                   label: 'Interest Earned',
-                  value: '+${formatCompactIndian(projection.interestEarned)}',
+                  value: '+${formatCompactCurrency(projection.interestEarned, symbol: currencySymbol, locale: locale)}',
                   valueColor: AppColors.successLight,
                 ),
 

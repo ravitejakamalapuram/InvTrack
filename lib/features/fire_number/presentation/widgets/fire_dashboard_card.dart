@@ -21,6 +21,7 @@ class FireDashboardCard extends ConsumerWidget {
     final calculationAsync = ref.watch(fireCalculationProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
 
     return settingsAsync.when(
       data: (settings) {
@@ -34,6 +35,7 @@ class FireDashboardCard extends ConsumerWidget {
             isDark,
             calculation,
             currencySymbol,
+            locale,
           ),
           loading: () => _buildLoadingCard(isDark),
           error: (_, st) => const SizedBox.shrink(),
@@ -102,6 +104,7 @@ class FireDashboardCard extends ConsumerWidget {
     bool isDark,
     FireCalculationResult calculation,
     String currencySymbol,
+    String locale,
   ) {
     final progress = calculation.displayProgress;
     final status = calculation.status;
@@ -164,7 +167,7 @@ class FireDashboardCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                formatCompactIndian(calculation.currentPortfolioValue, symbol: currencySymbol),
+                formatCompactCurrency(calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale),
                 style: AppTypography.bodyMedium.copyWith(
                   color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   fontWeight: FontWeight.w600,
@@ -178,7 +181,7 @@ class FireDashboardCard extends ConsumerWidget {
                 ),
               ),
               Text(
-                formatCompactIndian(calculation.fireNumber, symbol: currencySymbol),
+                formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
                 style: AppTypography.bodyMedium.copyWith(
                   color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),

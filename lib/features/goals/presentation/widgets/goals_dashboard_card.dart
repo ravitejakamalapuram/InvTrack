@@ -23,6 +23,7 @@ class GoalsDashboardCard extends ConsumerWidget {
     final summaryAsync = ref.watch(goalsSummaryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return summaryAsync.when(
@@ -35,6 +36,7 @@ class GoalsDashboardCard extends ConsumerWidget {
           summary,
           isDark,
           currencySymbol,
+          locale,
           isPrivacyMode,
         );
       },
@@ -96,6 +98,7 @@ class GoalsDashboardCard extends ConsumerWidget {
     GoalsSummary summary,
     bool isDark,
     String currencySymbol,
+    String locale,
     bool isPrivacyMode,
   ) {
     final closest = summary.closestToCompletion;
@@ -174,11 +177,11 @@ class GoalsDashboardCard extends ConsumerWidget {
                       // Mask the progress message (contains amounts)
                       isPrivacyMode
                           ? MaskedAmountText(
-                              text: closest.getProgressMessage(currencySymbol),
+                              text: closest.getProgressMessage(currencySymbol, locale),
                               style: progressTextStyle,
                             )
                           : Text(
-                              closest.getProgressMessage(currencySymbol),
+                              closest.getProgressMessage(currencySymbol, locale),
                               style: progressTextStyle,
                             ),
                     ],

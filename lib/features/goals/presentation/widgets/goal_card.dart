@@ -37,6 +37,7 @@ class GoalCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final progress = ref.watch(goalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Padding(
@@ -81,6 +82,7 @@ class GoalCard extends ConsumerWidget {
                         isDark,
                         progress,
                         currencySymbol,
+                        locale,
                         isPrivacyMode,
                       ),
                     ),
@@ -138,13 +140,14 @@ class GoalCard extends ConsumerWidget {
     bool isDark,
     GoalProgress? progress,
     String currencySymbol,
+    String locale,
     bool isPrivacyMode,
   ) {
     final progressTextStyle = AppTypography.small.copyWith(
       color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
     );
     final progressText =
-        progress?.getProgressMessage(currencySymbol) ?? 'Calculating...';
+        progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
