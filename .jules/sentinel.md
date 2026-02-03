@@ -59,3 +59,11 @@
 **Prevention:**
 1. Audit all notification types for PII or sensitive metadata.
 2. Default to `visibility: NotificationVisibility.private` for any notification that includes dynamic user content, unless explicitly verified as public-safe.
+
+## 2026-05-24 - [CSV Injection Vulnerability]
+**Vulnerability:** User-controlled inputs (investment names, notes, goal names) were exported to CSV files without sanitization. This allowed CSV Injection (Formula Injection) attacks where malicious input starting with =, +, -, @ could execute commands when opened in spreadsheet software.
+**Learning:** Exporting user data to formats like CSV/Excel requires sanitization just like rendering HTML to prevent XSS. Spreadsheet software interprets cells starting with special characters as formulas, regardless of context.
+**Prevention:**
+1. Sanitize all user-controlled fields before writing to CSV.
+2. Prepend a single quote (') to any field starting with =, +, -, @, tab, or carriage return.
+3. Use a centralized utility (e.g., CsvUtils.sanitizeField) to ensure consistency.
