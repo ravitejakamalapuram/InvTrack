@@ -21,9 +21,6 @@ output-class: AppLocalizations
 preferred-supported-locales:
   - en
 
-# Generate synthetic package (recommended)
-synthetic-package: false
-
 # Use escaping for special characters
 use-escaping: true
 
