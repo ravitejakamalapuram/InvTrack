@@ -1,20 +1,5 @@
 # Changelog
 
-## [3.30.5] - 2026-02-02
-
-### 🐛 Bug Fixes
-
-- Add error handling for network image loading in user profile
-
-## [3.30.4] - 2026-02-02
-
-### ⚡ Performance
-
-- Optimize investment list stats using map provider (#140)
-
-### 🐛 Bug Fixes
-
-- **security**: Increase PIN lockout duration to 15 minutes (#139)
 ## [Unreleased]
 
 ### ✨ Features - Enterprise Localization & Internationalization
@@ -83,6 +68,24 @@
 - ✅ Existing users' currency settings preserved
 - ✅ No breaking changes
 - ✅ Automatic migration on first launch after update
+
+---
+
+## [3.30.5] - 2026-02-02
+
+### 🐛 Bug Fixes
+
+- Add error handling for network image loading in user profile
+
+## [3.30.4] - 2026-02-02
+
+### ⚡ Performance
+
+- Optimize investment list stats using map provider (#140)
+
+### 🐛 Bug Fixes
+
+- **security**: Increase PIN lockout duration to 15 minutes (#139)
 
 ## [3.30.0] - 2026-02-01
 

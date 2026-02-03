@@ -1,31 +1,6 @@
 # InvTrack 📊
 
 > **Professional Investment Tracking for Alternative Assets**
-# InvTrack - Investment Tracker
-
-Track what you invested and what came back. XIRR & MOIC calculations. Works offline, syncs online.
-
-## Features
-
-- 📊 **Track Investments**: FDs, P2P lending, bonds, real estate, and more
-- 📈 **Real Returns**: XIRR (true annual return) and MOIC (money multiplier)
-- 🎯 **Goals & Reminders**: Track progress and get notified about maturity dates
-- 🌍 **Multi-Currency Support**: 40+ currencies with automatic locale detection
-- 📅 **Smart Date Formatting**: Adapts to your region (US, UK, India, Japan, etc.)
-- 💰 **Locale-Aware Number Formatting**: Indian lakh/crore system, European formatting, etc.
-- 🔒 **Privacy Mode**: Hide sensitive amounts
-- 🔐 **Secure**: Biometric authentication, encrypted storage
-- ☁️ **Cloud Sync**: Firebase-powered sync across devices
-- 📴 **Offline-First**: Works without internet, syncs when online
-
-## Localization & Internationalization
-
-InvTrack automatically detects your country on first login and configures:
-- **Currency**: Auto-selected based on your country (USD for US, INR for India, EUR for Europe, etc.)
-- **Number Formatting**: Locale-aware (1,00,000 for India, 100,000 for US)
-- **Date Format**: Regional preferences (MM/DD/YYYY for US, DD/MM/YYYY for UK/India, YYYY-MM-DD for Japan)
-
-See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 
 InvTrack is a mobile-first investment tracking application designed for alternative investments like Fixed Deposits, P2P Lending, Gold, Chit Funds, and other illiquid assets. Unlike traditional portfolio trackers, InvTrack uses a **cash-flow based methodology** to provide professional-grade metrics (XIRR, MOIC, CAGR) for investments that don't have daily market prices.
 
@@ -49,6 +24,14 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 - **Document Attachments** - Store investment documents securely in Firebase Storage
 - **Bulk Import** - Import historical data via CSV files
 
+### 🌍 Localization & Internationalization
+- **Multi-Currency Support**: 40+ currencies with automatic locale detection
+- **Smart Date Formatting**: Adapts to your region (US, UK, India, Japan, etc.)
+- **Locale-Aware Number Formatting**: Indian lakh/crore system, European formatting, etc.
+- **Automatic Setup**: Detects your country on first login and configures currency, number format, and date format
+
+See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
+
 ### 🎯 Goal Tracking
 - **Target Amount Goals** - Track progress towards financial targets
 - **Monthly Income Goals** - Plan for passive income streams
@@ -69,6 +52,7 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 - And more...
 
 ### 🔒 Privacy & Security
+- **Privacy Mode** - Hide sensitive amounts with one tap
 - **Offline-First** - Works 100% without internet (Firestore offline persistence)
 - **Your Data, Your Control** - Data stored in your own Firebase account
 - **Encrypted Storage** - FlutterSecureStorage for sensitive data
@@ -298,7 +282,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Investment insights & recommendations
 
 ### Phase 3: Portfolio Intelligence (Q2 2026)
-- [ ] Multi-currency support
 - [ ] Benchmark comparison (Nifty, S&P 500)
 - [ ] Tax reporting
 - [ ] What-if scenarios
@@ -306,72 +289,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made with ❤️ in India**
-### Prerequisites
-
-- Flutter SDK (3.10.1 or higher)
-- Dart SDK (3.10.1 or higher)
-- Firebase account (for cloud sync)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/ravitejakamalapuram/InvTrack.git
-cd InvTrack
-```
-
-2. Install dependencies:
-```bash
-flutter pub get
-```
-
-3. Generate localization files:
-```bash
-flutter gen-l10n
-```
-
-4. Run the app:
-```bash
-flutter run
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-flutter test
-
-# Run tests with coverage
-flutter test --coverage
-
-# Run specific test file
-flutter test test/core/services/locale_detection_service_test.dart
-```
-
-## Documentation
-
-- [Localization Guide](docs/LOCALIZATION.md) - Multi-currency, number & date formatting
-- [FIRE Number Feature](docs/FIRE_NUMBER_FEATURE_PLAN.md) - Financial Independence planning
-- [FIRE Number KT](docs/fire-number-kt.md) - Knowledge transfer document
-
-## Architecture
-
-InvTrack follows Clean Architecture principles with:
-- **Domain Layer**: Entities, repositories (interfaces), use cases
-- **Data Layer**: Repository implementations, models, data sources
-- **Presentation Layer**: Screens, widgets, providers (Riverpod)
-
-Key technologies:
-- **State Management**: Riverpod
-- **Backend**: Firebase (Auth, Firestore, Analytics, Crashlytics)
-- **Local Storage**: SharedPreferences, FlutterSecureStorage
-- **Routing**: GoRouter
-- **Localization**: flutter_localizations, intl
-
-## Contributing
-
-Contributions are welcome! Please read the contributing guidelines before submitting PRs.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
