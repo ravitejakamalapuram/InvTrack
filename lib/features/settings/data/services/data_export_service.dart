@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -17,12 +18,7 @@ import 'package:inv_tracker/features/investment/domain/repositories/document_rep
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 
 /// File types for metadata.json
-enum ExportFileType {
-  cashflows,
-  cashflowsArchived,
-  goals,
-  goalsArchived,
-}
+enum ExportFileType { cashflows, cashflowsArchived, goals, goalsArchived }
 
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
@@ -38,11 +34,11 @@ class DataExportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
-  })  : _investmentRepository = investmentRepository,
-        _goalRepository = goalRepository,
-        _documentRepository = documentRepository,
-        _documentStorageService = documentStorageService,
-        _fireSettingsRepository = fireSettingsRepository;
+  }) : _investmentRepository = investmentRepository,
+       _goalRepository = goalRepository,
+       _documentRepository = documentRepository,
+       _documentStorageService = documentStorageService,
+       _fireSettingsRepository = fireSettingsRepository;
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
@@ -53,24 +49,26 @@ class DataExportService {
 
     // 1. Fetch all data
     final investments = await _investmentRepository.getAllInvestments();
-    final archivedInvestments =
-        await _investmentRepository.watchArchivedInvestments().first;
+    final archivedInvestments = await _investmentRepository
+        .watchArchivedInvestments()
+        .first;
 
     // Separate active and archived cashflows
     final activeCashFlows = <_CashFlowWithInvestment>[];
     final archivedCashFlows = <_CashFlowWithInvestment>[];
 
     for (final inv in investments) {
-      final cashFlows =
-          await _investmentRepository.getCashFlowsByInvestment(inv.id);
+      final cashFlows = await _investmentRepository.getCashFlowsByInvestment(
+        inv.id,
+      );
       for (final cf in cashFlows) {
         activeCashFlows.add(_CashFlowWithInvestment(cf, inv));
       }
     }
 
     for (final inv in archivedInvestments) {
-      final cashFlows =
-          await _investmentRepository.getArchivedCashFlowsByInvestment(inv.id);
+      final cashFlows = await _investmentRepository
+          .getArchivedCashFlowsByInvestment(inv.id);
       for (final cf in cashFlows) {
         archivedCashFlows.add(_CashFlowWithInvestment(cf, inv));
       }
@@ -83,16 +81,17 @@ class DataExportService {
     final allInvestments = [...investments, ...archivedInvestments];
     final allDocuments = <DocumentEntity>[];
     for (final inv in allInvestments) {
-      final docs =
-          await _documentRepository.getDocumentsByInvestment(inv.id);
+      final docs = await _documentRepository.getDocumentsByInvestment(inv.id);
       allDocuments.addAll(docs);
     }
 
     if (kDebugMode) {
-      debugPrint('📦 Found ${activeCashFlows.length} active cashflows, '
-          '${archivedCashFlows.length} archived cashflows, '
-          '${goals.length} goals, ${archivedGoals.length} archived goals, '
-          '${allDocuments.length} documents');
+      debugPrint(
+        '📦 Found ${activeCashFlows.length} active cashflows, '
+        '${archivedCashFlows.length} archived cashflows, '
+        '${goals.length} goals, ${archivedGoals.length} archived goals, '
+        '${allDocuments.length} documents',
+      );
     }
 
     // 2. Generate CSV files
@@ -112,40 +111,36 @@ class DataExportService {
 
     // Add CSV files
     final cashflowsBytes = utf8.encode(cashflowsCsv);
-    archive.addFile(ArchiveFile(
-      'cashflows.csv',
-      cashflowsBytes.length,
-      cashflowsBytes,
-    ));
+    archive.addFile(
+      ArchiveFile('cashflows.csv', cashflowsBytes.length, cashflowsBytes),
+    );
 
     final cashflowsArchivedBytes = utf8.encode(cashflowsArchivedCsv);
-    archive.addFile(ArchiveFile(
-      'cashflows_archived.csv',
-      cashflowsArchivedBytes.length,
-      cashflowsArchivedBytes,
-    ));
+    archive.addFile(
+      ArchiveFile(
+        'cashflows_archived.csv',
+        cashflowsArchivedBytes.length,
+        cashflowsArchivedBytes,
+      ),
+    );
 
     final goalsBytes = utf8.encode(goalsCsv);
-    archive.addFile(ArchiveFile(
-      'goals.csv',
-      goalsBytes.length,
-      goalsBytes,
-    ));
+    archive.addFile(ArchiveFile('goals.csv', goalsBytes.length, goalsBytes));
 
     final goalsArchivedBytes = utf8.encode(goalsArchivedCsv);
-    archive.addFile(ArchiveFile(
-      'goals_archived.csv',
-      goalsArchivedBytes.length,
-      goalsArchivedBytes,
-    ));
+    archive.addFile(
+      ArchiveFile(
+        'goals_archived.csv',
+        goalsArchivedBytes.length,
+        goalsArchivedBytes,
+      ),
+    );
 
     // Add metadata JSON
     final metadataBytes = utf8.encode(jsonEncode(metadata));
-    archive.addFile(ArchiveFile(
-      'metadata.json',
-      metadataBytes.length,
-      metadataBytes,
-    ));
+    archive.addFile(
+      ArchiveFile('metadata.json', metadataBytes.length, metadataBytes),
+    );
 
     // Add documents to the archive
     for (final doc in allDocuments) {
@@ -160,12 +155,16 @@ class DataExportService {
     if (_fireSettingsRepository != null) {
       final fireSettings = await _fireSettingsRepository.getSettings();
       if (fireSettings != null) {
-        final fireSettingsBytes = utf8.encode(jsonEncode(fireSettings.toJson()));
-        archive.addFile(ArchiveFile(
-          'fire_settings.json',
-          fireSettingsBytes.length,
-          fireSettingsBytes,
-        ));
+        final fireSettingsBytes = utf8.encode(
+          jsonEncode(fireSettings.toJson()),
+        );
+        archive.addFile(
+          ArchiveFile(
+            'fire_settings.json',
+            fireSettingsBytes.length,
+            fireSettingsBytes,
+          ),
+        );
         if (kDebugMode) {
           debugPrint('📦 Added FIRE settings to export');
         }
@@ -189,7 +188,8 @@ class DataExportService {
     if (kDebugMode) {
       debugPrint('📦 Export saved to: $filePath');
       debugPrint(
-          '📦 File size: ${(zipData.length / 1024).toStringAsFixed(1)} KB');
+        '📦 File size: ${(zipData.length / 1024).toStringAsFixed(1)} KB',
+      );
     }
 
     return filePath;
@@ -233,10 +233,10 @@ class DataExportService {
     for (final item in items) {
       rows.add([
         item.cashFlow.date.toIso8601String().split('T').first,
-        item.investment.name,
+        CsvUtils.sanitizeField(item.investment.name),
         _typeToExportString(item.cashFlow.type),
         item.cashFlow.amount,
-        item.cashFlow.notes ?? '',
+        CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,
       ]);
@@ -280,15 +280,15 @@ class DataExportService {
           .toList();
 
       rows.add([
-        goal.name,
+        CsvUtils.sanitizeField(goal.name),
         goal.type.name,
         goal.targetAmount,
         goal.targetMonthlyIncome ?? '',
         goal.targetDate?.toIso8601String().split('T').first ?? '',
         goal.trackingMode.name,
-        linkedNames.join(';'),
+        CsvUtils.sanitizeField(linkedNames.join(';')),
         goal.linkedTypes.map((t) => t.name).join(';'),
-        goal.icon,
+        CsvUtils.sanitizeField(goal.icon),
         goal.colorValue,
       ]);
     }
@@ -329,12 +329,12 @@ class DataExportService {
         {'fileName': 'cashflows.csv', 'type': ExportFileType.cashflows.name},
         {
           'fileName': 'cashflows_archived.csv',
-          'type': ExportFileType.cashflowsArchived.name
+          'type': ExportFileType.cashflowsArchived.name,
         },
         {'fileName': 'goals.csv', 'type': ExportFileType.goals.name},
         {
           'fileName': 'goals_archived.csv',
-          'type': ExportFileType.goalsArchived.name
+          'type': ExportFileType.goalsArchived.name,
         },
       ],
       'documents': documents.map((d) {
@@ -346,20 +346,19 @@ class DataExportService {
   Map<String, dynamic> _documentToJson(
     DocumentEntity doc,
     String investmentName,
-  ) =>
-      {
-        'id': doc.id,
-        'investmentId': doc.investmentId,
-        'investmentName': investmentName,
-        'name': doc.name,
-        'fileName': doc.fileName,
-        'type': doc.type.name,
-        'mimeType': doc.mimeType,
-        'fileSize': doc.fileSize,
-        'createdAt': doc.createdAt.toIso8601String(),
-        'updatedAt': doc.updatedAt.toIso8601String(),
-        'zipPath': 'documents/${doc.investmentId}/${doc.fileName}',
-      };
+  ) => {
+    'id': doc.id,
+    'investmentId': doc.investmentId,
+    'investmentName': investmentName,
+    'name': doc.name,
+    'fileName': doc.fileName,
+    'type': doc.type.name,
+    'mimeType': doc.mimeType,
+    'fileSize': doc.fileSize,
+    'createdAt': doc.createdAt.toIso8601String(),
+    'updatedAt': doc.updatedAt.toIso8601String(),
+    'zipPath': 'documents/${doc.investmentId}/${doc.fileName}',
+  };
 }
 
 /// Helper class to hold cashflow with its investment
