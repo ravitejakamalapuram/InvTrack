@@ -574,6 +574,13 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _deleteAllUserData() async {
+    // Get current user ID
+    final authState = ref.read(authStateProvider);
+    final user = authState.value;
+    if (user == null) {
+      throw StateError('User not authenticated');
+    }
+
     // Delete all investments (which cascades to cash flows and documents)
     final investmentRepo = ref.read(investmentRepositoryProvider);
     final investments = await investmentRepo.getAllInvestments();
@@ -602,7 +609,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     }
 
     // Delete user profile (Rule 18: Data Lifecycle)
-    final userProfileRepo = ref.read(userProfileRepositoryProvider);
+    final userProfileRepo = ref.read(userProfileRepositoryProvider(user.id));
     await userProfileRepo.deleteProfile();
 
     // Delete FIRE settings (Rule 18: Data Lifecycle)

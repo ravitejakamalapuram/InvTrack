@@ -214,7 +214,6 @@ void main() {
         expect(xirr, closeTo(-1.0, 0.01)); // Should be ~-100%
       });
     });
-  });
 
     group('calculateXirr - Approximation Formula Tests (Bug Fix Verification)', () {
       // These tests specifically verify the fix for the XIRR approximation formula

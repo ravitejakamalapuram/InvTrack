@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
