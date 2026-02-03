@@ -134,9 +134,7 @@ final archivedInvestmentBasicStatsProvider =
             return AsyncValue.data(InvestmentStats.empty());
           }
           // Optimization: Skip XIRR calculation
-          return AsyncValue.data(
-            calculateStats(cashFlows, includeXirr: false),
-          );
+          return AsyncValue.data(calculateStats(cashFlows, includeXirr: false));
         },
         loading: () => const AsyncValue.loading(),
         error: (e, st) => AsyncValue.error(e, st),
@@ -172,9 +170,9 @@ final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
   investmentId,
 ) async {
   final cashFlows = await ref.watch(
-    archivedCashFlowsByInvestmentProvider(investmentId).selectAsync(
-      (data) => data,
-    ),
+    archivedCashFlowsByInvestmentProvider(
+      investmentId,
+    ).selectAsync((data) => data),
   );
 
   if (cashFlows.isEmpty) {
@@ -294,9 +292,18 @@ InvestmentStats calculateStats(
     return InvestmentStats.empty();
   }
 
-  // Sort by date for date range extraction
-  final sorted = List<CashFlowEntity>.from(cashFlows)
-    ..sort((a, b) => a.date.compareTo(b.date));
+  // Find date range without sorting (O(N) instead of O(N log N))
+  DateTime? firstDate;
+  DateTime? lastDate;
+
+  for (final cf in cashFlows) {
+    if (firstDate == null || cf.date.isBefore(firstDate)) {
+      firstDate = cf.date;
+    }
+    if (lastDate == null || cf.date.isAfter(lastDate)) {
+      lastDate = cf.date;
+    }
+  }
 
   // Use FinancialCalculator for all calculations
   final totalInvested = FinancialCalculator.calculateTotalInvested(cashFlows);
@@ -312,10 +319,9 @@ InvestmentStats calculateStats(
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
 
   // Skip XIRR calculation if not requested (performance optimization)
-  final xirr =
-      includeXirr
-          ? FinancialCalculator.calculateXirrFromCashFlows(cashFlows)
-          : 0.0;
+  final xirr = includeXirr
+      ? FinancialCalculator.calculateXirrFromCashFlows(cashFlows)
+      : 0.0;
 
   return InvestmentStats(
     totalInvested: totalInvested,
@@ -325,7 +331,7 @@ InvestmentStats calculateStats(
     moic: moic,
     xirr: xirr,
     cashFlowCount: cashFlows.length,
-    firstCashFlowDate: sorted.first.date,
-    lastCashFlowDate: sorted.last.date,
+    firstCashFlowDate: firstDate,
+    lastCashFlowDate: lastDate,
   );
 }
