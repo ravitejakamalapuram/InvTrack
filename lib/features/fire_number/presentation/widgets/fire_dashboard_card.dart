@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
@@ -22,6 +24,7 @@ class FireDashboardCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return settingsAsync.when(
       data: (settings) {
@@ -36,6 +39,7 @@ class FireDashboardCard extends ConsumerWidget {
             calculation,
             currencySymbol,
             locale,
+            isPrivacyMode,
           ),
           loading: () => _buildLoadingCard(isDark),
           error: (_, st) => const SizedBox.shrink(),
@@ -105,6 +109,7 @@ class FireDashboardCard extends ConsumerWidget {
     FireCalculationResult calculation,
     String currencySymbol,
     String locale,
+    bool isPrivacyMode,
   ) {
     final progress = calculation.displayProgress;
     final status = calculation.status;
@@ -166,26 +171,48 @@ class FireDashboardCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                formatCompactCurrency(calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale),
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
+              // Current portfolio value - mask in privacy mode
+              isPrivacyMode
+                  ? MaskedAmountText(
+                      text: formatCompactCurrency(calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  : Text(
+                      formatCompactCurrency(calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+              // Progress percentage - mask in privacy mode
+              PrivacyMask(
+                useTextMask: true,
+                maskedText: '••%',
+                child: Text(
+                  '${progress.toStringAsFixed(1)}%',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: status.color,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              Text(
-                '${progress.toStringAsFixed(1)}%',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: status.color,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-                ),
-              ),
+              // FIRE target number - mask in privacy mode
+              isPrivacyMode
+                  ? MaskedAmountText(
+                      text: formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      ),
+                    )
+                  : Text(
+                      formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      ),
+                    ),
             ],
           ),
         ],
