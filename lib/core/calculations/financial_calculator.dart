@@ -5,6 +5,7 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 class FinancialCalculator {
   /// Calculates XIRR from a list of cash flows.
   /// Uses the signedAmount property: negative for outflows, positive for inflows.
+  /// Returns 0.0 if cash flows are empty or invalid.
   static double calculateXirrFromCashFlows(List<CashFlowEntity> cashFlows) {
     if (cashFlows.isEmpty) return 0.0;
 
@@ -16,7 +17,7 @@ class FinancialCalculator {
       amounts.add(cf.signedAmount);
     }
 
-    return XirrSolver.calculateXirr(dates, amounts);
+    return XirrSolver.calculateXirr(dates, amounts) ?? 0.0;
   }
 
   /// Calculates CAGR (Compound Annual Growth Rate).
