@@ -311,7 +311,7 @@ extension SmartCurrencyFormat on NumberFormat {
       // Western locales (en_US, en_GB, etc.) will show: 100K, 1M
       final compactFormatter = NumberFormat.compactCurrency(
         symbol: currencySymbol,
-        locale: locale?.toString(),
+        locale: locale.toString(),
         decimalDigits: 2,
       );
       return compactFormatter.format(amount);
@@ -326,7 +326,7 @@ extension SmartCurrencyFormat on NumberFormat {
   String formatCompact(double amount) {
     final compactFormatter = NumberFormat.compactCurrency(
       symbol: currencySymbol,
-      locale: locale?.toString(),
+      locale: locale.toString(),
       decimalDigits: 2,
     );
     return compactFormatter.format(amount);
@@ -337,7 +337,7 @@ extension SmartCurrencyFormat on NumberFormat {
   String formatCompactShort(double amount) {
     final compactFormatter = NumberFormat.compactCurrency(
       symbol: currencySymbol,
-      locale: locale?.toString(),
+      locale: locale.toString(),
       decimalDigits: 1,
     );
     return compactFormatter.format(amount);

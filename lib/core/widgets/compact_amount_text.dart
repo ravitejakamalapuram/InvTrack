@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 
 /// A text widget that displays amounts in compact format (e.g., ₹1.05Cr)
 /// with long-press to reveal full amount and copy functionality.
@@ -56,9 +57,10 @@ class CompactAmountText extends ConsumerWidget {
     this.prefix,
   });
 
-  String get _fullFormattedAmount {
+  String _fullFormattedAmount(WidgetRef ref) {
+    final locale = ref.watch(currencyLocaleProvider);
     final formatter = NumberFormat.currency(
-      locale: 'en_IN',
+      locale: locale,
       symbol: currencySymbol,
       decimalDigits: 2,
     );
@@ -72,9 +74,10 @@ class CompactAmountText extends ConsumerWidget {
   String get _displayText =>
       prefix != null ? '$prefix$compactText' : compactText;
 
-  void _showFullAmount(BuildContext context) {
+  void _showFullAmount(BuildContext context, WidgetRef ref) {
     HapticFeedback.mediumImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fullAmount = _fullFormattedAmount(ref);
 
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -96,8 +99,8 @@ class CompactAmountText extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     prefix != null
-                        ? '$prefix$_fullFormattedAmount'
-                        : _fullFormattedAmount,
+                        ? '$prefix$fullAmount'
+                        : fullAmount,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -117,8 +120,8 @@ class CompactAmountText extends ConsumerWidget {
                 Clipboard.setData(
                   ClipboardData(
                     text: prefix != null
-                        ? '$prefix$_fullFormattedAmount'
-                        : _fullFormattedAmount,
+                        ? '$prefix$fullAmount'
+                        : fullAmount,
                   ),
                 );
                 HapticFeedback.lightImpact();
@@ -180,10 +183,10 @@ class CompactAmountText extends ConsumerWidget {
         currencySymbol,
       ),
       hint: 'Double tap and hold to copy exact amount',
-      onLongPress: () => _showFullAmount(context),
+      onLongPress: () => _showFullAmount(context, ref),
       excludeSemantics: true,
       child: GestureDetector(
-        onLongPress: () => _showFullAmount(context),
+        onLongPress: () => _showFullAmount(context, ref),
         child: Text(
           _displayText,
           style: style,
