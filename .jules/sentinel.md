@@ -67,3 +67,10 @@
 1. Sanitize all user-controlled fields before writing to CSV.
 2. Prepend a single quote (') to any field starting with =, +, -, @, tab, or carriage return.
 3. Use a centralized utility (e.g., CsvUtils.sanitizeField) to ensure consistency.
+
+## 2026-05-24 - [Accessibility Data Leakage]
+**Vulnerability:** Privacy-masked fields (using `ImageFiltered` or text bullets) were leaking sensitive data via accessibility services (Screen Readers). The blurred content was still semantically present, and bulleted text announced individual bullets instead of "Hidden".
+**Learning:** Visual masking (like blur) does not hide semantics from accessibility tools. Screen readers read the underlying widget tree unless explicitly excluded.
+**Prevention:**
+1. Wrap visually masked content in `Semantics(label: 'Hidden content', child: ExcludeSemantics(child: ...))`.
+2. Use `semanticsLabel` on `Text` widgets to provide meaningful descriptions for masked text (e.g. "Hidden amount").
