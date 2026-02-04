@@ -5,6 +5,17 @@ import 'package:inv_tracker/core/services/locale_detection_service.dart';
 class AppDateUtils {
   AppDateUtils._();
 
+  static final Map<String, DateFormat> _formatters = {};
+
+  static DateFormat _getFormatter(String pattern, String? locale) {
+    final effectiveLocale = locale ?? Intl.defaultLocale;
+    final key = '$pattern|$effectiveLocale';
+    return _formatters.putIfAbsent(
+      key,
+      () => DateFormat(pattern, effectiveLocale),
+    );
+  }
+
   /// Formats a date as a relative string (e.g., "today", "yesterday", "3 days ago")
   /// Falls back to locale-aware short format for dates older than a week
   static String formatRelative(DateTime date, {String? locale}) {
@@ -32,36 +43,31 @@ class AppDateUtils {
   /// Formats a date as "MMM d, y" (e.g., "Dec 19, 2025")
   /// Locale-aware: uses provided locale or defaults to system locale
   static String formatShort(DateTime date, {String? locale}) {
-    final format = DateFormat('MMM d, y', locale);
-    return format.format(date);
+    return _getFormatter('MMM d, y', locale).format(date);
   }
 
   /// Formats a date as "MMMM d, yyyy" (e.g., "December 19, 2025")
   /// Locale-aware: uses provided locale or defaults to system locale
   static String formatLong(DateTime date, {String? locale}) {
-    final format = DateFormat('MMMM d, yyyy', locale);
-    return format.format(date);
+    return _getFormatter('MMMM d, yyyy', locale).format(date);
   }
 
   /// Formats a date as "EEEE" (e.g., "Friday")
   /// Locale-aware: uses provided locale or defaults to system locale
   static String formatDayOfWeek(DateTime date, {String? locale}) {
-    final format = DateFormat('EEEE', locale);
-    return format.format(date);
+    return _getFormatter('EEEE', locale).format(date);
   }
 
   /// Formats a date as "MMM yyyy" (e.g., "Dec 2025") - useful for charts
   /// Locale-aware: uses provided locale or defaults to system locale
   static String formatMonthYear(DateTime date, {String? locale}) {
-    final format = DateFormat('MMM yyyy', locale);
-    return format.format(date);
+    return _getFormatter('MMM yyyy', locale).format(date);
   }
 
   /// Formats a date as "MMM" (e.g., "Dec") - useful for compact charts
   /// Locale-aware: uses provided locale or defaults to system locale
   static String formatMonth(DateTime date, {String? locale}) {
-    final format = DateFormat('MMM', locale);
-    return format.format(date);
+    return _getFormatter('MMM', locale).format(date);
   }
 
   /// Format date based on user's preferred date format pattern
@@ -74,16 +80,13 @@ class AppDateUtils {
     switch (pattern) {
       case DateFormatPattern.mdy:
         // US format: MM/DD/YYYY
-        final format = DateFormat('MM/dd/yyyy', locale);
-        return format.format(date);
+        return _getFormatter('MM/dd/yyyy', locale).format(date);
       case DateFormatPattern.dmy:
         // UK/India format: DD/MM/YYYY
-        final format = DateFormat('dd/MM/yyyy', locale);
-        return format.format(date);
+        return _getFormatter('dd/MM/yyyy', locale).format(date);
       case DateFormatPattern.ymd:
         // ISO/Japan format: YYYY-MM-DD
-        final format = DateFormat('yyyy-MM-dd', locale);
-        return format.format(date);
+        return _getFormatter('yyyy-MM-dd', locale).format(date);
     }
   }
 
@@ -100,13 +103,10 @@ class AppDateUtils {
         return formatShort(date, locale: locale);
       case DateFormatPattern.dmy:
         // UK/India format: 19 Dec 2025
-        final format = DateFormat('d MMM yyyy', locale);
-        return format.format(date);
+        return _getFormatter('d MMM yyyy', locale).format(date);
       case DateFormatPattern.ymd:
         // ISO/Japan format: 2025-12-19
-        final format = DateFormat('yyyy-MM-dd', locale);
-        return format.format(date);
+        return _getFormatter('yyyy-MM-dd', locale).format(date);
     }
   }
 }
-
