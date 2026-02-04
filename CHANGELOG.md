@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Add in-app Help & FAQ screen with usage information
+
+## [3.31.0] - 2026-02-03
+
+### ✨ Features
+
 - Enterprise-Grade Localization & Internationalization (40+ Currencies, Auto-Detection) (#137)
 
 ## [3.30.5] - 2026-02-02
