@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
@@ -146,33 +147,13 @@ class AboutScreen extends ConsumerWidget {
     );
   }
 
-  /// Opens the Help & FAQ page (GitHub repository wiki or docs)
-  Future<void> _openHelpPage(BuildContext context) async {
-    const helpUrl = 'https://github.com/ravitejakamalapuram/InvTrack#readme';
-    final uri = Uri.parse(helpUrl);
-
-    try {
-      final canLaunch = await canLaunchUrl(uri);
-      if (canLaunch) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback: copy URL to clipboard
-        if (!context.mounted) return;
-        await _copyToClipboardWithFeedback(
-          context,
-          helpUrl,
-          'Help URL copied to clipboard',
-        );
-      }
-    } catch (e) {
-      // Fallback: copy URL to clipboard
-      if (!context.mounted) return;
-      await _copyToClipboardWithFeedback(
-        context,
-        helpUrl,
-        'Help URL copied to clipboard',
-      );
-    }
+  /// Opens the Help & FAQ page
+  void _openHelpPage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HelpFaqScreen(),
+      ),
+    );
   }
 
   /// Opens the email client for support
