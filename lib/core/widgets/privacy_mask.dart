@@ -64,14 +64,19 @@ class PrivacyMask extends ConsumerWidget {
       );
     }
 
-    return ClipRRect(
-      key: const ValueKey('masked'),
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: width,
-        child: ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: child,
+    return Semantics(
+      label: 'Hidden content',
+      child: ExcludeSemantics(
+        child: ClipRRect(
+          key: const ValueKey('masked'),
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: width,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: child,
+            ),
+          ),
         ),
       ),
     );
@@ -174,6 +179,7 @@ class _MaskedText extends StatelessWidget {
     // Also fixed bug where dots were white-on-white in light mode.
     return Text(
       maskedPattern,
+      semanticsLabel: 'Hidden amount',
       style: effectiveStyle.copyWith(
         letterSpacing: 2,
       ),
