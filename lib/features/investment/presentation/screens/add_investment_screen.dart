@@ -750,14 +750,22 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           ),
         ),
         SizedBox(height: AppSpacing.xs),
-        GestureDetector(
+        Semantics(
+          button: true,
+          label: 'Select Start Date',
+          value: _startDate != null
+              ? AppDateUtils.formatLong(_startDate!)
+              : 'Not set',
+          excludeSemantics: true,
           onTap: () => _selectStartDate(context, isDark),
-          child: GlassCard(
-            padding: AppSpacing.cardPadding,
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
+          child: GestureDetector(
+            onTap: () => _selectStartDate(context, isDark),
+            child: GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight.withValues(alpha: 0.1),
                     borderRadius: AppSizes.borderRadiusMd,
@@ -807,6 +815,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               ],
             ),
           ),
+        ),
         ),
       ],
     );
@@ -1058,13 +1067,22 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }) {
     final chipColor = color ?? AppColors.primaryLight;
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      excludeSemantics: true,
       onTap: () {
         HapticFeedback.selectionClick();
         onTap();
       },
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
         builder: (context, progress, child) {
@@ -1132,6 +1150,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
             ),
           );
         },
+      ),
       ),
     );
   }
