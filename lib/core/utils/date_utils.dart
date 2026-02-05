@@ -18,8 +18,12 @@ class AppDateUtils {
 
   /// Formats a date as a relative string (e.g., "today", "yesterday", "3 days ago")
   /// Falls back to locale-aware short format for dates older than a week
-  static String formatRelative(DateTime date, {String? locale}) {
-    final now = DateTime.now();
+  static String formatRelative(
+    DateTime date, {
+    String? locale,
+    DateTime? relativeTo,
+  }) {
+    final now = relativeTo ?? DateTime.now();
     final diff = now.difference(date);
 
     if (diff.inDays == 0) {

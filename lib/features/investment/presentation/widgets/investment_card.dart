@@ -26,6 +26,7 @@ class InvestmentCard extends ConsumerWidget {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final ValueChanged<bool?>? onCheckboxChanged;
+  final DateTime? referenceDate;
 
   const InvestmentCard({
     super.key,
@@ -35,6 +36,7 @@ class InvestmentCard extends ConsumerWidget {
     required this.onTap,
     this.onLongPress,
     this.onCheckboxChanged,
+    this.referenceDate,
   });
 
   @override
@@ -113,6 +115,7 @@ class InvestmentCard extends ConsumerWidget {
                       isDark: isDark,
                       typeColor: typeColor,
                       isClosed: isClosed,
+                      referenceDate: referenceDate,
                     ),
                   ),
                   SizedBox(width: AppSpacing.sm),
@@ -135,6 +138,7 @@ class InvestmentCard extends ConsumerWidget {
               statsAsync: statsAsync,
               currencyFormat: currencyFormat,
               isPrivacyMode: isPrivacyMode,
+              referenceDate: referenceDate,
             ),
           ],
         ),
@@ -190,12 +194,14 @@ class _InvestmentInfo extends StatelessWidget {
   final bool isDark;
   final Color typeColor;
   final bool isClosed;
+  final DateTime? referenceDate;
 
   const _InvestmentInfo({
     required this.investment,
     required this.isDark,
     required this.typeColor,
     required this.isClosed,
+    this.referenceDate,
   });
 
   @override
@@ -294,7 +300,9 @@ class _InvestmentInfo extends StatelessWidget {
     final maturityDate = investment.maturityDate;
     if (maturityDate == null) return null;
 
-    final now = DateTime.now();
+    // Use passed reference date (e.g. calculated once per frame) to avoid
+    // excessive DateTime allocations in lists.
+    final now = referenceDate ?? DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final maturity = DateTime(
       maturityDate.year,
@@ -489,6 +497,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
   final AsyncValue<InvestmentStats> statsAsync;
   final NumberFormat currencyFormat;
   final bool isPrivacyMode;
+  final DateTime? referenceDate;
 
   const _InvestmentBottomStrip({
     required this.investment,
@@ -496,6 +505,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
     required this.statsAsync,
     required this.currencyFormat,
     required this.isPrivacyMode,
+    this.referenceDate,
   });
 
   @override
@@ -539,7 +549,10 @@ class _InvestmentBottomStrip extends StatelessWidget {
               ),
               SizedBox(width: 4),
               Text(
-                AppDateUtils.formatRelative(lastActivityDate),
+                AppDateUtils.formatRelative(
+                  lastActivityDate,
+                  relativeTo: referenceDate,
+                ),
                 style: subtleTextStyle,
               ),
               SizedBox(width: AppSpacing.md),
@@ -618,7 +631,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Added ${AppDateUtils.formatRelative(investment.createdAt)}',
+              'Added ${AppDateUtils.formatRelative(investment.createdAt, relativeTo: referenceDate)}',
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
