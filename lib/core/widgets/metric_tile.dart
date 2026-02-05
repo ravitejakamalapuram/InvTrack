@@ -27,70 +27,83 @@ class MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
+    // Construct semantic label
+    final trend = change != null
+        ? ((isPositive ?? true) ? 'up by $change' : 'down by $change')
+        : '';
+    final semanticLabel =
+        change != null ? '$label: $value. Trending $trend' : '$label: $value';
+
+    return Semantics(
+      button: onTap != null,
+      label: semanticLabel,
+      excludeSemantics: true,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.cardDark : AppColors.cardLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark
-                ? AppColors.neutral700Dark
-                : AppColors.neutral200Light,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : AppColors.cardLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                if (icon != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: (iconColor ?? AppColors.primaryLight).withValues(
-                        alpha: 0.1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  if (icon != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: (iconColor ?? AppColors.primaryLight).withValues(
+                          alpha: 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      child: Icon(
+                        icon,
+                        size: 16,
+                        color: iconColor ?? AppColors.primaryLight,
+                      ),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 16,
-                      color: iconColor ?? AppColors.primaryLight,
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: AppTypography.caption.copyWith(
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral600Light,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
                 ],
-                Expanded(
-                  child: Text(
-                    label,
-                    style: AppTypography.caption.copyWith(
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral600Light,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: AppTypography.numberSmall.copyWith(
-                color: isDark
-                    ? AppColors.neutral50Dark
-                    : AppColors.neutral900Light,
               ),
-            ),
-            if (change != null) ...[
-              const SizedBox(height: 4),
-              _buildChangeIndicator(isDark),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: AppTypography.numberSmall.copyWith(
+                  color: isDark
+                      ? AppColors.neutral50Dark
+                      : AppColors.neutral900Light,
+                ),
+              ),
+              if (change != null) ...[
+                const SizedBox(height: 4),
+                _buildChangeIndicator(isDark),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
