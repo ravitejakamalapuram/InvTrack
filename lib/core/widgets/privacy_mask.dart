@@ -60,6 +60,7 @@ class PrivacyMask extends ConsumerWidget {
       return Text(
         maskedText ?? '••••••',
         key: const ValueKey('masked'),
+        semanticsLabel: 'Hidden content',
         style: maskedTextStyle,
       );
     }
