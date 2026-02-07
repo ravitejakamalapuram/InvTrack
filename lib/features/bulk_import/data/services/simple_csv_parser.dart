@@ -87,16 +87,6 @@ class SimpleCsvParser {
     // Excel serial date handled separately
   ];
 
-  /// Lazily initialized date formats - only created when first accessed
-  static List<DateFormat>? _dateFormatsCache;
-
-  /// Get date formats, creating them lazily
-  static List<DateFormat> get _dateFormats {
-    _dateFormatsCache ??=
-        _dateFormatPatterns.map((p) => DateFormat(p)).toList();
-    return _dateFormatsCache!;
-  }
-
   /// Parse CSV bytes into structured data
   static ParsedCsvResult parse(Uint8List bytes) {
     final content = utf8.decode(bytes);
@@ -105,86 +95,7 @@ class SimpleCsvParser {
 
   /// Parse CSV string content
   static ParsedCsvResult parseString(String content) {
-    final lines = const LineSplitter().convert(content);
-    if (lines.isEmpty) {
-      return const ParsedCsvResult(
-        rows: [],
-        errors: ['Empty file'],
-        totalRows: 0,
-        validRows: 0,
-      );
-    }
-
-    // Parse header row
-    final headerRow = _parseCSVLine(lines.first);
-    final columnMap = _mapColumns(headerRow);
-
-    if (!columnMap.containsKey('date') ||
-        !columnMap.containsKey('investment') ||
-        !columnMap.containsKey('type') ||
-        !columnMap.containsKey('amount')) {
-      return ParsedCsvResult(
-        rows: [],
-        errors: [
-          'Missing required columns. Required: Date, Investment Name, Type, Amount',
-        ],
-        totalRows: lines.length - 1,
-        validRows: 0,
-      );
-    }
-
-    final rows = <ParsedCashFlowRow>[];
-    final errors = <String>[];
-
-    // Parse data rows (skip header)
-    for (var i = 1; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isEmpty) continue;
-
-      final values = _parseCSVLine(line);
-      final result = _parseRow(i + 1, values, columnMap);
-
-      if (result.isValid) {
-        rows.add(result);
-      } else {
-        errors.add('Row ${result.rowNumber}: ${result.error}');
-      }
-    }
-
-    return ParsedCsvResult(
-      rows: rows,
-      errors: errors,
-      totalRows: lines.length - 1,
-      validRows: rows.where((r) => r.isValid).length,
-    );
-  }
-
-  /// Map column headers to indices
-  static Map<String, int> _mapColumns(List<String> headers) {
-    final map = <String, int>{};
-    for (var i = 0; i < headers.length; i++) {
-      final header = headers[i].toLowerCase().trim();
-      if (header.contains('date')) {
-        map['date'] = i;
-      } else if (header == 'investment name') {
-        map['investment'] = i;
-      } else if (header == 'investment type') {
-        map['investmentType'] = i;
-      } else if (header == 'investment status') {
-        map['investmentStatus'] = i;
-      } else if (header == 'type') {
-        // Cashflow type (INVEST, INCOME, RETURN, FEE)
-        map['type'] = i;
-      } else if (header.contains('name') && !map.containsKey('investment')) {
-        // Fallback for older CSV formats
-        map['investment'] = i;
-      } else if (header.contains('amount')) {
-        map['amount'] = i;
-      } else if (header.contains('note')) {
-        map['notes'] = i;
-      }
-    }
-    return map;
+    return _CsvParserSession(content).parse();
   }
 
   /// Parse a single CSV line handling quotes
@@ -212,9 +123,107 @@ class SimpleCsvParser {
     result.add(current.toString().trim());
     return result;
   }
+}
+
+class _CsvParserSession {
+  final String content;
+  DateFormat? _detectedDateFormat;
+  late final List<DateFormat> _dateFormats;
+
+  _CsvParserSession(this.content) {
+    // Create formatters using the current locale.
+    // This fixes a bug where static formatters would capture the initial locale
+    // and fail if the locale changed.
+    _dateFormats = SimpleCsvParser._dateFormatPatterns
+        .map((p) => DateFormat(p))
+        .toList();
+  }
+
+  ParsedCsvResult parse() {
+    final lines = const LineSplitter().convert(content);
+    if (lines.isEmpty) {
+      return const ParsedCsvResult(
+        rows: [],
+        errors: ['Empty file'],
+        totalRows: 0,
+        validRows: 0,
+      );
+    }
+
+    // Parse header row
+    final headerRow = SimpleCsvParser._parseCSVLine(lines.first);
+    final columnMap = _mapColumns(headerRow);
+
+    if (!columnMap.containsKey('date') ||
+        !columnMap.containsKey('investment') ||
+        !columnMap.containsKey('type') ||
+        !columnMap.containsKey('amount')) {
+      return ParsedCsvResult(
+        rows: [],
+        errors: [
+          'Missing required columns. Required: Date, Investment Name, Type, Amount',
+        ],
+        totalRows: lines.length - 1,
+        validRows: 0,
+      );
+    }
+
+    final rows = <ParsedCashFlowRow>[];
+    final errors = <String>[];
+
+    // Parse data rows (skip header)
+    for (var i = 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) continue;
+
+      final values = SimpleCsvParser._parseCSVLine(line);
+      final result = _parseRow(i + 1, values, columnMap);
+
+      if (result.isValid) {
+        rows.add(result);
+      } else {
+        errors.add('Row ${result.rowNumber}: ${result.error}');
+      }
+    }
+
+    return ParsedCsvResult(
+      rows: rows,
+      errors: errors,
+      totalRows: lines.length - 1,
+      validRows: rows.where((r) => r.isValid).length,
+    );
+  }
+
+  /// Map column headers to indices
+  Map<String, int> _mapColumns(List<String> headers) {
+    final map = <String, int>{};
+    for (var i = 0; i < headers.length; i++) {
+      final header = headers[i].toLowerCase().trim();
+      if (header.contains('date')) {
+        map['date'] = i;
+      } else if (header == 'investment name') {
+        map['investment'] = i;
+      } else if (header == 'investment type') {
+        map['investmentType'] = i;
+      } else if (header == 'investment status') {
+        map['investmentStatus'] = i;
+      } else if (header == 'type') {
+        // Cashflow type (INVEST, INCOME, RETURN, FEE)
+        map['type'] = i;
+      } else if (header.contains('name') && !map.containsKey('investment')) {
+        // Fallback for older CSV formats
+        map['investment'] = i;
+      } else if (header.contains('amount')) {
+        map['amount'] = i;
+      } else if (header.contains('note')) {
+        map['notes'] = i;
+      }
+    }
+    return map;
+  }
 
   /// Parse a single row
-  static ParsedCashFlowRow _parseRow(
+  ParsedCashFlowRow _parseRow(
     int rowNum,
     List<String> values,
     Map<String, int> columnMap,
@@ -324,7 +333,7 @@ class SimpleCsvParser {
     }
   }
 
-  static String _getValue(List<String> values, int index) {
+  String _getValue(List<String> values, int index) {
     return index < values.length ? values[index].trim() : '';
   }
 
@@ -354,7 +363,7 @@ class SimpleCsvParser {
   };
 
   /// Parse date with smart format detection
-  static DateTime? _parseDate(String dateStr) {
+  DateTime? _parseDate(String dateStr) {
     if (dateStr.isEmpty) return null;
 
     // Check for Excel serial date (number like 45678)
@@ -380,22 +389,35 @@ class SimpleCsvParser {
       }
     }
 
-    // Try any_date library for flexible full-date parsing
+    // Optimization: Try detected format first
+    if (_detectedDateFormat != null) {
+      try {
+        return _detectedDateFormat!.parseStrict(dateStr);
+      } catch (_) {
+        // Failed, continue to fallback
+      }
+    }
+
+    // Try manual date formats first to detect consistent pattern
+    for (final format in _dateFormats) {
+      try {
+        final date = format.parseStrict(dateStr);
+        // If successful, memoize this format for future rows
+        _detectedDateFormat = format;
+        return date;
+      } catch (_) {}
+    }
+
+    // Fallback: try any_date library for flexible full-date parsing
     try {
       return _dateParser.parse(dateStr);
     } catch (_) {
-      // Fallback: try manual date formats
-      for (final format in _dateFormats) {
-        try {
-          return format.parseStrict(dateStr);
-        } catch (_) {}
-      }
       return null;
     }
   }
 
   /// Parse cash flow type
-  static CashFlowType? _parseType(String typeStr) {
+  CashFlowType? _parseType(String typeStr) {
     final normalized = typeStr.toLowerCase().trim();
     switch (normalized) {
       case 'invest':
@@ -425,7 +447,7 @@ class SimpleCsvParser {
   }
 
   /// Parse amount, removing currency symbols and commas
-  static double? _parseAmount(String amountStr) {
+  double? _parseAmount(String amountStr) {
     if (amountStr.isEmpty) return null;
     final cleaned = amountStr
         .replaceAll(RegExp(r'[₹$€£¥,\s]'), '')
