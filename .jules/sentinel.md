@@ -81,3 +81,10 @@
 **Prevention:**
 1. Validate all IDs used in file paths against a strict whitelist (e.g. `^[a-zA-Z0-9-_]+$`).
 2. Use `path.normalize` and check `path.isWithin` to ensure the final path is inside the intended directory, as a second layer of defense.
+
+## 2026-06-18 - [Weak PIN Hashing Remediated]
+**Vulnerability:** User PINs were stored using weak hashing (single iteration SHA-256 with salt, known as v2 format). This is vulnerable to brute-force attacks if the storage is compromised, given the low entropy of 4-digit PINs.
+**Learning:** Even with a salt, fast hashing algorithms are unsuitable for low-entropy secrets like PINs. An attacker can iterate through the entire 10,000 PIN space in milliseconds.
+**Prevention:**
+1. Implemented PBKDF2-HMAC-SHA256 with 10,000 iterations to increase the work factor (v3 format).
+2. Added automatic upgrade logic to migrate existing users from v0 (plaintext), v1 (unsalted), and v2 (simple salted) to v3 (PBKDF2) upon successful login.
