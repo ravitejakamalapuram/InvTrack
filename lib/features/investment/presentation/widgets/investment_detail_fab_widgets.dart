@@ -17,34 +17,42 @@ class TransactionFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.heroGradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryLight.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add_rounded, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(
-              'Add Transaction',
-              style: AppTypography.button.copyWith(color: Colors.white),
-            ),
-          ],
+    void handleTap() {
+      HapticFeedback.selectionClick();
+      onTap();
+    }
+
+    return Semantics(
+      button: true,
+      label: 'Add Transaction',
+      excludeSemantics: true,
+      onTap: handleTap,
+      child: GestureDetector(
+        onTap: handleTap,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.heroGradient,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryLight.withValues(alpha: 0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(
+                'Add Transaction',
+                style: AppTypography.button.copyWith(color: Colors.white),
+              ),
+            ],
+          ),
         ),
       ),
     );
