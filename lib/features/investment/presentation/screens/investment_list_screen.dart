@@ -371,6 +371,11 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           );
         }
 
+        // OPTIMIZATION: Capture current time once for the entire list render.
+        // This prevents thousands of DateTime.now() calls during list scrolling/building,
+        // which can cause jank on older devices.
+        final now = DateTime.now();
+
         return SliverPadding(
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
@@ -430,6 +435,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       investment: investment,
                       isSelectionMode: isSelectionMode,
                       isSelected: selectedIds.contains(investment.id),
+                      referenceDate: now,
                       onTap: isSelectionMode
                           ? () => ref
                                 .read(investmentListStateProvider.notifier)
