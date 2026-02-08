@@ -128,16 +128,20 @@ class SimpleCsvParser {
 class _CsvParserSession {
   final String content;
   DateFormat? _detectedDateFormat;
-  late final List<DateFormat> _dateFormats;
 
-  _CsvParserSession(this.content) {
-    // Create formatters using the current locale.
-    // This fixes a bug where static formatters would capture the initial locale
-    // and fail if the locale changed.
-    _dateFormats = SimpleCsvParser._dateFormatPatterns
-        .map((p) => DateFormat(p))
-        .toList();
+  // Cache formatters by locale to avoid expensive re-creation
+  static final Map<String, List<DateFormat>> _formattersCache = {};
+
+  List<DateFormat> get _dateFormats {
+    final locale = Intl.defaultLocale ?? 'default';
+    return _formattersCache.putIfAbsent(locale, () {
+      return SimpleCsvParser._dateFormatPatterns
+          .map((p) => DateFormat(p, locale == 'default' ? null : locale))
+          .toList();
+    });
   }
+
+  _CsvParserSession(this.content);
 
   ParsedCsvResult parse() {
     final lines = const LineSplitter().convert(content);
