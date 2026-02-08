@@ -41,3 +41,7 @@
 ## 2026-10-27 - [Accessibility: Disassociated Labels]
 **Learning:** When rendering form labels manually outside of `TextField` (e.g. using a `Column` with `Text` + `TextField`), the label is not programmatically associated with the input field for screen readers. Users land on the field without context.
 **Action:** Use `InputDecoration.labelText` with `FloatingLabelBehavior.never` to pass the label to the semantic tree without duplicating it visually. Also, wrap the external visual label in a `GestureDetector` that requests focus on the field to mimic standard `htmlFor` behavior.
+
+## 2026-10-27 - [Accessibility: Custom Widget Keyboard Focus]
+**Learning:** Custom selection widgets built with `GestureDetector` (like `TypeSelector`) are often implemented without keyboard focus support, making them inaccessible to keyboard users and screen readers that rely on focus traversal.
+**Action:** Wrap custom interactive widgets in a `Focus` widget. Handle `onFocusChange` to update visual state (e.g., focus ring) and `onKeyEvent` to support Enter/Space activation, ensuring they behave like native buttons.

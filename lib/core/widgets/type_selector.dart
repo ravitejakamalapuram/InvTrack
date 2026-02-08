@@ -6,7 +6,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 /// A generic type selector widget that displays selectable chips in a wrap layout.
 ///
 /// Supports haptic feedback, animated transitions, and gradient styling.
-/// Now with improved layout options for better UX.
+/// Now with improved layout options for better UX and accessibility.
 class TypeSelector<T> extends StatelessWidget {
   final String? label;
   final String? subtitle;
@@ -114,13 +114,14 @@ class TypeSelector<T> extends StatelessWidget {
         HapticFeedback.selectionClick();
         onSelected(item);
       },
-      child: GestureDetector(
+      child: _AccessibleChip(
         onTap: () {
           HapticFeedback.selectionClick();
           onSelected(item);
         },
-        child: _TypeSelectorChip(
+        builder: (context, isFocused) => _TypeSelectorChip(
           isSelected: isSelected,
+          isFocused: isFocused,
           color: color,
           isDark: isDark,
           expanded: expanded,
@@ -133,10 +134,49 @@ class TypeSelector<T> extends StatelessWidget {
   }
 }
 
+/// A wrapper that handles keyboard focus and interaction for accessible selection.
+class _AccessibleChip extends StatefulWidget {
+  final VoidCallback onTap;
+  final Widget Function(BuildContext context, bool isFocused) builder;
+
+  const _AccessibleChip({
+    required this.onTap,
+    required this.builder,
+  });
+
+  @override
+  State<_AccessibleChip> createState() => _AccessibleChipState();
+}
+
+class _AccessibleChipState extends State<_AccessibleChip> {
+  bool _isFocused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      onFocusChange: (value) => setState(() => _isFocused = value),
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.space)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: widget.builder(context, _isFocused),
+      ),
+    );
+  }
+}
+
 /// Stateful chip widget with smooth animations that avoid flickering.
 /// Uses TweenAnimationBuilder for controlled, non-rebuilding animations.
 class _TypeSelectorChip extends StatelessWidget {
   final bool isSelected;
+  final bool isFocused;
   final Color color;
   final bool isDark;
   final bool expanded;
@@ -146,6 +186,7 @@ class _TypeSelectorChip extends StatelessWidget {
 
   const _TypeSelectorChip({
     required this.isSelected,
+    this.isFocused = false,
     required this.color,
     required this.isDark,
     required this.expanded,
@@ -168,11 +209,23 @@ class _TypeSelectorChip extends StatelessWidget {
           selectionProgress,
         )!;
 
-        final borderColor = Color.lerp(
-          isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-          Colors.transparent,
-          selectionProgress,
-        )!;
+        // Border color logic:
+        // 1. If focused, use primary/high contrast color
+        // 2. If selected, transparent (handled by background) or subtle
+        // 3. Default border
+        Color borderColor;
+        if (isFocused) {
+          borderColor = isDark ? Colors.white : AppColors.primaryLight;
+        } else {
+          borderColor = Color.lerp(
+            isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+            Colors.transparent,
+            selectionProgress,
+          )!;
+        }
+
+        // Increase border width when focused
+        final borderWidth = isFocused ? 2.0 : 1.5;
 
         final iconBgColor = Color.lerp(
           color.withValues(alpha: 0.12),
@@ -198,17 +251,22 @@ class _TypeSelectorChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.5),
-            boxShadow: selectionProgress > 0.1
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: shadowOpacity),
-                      blurRadius: 16 * selectionProgress,
-                      offset: Offset(0, 6 * selectionProgress),
-                      spreadRadius: -2,
-                    ),
-                  ]
-                : null,
+            border: Border.all(color: borderColor, width: borderWidth),
+            boxShadow: [
+              if (selectionProgress > 0.1)
+                BoxShadow(
+                  color: color.withValues(alpha: shadowOpacity),
+                  blurRadius: 16 * selectionProgress,
+                  offset: Offset(0, 6 * selectionProgress),
+                  spreadRadius: -2,
+                ),
+              if (isFocused)
+                BoxShadow(
+                  color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+            ],
           ),
           child: Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
