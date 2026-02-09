@@ -75,6 +75,13 @@
 1. Wrap visually masked content in `Semantics(label: 'Hidden content', child: ExcludeSemantics(child: ...))`.
 2. Use `semanticsLabel` on `Text` widgets to provide meaningful descriptions for masked text (e.g. "Hidden amount").
 
+## 2026-05-25 - [Cleartext Traffic Vulnerability]
+**Vulnerability:** The Android application did not explicitly forbid cleartext traffic (`usesCleartextTraffic` was undefined). This means on older Android versions or under certain configurations, the app could theoretically make unencrypted HTTP requests, exposing financial data to Man-in-the-Middle (MitM) attacks.
+**Learning:** Even if an app primarily uses HTTPS libraries (like Firebase), leaving the "door open" for HTTP at the OS level is a security risk. A developer might accidentally introduce an HTTP call (e.g., for an image or a new API), and without this check, it would silently succeed and leak data.
+**Prevention:**
+1. Explicitly set `android:usesCleartextTraffic="false"` in `AndroidManifest.xml` for all production apps handling sensitive data.
+2. Consider using Network Security Configuration for more granular control (certificate pinning) if higher security is needed.
+
 ## 2026-06-02 - [Zip Slip Path Traversal]
 **Vulnerability:** The document import process (`DataImportService`) extracts files from a ZIP archive using metadata (`investmentId` and `documentId`) provided within the archive itself (`metadata.json`). These IDs were used to construct file paths in `DocumentStorageService` without validation, allowing a malicious ZIP file to write files outside the intended directory via path traversal characters (`../`).
 **Learning:** Never trust metadata or file paths coming from an external source (like a ZIP file), even if the ZIP extraction itself is safe. Always validate or sanitize any string used to construct a file system path.
