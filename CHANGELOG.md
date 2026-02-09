@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- **a11y**: Improve semantic labels for MetricTile (#151)
+- **a11y**: Improve semantics for transaction FAB and app bar actions (#156)
+- **perf**: Optimize investment list date rendering (#157)
+- **a11y**: Add keyboard navigation and focus indicators to TypeSelector (#158)
+
 ## [3.32.0] - 2026-02-04
 
 ### ✨ Features
