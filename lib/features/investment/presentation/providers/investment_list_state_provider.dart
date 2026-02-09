@@ -125,8 +125,9 @@ class InvestmentListNotifier extends Notifier<InvestmentListState> {
 }
 
 /// Provider for investment list state
+/// Uses .autoDispose to prevent memory leaks when screen is disposed
 final investmentListStateProvider =
-    NotifierProvider<InvestmentListNotifier, InvestmentListState>(
+    NotifierProvider.autoDispose<InvestmentListNotifier, InvestmentListState>(
       InvestmentListNotifier.new,
     );
 

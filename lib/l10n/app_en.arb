@@ -142,6 +142,146 @@
   "skip": "Skip",
   "@skip": {
     "description": "Skip button label"
+  },
+
+  "appearance": "Appearance",
+  "@appearance": {
+    "description": "Appearance settings screen title"
+  },
+
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme section title"
+  },
+
+  "themeDescription": "Choose how InvTrack looks",
+  "@themeDescription": {
+    "description": "Theme section description"
+  },
+
+  "themeSystem": "System",
+  "@themeSystem": {
+    "description": "System theme option"
+  },
+
+  "themeSystemSubtitle": "Match device settings",
+  "@themeSystemSubtitle": {
+    "description": "System theme option subtitle"
+  },
+
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Light theme option"
+  },
+
+  "themeLightSubtitle": "Always use light theme",
+  "@themeLightSubtitle": {
+    "description": "Light theme option subtitle"
+  },
+
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Dark theme option"
+  },
+
+  "themeDarkSubtitle": "Always use dark theme",
+  "@themeDarkSubtitle": {
+    "description": "Dark theme option subtitle"
+  },
+
+  "preview": "Preview",
+  "@preview": {
+    "description": "Preview label for theme preview"
+  },
+
+  "primary": "Primary",
+  "@primary": {
+    "description": "Primary color label"
+  },
+
+  "success": "Success",
+  "@success": {
+    "description": "Success color label"
+  },
+
+  "error": "Error",
+  "@error": {
+    "description": "Error color label"
+  },
+
+  "general": "General",
+  "@general": {
+    "description": "General settings section title"
+  },
+
+  "security": "Security",
+  "@security": {
+    "description": "Security settings section title"
+  },
+
+  "appLock": "App Lock",
+  "@appLock": {
+    "description": "App lock settings title"
+  },
+
+  "pinEnabled": "PIN enabled",
+  "@pinEnabled": {
+    "description": "PIN enabled status"
+  },
+
+  "biometricsOn": "Biometrics on",
+  "@biometricsOn": {
+    "description": "Biometrics enabled status"
+  },
+
+  "protectYourData": "Protect your data",
+  "@protectYourData": {
+    "description": "App lock subtitle when disabled"
+  },
+
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications settings title"
+  },
+
+  "remindersAndSummaries": "Reminders & summaries",
+  "@remindersAndSummaries": {
+    "description": "Notifications subtitle"
+  },
+
+  "dataAndAccount": "Data & Account",
+  "@dataAndAccount": {
+    "description": "Data and account settings title"
+  },
+
+  "importExportBackupDelete": "Import, export, backup & delete",
+  "@importExportBackupDelete": {
+    "description": "Data and account subtitle"
+  },
+
+  "about": "About",
+  "@about": {
+    "description": "About section title"
+  },
+
+  "aboutInvTrack": "About InvTrack",
+  "@aboutInvTrack": {
+    "description": "About InvTrack title"
+  },
+
+  "versionLegalSupport": "Version, legal & support",
+  "@versionLegalSupport": {
+    "description": "About InvTrack subtitle"
+  },
+
+  "signOutConfirmTitle": "Sign Out",
+  "@signOutConfirmTitle": {
+    "description": "Sign out confirmation dialog title"
+  },
+
+  "signOutConfirmMessage": "Are you sure you want to sign out?",
+  "@signOutConfirmMessage": {
+    "description": "Sign out confirmation dialog message"
   }
 }
 

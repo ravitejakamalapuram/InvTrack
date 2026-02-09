@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -26,12 +27,13 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final themeMode = settings.themeMode;
     final securityState = ref.watch(securityProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Settings', style: AppTypography.h3)),
+      appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
       body: ListView(
         children: [
           // User Profile Card
@@ -39,20 +41,20 @@ class SettingsScreen extends ConsumerWidget {
 
           // Appearance & Preferences
           SettingsSection(
-            title: 'General',
+            title: l10n.general,
             children: [
               SettingsNavTile(
                 icon: Icons.palette,
                 iconColor: Colors.purple,
-                title: 'Appearance',
-                subtitle: _getThemeModeLabel(themeMode),
+                title: l10n.appearance,
+                subtitle: _getThemeModeLabel(themeMode, l10n),
                 onTap: () =>
                     _navigateTo(context, const AppearanceSettingsScreen()),
               ),
               SettingsValueTile(
                 icon: Icons.currency_exchange_rounded,
                 iconColor: AppColors.successLight,
-                title: 'Currency',
+                title: l10n.currency,
                 value: settings.currency,
                 onTap: () => _showCurrencyPicker(context, ref),
               ),
@@ -61,15 +63,15 @@ class SettingsScreen extends ConsumerWidget {
 
           // Security & Privacy
           SettingsSection(
-            title: 'Security',
+            title: l10n.security,
             children: [
               SettingsNavTile(
                 icon: securityState.hasPin ? Icons.lock : Icons.lock_open,
                 iconColor: securityState.hasPin ? AppColors.successLight : null,
-                title: 'App Lock',
+                title: l10n.appLock,
                 subtitle: securityState.hasPin
-                    ? 'PIN enabled${securityState.isBiometricEnabled ? ' • Biometrics on' : ''}'
-                    : 'Protect your data',
+                    ? '${l10n.pinEnabled}${securityState.isBiometricEnabled ? ' • ${l10n.biometricsOn}' : ''}'
+                    : l10n.protectYourData,
                 onTap: () =>
                     _navigateTo(context, const SecuritySettingsScreen()),
               ),
@@ -78,13 +80,13 @@ class SettingsScreen extends ConsumerWidget {
 
           // Notifications
           SettingsSection(
-            title: 'Notifications',
+            title: l10n.notifications,
             children: [
               SettingsNavTile(
                 icon: Icons.notifications,
                 iconColor: Colors.orange,
-                title: 'Notifications',
-                subtitle: 'Reminders & summaries',
+                title: l10n.notifications,
+                subtitle: l10n.remindersAndSummaries,
                 onTap: () =>
                     _navigateTo(context, const NotificationsSettingsScreen()),
               ),
@@ -93,13 +95,13 @@ class SettingsScreen extends ConsumerWidget {
 
           // Data & Account
           SettingsSection(
-            title: 'Data & Account',
+            title: l10n.dataAndAccount,
             children: [
               SettingsNavTile(
                 icon: Icons.folder,
                 iconColor: Colors.blue,
-                title: 'Data & Account',
-                subtitle: 'Import, export, backup & delete',
+                title: l10n.dataAndAccount,
+                subtitle: l10n.importExportBackupDelete,
                 onTap: () => _navigateTo(context, const DataManagementScreen()),
               ),
             ],
@@ -107,13 +109,13 @@ class SettingsScreen extends ConsumerWidget {
 
           // About & Legal
           SettingsSection(
-            title: 'About',
+            title: l10n.about,
             children: [
               SettingsNavTile(
                 icon: Icons.info,
                 iconColor: Colors.grey,
-                title: 'About InvTrack',
-                subtitle: 'Version, legal & support',
+                title: l10n.aboutInvTrack,
+                subtitle: l10n.versionLegalSupport,
                 onTap: () => _navigateTo(context, const AboutScreen()),
               ),
             ],
@@ -125,7 +127,7 @@ class SettingsScreen extends ConsumerWidget {
               SettingsNavTile(
                 icon: Icons.logout,
                 iconColor: AppColors.errorLight,
-                title: 'Sign Out',
+                title: l10n.signOut,
                 showChevron: false,
                 onTap: () => _handleSignOut(context, ref),
               ),
@@ -138,14 +140,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  String _getThemeModeLabel(ThemeMode mode) {
+  String _getThemeModeLabel(ThemeMode mode, AppLocalizations l10n) {
     switch (mode) {
       case ThemeMode.system:
-        return 'System';
+        return l10n.themeSystem;
       case ThemeMode.light:
-        return 'Light';
+        return l10n.themeLight;
       case ThemeMode.dark:
-        return 'Dark';
+        return l10n.themeDark;
     }
   }
 
@@ -154,6 +156,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final settings = ref.read(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -203,7 +206,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               Padding(
                 padding: EdgeInsets.all(AppSpacing.md),
-                child: Text('Select Currency', style: AppTypography.h4),
+                child: Text(l10n.selectCurrency, style: AppTypography.h4),
               ),
               const Divider(height: 1),
               Expanded(
@@ -240,15 +243,16 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _handleSignOut(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: Text(l10n.signOutConfirmTitle),
+        content: Text(l10n.signOutConfirmMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -258,7 +262,7 @@ class SettingsScreen extends ConsumerWidget {
               ref.read(crashlyticsServiceProvider).clearUserIdentifier();
               ref.read(authRepositoryProvider).signOut();
             },
-            child: const Text('Sign Out'),
+            child: Text(l10n.signOut),
           ),
         ],
       ),
