@@ -62,7 +62,7 @@ void main() {
       expect(() => base64.decode(hash), returnsNormally);
 
       // Verify correctness
-      expect(SecurityUtils.verifyPin(pin, storedValue!), isTrue);
+      expect(SecurityUtils.verifyPin(pin, storedValue), isTrue);
     });
 
     test('verifyPin returns true for correct PIN (hashed storage)', () async {

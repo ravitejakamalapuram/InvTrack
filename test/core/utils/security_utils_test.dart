@@ -63,7 +63,6 @@ void main() {
       SecurityUtils.hashPin(pin, salt, iterations: 10000);
       stopwatch.stop();
 
-      print('10,000 iterations took ${stopwatch.elapsedMilliseconds}ms');
       // In CI environments (like this sandbox), it might be slower, so we use a generous limit.
       // But typically it should be < 500ms.
       expect(stopwatch.elapsedMilliseconds, lessThan(2000));
