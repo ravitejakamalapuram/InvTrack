@@ -34,53 +34,67 @@ class QuickStatCard extends ConsumerWidget {
     final isPrivacyMode = ref.watch(privacyModeProvider);
     final shouldMask = isSensitive && isPrivacyMode;
 
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+    // Accessibility: Group all text elements into a single cohesive announcement.
+    // Instead of reading "Label", "Value", "Subtitle" separately, screen readers will
+    // announce "Label: Value, Subtitle". This reduces swipe fatigue.
+    // Note: We hide subtitle in privacy mode to prevent leaking sensitive info.
+    final semanticValue = shouldMask ? 'Hidden amount' : value;
+    final showSubtitle = subtitle != null && !shouldMask;
+    final semanticLabel =
+        '$label: $semanticValue${showSubtitle ? ", $subtitle" : ""}';
+
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              shouldMask
-                  ? MaskedAmountText(
-                      text: value,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    )
-                  : Text(
-                      value,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-              if (subtitle != null)
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: shouldMask ? 0.0 : 1.0,
-                  child: Text(
-                    subtitle!,
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                  ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
-            ],
-          ),
-        ],
+                shouldMask
+                    ? MaskedAmountText(
+                        text: value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      )
+                    : Text(
+                        value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                if (subtitle != null)
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: shouldMask ? 0.0 : 1.0,
+                    child: Text(
+                      subtitle!,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
