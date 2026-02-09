@@ -84,6 +84,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             backgroundColor: primaryColor,
             surfaceTintColor: Colors.transparent,
             leading: IconButton(
+              tooltip: 'Back',
               icon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -109,6 +110,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
             actions: [
               IconButton(
+                tooltip: 'More options',
                 icon: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
