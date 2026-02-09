@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,14 +47,6 @@ class SecurityService {
     return base64.encode(values);
   }
 
-  /// Hash PIN using SHA-256 with salt
-  /// Returns string in format: salt:hash
-  String _hashPinWithSalt(String pin, String salt) {
-    final bytes = utf8.encode(pin + salt);
-    final digest = sha256.convert(bytes);
-    return '$salt:${digest.toString()}';
-  }
-
   /// Hash PIN using SHA-256 (Legacy unsalted)
   String _hashPinLegacy(String pin) {
     final bytes = utf8.encode(pin);
@@ -63,7 +56,8 @@ class SecurityService {
 
   Future<void> setPin(String pin) async {
     final salt = _generateSalt();
-    final hashedPin = _hashPinWithSalt(pin, salt);
+    // Use PBKDF2 with 10,000 iterations (v3 format: salt:iterations:hash)
+    final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 10000);
     await _secureStorage.write(
       key: _pinKey,
       value: hashedPin,
@@ -106,39 +100,45 @@ class SecurityService {
     if (storedPin == null) return false;
 
     bool isMatch = false;
+    bool needsUpgrade = false;
 
-    // v2: Salted Hash (contains ':')
-    if (storedPin.contains(':')) {
+    // v3: PBKDF2 (contains 2 colons 'salt:iterations:hash')
+    if (storedPin.split(':').length == 3) {
+      isMatch = SecurityUtils.verifyPin(pin, storedPin);
+    }
+    // v2: Salted Hash (contains 1 colon 'salt:hash')
+    else if (storedPin.contains(':')) {
       final parts = storedPin.split(':');
       if (parts.length == 2) {
         final salt = parts[0];
         final expectedHash = parts[1];
-        // Re-hash input with extracted salt
+        // Re-hash input with extracted salt (Legacy SHA-256)
         final bytes = utf8.encode(pin + salt);
         final actualHash = sha256.convert(bytes).toString();
         isMatch = actualHash == expectedHash;
+        if (isMatch) needsUpgrade = true;
       }
     }
     // v1: Unsalted Hash (SHA-256 is 64 chars hex)
     else if (storedPin.length == 64) {
       final hashedInput = _hashPinLegacy(pin);
       isMatch = storedPin == hashedInput;
-      if (isMatch) {
-        await setPin(pin); // Upgrade
-      }
+      if (isMatch) needsUpgrade = true;
     }
     // v0: Plaintext (Legacy)
     else {
       isMatch = storedPin == pin;
-      if (isMatch) {
-        await setPin(pin); // Upgrade
-      }
+      if (isMatch) needsUpgrade = true;
     }
 
     if (isMatch) {
       // Reset failed attempts on success
       await _prefs.remove(_failedAttemptsKey);
       await _prefs.remove(_lockoutTimestampKey);
+
+      if (needsUpgrade) {
+        await setPin(pin); // Upgrade to PBKDF2
+      }
       return true;
     } else {
       // Handle failure

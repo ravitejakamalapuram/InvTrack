@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,7 +38,7 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('setPin stores salted hashed PIN', () async {
+    test('setPin stores PBKDF2 hashed PIN (v3)', () async {
       const pin = '1234';
       await service.setPin(pin);
 
@@ -45,20 +46,23 @@ void main() {
       expect(storedValue, contains(':'));
 
       final parts = storedValue!.split(':');
-      expect(parts.length, equals(2));
+      expect(parts.length, equals(3));
 
       final salt = parts[0];
-      final hash = parts[1];
+      final iterations = int.parse(parts[1]);
+      final hash = parts[2];
 
       // Verify salt is base64
       expect(() => base64.decode(salt), returnsNormally);
 
-      // Verify hash is SHA-256 (64 chars hex)
-      expect(hash.length, equals(64));
+      // Verify iterations
+      expect(iterations, equals(10000));
 
-      // Verify hash calculation
-      final expectedHash = sha256.convert(utf8.encode(pin + salt)).toString();
-      expect(hash, equals(expectedHash));
+      // Verify hash is base64
+      expect(() => base64.decode(hash), returnsNormally);
+
+      // Verify correctness
+      expect(SecurityUtils.verifyPin(pin, storedValue), isTrue);
     });
 
     test('verifyPin returns true for correct PIN (hashed storage)', () async {
@@ -73,7 +77,7 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('verifyPin upgrades legacy plaintext PIN to salted hash', () async {
+    test('verifyPin upgrades legacy plaintext PIN to PBKDF2 hash', () async {
       // Setup: Manually store a plaintext PIN (legacy state)
       const plaintextPin = '1234';
       await fakeSecureStorage.write(key: 'user_pin', value: plaintextPin);
@@ -82,21 +86,13 @@ void main() {
       final result = await service.verifyPin(plaintextPin);
       expect(result, isTrue);
 
-      // Check: Storage should now be salted hashed
+      // Check: Storage should now be PBKDF2 hashed (v3)
       final storedValue = fakeSecureStorage.storage['user_pin'];
-      expect(storedValue, contains(':'));
-
-      final parts = storedValue!.split(':');
-      final salt = parts[0];
-      final hash = parts[1];
-
-      final expectedHash = sha256
-          .convert(utf8.encode(plaintextPin + salt))
-          .toString();
-      expect(hash, equals(expectedHash));
+      expect(storedValue!.split(':').length, equals(3));
+      expect(SecurityUtils.verifyPin(plaintextPin, storedValue), isTrue);
     });
 
-    test('verifyPin upgrades legacy unsalted hash to salted hash', () async {
+    test('verifyPin upgrades legacy unsalted hash to PBKDF2 hash', () async {
       // Setup: Manually store an unsalted hash (v1 state)
       const pin = '1234';
       final unsaltedHash = sha256.convert(utf8.encode(pin)).toString();
@@ -106,16 +102,28 @@ void main() {
       final result = await service.verifyPin(pin);
       expect(result, isTrue);
 
-      // Check: Storage should now be salted hashed
+      // Check: Storage should now be PBKDF2 hashed (v3)
       final storedValue = fakeSecureStorage.storage['user_pin'];
-      expect(storedValue, contains(':'));
+      expect(storedValue!.split(':').length, equals(3));
+      expect(SecurityUtils.verifyPin(pin, storedValue), isTrue);
+    });
 
-      final parts = storedValue!.split(':');
-      final salt = parts[0];
-      final hash = parts[1];
+    test('verifyPin upgrades v2 salted hash to PBKDF2 hash', () async {
+      // Setup: Manually store a v2 salted hash
+      const pin = '1234';
+      const salt = 'somesalt';
+      final v2Hash = sha256.convert(utf8.encode(pin + salt)).toString();
+      final storedV2 = '$salt:$v2Hash';
+      await fakeSecureStorage.write(key: 'user_pin', value: storedV2);
 
-      final expectedHash = sha256.convert(utf8.encode(pin + salt)).toString();
-      expect(hash, equals(expectedHash));
+      // Verify: Authenticate with the correct PIN
+      final result = await service.verifyPin(pin);
+      expect(result, isTrue);
+
+      // Check: Storage should now be PBKDF2 hashed (v3)
+      final storedValue = fakeSecureStorage.storage['user_pin'];
+      expect(storedValue!.split(':').length, equals(3));
+      expect(SecurityUtils.verifyPin(pin, storedValue), isTrue);
     });
 
     test('removePin removes the PIN and disables biometrics', () async {
