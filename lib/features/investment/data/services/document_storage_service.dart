@@ -21,8 +21,17 @@ class DocumentStorageService {
     return docsDir;
   }
 
+  /// Validate ID format to prevent path traversal
+  bool _isValidId(String id) {
+    // Only allow alphanumeric characters, dashes, and underscores
+    return RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(id);
+  }
+
   /// Get the directory for a specific investment's documents
   Future<Directory> _getInvestmentDirectory(String investmentId) async {
+    if (!_isValidId(investmentId)) {
+      throw const FormatException('Invalid investment ID format');
+    }
     final baseDir = await _documentsDirectory;
     final invDir = Directory(path_lib.join(baseDir.path, investmentId));
     if (!await invDir.exists()) {
@@ -42,6 +51,9 @@ class DocumentStorageService {
     required String fileName,
     required Uint8List bytes,
   }) async {
+    if (!_isValidId(documentId)) {
+      throw const FormatException('Invalid document ID format');
+    }
     final invDir = await _getInvestmentDirectory(investmentId);
     final extension = path_lib.extension(fileName);
     final localFileName = '$documentId$extension';
