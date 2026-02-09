@@ -9,7 +9,7 @@ class VersionCheckService {
   VersionCheckService(this._firestore);
 
   /// Fetch latest version info from Firestore
-  /// 
+  ///
   /// Document structure in Firestore:
   /// Collection: app_config
   /// Document: version_info
@@ -34,19 +34,25 @@ class VersionCheckService {
           );
 
       if (!doc.exists) {
-        debugPrint('⚠️ Version info document does not exist');
+        if (kDebugMode) {
+          debugPrint('⚠️ Version info document does not exist');
+        }
         return null;
       }
 
       final data = doc.data();
       if (data == null) {
-        debugPrint('⚠️ Version info data is null');
+        if (kDebugMode) {
+          debugPrint('⚠️ Version info data is null');
+        }
         return null;
       }
 
       return AppVersionEntity.fromMap(data);
     } catch (e) {
-      debugPrint('❌ Error fetching version info: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching version info: $e');
+      }
       return null;
     }
   }
@@ -59,4 +65,3 @@ class TimeoutException implements Exception {
   @override
   String toString() => message;
 }
-
