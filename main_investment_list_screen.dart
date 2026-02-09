@@ -414,7 +414,6 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                       onCheckboxChanged: (_) => ref
                           .read(investmentListStateProvider.notifier)
                           .toggleSelection(investment.id),
-                      referenceDate: DateTime.now(),
                     ),
                   ),
                 ),
