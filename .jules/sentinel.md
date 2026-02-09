@@ -74,3 +74,10 @@
 **Prevention:**
 1. Wrap visually masked content in `Semantics(label: 'Hidden content', child: ExcludeSemantics(child: ...))`.
 2. Use `semanticsLabel` on `Text` widgets to provide meaningful descriptions for masked text (e.g. "Hidden amount").
+
+## 2026-06-02 - [Zip Slip Path Traversal]
+**Vulnerability:** The document import process (`DataImportService`) extracts files from a ZIP archive using metadata (`investmentId` and `documentId`) provided within the archive itself (`metadata.json`). These IDs were used to construct file paths in `DocumentStorageService` without validation, allowing a malicious ZIP file to write files outside the intended directory via path traversal characters (`../`).
+**Learning:** Never trust metadata or file paths coming from an external source (like a ZIP file), even if the ZIP extraction itself is safe. Always validate or sanitize any string used to construct a file system path.
+**Prevention:**
+1. Validate all IDs used in file paths against a strict whitelist (e.g. `^[a-zA-Z0-9-_]+$`).
+2. Use `path.normalize` and check `path.isWithin` to ensure the final path is inside the intended directory, as a second layer of defense.
