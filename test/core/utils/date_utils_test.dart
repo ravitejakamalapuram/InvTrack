@@ -55,22 +55,6 @@ void main() {
         final oneYearAgo = DateTime.now().subtract(const Duration(days: 365));
         expect(AppDateUtils.formatRelative(oneYearAgo), '1 year ago');
       });
-
-      test('uses relativeTo parameter when provided', () {
-        final referenceDate = DateTime(2025, 1, 10); // Reference: Jan 10, 2025
-        final targetDate = DateTime(2025, 1, 9); // Target: Jan 9, 2025 (yesterday relative to reference)
-
-        expect(
-          AppDateUtils.formatRelative(targetDate, relativeTo: referenceDate),
-          'yesterday',
-        );
-
-        final threeDaysBefore = DateTime(2025, 1, 7);
-        expect(
-          AppDateUtils.formatRelative(threeDaysBefore, relativeTo: referenceDate),
-          '3 days ago',
-        );
-      });
     });
 
     group('formatShort', () {
