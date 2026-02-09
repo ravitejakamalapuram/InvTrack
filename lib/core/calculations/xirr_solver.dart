@@ -88,8 +88,7 @@ class XirrSolver {
       // Prevent x from going below -1 (which would cause pow issues)
       if (x <= -1.0) x = -0.99;
 
-      final fValue = _f(x, yearsFromStart, amounts);
-      final dfValue = _df(x, yearsFromStart, amounts);
+      final (fValue, dfValue) = _calculateFandDf(x, yearsFromStart, amounts);
 
       if (dfValue.abs() < 1e-10) return null; // Derivative too small
 
@@ -212,17 +211,32 @@ class XirrSolver {
     return sum;
   }
 
-  /// Derivative of XNPV
-  static double _df(double x, List<double> yearsFromStart, List<double> amounts) {
-    if (x <= -1.0) return double.infinity;
+  /// Calculates both function value and derivative in a single pass
+  /// Reduces pow() calls by 50%
+  static (double, double) _calculateFandDf(
+    double x,
+    List<double> yearsFromStart,
+    List<double> amounts,
+  ) {
+    if (x <= -1.0) return (double.infinity, double.infinity);
 
-    double sum = 0.0;
+    double fSum = 0.0;
+    double dfSum = 0.0;
+    final base = 1 + x;
+
+    if (base <= 0) return (double.infinity, double.infinity);
+
     for (int i = 0; i < amounts.length; i++) {
-      final power = yearsFromStart[i] + 1;
-      final base = 1 + x;
-      if (base <= 0) return double.infinity;
-      sum += -yearsFromStart[i] * amounts[i] / pow(base, power);
+      final p = yearsFromStart[i];
+      // Calculate pow once and reuse for both f and df
+      // f term: amount / (1+x)^p
+      // df term: amount * -p / (1+x)^(p+1) = (f term) * -p / (1+x)
+      final powTerm = pow(base, p);
+      final termF = amounts[i] / powTerm;
+
+      fSum += termF;
+      dfSum += termF * (-p) / base;
     }
-    return sum;
+    return (fSum, dfSum);
   }
 }
