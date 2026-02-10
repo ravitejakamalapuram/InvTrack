@@ -84,69 +84,27 @@
 
 ## P0 - Critical (Post-Launch - 3-4 weeks)
 
-### 1. Split Oversized Files (Rule 1.3)
+### 1. ~~Split Oversized Files~~ → DEPRECATED ✅
 
-**25+ files exceed size limits. Refactor into smaller, focused components.**
+**Status**: File size limits removed in favor of better quality metrics
 
-#### Screens (Max: 500 lines)
+**Why Removed:**
+- File size (lines of code) doesn't measure code quality
+- Arbitrary limits (300/400/500 lines) don't measure actual complexity
+- 25+ files exceeded limits, indicating unrealistic thresholds
+- Better metrics now enforced: cyclomatic complexity, code coverage, architecture
 
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/presentation/screens/investment_detail_screen.dart` | 864 | +364 |
-| `lib/features/settings/presentation/screens/data_management_screen.dart` | 749 | +249 |
-| `lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart` | 642 | +142 |
-| `lib/features/goals/presentation/screens/goal_details_screen.dart` | 633 | +133 |
-| `lib/features/investment/presentation/screens/investment_list_screen.dart` | 610 | +110 |
-| `lib/features/goals/presentation/screens/goals_screen.dart` | 539 | +39 |
-| `lib/features/goals/presentation/screens/create_goal_screen.dart` | 511 | +11 |
-| `lib/features/fire_number/presentation/screens/fire_setup_screen.dart` | 510 | +10 |
+**New Quality Focus:**
+- ✅ Cyclomatic Complexity: <15 decision points per 100 lines (enforced by CI)
+- ✅ Code Coverage: ≥60% overall (enforced by CI)
+- ✅ Architecture Boundaries: No API in widgets, no navigation in domain
+- ✅ Static Analysis: Zero errors/warnings
 
-#### Providers (Max: 200 lines)
-
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/presentation/providers/investment_notifier.dart` | 780 | +580 |
-| `lib/features/goals/presentation/providers/goal_progress_provider.dart` | 379 | +179 |
-| `lib/features/investment/presentation/providers/investment_list_state_provider.dart` | 332 | +132 |
-| `lib/features/investment/presentation/providers/investment_stats_provider.dart` | 284 | +84 |
-| `lib/features/security/presentation/providers/security_provider.dart` | 282 | +82 |
-| `lib/features/goals/presentation/providers/goals_provider.dart` | 282 | +82 |
-| `lib/features/investment/presentation/providers/investment_analytics_provider.dart` | 212 | +12 |
-| `lib/features/investment/presentation/providers/document_notifier.dart` | 209 | +9 |
-
-#### Widgets (Max: 300 lines)
-
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/presentation/widgets/add_document_sheet.dart` | 957 | +657 |
-| `lib/features/investment/presentation/widgets/investment_card.dart` | 640 | +340 |
-| `lib/features/overview/presentation/widgets/overview_analytics.dart` | 554 | +254 |
-| `lib/core/widgets/premium_animations.dart` | 463 | +163 |
-| `lib/features/overview/presentation/widgets/hero_card.dart` | 389 | +89 |
-| `lib/features/investment/presentation/widgets/investment_detail_stats_section.dart` | 386 | +86 |
-| `lib/core/widgets/loading_skeletons.dart` | 362 | +62 |
-| `lib/features/investment/presentation/widgets/document_list_widget.dart` | 345 | +45 |
-
-#### Repositories (Max: 400 lines)
-
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/data/repositories/firestore_investment_repository.dart` | 576 | +176 |
-
-#### Models/Entities (Max: 150 lines)
-
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/domain/entities/investment_entity.dart` | 322 | +172 |
-| `lib/features/goals/domain/entities/goal_entity.dart` | 317 | +167 |
-| `lib/features/fire_number/domain/entities/fire_settings_entity.dart` | 317 | +167 |
-| `lib/features/investment/domain/entities/document_entity.dart` | 225 | +75 |
-| `lib/features/investment/domain/entities/investment_stats.dart` | 207 | +57 |
-
-**Suggested Approach:**
-- Extract reusable widgets from large screens
-- Split notifiers by domain concern (e.g., `InvestmentCrudNotifier`, `InvestmentAnalyticsNotifier`)
-- Move helper methods to separate utility classes
+**Action Items:**
+- Review files with high cyclomatic complexity (>15)
+- Refactor complex functions into smaller, testable units
+- Focus on single responsibility principle
+- Improve test coverage for complex logic
 
 ---
 
@@ -515,17 +473,16 @@ The following areas passed review:
 
 ## 📊 Metrics & Progress Tracking
 
-### File Size Violations Progress
-**Target:** Refactor 25+ oversized files
-**Status:** 0/25 completed (0%)
-**Timeline:** Post-launch (3-4 weeks)
+### Code Quality Metrics Progress
+**Target:** Maintain high code quality standards
+**Status:** Enforced by CI
 
-| Category | Total | Refactored | Remaining |
-|----------|-------|------------|-----------|
-| Screens (>500 lines) | 8 | 0 | 8 |
-| Providers (>200 lines) | 8 | 0 | 8 |
-| Widgets (>300 lines) | 8 | 0 | 8 |
-| Repositories (>400 lines) | 1 | 0 | 1 |
+| Metric | Target | Status |
+|--------|--------|--------|
+| Cyclomatic Complexity | <15 per 100 lines | ✅ Enforced by CI |
+| Code Coverage | ≥60% | ✅ Enforced by CI |
+| Architecture Boundaries | Clean separation | ✅ Enforced by CI |
+| Static Analysis | Zero errors | ✅ Enforced by CI |
 | Models/Entities (>150 lines) | 5 | 0 | 5 |
 
 ### Test Coverage

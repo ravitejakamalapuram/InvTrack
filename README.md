@@ -235,11 +235,12 @@ Contributions are welcome! Please follow these guidelines:
 
 ### Code Quality Standards
 - Zero analyzer errors/warnings
-- All tests passing
-- File size limits enforced (see `invtrack_rules.md`)
+- All tests passing (≥60% coverage)
+- Cyclomatic complexity <15 per 100 lines
 - Proper error handling with `AppException` hierarchy
 - Accessibility compliance (WCAG)
 - Security best practices (OWASP MASVS)
+- Clean Architecture layer boundaries enforced
 
 ---
 
