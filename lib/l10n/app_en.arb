@@ -282,6 +282,414 @@
   "signOutConfirmMessage": "Are you sure you want to sign out?",
   "@signOutConfirmMessage": {
     "description": "Sign out confirmation dialog message"
+  },
+
+  "notificationsSectionTitle": "Notifications",
+  "@notificationsSectionTitle": {
+    "description": "Notifications screen title"
+  },
+
+  "summaries": "Summaries",
+  "@summaries": {
+    "description": "Summaries section title"
+  },
+
+  "periodicUpdatesAboutPortfolio": "Periodic updates about your portfolio performance",
+  "@periodicUpdatesAboutPortfolio": {
+    "description": "Summaries section footer"
+  },
+
+  "weeklySummary": "Weekly Summary",
+  "@weeklySummary": {
+    "description": "Weekly summary toggle title"
+  },
+
+  "getSummaryEverySunday": "Get a summary every Sunday",
+  "@getSummaryEverySunday": {
+    "description": "Weekly summary subtitle"
+  },
+
+  "monthlySummary": "Monthly Summary",
+  "@monthlySummary": {
+    "description": "Monthly summary toggle title"
+  },
+
+  "endOfMonthIncomeRecap": "End of month income recap",
+  "@endOfMonthIncomeRecap": {
+    "description": "Monthly summary subtitle"
+  },
+
+  "reminders": "Reminders",
+  "@reminders": {
+    "description": "Reminders section title"
+  },
+
+  "stayOnTopOfUpcomingEvents": "Stay on top of upcoming events",
+  "@stayOnTopOfUpcomingEvents": {
+    "description": "Reminders section footer"
+  },
+
+  "incomeReminders": "Income Reminders",
+  "@incomeReminders": {
+    "description": "Income reminders toggle title"
+  },
+
+  "whenIncomeIsExpected": "When income is expected",
+  "@whenIncomeIsExpected": {
+    "description": "Income reminders subtitle"
+  },
+
+  "maturityReminders": "Maturity Reminders",
+  "@maturityReminders": {
+    "description": "Maturity reminders toggle title"
+  },
+
+  "beforeInvestmentsMature": "Before investments mature",
+  "@beforeInvestmentsMature": {
+    "description": "Maturity reminders subtitle"
+  },
+
+  "goalMilestones": "Goal Milestones",
+  "@goalMilestones": {
+    "description": "Goal milestones toggle title"
+  },
+
+  "celebrateAtMilestones": "Celebrate at 25%, 50%, 75%, 100%",
+  "@celebrateAtMilestones": {
+    "description": "Goal milestones subtitle"
+  },
+
+  "debug": "Debug",
+  "@debug": {
+    "description": "Debug section title"
+  },
+
+  "testNotification": "Test Notification",
+  "@testNotification": {
+    "description": "Test notification button title"
+  },
+
+  "sendImmediateTest": "Send an immediate test",
+  "@sendImmediateTest": {
+    "description": "Test notification subtitle"
+  },
+
+  "testNotificationSent": "Test notification sent!",
+  "@testNotificationSent": {
+    "description": "Test notification success message"
+  },
+
+  "permissionDenied": "Permission denied",
+  "@permissionDenied": {
+    "description": "Permission denied message"
+  },
+
+  "scheduledTest": "Scheduled Test",
+  "@scheduledTest": {
+    "description": "Scheduled test button title"
+  },
+
+  "notifyInFiveSeconds": "Notify in 5 seconds",
+  "@notifyInFiveSeconds": {
+    "description": "Scheduled test subtitle"
+  },
+
+  "scheduledForFiveSeconds": "Scheduled for 5 seconds",
+  "@scheduledForFiveSeconds": {
+    "description": "Scheduled test success message"
+  },
+
+  "securityTitle": "Security",
+  "@securityTitle": {
+    "description": "Security screen title"
+  },
+
+  "appLockSection": "App Lock",
+  "@appLockSection": {
+    "description": "App lock section title"
+  },
+
+  "yourAppIsProtectedWithPin": "Your app is protected with a PIN",
+  "@yourAppIsProtectedWithPin": {
+    "description": "App lock footer when PIN is set"
+  },
+
+  "addPinToProtectData": "Add a PIN to protect your data",
+  "@addPinToProtectData": {
+    "description": "App lock footer when PIN is not set"
+  },
+
+  "enableAppLock": "Enable App Lock",
+  "@enableAppLock": {
+    "description": "Enable app lock toggle title"
+  },
+
+  "pinRequiredToOpenApp": "PIN required to open app",
+  "@pinRequiredToOpenApp": {
+    "description": "App lock subtitle when PIN is set"
+  },
+
+  "protectWithFourDigitPin": "Protect with a 4-digit PIN",
+  "@protectWithFourDigitPin": {
+    "description": "App lock subtitle when PIN is not set"
+  },
+
+  "quickUnlock": "Quick Unlock",
+  "@quickUnlock": {
+    "description": "Quick unlock section title"
+  },
+
+  "useBiometricsForFasterAccess": "Use biometrics for faster access",
+  "@useBiometricsForFasterAccess": {
+    "description": "Quick unlock section footer"
+  },
+
+  "faceIdTouchId": "Face ID / Touch ID",
+  "@faceIdTouchId": {
+    "description": "Biometric toggle title"
+  },
+
+  "unlockWithBiometrics": "Unlock with biometrics",
+  "@unlockWithBiometrics": {
+    "description": "Biometric toggle subtitle"
+  },
+
+  "managePin": "Manage PIN",
+  "@managePin": {
+    "description": "Manage PIN section title"
+  },
+
+  "changePin": "Change PIN",
+  "@changePin": {
+    "description": "Change PIN button title"
+  },
+
+  "updateYourSecurityCode": "Update your security code",
+  "@updateYourSecurityCode": {
+    "description": "Change PIN subtitle"
+  },
+
+  "dataStoredLocallyMessage": "Your investment data is stored locally on this device and is never uploaded to external servers.",
+  "@dataStoredLocallyMessage": {
+    "description": "Security info message"
+  },
+
+  "helpFaqTitle": "Help & FAQ",
+  "@helpFaqTitle": {
+    "description": "Help & FAQ screen title"
+  },
+
+  "gettingStarted": "Getting Started",
+  "@gettingStarted": {
+    "description": "Getting started section title"
+  },
+
+  "howToAddFirstInvestment": "How do I add my first investment?",
+  "@howToAddFirstInvestment": {
+    "description": "FAQ question"
+  },
+
+  "howToAddFirstInvestmentAnswer": "Tap the \"+\" button on the Investments tab. Enter your investment details including name, amount, date, and category. You can also add transactions later to track your investment growth.",
+  "@howToAddFirstInvestmentAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "whatInvestmentTypesSupported": "What investment types are supported?",
+  "@whatInvestmentTypesSupported": {
+    "description": "FAQ question"
+  },
+
+  "whatInvestmentTypesSupportedAnswer": "InvTrack supports Stocks, Mutual Funds, Fixed Deposits, Gold, Real Estate, Crypto, and more. You can categorize any investment type.",
+  "@whatInvestmentTypesSupportedAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "trackingReturns": "Tracking Returns",
+  "@trackingReturns": {
+    "description": "Tracking Returns section title"
+  },
+
+  "howAreReturnsCalculated": "How are returns calculated?",
+  "@howAreReturnsCalculated": {
+    "description": "FAQ question"
+  },
+
+  "howAreReturnsCalculatedAnswer": "InvTrack uses XIRR (Extended Internal Rate of Return) to calculate accurate returns considering all your transactions and their timing. This gives you a true picture of your investment performance.",
+  "@howAreReturnsCalculatedAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "whatIsXirr": "What is XIRR?",
+  "@whatIsXirr": {
+    "description": "FAQ question"
+  },
+
+  "whatIsXirrAnswer": "XIRR is the industry-standard method for calculating returns on investments with multiple cash flows at different times. It accounts for when you invested and when you withdrew money.",
+  "@whatIsXirrAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "goalsSection": "Goals",
+  "@goalsSection": {
+    "description": "Goals section title"
+  },
+
+  "howToSetFinancialGoal": "How do I set a financial goal?",
+  "@howToSetFinancialGoal": {
+    "description": "FAQ question"
+  },
+
+  "howToSetFinancialGoalAnswer": "Go to the Goals tab and tap \"+\". Enter your goal name, target amount, and deadline. InvTrack will track your progress and show how much you need to save.",
+  "@howToSetFinancialGoalAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "canLinkInvestmentsToGoals": "Can I link investments to goals?",
+  "@canLinkInvestmentsToGoals": {
+    "description": "FAQ question"
+  },
+
+  "canLinkInvestmentsToGoalsAnswer": "Yes! When creating or editing a goal, you can allocate specific investments toward that goal. This helps you track progress toward multiple goals simultaneously.",
+  "@canLinkInvestmentsToGoalsAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "privacyAndSecurity": "Privacy & Security",
+  "@privacyAndSecurity": {
+    "description": "Privacy & Security section title"
+  },
+
+  "isMyDataSecure": "Is my data secure?",
+  "@isMyDataSecure": {
+    "description": "FAQ question"
+  },
+
+  "isMyDataSecureAnswer": "Yes! All your data is stored securely in Firebase with encryption. You can also enable app lock with PIN or biometrics for extra security.",
+  "@isMyDataSecureAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "whatIsPrivacyMode": "What is Privacy Mode?",
+  "@whatIsPrivacyMode": {
+    "description": "FAQ question"
+  },
+
+  "whatIsPrivacyModeAnswer": "Privacy Mode hides all financial amounts in the app, showing \"•••••\" instead. Perfect for when you want to check your portfolio in public. Toggle it from Settings → Appearance.",
+  "@whatIsPrivacyModeAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "dataManagementSection": "Data Management",
+  "@dataManagementSection": {
+    "description": "Data Management section title"
+  },
+
+  "canExportMyData": "Can I export my data?",
+  "@canExportMyData": {
+    "description": "FAQ question"
+  },
+
+  "canExportMyDataAnswer": "Yes! Go to Settings → Data & Account → Export Data. You can download all your investment data as a ZIP file containing CSV files.",
+  "@canExportMyDataAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "howToBackupData": "How do I backup my data?",
+  "@howToBackupData": {
+    "description": "FAQ question"
+  },
+
+  "howToBackupDataAnswer": "Your data is automatically backed up to Firebase when you''re signed in. You can also export a local backup anytime from Settings → Data & Account.",
+  "@howToBackupDataAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "multiCurrencySupport": "Multi-Currency Support",
+  "@multiCurrencySupport": {
+    "description": "Multi-Currency Support section title"
+  },
+
+  "canChangeMyCurrency": "Can I change my currency?",
+  "@canChangeMyCurrency": {
+    "description": "FAQ question"
+  },
+
+  "canChangeMyCurrencyAnswer": "Yes! Go to Settings → Currency and select from 40+ supported currencies. The app will format all amounts according to your selected currency and locale.",
+  "@canChangeMyCurrencyAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "howDoesCurrencyFormattingWork": "How does currency formatting work?",
+  "@howDoesCurrencyFormattingWork": {
+    "description": "FAQ question"
+  },
+
+  "howDoesCurrencyFormattingWorkAnswer": "InvTrack automatically formats numbers based on your currency:\n• Indian Rupee (₹): Shows 1L, 10L, 1Cr\n• USD/EUR/GBP: Shows 100K, 1M, 10M\n• Other currencies use appropriate locale formatting",
+  "@howDoesCurrencyFormattingWorkAnswer": {
+    "description": "FAQ answer"
+  },
+
+  "needMoreHelpContact": "Need more help? Contact support@invtracker.com",
+  "@needMoreHelpContact": {
+    "description": "Help contact message"
+  },
+
+  "invTrack": "InvTrack",
+  "@invTrack": {
+    "description": "App name"
+  },
+
+  "version": "Version {version} ({buildNumber})",
+  "@version": {
+    "description": "App version display",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "buildNumber": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legal": "Legal",
+  "@legal": {
+    "description": "Legal section title"
+  },
+
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Privacy policy title"
+  },
+
+  "termsOfService": "Terms of Service",
+  "@termsOfService": {
+    "description": "Terms of service title"
+  },
+
+  "support": "Support",
+  "@support": {
+    "description": "Support section title"
+  },
+
+  "helpAndFaq": "Help & FAQ",
+  "@helpAndFaq": {
+    "description": "Help & FAQ menu item"
+  },
+
+  "contactSupport": "Contact Support",
+  "@contactSupport": {
+    "description": "Contact support title"
+  },
+
+  "supportEmail": "invtrack_support@googlegroups.com",
+  "@supportEmail": {
+    "description": "Support email address"
+  },
+
+  "madeWithLove": "Made with ❤️ for smart investors",
+  "@madeWithLove": {
+    "description": "Footer message"
   }
 }
 

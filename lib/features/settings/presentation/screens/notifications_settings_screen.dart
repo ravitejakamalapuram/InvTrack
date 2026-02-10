@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen for managing all notification preferences.
 class NotificationsSettingsScreen extends ConsumerWidget {
@@ -20,23 +21,24 @@ class NotificationsSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(notificationSettingsProvider);
     final notifier = ref.read(notificationSettingsProvider.notifier);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Notifications', style: AppTypography.h3)),
+      appBar: AppBar(title: Text(l10n.notificationsSectionTitle, style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
 
           // Summary notifications
           SettingsSection(
-            title: 'Summaries',
-            footer: 'Periodic updates about your portfolio performance',
+            title: l10n.summaries,
+            footer: l10n.periodicUpdatesAboutPortfolio,
             children: [
               SettingsToggleTile(
                 icon: Icons.calendar_today,
                 iconColor: Colors.blue,
-                title: 'Weekly Summary',
-                subtitle: 'Get a summary every Sunday',
+                title: l10n.weeklySummary,
+                subtitle: l10n.getSummaryEverySunday,
                 value: settings.weeklySummaryEnabled,
                 onChanged: (value) => notifier.setSetting(
                   NotificationSettingType.weeklySummary,
@@ -46,8 +48,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
               SettingsToggleTile(
                 icon: Icons.summarize,
                 iconColor: Colors.teal,
-                title: 'Monthly Summary',
-                subtitle: 'End of month income recap',
+                title: l10n.monthlySummary,
+                subtitle: l10n.endOfMonthIncomeRecap,
                 value: settings.monthlySummaryEnabled,
                 onChanged: (value) => notifier.setSetting(
                   NotificationSettingType.monthlySummary,
@@ -59,14 +61,14 @@ class NotificationsSettingsScreen extends ConsumerWidget {
 
           // Reminder notifications
           SettingsSection(
-            title: 'Reminders',
-            footer: 'Stay on top of upcoming events',
+            title: l10n.reminders,
+            footer: l10n.stayOnTopOfUpcomingEvents,
             children: [
               SettingsToggleTile(
                 icon: Icons.notification_important,
                 iconColor: Colors.orange,
-                title: 'Income Reminders',
-                subtitle: 'When income is expected',
+                title: l10n.incomeReminders,
+                subtitle: l10n.whenIncomeIsExpected,
                 value: settings.incomeRemindersEnabled,
                 onChanged: (value) => notifier.setSetting(
                   NotificationSettingType.incomeReminders,
@@ -76,8 +78,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
               SettingsToggleTile(
                 icon: Icons.event_available,
                 iconColor: Colors.purple,
-                title: 'Maturity Reminders',
-                subtitle: 'Before investments mature',
+                title: l10n.maturityReminders,
+                subtitle: l10n.beforeInvestmentsMature,
                 value: settings.maturityRemindersEnabled,
                 onChanged: (value) => notifier.setSetting(
                   NotificationSettingType.maturityReminders,
@@ -89,13 +91,13 @@ class NotificationsSettingsScreen extends ConsumerWidget {
 
           // Goal notifications
           SettingsSection(
-            title: 'Goals',
+            title: l10n.goals,
             children: [
               SettingsToggleTile(
                 icon: Icons.flag,
                 iconColor: AppColors.successLight,
-                title: 'Goal Milestones',
-                subtitle: 'Celebrate at 25%, 50%, 75%, 100%',
+                title: l10n.goalMilestones,
+                subtitle: l10n.celebrateAtMilestones,
                 value: settings.goalMilestonesEnabled,
                 onChanged: (value) => notifier.setSetting(
                   NotificationSettingType.goalMilestones,
@@ -108,13 +110,13 @@ class NotificationsSettingsScreen extends ConsumerWidget {
           // Debug options
           if (kDebugMode) ...[
             SettingsSection(
-              title: 'Debug',
+              title: l10n.debug,
               children: [
                 SettingsNavTile(
                   icon: Icons.notifications_active,
                   iconColor: Colors.blue,
-                  title: 'Test Notification',
-                  subtitle: 'Send an immediate test',
+                  title: l10n.testNotification,
+                  subtitle: l10n.sendImmediateTest,
                   showChevron: false,
                   onTap: () async {
                     final service = ref.read(notificationServiceProvider);
@@ -124,8 +126,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                         SnackBar(
                           content: Text(
                             success
-                                ? 'Test notification sent!'
-                                : 'Permission denied',
+                                ? l10n.testNotificationSent
+                                : l10n.permissionDenied,
                           ),
                           backgroundColor: success
                               ? Colors.blue
@@ -138,8 +140,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 SettingsNavTile(
                   icon: Icons.schedule,
                   iconColor: Colors.purple,
-                  title: 'Scheduled Test',
-                  subtitle: 'Notify in 5 seconds',
+                  title: l10n.scheduledTest,
+                  subtitle: l10n.notifyInFiveSeconds,
                   showChevron: false,
                   onTap: () async {
                     final service = ref.read(notificationServiceProvider);
@@ -151,8 +153,8 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                         SnackBar(
                           content: Text(
                             success
-                                ? 'Scheduled for 5 seconds'
-                                : 'Permission denied',
+                                ? l10n.scheduledForFiveSeconds
+                                : l10n.permissionDenied,
                           ),
                           backgroundColor: success
                               ? Colors.purple
