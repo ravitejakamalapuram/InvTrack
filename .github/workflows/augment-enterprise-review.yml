@@ -73,6 +73,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: false  # Self-hosted runners have Flutter installed locally
       - run: flutter clean && flutter pub get
+      - run: flutter gen-l10n
 
       - name: Static Analysis
         id: analyze
@@ -140,6 +141,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: false  # Self-hosted runners have Flutter installed locally
       - run: flutter clean && flutter pub get
+      - run: flutter gen-l10n
 
       - name: Run Tests
         id: test
