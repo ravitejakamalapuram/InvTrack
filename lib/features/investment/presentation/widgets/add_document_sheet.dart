@@ -466,6 +466,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                               width: 48,
                               height: 48,
                               fit: BoxFit.cover,
+                              semanticLabel: 'Document preview: ${file.fileName}',
                             )
                           : Container(
                               width: 48,

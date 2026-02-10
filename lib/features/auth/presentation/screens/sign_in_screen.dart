@@ -218,10 +218,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                                         ),
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.trending_up_rounded,
-                                      size: 52,
-                                      color: Colors.white,
+                                    Semantics(
+                                      label: 'Investment tracking icon',
+                                      child: const Icon(
+                                        Icons.trending_up_rounded,
+                                        size: 52,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ],
                                 ),
