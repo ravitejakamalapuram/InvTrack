@@ -2,7 +2,6 @@
 /// These are the single source of truth - all other providers derive from these.
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -20,7 +19,7 @@ export 'package:inv_tracker/core/di/database_module.dart'
 
 /// Watch all investments (reactive).
 /// Returns empty list if user is not authenticated.
-/// Handles permission errors gracefully to prevent infinite retry loops.
+/// Errors propagate to UI for proper error handling with retry buttons.
 final allInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
@@ -28,18 +27,13 @@ final allInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((ref) {
     return Stream.value([]);
   }
 
-  return ref
-      .watch(investmentRepositoryProvider)
-      .watchAllInvestments()
-      .handleError((error, stackTrace) {
-        // Log the error but don't rethrow - prevents infinite retry loops
-        // on permission errors (e.g., expired Firestore security rules)
-        debugPrint('allInvestmentsProvider: ERROR - $error');
-      });
+  // Let errors propagate to UI - screens handle AsyncValue.error properly
+  return ref.watch(investmentRepositoryProvider).watchAllInvestments();
 });
 
 /// Watch investments by status.
 /// Returns empty list if user is not authenticated.
+/// Errors propagate to UI for proper error handling.
 final investmentsByStatusProvider =
     StreamProvider.family<List<InvestmentEntity>, InvestmentStatus>((
       ref,
@@ -50,12 +44,10 @@ final investmentsByStatusProvider =
       if (!isAuthenticated) {
         return Stream.value([]);
       }
+      // Let errors propagate to UI
       return ref
           .watch(investmentRepositoryProvider)
-          .watchInvestmentsByStatus(status)
-          .handleError((error, stackTrace) {
-            debugPrint('investmentsByStatusProvider: ERROR - $error');
-          });
+          .watchInvestmentsByStatus(status);
     });
 
 /// Get a single investment by ID.
@@ -75,6 +67,7 @@ final investmentByIdProvider = FutureProvider.family<InvestmentEntity?, String>(
 
 /// Watch cash flows for an investment (reactive).
 /// Returns empty list if user is not authenticated.
+/// Errors propagate to UI for proper error handling.
 final cashFlowsByInvestmentProvider =
     StreamProvider.family<List<CashFlowEntity>, String>((ref, investmentId) {
       // Check auth first to avoid exception when user signs out
@@ -82,28 +75,23 @@ final cashFlowsByInvestmentProvider =
       if (!isAuthenticated) {
         return Stream.value([]);
       }
+      // Let errors propagate to UI
       return ref
           .watch(investmentRepositoryProvider)
-          .watchCashFlowsByInvestment(investmentId)
-          .handleError((error, stackTrace) {
-            debugPrint('cashFlowsByInvestmentProvider: ERROR - $error');
-          });
+          .watchCashFlowsByInvestment(investmentId);
     });
 
 /// Watch all cash flows (reactive stream - single source of truth).
 /// Returns empty list if user is not authenticated.
+/// Errors propagate to UI for proper error handling.
 final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
   // Check auth first to avoid exception when user signs out
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref
-      .watch(investmentRepositoryProvider)
-      .watchAllCashFlows()
-      .handleError((error, stackTrace) {
-        debugPrint('allCashFlowsStreamProvider: ERROR - $error');
-      });
+  // Let errors propagate to UI
+  return ref.watch(investmentRepositoryProvider).watchAllCashFlows();
 });
 
 /// Active (non-archived) investments only.
@@ -119,6 +107,7 @@ final activeInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((
 
 /// Watch all archived investments (reactive).
 /// Returns empty list if user is not authenticated.
+/// Errors propagate to UI for proper error handling.
 final archivedInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((
   ref,
 ) {
@@ -126,28 +115,23 @@ final archivedInvestmentsProvider = StreamProvider<List<InvestmentEntity>>((
   if (!isAuthenticated) {
     return Stream.value([]);
   }
-  return ref
-      .watch(investmentRepositoryProvider)
-      .watchArchivedInvestments()
-      .handleError((error, stackTrace) {
-        debugPrint('archivedInvestmentsProvider: ERROR - $error');
-      });
+  // Let errors propagate to UI
+  return ref.watch(investmentRepositoryProvider).watchArchivedInvestments();
 });
 
 /// Watch archived cash flows for an investment (reactive).
 /// Returns empty list if user is not authenticated.
+/// Errors propagate to UI for proper error handling.
 final archivedCashFlowsByInvestmentProvider =
     StreamProvider.family<List<CashFlowEntity>, String>((ref, investmentId) {
       final isAuthenticated = ref.watch(isAuthenticatedProvider);
       if (!isAuthenticated) {
         return Stream.value([]);
       }
+      // Let errors propagate to UI
       return ref
           .watch(investmentRepositoryProvider)
-          .watchArchivedCashFlowsByInvestment(investmentId)
-          .handleError((error, stackTrace) {
-            debugPrint('archivedCashFlowsByInvestmentProvider: ERROR - $error');
-          });
+          .watchArchivedCashFlowsByInvestment(investmentId);
     });
 
 /// Filtered cash flows for valid investments only (derived from streams)
