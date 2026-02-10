@@ -995,6 +995,136 @@
   "failedToLoadInvestments": "Failed to load investments",
   "@failedToLoadInvestments": {
     "description": "Investments load failure message"
+  },
+
+  "fireJourney": "FIRE Journey",
+  "@fireJourney": {
+    "description": "Title for FIRE dashboard screen"
+  },
+
+  "getStarted": "Get Started",
+  "@getStarted": {
+    "description": "Button text to get started with a feature"
+  },
+
+  "retry": "Retry",
+  "@retry": {
+    "description": "Button text to retry an action"
+  },
+
+  "openInPdfViewer": "Open in PDF Viewer",
+  "@openInPdfViewer": {
+    "description": "Button text to open document in external PDF viewer"
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Button text to cancel an action"
+  },
+
+  "save": "Save",
+  "@save": {
+    "description": "Button text to save changes"
+  },
+
+  "changeFile": "Change File",
+  "@changeFile": {
+    "description": "Button text to change selected file"
+  },
+
+  "permissionRequired": "Permission Required",
+  "@permissionRequired": {
+    "description": "Dialog title for permission requests"
+  },
+
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Button text to open device settings"
+  },
+
+  "importInvestments": "Import Investments",
+  "@importInvestments": {
+    "description": "Title for bulk import screen"
+  },
+
+  "confirmImport": "Confirm Import",
+  "@confirmImport": {
+    "description": "Title for import confirmation screen"
+  },
+
+  "goBack": "Go Back",
+  "@goBack": {
+    "description": "Button text to go back to previous screen"
+  },
+
+  "editGoal": "Edit Goal",
+  "@editGoal": {
+    "description": "Button text to edit a goal"
+  },
+
+  "deleteGoal": "Delete Goal",
+  "@deleteGoal": {
+    "description": "Dialog title for goal deletion confirmation"
+  },
+
+  "delete": "Delete",
+  "@delete": {
+    "description": "Button text to delete an item"
+  },
+
+  "viewActiveGoals": "View active goals",
+  "@viewActiveGoals": {
+    "description": "Button text to view active goals"
+  },
+
+  "createYourFirstGoal": "Create Your First Goal",
+  "@createYourFirstGoal": {
+    "description": "Button text to create first goal"
+  },
+
+  "done": "Done",
+  "@done": {
+    "description": "Button text to complete an action"
+  },
+
+  "updateNow": "Update Now",
+  "@updateNow": {
+    "description": "Button text to update app now"
+  },
+
+  "addInvestment": "Add Investment",
+  "@addInvestment": {
+    "description": "Button text to add new investment"
+  },
+
+  "clearSampleData": "Clear Sample Data?",
+  "@clearSampleData": {
+    "description": "Dialog title for clearing sample data"
+  },
+
+  "clear": "Clear",
+  "@clear": {
+    "description": "Button text to clear data"
+  },
+
+  "keepSampleData": "Keep Sample Data?",
+  "@keepSampleData": {
+    "description": "Dialog title for keeping sample data"
+  },
+
+  "keep": "Keep",
+  "@keep": {
+    "description": "Button text to keep data"
+  },
+
+  "invTrackerPremium": "InvTracker Premium",
+  "@invTrackerPremium": {
+    "description": "Title for premium paywall screen"
+  },
+
+  "maybeLater": "Maybe Later",
+  "@maybeLater": {
+    "description": "Button text to dismiss premium offer"
   }
 }
 

@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying detailed goal information
 class GoalDetailsScreen extends ConsumerWidget {
@@ -48,6 +49,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildNotFound(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -67,7 +69,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.md),
           TextButton(
             onPressed: () => context.safePop(),
-            child: const Text('Go Back'),
+            child: Text(l10n.goBack),
           ),
         ],
       ),
@@ -75,6 +77,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildError(BuildContext context, bool isDark, Object error) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -94,7 +97,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.md),
           TextButton(
             onPressed: () => context.safePop(),
-            child: const Text('Go Back'),
+            child: Text(l10n.goBack),
           ),
         ],
       ),
@@ -515,13 +518,14 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalEntity goal,
     bool isDark,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         OutlinedButton.icon(
           onPressed: () => _navigateToEdit(context, goal),
           icon: const Icon(Icons.edit_rounded),
-          label: const Text('Edit Goal'),
+          label: Text(l10n.editGoal),
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
           ),
@@ -597,22 +601,23 @@ class GoalDetailsScreen extends ConsumerWidget {
     WidgetRef ref,
     GoalEntity goal,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Goal'),
+        title: Text(l10n.deleteGoal),
         content: Text(
           'Are you sure you want to permanently delete "${goal.name}"?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),

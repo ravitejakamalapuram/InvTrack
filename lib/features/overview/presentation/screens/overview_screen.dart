@@ -23,12 +23,14 @@ import 'package:inv_tracker/features/overview/presentation/widgets/overview_empt
 import 'package:inv_tracker/features/overview/presentation/widgets/quick_stat_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final globalStats = ref.watch(globalStatsProvider);
     final openStats = ref.watch(openInvestmentsStatsProvider);
     final closedStats = ref.watch(closedInvestmentsStatsProvider);
@@ -46,7 +48,7 @@ class OverviewScreen extends ConsumerWidget {
           );
         },
         icon: const Icon(Icons.add),
-        label: const Text('Add Investment'),
+        label: Text(l10n.addInvestment),
         backgroundColor: isDark
             ? AppColors.primaryDark
             : AppColors.primaryLight,

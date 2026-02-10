@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Empty state widget when no goals exist
 class GoalsEmptyState extends StatelessWidget {
@@ -11,6 +12,7 @@ class GoalsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -70,7 +72,7 @@ class GoalsEmptyState extends StatelessWidget {
           FilledButton.icon(
             onPressed: onCreateGoal,
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Create Your First Goal'),
+            label: Text(l10n.createYourFirstGoal),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
               foregroundColor: Colors.white,

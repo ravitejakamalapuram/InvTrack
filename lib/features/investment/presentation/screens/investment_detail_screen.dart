@@ -16,6 +16,7 @@ import 'package:inv_tracker/features/investment/presentation/widgets/document_li
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_fab_widgets.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_segment_control.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class InvestmentDetailScreen extends ConsumerStatefulWidget {
   final InvestmentEntity investment;
@@ -425,6 +426,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
   }
 
   Widget _buildErrorState(bool isDark, String error) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -475,7 +477,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 }
               },
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(l10n.retry),
             ),
           ],
         ),

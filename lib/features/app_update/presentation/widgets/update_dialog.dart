@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/app_update/domain/entities/app_version_entity.dart';
 import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Dialog to show when an app update is available
@@ -21,6 +22,7 @@ class UpdateDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
@@ -117,7 +119,7 @@ class UpdateDialog extends ConsumerWidget {
             ),
           FilledButton(
             onPressed: () => _launchUpdate(context, versionInfo.downloadUrl),
-            child: const Text('Update Now'),
+            child: Text(l10n.updateNow),
           ),
         ],
       ),

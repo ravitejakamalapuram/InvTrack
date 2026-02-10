@@ -18,6 +18,7 @@ import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Bottom sheet for adding documents via camera, gallery, or file picker
 class AddDocumentSheet extends ConsumerStatefulWidget {
@@ -183,6 +184,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   }
 
   Widget _buildPreviewAndForm(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     final isImage =
         _selectedFileName != null &&
         DocumentMimeTypes.isImage(_selectedFileName!);
@@ -271,7 +273,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                     _nameController.clear();
                   });
                 },
-                child: const Text('Change File'),
+                child: Text(l10n.changeFile),
               ),
             ),
             SizedBox(width: AppSpacing.md),
@@ -284,7 +286,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Save'),
+                    : Text(l10n.save),
               ),
             ),
           ],
@@ -416,6 +418,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   }
 
   Widget _buildMultiFileForm(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -613,7 +616,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                           _isMultiMode = false;
                         });
                       },
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
             ),
             SizedBox(width: AppSpacing.md),
@@ -825,10 +828,11 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
   /// Shows dialog prompting user to open settings when permission is permanently denied
   void _showSettingsDialog(String permissionName) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
+        title: Text(l10n.permissionRequired),
         content: Text(
           'InvTracker needs $permissionName access to attach documents. '
           'Please enable it in Settings.',
@@ -836,14 +840,14 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
               _permissionService.openSettings();
             },
-            child: const Text('Open Settings'),
+            child: Text(l10n.openSettings),
           ),
         ],
       ),

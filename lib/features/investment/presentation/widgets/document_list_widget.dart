@@ -301,6 +301,7 @@ class _DocumentCard extends ConsumerWidget {
           // into memory even for this tiny 48x48 box, causing massive memory usage.
           cacheWidth: 150, // ~3x the display size for high-DPI screens
           fit: BoxFit.cover,
+          semanticLabel: 'Document thumbnail: ${document.name}',
           errorBuilder: (context, error, stackTrace) => _buildIconThumbnail(),
         ),
       );

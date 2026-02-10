@@ -26,6 +26,7 @@ class FireDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final settingsAsync = ref.watch(fireSettingsProvider);
     final calculationAsync = ref.watch(fireCalculationProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -33,7 +34,7 @@ class FireDashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('FIRE Journey'),
+        title: Text(l10n.fireJourney),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -79,6 +80,7 @@ class FireDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildSetupPrompt(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: AppSpacing.paddingLg,
@@ -110,7 +112,7 @@ class FireDashboardScreen extends ConsumerWidget {
             FilledButton.icon(
               onPressed: () => context.push('/fire/setup'),
               icon: const Icon(Icons.rocket_launch_outlined),
-              label: const Text('Get Started'),
+              label: Text(l10n.getStarted),
               style: FilledButton.styleFrom(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.xl,
@@ -653,7 +655,7 @@ class FireDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildErrorState(bool isDark, VoidCallback onRetry, BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),

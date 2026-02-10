@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A banner that appears when sample data mode is active.
 /// Shows sample data indicator with options to keep or clear.
@@ -17,6 +18,7 @@ class SampleDataBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final sampleState = ref.watch(sampleDataModeProvider);
 
     if (!sampleState.isActive) {
@@ -88,13 +90,13 @@ class SampleDataBanner extends ConsumerWidget {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: 'Clear Sample Data',
+                  label: l10n.clearSampleData,
                   icon: Icons.delete_outline_rounded,
                   isDestructive: true,
                   isLoading: sampleState.isLoading,
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
-                    final confirmed = await _showClearConfirmation(context);
+                    final confirmed = await _showClearConfirmation(context, l10n);
                     if (confirmed == true) {
                       ref.read(sampleDataModeProvider.notifier).clearSampleData();
                     }
@@ -104,13 +106,13 @@ class SampleDataBanner extends ConsumerWidget {
               SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _ActionButton(
-                  label: 'Keep as My Data',
+                  label: l10n.keepSampleData,
                   icon: Icons.check_circle_outline_rounded,
                   isDestructive: false,
                   isLoading: sampleState.isLoading,
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
-                    final confirmed = await _showKeepConfirmation(context);
+                    final confirmed = await _showKeepConfirmation(context, l10n);
                     if (confirmed == true) {
                       ref.read(sampleDataModeProvider.notifier).keepSampleData();
                     }
@@ -124,11 +126,11 @@ class SampleDataBanner extends ConsumerWidget {
     );
   }
 
-  Future<bool?> _showClearConfirmation(BuildContext context) {
+  Future<bool?> _showClearConfirmation(BuildContext context, AppLocalizations l10n) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Sample Data?'),
+        title: Text(l10n.clearSampleData),
         content: const Text(
           'This will remove all sample investments and goals. '
           'You can always try sample data again later.',
@@ -136,23 +138,23 @@ class SampleDataBanner extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Clear'),
+            child: Text(l10n.clear),
           ),
         ],
       ),
     );
   }
 
-  Future<bool?> _showKeepConfirmation(BuildContext context) {
+  Future<bool?> _showKeepConfirmation(BuildContext context, AppLocalizations l10n) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Keep Sample Data?'),
+        title: Text(l10n.keepSampleData),
         content: const Text(
           'Sample investments will become your real data. '
           'You can edit or delete them anytime.',
@@ -160,11 +162,11 @@ class SampleDataBanner extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Keep'),
+            child: Text(l10n.keep),
           ),
         ],
       ),

@@ -41,7 +41,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final exportState = ref.watch(exportStateProvider);
     final zipExportState = ref.watch(zipExportStateProvider);
     final zipImportState = ref.watch(zipImportStateProvider);
@@ -214,7 +214,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     await ref.read(exportStateProvider.notifier).exportCsv();
     final state = ref.read(exportStateProvider);
     if (state.hasError && context.mounted) {
-      final l10n = AppLocalizations.of(context);
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.exportFailed(state.error.toString()))),
       );
@@ -227,7 +227,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     await ref.read(zipExportStateProvider.notifier).exportAsZip();
     final state = ref.read(zipExportStateProvider);
     if (state.hasError && context.mounted) {
-      final l10n = AppLocalizations.of(context);
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.exportFailed(state.error.toString())),
@@ -235,7 +235,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         ),
       );
     } else if (context.mounted) {
-      final l10n = AppLocalizations.of(context);
+      final l10n = AppLocalizations.of(context)!;
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'zip');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -247,7 +247,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _handleZipImport(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Show strategy selection dialog
@@ -305,7 +305,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) {
-          final l10n = AppLocalizations.of(context);
+          final l10n = AppLocalizations.of(context)!;
           return AlertDialog(
             title: Text(l10n.replaceAllData),
             content: Text(l10n.replaceAllDataMessage),
@@ -362,7 +362,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           .importFromZip(selectedFile.bytes!, strategy);
 
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
+        final l10n = AppLocalizations.of(context)!;
         if (importResult.hasErrors) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -386,7 +386,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.importFailed(e.toString())),
@@ -401,7 +401,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
-        final l10n = AppLocalizations.of(context);
+        final l10n = AppLocalizations.of(context)!;
         return AlertDialog(
           title: Text(l10n.seedDemoData),
           content: Text(l10n.seedDemoDataMessage),
@@ -435,7 +435,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     // Capture context-dependent objects before any async gap
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -443,7 +443,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        final l10n = AppLocalizations.of(context);
+        final l10n = AppLocalizations.of(context)!;
         return AlertDialog(
           title: Text(l10n.deleteAccount),
           content: Text(l10n.deleteAccountMessage),
@@ -641,7 +641,7 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       title: Text(l10n.finalConfirmation),
       content: Column(

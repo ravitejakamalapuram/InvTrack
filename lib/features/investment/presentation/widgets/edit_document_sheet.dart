@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Bottom sheet for editing document name and type
 class EditDocumentSheet extends ConsumerStatefulWidget {
@@ -42,6 +43,7 @@ class _EditDocumentSheetState extends ConsumerState<EditDocumentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
@@ -129,7 +131,7 @@ class _EditDocumentSheetState extends ConsumerState<EditDocumentSheet> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.cancel),
                   ),
                 ),
                 SizedBox(width: AppSpacing.md),
@@ -142,7 +144,7 @@ class _EditDocumentSheetState extends ConsumerState<EditDocumentSheet> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Save'),
+                        : Text(l10n.save),
                   ),
                 ),
               ],

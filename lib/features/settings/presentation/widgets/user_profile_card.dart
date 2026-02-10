@@ -48,6 +48,7 @@ class UserProfileCard extends ConsumerWidget {
                       ? Image.network(
                           photoUrl,
                           fit: BoxFit.cover,
+                          semanticLabel: 'Profile photo of $displayName',
                           errorBuilder: (context, error, stackTrace) {
                             // Fallback to initials avatar on network error
                             return Container(

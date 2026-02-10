@@ -27,7 +27,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(settingsProvider);
     final themeMode = settings.themeMode;
     final securityState = ref.watch(securityProvider);
@@ -156,7 +156,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final settings = ref.read(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -243,7 +243,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _handleSignOut(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
