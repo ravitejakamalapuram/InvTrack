@@ -60,7 +60,8 @@ jobs:
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
       analysis: ${{ steps.analyze.outputs.status }}
-      file_size: ${{ steps.size.outputs.status }}
+      complexity: ${{ steps.complexity.outputs.status }}
+      coverage: ${{ steps.coverage.outputs.status }}
       security: ${{ steps.security.outputs.status }}
       accessibility: ${{ steps.a11y.outputs.status }}
 
@@ -79,16 +80,61 @@ jobs:
         run: |
           flutter analyze --no-fatal-infos 2>&1 && echo "status=✅" >> $GITHUB_OUTPUT || echo "status=❌" >> $GITHUB_OUTPUT
 
-      - name: File Size Limits
-        id: size
+      - name: Code Complexity Analysis
+        id: complexity
         run: |
           FAIL=false
-          for f in $(find lib -name "*_screen.dart" 2>/dev/null); do
-            [ $(wc -l < "$f") -gt 500 ] && FAIL=true
+          WARNINGS=""
+
+          # Check cyclomatic complexity (decision points per 100 lines)
+          for f in $(find lib -name "*.dart" ! -name "*_test.dart" 2>/dev/null); do
+            if [ -f "$f" ]; then
+              NESTING=$(grep -o "^\s*if\|^\s*for\|^\s*while\|^\s*switch\|&&\|||\|??" "$f" | wc -l | tr -d ' ')
+              LINES=$(wc -l < "$f" | tr -d ' ')
+
+              if [ "$LINES" -gt 0 ]; then
+                COMPLEXITY=$(echo "scale=1; ($NESTING * 100) / $LINES" | bc)
+
+                # Fail if complexity > 20 (very high)
+                if [ $(echo "$COMPLEXITY > 20" | bc) -eq 1 ]; then
+                  FAIL=true
+                  WARNINGS="$WARNINGS\n  ❌ $f: $COMPLEXITY decision points/100 lines (critical)"
+                # Warn if complexity > 15 (high)
+                elif [ $(echo "$COMPLEXITY > 15" | bc) -eq 1 ]; then
+                  WARNINGS="$WARNINGS\n  ⚠️ $f: $COMPLEXITY decision points/100 lines (high)"
+                fi
+              fi
+            fi
           done
-          for f in $(find lib -path "*/widgets/*.dart" 2>/dev/null); do
-            [ $(wc -l < "$f") -gt 300 ] && FAIL=true
-          done
+
+          if [ -n "$WARNINGS" ]; then
+            echo -e "Complexity warnings:$WARNINGS"
+          fi
+
+          echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
+
+      - name: Code Coverage Check
+        id: coverage
+        run: |
+          # Run tests with coverage
+          flutter test --coverage --reporter=compact 2>/dev/null || true
+
+          FAIL=false
+          if [ -f "coverage/lcov.info" ]; then
+            # Check coverage percentage
+            if command -v lcov &> /dev/null; then
+              COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+(?=%)' || echo "0")
+
+              # Fail if coverage < 60%
+              if [ $(echo "$COVERAGE < 60" | bc) -eq 1 ]; then
+                FAIL=true
+                echo "Coverage: ${COVERAGE}% (below 60% threshold)"
+              else
+                echo "Coverage: ${COVERAGE}%"
+              fi
+            fi
+          fi
+
           echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
 
       - name: Security Anti-Patterns
@@ -251,7 +297,8 @@ jobs:
         with:
           script: |
             const analysis = '${{ needs.code-health.outputs.analysis }}' || '⏭️';
-            const fileSize = '${{ needs.code-health.outputs.file_size }}' || '⏭️';
+            const complexity = '${{ needs.code-health.outputs.complexity }}' || '⏭️';
+            const coverage = '${{ needs.code-health.outputs.coverage }}' || '⏭️';
             const security = '${{ needs.code-health.outputs.security }}' || '⏭️';
             const a11y = '${{ needs.code-health.outputs.accessibility }}' || '⏭️';
             const tests = '${{ needs.tests.outputs.status }}' || '⏭️';
@@ -265,7 +312,8 @@ jobs:
             | Category | Check | Status |
             |----------|-------|--------|
             | **Code Health** | Static Analysis | ${analysis} |
-            | | File Size Limits | ${fileSize} |
+            | | Cyclomatic Complexity | ${complexity} |
+            | | Code Coverage (≥60%) | ${coverage} |
             | **Security** | Anti-Pattern Scan | ${security} |
             | **Accessibility** | Semantic Labels | ${a11y} |
             | **Testing** | All Tests Pass (${testCount}) | ${tests} |

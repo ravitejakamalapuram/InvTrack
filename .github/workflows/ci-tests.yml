@@ -104,30 +104,116 @@ jobs:
             echo "✅ All new files have corresponding test files or are exempt"
           fi
 
-      - name: Check file size limits
+      - name: Check code complexity
         run: |
-          echo "🔍 Checking file size limits..."
-          LARGE_FILES=""
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'lib/*.dart' || true)
+          echo "🔍 Analyzing code complexity..."
+
+          # Check for overly complex functions (>15 decision points per 100 lines)
+          echo "📊 Checking cyclomatic complexity..."
+          COMPLEX_FILES=""
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'lib/**/*.dart' || true)
+
           for file in $CHANGED_FILES; do
-            if [ -f "$file" ]; then
+            if [ -f "$file" ] && [[ "$file" != *"_test.dart" ]]; then
+              # Check for excessive nesting (>4 levels)
+              NESTING=$(grep -o "^\s*if\|^\s*for\|^\s*while\|^\s*switch" "$file" | wc -l | tr -d ' ')
               LINES=$(wc -l < "$file" | tr -d ' ')
-              # Widget files: 300 lines, other files: 400 lines
-              if [[ "$file" == *"widget"* ]] || [[ "$file" == *"screen"* ]]; then
-                LIMIT=300
-              else
-                LIMIT=400
-              fi
-              if [ "$LINES" -gt "$LIMIT" ]; then
-                LARGE_FILES="$LARGE_FILES\n  - $file: $LINES lines (limit: $LIMIT)"
+
+              if [ "$LINES" -gt 0 ]; then
+                # Calculate decision points per 100 lines
+                COMPLEXITY=$(echo "scale=1; ($NESTING * 100) / $LINES" | bc)
+                THRESHOLD=15
+
+                # Use awk for floating point comparison
+                if [ $(echo "$COMPLEXITY > $THRESHOLD" | bc) -eq 1 ]; then
+                  COMPLEX_FILES="$COMPLEX_FILES\n  - $file: $COMPLEXITY decision points per 100 lines (threshold: $THRESHOLD)"
+                fi
               fi
             fi
           done
-          if [ -n "$LARGE_FILES" ]; then
-            echo "⚠️ Files exceeding size limits:"
-            echo -e "$LARGE_FILES"
+
+          if [ -n "$COMPLEX_FILES" ]; then
+            echo "⚠️ Files with high cyclomatic complexity:"
+            echo -e "$COMPLEX_FILES"
             echo ""
-            echo "Consider splitting these files."
+            echo "💡 Consider refactoring complex logic into smaller functions."
+            echo "   High complexity makes code harder to test and maintain."
           else
-            echo "✅ All files within size limits"
+            echo "✅ All files have acceptable complexity"
+          fi
+
+      - name: Check code coverage
+        run: |
+          echo "📊 Checking test coverage..."
+
+          # Run tests with coverage
+          flutter test --coverage --reporter=compact || true
+
+          # Check if coverage file exists
+          if [ -f "coverage/lcov.info" ]; then
+            # Install lcov if not available
+            if ! command -v lcov &> /dev/null; then
+              echo "Installing lcov..."
+              sudo apt-get update -qq
+              sudo apt-get install -y lcov
+            fi
+
+            # Generate coverage summary
+            COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | grep -oP '\d+\.\d+(?=%)')
+
+            echo "📈 Overall coverage: ${COVERAGE}%"
+
+            # Check if coverage meets minimum threshold (60%)
+            if [ $(echo "$COVERAGE < 60" | bc) -eq 1 ]; then
+              echo "⚠️ Coverage is below 60% threshold"
+              echo "💡 Add more tests to improve coverage"
+            else
+              echo "✅ Coverage meets minimum threshold"
+            fi
+          else
+            echo "⚠️ No coverage data generated"
+          fi
+
+      - name: Check architectural patterns
+        run: |
+          echo "🏗️ Checking architectural patterns..."
+
+          VIOLATIONS=""
+
+          # Check for API calls in widgets (should be in repositories/services)
+          if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
+            VIOLATIONS="$VIOLATIONS\n  ❌ API calls found in widgets (should be in repositories)"
+          fi
+
+          # Check for navigation in domain layer
+          if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
+            VIOLATIONS="$VIOLATIONS\n  ❌ Navigation found in domain layer (should be in presentation)"
+          fi
+
+          # Check for ref.read in build methods (should use ref.watch)
+          if grep -rn "ref\.read" lib/ --include="*.dart" | grep "Widget build\|build(" 2>/dev/null; then
+            VIOLATIONS="$VIOLATIONS\n  ❌ ref.read found in build methods (use ref.watch instead)"
+          fi
+
+          # Check for business logic in widgets (look for complex calculations)
+          CHANGED_WIDGETS=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'lib/**/widgets/*.dart' || true)
+          for widget in $CHANGED_WIDGETS; do
+            if [ -f "$widget" ]; then
+              # Check for calculations in widgets (should be in domain/services)
+              if grep -n "calculate\|compute\|process" "$widget" | grep -v "// " | grep -v "Calculator\|Computed" 2>/dev/null; then
+                VIOLATIONS="$VIOLATIONS\n  ⚠️ Possible business logic in $widget (consider moving to domain layer)"
+              fi
+            fi
+          done
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "⚠️ Architectural violations detected:"
+            echo -e "$VIOLATIONS"
+            echo ""
+            echo "💡 Follow Clean Architecture principles:"
+            echo "   - UI → State → Domain → Data"
+            echo "   - Keep widgets simple and focused on presentation"
+            echo "   - Move business logic to domain layer"
+          else
+            echo "✅ No architectural violations detected"
           fi

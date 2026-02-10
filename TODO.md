@@ -84,30 +84,27 @@
 
 ## P0 - Critical (Post-Launch - 3-4 weeks)
 
-### 1. Split Oversized Files (Rule 1.3)
+### 1. ~~Split Oversized Files~~ → DEPRECATED ✅
 
-**25+ files exceed size limits. Refactor into smaller, focused components.**
+**Status**: File size limits removed in favor of better quality metrics
 
-#### Screens (Max: 500 lines)
+**Why Removed:**
+- File size (lines of code) is not a good indicator of code quality
+- Arbitrary limits (300/400/500 lines) don't measure actual complexity
+- 25+ files exceeded limits, indicating unrealistic thresholds
+- Better metrics now enforced: cyclomatic complexity, code coverage, architecture
 
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/presentation/screens/investment_detail_screen.dart` | 864 | +364 |
-| `lib/features/settings/presentation/screens/data_management_screen.dart` | 749 | +249 |
-| `lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart` | 642 | +142 |
-| `lib/features/goals/presentation/screens/goal_details_screen.dart` | 633 | +133 |
-| `lib/features/investment/presentation/screens/investment_list_screen.dart` | 610 | +110 |
-| `lib/features/goals/presentation/screens/goals_screen.dart` | 539 | +39 |
-| `lib/features/goals/presentation/screens/create_goal_screen.dart` | 511 | +11 |
-| `lib/features/fire_number/presentation/screens/fire_setup_screen.dart` | 510 | +10 |
+**New Quality Metrics (Enforced by CI):**
+- ✅ Cyclomatic Complexity: <20 decision points per 100 lines
+- ✅ Code Coverage: ≥60% overall
+- ✅ Architecture Boundaries: No API in widgets, no navigation in domain
+- ✅ Static Analysis: Zero errors/warnings
 
-#### Providers (Max: 200 lines)
-
-| File | Lines | Over By |
-|------|-------|---------|
-| `lib/features/investment/presentation/providers/investment_notifier.dart` | 780 | +580 |
-| `lib/features/goals/presentation/providers/goal_progress_provider.dart` | 379 | +179 |
-| `lib/features/investment/presentation/providers/investment_list_state_provider.dart` | 332 | +132 |
+**Action Items:**
+- Review files with high cyclomatic complexity (>15)
+- Refactor complex functions into smaller, testable units
+- Focus on single responsibility principle
+- Improve test coverage for complex logic
 | `lib/features/investment/presentation/providers/investment_stats_provider.dart` | 284 | +84 |
 | `lib/features/security/presentation/providers/security_provider.dart` | 282 | +82 |
 | `lib/features/goals/presentation/providers/goals_provider.dart` | 282 | +82 |

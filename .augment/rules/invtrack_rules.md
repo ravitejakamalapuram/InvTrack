@@ -17,11 +17,56 @@
 - Screens: `lib/features/{feature}/presentation/screens/`
 - Widgets: `lib/features/{feature}/presentation/widgets/`
 
-### 1.3 Complexity Guidelines
-- Keep functions focused and single-purpose
-- Cyclomatic complexity: <15 decision points per 100 lines
-- Large files (>300 lines) should be reviewed for refactoring opportunities
-- Complex logic should be extracted to separate functions/classes
+### 1.3 Code Complexity Standards
+**Cyclomatic Complexity** (Decision Points per 100 Lines)
+- **Target**: <10 (simple, easy to test)
+- **Acceptable**: 10-15 (moderate complexity)
+- **Warning**: 15-20 (high complexity, consider refactoring)
+- **Critical**: >20 (must refactor before merge)
+
+**What Counts as Decision Points:**
+- `if`, `else if`, `else`
+- `for`, `while`, `do-while`
+- `switch` cases
+- Ternary operators (`? :`)
+- Logical operators (`&&`, `||`)
+- Null-aware operators (`??`, `?.`)
+
+**Why This Matters:**
+- High complexity = harder to test
+- High complexity = more bugs
+- High complexity = harder to maintain
+- Cyclomatic complexity is an industry-standard metric
+
+**Refactoring Strategies:**
+- Extract complex conditions into named boolean variables
+- Break large functions into smaller, focused functions
+- Use early returns to reduce nesting
+- Replace complex switch statements with polymorphism
+- Move business logic to domain layer
+
+**Example - Before (Complexity: 8):**
+```dart
+if (user != null && user.isActive && user.hasPermission('edit') &&
+    document != null && !document.isLocked && document.owner == user.id) {
+  // ... complex logic
+}
+```
+
+**Example - After (Complexity: 1):**
+```dart
+final canEdit = _canUserEditDocument(user, document);
+if (canEdit) {
+  // ... complex logic
+}
+
+bool _canUserEditDocument(User? user, Document? document) {
+  if (user == null || !user.isActive) return false;
+  if (!user.hasPermission('edit')) return false;
+  if (document == null || document.isLocked) return false;
+  return document.owner == user.id;
+}
+```
 
 ---
 
@@ -38,11 +83,51 @@
 - High complexity indicates need for refactoring
 - Extract complex logic into smaller, testable functions
 
-### 2.3 Code Coverage
-- Target: ≥80% coverage for new code
-- Minimum: ≥60% coverage
-- All business logic must be tested
-- Bug fixes must include regression tests
+### 2.3 Code Coverage Standards
+**Coverage Thresholds:**
+- **Minimum**: ≥60% (enforced by CI)
+- **Target**: ≥80% for new code
+- **Ideal**: ≥90% for critical business logic
+
+**What Must Be Tested:**
+- ✅ All business logic (domain layer)
+- ✅ All data transformations
+- ✅ All validation logic
+- ✅ All error handling paths
+- ✅ All edge cases
+- ✅ Bug fixes (regression tests)
+
+**What Can Be Skipped:**
+- ⏭️ UI widgets (test with widget tests instead)
+- ⏭️ Generated code (`*.g.dart`, `*.freezed.dart`)
+- ⏭️ Simple getters/setters
+- ⏭️ Trivial constructors
+
+**Why Coverage Matters:**
+- Catches bugs before production
+- Enables confident refactoring
+- Documents expected behavior
+- Reduces debugging time
+
+**Running Coverage:**
+```bash
+# Generate coverage report
+flutter test --coverage
+
+# View coverage summary
+lcov --summary coverage/lcov.info
+
+# Generate HTML report
+genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
+```
+
+**Coverage Best Practices:**
+- Don't chase 100% coverage (diminishing returns)
+- Focus on testing behavior, not implementation
+- Test edge cases and error paths
+- Use meaningful test names
+- Keep tests fast and independent
 
 ### 2.5 Naming
 - Files: `snake_case.dart`
@@ -417,15 +502,17 @@ For features, review from 4 perspectives:
 ## 15. CI AUTOMATION CHECKS
 
 The enterprise review workflow verifies:
-- [ ] Static analysis passes
-- [ ] All tests pass
-- [ ] File size limits respected
-- [ ] No architecture violations
-- [ ] Bug fixes include tests
-- [ ] PR description adequate
-- [ ] Localization requirements met
-- [ ] Privacy features handled correctly
-- [ ] No stale code being merged
+- [ ] **Static Analysis**: Zero errors/warnings from `flutter analyze`
+- [ ] **Cyclomatic Complexity**: <20 decision points per 100 lines (critical threshold)
+- [ ] **Code Coverage**: ≥60% overall coverage
+- [ ] **All Tests Pass**: 100% test success rate
+- [ ] **Architecture Violations**: No API calls in widgets, no navigation in domain
+- [ ] **Bug Fixes Include Tests**: Regression tests for all bug fixes
+- [ ] **Security**: No hardcoded secrets, no print statements in production
+- [ ] **Accessibility**: Semantic labels on images and interactive elements
+- [ ] **Localization**: All strings in ARB files
+- [ ] **Privacy**: Financial data wrapped in PrivacyProtectionWrapper
+- [ ] **No Stale Code**: PR based on latest main branch
 
 ---
 
