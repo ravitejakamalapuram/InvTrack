@@ -83,14 +83,14 @@ class FireSettingsScreen extends ConsumerWidget {
             ),
             SizedBox(height: AppSpacing.lg),
             Text(
-              'Connection Error',
+              l10n.connectionError,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Failed to load FIRE settings. Please try again.',
+              l10n.failedToLoadFireSettings,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark

@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/fire_number/presentation/providers/fire_pro
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Main FIRE Number dashboard screen
 class FireDashboardScreen extends ConsumerWidget {
@@ -66,13 +67,13 @@ class FireDashboardScreen extends ConsumerWidget {
             error: (e, _) => _buildErrorState(isDark, () {
               ref.invalidate(fireSettingsProvider);
               ref.invalidate(fireCalculationProvider);
-            }),
+            }, context),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _buildErrorState(isDark, () {
           ref.invalidate(fireSettingsProvider);
-        }),
+        }, context),
       ),
     );
   }
@@ -651,7 +652,8 @@ class FireDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(bool isDark, VoidCallback onRetry) {
+  Widget _buildErrorState(bool isDark, VoidCallback onRetry, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -672,14 +674,14 @@ class FireDashboardScreen extends ConsumerWidget {
             ),
             SizedBox(height: AppSpacing.lg),
             Text(
-              'Connection Error',
+              l10n.connectionError,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Failed to load FIRE data. Please try again.',
+              l10n.failedToLoadFireData,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -691,7 +693,7 @@ class FireDashboardScreen extends ConsumerWidget {
             TextButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(l10n.retry),
             ),
           ],
         ),

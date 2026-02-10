@@ -144,7 +144,9 @@ class UpdateDialog extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          const SnackBar(
+            content: Text('Could not open update link. Please try again.'),
+          ),
         );
       }
     }

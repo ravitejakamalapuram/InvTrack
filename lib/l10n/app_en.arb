@@ -945,6 +945,56 @@
   "reset": "Reset",
   "@reset": {
     "description": "Reset button label"
+  },
+
+  "trySampleData": "Try Sample Data",
+  "@trySampleData": {
+    "description": "Try sample data button title"
+  },
+
+  "exploreWithRealisticInvestments": "Explore with realistic Indian investments",
+  "@exploreWithRealisticInvestments": {
+    "description": "Sample data description"
+  },
+
+  "tryIt": "Try It",
+  "@tryIt": {
+    "description": "Try it button label"
+  },
+
+  "failedToLoadData": "Failed to load data",
+  "@failedToLoadData": {
+    "description": "Generic data load failure message"
+  },
+
+  "pleaseTryAgainLater": "Please try again later",
+  "@pleaseTryAgainLater": {
+    "description": "Generic retry message"
+  },
+
+  "connectionError": "Connection Error",
+  "@connectionError": {
+    "description": "Connection error title"
+  },
+
+  "failedToLoadFireData": "Failed to load FIRE data. Please try again.",
+  "@failedToLoadFireData": {
+    "description": "FIRE data load failure message"
+  },
+
+  "failedToLoadFireSettings": "Failed to load FIRE settings. Please try again.",
+  "@failedToLoadFireSettings": {
+    "description": "FIRE settings load failure message"
+  },
+
+  "couldNotOpenUpdateLink": "Could not open update link. Please try again.",
+  "@couldNotOpenUpdateLink": {
+    "description": "Update link open failure message"
+  },
+
+  "failedToLoadInvestments": "Failed to load investments",
+  "@failedToLoadInvestments": {
+    "description": "Investments load failure message"
   }
 }
 
