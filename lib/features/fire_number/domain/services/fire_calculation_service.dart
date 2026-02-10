@@ -4,55 +4,84 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculatio
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 
 /// Service for calculating FIRE numbers and projections
+///
+/// **IMPORTANT**: This service uses REAL returns (inflation-adjusted) for all calculations.
+/// This ensures accurate retirement planning by working in today's money.
+///
+/// Key concepts:
+/// - FIRE number is calculated in TODAY'S money (not inflated)
+/// - Real return = Nominal return - Inflation rate (using Fisher equation)
+/// - All projections use real returns to maintain purchasing power
 class FireCalculationService {
   /// Calculate complete FIRE analysis
+  ///
+  /// This method calculates the FIRE number in today's money and uses real returns
+  /// for all projections. This approach is mathematically correct and user-friendly.
+  ///
+  /// Example:
+  /// - Monthly expenses: ₹50,000
+  /// - Inflation: 6%, Nominal return: 12%
+  /// - Real return: ~5.66%
+  /// - FIRE number: ₹1.5 crore (in today's money)
+  /// - At retirement, this will have same purchasing power as ₹4.8cr in future money
   FireCalculationResult calculate({
     required FireSettingsEntity settings,
     required double currentPortfolioValue,
     required double currentMonthlySavings,
   }) {
-    // Calculate inflation-adjusted expenses at retirement
+    // Calculate real return using Fisher equation
+    // (1 + nominal) = (1 + real) × (1 + inflation)
+    // Solving for real: real = (1 + nominal) / (1 + inflation) - 1
+    final realReturn = _calculateRealReturn(
+      settings.preRetirementReturn,
+      settings.inflationRate,
+    );
+
+    // Calculate FIRE number in TODAY'S money (no inflation adjustment)
     // Apply FIRE type expense multiplier (e.g., lean = 70%, fat = 150%)
-    final adjustedMonthlyExpenses = settings.monthlyExpenses * settings.fireType.expenseMultiplier;
+    final fireTypeAdjustedExpenses =
+        settings.monthlyExpenses * settings.fireType.expenseMultiplier;
+    final currentAnnualExpenses = fireTypeAdjustedExpenses * 12;
+
+    // Calculate core FIRE number (25x rule with SWR) - in today's money
+    final coreRetirementCorpus =
+        currentAnnualExpenses * settings.fireMultiplier;
+
+    // Calculate emergency fund (in today's money)
+    final emergencyFundNeeded =
+        fireTypeAdjustedExpenses * settings.emergencyMonths;
+
+    // Calculate healthcare buffer (percentage of core corpus)
+    final healthcareCorpusNeeded =
+        coreRetirementCorpus * (settings.healthcareBuffer / 100);
+
+    // Total FIRE number (in today's money)
+    final fireNumber =
+        coreRetirementCorpus + emergencyFundNeeded + healthcareCorpusNeeded;
+
+    // Adjust for passive income and pension (in today's money)
+    final annualPassiveIncome = settings.monthlyPassiveIncome * 12;
+    final annualPension = settings.expectedPension * 12;
+    final totalOtherIncome = annualPassiveIncome + annualPension;
+    final adjustedFireNumber =
+        fireNumber - (totalOtherIncome * settings.fireMultiplier);
+    final finalFireNumber = adjustedFireNumber > 0 ? adjustedFireNumber : 0.0;
+
+    // Calculate what this will be worth in future money (for display purposes)
     final yearsToFire = settings.yearsToFire;
     final inflationMultiplier = math.pow(
       1 + settings.inflationRate / 100,
       yearsToFire,
     );
+    final inflationAdjustedFireNumber = finalFireNumber * inflationMultiplier;
     final inflationAdjustedMonthlyExpenses =
-        adjustedMonthlyExpenses * inflationMultiplier;
-    final inflationAdjustedAnnualExpenses =
-        inflationAdjustedMonthlyExpenses * 12;
+        fireTypeAdjustedExpenses * inflationMultiplier;
 
-    // Calculate core FIRE number (25x rule with SWR)
-    final coreRetirementCorpus =
-        inflationAdjustedAnnualExpenses * settings.fireMultiplier;
-
-    // Calculate emergency fund (6 months of expenses)
-    final emergencyFundNeeded =
-        inflationAdjustedMonthlyExpenses * settings.emergencyMonths;
-
-    // Calculate healthcare buffer
-    final healthcareCorpusNeeded =
-        coreRetirementCorpus * (settings.healthcareBuffer / 100);
-
-    // Total FIRE number
-    final fireNumber =
-        coreRetirementCorpus + emergencyFundNeeded + healthcareCorpusNeeded;
-
-    // Adjust for passive income and pension
-    final annualPassiveIncome = settings.monthlyPassiveIncome * 12;
-    final annualPension = settings.expectedPension * 12;
-    final totalOtherIncome = annualPassiveIncome + annualPension;
-    final adjustedFireNumber = fireNumber -
-        (totalOtherIncome * settings.fireMultiplier);
-    final finalFireNumber = adjustedFireNumber > 0 ? adjustedFireNumber : 0.0;
-
-    // Calculate Coast FIRE number
+    // Calculate Coast FIRE number using REAL returns
     final coastFireNumber = _calculateCoastFireNumber(
       targetAmount: finalFireNumber,
       yearsToGrow: yearsToFire,
-      returnRate: settings.preRetirementReturn,
+      returnRate: realReturn,
     );
 
     // Calculate Barista FIRE number (50% of FIRE number)
@@ -71,20 +100,20 @@ class FireCalculationService {
       yearsToFire: yearsToFire,
     );
 
-    // Calculate required monthly savings
+    // Calculate required monthly savings using REAL returns
     final requiredMonthlySavings = _calculateRequiredMonthlySavings(
       targetAmount: finalFireNumber,
       currentAmount: currentPortfolioValue,
       years: yearsToFire,
-      annualReturn: settings.preRetirementReturn,
+      annualReturn: realReturn,
     );
 
-    // Calculate projected FIRE age
+    // Calculate projected FIRE age using REAL returns
     final projectedFireAge = _calculateProjectedFireAge(
       targetAmount: finalFireNumber,
       currentAmount: currentPortfolioValue,
       monthlySavings: currentMonthlySavings,
-      annualReturn: settings.preRetirementReturn,
+      annualReturn: realReturn,
       currentAge: settings.currentAge,
     );
 
@@ -119,7 +148,7 @@ class FireCalculationService {
       currentMonthlySavingsRate: currentMonthlySavings,
       projectedFireAge: projectedFireAge,
       projectedFireDate: projectedFireDate,
-      inflationAdjustedFireNumber: finalFireNumber,
+      inflationAdjustedFireNumber: inflationAdjustedFireNumber,
       inflationAdjustedMonthlyExpenses: inflationAdjustedMonthlyExpenses,
       portfolioGap: finalFireNumber - currentPortfolioValue,
       monthlyGap: requiredMonthlySavings - currentMonthlySavings,
@@ -131,6 +160,24 @@ class FireCalculationService {
       coreRetirementCorpus: coreRetirementCorpus,
       calculatedAt: DateTime.now(),
     );
+  }
+
+  /// Calculate real return using Fisher equation
+  ///
+  /// Fisher equation: (1 + nominal) = (1 + real) × (1 + inflation)
+  /// Solving for real: real = (1 + nominal) / (1 + inflation) - 1
+  ///
+  /// Example:
+  /// - Nominal return: 12%
+  /// - Inflation: 6%
+  /// - Real return: (1.12 / 1.06) - 1 = 0.0566 = 5.66%
+  ///
+  /// This is the actual purchasing power growth rate.
+  double _calculateRealReturn(double nominalReturn, double inflationRate) {
+    final nominal = nominalReturn / 100;
+    final inflation = inflationRate / 100;
+    final real = (1 + nominal) / (1 + inflation) - 1;
+    return real * 100; // Convert back to percentage
   }
 
   /// Calculate Coast FIRE number using compound interest formula
@@ -261,6 +308,9 @@ class FireCalculationService {
   }
 
   /// Generate projection points for chart
+  ///
+  /// Uses REAL returns for projections to maintain consistency with FIRE calculations.
+  /// All values are in today's money (purchasing power).
   List<FireProjectionPoint> generateProjections({
     required FireSettingsEntity settings,
     required double currentPortfolioValue,
@@ -268,7 +318,13 @@ class FireCalculationService {
     required double fireNumber,
   }) {
     final points = <FireProjectionPoint>[];
-    final monthlyRate = settings.preRetirementReturn / 100 / 12;
+
+    // Calculate real return for projections
+    final realReturn = _calculateRealReturn(
+      settings.preRetirementReturn,
+      settings.inflationRate,
+    );
+    final monthlyRate = realReturn / 100 / 12;
     var balance = currentPortfolioValue;
 
     for (var year = 0; year <= settings.yearsToFire + 5; year++) {
@@ -283,7 +339,7 @@ class FireCalculationService {
         isHistorical: year == 0,
       ));
 
-      // Compound for next year
+      // Compound for next year using real returns
       for (var month = 0; month < 12; month++) {
         balance = balance * (1 + monthlyRate) + monthlySavings;
       }

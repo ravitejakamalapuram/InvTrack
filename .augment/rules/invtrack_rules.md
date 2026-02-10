@@ -19,9 +19,9 @@
 
 ### 1.3 Complexity Guidelines
 - Keep functions focused and single-purpose
-- Cyclomatic complexity: <15 decision points per 100 lines
-- Large files (>300 lines) should be reviewed for refactoring opportunities
+- Cyclomatic complexity: <15 decision points per 100 lines (enforced by CI)
 - Complex logic should be extracted to separate functions/classes
+- High complexity indicates need for refactoring
 
 ---
 
@@ -417,15 +417,17 @@ For features, review from 4 perspectives:
 ## 15. CI AUTOMATION CHECKS
 
 The enterprise review workflow verifies:
-- [ ] Static analysis passes
-- [ ] All tests pass
-- [ ] File size limits respected
-- [ ] No architecture violations
-- [ ] Bug fixes include tests
-- [ ] PR description adequate
-- [ ] Localization requirements met
-- [ ] Privacy features handled correctly
-- [ ] No stale code being merged
+- [ ] **Static Analysis**: Zero errors/warnings from `flutter analyze`
+- [ ] **All Tests Pass**: 100% test success rate
+- [ ] **Cyclomatic Complexity**: <15 decision points per 100 lines (warning), <20 (critical)
+- [ ] **Code Coverage**: ≥60% overall coverage
+- [ ] **Architecture Violations**: No API calls in widgets, no navigation in domain
+- [ ] **Bug Fixes Include Tests**: Regression tests for all bug fixes
+- [ ] **Security**: No hardcoded secrets, no print statements in production
+- [ ] **Accessibility**: Semantic labels on images and interactive elements
+- [ ] **Localization**: All strings in ARB files
+- [ ] **Privacy**: Financial data wrapped in PrivacyProtectionWrapper
+- [ ] **No Stale Code**: PR based on latest main branch
 
 ---
 

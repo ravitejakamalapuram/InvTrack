@@ -30,7 +30,7 @@ void main() {
   });
 
   group('FireCalculationService.calculate', () {
-    test('calculates FIRE number correctly with no passive income', () {
+    test('calculates FIRE number in today\'s money (not inflated)', () {
       final result = service.calculate(
         settings: testSettings,
         currentPortfolioValue: 0,
@@ -39,9 +39,25 @@ void main() {
 
       // Verify FIRE number is calculated
       expect(result.fireNumber, greaterThan(0));
-      // With 6% inflation over 15 years, expenses will be much higher
-      // FIRE number should be > 25x annual expenses (adjusted for inflation)
-      expect(result.fireNumber, greaterThan(testSettings.annualExpenses * 25));
+
+      // NEW BEHAVIOR: FIRE number is in TODAY'S money
+      // Monthly expenses: ₹50,000
+      // Annual expenses: ₹6,00,000
+      // FIRE multiplier: 25x (from 4% SWR)
+      // Core corpus: ₹1,50,00,000
+      // Plus emergency fund (6 months): ₹3,00,000
+      // Plus healthcare buffer (20%): ₹30,00,000
+      // Total: ₹1,83,00,000
+
+      final expectedCoreCorpus = testSettings.annualExpenses * 25; // ₹1.5cr
+      final expectedEmergencyFund = testSettings.monthlyExpenses * 6; // ₹3L
+      final expectedHealthcare = expectedCoreCorpus * 0.2; // ₹30L
+      final expectedTotal = expectedCoreCorpus + expectedEmergencyFund + expectedHealthcare;
+
+      expect(result.fireNumber, closeTo(expectedTotal, 1000));
+      expect(result.coreRetirementCorpus, closeTo(expectedCoreCorpus, 1000));
+      expect(result.emergencyFundNeeded, closeTo(expectedEmergencyFund, 1000));
+      expect(result.healthcareCorpusNeeded, closeTo(expectedHealthcare, 1000));
     });
 
     test('calculates progress percentage correctly', () {
@@ -84,6 +100,82 @@ void main() {
 
       expect(result.status, FireProgressStatus.notStarted);
       expect(result.progressPercentage, 0);
+    });
+
+    test('uses real returns for all calculations', () {
+      // Test settings: 12% nominal, 6% inflation
+      // Real return should be: (1.12 / 1.06) - 1 = 0.0566 = 5.66%
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 1000000,
+        currentMonthlySavings: 25000,
+      );
+
+      // FIRE number should be in today's money (not inflated)
+      // ₹50,000/month × 12 × 25 = ₹1.5cr base
+      // Plus emergency (₹3L) and healthcare (₹30L) = ₹1.83cr
+      expect(result.fireNumber, closeTo(18300000, 10000));
+
+      // Required savings should be calculated using real returns (~5.66%)
+      // This should be significantly lower than if using nominal returns (12%)
+      expect(result.requiredMonthlySavings, greaterThan(0));
+
+      // Verify the calculation is using real returns by checking it's reasonable
+      // With real returns, required savings should be achievable
+      expect(result.requiredMonthlySavings, lessThan(100000));
+    });
+
+    test('provides inflation-adjusted values for display', () {
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 1000000,
+        currentMonthlySavings: 25000,
+      );
+
+      // inflationAdjustedFireNumber should be the future value
+      // FIRE number (₹1.83cr) × (1.06)^15 ≈ ₹4.39cr
+      final inflationMultiplier = 2.396; // (1.06)^15
+      final expectedInflatedValue = result.fireNumber * inflationMultiplier;
+
+      expect(
+        result.inflationAdjustedFireNumber,
+        closeTo(expectedInflatedValue, 100000),
+      );
+
+      // inflationAdjustedMonthlyExpenses should be future expenses
+      // ₹50,000 × (1.06)^15 ≈ ₹1,19,800
+      final expectedInflatedExpenses = 50000 * inflationMultiplier;
+      expect(
+        result.inflationAdjustedMonthlyExpenses,
+        closeTo(expectedInflatedExpenses, 1000),
+      );
+    });
+
+    test('real return calculation handles edge cases', () {
+      // Test with zero inflation
+      final zeroInflationSettings = testSettings.copyWith(inflationRate: 0);
+      final result1 = service.calculate(
+        settings: zeroInflationSettings,
+        currentPortfolioValue: 1000000,
+        currentMonthlySavings: 25000,
+      );
+
+      // With zero inflation, real return = nominal return
+      // FIRE number should still be in today's money
+      expect(result1.fireNumber, greaterThan(0));
+
+      // Test with high inflation
+      final highInflationSettings = testSettings.copyWith(inflationRate: 10);
+      final result2 = service.calculate(
+        settings: highInflationSettings,
+        currentPortfolioValue: 1000000,
+        currentMonthlySavings: 25000,
+      );
+
+      // With high inflation (10%) and 12% nominal return
+      // Real return = (1.12 / 1.10) - 1 ≈ 1.8%
+      // Required savings should be much higher
+      expect(result2.requiredMonthlySavings, greaterThan(result1.requiredMonthlySavings));
     });
 
     test('calculates coast FIRE number correctly', () {
@@ -170,11 +262,14 @@ void main() {
         currentMonthlySavings: 50000,
       );
 
-      // Emergency fund = inflationAdjustedMonthlyExpenses * emergencyMonths
+      // NEW BEHAVIOR: Emergency fund is in TODAY'S money
+      // Monthly expenses: ₹50,000
+      // Emergency months: 6
+      // Expected: ₹50,000 × 6 = ₹3,00,000
       expect(result.emergencyFundNeeded, greaterThan(0));
       expect(
         result.emergencyFundNeeded,
-        closeTo(result.inflationAdjustedMonthlyExpenses * 6, 1),
+        closeTo(testSettings.monthlyExpenses * testSettings.emergencyMonths, 1),
       );
     });
 

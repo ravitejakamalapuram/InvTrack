@@ -39,10 +39,11 @@ class FireStatsCard extends ConsumerWidget {
             iconColor: fireColor,
             label: 'FIRE Number',
             value: formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
-            subtitle: 'Full financial independence target',
-            tooltip: 'The total amount needed to retire and live off investment returns. '
-                'Based on ${(100 / calculation.fireNumber * calculation.coreRetirementCorpus * 25).toStringAsFixed(0)}x '
-                'your inflation-adjusted annual expenses.',
+            subtitle: 'In today\'s money (purchasing power)',
+            tooltip: 'This is the amount you need in TODAY\'S money to achieve financial independence. '
+                'At retirement, this will be worth ${formatCompactCurrency(calculation.inflationAdjustedFireNumber, symbol: currencySymbol, locale: locale)} '
+                'in future money, but will have the same purchasing power as ${formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale)} today. '
+                'Based on 25x your annual expenses using real (inflation-adjusted) returns.',
           ),
           Divider(
             height: AppSpacing.lg,
@@ -57,7 +58,8 @@ class FireStatsCard extends ConsumerWidget {
             value: formatCompactCurrency(calculation.coastFireNumber, symbol: currencySymbol, locale: locale),
             subtitle: 'Save this, then stop saving',
             tooltip: 'If you have this amount today, you can stop saving entirely. '
-                'Your investments will grow to your FIRE Number by retirement age through compound growth.',
+                'Your investments will grow to your FIRE Number by retirement age through real (inflation-adjusted) compound growth. '
+                'This accounts for inflation, so the growth maintains purchasing power.',
           ),
           Divider(
             height: AppSpacing.lg,
