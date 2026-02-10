@@ -11,6 +11,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/features/app_update/presentation/widgets/version_check_initializer.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class InvTrackerApp extends ConsumerWidget {
   const InvTrackerApp({super.key});
@@ -30,6 +31,8 @@ class InvTrackerApp extends ConsumerWidget {
               darkTheme: AppTheme.darkTheme,
               themeMode: settings.themeMode,
               routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               builder: (context, child) {
                 return PrivacyProtectionWrapper(
                   child: child!,
