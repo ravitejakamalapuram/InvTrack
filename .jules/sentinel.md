@@ -95,3 +95,10 @@
 **Prevention:**
 1. Implemented PBKDF2-HMAC-SHA256 with 10,000 iterations to increase the work factor (v3 format).
 2. Added automatic upgrade logic to migrate existing users from v0 (plaintext), v1 (unsalted), and v2 (simple salted) to v3 (PBKDF2) upon successful login.
+
+## 2026-06-25 - [Insecure PIN Rate Limiting Storage]
+**Vulnerability:** PIN rate limiting counters (failed attempts, lockout timestamp) were stored in `SharedPreferences`. On iOS, `SharedPreferences` are cleared on app uninstall, while Keychain items (the PIN) persist. This allowed an attacker to bypass the lockout mechanism by uninstalling and reinstalling the app, effectively enabling infinite brute-force attempts.
+**Learning:** Security controls (like rate limits) protecting a secret must be stored with the same persistence and security level as the secret itself. If the lock can be reset while the key remains, the lock is useless.
+**Prevention:**
+1. Store security metadata (failed attempts, lockout) in `FlutterSecureStorage` alongside the credentials.
+2. Implement migration logic to seamlessly move existing counters from insecure storage to secure storage without resetting them (fail closed/secure).

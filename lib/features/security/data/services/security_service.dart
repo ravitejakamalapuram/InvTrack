@@ -66,8 +66,135 @@ class SecurityService {
     );
   }
 
+  // --- Rate Limiting Helpers ---
+
+  /// Get failed attempts from secure storage (migrating from prefs if needed)
+  Future<int> _getFailedAttempts() async {
+    try {
+      // Check Secure Storage first
+      final stored = await _secureStorage.read(
+        key: _failedAttemptsKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      if (stored != null) {
+        return int.tryParse(stored) ?? 0;
+      }
+
+      // Fallback/Migrate from SharedPreferences
+      final legacy = _prefs.getInt(_failedAttemptsKey);
+      if (legacy != null) {
+        // Migrate to Secure Storage
+        await _setFailedAttempts(legacy);
+        // Cleanup legacy is handled in _setFailedAttempts
+        return legacy;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error reading failed attempts: $e');
+      }
+    }
+    return 0;
+  }
+
+  /// Set failed attempts to secure storage
+  Future<void> _setFailedAttempts(int attempts) async {
+    try {
+      await _secureStorage.write(
+        key: _failedAttemptsKey,
+        value: attempts.toString(),
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      // Ensure legacy is cleaned up
+      if (_prefs.containsKey(_failedAttemptsKey)) {
+        await _prefs.remove(_failedAttemptsKey);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error writing failed attempts: $e');
+      }
+    }
+  }
+
+  /// Get lockout timestamp from secure storage (migrating from prefs if needed)
+  Future<int?> _getLockoutTimestamp() async {
+    try {
+      // Check Secure Storage first
+      final stored = await _secureStorage.read(
+        key: _lockoutTimestampKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      if (stored != null) {
+        return int.tryParse(stored);
+      }
+
+      // Fallback/Migrate from SharedPreferences
+      final legacy = _prefs.getInt(_lockoutTimestampKey);
+      if (legacy != null) {
+        // Migrate
+        await _setLockoutTimestamp(legacy);
+        // Cleanup legacy is handled in _setLockoutTimestamp
+        return legacy;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error reading lockout timestamp: $e');
+      }
+    }
+    return null;
+  }
+
+  /// Set lockout timestamp to secure storage
+  Future<void> _setLockoutTimestamp(int timestamp) async {
+    try {
+      await _secureStorage.write(
+        key: _lockoutTimestampKey,
+        value: timestamp.toString(),
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      // Ensure legacy is cleaned up
+      if (_prefs.containsKey(_lockoutTimestampKey)) {
+        await _prefs.remove(_lockoutTimestampKey);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error writing lockout timestamp: $e');
+      }
+    }
+  }
+
+  /// Clear all rate limiting data
+  Future<void> _clearRateLimit() async {
+    try {
+      await _secureStorage.delete(
+        key: _failedAttemptsKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      await _secureStorage.delete(
+        key: _lockoutTimestampKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      // Also clear legacy just in case
+      if (_prefs.containsKey(_failedAttemptsKey)) {
+        await _prefs.remove(_failedAttemptsKey);
+      }
+      if (_prefs.containsKey(_lockoutTimestampKey)) {
+        await _prefs.remove(_lockoutTimestampKey);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error clearing rate limit: $e');
+      }
+    }
+  }
+
   Future<int?> getLockoutRemainingSeconds() async {
-    final lockoutTimestamp = _prefs.getInt(_lockoutTimestampKey);
+    final lockoutTimestamp = await _getLockoutTimestamp();
     if (lockoutTimestamp == null) return null;
 
     final lockoutTime = DateTime.fromMillisecondsSinceEpoch(lockoutTimestamp);
@@ -78,8 +205,7 @@ class SecurityService {
       return _lockoutDurationSeconds - difference;
     } else {
       // Lockout expired, reset attempts
-      await _prefs.remove(_lockoutTimestampKey);
-      await _prefs.remove(_failedAttemptsKey);
+      await _clearRateLimit();
       return null;
     }
   }
@@ -133,8 +259,7 @@ class SecurityService {
 
     if (isMatch) {
       // Reset failed attempts on success
-      await _prefs.remove(_failedAttemptsKey);
-      await _prefs.remove(_lockoutTimestampKey);
+      await _clearRateLimit();
 
       if (needsUpgrade) {
         await setPin(pin); // Upgrade to PBKDF2
@@ -142,14 +267,11 @@ class SecurityService {
       return true;
     } else {
       // Handle failure
-      int failedAttempts = (_prefs.getInt(_failedAttemptsKey) ?? 0) + 1;
-      await _prefs.setInt(_failedAttemptsKey, failedAttempts);
+      int failedAttempts = (await _getFailedAttempts()) + 1;
+      await _setFailedAttempts(failedAttempts);
 
       if (failedAttempts >= _maxAttempts) {
-        await _prefs.setInt(
-          _lockoutTimestampKey,
-          DateTime.now().millisecondsSinceEpoch,
-        );
+        await _setLockoutTimestamp(DateTime.now().millisecondsSinceEpoch);
       }
       return false;
     }
