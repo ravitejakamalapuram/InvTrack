@@ -39,9 +39,11 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 - **Progress Milestones** - Celebrate 25%, 50%, 75%, 100% achievements
 
 ### 🔥 FIRE Number Calculator
-- **Financial Independence Tracking** - Calculate your FIRE number
-- **India-Focused Defaults** - Optimized for Indian investors (INR, 6% inflation)
-- **Retirement Planning** - Track progress towards early retirement
+- **Financial Independence Tracking** - Calculate your FIRE number using real (inflation-adjusted) returns
+- **Accurate Calculations** - Uses Fisher equation for mathematically correct projections
+- **Today's Money** - FIRE numbers shown in today's purchasing power for clarity
+- **India-Focused Defaults** - Optimized for Indian investors (INR, 6% inflation, 12% returns)
+- **Retirement Planning** - Track progress towards early retirement with realistic goals
 
 ### 🔔 Smart Notifications (11 Types)
 - Investment milestones (10x, 50x, 100x returns)

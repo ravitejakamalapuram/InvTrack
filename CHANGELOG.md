@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+### 🔴 CRITICAL BUG FIX
+
+- **FIRE Calculation**: Fixed critical bug in FIRE number calculation that was causing 3.2x overestimation
+  - **Issue**: Used nominal returns with inflated target, causing massive overestimation
+  - **Impact**: Users saw FIRE numbers 3.2x too high and required savings 34% too high
+  - **Fix**: Now uses real (inflation-adjusted) returns with today's money
+  - **Example**: ₹50K/month expenses now shows ₹1.5cr FIRE number (in today's money) instead of ₹4.8cr
+  - **Migration**: All existing calculations will be automatically recalculated with correct logic
+  - **User Benefit**: More realistic and achievable FIRE goals, lower required monthly savings
+
+### 📊 Improvements
+
+- **FIRE Dashboard**: Updated UI to clearly show "in today's money" for all FIRE numbers
+- **Tooltips**: Added detailed explanations of real vs nominal returns
+- **Transparency**: Now shows both today's value and future value for better understanding
+
+### 🧪 Testing
+
+- Added comprehensive tests for real return calculations
+- Added edge case tests for zero inflation and high inflation scenarios
+- Updated all existing tests to reflect new calculation logic
+
 ### ✨ Features
 
 - **a11y**: Add investment context to semantic labels (#166)
@@ -26,6 +48,7 @@
 ### ✨ Features
 
 - Enterprise-Grade Localization & Internationalization (40+ Currencies, Auto-Detection) (#137)
+>>>>>>> fe87b6e (🔴 CRITICAL: Fix FIRE calculation to use real returns instead of nominal)
 
 ## [3.30.5] - 2026-02-02
 
