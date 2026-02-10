@@ -135,7 +135,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           ),
                           child: Center(
                             child: Text(
-                              l10n.error,
+                              l10n.errorColor,
                               style: AppTypography.small.copyWith(
                                 color: Colors.white,
                               ),

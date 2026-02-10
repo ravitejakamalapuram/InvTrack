@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Result returned from the merge investments dialog
 typedef MergeDialogResult = ({String name, InvestmentType type});
@@ -61,17 +62,18 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasMultipleTypes = widget.investmentTypes.length > 1;
 
     return AlertDialog(
-      title: const Text('Merge Investments'),
+      title: Text(l10n.mergeInvestments),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Merge ${widget.selectedCount} investments into one.'),
+            Text(l10n.mergeInvestmentsMessage(widget.selectedCount)),
             const SizedBox(height: 16),
             AppTextField(
               controller: _nameController,
@@ -111,9 +113,9 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
-        TextButton(onPressed: _onMergePressed, child: const Text('Merge')),
+        TextButton(onPressed: _onMergePressed, child: Text(l10n.merge)),
       ],
     );
   }

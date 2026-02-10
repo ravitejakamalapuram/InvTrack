@@ -204,8 +204,8 @@
     "description": "Success color label"
   },
 
-  "error": "Error",
-  "@error": {
+  "errorColor": "Error",
+  "@errorColor": {
     "description": "Error color label"
   },
 
@@ -690,6 +690,261 @@
   "madeWithLove": "Made with ❤️ for smart investors",
   "@madeWithLove": {
     "description": "Footer message"
+  },
+
+  "dataAndAccount": "Data & Account",
+  "@dataAndAccount": {
+    "description": "Data management screen title"
+  },
+
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "description": "Export failure message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "exportReady": "Export ready! Choose where to save.",
+  "@exportReady": {
+    "description": "Export success message"
+  },
+
+  "importStrategy": "Import Strategy",
+  "@importStrategy": {
+    "description": "Import strategy dialog title"
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button label"
+  },
+
+  "replaceAllData": "Replace All Data?",
+  "@replaceAllData": {
+    "description": "Replace data confirmation dialog title"
+  },
+
+  "replaceAllDataMessage": "This will DELETE all existing investments, goals, and documents and replace them with the imported data. This cannot be undone.",
+  "@replaceAllDataMessage": {
+    "description": "Replace data confirmation message"
+  },
+
+  "replaceAll": "Replace All",
+  "@replaceAll": {
+    "description": "Replace all button label"
+  },
+
+  "importCompletedWithErrors": "Import completed with errors: {error}",
+  "@importCompletedWithErrors": {
+    "description": "Import partial success message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "description": "Import failure message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "seedDemoData": "Seed Demo Data?",
+  "@seedDemoData": {
+    "description": "Seed demo data dialog title"
+  },
+
+  "seedDemoDataMessage": "This will add 10 sample investments with realistic cash flows and goals. Great for testing!",
+  "@seedDemoDataMessage": {
+    "description": "Seed demo data dialog message"
+  },
+
+  "seedData": "Seed Data",
+  "@seedData": {
+    "description": "Seed data button label"
+  },
+
+  "deleteAccount": "Delete Account?",
+  "@deleteAccount": {
+    "description": "Delete account dialog title"
+  },
+
+  "deleteAccountMessage": "This will permanently delete:\n\n• All investments & cash flows\n• All goals & progress\n• All documents & attachments\n• Your user profile\n\nThis action cannot be undone!",
+  "@deleteAccountMessage": {
+    "description": "Delete account warning message"
+  },
+
+  "deleteEverything": "Delete Everything",
+  "@deleteEverything": {
+    "description": "Delete everything button label"
+  },
+
+  "accountDeletionCancelled": "Account deletion cancelled",
+  "@accountDeletionCancelled": {
+    "description": "Account deletion cancelled message"
+  },
+
+  "accountDeletedSuccessfully": "Account deleted successfully",
+  "@accountDeletedSuccessfully": {
+    "description": "Account deleted success message"
+  },
+
+  "failedToDeleteAccount": "Failed to delete account: {message}",
+  "@failedToDeleteAccount": {
+    "description": "Account deletion failure message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+
+  "error": "Error: {error}",
+  "@error": {
+    "description": "Generic error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "finalConfirmation": "Final Confirmation",
+  "@finalConfirmation": {
+    "description": "Final confirmation dialog title"
+  },
+
+  "typeDeleteToConfirm": "Type DELETE to confirm:",
+  "@typeDeleteToConfirm": {
+    "description": "Delete confirmation instruction"
+  },
+
+  "deleteMyAccount": "Delete My Account",
+  "@deleteMyAccount": {
+    "description": "Delete my account button label"
+  },
+
+  "mergeInvestments": "Merge Investments",
+  "@mergeInvestments": {
+    "description": "Merge investments dialog title"
+  },
+
+  "mergeInvestmentsMessage": "Merge {count} investments into one.",
+  "@mergeInvestmentsMessage": {
+    "description": "Merge investments dialog message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "merge": "Merge",
+  "@merge": {
+    "description": "Merge button label"
+  },
+
+  "fireSettings": "FIRE Settings",
+  "@fireSettings": {
+    "description": "FIRE settings screen title"
+  },
+
+  "noFireSettingsFound": "No FIRE settings found",
+  "@noFireSettingsFound": {
+    "description": "No FIRE settings message"
+  },
+
+  "setUpFire": "Set Up FIRE",
+  "@setUpFire": {
+    "description": "Set up FIRE button label"
+  },
+
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button label"
+  },
+
+  "basicSettings": "Basic Settings",
+  "@basicSettings": {
+    "description": "Basic settings section title"
+  },
+
+  "advancedSettings": "Advanced Settings",
+  "@advancedSettings": {
+    "description": "Advanced settings section title"
+  },
+
+  "dangerZone": "Danger Zone",
+  "@dangerZone": {
+    "description": "Danger zone section title"
+  },
+
+  "resetFireSettings": "Reset FIRE Settings",
+  "@resetFireSettings": {
+    "description": "Reset FIRE settings option"
+  },
+
+  "startOverWithNewSettings": "Start over with new settings",
+  "@startOverWithNewSettings": {
+    "description": "Reset FIRE settings subtitle"
+  },
+
+  "yearsAge": "{age} years",
+  "@yearsAge": {
+    "description": "Age display",
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+
+  "save": "Save",
+  "@save": {
+    "description": "Save button label"
+  },
+
+  "monthlyExpenses": "Monthly Expenses",
+  "@monthlyExpenses": {
+    "description": "Monthly expenses label"
+  },
+
+  "selectFireType": "Select FIRE Type",
+  "@selectFireType": {
+    "description": "Select FIRE type label"
+  },
+
+  "percentageValue": "{value}%",
+  "@percentageValue": {
+    "description": "Percentage value display",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+
+  "resetFireSettingsConfirm": "Reset FIRE Settings?",
+  "@resetFireSettingsConfirm": {
+    "description": "Reset FIRE settings confirmation title"
+  },
+
+  "resetFireSettingsMessage": "This will delete all your FIRE settings. You will need to set them up again.",
+  "@resetFireSettingsMessage": {
+    "description": "Reset FIRE settings confirmation message"
+  },
+
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset button label"
   }
 }
 
