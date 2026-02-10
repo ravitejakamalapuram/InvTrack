@@ -45,3 +45,7 @@
 ## 2026-10-27 - [Accessibility: Custom Widget Keyboard Focus]
 **Learning:** Custom selection widgets built with `GestureDetector` (like `TypeSelector`) are often implemented without keyboard focus support, making them inaccessible to keyboard users and screen readers that rely on focus traversal.
 **Action:** Wrap custom interactive widgets in a `Focus` widget. Handle `onFocusChange` to update visual state (e.g., focus ring) and `onKeyEvent` to support Enter/Space activation, ensuring they behave like native buttons.
+
+## 2026-10-27 - [Accessibility: Contextual Metadata in List Items]
+**Learning:** Screen reader users often miss context available to sighted users through auxiliary text (e.g., "Last activity", "Total invested" in a footer). Grouping primary data (Name, Value) with secondary metadata into a single semantic label ensures users get the full picture without navigating multiple small elements.
+**Action:** Consolidate all relevant data points into a single, comprehensive `semanticLabel` for complex list items (like investment cards), using clear separators (e.g., ". ") to allow screen readers to pause naturally between pieces of information.

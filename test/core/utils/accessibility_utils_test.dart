@@ -16,7 +16,7 @@ void main() {
 
         expect(
           label,
-          'Open investment: Tech Stocks, Type: Stock, Current value:  50,000 dollars. Returns: positive 12.5 percent',
+          'Open investment: Tech Stocks. Type: Stock. Current value:  50,000 dollars. Returns: positive 12.5 percent',
         );
       });
 
@@ -32,7 +32,7 @@ void main() {
 
         expect(
           label,
-          'Closed investment: Old Bond, Type: Bond, Current value:  10,000 rupees. Returns: positive 5.0 percent',
+          'Closed investment: Old Bond. Type: Bond. Current value:  10,000 rupees. Returns: positive 5.0 percent',
         );
       });
 
@@ -48,7 +48,36 @@ void main() {
 
         expect(
           label,
-          'Open investment: New Fund, Type: Mutual Fund, Current value:  2,000 dollars. ',
+          'Open investment: New Fund. Type: Mutual Fund. Current value:  2,000 dollars',
+        );
+      });
+
+      test('generates correct label with invested amount and last activity', () {
+        final lastActivity = DateTime(2023, 10, 15);
+
+        final label = AccessibilityUtils.investmentCardLabel(
+          name: 'Active Stock',
+          type: 'Stock',
+          currentValue: 55000,
+          returnPercent: 10.0,
+          currencySymbol: '\$',
+          isClosed: false,
+          totalInvested: 50000,
+          lastActivityDate: lastActivity,
+        );
+
+        expect(
+          label,
+          contains('Invested:  50,000 dollars'),
+        );
+        expect(
+          label,
+          contains('Last activity: October 15, 2023'),
+        );
+        // Verify order roughly
+        expect(
+          label,
+          'Open investment: Active Stock. Type: Stock. Current value:  55,000 dollars. Invested:  50,000 dollars. Returns: positive 10.0 percent. Last activity: October 15, 2023',
         );
       });
 

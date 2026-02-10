@@ -74,11 +74,19 @@ class AccessibilityUtils {
     required String currencySymbol,
     required bool isClosed,
     DateTime? maturityDate,
+    double? totalInvested,
+    DateTime? lastActivityDate,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = formatCurrencyForScreenReader(currentValue, currencySymbol);
+    final invested = totalInvested != null && totalInvested > 0
+        ? 'Invested: ${formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
+        : '';
     final returns = returnPercent != null
         ? 'Returns: ${formatPercentageForScreenReader(returnPercent)}'
+        : '';
+    final lastActivity = lastActivityDate != null
+        ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'
         : '';
 
     String maturityInfo = '';
@@ -101,8 +109,15 @@ class AccessibilityUtils {
       }
     }
 
-    final mainLabel =
-        '$status: $name, Type: $type, Current value: $value. $returns';
+    final mainLabel = [
+      '$status: $name',
+      'Type: $type',
+      'Current value: $value',
+      if (invested.isNotEmpty) invested,
+      if (returns.isNotEmpty) returns,
+      if (lastActivity.isNotEmpty) lastActivity,
+    ].join('. ');
+
     return maturityInfo.isNotEmpty ? '$mainLabel. $maturityInfo' : mainLabel;
   }
 
