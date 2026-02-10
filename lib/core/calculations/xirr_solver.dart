@@ -122,7 +122,8 @@ class XirrSolver {
     double low = -0.99;
     double high = 5.0;
 
-    final fLow = _f(low, yearsFromStart, amounts);
+    // Cache fLow to avoid recalculation in loop
+    double fLow = _f(low, yearsFromStart, amounts);
     final fHigh = _f(high, yearsFromStart, amounts);
 
     // Check if there's a root in this interval
@@ -144,8 +145,9 @@ class XirrSolver {
         return mid;
       }
 
-      if (fMid.sign == _f(low, yearsFromStart, amounts).sign) {
+      if (fMid.sign == fLow.sign) {
         low = mid;
+        fLow = fMid;
       } else {
         high = mid;
       }
@@ -201,11 +203,12 @@ class XirrSolver {
   static double _f(double x, List<double> yearsFromStart, List<double> amounts) {
     if (x <= -1.0) return double.infinity;
 
+    final base = 1 + x;
+    if (base <= 0) return double.infinity;
+
     double sum = 0.0;
     for (int i = 0; i < amounts.length; i++) {
       final power = yearsFromStart[i];
-      final base = 1 + x;
-      if (base <= 0) return double.infinity;
       sum += amounts[i] / pow(base, power);
     }
     return sum;
@@ -226,6 +229,9 @@ class XirrSolver {
 
     if (base <= 0) return (double.infinity, double.infinity);
 
+    // Pre-calculate inverse base to replace division with multiplication in loop
+    final invBase = 1.0 / base;
+
     for (int i = 0; i < amounts.length; i++) {
       final p = yearsFromStart[i];
       // Calculate pow once and reuse for both f and df
@@ -235,7 +241,7 @@ class XirrSolver {
       final termF = amounts[i] / powTerm;
 
       fSum += termF;
-      dfSum += termF * (-p) / base;
+      dfSum += termF * (-p) * invBase;
     }
     return (fSum, dfSum);
   }
