@@ -262,11 +262,14 @@ void main() {
         currentMonthlySavings: 50000,
       );
 
-      // Emergency fund = inflationAdjustedMonthlyExpenses * emergencyMonths
+      // NEW BEHAVIOR: Emergency fund is in TODAY'S money
+      // Monthly expenses: ₹50,000
+      // Emergency months: 6
+      // Expected: ₹50,000 × 6 = ₹3,00,000
       expect(result.emergencyFundNeeded, greaterThan(0));
       expect(
         result.emergencyFundNeeded,
-        closeTo(result.inflationAdjustedMonthlyExpenses * 6, 1),
+        closeTo(testSettings.monthlyExpenses * testSettings.emergencyMonths, 1),
       );
     });
 
