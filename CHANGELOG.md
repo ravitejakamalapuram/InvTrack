@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ♻️ Refactoring
+
+- Add .autoDispose to screen-specific and parameterized providers (P1) (#172)
+
+## [3.34.1] - 2026-02-11
+
 ### 🐛 Bug Fixes
 
 - Enterprise compliance improvements (P0, P1, P2) (#163)
