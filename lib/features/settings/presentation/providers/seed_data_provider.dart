@@ -13,12 +13,14 @@ final seedDataServiceProvider = Provider<SeedDataService>((ref) {
 /// Re-export the SeedResult type from the service
 typedef SeedResult = ({int investments, int cashFlows, int goals});
 
+/// State for seed data operation
+/// Uses .autoDispose to prevent memory leaks when screen is disposed
 final seedDataStateProvider =
-    NotifierProvider<SeedDataNotifier, AsyncValue<SeedResult?>>(
+    NotifierProvider.autoDispose<SeedDataNotifier, AsyncValue<SeedResult?>>(
       SeedDataNotifier.new,
     );
 
-class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
+class SeedDataNotifier extends AutoDisposeNotifier<AsyncValue<SeedResult?>> {
   @override
   AsyncValue<SeedResult?> build() => const AsyncValue.data(null);
 

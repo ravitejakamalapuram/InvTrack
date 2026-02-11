@@ -11,8 +11,9 @@ export 'package:inv_tracker/features/investment/domain/entities/document_entity.
 /// Watch documents for an investment (reactive stream)
 /// Returns empty list if user is not authenticated
 /// Errors propagate to UI for proper error state display
+/// Uses .autoDispose.family to prevent memory leaks from cached instances
 final documentsByInvestmentProvider =
-    StreamProvider.family<List<DocumentEntity>, String>((ref, investmentId) {
+    StreamProvider.autoDispose.family<List<DocumentEntity>, String>((ref, investmentId) {
       final isAuthenticated = ref.watch(isAuthenticatedProvider);
       if (!isAuthenticated) {
         return Stream.value([]);
@@ -24,7 +25,8 @@ final documentsByInvestmentProvider =
     });
 
 /// Get document count for an investment
-final documentCountProvider = FutureProvider.family<int, String>((
+/// Uses .autoDispose.family to prevent memory leaks from cached instances
+final documentCountProvider = FutureProvider.autoDispose.family<int, String>((
   ref,
   investmentId,
 ) async {
@@ -36,7 +38,8 @@ final documentCountProvider = FutureProvider.family<int, String>((
 });
 
 /// Get a single document by ID
-final documentByIdProvider = FutureProvider.family<DocumentEntity?, String>((
+/// Uses .autoDispose.family to prevent memory leaks from cached instances
+final documentByIdProvider = FutureProvider.autoDispose.family<DocumentEntity?, String>((
   ref,
   documentId,
 ) async {
@@ -48,7 +51,8 @@ final documentByIdProvider = FutureProvider.family<DocumentEntity?, String>((
 });
 
 /// Get total storage used by all documents
-final totalDocumentStorageProvider = FutureProvider<int>((ref) async {
+/// Uses .autoDispose for one-time fetch that should be disposed when not needed
+final totalDocumentStorageProvider = FutureProvider.autoDispose<int>((ref) async {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return 0;

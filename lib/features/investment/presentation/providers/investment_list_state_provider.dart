@@ -133,7 +133,8 @@ final investmentListStateProvider =
 
 /// Provider for filtered and sorted investments
 /// Uses separate streams for active and archived investments for complete isolation.
-final filteredInvestmentsProvider = Provider<AsyncValue<List<InvestmentEntity>>>((
+/// Uses .autoDispose since it's only used in investment_list_screen and its widgets
+final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<InvestmentEntity>>>((
   ref,
 ) {
   final listState = ref.watch(investmentListStateProvider);

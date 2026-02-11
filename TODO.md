@@ -17,7 +17,7 @@
 | Priority | Count | Status | Timeline |
 |----------|-------|--------|----------|
 | **P0 - Critical** | 2 | 🟡 Post-Launch | 3-4 weeks |
-| **P1 - High** | 4 | 🟡 Post-Launch | 1-2 weeks |
+| **P1 - High** | 3 | 🟡 In Progress | 1-2 weeks |
 | **P2 - Medium** | 3 | 🟢 Optional | 1 week |
 | **P3 - Low** | 5 | 🟢 Optional | 2-3 days |
 | **Pre-Launch** | 3 | ✅ Complete | Done |
@@ -142,20 +142,30 @@
 
 ## P1 - High Priority (Post-Launch - 1-2 weeks)
 
-### 1. Add .autoDispose to Screen-Specific Providers (Rule 6.2)
-**Status:** ❌ Not Started
+### 1. Add .autoDispose to Screen-Specific Providers (Rule 6.2) ✅
+**Status:** ✅ Complete
 **Effort:** 1 day
 **Impact:** Prevents memory leaks when navigating away from screens
 
-**Current State:** Only 5 instances of `.autoDispose` found
+**Completed:** 2026-02-11
+**Branch:** `feature/add-autodispose-to-providers`
+**Commit:** `b22e3da`
 
 **Action Items:**
-- [ ] Audit all providers used only in single screens
-- [ ] Add `.autoDispose` modifier to prevent memory leaks
-- [ ] Priority providers:
-  - Form state providers
-  - Screen-specific filter/sort providers
-  - Temporary UI state providers
+- [x] Audit all providers used only in single screens
+- [x] Add `.autoDispose` modifier to prevent memory leaks
+- [x] Priority providers:
+  - Screen-specific operation state providers (4)
+  - Parameterized providers with `.family` (4)
+  - One-time fetch providers (2)
+  - Screen-specific derived providers (1)
+
+**Changes Made:**
+- Added `.autoDispose` to 11 providers across 8 files
+- Screen-specific: zipExportStateProvider, zipImportStateProvider, exportStateProvider, seedDataStateProvider
+- Parameterized: documentsByInvestmentProvider, documentCountProvider, documentByIdProvider, cashFlowsByInvestmentProvider
+- One-time fetch: totalDocumentStorageProvider, currentConnectivityProvider
+- Derived: filteredInvestmentsProvider
 
 **Example:**
 ```dart
