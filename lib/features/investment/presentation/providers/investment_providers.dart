@@ -68,8 +68,9 @@ final investmentByIdProvider = FutureProvider.family<InvestmentEntity?, String>(
 /// Watch cash flows for an investment (reactive).
 /// Returns empty list if user is not authenticated.
 /// Errors propagate to UI for proper error handling.
+/// Uses .autoDispose.family to prevent memory leaks from cached instances
 final cashFlowsByInvestmentProvider =
-    StreamProvider.family<List<CashFlowEntity>, String>((ref, investmentId) {
+    StreamProvider.autoDispose.family<List<CashFlowEntity>, String>((ref, investmentId) {
       // Check auth first to avoid exception when user signs out
       final isAuthenticated = ref.watch(isAuthenticatedProvider);
       if (!isAuthenticated) {

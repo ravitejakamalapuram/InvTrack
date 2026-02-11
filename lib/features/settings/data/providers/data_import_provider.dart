@@ -32,12 +32,13 @@ final dataImportServiceProvider = Provider<DataImportService?>((ref) {
 });
 
 /// State for ZIP import operation
+/// Uses .autoDispose to prevent memory leaks when screen is disposed
 final zipImportStateProvider =
-    NotifierProvider<ZipImportNotifier, AsyncValue<ZipImportResult?>>(
+    NotifierProvider.autoDispose<ZipImportNotifier, AsyncValue<ZipImportResult?>>(
   ZipImportNotifier.new,
 );
 
-class ZipImportNotifier extends Notifier<AsyncValue<ZipImportResult?>> {
+class ZipImportNotifier extends AutoDisposeNotifier<AsyncValue<ZipImportResult?>> {
   @override
   AsyncValue<ZipImportResult?> build() => const AsyncValue.data(null);
 

@@ -16,7 +16,8 @@ final connectivityStatusProvider = StreamProvider<bool>((ref) {
 });
 
 /// Provider to check current connectivity status (one-time check)
-final currentConnectivityProvider = FutureProvider<bool>((ref) {
+/// Uses .autoDispose for one-time fetch that should be disposed when not needed
+final currentConnectivityProvider = FutureProvider.autoDispose<bool>((ref) {
   final service = ref.watch(connectivityServiceProvider);
   return service.checkConnectivity();
 });
