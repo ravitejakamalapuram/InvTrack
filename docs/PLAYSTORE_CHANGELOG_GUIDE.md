@@ -4,25 +4,35 @@
 
 This guide explains how to create effective Play Store changelogs that are user-friendly and comply with the 500-character limit.
 
+Play Store changelogs are **automatically generated** by the CI/CD workflow when code is merged to `main`.
+
 ---
 
-## Quick Start
+## Automated Generation (CI/CD)
 
-### Automated Generation
+### How It Works
+
+When you merge to `main`, the **CD: Version & Changelog** workflow automatically:
+
+1. Determines version bump (major/minor/patch) from conventional commits
+2. Generates user-friendly changelog using `cliff-playstore.toml`
+3. Creates `android/fastlane/metadata/android/en-US/changelogs/{version_code}.txt`
+4. Validates character count (≤500)
+5. Commits the changelog file
+6. Creates a git tag for release
+
+**No manual intervention needed!** Just write good commit messages.
+
+### Manual Generation (If Needed)
 
 ```bash
-# Generate changelog for current version (from pubspec.yaml)
-./scripts/generate-playstore-changelog.sh
+# Generate Play Store changelog manually
+git-cliff --config cliff-playstore.toml --latest --strip all
 
-# Generate changelog for specific version code
-./scripts/generate-playstore-changelog.sh 87
+# Save to specific version code
+git-cliff --config cliff-playstore.toml --latest --strip all > \
+  android/fastlane/metadata/android/en-US/changelogs/89.txt
 ```
-
-The script will:
-1. Generate changelog from git commits using `cliff-playstore.toml`
-2. Save to `android/fastlane/metadata/android/en-US/changelogs/{version_code}.txt`
-3. Show character count (must be ≤500)
-4. Offer to edit if needed
 
 ---
 
@@ -148,19 +158,39 @@ refactor: Extract FireCalculationService to separate file
 2. Use conventional commits: `feat:`, `fix:`, `perf:`
 3. Think: "How would I explain this to my mom?"
 
-### Before Release
+### On Merge to Main
 
-1. Run `./scripts/generate-playstore-changelog.sh`
-2. Review generated changelog
-3. Edit for clarity and length if needed
-4. Verify character count ≤500
-5. Commit the changelog file
+The **CD: Version & Changelog** workflow (`.github/workflows/cd-version.yml`) automatically:
 
-### CI/CD Integration
+1. **Determines version bump** from commit messages:
+   - `BREAKING CHANGE` or `!:` → major version (3.0.0)
+   - `feat:` → minor version (3.1.0)
+   - `fix:`, `perf:`, etc. → patch version (3.0.1)
 
-The changelog is automatically used by:
-- `.github/workflows/cd-deploy-android.yml` (Play Store deployment)
-- `.github/workflows/augment-enterprise-review.yml` (PR preview)
+2. **Generates changelog** using `cliff-playstore.toml`:
+   - User-friendly format (no technical jargon)
+   - Removes scope prefixes (e.g., "feat(fire):" → just the message)
+   - Only includes user-facing changes
+   - Validates ≤500 character limit
+
+3. **Creates files**:
+   - `android/fastlane/metadata/android/en-US/changelogs/{version_code}.txt`
+   - Updates `CHANGELOG.md` (full changelog with `cliff.toml`)
+   - Updates `pubspec.yaml` version
+   - Updates `about_screen.dart` version
+
+4. **Commits and tags**:
+   - Commits all version files with `chore(release): vX.Y.Z [skip-release]`
+   - Creates git tag `vX.Y.Z`
+
+### On Tag Push
+
+The **CD: Deploy to Play Store** workflow (`.github/workflows/cd-deploy-android.yml`) automatically:
+
+1. Builds release bundle
+2. Uses the generated changelog from `changelogs/{version_code}.txt`
+3. Deploys to Play Store alpha track
+4. Creates GitHub Release with changelog
 
 ---
 
