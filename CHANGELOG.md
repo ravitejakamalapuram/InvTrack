@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+
+- Optimize currency formatting with NumberFormat caching (#171)
+
+### ✨ Features
+
+- Improve accessibility of filter chip close button (#170)
+
+## [3.34.2] - 2026-02-11
+
 ### ♻️ Refactoring
 
 - Add .autoDispose to screen-specific and parameterized providers (P1) (#172)
