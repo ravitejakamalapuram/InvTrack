@@ -49,7 +49,7 @@ class PerformanceService {
   /// final trace = await performanceService.startTrace('investment_create');
   /// try {
   ///   // ... perform operation
-  ///   await trace?.putMetric('investment_count', 1);
+  ///   trace?.setMetric('investment_count', 1);
   /// } finally {
   ///   await trace?.stop();
   /// }
@@ -111,7 +111,7 @@ class PerformanceService {
       // Add metrics after operation
       if (metrics != null && trace != null) {
         for (final entry in metrics.entries) {
-          trace.putMetric(entry.key, entry.value);
+          trace.setMetric(entry.key, entry.value);
         }
       }
 
