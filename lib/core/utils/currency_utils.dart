@@ -2,6 +2,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
+/// Cache for NumberFormat instances to avoid repeated instantiation overhead
+final Map<String, NumberFormat> _formatters = {};
+
+/// Helper to get cached formatter
+NumberFormat _getCachedFormatter({
+  required String type, // 'currency', 'compact', 'decimal'
+  String? locale,
+  String? symbol,
+  int? decimalDigits,
+}) {
+  final key = '$type|$locale|$symbol|$decimalDigits';
+  return _formatters.putIfAbsent(key, () {
+    switch (type) {
+      case 'currency':
+        return NumberFormat.currency(
+          locale: locale,
+          symbol: symbol,
+          decimalDigits: decimalDigits,
+        );
+      case 'compact':
+        return NumberFormat.compactCurrency(
+          locale: locale,
+          symbol: symbol,
+          decimalDigits: decimalDigits,
+        );
+      case 'decimal':
+        return NumberFormat.decimalPatternDigits(
+          locale: locale,
+          decimalDigits: decimalDigits,
+        );
+      default:
+        throw ArgumentError('Unknown formatter type: $type');
+    }
+  });
+}
+
 /// Currency symbol mapping for supported currencies
 const Map<String, String> _currencySymbols = {
   'USD': '\$',
@@ -128,10 +164,11 @@ final currencyLocaleProvider = Provider<String>((ref) {
 final currencyFormatProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return NumberFormat.currency(
+  return _getCachedFormatter(
+    type: 'currency',
     symbol: symbol,
-    decimalDigits: 0,
     locale: locale,
+    decimalDigits: 0,
   );
 });
 
@@ -139,10 +176,11 @@ final currencyFormatProvider = Provider<NumberFormat>((ref) {
 final currencyFormatPreciseProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return NumberFormat.currency(
+  return _getCachedFormatter(
+    type: 'currency',
     symbol: symbol,
-    decimalDigits: 2,
     locale: locale,
+    decimalDigits: 2,
   );
 });
 
@@ -150,7 +188,11 @@ final currencyFormatPreciseProvider = Provider<NumberFormat>((ref) {
 final currencyFormatCompactProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return NumberFormat.compactCurrency(symbol: symbol, locale: locale);
+  return _getCachedFormatter(
+    type: 'compact',
+    symbol: symbol,
+    locale: locale,
+  );
 });
 
 /// Format a number as currency with proper locale formatting
@@ -161,10 +203,11 @@ String formatCurrency(
   String locale, {
   int decimalDigits = 0,
 }) {
-  final formatter = NumberFormat.currency(
+  final formatter = _getCachedFormatter(
+    type: 'currency',
     symbol: symbol,
-    decimalDigits: decimalDigits,
     locale: locale,
+    decimalDigits: decimalDigits,
   );
   return formatter.format(amount);
 }
@@ -172,7 +215,8 @@ String formatCurrency(
 /// Format a number with proper locale grouping (no currency symbol)
 /// Useful for input fields or when symbol is added separately
 String formatNumber(double amount, String locale, {int decimalDigits = 0}) {
-  final formatter = NumberFormat.decimalPatternDigits(
+  final formatter = _getCachedFormatter(
+    type: 'decimal',
     locale: locale,
     decimalDigits: decimalDigits,
   );
@@ -252,7 +296,8 @@ String formatSmartCurrency(
 
   if (absAmount >= compactThreshold) {
     // Use locale-aware compact formatting
-    final compactFormatter = NumberFormat.compactCurrency(
+    final compactFormatter = _getCachedFormatter(
+      type: 'compact',
       symbol: symbol,
       locale: locale,
       decimalDigits: 2,
@@ -270,7 +315,8 @@ String formatCompactCurrency(
   required String symbol,
   String locale = 'en_US',
 }) {
-  final compactFormatter = NumberFormat.compactCurrency(
+  final compactFormatter = _getCachedFormatter(
+    type: 'compact',
     symbol: symbol,
     locale: locale,
     decimalDigits: 2,
@@ -309,9 +355,10 @@ extension SmartCurrencyFormat on NumberFormat {
       // Use locale-aware compact formatting
       // Indian locale (en_IN) will show: 1L, 1Cr
       // Western locales (en_US, en_GB, etc.) will show: 100K, 1M
-      final compactFormatter = NumberFormat.compactCurrency(
+      final compactFormatter = _getCachedFormatter(
+        type: 'compact',
         symbol: currencySymbol,
-        locale: locale.toString(),
+        locale: locale,
         decimalDigits: 2,
       );
       return compactFormatter.format(amount);
@@ -324,9 +371,10 @@ extension SmartCurrencyFormat on NumberFormat {
   /// Uses 2 decimals for better precision
   /// Respects locale for proper number formatting
   String formatCompact(double amount) {
-    final compactFormatter = NumberFormat.compactCurrency(
+    final compactFormatter = _getCachedFormatter(
+      type: 'compact',
       symbol: currencySymbol,
-      locale: locale.toString(),
+      locale: locale,
       decimalDigits: 2,
     );
     return compactFormatter.format(amount);
@@ -335,9 +383,10 @@ extension SmartCurrencyFormat on NumberFormat {
   /// Format compact with minimal decimals (for very tight spaces)
   /// Respects locale for proper number formatting
   String formatCompactShort(double amount) {
-    final compactFormatter = NumberFormat.compactCurrency(
+    final compactFormatter = _getCachedFormatter(
+      type: 'compact',
       symbol: currencySymbol,
-      locale: locale.toString(),
+      locale: locale,
       decimalDigits: 1,
     );
     return compactFormatter.format(amount);
