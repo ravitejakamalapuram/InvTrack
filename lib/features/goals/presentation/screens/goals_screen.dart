@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_empty_state.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_list_action_bar.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_list_selection_controls.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Filter options for goals list
 /// Note: Goals don't have open/closed like investments, so "All" is removed
@@ -397,6 +398,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildNoArchivedState(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -438,7 +440,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             SizedBox(height: AppSpacing.lg),
             TextButton(
               onPressed: () => setState(() => _filter = GoalsFilter.active),
-              child: const Text('View active goals'),
+              child: Text(l10n.viewActiveGoals),
             ),
           ],
         ),
@@ -447,6 +449,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildErrorState(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -485,7 +488,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             SizedBox(height: AppSpacing.lg),
             TextButton(
               onPressed: () => ref.invalidate(allGoalsProvider),
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),

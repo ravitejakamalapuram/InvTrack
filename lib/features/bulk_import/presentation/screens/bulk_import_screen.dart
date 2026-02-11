@@ -11,6 +11,7 @@ import 'package:inv_tracker/features/bulk_import/data/services/csv_template_serv
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/import_confirmation_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class BulkImportScreen extends ConsumerStatefulWidget {
   const BulkImportScreen({super.key});
@@ -108,11 +109,12 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Import Investments'),
+        title: Text(l10n.importInvestments),
         centerTitle: true,
       ),
       body: SafeArea(

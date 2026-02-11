@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/document_viewer_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   late List<DocumentEntity> testDocuments;
@@ -49,6 +50,8 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: DocumentListWidget(
             investmentId: 'inv-1',

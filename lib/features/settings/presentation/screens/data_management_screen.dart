@@ -25,6 +25,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Unified screen for data import/export and account management.
 class DataManagementScreen extends ConsumerStatefulWidget {
@@ -40,6 +41,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final exportState = ref.watch(exportStateProvider);
     final zipExportState = ref.watch(zipExportStateProvider);
     final zipImportState = ref.watch(zipImportStateProvider);
@@ -47,7 +49,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Data & Account', style: AppTypography.h3)),
+      appBar: AppBar(title: Text(l10n.dataAndAccount, style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
@@ -212,8 +214,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     await ref.read(exportStateProvider.notifier).exportCsv();
     final state = ref.read(exportStateProvider);
     if (state.hasError && context.mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: ${state.error}')),
+        SnackBar(content: Text(l10n.exportFailed(state.error.toString()))),
       );
     } else {
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'csv');
@@ -224,17 +227,19 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     await ref.read(zipExportStateProvider.notifier).exportAsZip();
     final state = ref.read(zipExportStateProvider);
     if (state.hasError && context.mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Export failed: ${state.error}'),
+          content: Text(l10n.exportFailed(state.error.toString())),
           backgroundColor: AppColors.errorLight,
         ),
       );
     } else if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
       ref.read(analyticsServiceProvider).logExportGenerated(format: 'zip');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export ready! Choose where to save.'),
+        SnackBar(
+          content: Text(l10n.exportReady),
           backgroundColor: Colors.green,
         ),
       );
@@ -242,13 +247,14 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _handleZipImport(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Show strategy selection dialog
     final strategy = await showDialog<ImportStrategy>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Import Strategy'),
+        title: Text(l10n.importStrategy),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -286,7 +292,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
         ],
       ),
@@ -298,27 +304,26 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     if (strategy == ImportStrategy.replace) {
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Replace All Data?'),
-          content: const Text(
-            'This will DELETE all existing investments, goals, and documents '
-            'before importing the backup.\n\n'
-            'This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.errorLight,
+        builder: (dialogContext) {
+          final l10n = AppLocalizations.of(context);
+          return AlertDialog(
+            title: Text(l10n.replaceAllData),
+            content: Text(l10n.replaceAllDataMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(l10n.cancel),
               ),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Replace All'),
-            ),
-          ],
-        ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.errorLight,
+                ),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(l10n.replaceAll),
+              ),
+            ],
+          );
+        },
       );
 
       if (confirmed != true || !context.mounted) return;
@@ -357,10 +362,11 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           .importFromZip(selectedFile.bytes!, strategy);
 
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
         if (importResult.hasErrors) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Import completed with errors: ${importResult.errors.first}'),
+              content: Text(l10n.importCompletedWithErrors(importResult.errors.first)),
               backgroundColor: Colors.orange,
             ),
           );
@@ -380,9 +386,10 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       }
     } catch (e) {
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Import failed: $e'),
+            content: Text(l10n.importFailed(e.toString())),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -393,25 +400,23 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   Future<void> _handleSeedData(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Seed Demo Data?'),
-        content: const Text(
-          'This will add 10 sample investments with realistic cash flows '
-          'and 5 goals at different progress levels.\n\n'
-          'Perfect for app store screenshots!\n\n'
-          'Note: Existing data will NOT be deleted.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Seed Data'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(l10n.seedDemoData),
+          content: Text(l10n.seedDemoDataMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.seedData),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -430,39 +435,33 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     // Capture context-dependent objects before any async gap
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     // First confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Account?'),
-        content: const Text(
-          'This will permanently delete:\n\n'
-          '• All your investments\n'
-          '• All cash flow records\n'
-          '• All goals\n'
-          '• All attached documents\n'
-          '• Your user profile\n'
-          '• Your FIRE settings\n'
-          '• Your account\n\n'
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.errorLight,
+      builder: (dialogContext) {
+        final l10n = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(l10n.deleteAccount),
+          content: Text(l10n.deleteAccountMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancel),
             ),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete Everything'),
-          ),
-        ],
-      ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.errorLight,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.deleteEverything),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed != true || !mounted) return;
@@ -502,8 +501,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               // User cancelled re-auth
               if (mounted) {
                 scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Account deletion cancelled'),
+                  SnackBar(
+                    content: Text(l10n.accountDeletionCancelled),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -539,8 +538,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
       if (mounted) {
         scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text('Account deleted successfully'),
+          SnackBar(
+            content: Text(l10n.accountDeletedSuccessfully),
             backgroundColor: Colors.green,
           ),
         );
@@ -552,7 +551,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to delete account: ${e.message}'),
+            content: Text(l10n.failedToDeleteAccount(e.message ?? 'Unknown error')),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -561,7 +560,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(l10n.error(e.toString())),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -642,13 +641,14 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('Final Confirmation'),
+      title: Text(l10n.finalConfirmation),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Type DELETE to confirm:'),
+          Text(l10n.typeDeleteToConfirm),
           SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _controller,
@@ -666,14 +666,14 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
             backgroundColor: _isValid ? AppColors.errorLight : Colors.grey,
           ),
           onPressed: _isValid ? () => Navigator.pop(context, 'DELETE') : null,
-          child: const Text('Delete My Account'),
+          child: Text(l10n.deleteMyAccount),
         ),
       ],
     );

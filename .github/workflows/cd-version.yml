@@ -169,15 +169,25 @@ jobs:
           BUILD_NUM="${{ steps.new_version.outputs.build_number }}"
           CHANGELOG_FILE="android/fastlane/metadata/android/en-US/changelogs/${BUILD_NUM}.txt"
 
-          # Create changelog file for this version (max 500 chars for Play Store)
-          CHANGELOG="${{ steps.changelog.outputs.changelog }}"
-          if [ ${#CHANGELOG} -gt 500 ]; then
-            # Truncate to 497 chars and add "..."
+          # Generate Play Store optimized changelog (user-friendly, max 500 chars)
+          # Uses cliff-playstore.toml config for compact, non-technical format
+          CHANGELOG=$(git-cliff --config cliff-playstore.toml --latest --strip all)
+
+          # Check character count
+          CHAR_COUNT=${#CHANGELOG}
+          echo "Generated changelog: $CHAR_COUNT characters"
+
+          if [ $CHAR_COUNT -gt 500 ]; then
+            echo "⚠️ Changelog exceeds 500 characters ($CHAR_COUNT chars)"
+            echo "⚠️ Truncating to 497 chars + '...'"
             CHANGELOG="${CHANGELOG:0:497}..."
-            echo "⚠️ Changelog truncated to 500 characters for Play Store"
           fi
+
           echo "$CHANGELOG" > "$CHANGELOG_FILE"
-          echo "Created changelog: $CHANGELOG_FILE ($(wc -c < "$CHANGELOG_FILE") chars)"
+          echo "✅ Created changelog: $CHANGELOG_FILE ($CHAR_COUNT chars)"
+          echo ""
+          echo "Preview:"
+          cat "$CHANGELOG_FILE"
 
       - name: Commit version bump
         run: |

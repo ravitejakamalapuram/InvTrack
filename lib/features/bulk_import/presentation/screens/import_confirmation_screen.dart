@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
 class ImportConfirmationScreen extends ConsumerStatefulWidget {
@@ -135,12 +136,13 @@ class _ImportConfirmationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final grouped = _groupedByInvestment;
     final currencyFormat = ref.watch(currencyFormatProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Confirm Import'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.confirmImport), centerTitle: true),
       body: Column(
         children: [
           // Summary header

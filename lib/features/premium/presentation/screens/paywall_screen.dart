@@ -3,15 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/premium/presentation/providers/premium_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class PaywallScreen extends ConsumerWidget {
   const PaywallScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('InvTracker Premium'),
+        title: Text(l10n.invTrackerPremium),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -72,7 +74,7 @@ class PaywallScreen extends ConsumerWidget {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Maybe Later'),
+              child: Text(l10n.maybeLater),
             ),
           ],
         ),

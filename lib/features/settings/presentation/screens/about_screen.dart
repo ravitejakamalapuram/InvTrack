@@ -11,6 +11,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/help_faq_scre
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// App version info - matches pubspec.yaml version: 3.5.1+19
@@ -24,9 +25,10 @@ class AboutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('About', style: AppTypography.h3)),
+      appBar: AppBar(title: Text(l10n.about, style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.md),
@@ -53,7 +55,7 @@ class AboutScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: AppSpacing.md),
                 Text(
-                  'InvTrack',
+                  l10n.invTrack,
                   style: AppTypography.h2.copyWith(
                     color: isDark ? Colors.white : AppColors.neutral900Light,
                     fontWeight: FontWeight.bold,
@@ -61,7 +63,7 @@ class AboutScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: AppSpacing.xxs),
                 Text(
-                  'Version $_appVersion ($_buildNumber)',
+                  l10n.version(_appVersion, _buildNumber),
                   style: AppTypography.small.copyWith(
                     color: isDark
                         ? AppColors.neutral400Dark
@@ -76,22 +78,22 @@ class AboutScreen extends ConsumerWidget {
 
           // Legal section
           SettingsSection(
-            title: 'Legal',
+            title: l10n.legal,
             children: [
               SettingsNavTile(
                 icon: Icons.privacy_tip,
                 iconColor: Colors.purple,
-                title: 'Privacy Policy',
+                title: l10n.privacyPolicy,
                 onTap: () =>
-                    _openLegalScreen(context, 'Privacy Policy', _privacyPolicy),
+                    _openLegalScreen(context, l10n.privacyPolicy, _privacyPolicy),
               ),
               SettingsNavTile(
                 icon: Icons.description,
                 iconColor: Colors.purple,
-                title: 'Terms of Service',
+                title: l10n.termsOfService,
                 onTap: () => _openLegalScreen(
                   context,
-                  'Terms of Service',
+                  l10n.termsOfService,
                   _termsOfService,
                 ),
               ),
@@ -100,19 +102,19 @@ class AboutScreen extends ConsumerWidget {
 
           // Support section
           SettingsSection(
-            title: 'Support',
+            title: l10n.support,
             children: [
               SettingsNavTile(
                 icon: Icons.help_outline,
                 iconColor: Colors.blue,
-                title: 'Help & FAQ',
+                title: l10n.helpAndFaq,
                 onTap: () => _openHelpPage(context),
               ),
               SettingsNavTile(
                 icon: Icons.email_outlined,
                 iconColor: Colors.teal,
-                title: 'Contact Support',
-                subtitle: 'invtrack_support@googlegroups.com',
+                title: l10n.contactSupport,
+                subtitle: l10n.supportEmail,
                 onTap: () => _openSupportEmail(context),
               ),
             ],
@@ -123,7 +125,7 @@ class AboutScreen extends ConsumerWidget {
             padding: EdgeInsets.all(AppSpacing.xl),
             child: Center(
               child: Text(
-                'Made with ❤️ for smart investors',
+                l10n.madeWithLove,
                 style: AppTypography.small.copyWith(
                   color: isDark
                       ? AppColors.neutral500Dark

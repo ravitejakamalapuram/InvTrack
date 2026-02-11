@@ -2,7 +2,6 @@
 /// Handles FIRE settings, calculations, and projections.
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -40,19 +39,14 @@ final fireCalculationServiceProvider = Provider<FireCalculationService>((ref) {
 /// Watch FIRE settings (real-time updates)
 /// Returns null if user hasn't set up FIRE settings yet
 /// Uses autoDispose to clean up when no longer needed
+/// Errors propagate to UI for proper error handling
 final fireSettingsProvider = StreamProvider.autoDispose<FireSettingsEntity?>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   if (!isAuthenticated) {
     return Stream.value(null);
   }
-  return ref.watch(fireSettingsRepositoryProvider).watchSettings().handleError((
-    error,
-    stackTrace,
-  ) {
-    if (kDebugMode) {
-      debugPrint('fireSettingsProvider: ERROR - $error');
-    }
-  });
+  // Let errors propagate to UI - FIRE dashboard handles AsyncValue.error properly
+  return ref.watch(fireSettingsRepositoryProvider).watchSettings();
 });
 
 /// Check if FIRE setup is complete

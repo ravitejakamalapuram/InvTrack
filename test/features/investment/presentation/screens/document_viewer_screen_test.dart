@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/document_viewer_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   late DocumentEntity testPdfDocument;
@@ -40,6 +41,8 @@ void main() {
   Widget buildTestWidget(DocumentEntity document) {
     return ProviderScope(
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: DocumentViewerScreen(document: document),
       ),
     );
@@ -174,6 +177,8 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Builder(
                 builder: (context) => Scaffold(
                   body: ElevatedButton(

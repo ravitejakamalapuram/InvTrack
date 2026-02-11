@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Enhanced empty state shown when there are no investments.
 /// Designed to drive user activation with:
@@ -575,6 +576,7 @@ class _SampleDataSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -612,7 +614,7 @@ class _SampleDataSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Try Sample Data',
+                  l10n.trySampleData,
                   style: AppTypography.label.copyWith(
                     color: isDark ? Colors.white : AppColors.neutral900Light,
                     fontWeight: FontWeight.w600,
@@ -620,7 +622,7 @@ class _SampleDataSection extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Explore with realistic Indian investments',
+                  l10n.exploreWithRealisticInvestments,
                   style: AppTypography.small.copyWith(
                     color: isDark
                         ? AppColors.neutral400Dark
@@ -642,7 +644,7 @@ class _SampleDataSection extends StatelessWidget {
                 vertical: AppSpacing.sm,
               ),
             ),
-            child: const Text('Try It'),
+            child: Text(l10n.tryIt),
           ),
         ],
       ),
@@ -658,12 +660,18 @@ class OverviewErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       child: Column(
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 8),
-          Text('Error: $error'),
+          Text(l10n.failedToLoadData),
+          const SizedBox(height: 4),
+          Text(
+            l10n.pleaseTryAgainLater,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );

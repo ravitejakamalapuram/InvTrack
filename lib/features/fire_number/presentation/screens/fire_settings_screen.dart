@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -11,6 +12,7 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// FIRE settings editing screen
 class FireSettingsScreen extends ConsumerWidget {
@@ -18,13 +20,14 @@ class FireSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final settingsAsync = ref.watch(fireSettingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        title: Text('FIRE Settings', style: AppTypography.h2),
+        title: Text(l10n.fireSettings, style: AppTypography.h2),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -40,11 +43,11 @@ class FireSettingsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('No FIRE settings found'),
+                  Text(l10n.noFireSettingsFound),
                   SizedBox(height: AppSpacing.md),
                   FilledButton(
                     onPressed: () => context.push('/fire/setup'),
-                    child: const Text('Set Up FIRE'),
+                    child: Text(l10n.setUpFire),
                   ),
                 ],
               ),
@@ -53,7 +56,56 @@ class FireSettingsScreen extends ConsumerWidget {
           return _buildSettingsList(context, ref, isDark, settings);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => _buildErrorState(context, ref, isDark),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, bool isDark) {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: AppSizes.iconXl,
+                color: AppColors.errorLight,
+              ),
+            ),
+            SizedBox(height: AppSpacing.lg),
+            Text(
+              l10n.connectionError,
+              style: AppTypography.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.failedToLoadFireSettings,
+              style: AppTypography.bodyMedium.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
+              onPressed: () => ref.invalidate(fireSettingsProvider),
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(l10n.retry),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -64,6 +116,7 @@ class FireSettingsScreen extends ConsumerWidget {
     bool isDark,
     FireSettingsEntity settings,
   ) {
+    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
 
     return SingleChildScrollView(
@@ -72,7 +125,7 @@ class FireSettingsScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Basic Settings
-          Text('Basic Settings', style: AppTypography.h3.copyWith(
+          Text(l10n.basicSettings, style: AppTypography.h3.copyWith(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           )),
           SizedBox(height: AppSpacing.sm),
@@ -116,7 +169,7 @@ class FireSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg),
 
           // Advanced Settings
-          Text('Advanced Settings', style: AppTypography.h3.copyWith(
+          Text(l10n.advancedSettings, style: AppTypography.h3.copyWith(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
           )),
           SizedBox(height: AppSpacing.sm),
@@ -170,17 +223,17 @@ class FireSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg),
 
           // Danger Zone
-          Text('Danger Zone', style: AppTypography.h3.copyWith(
+          Text(l10n.dangerZone, style: AppTypography.h3.copyWith(
             color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
           )),
           SizedBox(height: AppSpacing.sm),
           GlassCard(
             child: ListTile(
               leading: Icon(Icons.delete_forever, color: isDark ? AppColors.dangerDark : AppColors.dangerLight),
-              title: Text('Reset FIRE Settings', style: AppTypography.bodyMedium.copyWith(
+              title: Text(l10n.resetFireSettings, style: AppTypography.bodyMedium.copyWith(
                 color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
               )),
-              subtitle: Text('Start over with new settings'),
+              subtitle: Text(l10n.startOverWithNewSettings),
               onTap: () => _confirmReset(context, ref),
             ),
           ),
@@ -234,55 +287,59 @@ class FireSettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
-              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTypography.h3.copyWith(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              )),
-              SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('$selectedAge years', style: AppTypography.h1.copyWith(
-                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
-                  )),
-                ],
-              ),
-              Slider(
-                value: selectedAge.toDouble(),
-                min: minAge.toDouble(),
-                max: maxAge.toDouble(),
-                divisions: maxAge - minAge,
-                label: '$selectedAge',
-                onChanged: (v) => setState(() => selectedAge = v.toInt()),
-              ),
-              SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    final updated = isCurrentAge
-                        ? settings.copyWith(currentAge: selectedAge)
-                        : settings.copyWith(targetFireAge: selectedAge);
-                    await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
-                  },
-                  child: const Text('Save'),
+        builder: (context, setState) {
+          final l10n = AppLocalizations.of(context);
+          return Padding(
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+                MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTypography.h3.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                )),
+                SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('$selectedAge years', style: AppTypography.h1.copyWith(
+                      color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                    )),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
+                Slider(
+                  value: selectedAge.toDouble(),
+                  min: minAge.toDouble(),
+                  max: maxAge.toDouble(),
+                  divisions: maxAge - minAge,
+                  label: '$selectedAge',
+                  onChanged: (v) => setState(() => selectedAge = v.toInt()),
+                ),
+                SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final updated = isCurrentAge
+                          ? settings.copyWith(currentAge: selectedAge)
+                          : settings.copyWith(targetFireAge: selectedAge);
+                      await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+                    },
+                    child: Text(l10n.save),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   void _showExpensesEditor(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.read(currencySymbolProvider);
     final controller = TextEditingController(text: settings.monthlyExpenses.toStringAsFixed(0));
@@ -301,7 +358,7 @@ class FireSettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Monthly Expenses', style: AppTypography.h3.copyWith(
+            Text(l10n.monthlyExpenses, style: AppTypography.h3.copyWith(
               color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             )),
             SizedBox(height: AppSpacing.lg),
@@ -310,7 +367,7 @@ class FireSettingsScreen extends ConsumerWidget {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 prefixText: '$currencySymbol ',
-                labelText: 'Monthly Expenses',
+                labelText: l10n.monthlyExpenses,
                 border: const OutlineInputBorder(),
               ),
               autofocus: true,
@@ -325,7 +382,7 @@ class FireSettingsScreen extends ConsumerWidget {
                   final updated = settings.copyWith(monthlyExpenses: value);
                   await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
                 },
-                child: const Text('Save'),
+                child: Text(l10n.save),
               ),
             ),
           ],
@@ -335,6 +392,7 @@ class FireSettingsScreen extends ConsumerWidget {
   }
 
   void _showFireTypeSelector(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -349,7 +407,7 @@ class FireSettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Select FIRE Type', style: AppTypography.h3.copyWith(
+            Text(l10n.selectFireType, style: AppTypography.h3.copyWith(
               color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
             )),
             SizedBox(height: AppSpacing.md),
@@ -393,48 +451,51 @@ class FireSettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
-              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTypography.h3.copyWith(
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              )),
-              SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('${selectedValue.toStringAsFixed(1)}%', style: AppTypography.h1.copyWith(
-                    color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
-                  )),
-                ],
-              ),
-              Slider(
-                value: selectedValue,
-                min: min,
-                max: max,
-                divisions: ((max - min) * 10).toInt(),
-                label: '${selectedValue.toStringAsFixed(1)}%',
-                onChanged: (v) => setState(() => selectedValue = v),
-              ),
-              SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    final updated = onSave(selectedValue);
-                    await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
-                  },
-                  child: const Text('Save'),
+        builder: (context, setState) {
+          final l10n = AppLocalizations.of(context);
+          return Padding(
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+                MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTypography.h3.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                )),
+                SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('${selectedValue.toStringAsFixed(1)}%', style: AppTypography.h1.copyWith(
+                      color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                    )),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
+                Slider(
+                  value: selectedValue,
+                  min: min,
+                  max: max,
+                  divisions: ((max - min) * 10).toInt(),
+                  label: '${selectedValue.toStringAsFixed(1)}%',
+                  onChanged: (v) => setState(() => selectedValue = v),
+                ),
+                SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final updated = onSave(selectedValue);
+                      await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+                    },
+                    child: Text(l10n.save),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -442,26 +503,29 @@ class FireSettingsScreen extends ConsumerWidget {
   void _confirmReset(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reset FIRE Settings?'),
-        content: const Text('This will delete all your FIRE settings. You will need to set them up again.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
-              if (context.mounted) {
-                context.go('/fire');
-              }
-            },
-            child: Text('Reset', style: TextStyle(color: AppColors.dangerLight)),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(l10n.resetFireSettingsConfirm),
+          content: Text(l10n.resetFireSettingsMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.cancel),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
+                if (context.mounted) {
+                  context.go('/fire');
+                }
+              },
+              child: Text(l10n.reset, style: TextStyle(color: AppColors.dangerLight)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

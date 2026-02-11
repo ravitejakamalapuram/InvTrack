@@ -107,17 +107,59 @@ class FakeNotificationService implements NotificationService {
     shownGoalStaleNotifications.add(goalId);
   }
 
+  // Implement preference getters
+  @override
+  DateTime? get userSignupDate => null;
+
+  @override
+  bool get weeklySummaryEnabled => true;
+
+  @override
+  bool get monthlySummaryEnabled => true;
+
+  @override
+  bool get maturityRemindersEnabled => true;
+
+  @override
+  bool get incomeRemindersEnabled => true;
+
+  @override
+  bool get milestonesEnabled => true;
+
+  @override
+  bool get goalMilestonesEnabled => true;
+
+  @override
+  bool get taxRemindersEnabled => true;
+
+  @override
+  bool get riskAlertsEnabled => true;
+
+  @override
+  bool get weeklyCheckInEnabled => true;
+
+  @override
+  bool get idleAlertsEnabled => true;
+
+  @override
+  int get idleAlertDays => 90;
+
+  @override
+  bool get fySummaryEnabled => true;
+
+  @override
+  bool get goalAtRiskEnabled => true;
+
+  @override
+  bool get goalStaleEnabled => true;
+
+  @override
+  int get goalStaleDays => 60;
+
   // Implement all other required methods with no-op stubs
   @override
   dynamic noSuchMethod(Invocation invocation) {
     // For Future-returning methods, return completed future
-    final memberName = invocation.memberName.toString();
-    if (memberName.contains('get ')) {
-      // Handle getters - return sensible defaults
-      if (memberName.contains('Enabled')) return true;
-      return null;
-    }
-    // For async methods, return completed Future
     return Future<void>.value();
   }
 }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -17,6 +18,7 @@ import 'package:inv_tracker/features/fire_number/presentation/providers/fire_pro
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Main FIRE Number dashboard screen
 class FireDashboardScreen extends ConsumerWidget {
@@ -24,6 +26,7 @@ class FireDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final settingsAsync = ref.watch(fireSettingsProvider);
     final calculationAsync = ref.watch(fireCalculationProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -31,7 +34,7 @@ class FireDashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('FIRE Journey'),
+        title: Text(l10n.fireJourney),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -62,16 +65,22 @@ class FireDashboardScreen extends ConsumerWidget {
               calculation,
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => _buildErrorState(isDark, () {
+              ref.invalidate(fireSettingsProvider);
+              ref.invalidate(fireCalculationProvider);
+            }, context),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => _buildErrorState(isDark, () {
+          ref.invalidate(fireSettingsProvider);
+        }, context),
       ),
     );
   }
 
   Widget _buildSetupPrompt(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: AppSpacing.paddingLg,
@@ -103,7 +112,7 @@ class FireDashboardScreen extends ConsumerWidget {
             FilledButton.icon(
               onPressed: () => context.push('/fire/setup'),
               icon: const Icon(Icons.rocket_launch_outlined),
-              label: const Text('Get Started'),
+              label: Text(l10n.getStarted),
               style: FilledButton.styleFrom(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.xl,
@@ -641,6 +650,55 @@ class FireDashboardScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isDark, VoidCallback onRetry, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.cloud_off_rounded,
+                size: AppSizes.iconXl,
+                color: AppColors.errorLight,
+              ),
+            ),
+            SizedBox(height: AppSpacing.lg),
+            Text(
+              l10n.connectionError,
+              style: AppTypography.h3.copyWith(
+                color: isDark ? Colors.white : AppColors.neutral900Light,
+              ),
+            ),
+            SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.failedToLoadFireData,
+              style: AppTypography.bodyMedium.copyWith(
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: AppSpacing.lg),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(l10n.retry),
+            ),
+          ],
+        ),
       ),
     );
   }

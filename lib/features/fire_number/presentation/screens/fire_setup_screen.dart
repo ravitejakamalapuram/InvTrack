@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -104,11 +105,9 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
       if (mounted) {
         context.go('/fire');
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ErrorHandler.handle(e, st, context: context, showFeedback: true);
       }
     } finally {
       if (mounted) {

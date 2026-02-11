@@ -317,6 +317,24 @@ CrashlyticsService().recordError(error, stack, reason: 'context');
 - [ ] Localization applied
 - [ ] Accessibility verified
 - [ ] Data lifecycle handled (if new storage)
+- [ ] Help & FAQ screen updated (if major feature/change)
+
+### 10.3 Help & FAQ Update Requirements
+**For major features, breaking changes, or new user-facing functionality:**
+
+Update `lib/features/settings/presentation/screens/help_faq_screen.dart` with:
+- [ ] New FAQ entry explaining the feature
+- [ ] Common use cases and examples
+- [ ] Troubleshooting tips (if applicable)
+- [ ] Links to related features (if applicable)
+
+**Examples of changes requiring Help & FAQ updates:**
+- ✅ New investment types or categories
+- ✅ New FIRE calculation methods
+- ✅ Changes to data export/import behavior
+- ✅ New privacy or security features
+- ✅ Changes to currency handling or localization
+- ❌ Minor UI tweaks or bug fixes (unless they change user workflow)
 
 ---
 
@@ -450,11 +468,19 @@ Text(AppLocalizations.of(context)!.addInvestment)
 Before submitting PR, verify:
 - [ ] No hardcoded user-facing strings in UI code
 - [ ] All new strings added to `app_en.arb`
+- [ ] All ARB keys are unique (no duplicate keys)
+- [ ] ARB entries include `@keyName` metadata with description
 - [ ] Placeholders use proper syntax: `{variableName}`
+- [ ] Placeholder types defined in ARB metadata
 - [ ] Dates formatted with `DateFormat` (locale-aware)
 - [ ] Numbers formatted with `NumberFormat` (locale-aware)
 - [ ] Currency formatted with `NumberFormat.currency()`
 - [ ] No string concatenation for sentences (use placeholders)
+- [ ] Run `flutter gen-l10n` to regenerate localization files
+- [ ] Run `flutter analyze` to verify no errors after localization changes
+- [ ] Import statement added: `import 'package:inv_tracker/l10n/generated/app_localizations.dart';`
+- [ ] `final l10n = AppLocalizations.of(context);` declared in build methods
+- [ ] For dialogs/bottom sheets: `l10n` captured in builder context (not in callbacks)
 
 ### 16.3 Common Violations
 ❌ **Hardcoded strings:**
@@ -792,6 +818,9 @@ Before marking PR as ready for review:
 
 ### Compliance
 - [ ] Localization: All strings in ARB files
+- [ ] Localization: All ARB keys unique (no duplicates)
+- [ ] Localization: Run `flutter gen-l10n` and `flutter analyze` after changes
+- [ ] Localization: Import statement and `l10n` variable declared properly
 - [ ] Currency: All amounts use `formatCompactCurrency()` with locale parameter
 - [ ] Currency: No direct calls to `formatCompactIndian()` (deprecated)
 - [ ] Currency: Tested with different currencies (USD, EUR, INR) for correct notation
@@ -806,6 +835,7 @@ Before marking PR as ready for review:
 - [ ] Breaking changes documented
 - [ ] New dependencies justified
 - [ ] Data lifecycle handled (if new storage)
+- [ ] Help & FAQ screen updated (if major feature/change - see Rule 10.3)
 
 ### Review
 - [ ] PR based on latest `main`

@@ -67,7 +67,8 @@ class GoalsListNotifier extends Notifier<GoalsListState> {
 }
 
 /// Provider for goals list state
+/// Uses .autoDispose to prevent memory leaks when screen is disposed
 final goalsListStateProvider =
-    NotifierProvider<GoalsListNotifier, GoalsListState>(
+    NotifierProvider.autoDispose<GoalsListNotifier, GoalsListState>(
       GoalsListNotifier.new,
     );

@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Bottom sheet for selecting investments or investment types to link to a goal
 class InvestmentSelectorSheet extends ConsumerStatefulWidget {
@@ -42,6 +43,7 @@ class _InvestmentSelectorSheetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -109,7 +111,7 @@ class _InvestmentSelectorSheetState
                       backgroundColor: AppColors.primaryLight,
                       padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                     ),
-                    child: const Text('Done'),
+                    child: Text(l10n.done),
                   ),
                 ),
               ),
@@ -181,7 +183,24 @@ class _InvestmentSelectorSheetState
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) {
+        final l10n = AppLocalizations.of(context);
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 8),
+              Text(l10n.failedToLoadInvestments),
+              const SizedBox(height: 4),
+              Text(
+                l10n.pleaseTryAgainLater,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

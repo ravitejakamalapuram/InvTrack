@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying help and frequently asked questions about using the app
 class HelpFaqScreen extends StatelessWidget {
@@ -13,100 +14,101 @@ class HelpFaqScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Help & FAQ', style: AppTypography.h3),
+        title: Text(l10n.helpFaqTitle, style: AppTypography.h3),
       ),
       body: ListView(
         padding: EdgeInsets.all(AppSpacing.md),
         children: [
           _buildSection(
-            'Getting Started',
+            l10n.gettingStarted,
             [
               _buildFaqItem(
-                'How do I add my first investment?',
-                'Tap the "+" button on the Investments tab. Enter your investment details including name, amount, date, and category. You can also add transactions later to track your investment growth.',
+                l10n.howToAddFirstInvestment,
+                l10n.howToAddFirstInvestmentAnswer,
                 isDark,
               ),
               _buildFaqItem(
-                'What investment types are supported?',
-                'InvTrack supports Stocks, Mutual Funds, Fixed Deposits, Gold, Real Estate, Crypto, and more. You can categorize any investment type.',
+                l10n.whatInvestmentTypesSupported,
+                l10n.whatInvestmentTypesSupportedAnswer,
                 isDark,
               ),
             ],
           ),
           _buildSection(
-            'Tracking Returns',
+            l10n.trackingReturns,
             [
               _buildFaqItem(
-                'How are returns calculated?',
-                'InvTrack uses XIRR (Extended Internal Rate of Return) to calculate accurate returns considering all your transactions and their timing. This gives you a true picture of your investment performance.',
+                l10n.howAreReturnsCalculated,
+                l10n.howAreReturnsCalculatedAnswer,
                 isDark,
               ),
               _buildFaqItem(
-                'What is XIRR?',
-                'XIRR is the industry-standard method for calculating returns on investments with multiple cash flows at different times. It accounts for when you invested and when you withdrew money.',
+                l10n.whatIsXirr,
+                l10n.whatIsXirrAnswer,
                 isDark,
               ),
             ],
           ),
           _buildSection(
-            'Goals',
+            l10n.goalsSection,
             [
               _buildFaqItem(
-                'How do I set a financial goal?',
-                'Go to the Goals tab and tap "+". Enter your goal name, target amount, and deadline. InvTrack will track your progress and show how much you need to save.',
+                l10n.howToSetFinancialGoal,
+                l10n.howToSetFinancialGoalAnswer,
                 isDark,
               ),
               _buildFaqItem(
-                'Can I link investments to goals?',
-                'Yes! When creating or editing a goal, you can allocate specific investments toward that goal. This helps you track progress toward multiple goals simultaneously.',
+                l10n.canLinkInvestmentsToGoals,
+                l10n.canLinkInvestmentsToGoalsAnswer,
                 isDark,
               ),
             ],
           ),
           _buildSection(
-            'Privacy & Security',
+            l10n.privacyAndSecurity,
             [
               _buildFaqItem(
-                'Is my data secure?',
-                'Yes! All your data is stored securely in Firebase with encryption. You can also enable app lock with PIN or biometrics for extra security.',
+                l10n.isMyDataSecure,
+                l10n.isMyDataSecureAnswer,
                 isDark,
               ),
               _buildFaqItem(
-                'What is Privacy Mode?',
-                'Privacy Mode hides all financial amounts in the app, showing "•••••" instead. Perfect for when you want to check your portfolio in public. Toggle it from Settings → Appearance.',
+                l10n.whatIsPrivacyMode,
+                l10n.whatIsPrivacyModeAnswer,
                 isDark,
               ),
             ],
           ),
           _buildSection(
-            'Data Management',
+            l10n.dataManagementSection,
             [
               _buildFaqItem(
-                'Can I export my data?',
-                'Yes! Go to Settings → Data & Account → Export Data. You can download all your investment data as a ZIP file containing CSV files.',
+                l10n.canExportMyData,
+                l10n.canExportMyDataAnswer,
                 isDark,
               ),
               _buildFaqItem(
-                'How do I backup my data?',
-                'Your data is automatically backed up to Firebase when you\'re signed in. You can also export a local backup anytime from Settings → Data & Account.',
+                l10n.howToBackupData,
+                l10n.howToBackupDataAnswer,
                 isDark,
               ),
             ],
           ),
           _buildSection(
-            'Multi-Currency Support',
+            l10n.multiCurrencySupport,
             [
               _buildFaqItem(
-                'Can I change my currency?',
-                'Yes! Go to Settings → Currency and select from 40+ supported currencies. The app will format all amounts according to your selected currency and locale.',
+                l10n.canChangeMyCurrency,
+                l10n.canChangeMyCurrencyAnswer,
                 isDark,
               ),
               _buildFaqItem(
-                'How does currency formatting work?',
-                'InvTrack automatically formats numbers based on your currency:\n• Indian Rupee (₹): Shows 1L, 10L, 1Cr\n• USD/EUR/GBP: Shows 100K, 1M, 10M\n• Other currencies use appropriate locale formatting',
+                l10n.howDoesCurrencyFormattingWork,
+                l10n.howDoesCurrencyFormattingWorkAnswer,
                 isDark,
               ),
             ],
@@ -114,7 +116,7 @@ class HelpFaqScreen extends StatelessWidget {
           SizedBox(height: AppSpacing.xl),
           Center(
             child: Text(
-              'Need more help? Contact support@invtracker.com',
+              l10n.needMoreHelpContact,
               style: AppTypography.small.copyWith(
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),

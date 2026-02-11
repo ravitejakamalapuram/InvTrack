@@ -1,0 +1,77 @@
+# git-cliff configuration optimized for Play Store changelogs
+# Play Store limit: 500 characters
+# Usage: git cliff --config cliff-playstore.toml --latest --strip all
+
+[changelog]
+# No header for Play Store (saves space)
+header = ""
+
+# Compact template for Play Store (user-friendly, no technical details)
+body = """
+{% for group, commits in commits | group_by(attribute="group") -%}
+{% if group == "✨ Features" -%}
+🆕 What's New
+{% for commit in commits -%}
+• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+{% endfor %}
+{% endif -%}
+{% if group == "🐛 Bug Fixes" -%}
+
+🐛 Bug Fixes & Improvements
+{% for commit in commits -%}
+• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+{% endfor %}
+{% endif -%}
+{% if group == "⚡ Performance" -%}
+
+⚡ Performance Improvements
+{% for commit in commits -%}
+• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+{% endfor %}
+{% endif -%}
+{% if group == "🔒 Security" -%}
+
+🔒 Security Updates
+{% for commit in commits -%}
+• {{ commit.message | upper_first | split(pat=":") | last | trim }}
+{% endfor %}
+{% endif -%}
+{% endfor -%}
+"""
+
+# No footer for Play Store (saves ~50 characters)
+footer = ""
+
+# Remove all whitespace
+trim = true
+
+[git]
+# Parse conventional commits
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+
+# Simplified commit parsers for Play Store (only show user-facing changes)
+commit_parsers = [
+    { message = "^feat", group = "✨ Features" },
+    { message = "^fix", group = "🐛 Bug Fixes" },
+    { message = "^perf", group = "⚡ Performance" },
+    { body = ".*security", group = "🔒 Security" },
+    # Skip internal changes (not relevant to users)
+    { message = "^doc", skip = true },
+    { message = "^refactor", skip = true },
+    { message = "^style", skip = true },
+    { message = "^test", skip = true },
+    { message = "^chore", skip = true },
+    { message = "^ci", skip = true },
+]
+
+# Filter out certain commits
+filter_commits = false
+
+# Tag pattern for releases
+tag_pattern = "v[0-9].*"
+
+# Sort commits by newest first
+sort_commits = "newest"
+

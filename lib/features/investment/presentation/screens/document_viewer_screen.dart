@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -100,6 +101,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                       child: Image.file(
                         File(document.localPath),
                         fit: BoxFit.contain,
+                        semanticLabel: 'Document: ${document.name}',
                         errorBuilder: (context, error, stackTrace) =>
                             _buildErrorState(),
                       ),
@@ -122,6 +124,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   }
 
   Widget _buildPdfViewer(DocumentEntity document) {
+    final l10n = AppLocalizations.of(context);
     // For PDF, we show a placeholder with option to open externally
     return Center(
       child: Column(
@@ -150,7 +153,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           FilledButton.icon(
             onPressed: () => _openInExternalViewer(context),
             icon: const Icon(Icons.open_in_new_rounded),
-            label: const Text('Open in PDF Viewer'),
+            label: Text(l10n.openInPdfViewer),
           ),
           SizedBox(height: AppSpacing.md),
           TextButton.icon(

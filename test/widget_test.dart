@@ -105,6 +105,9 @@ void main() {
       ),
     );
 
+    // Wait for all async operations to complete (including NotificationSyncInitializer)
+    await tester.pumpAndSettle();
+
     // Verify that the app title is displayed (on Sign In screen or Home).
     expect(find.byType(InvTrackerApp), findsOneWidget);
   });

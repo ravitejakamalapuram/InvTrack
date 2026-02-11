@@ -10,6 +10,7 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen for managing security settings.
 class SecuritySettingsScreen extends ConsumerWidget {
@@ -20,27 +21,28 @@ class SecuritySettingsScreen extends ConsumerWidget {
     final securityState = ref.watch(securityProvider);
     final securityNotifier = ref.read(securityProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Security', style: AppTypography.h3)),
+      appBar: AppBar(title: Text(l10n.securityTitle, style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
 
           // App Lock section
           SettingsSection(
-            title: 'App Lock',
+            title: l10n.appLockSection,
             footer: securityState.hasPin
-                ? 'Your app is protected with a PIN'
-                : 'Add a PIN to protect your data',
+                ? l10n.yourAppIsProtectedWithPin
+                : l10n.addPinToProtectData,
             children: [
               SettingsToggleTile(
                 icon: securityState.hasPin ? Icons.lock : Icons.lock_open,
                 iconColor: securityState.hasPin ? AppColors.successLight : null,
-                title: 'Enable App Lock',
+                title: l10n.enableAppLock,
                 subtitle: securityState.hasPin
-                    ? 'PIN required to open app'
-                    : 'Protect with a 4-digit PIN',
+                    ? l10n.pinRequiredToOpenApp
+                    : l10n.protectWithFourDigitPin,
                 value: securityState.hasPin,
                 onChanged: (value) =>
                     _handlePinToggle(context, value, securityNotifier),
@@ -51,16 +53,16 @@ class SecuritySettingsScreen extends ConsumerWidget {
           // Biometric section (only show if PIN is set)
           if (securityState.hasPin && securityState.isBiometricAvailable)
             SettingsSection(
-              title: 'Quick Unlock',
-              footer: 'Use biometrics for faster access',
+              title: l10n.quickUnlock,
+              footer: l10n.useBiometricsForFasterAccess,
               children: [
                 SettingsToggleTile(
                   icon: Icons.fingerprint,
                   iconColor: securityState.isBiometricEnabled
                       ? AppColors.primaryLight
                       : null,
-                  title: 'Face ID / Touch ID',
-                  subtitle: 'Unlock with biometrics',
+                  title: l10n.faceIdTouchId,
+                  subtitle: l10n.unlockWithBiometrics,
                   value: securityState.isBiometricEnabled,
                   onChanged: (value) =>
                       securityNotifier.toggleBiometrics(value),
@@ -71,13 +73,13 @@ class SecuritySettingsScreen extends ConsumerWidget {
           // PIN management (only show if PIN is set)
           if (securityState.hasPin)
             SettingsSection(
-              title: 'Manage PIN',
+              title: l10n.managePin,
               children: [
                 SettingsNavTile(
                   icon: Icons.pin,
                   iconColor: Colors.blue,
-                  title: 'Change PIN',
-                  subtitle: 'Update your security code',
+                  title: l10n.changePin,
+                  subtitle: l10n.updateYourSecurityCode,
                   onTap: () => _handleChangePin(context, securityNotifier),
                 ),
               ],
@@ -102,7 +104,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'Your investment data is stored locally on this device and is never uploaded to external servers.',
+                      l10n.dataStoredLocallyMessage,
                       style: AppTypography.small.copyWith(
                         color: isDark
                             ? Colors.white70

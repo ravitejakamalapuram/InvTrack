@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -15,24 +16,25 @@ class AppearanceSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final settings = ref.watch(settingsProvider);
     final themeMode = settings.themeMode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Appearance', style: AppTypography.h3)),
+      appBar: AppBar(title: Text(l10n.appearance, style: AppTypography.h3)),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),
 
           SettingsSection(
-            title: 'Theme',
-            footer: 'Choose how InvTrack looks',
+            title: l10n.theme,
+            footer: l10n.themeDescription,
             children: [
               _ThemeOption(
                 icon: Icons.brightness_auto,
-                title: 'System',
-                subtitle: 'Match device settings',
+                title: l10n.themeSystem,
+                subtitle: l10n.themeSystemSubtitle,
                 isSelected: themeMode == ThemeMode.system,
                 onTap: () => ref
                     .read(settingsProvider.notifier)
@@ -40,8 +42,8 @@ class AppearanceSettingsScreen extends ConsumerWidget {
               ),
               _ThemeOption(
                 icon: Icons.light_mode,
-                title: 'Light',
-                subtitle: 'Always use light theme',
+                title: l10n.themeLight,
+                subtitle: l10n.themeLightSubtitle,
                 isSelected: themeMode == ThemeMode.light,
                 onTap: () => ref
                     .read(settingsProvider.notifier)
@@ -49,8 +51,8 @@ class AppearanceSettingsScreen extends ConsumerWidget {
               ),
               _ThemeOption(
                 icon: Icons.dark_mode,
-                title: 'Dark',
-                subtitle: 'Always use dark theme',
+                title: l10n.themeDark,
+                subtitle: l10n.themeDarkSubtitle,
                 isSelected: themeMode == ThemeMode.dark,
                 onTap: () => ref
                     .read(settingsProvider.notifier)
@@ -77,7 +79,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Preview',
+                    l10n.preview,
                     style: AppTypography.small.copyWith(
                       color: isDark
                           ? AppColors.neutral400Dark
@@ -97,7 +99,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Primary',
+                              l10n.primary,
                               style: AppTypography.small.copyWith(
                                 color: Colors.white,
                               ),
@@ -115,7 +117,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Success',
+                              l10n.success,
                               style: AppTypography.small.copyWith(
                                 color: Colors.white,
                               ),
@@ -133,7 +135,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Error',
+                              l10n.errorColor,
                               style: AppTypography.small.copyWith(
                                 color: Colors.white,
                               ),
