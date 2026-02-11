@@ -36,9 +36,12 @@ final zipExportStateProvider =
   ZipExportNotifier.new,
 );
 
-class ZipExportNotifier extends AutoDisposeNotifier<AsyncValue<void>> {
+class ZipExportNotifier extends Notifier<AsyncValue<void>> {
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  AsyncValue<void> build() {
+    // Initial state is null (no operation in progress)
+    return const AsyncValue.data(null);
+  }
 
   Future<void> exportAsZip() async {
     state = const AsyncValue.loading();

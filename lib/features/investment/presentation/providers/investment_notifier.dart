@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -69,7 +70,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
       );
-      await ref.read(investmentRepositoryProvider).createInvestment(investment);
+
+      // Track performance of investment creation
+      await ref.read(performanceServiceProvider).trackOperation(
+        'investment_create',
+        () => ref.read(investmentRepositoryProvider).createInvestment(investment),
+        attributes: {'investment_type': type.name},
+      );
 
       // Track analytics event
       ref
@@ -149,11 +156,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         compoundingFrequency: compoundingFrequency,
       );
       final repo = ref.read(investmentRepositoryProvider);
-      if (existing.isArchived) {
-        await repo.updateArchivedInvestment(updated);
-      } else {
-        await repo.updateInvestment(updated);
-      }
+
+      // Track performance of investment update
+      await ref.read(performanceServiceProvider).trackOperation(
+        'investment_update',
+        () async {
+          if (existing.isArchived) {
+            await repo.updateArchivedInvestment(updated);
+          } else {
+            await repo.updateInvestment(updated);
+          }
+        },
+        attributes: {'investment_type': type.name, 'is_archived': existing.isArchived.toString()},
+      );
 
       // Update income reminder based on new frequency
       if (incomeFrequency != null) {
@@ -306,7 +321,13 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       // Cancel all reminders before deleting
       await _cancelIncomeReminder(id);
       await _cancelMaturityReminders(id);
-      await ref.read(investmentRepositoryProvider).deleteInvestment(id);
+
+      // Track performance of investment deletion
+      await ref.read(performanceServiceProvider).trackOperation(
+        'investment_delete',
+        () => ref.read(investmentRepositoryProvider).deleteInvestment(id),
+        attributes: {'investment_type': investment?.type.name ?? 'unknown'},
+      );
 
       // Track analytics
       if (investment != null) {
@@ -565,9 +586,17 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final result = await ref
-          .read(investmentRepositoryProvider)
-          .bulkImport(investments: investments, cashFlows: cashFlows);
+      // Track performance of bulk import
+      final result = await ref.read(performanceServiceProvider).trackOperation(
+        'investment_bulk_import',
+        () => ref
+            .read(investmentRepositoryProvider)
+            .bulkImport(investments: investments, cashFlows: cashFlows),
+        metrics: {
+          'investment_count': investments.length,
+          'cash_flow_count': cashFlows.length,
+        },
+      );
 
       _invalidateAll();
       state = const AsyncValue.data(null);

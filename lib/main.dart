@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -76,6 +77,10 @@ Future<void> _initializeNonCriticalServices(
     // Initialize Crashlytics in background
     final crashlyticsService = CrashlyticsService();
     unawaited(crashlyticsService.initialize());
+
+    // Initialize Performance Monitoring in background
+    final performanceService = PerformanceService();
+    unawaited(performanceService.initialize());
 
     // Initialize notifications in background
     await notificationService.initialize();

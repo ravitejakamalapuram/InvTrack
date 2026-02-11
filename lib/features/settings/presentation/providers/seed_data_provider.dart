@@ -20,9 +20,12 @@ final seedDataStateProvider =
       SeedDataNotifier.new,
     );
 
-class SeedDataNotifier extends AutoDisposeNotifier<AsyncValue<SeedResult?>> {
+class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
   @override
-  AsyncValue<SeedResult?> build() => const AsyncValue.data(null);
+  AsyncValue<SeedResult?> build() {
+    // Initial state is null (no seed operation in progress)
+    return const AsyncValue.data(null);
+  }
 
   Future<SeedResult?> seedData() async {
     state = const AsyncValue.loading();

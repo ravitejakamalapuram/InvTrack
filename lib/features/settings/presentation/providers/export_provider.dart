@@ -12,9 +12,12 @@ final exportStateProvider = NotifierProvider.autoDispose<ExportNotifier, AsyncVa
   ExportNotifier.new,
 );
 
-class ExportNotifier extends AutoDisposeNotifier<AsyncValue<void>> {
+class ExportNotifier extends Notifier<AsyncValue<void>> {
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  AsyncValue<void> build() {
+    // Initial state is null (no operation in progress)
+    return const AsyncValue.data(null);
+  }
 
   Future<void> exportCsv() async {
     state = const AsyncValue.loading();

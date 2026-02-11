@@ -38,9 +38,12 @@ final zipImportStateProvider =
   ZipImportNotifier.new,
 );
 
-class ZipImportNotifier extends AutoDisposeNotifier<AsyncValue<ZipImportResult?>> {
+class ZipImportNotifier extends Notifier<AsyncValue<ZipImportResult?>> {
   @override
-  AsyncValue<ZipImportResult?> build() => const AsyncValue.data(null);
+  AsyncValue<ZipImportResult?> build() {
+    // Initial state is null (no import in progress)
+    return const AsyncValue.data(null);
+  }
 
   /// Import data from a ZIP file
   Future<ZipImportResult> importFromZip(
