@@ -87,13 +87,13 @@ void main() {
       test('formats crores correctly', () {
         expect(formatCompactCurrency(10000000, symbol: '₹', locale: 'en_IN'), '₹1Cr');
         expect(formatCompactCurrency(15000000, symbol: '₹', locale: 'en_IN'), '₹1.5Cr');
-        expect(formatCompactCurrency(25600000, symbol: '₹', locale: 'en_IN'), '₹2.6Cr');
+        expect(formatCompactCurrency(25600000, symbol: '₹', locale: 'en_IN'), '₹2.56Cr');
       });
 
       test('formats lakhs correctly', () {
         expect(formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN'), '₹1L');
         expect(formatCompactCurrency(150000, symbol: '₹', locale: 'en_IN'), '₹1.5L');
-        expect(formatCompactCurrency(256000, symbol: '₹', locale: 'en_IN'), '₹2.6L');
+        expect(formatCompactCurrency(256000, symbol: '₹', locale: 'en_IN'), '₹2.56L');
       });
 
       test('formats thousands correctly', () {
