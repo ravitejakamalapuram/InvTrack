@@ -78,7 +78,18 @@ jobs:
       - name: Static Analysis
         id: analyze
         run: |
-          flutter analyze --no-fatal-infos 2>&1 && echo "status=✅" >> $GITHUB_OUTPUT || echo "status=❌" >> $GITHUB_OUTPUT
+          set +e
+          RESULT=$(flutter analyze --no-fatal-infos 2>&1)
+          EXIT_CODE=$?
+          echo "$RESULT"
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "::error::Static analysis found issues"
+            exit 1
+          fi
 
       - name: File Size Limits
         id: size
@@ -99,16 +110,24 @@ jobs:
           # Check for hardcoded secrets
           if grep -rn "api[_-]key\|secret\|password" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "// " 2>/dev/null; then
             FAIL=true
+            echo "::error::Found hardcoded secrets in code"
           fi
           # Check for print statements in production
           if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
             FAIL=true
+            echo "::error::Found print statements in production code"
           fi
           # Check for disabled SSL
           if grep -rn "badCertificateCallback\|allowInsecure" lib/ 2>/dev/null; then
             FAIL=true
+            echo "::error::Found disabled SSL verification"
           fi
-          echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
+          if [[ "$FAIL" == "true" ]]; then
+            echo "status=❌" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "status=✅" >> $GITHUB_OUTPUT
+          fi
 
       - name: Accessibility Check
         id: a11y
@@ -149,15 +168,17 @@ jobs:
           set +e
           RESULT=$(flutter test --exclude-tags=golden 2>&1)
           EXIT_CODE=$?
-          set -e
           echo "$RESULT"
           if [ $EXIT_CODE -eq 0 ]; then
             COUNT=$(echo "$RESULT" | grep -oE '\+[0-9]+' | tail -1 | tr -d '+' || echo "0")
             echo "status=✅" >> $GITHUB_OUTPUT
             echo "count=${COUNT:-0}" >> $GITHUB_OUTPUT
+            exit 0
           else
             echo "status=❌" >> $GITHUB_OUTPUT
             echo "count=0" >> $GITHUB_OUTPUT
+            echo "::error::Tests failed"
+            exit 1
           fi
 
       - name: Bug Fix Test Check
@@ -190,16 +211,24 @@ jobs:
           # API in widgets
           if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
             FAIL=true
+            echo "::error::Found API calls in widgets (violates architecture rules)"
           fi
           # Navigation in domain
           if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
             FAIL=true
+            echo "::error::Found navigation in domain layer (violates architecture rules)"
           fi
           # ref.read in build
           if grep -rn "ref\.read" lib/ --include="*.dart" | grep "Widget build\|build(" 2>/dev/null; then
             FAIL=true
+            echo "::error::Found ref.read in build methods (should use ref.watch)"
           fi
-          echo "status=$([[ "$FAIL" == "true" ]] && echo ❌ || echo ✅)" >> $GITHUB_OUTPUT
+          if [[ "$FAIL" == "true" ]]; then
+            echo "status=❌" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "status=✅" >> $GITHUB_OUTPUT
+          fi
 
       - name: Data Lifecycle
         id: lifecycle
