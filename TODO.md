@@ -1,14 +1,16 @@
 # InvTrack - Comprehensive Action Items & Technical Debt
 
 > Generated from comprehensive codebase review against InvTrack Enterprise Rules
-> Last Updated: 2026-02-01
+> Last Updated: 2026-02-11
 >
 > **Status:** Production-ready with manageable technical debt
 > - ✅ Zero static analysis errors/warnings
-> - ✅ All 868 unit tests passing
+> - ✅ All 1020 unit tests passing
 > - ✅ Firebase Analytics & Crashlytics integrated
+> - ✅ Firebase Performance Monitoring integrated
 > - ✅ Comprehensive integration test infrastructure
 > - ✅ OWASP MASVS security compliant
+> - ✅ FLAG_SECURE implemented for sensitive screens
 
 ---
 
@@ -189,7 +191,8 @@ final myScreenStateProvider = StateNotifierProvider.autoDispose<MyScreenNotifier
 
 **Completed:** 2026-02-11
 **Branch:** `feature/performance-monitoring-setup`
-**Commit:** `0752789`
+**PR:** #173
+**Commit:** `d66a2dc`
 
 **Action Items:**
 - [x] Enable Firebase Performance Monitoring
@@ -210,7 +213,39 @@ final myScreenStateProvider = StateNotifierProvider.autoDispose<MyScreenNotifier
 
 ---
 
-### 3. Structured Logging Implementation
+### 3. FLAG_SECURE on Passcode Screen ✅
+**Status:** ✅ Complete
+**Effort:** 1 day
+**Priority:** Security enhancement
+
+**Completed:** 2026-02-11
+**Branch:** `sentinel-flag-secure-passcode-14950037383743001220`
+**PR:** #174
+**Commit:** `2c07519`
+
+**Action Items:**
+- [x] Implement FLAG_SECURE for PasscodeScreen on Android
+- [x] Add MethodChannel for dynamic FLAG_SECURE control
+- [x] Enable FLAG_SECURE in initState, disable in dispose
+- [x] Add platform safety checks (!kIsWeb && Platform.isAndroid)
+- [x] Add unit tests for widget lifecycle
+- [x] Verify no crashes on Web/iOS
+
+**Implementation:**
+- Modified MainActivity.kt to add MethodChannel `com.invtracker/security`
+- Added `setSecureMode(boolean)` method to dynamically add/remove FLAG_SECURE
+- Modified PasscodeScreen to invoke channel in initState/dispose
+- Added comprehensive unit tests (passcode_screen_test.dart)
+
+**Security Impact:**
+- Prevents screenshots and screen recording of PIN entry
+- Hides PasscodeScreen content in "Recent Apps" switcher
+- Protects against "Tapjacking" (overlay attacks)
+- Prevents accidental data leakage via screenshots/screen recording
+
+---
+
+### 4. Structured Logging Implementation
 **Status:** ❌ Not Started
 **Effort:** 2 days
 **Priority:** Better debugging and monitoring
@@ -506,9 +541,9 @@ The following areas passed review:
 | Models/Entities (>150 lines) | 5 | 0 | 5 |
 
 ### Test Coverage
-**Current:** 868 tests passing
+**Current:** 1020 tests passing
 **Target:** 1000+ tests with 80%+ coverage
-**Status:** ✅ Excellent baseline
+**Status:** ✅ Target exceeded! Excellent baseline
 
 ### Performance Metrics
 **Target:** Add monitoring for:
@@ -859,7 +894,7 @@ The following areas passed review:
 
 ---
 
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-11
 **Next Review:** After launch (2-3 weeks)
-**Status:** 🚀 Ready for Pre-Launch Polish
+**Status:** 🚀 Production-ready with P1 tasks in progress
 
