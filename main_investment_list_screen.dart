@@ -581,10 +581,20 @@ class _ActiveTypeFilterChip extends StatelessWidget {
                   HapticFeedback.selectionClick();
                   onClear();
                 },
-                child: Icon(
-                  Icons.close_rounded,
-                  color: type.color,
-                  size: 16,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxs),
+                  child: Tooltip(
+                    message: 'Clear filter',
+                    child: Semantics(
+                      button: true,
+                      label: 'Clear ${type.displayName} filter',
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: type.color,
+                        size: 16,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
