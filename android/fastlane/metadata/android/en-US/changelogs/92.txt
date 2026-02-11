@@ -1,0 +1,2 @@
+🆕 What's New
+• Add Firebase Performance Monitoring (P1) (#173)
