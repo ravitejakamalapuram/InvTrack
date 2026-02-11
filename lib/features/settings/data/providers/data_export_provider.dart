@@ -32,13 +32,13 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
 /// State for ZIP export operation
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
 final zipExportStateProvider =
-    NotifierProvider.autoDispose<ZipExportNotifier, AsyncValue<void>>(
+    AsyncNotifierProvider.autoDispose<ZipExportNotifier, void>(
   ZipExportNotifier.new,
 );
 
-class ZipExportNotifier extends AutoDisposeNotifier<AsyncValue<void>> {
+class ZipExportNotifier extends AutoDisposeAsyncNotifier<void> {
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  Future<void> build() async {}
 
   Future<void> exportAsZip() async {
     state = const AsyncValue.loading();

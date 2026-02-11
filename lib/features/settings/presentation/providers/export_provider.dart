@@ -8,13 +8,13 @@ final exportServiceProvider = Provider<ExportService>((ref) {
 
 /// State for CSV export operation
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
-final exportStateProvider = NotifierProvider.autoDispose<ExportNotifier, AsyncValue<void>>(
+final exportStateProvider = AsyncNotifierProvider.autoDispose<ExportNotifier, void>(
   ExportNotifier.new,
 );
 
-class ExportNotifier extends AutoDisposeNotifier<AsyncValue<void>> {
+class ExportNotifier extends AutoDisposeAsyncNotifier<void> {
   @override
-  AsyncValue<void> build() => const AsyncValue.data(null);
+  Future<void> build() async {}
 
   Future<void> exportCsv() async {
     state = const AsyncValue.loading();

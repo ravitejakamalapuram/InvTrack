@@ -16,13 +16,13 @@ typedef SeedResult = ({int investments, int cashFlows, int goals});
 /// State for seed data operation
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
 final seedDataStateProvider =
-    NotifierProvider.autoDispose<SeedDataNotifier, AsyncValue<SeedResult?>>(
+    AsyncNotifierProvider.autoDispose<SeedDataNotifier, SeedResult?>(
       SeedDataNotifier.new,
     );
 
-class SeedDataNotifier extends AutoDisposeNotifier<AsyncValue<SeedResult?>> {
+class SeedDataNotifier extends AutoDisposeAsyncNotifier<SeedResult?> {
   @override
-  AsyncValue<SeedResult?> build() => const AsyncValue.data(null);
+  Future<SeedResult?> build() async => null;
 
   Future<SeedResult?> seedData() async {
     state = const AsyncValue.loading();
