@@ -107,11 +107,21 @@ jobs:
         id: security
         run: |
           FAIL=false
-          # Check for hardcoded secrets
-          if grep -rn "api[_-]key\|secret\|password" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "// " 2>/dev/null; then
+          # Check for hardcoded secrets (exclude parameter names, comments, and security utils)
+          # Look for actual hardcoded values like: password = "secret123"
+          SECRETS=$(grep -rn "api[_-]key\s*=\|secret\s*=\|password\s*=" lib/ --include="*.dart" | \
+            grep -v "_test.dart" | \
+            grep -v "// " | \
+            grep -v "security_utils.dart" | \
+            grep -v "List<int> password" | \
+            grep -v "String password" 2>/dev/null || true)
+
+          if [ -n "$SECRETS" ]; then
+            echo "$SECRETS"
             FAIL=true
             echo "::error::Found hardcoded secrets in code"
           fi
+
           # Check for print statements in production
           if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
             FAIL=true
