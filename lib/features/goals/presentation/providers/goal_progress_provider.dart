@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -270,13 +271,22 @@ final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((
         data: (investments) {
           return cashFlowsAsync.when(
             data: (cashFlows) {
-              final progressList = goals.map((goal) {
-                return GoalProgressCalculator.calculate(
-                  goal: goal,
-                  allInvestments: investments,
-                  allCashFlows: cashFlows,
-                );
-              }).toList();
+              // Track performance of goal progress calculation
+              final progressList = ref.read(performanceServiceProvider).trackSync(
+                'goal_progress_calculation',
+                () => goals.map((goal) {
+                  return GoalProgressCalculator.calculate(
+                    goal: goal,
+                    allInvestments: investments,
+                    allCashFlows: cashFlows,
+                  );
+                }).toList(),
+                metrics: {
+                  'goal_count': goals.length,
+                  'investment_count': investments.length,
+                  'cash_flow_count': cashFlows.length,
+                },
+              );
               return AsyncValue.data(progressList);
             },
             loading: () => const AsyncValue.loading(),

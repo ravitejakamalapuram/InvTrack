@@ -5,6 +5,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
@@ -159,8 +160,12 @@ final investmentXirrProvider = FutureProvider.family<double, String>((
     return 0.0;
   }
 
-  // Offload expensive calculation to background isolate
-  return compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows);
+  // Track performance of XIRR calculation
+  return ref.read(performanceServiceProvider).trackOperation(
+    'xirr_calculation',
+    () => compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
+    metrics: {'cash_flow_count': cashFlows.length},
+  );
 });
 
 /// XIRR ONLY provider for archived investments.
@@ -179,8 +184,12 @@ final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
     return 0.0;
   }
 
-  // Offload expensive calculation to background isolate
-  return compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows);
+  // Track performance of XIRR calculation for archived investments
+  return ref.read(performanceServiceProvider).trackOperation(
+    'xirr_calculation_archived',
+    () => compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
+    metrics: {'cash_flow_count': cashFlows.length},
+  );
 });
 
 // ============ AGGREGATE STATS PROVIDERS ============
