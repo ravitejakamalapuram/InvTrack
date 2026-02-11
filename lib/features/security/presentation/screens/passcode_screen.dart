@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -37,10 +40,24 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   static const int _maxBiometricAttempts = 3;
   // Cooldown period between auto-retry attempts
   static const Duration _biometricCooldown = Duration(seconds: 2);
+  static const platform = MethodChannel('com.invtracker/security');
+
+  Future<void> _setSecureMode(bool secure) async {
+    try {
+      if (!kIsWeb && Platform.isAndroid) {
+        await platform.invokeMethod('setSecureMode', {'secure': secure});
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to set secure mode: $e');
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _setSecureMode(true);
     WidgetsBinding.instance.addObserver(this);
     _updateMessage();
     if (widget.mode == PasscodeMode.unlock) {
@@ -58,6 +75,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
   @override
   void dispose() {
+    _setSecureMode(false);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
