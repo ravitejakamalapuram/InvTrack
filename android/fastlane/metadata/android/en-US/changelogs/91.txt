@@ -1,0 +1,5 @@
+⚡ Performance Improvements
+• Optimize currency formatting with NumberFormat caching (#171)
+
+🆕 What's New
+• Improve accessibility of filter chip close button (#170)

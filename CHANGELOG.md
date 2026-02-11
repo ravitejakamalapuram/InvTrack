@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add Firebase Performance Monitoring (P1) (#173)
+
+## [3.35.0] - 2026-02-11
+
 ### ⚡ Performance
 
 - Optimize currency formatting with NumberFormat caching (#171)
