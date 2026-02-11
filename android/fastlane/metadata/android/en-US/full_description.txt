@@ -19,28 +19,6 @@ That's it. Simple but powerful.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🆕 NEW IN VERSION 3.6.0
-
-📄 Document Viewer
-View PDFs and images directly in the app. Open in external apps when needed. Full document management for your investments.
-
-📥 Data Export & Import
-Backup your entire portfolio with one tap. Export to ZIP and import on any device. Your data, fully portable.
-
-📊 Enhanced Analytics
-Comprehensive tracking for your investment lifecycle. Better insights into your portfolio performance.
-
-🔒 Privacy Mode
-Check your portfolio anywhere without revealing sensitive data. One tap to hide all amounts.
-
-🎯 Financial Goals
-Set targets and track progress with beautiful progress rings and milestone celebrations.
-
-🔔 Smart Notifications
-Never miss income payments or maturity dates. Get timely reminders.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 📈 SMART METRICS
 
 XIRR - Your True Annual Return
@@ -48,6 +26,22 @@ Most apps show basic percentage returns. XIRR accounts for WHEN you invested and
 
 MOIC - Your Money Multiple
 Invested ₹1 lakh and got ₹1.5 lakh back? That's 1.5x MOIC. Simple way to see how much your money multiplied.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔥 FIRE NUMBER - PLAN YOUR FINANCIAL INDEPENDENCE
+
+Know exactly how much you need to retire early and live off your investments forever.
+
+FIRE = Financial Independence, Retire Early. Enter your monthly expenses and target retirement age. We calculate your FIRE Number using the proven 4% Safe Withdrawal Rate (25x your annual expenses, inflation-adjusted for India).
+
+Track your progress automatically:
+• Visual milestones showing your journey
+• Coast FIRE calculator (when you can stop saving)
+• Projected retirement date based on current pace
+• Works with ALL your investments
+
+Example: ₹50K monthly expenses → ₹3.6 Cr FIRE Number at age 45
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -96,15 +90,11 @@ Easy on the eyes, especially at night.
 
 🤔 WHY INVTRACKER?
 
-Regular portfolio apps track stocks and mutual funds with daily prices. But what about your FD? Your P2P loans? That property you invested in?
+Regular apps track stocks and mutual funds. But what about your FD? P2P loans? Real estate?
 
-InvTracker is built for these "other" investments where you put money in today and get money back later - maybe in months or years.
+InvTracker is built for investments where you put money in today and get money back later.
 
-Just record:
-1. What you invested and when
-2. What you got back and when
-
-We calculate the rest.
+Just record what you invested and what you got back. We calculate the rest.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
