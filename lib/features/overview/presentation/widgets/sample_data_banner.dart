@@ -18,7 +18,7 @@ class SampleDataBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final sampleState = ref.watch(sampleDataModeProvider);
 
     if (!sampleState.isActive) {

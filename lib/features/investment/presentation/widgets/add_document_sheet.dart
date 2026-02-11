@@ -184,7 +184,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   }
 
   Widget _buildPreviewAndForm(bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isImage =
         _selectedFileName != null &&
         DocumentMimeTypes.isImage(_selectedFileName!);
@@ -418,7 +418,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
   }
 
   Widget _buildMultiFileForm(bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -828,7 +828,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
   /// Shows dialog prompting user to open settings when permission is permanently denied
   void _showSettingsDialog(String permissionName) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -62,7 +62,7 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasMultipleTypes = widget.investmentTypes.length > 1;
 

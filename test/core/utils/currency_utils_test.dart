@@ -83,51 +83,51 @@ void main() {
       });
     });
 
-    group('formatCompactIndian', () {
+    group('formatCompactIndian (deprecated - use formatCompactCurrency)', () {
       test('formats crores correctly', () {
-        expect(formatCompactIndian(10000000), '₹1Cr');
-        expect(formatCompactIndian(15000000), '₹1.5Cr');
-        expect(formatCompactIndian(25600000), '₹2.6Cr');
+        expect(formatCompactCurrency(10000000, symbol: '₹', locale: 'en_IN'), '₹1Cr');
+        expect(formatCompactCurrency(15000000, symbol: '₹', locale: 'en_IN'), '₹1.5Cr');
+        expect(formatCompactCurrency(25600000, symbol: '₹', locale: 'en_IN'), '₹2.6Cr');
       });
 
       test('formats lakhs correctly', () {
-        expect(formatCompactIndian(100000), '₹1L');
-        expect(formatCompactIndian(150000), '₹1.5L');
-        expect(formatCompactIndian(256000), '₹2.6L');
+        expect(formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN'), '₹1L');
+        expect(formatCompactCurrency(150000, symbol: '₹', locale: 'en_IN'), '₹1.5L');
+        expect(formatCompactCurrency(256000, symbol: '₹', locale: 'en_IN'), '₹2.6L');
       });
 
       test('formats thousands correctly', () {
-        expect(formatCompactIndian(1000), '₹1K');
-        expect(formatCompactIndian(1500), '₹1.5K');
-        expect(formatCompactIndian(2600), '₹2.6K');
+        expect(formatCompactCurrency(1000, symbol: '₹', locale: 'en_IN'), '₹1K');
+        expect(formatCompactCurrency(1500, symbol: '₹', locale: 'en_IN'), '₹1.5K');
+        expect(formatCompactCurrency(2600, symbol: '₹', locale: 'en_IN'), '₹2.6K');
       });
 
       test('formats small amounts without suffix', () {
-        expect(formatCompactIndian(500), '₹500');
-        expect(formatCompactIndian(999), '₹999');
+        expect(formatCompactCurrency(500, symbol: '₹', locale: 'en_IN'), '₹500');
+        expect(formatCompactCurrency(999, symbol: '₹', locale: 'en_IN'), '₹999');
       });
 
       test('handles negative amounts', () {
-        expect(formatCompactIndian(-100000), '-₹1L');
-        expect(formatCompactIndian(-1500), '-₹1.5K');
+        expect(formatCompactCurrency(-100000, symbol: '₹', locale: 'en_IN'), '-₹1L');
+        expect(formatCompactCurrency(-1500, symbol: '₹', locale: 'en_IN'), '-₹1.5K');
       });
 
       test('uses custom symbol', () {
-        expect(formatCompactIndian(100000, symbol: '\$'), '\$1L');
+        expect(formatCompactCurrency(100000, symbol: '\$', locale: 'en_IN'), '\$1L');
       });
 
-      test('respects maxDecimals', () {
-        final result = formatCompactIndian(156789, maxDecimals: 2);
+      test('formats with appropriate precision', () {
+        final result = formatCompactCurrency(156789, symbol: '₹', locale: 'en_IN');
         expect(result, contains('1.5'));
       });
 
-      test('always shows decimals when requested', () {
-        final result = formatCompactIndian(
+      test('formats round amounts correctly', () {
+        final result = formatCompactCurrency(
           100000,
-          alwaysShowDecimals: true,
-          maxDecimals: 1,
+          symbol: '₹',
+          locale: 'en_IN',
         );
-        expect(result, '₹1.0L');
+        expect(result, '₹1L');
       });
     });
 

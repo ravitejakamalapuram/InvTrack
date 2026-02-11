@@ -43,7 +43,7 @@ class _InvestmentSelectorSheetState
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -184,7 +184,7 @@ class _InvestmentSelectorSheetState
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

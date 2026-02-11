@@ -398,7 +398,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildNoArchivedState(bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -449,7 +449,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildErrorState(bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),

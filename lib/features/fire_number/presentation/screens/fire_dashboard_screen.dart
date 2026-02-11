@@ -26,7 +26,7 @@ class FireDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final settingsAsync = ref.watch(fireSettingsProvider);
     final calculationAsync = ref.watch(fireCalculationProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -80,7 +80,7 @@ class FireDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildSetupPrompt(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: AppSpacing.paddingLg,
@@ -655,7 +655,7 @@ class FireDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildErrorState(bool isDark, VoidCallback onRetry, BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),

@@ -136,7 +136,7 @@ class _ImportConfirmationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final grouped = _groupedByInvestment;
     final currencyFormat = ref.watch(currencyFormatProvider);

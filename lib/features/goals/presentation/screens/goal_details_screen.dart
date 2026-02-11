@@ -49,7 +49,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildNotFound(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -77,7 +77,7 @@ class GoalDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildError(BuildContext context, bool isDark, Object error) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -518,7 +518,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalEntity goal,
     bool isDark,
   ) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -601,7 +601,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     WidgetRef ref,
     GoalEntity goal,
   ) async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

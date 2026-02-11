@@ -20,7 +20,7 @@ class FireSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final settingsAsync = ref.watch(fireSettingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -62,7 +62,7 @@ class FireSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildErrorState(BuildContext context, WidgetRef ref, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.xxl),
@@ -116,7 +116,7 @@ class FireSettingsScreen extends ConsumerWidget {
     bool isDark,
     FireSettingsEntity settings,
   ) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
 
     return SingleChildScrollView(
@@ -288,7 +288,7 @@ class FireSettingsScreen extends ConsumerWidget {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
-          final l10n = AppLocalizations.of(context)!;
+          final l10n = AppLocalizations.of(context);
           return Padding(
             padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
                 MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
@@ -339,7 +339,7 @@ class FireSettingsScreen extends ConsumerWidget {
   }
 
   void _showExpensesEditor(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.read(currencySymbolProvider);
     final controller = TextEditingController(text: settings.monthlyExpenses.toStringAsFixed(0));
@@ -392,7 +392,7 @@ class FireSettingsScreen extends ConsumerWidget {
   }
 
   void _showFireTypeSelector(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -452,7 +452,7 @@ class FireSettingsScreen extends ConsumerWidget {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
-          final l10n = AppLocalizations.of(context)!;
+          final l10n = AppLocalizations.of(context);
           return Padding(
             padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
                 MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
@@ -504,7 +504,7 @@ class FireSettingsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         return AlertDialog(
           title: Text(l10n.resetFireSettingsConfirm),
           content: Text(l10n.resetFireSettingsMessage),

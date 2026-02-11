@@ -124,7 +124,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   }
 
   Widget _buildPdfViewer(DocumentEntity document) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     // For PDF, we show a placeholder with option to open externally
     return Center(
       child: Column(

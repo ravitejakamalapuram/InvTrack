@@ -21,7 +21,7 @@ class SecuritySettingsScreen extends ConsumerWidget {
     final securityState = ref.watch(securityProvider);
     final securityNotifier = ref.read(securityProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.securityTitle, style: AppTypography.h3)),

@@ -30,7 +30,7 @@ class OverviewScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final globalStats = ref.watch(globalStatsProvider);
     final openStats = ref.watch(openInvestmentsStatsProvider);
     final closedStats = ref.watch(closedInvestmentsStatsProvider);
