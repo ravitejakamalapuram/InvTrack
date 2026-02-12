@@ -1,0 +1,5 @@
+🆕 What's New
+• P1 tasks - Structured Logging and ref.select (#175)
+
+🔒 Security Updates
+• Update TODO.md with completed PR #173 and #174
