@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- P1 tasks - Structured Logging and ref.select (#175)
+
+### 📚 Documentation
+
+- Update TODO.md with completed PR #173 and #174
+
 ## [3.36.0] - 2026-02-11
 
 ### ✨ Features
