@@ -8,7 +8,7 @@
 library;
 
 import 'package:firebase_performance/firebase_performance.dart';
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Service for tracking performance metrics using Firebase Performance Monitoring.
 class PerformanceService {
@@ -32,13 +32,13 @@ class PerformanceService {
 
       _isInitialized = true;
 
-      if (kDebugMode) {
-        debugPrint('📊 Performance monitoring initialized');
-      }
+      LoggerService.info('Performance monitoring initialized');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('📊 Error initializing performance monitoring: $e');
-      }
+      LoggerService.warn(
+        'Error initializing performance monitoring',
+        error: e,
+        metadata: {'service': 'PerformanceService'},
+      );
     }
   }
 
@@ -56,9 +56,10 @@ class PerformanceService {
   /// ```
   Future<Trace?> startTrace(String name) async {
     if (!_isInitialized || _performance == null) {
-      if (kDebugMode) {
-        debugPrint('📊 Performance not initialized, skipping trace: $name');
-      }
+      LoggerService.debug(
+        'Performance not initialized, skipping trace',
+        metadata: {'trace': name},
+      );
       return null;
     }
 
@@ -66,15 +67,15 @@ class PerformanceService {
       final trace = _performance!.newTrace(name);
       await trace.start();
 
-      if (kDebugMode) {
-        debugPrint('📊 Started trace: $name');
-      }
+      LoggerService.debug('Started trace', metadata: {'trace': name});
 
       return trace;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('📊 Error starting trace $name: $e');
-      }
+      LoggerService.warn(
+        'Error starting trace',
+        error: e,
+        metadata: {'trace': name},
+      );
       return null;
     }
   }
@@ -139,15 +140,20 @@ class PerformanceService {
   }) {
     // For sync operations, we can't use async trace management
     // So we just execute and log in debug mode
-    if (kDebugMode) {
-      final stopwatch = Stopwatch()..start();
-      final result = operation();
-      stopwatch.stop();
-      debugPrint('📊 $traceName completed in ${stopwatch.elapsedMilliseconds}ms');
-      return result;
-    }
+    final stopwatch = Stopwatch()..start();
+    final result = operation();
+    stopwatch.stop();
 
-    return operation();
+    LoggerService.debug(
+      'Sync operation completed',
+      metadata: {
+        'trace': traceName,
+        'duration_ms': stopwatch.elapsedMilliseconds,
+        if (metrics != null) ...metrics.map((k, v) => MapEntry(k, v.toString())),
+      },
+    );
+
+    return result;
   }
 }
 

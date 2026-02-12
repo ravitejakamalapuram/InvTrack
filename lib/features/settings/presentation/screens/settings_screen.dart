@@ -28,9 +28,12 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final settings = ref.watch(settingsProvider);
-    final themeMode = settings.themeMode;
-    final securityState = ref.watch(securityProvider);
+
+    // PERFORMANCE: Use ref.select to rebuild only when specific fields change
+    final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
+    final currency = ref.watch(settingsProvider.select((s) => s.currency));
+    final hasPin = ref.watch(securityProvider.select((s) => s.hasPin));
+    final isBiometricEnabled = ref.watch(securityProvider.select((s) => s.isBiometricEnabled));
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
@@ -55,7 +58,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.currency_exchange_rounded,
                 iconColor: AppColors.successLight,
                 title: l10n.currency,
-                value: settings.currency,
+                value: currency,
                 onTap: () => _showCurrencyPicker(context, ref),
               ),
             ],
@@ -66,11 +69,11 @@ class SettingsScreen extends ConsumerWidget {
             title: l10n.security,
             children: [
               SettingsNavTile(
-                icon: securityState.hasPin ? Icons.lock : Icons.lock_open,
-                iconColor: securityState.hasPin ? AppColors.successLight : null,
+                icon: hasPin ? Icons.lock : Icons.lock_open,
+                iconColor: hasPin ? AppColors.successLight : null,
                 title: l10n.appLock,
-                subtitle: securityState.hasPin
-                    ? '${l10n.pinEnabled}${securityState.isBiometricEnabled ? ' • ${l10n.biometricsOn}' : ''}'
+                subtitle: hasPin
+                    ? '${l10n.pinEnabled}${isBiometricEnabled ? ' • ${l10n.biometricsOn}' : ''}'
                     : l10n.protectYourData,
                 onTap: () =>
                     _navigateTo(context, const SecuritySettingsScreen()),

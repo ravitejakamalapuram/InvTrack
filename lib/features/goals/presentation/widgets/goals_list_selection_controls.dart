@@ -16,15 +16,18 @@ class GoalsListSelectionControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final listState = ref.watch(goalsListStateProvider);
+    // PERFORMANCE: Use ref.select to rebuild only when selectedIds changes
+    final selectedIds = ref.watch(
+      goalsListStateProvider.select((s) => s.selectedIds),
+    );
 
     final allSelected =
         filteredGoals.isNotEmpty &&
-        filteredGoals.every((g) => listState.selectedIds.contains(g.id));
+        filteredGoals.every((g) => selectedIds.contains(g.id));
 
     return SelectionListControls(
       totalCount: filteredGoals.length,
-      selectedCount: listState.selectedIds.length,
+      selectedCount: selectedIds.length,
       allSelected: allSelected,
       onToggleSelectAll: () {
         final notifier = ref.read(goalsListStateProvider.notifier);
