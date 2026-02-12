@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -146,7 +147,9 @@ class DataExportService {
     for (final doc in allDocuments) {
       final bytes = await _documentStorageService.readDocument(doc.localPath);
       if (bytes != null) {
-        final docPath = 'documents/${doc.investmentId}/${doc.fileName}';
+        // Sanitize filename to prevent path traversal in ZIP
+        final safeFileName = path.basename(doc.fileName);
+        final docPath = 'documents/${doc.investmentId}/$safeFileName';
         archive.addFile(ArchiveFile(docPath, bytes.length, bytes));
       }
     }
@@ -346,19 +349,23 @@ class DataExportService {
   Map<String, dynamic> _documentToJson(
     DocumentEntity doc,
     String investmentName,
-  ) => {
-    'id': doc.id,
-    'investmentId': doc.investmentId,
-    'investmentName': investmentName,
-    'name': doc.name,
-    'fileName': doc.fileName,
-    'type': doc.type.name,
-    'mimeType': doc.mimeType,
-    'fileSize': doc.fileSize,
-    'createdAt': doc.createdAt.toIso8601String(),
-    'updatedAt': doc.updatedAt.toIso8601String(),
-    'zipPath': 'documents/${doc.investmentId}/${doc.fileName}',
-  };
+  ) {
+    // Sanitize filename for metadata as well
+    final safeFileName = path.basename(doc.fileName);
+    return {
+      'id': doc.id,
+      'investmentId': doc.investmentId,
+      'investmentName': investmentName,
+      'name': doc.name,
+      'fileName': safeFileName,
+      'type': doc.type.name,
+      'mimeType': doc.mimeType,
+      'fileSize': doc.fileSize,
+      'createdAt': doc.createdAt.toIso8601String(),
+      'updatedAt': doc.updatedAt.toIso8601String(),
+      'zipPath': 'documents/${doc.investmentId}/$safeFileName',
+    };
+  }
 }
 
 /// Helper class to hold cashflow with its investment

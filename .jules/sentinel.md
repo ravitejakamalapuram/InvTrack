@@ -102,3 +102,10 @@
 **Prevention:**
 1. Store security metadata (failed attempts, lockout) in `FlutterSecureStorage` alongside the credentials.
 2. Implement migration logic to seamlessly move existing counters from insecure storage to secure storage without resetting them (fail closed/secure).
+
+## 2026-06-26 - [Zip Slip via Data Export]
+**Vulnerability:** The data export service constructed ZIP files using unsanitized document filenames. A malicious filename containing path traversal characters (`../`) could be written to the ZIP, potentially allowing arbitrary file write when extracted by a vulnerable client (Zip Slip).
+**Learning:** Security is bidirectional. We must sanitize data we *export* as well as data we *import*. Creating a malicious file (even from user's own data) puts the user at risk when they use that file with other tools.
+**Prevention:**
+1. Sanitize all filenames before adding them to a ZIP archive using `path.basename`.
+2. Ensure metadata pointing to these files also uses the sanitized name to maintain referential integrity.
