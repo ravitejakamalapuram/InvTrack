@@ -5,6 +5,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -301,22 +302,40 @@ InvestmentStats calculateStats(
     return InvestmentStats.empty();
   }
 
-  // Find date range without sorting (O(N) instead of O(N log N))
+  // Single pass calculation for O(N) complexity
+  double totalInvested = 0.0;
+  double totalReturned = 0.0;
   DateTime? firstDate;
   DateTime? lastDate;
 
+  // Pre-allocate lists for XIRR if needed
+  final xirrDates = includeXirr ? <DateTime>[] : null;
+  final xirrAmounts = includeXirr ? <double>[] : null;
+
   for (final cf in cashFlows) {
+    // 1. Date range
     if (firstDate == null || cf.date.isBefore(firstDate)) {
       firstDate = cf.date;
     }
     if (lastDate == null || cf.date.isAfter(lastDate)) {
       lastDate = cf.date;
     }
+
+    // 2. Totals
+    if (cf.type.isOutflow) {
+      totalInvested += cf.amount;
+    } else if (cf.type.isInflow) {
+      totalReturned += cf.amount;
+    }
+
+    // 3. XIRR data prep
+    if (includeXirr) {
+      xirrDates!.add(cf.date);
+      xirrAmounts!.add(cf.signedAmount);
+    }
   }
 
-  // Use FinancialCalculator for all calculations
-  final totalInvested = FinancialCalculator.calculateTotalInvested(cashFlows);
-  final totalReturned = FinancialCalculator.calculateTotalReturned(cashFlows);
+  // Calculate derived stats (O(1))
   final netCashFlow = FinancialCalculator.calculateNetCashFlow(
     totalInvested,
     totalReturned,
@@ -327,10 +346,11 @@ InvestmentStats calculateStats(
   );
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
 
-  // Skip XIRR calculation if not requested (performance optimization)
-  final xirr = includeXirr
-      ? FinancialCalculator.calculateXirrFromCashFlows(cashFlows)
-      : 0.0;
+  // XIRR calculation using pre-populated lists
+  final xirr =
+      includeXirr
+          ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
+          : 0.0;
 
   return InvestmentStats(
     totalInvested: totalInvested,
