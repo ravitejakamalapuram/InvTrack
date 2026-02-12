@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/app/app.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/firebase_options.dart';
@@ -57,13 +57,12 @@ void main() async {
     },
     (error, stack) {
       // Catch any errors that escape the Flutter framework
-      if (kDebugMode) {
-        debugPrint('🔴 Uncaught error: $error');
-        debugPrint('Stack trace: $stack');
-      } else {
-        // In release mode, send to Crashlytics
-        CrashlyticsService().recordError(error, stack, fatal: true);
-      }
+      LoggerService.error(
+        'Uncaught error in Flutter framework',
+        error: error,
+        stackTrace: stack,
+        metadata: {'fatal': 'true'},
+      );
     },
   );
 }
@@ -89,9 +88,11 @@ Future<void> _initializeNonCriticalServices(
     // These are idempotent - safe to call on every app start
     unawaited(_scheduleRecurringNotifications(notificationService));
   } catch (e) {
-    if (kDebugMode) {
-      debugPrint('🔴 Error initializing non-critical services: $e');
-    }
+    LoggerService.error(
+      'Error initializing non-critical services',
+      error: e,
+      metadata: {'service': 'main'},
+    );
   }
 }
 
@@ -110,12 +111,12 @@ Future<void> _scheduleRecurringNotifications(
     // Schedule FY summary for April 1st
     await notificationService.scheduleFYSummary();
 
-    if (kDebugMode) {
-      debugPrint('🔔 Recurring notifications scheduled');
-    }
+    LoggerService.info('Recurring notifications scheduled');
   } catch (e) {
-    if (kDebugMode) {
-      debugPrint('🔴 Error scheduling recurring notifications: $e');
-    }
+    LoggerService.error(
+      'Error scheduling recurring notifications',
+      error: e,
+      metadata: {'service': 'NotificationService'},
+    );
   }
 }

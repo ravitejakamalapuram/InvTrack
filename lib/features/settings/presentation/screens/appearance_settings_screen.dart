@@ -17,8 +17,9 @@ class AppearanceSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final settings = ref.watch(settingsProvider);
-    final themeMode = settings.themeMode;
+
+    // PERFORMANCE: Use ref.select to rebuild only when themeMode changes
+    final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
