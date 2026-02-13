@@ -70,126 +70,96 @@ class SecurityService {
 
   /// Get failed attempts from secure storage (migrating from prefs if needed)
   Future<int> _getFailedAttempts() async {
-    try {
-      // Check Secure Storage first
-      final stored = await _secureStorage.read(
-        key: _failedAttemptsKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      if (stored != null) {
-        return int.tryParse(stored) ?? 0;
-      }
+    // Check Secure Storage first
+    final stored = await _secureStorage.read(
+      key: _failedAttemptsKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    if (stored != null) {
+      return int.tryParse(stored) ?? 0;
+    }
 
-      // Fallback/Migrate from SharedPreferences
-      final legacy = _prefs.getInt(_failedAttemptsKey);
-      if (legacy != null) {
-        // Migrate to Secure Storage
-        await _setFailedAttempts(legacy);
-        // Cleanup legacy is handled in _setFailedAttempts
-        return legacy;
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error reading failed attempts: $e');
-      }
+    // Fallback/Migrate from SharedPreferences
+    final legacy = _prefs.getInt(_failedAttemptsKey);
+    if (legacy != null) {
+      // Migrate to Secure Storage
+      await _setFailedAttempts(legacy);
+      // Cleanup legacy is handled in _setFailedAttempts
+      return legacy;
     }
     return 0;
   }
 
   /// Set failed attempts to secure storage
   Future<void> _setFailedAttempts(int attempts) async {
-    try {
-      await _secureStorage.write(
-        key: _failedAttemptsKey,
-        value: attempts.toString(),
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      // Ensure legacy is cleaned up
-      if (_prefs.containsKey(_failedAttemptsKey)) {
-        await _prefs.remove(_failedAttemptsKey);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error writing failed attempts: $e');
-      }
+    await _secureStorage.write(
+      key: _failedAttemptsKey,
+      value: attempts.toString(),
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    // Ensure legacy is cleaned up
+    if (_prefs.containsKey(_failedAttemptsKey)) {
+      await _prefs.remove(_failedAttemptsKey);
     }
   }
 
   /// Get lockout timestamp from secure storage (migrating from prefs if needed)
   Future<int?> _getLockoutTimestamp() async {
-    try {
-      // Check Secure Storage first
-      final stored = await _secureStorage.read(
-        key: _lockoutTimestampKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      if (stored != null) {
-        return int.tryParse(stored);
-      }
+    // Check Secure Storage first
+    final stored = await _secureStorage.read(
+      key: _lockoutTimestampKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    if (stored != null) {
+      return int.tryParse(stored);
+    }
 
-      // Fallback/Migrate from SharedPreferences
-      final legacy = _prefs.getInt(_lockoutTimestampKey);
-      if (legacy != null) {
-        // Migrate
-        await _setLockoutTimestamp(legacy);
-        // Cleanup legacy is handled in _setLockoutTimestamp
-        return legacy;
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error reading lockout timestamp: $e');
-      }
+    // Fallback/Migrate from SharedPreferences
+    final legacy = _prefs.getInt(_lockoutTimestampKey);
+    if (legacy != null) {
+      // Migrate
+      await _setLockoutTimestamp(legacy);
+      // Cleanup legacy is handled in _setLockoutTimestamp
+      return legacy;
     }
     return null;
   }
 
   /// Set lockout timestamp to secure storage
   Future<void> _setLockoutTimestamp(int timestamp) async {
-    try {
-      await _secureStorage.write(
-        key: _lockoutTimestampKey,
-        value: timestamp.toString(),
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      // Ensure legacy is cleaned up
-      if (_prefs.containsKey(_lockoutTimestampKey)) {
-        await _prefs.remove(_lockoutTimestampKey);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error writing lockout timestamp: $e');
-      }
+    await _secureStorage.write(
+      key: _lockoutTimestampKey,
+      value: timestamp.toString(),
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    // Ensure legacy is cleaned up
+    if (_prefs.containsKey(_lockoutTimestampKey)) {
+      await _prefs.remove(_lockoutTimestampKey);
     }
   }
 
   /// Clear all rate limiting data
   Future<void> _clearRateLimit() async {
-    try {
-      await _secureStorage.delete(
-        key: _failedAttemptsKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      await _secureStorage.delete(
-        key: _lockoutTimestampKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      // Also clear legacy just in case
-      if (_prefs.containsKey(_failedAttemptsKey)) {
-        await _prefs.remove(_failedAttemptsKey);
-      }
-      if (_prefs.containsKey(_lockoutTimestampKey)) {
-        await _prefs.remove(_lockoutTimestampKey);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error clearing rate limit: $e');
-      }
+    await _secureStorage.delete(
+      key: _failedAttemptsKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    await _secureStorage.delete(
+      key: _lockoutTimestampKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    // Also clear legacy just in case
+    if (_prefs.containsKey(_failedAttemptsKey)) {
+      await _prefs.remove(_failedAttemptsKey);
+    }
+    if (_prefs.containsKey(_lockoutTimestampKey)) {
+      await _prefs.remove(_lockoutTimestampKey);
     }
   }
 
