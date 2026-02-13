@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
@@ -418,6 +419,21 @@ void main() {
 
       await service.setAutoLockDuration(300);
       expect(service.autoLockDurationSeconds, equals(300));
+    });
+  });
+
+  group('SecurityService - Fail Securely', () {
+    test('verifyPin throws when reading failed attempts fails', () async {
+      await service.setPin('1234');
+
+      // Simulate read error for failed attempts
+      fakeSecureStorage.setThrowRead('pin_failed_attempts', true);
+
+      // Should throw exception instead of allowing access or retry
+      expect(
+        () => service.verifyPin('5678'),
+        throwsA(isA<PlatformException>())
+      );
     });
   });
 }

@@ -11,8 +11,13 @@ class MockLocalAuthentication extends Mock implements LocalAuthentication {}
 /// Fake implementation of FlutterSecureStorage for testing.
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
   final Map<String, String> _storage = {};
+  final Map<String, bool> _shouldThrowRead = {};
 
   FakeFlutterSecureStorage() : super();
+
+  void setThrowRead(String key, bool shouldThrow) {
+    _shouldThrowRead[key] = shouldThrow;
+  }
 
   @override
   Future<String?> read({
@@ -24,6 +29,9 @@ class FakeFlutterSecureStorage extends FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
+    if (_shouldThrowRead[key] == true) {
+      throw PlatformException(code: 'READ_ERROR', message: 'Failed to read');
+    }
     return _storage[key];
   }
 
