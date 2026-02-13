@@ -1,20 +1,103 @@
-/// Notification service for local push notifications.
+/// Local push notification service for InvTrack.
 ///
-/// Handles scheduling and displaying notifications for:
-/// - Income alerts (when income is recorded)
-/// - Weekly investment summary
-/// - Maturity reminders
-/// - Income reminders
-/// - Monthly income summary
+/// This service provides a unified interface for scheduling and displaying
+/// local notifications across the app. It wraps `flutter_local_notifications`
+/// and delegates domain-specific logic to specialized handlers.
 ///
-/// This is the main notification service that coordinates all notification
-/// operations. The service delegates to specialized handlers:
+/// ## Key Features
+///
+/// - **Scheduled Notifications**: Weekly/monthly summaries, tax reminders
+/// - **Investment Notifications**: Maturity reminders, income alerts, milestones
+/// - **Goal Notifications**: Goal milestones and progress alerts
+/// - **Alert Notifications**: Risk alerts, idle investment checks
+/// - **Deep Linking**: Tap notifications to navigate to specific screens
+/// - **Timezone Support**: Handles timezone conversions for accurate scheduling
+///
+/// ## Architecture
+///
+/// The service delegates to specialized handlers:
 /// - [ScheduledNotificationHandler]: Weekly, monthly, FY summaries & tax reminders
 /// - [InvestmentNotificationHandler]: Income & maturity reminders, milestones
 /// - [GoalNotificationHandler]: Goal milestones and alerts
 /// - [AlertNotificationHandler]: Risk alerts, idle investment checks
 ///
-/// Constants and preferences are extracted into separate files.
+/// ## Notification Types
+///
+/// ### 1. Scheduled Notifications
+/// - **Weekly Summary**: Every Sunday at 9 AM
+/// - **Monthly Summary**: 1st of every month at 9 AM
+/// - **FY Summary**: April 1st at 9 AM (India)
+/// - **Tax Reminder**: March 15th at 9 AM (before FY end)
+///
+/// ### 2. Investment Notifications
+/// - **Maturity Reminder**: 7 days before maturity date
+/// - **Income Alert**: When income/dividend is recorded
+/// - **Milestone**: When investment reaches 10%, 25%, 50%, 100% gain
+///
+/// ### 3. Goal Notifications
+/// - **Goal Milestone**: When goal reaches 25%, 50%, 75%, 100%
+/// - **Goal Alert**: Custom alerts for goal progress
+///
+/// ### 4. Alert Notifications
+/// - **Risk Alert**: When investment underperforms
+/// - **Idle Investment**: When no transactions for 90 days
+///
+/// ## Usage Example
+///
+/// ```dart
+/// // Initialize service (in main.dart)
+/// final notificationService = NotificationService(
+///   FlutterLocalNotificationsPlugin(),
+///   sharedPreferences,
+/// );
+/// await notificationService.initialize();
+///
+/// // Request permissions (in settings screen)
+/// final granted = await notificationService.requestPermissions();
+/// if (granted) {
+///   print('Notifications enabled');
+/// }
+///
+/// // Schedule maturity reminder
+/// await notificationService.scheduleMaturityReminder(
+///   investment: investment,
+///   daysBeforeMaturity: 7,
+/// );
+///
+/// // Show income alert
+/// await notificationService.showIncomeAlert(
+///   investmentName: 'FD - HDFC Bank',
+///   amount: 5000,
+///   incomeType: 'Interest',
+/// );
+///
+/// // Schedule weekly summary
+/// await notificationService.scheduleWeeklySummary();
+/// ```
+///
+/// ## Deep Linking
+///
+/// Notifications include payloads for deep linking:
+/// - **Investment notifications**: Navigate to investment detail screen
+/// - **Goal notifications**: Navigate to goal detail screen
+/// - **Summary notifications**: Navigate to dashboard
+///
+/// ## Preferences
+///
+/// User preferences are managed via [NotificationPreferencesMixin]:
+/// - Enable/disable notifications
+/// - Enable/disable specific notification types
+/// - Customize notification times
+///
+/// ## Timezone Handling
+///
+/// The service automatically detects the device timezone and schedules
+/// notifications accordingly. Fallback to UTC if timezone detection fails.
+///
+/// ## Testing
+///
+/// In tests, use a mock [FlutterLocalNotificationsPlugin] to avoid
+/// platform-specific initialization.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -37,16 +120,60 @@ import 'package:timezone/data/latest.dart' as tz_data;
 // Re-export constants for backward compatibility
 export 'package:inv_tracker/core/notifications/notification_constants.dart';
 
-/// Provider for the notification service
+/// Provider for the notification service.
+///
+/// **Must be overridden in main.dart** with actual implementation.
+///
+/// ## Example
+///
+/// ```dart
+/// // In main.dart
+/// final sharedPrefs = await SharedPreferences.getInstance();
+/// final notificationService = NotificationService(
+///   FlutterLocalNotificationsPlugin(),
+///   sharedPrefs,
+/// );
+/// await notificationService.initialize();
+///
+/// runApp(
+///   ProviderScope(
+///     overrides: [
+///       notificationServiceProvider.overrideWithValue(notificationService),
+///     ],
+///     child: MyApp(),
+///   ),
+/// );
+/// ```
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   throw UnimplementedError('Override in main.dart');
 });
 
 /// Notification service that wraps flutter_local_notifications.
 ///
-/// This service uses [NotificationPreferencesMixin] for preference management.
-/// Constants are defined in [notification_constants.dart].
-/// Domain-specific notification logic is delegated to handler classes.
+/// See library documentation above for usage examples and notification types.
+///
+/// ## Key Responsibilities
+///
+/// 1. **Initialization**: Set up notification plugin and timezone
+/// 2. **Permission Management**: Request and check notification permissions
+/// 3. **Scheduling**: Schedule recurring and one-time notifications
+/// 4. **Display**: Show immediate notifications
+/// 5. **Deep Linking**: Handle notification taps and navigate to screens
+/// 6. **Preference Management**: Enable/disable notification types
+///
+/// ## Handler Delegation
+///
+/// This service delegates domain-specific logic to specialized handlers:
+/// - [_scheduledHandler]: Weekly/monthly summaries, tax reminders
+/// - [_investmentHandler]: Maturity reminders, income alerts
+/// - [_goalHandler]: Goal milestones and alerts
+/// - [_alertHandler]: Risk alerts, idle investment checks
+///
+/// ## See Also
+///
+/// - [NotificationPreferencesMixin] for preference management
+/// - [NotificationConstants] for notification IDs and channels
+/// - [NotificationPayload] for deep linking payloads
 class NotificationService with NotificationPreferencesMixin {
   final FlutterLocalNotificationsPlugin _plugin;
   final SharedPreferences _prefs;
@@ -94,11 +221,47 @@ class NotificationService with NotificationPreferencesMixin {
     );
   }
 
-  /// Expose SharedPreferences for the mixin
+  /// Expose SharedPreferences for the mixin.
   @override
   SharedPreferences get prefs => _prefs;
 
-  /// Initialize the notification service
+  /// Initialize the notification service.
+  ///
+  /// **Must be called before using any notification features.**
+  /// Safe to call multiple times - subsequent calls return immediately.
+  ///
+  /// ## Initialization Steps
+  ///
+  /// 1. Initialize timezone database
+  /// 2. Detect and set device timezone
+  /// 3. Configure notification plugin (Android + iOS)
+  /// 4. Set up notification tap handler
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // In main.dart
+  /// final notificationService = NotificationService(
+  ///   FlutterLocalNotificationsPlugin(),
+  ///   sharedPreferences,
+  /// );
+  /// await notificationService.initialize();
+  /// ```
+  ///
+  /// ## Timezone Handling
+  ///
+  /// The service automatically detects the device timezone using
+  /// `flutter_timezone`. If detection fails, it falls back to UTC.
+  ///
+  /// ## Platform-Specific Behavior
+  ///
+  /// - **Android**: Uses `@mipmap/ic_launcher` as notification icon
+  /// - **iOS**: Permissions requested separately (not during initialization)
+  ///
+  /// ## See Also
+  ///
+  /// - [requestPermissions] to request notification permissions
+  /// - [arePermissionsGranted] to check permission status
   Future<void> initialize() async {
     if (_isInitialized) return;
 

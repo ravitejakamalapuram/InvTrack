@@ -1,8 +1,98 @@
+/// Currency formatting utilities with locale-aware number formatting.
+///
+/// This library provides comprehensive currency formatting for InvTrack,
+/// supporting 40+ currencies with proper locale-specific number formatting.
+///
+/// ## Key Features
+///
+/// - **Locale-Aware Formatting**: Respects currency locale (Indian lakhs/crores vs. Western thousands/millions)
+/// - **Compact Notation**: Automatic compact formatting for large numbers (1L, 1Cr, 100K, 1M)
+/// - **Performance**: Cached NumberFormat instances to avoid repeated instantiation
+/// - **Riverpod Integration**: Providers for currency code, symbol, and locale
+/// - **Multi-Currency Support**: 40+ currencies with proper symbols and locales
+///
+/// ## Number Formatting Examples
+///
+/// Different locales format numbers differently:
+///
+/// ### Indian Locale (en_IN)
+/// - 1,000 → "1K"
+/// - 1,00,000 → "1L" (1 lakh)
+/// - 10,00,000 → "10L" (10 lakhs)
+/// - 1,00,00,000 → "1Cr" (1 crore)
+///
+/// ### Western Locales (en_US, en_GB, de_DE)
+/// - 1,000 → "1K"
+/// - 100,000 → "100K"
+/// - 1,000,000 → "1M"
+/// - 10,000,000 → "10M"
+///
+/// ## Usage Example
+///
+/// ```dart
+/// // Using providers (recommended)
+/// final symbol = ref.watch(currencySymbolProvider); // ₹
+/// final locale = ref.watch(currencyLocaleProvider); // en_IN
+///
+/// // Compact formatting (for cards, lists)
+/// final compact = formatCompactCurrency(100000, symbol: symbol, locale: locale);
+/// print(compact); // ₹1L (Indian) or $100K (Western)
+///
+/// // Full formatting (for detail screens)
+/// final full = formatCurrency(100000, symbol, locale);
+/// print(full); // ₹1,00,000 (Indian) or $100,000 (Western)
+///
+/// // Smart formatting (compact for large amounts, full for small)
+/// final smart = formatSmartCurrency(
+///   100000,
+///   symbol: symbol,
+///   locale: locale,
+///   compactThreshold: 100000,
+/// );
+/// print(smart); // ₹1L (Indian) or $100K (Western)
+///
+/// // Using extension methods
+/// final formatter = ref.watch(currencyFormatProvider);
+/// print(formatter.formatCompact(100000)); // ₹1L or $100K
+/// ```
+///
+/// ## Supported Currencies
+///
+/// - **North America**: USD, CAD, MXN
+/// - **Europe**: EUR, GBP, CHF, SEK, NOK, DKK, PLN, CZK, HUF, RON
+/// - **Asia**: INR, JPY, CNY, KRW, SGD, HKD, TWD, THB, MYR, IDR, PHP, VND, BDT, PKR, LKR, AED, SAR, ILS, TRY
+/// - **Oceania**: AUD, NZD
+/// - **South America**: BRL, ARS, CLP, COP, PEN
+/// - **Africa**: ZAR, NGN, KES, EGP
+///
+/// ## Migration from formatCompactIndian()
+///
+/// The old `formatCompactIndian()` function is deprecated. Use `formatCompactCurrency()`
+/// with locale parameter for proper multi-currency support:
+///
+/// ```dart
+/// // ❌ OLD (always uses Indian notation)
+/// formatCompactIndian(100000, symbol: '₹');
+///
+/// // ✅ NEW (respects locale)
+/// formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN');
+/// ```
+///
+/// ## See Also
+///
+/// - [LocaleDetectionService] for automatic locale detection
+/// - [getCurrencySymbol] for currency symbol mapping
+/// - [getCurrencyLocale] for currency locale mapping
+library;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
-/// Cache for NumberFormat instances to avoid repeated instantiation overhead
+/// Cache for NumberFormat instances to avoid repeated instantiation overhead.
+///
+/// Caching improves performance by reusing formatters instead of creating
+/// new instances for every formatting operation.
 final Map<String, NumberFormat> _formatters = {};
 
 /// Helper to get cached formatter
@@ -132,12 +222,67 @@ const Map<String, String> _currencyLocales = {
   'EGP': 'ar_EG',
 };
 
-/// Get currency symbol from currency code
+/// Get currency symbol from currency code.
+///
+/// Maps ISO 4217 currency codes to their symbols.
+///
+/// ## Parameters
+///
+/// - [currencyCode]: ISO 4217 currency code (e.g., 'USD', 'EUR', 'INR')
+///
+/// ## Returns
+///
+/// - **String**: Currency symbol (e.g., '$', '€', '₹')
+/// - Fallback: '₹' (INR) if currency not found
+///
+/// ## Example
+///
+/// ```dart
+/// final symbol = getCurrencySymbol('USD'); // $
+/// final symbol2 = getCurrencySymbol('EUR'); // €
+/// final symbol3 = getCurrencySymbol('INR'); // ₹
+/// final unknown = getCurrencySymbol('XXX'); // ₹ (fallback)
+/// ```
+///
+/// ## Supported Currencies
+///
+/// See [_currencySymbols] map for full list (40+ currencies).
 String getCurrencySymbol(String currencyCode) {
   return _currencySymbols[currencyCode] ?? _currencySymbols['INR']!;
 }
 
-/// Get locale for currency code
+/// Get locale for currency code.
+///
+/// Maps currency codes to their proper locales for number formatting.
+/// This is critical for correct number formatting (Indian lakhs/crores vs. Western thousands/millions).
+///
+/// ## Parameters
+///
+/// - [currencyCode]: ISO 4217 currency code (e.g., 'USD', 'EUR', 'INR')
+///
+/// ## Returns
+///
+/// - **String**: Locale string (e.g., 'en_US', 'de_DE', 'en_IN')
+/// - Fallback: 'en_IN' if currency not found
+///
+/// ## Example
+///
+/// ```dart
+/// final locale = getCurrencyLocale('INR'); // en_IN (Indian numbering)
+/// final locale2 = getCurrencyLocale('USD'); // en_US (Western numbering)
+/// final locale3 = getCurrencyLocale('EUR'); // de_DE (European numbering)
+/// ```
+///
+/// ## Number Formatting Differences
+///
+/// - **en_IN**: 1,00,000 (lakhs/crores)
+/// - **en_US**: 100,000 (thousands/millions)
+/// - **de_DE**: 100.000 (periods as separators)
+///
+/// ## See Also
+///
+/// - [formatCompactCurrency] for locale-aware compact formatting
+/// - [LocaleDetectionService] for automatic locale detection
 String getCurrencyLocale(String currencyCode) {
   return _currencyLocales[currencyCode] ?? _currencyLocales['INR']!;
 }
@@ -195,8 +340,46 @@ final currencyFormatCompactProvider = Provider<NumberFormat>((ref) {
   );
 });
 
-/// Format a number as currency with proper locale formatting
-/// Use this function for displaying amounts throughout the app
+/// Format a number as currency with proper locale formatting.
+///
+/// This is the **primary function** for displaying currency amounts throughout the app.
+/// Use this for detail screens where full precision is needed.
+///
+/// ## Parameters
+///
+/// - [amount]: Amount to format
+/// - [symbol]: Currency symbol (e.g., '₹', '$', '€')
+/// - [locale]: Locale for number formatting (e.g., 'en_IN', 'en_US')
+/// - [decimalDigits]: Number of decimal places (default: 0)
+///
+/// ## Returns
+///
+/// - **String**: Formatted currency string with locale-specific grouping
+///
+/// ## Example
+///
+/// ```dart
+/// // Indian locale
+/// formatCurrency(100000, '₹', 'en_IN'); // ₹1,00,000
+/// formatCurrency(100000, '₹', 'en_IN', decimalDigits: 2); // ₹1,00,000.00
+///
+/// // US locale
+/// formatCurrency(100000, '\$', 'en_US'); // \$100,000
+///
+/// // German locale
+/// formatCurrency(100000, '€', 'de_DE'); // 100.000 €
+/// ```
+///
+/// ## When to Use
+///
+/// - **Use formatCurrency()**: For detail screens, full precision
+/// - **Use formatCompactCurrency()**: For cards, lists, constrained spaces
+/// - **Use formatSmartCurrency()**: For adaptive formatting (compact for large amounts)
+///
+/// ## See Also
+///
+/// - [formatCompactCurrency] for compact notation (1L, 1M)
+/// - [formatSmartCurrency] for adaptive formatting
 String formatCurrency(
   double amount,
   String symbol,
@@ -212,8 +395,38 @@ String formatCurrency(
   return formatter.format(amount);
 }
 
-/// Format a number with proper locale grouping (no currency symbol)
-/// Useful for input fields or when symbol is added separately
+/// Format a number with proper locale grouping (no currency symbol).
+///
+/// Useful for input fields or when symbol is added separately.
+///
+/// ## Parameters
+///
+/// - [amount]: Amount to format
+/// - [locale]: Locale for number formatting (e.g., 'en_IN', 'en_US')
+/// - [decimalDigits]: Number of decimal places (default: 0)
+///
+/// ## Returns
+///
+/// - **String**: Formatted number string with locale-specific grouping (no symbol)
+///
+/// ## Example
+///
+/// ```dart
+/// // Indian locale
+/// formatNumber(100000, 'en_IN'); // 1,00,000
+///
+/// // US locale
+/// formatNumber(100000, 'en_US'); // 100,000
+///
+/// // With decimals
+/// formatNumber(100000.50, 'en_US', decimalDigits: 2); // 100,000.50
+/// ```
+///
+/// ## Use Cases
+///
+/// - Input fields (where symbol is shown separately)
+/// - Charts/graphs (where symbol is in legend)
+/// - Export files (CSV, Excel)
 String formatNumber(double amount, String locale, {int decimalDigits = 0}) {
   final formatter = _getCachedFormatter(
     type: 'decimal',
@@ -279,13 +492,46 @@ String formatCompactIndian(
   return '$sign$symbol$formatted$suffix';
 }
 
-/// Format amount with automatic compact notation based on size
-/// Uses locale-aware compact format for large numbers (100K/1M for Western, 1L/1Cr for Indian)
+/// Format amount with automatic compact notation based on size.
 ///
-/// [amount] - The amount to format
-/// [symbol] - Currency symbol
-/// [locale] - Locale for number formatting
-/// [compactThreshold] - Above this value, use compact format (default 100000 = 1L)
+/// Uses locale-aware compact format for large numbers (100K/1M for Western, 1L/1Cr for Indian).
+/// For amounts below threshold, uses full formatting.
+///
+/// ## Parameters
+///
+/// - [amount]: Amount to format
+/// - [symbol]: Currency symbol (e.g., '₹', '$', '€')
+/// - [locale]: Locale for number formatting (e.g., 'en_IN', 'en_US')
+/// - [compactThreshold]: Above this value, use compact format (default: 100000)
+///
+/// ## Returns
+///
+/// - **String**: Formatted currency string (compact for large amounts, full for small)
+///
+/// ## Example
+///
+/// ```dart
+/// // Indian locale (threshold = 100000)
+/// formatSmartCurrency(50000, symbol: '₹', locale: 'en_IN'); // ₹50,000 (full)
+/// formatSmartCurrency(100000, symbol: '₹', locale: 'en_IN'); // ₹1L (compact)
+/// formatSmartCurrency(1000000, symbol: '₹', locale: 'en_IN'); // ₹10L (compact)
+///
+/// // US locale (threshold = 100000)
+/// formatSmartCurrency(50000, symbol: '\$', locale: 'en_US'); // \$50,000 (full)
+/// formatSmartCurrency(100000, symbol: '\$', locale: 'en_US'); // \$100K (compact)
+/// formatSmartCurrency(1000000, symbol: '\$', locale: 'en_US'); // \$1M (compact)
+/// ```
+///
+/// ## When to Use
+///
+/// - **Use formatSmartCurrency()**: For adaptive formatting (dashboard cards)
+/// - **Use formatCompactCurrency()**: Always compact (list items, tight spaces)
+/// - **Use formatCurrency()**: Always full (detail screens)
+///
+/// ## See Also
+///
+/// - [formatCompactCurrency] for always-compact formatting
+/// - [formatCurrency] for always-full formatting
 String formatSmartCurrency(
   double amount, {
   required String symbol,
@@ -308,8 +554,57 @@ String formatSmartCurrency(
   return formatCurrency(amount, symbol, locale);
 }
 
-/// Format amount for display in constrained spaces (cards, lists)
-/// Always uses locale-aware compact format for amounts >= 1000
+/// Format amount for display in constrained spaces (cards, lists).
+///
+/// **Always uses locale-aware compact format** for amounts >= 1000.
+/// This is the **recommended function** for cards, lists, and tight spaces.
+///
+/// ## Parameters
+///
+/// - [amount]: Amount to format
+/// - [symbol]: Currency symbol (e.g., '₹', '$', '€')
+/// - [locale]: Locale for number formatting (default: 'en_US')
+///
+/// ## Returns
+///
+/// - **String**: Formatted currency string in compact notation
+///
+/// ## Example
+///
+/// ```dart
+/// // Indian locale
+/// formatCompactCurrency(1000, symbol: '₹', locale: 'en_IN'); // ₹1K
+/// formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN'); // ₹1L
+/// formatCompactCurrency(1000000, symbol: '₹', locale: 'en_IN'); // ₹10L
+/// formatCompactCurrency(10000000, symbol: '₹', locale: 'en_IN'); // ₹1Cr
+///
+/// // US locale
+/// formatCompactCurrency(1000, symbol: '\$', locale: 'en_US'); // \$1K
+/// formatCompactCurrency(100000, symbol: '\$', locale: 'en_US'); // \$100K
+/// formatCompactCurrency(1000000, symbol: '\$', locale: 'en_US'); // \$1M
+/// formatCompactCurrency(10000000, symbol: '\$', locale: 'en_US'); // \$10M
+/// ```
+///
+/// ## When to Use
+///
+/// - **Use formatCompactCurrency()**: For cards, lists, constrained spaces
+/// - **Use formatSmartCurrency()**: For adaptive formatting (compact for large amounts)
+/// - **Use formatCurrency()**: For detail screens, full precision
+///
+/// ## Migration from formatCompactIndian()
+///
+/// ```dart
+/// // ❌ OLD (always uses Indian notation)
+/// formatCompactIndian(100000, symbol: '₹');
+///
+/// // ✅ NEW (respects locale)
+/// formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN');
+/// ```
+///
+/// ## See Also
+///
+/// - [formatSmartCurrency] for adaptive formatting
+/// - [formatCurrency] for full formatting
 String formatCompactCurrency(
   double amount, {
   required String symbol,

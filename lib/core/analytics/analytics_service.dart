@@ -1,27 +1,127 @@
 /// Analytics service for tracking user events and screen views.
 ///
-/// This abstraction layer wraps Firebase Analytics and provides
-/// a clean interface for the rest of the app.
+/// This abstraction layer wraps Firebase Analytics and provides a clean interface
+/// for tracking user behavior, feature adoption, and errors across the InvTrack app.
+///
+/// ## Key Features
+///
+/// - **Event Tracking**: Log custom events with parameters
+/// - **Screen Tracking**: Automatic screen view tracking via GoRouter observer
+/// - **User Properties**: Set user attributes for segmentation
+/// - **Privacy-First**: Never logs exact amounts, only ranges
+/// - **Debug Mode**: Prints events to console in debug builds
+///
+/// ## Event Naming Convention
+///
+/// All events follow the pattern: `{noun}_{action}` in snake_case
+///
+/// **Examples:**
+/// - `investment_created` (not `create_investment`)
+/// - `goal_updated` (not `update_goal`)
+/// - `csv_import_completed` (not `complete_csv_import`)
+///
+/// ## Privacy Guidelines
+///
+/// **NEVER log:**
+/// - ❌ Exact investment amounts
+/// - ❌ Exact returns or gains
+/// - ❌ User names, emails, phone numbers
+/// - ❌ Account numbers or sensitive IDs
+///
+/// **Always use ranges:**
+/// - ✅ `amount_range: "1k_10k"` instead of `amount: 5000`
+/// - ✅ `rate_range: "8_to_12"` instead of `rate: 10.5`
+///
+/// ## Usage Example
+///
+/// ```dart
+/// // Basic event logging
+/// await analyticsService.logEvent(
+///   name: 'investment_created',
+///   parameters: {'investment_type': 'FD', 'has_notes': true},
+/// );
+///
+/// // Using convenience methods
+/// await analyticsService.logInvestmentCreated(
+///   investmentType: 'FD',
+///   hasNotes: true,
+/// );
+///
+/// // Screen tracking (automatic via GoRouter observer)
+/// // No manual logging needed - observer handles it
+///
+/// // User properties
+/// await analyticsService.setUserProperty(
+///   name: 'preferred_currency',
+///   value: 'INR',
+/// );
+/// ```
+///
+/// ## Testing
+///
+/// In tests, use `FakeAnalyticsService` which prints events to console
+/// without sending to Firebase.
 library;
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Provider for the analytics service
+/// Provider for the analytics service.
+///
+/// Returns [AnalyticsService] in production, [FakeAnalyticsService] in tests.
 final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
   return AnalyticsService();
 });
 
-/// Provider for the Firebase Analytics observer (for GoRouter)
-/// Returns null in test mode when FakeAnalyticsService is used
+/// Provider for the Firebase Analytics observer (for GoRouter).
+///
+/// Automatically tracks screen views when routes change.
+/// Returns null in test mode when FakeAnalyticsService is used.
+///
+/// ## Usage
+///
+/// ```dart
+/// GoRouter(
+///   observers: [
+///     if (analyticsObserver != null) analyticsObserver!,
+///   ],
+/// );
+/// ```
 final analyticsObserverProvider = Provider<FirebaseAnalyticsObserver?>((ref) {
   final analytics = ref.watch(analyticsServiceProvider);
   return analytics.getObserver();
 });
 
-/// Analytics event names - centralized for consistency
-/// Kept minimal to reduce noise - only core business events
+/// Analytics event names - centralized for consistency.
+///
+/// All event names follow the pattern: `{noun}_{action}` in snake_case.
+/// Kept minimal to reduce noise - only core business events are tracked.
+///
+/// ## Event Categories
+///
+/// - **Core Conversion**: investment_created, cashflow_added
+/// - **Investment Lifecycle**: closed, reopened, archived, deleted
+/// - **Feature Adoption**: csv_import, export, goals, documents
+/// - **Security & Settings**: security_enabled, theme_changed
+/// - **Error Tracking**: error_occurred
+///
+/// ## Adding New Events
+///
+/// 1. Add constant to this class
+/// 2. Follow naming convention: `{noun}_{action}`
+/// 3. Add convenience method to AnalyticsService
+/// 4. Document parameters and privacy considerations
+///
+/// ## Example
+///
+/// ```dart
+/// // ❌ BAD: Verb-first naming
+/// static const String createInvestment = 'create_investment';
+///
+/// // ✅ GOOD: Noun-first naming
+/// static const String investmentCreated = 'investment_created';
+/// ```
 class AnalyticsEvents {
   // Core conversion events
   static const String investmentCreated = 'investment_created';
@@ -75,17 +175,66 @@ class AnalyticsEvents {
   static const String enhancedFieldsUsed = 'enhanced_fields_used';
 }
 
-/// Analytics service that wraps Firebase Analytics
+/// Analytics service that wraps Firebase Analytics.
+///
+/// See library documentation above for usage examples and privacy guidelines.
 class AnalyticsService {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
-  /// Get the analytics observer for navigation tracking
-  /// Returns null for fake implementations
+  /// Get the analytics observer for navigation tracking.
+  ///
+  /// Returns [FirebaseAnalyticsObserver] for automatic screen view tracking.
+  /// Returns null for fake implementations (used in tests).
+  ///
+  /// ## Usage
+  ///
+  /// ```dart
+  /// final observer = analyticsService.getObserver();
+  /// GoRouter(
+  ///   observers: [if (observer != null) observer],
+  /// );
+  /// ```
   FirebaseAnalyticsObserver? getObserver() {
     return FirebaseAnalyticsObserver(analytics: _analytics);
   }
 
-  /// Log a custom event
+  /// Log a custom event with optional parameters.
+  ///
+  /// This is the core method for logging events. Prefer using convenience methods
+  /// (e.g., [logInvestmentCreated]) for common events.
+  ///
+  /// ## Parameters
+  ///
+  /// - [name]: Event name (use constants from [AnalyticsEvents])
+  /// - [parameters]: Optional key-value pairs (max 25 parameters, max 100 chars per value)
+  ///
+  /// ## Privacy
+  ///
+  /// **NEVER include:**
+  /// - Exact amounts (use ranges: "1k_10k", "10k_100k")
+  /// - PII (names, emails, phone numbers)
+  /// - Sensitive IDs (account numbers, transaction IDs)
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // ❌ BAD: Logs exact amount
+  /// await analyticsService.logEvent(
+  ///   name: 'investment_created',
+  ///   parameters: {'amount': 50000},
+  /// );
+  ///
+  /// // ✅ GOOD: Uses amount range
+  /// await analyticsService.logEvent(
+  ///   name: 'investment_created',
+  ///   parameters: {'amount_range': '10k_100k'},
+  /// );
+  /// ```
+  ///
+  /// ## Debug Mode
+  ///
+  /// In debug builds, events are printed to console with 📊 emoji.
+  /// Errors are printed with ⚠️ emoji.
   Future<void> logEvent({
     required String name,
     Map<String, Object>? parameters,
@@ -102,7 +251,25 @@ class AnalyticsService {
     }
   }
 
-  /// Log screen view
+  /// Log screen view (usually handled automatically by observer).
+  ///
+  /// Manual screen view logging is rarely needed - the [FirebaseAnalyticsObserver]
+  /// automatically tracks screen views when routes change.
+  ///
+  /// ## Parameters
+  ///
+  /// - [screenName]: Name of the screen (e.g., "InvestmentListScreen")
+  /// - [screenClass]: Optional class name for grouping
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // Manual logging (rarely needed)
+  /// await analyticsService.logScreenView(
+  ///   screenName: 'InvestmentDetailScreen',
+  ///   screenClass: 'InvestmentScreen',
+  /// );
+  /// ```
   Future<void> logScreenView({
     required String screenName,
     String? screenClass,
@@ -122,7 +289,23 @@ class AnalyticsService {
     }
   }
 
-  /// Set user ID for analytics
+  /// Set user ID for analytics (hashed Firebase UID).
+  ///
+  /// **Privacy:** Only use hashed/anonymized Firebase UID, never email or name.
+  ///
+  /// ## Parameters
+  ///
+  /// - [userId]: Hashed Firebase UID (null to clear)
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // Set user ID on sign in
+  /// await analyticsService.setUserId(firebaseUser.uid);
+  ///
+  /// // Clear user ID on sign out
+  /// await analyticsService.setUserId(null);
+  /// ```
   Future<void> setUserId(String? userId) async {
     try {
       await _analytics.setUserId(id: userId);
@@ -133,7 +316,38 @@ class AnalyticsService {
     }
   }
 
-  /// Set user property
+  /// Set user property for segmentation.
+  ///
+  /// User properties are attributes that describe segments of your user base.
+  /// They're useful for creating audiences and analyzing user behavior.
+  ///
+  /// ## Parameters
+  ///
+  /// - [name]: Property name (max 24 chars, alphanumeric + underscore)
+  /// - [value]: Property value (max 36 chars, null to clear)
+  ///
+  /// ## Common Properties
+  ///
+  /// - `preferred_currency`: "INR", "USD", "EUR"
+  /// - `theme_mode`: "light", "dark", "system"
+  /// - `security_enabled`: "true", "false"
+  /// - `investment_count_range`: "0", "1_5", "6_20", "21_plus"
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // Set currency preference
+  /// await analyticsService.setUserProperty(
+  ///   name: 'preferred_currency',
+  ///   value: 'INR',
+  /// );
+  ///
+  /// // Clear property
+  /// await analyticsService.setUserProperty(
+  ///   name: 'preferred_currency',
+  ///   value: null,
+  /// );
+  /// ```
   Future<void> setUserProperty({
     required String name,
     required String? value,
@@ -149,17 +363,53 @@ class AnalyticsService {
 
   // ============ Convenience methods for common events ============
 
-  /// Log sign in event
+  /// Log sign in event (Firebase predefined event).
+  ///
+  /// ## Parameters
+  ///
+  /// - [method]: Sign-in method (e.g., "google", "email", "apple")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logSignIn(method: 'google');
+  /// ```
   Future<void> logSignIn({required String method}) async {
     await _analytics.logLogin(loginMethod: method);
   }
 
-  /// Log sign up event
+  /// Log sign up event (Firebase predefined event).
+  ///
+  /// ## Parameters
+  ///
+  /// - [method]: Sign-up method (e.g., "google", "email", "apple")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logSignUp(method: 'google');
+  /// ```
   Future<void> logSignUp({required String method}) async {
     await _analytics.logSignUp(signUpMethod: method);
   }
 
-  /// Log investment created
+  /// Log investment created (core conversion event).
+  ///
+  /// Tracks when a user creates a new investment. This is a key conversion metric.
+  ///
+  /// ## Parameters
+  ///
+  /// - [investmentType]: Type of investment (e.g., "FD", "Stocks", "MF", "PPF")
+  /// - [hasNotes]: Whether user added notes (indicates engagement)
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logInvestmentCreated(
+  ///   investmentType: 'FD',
+  ///   hasNotes: true,
+  /// );
+  /// ```
   Future<void> logInvestmentCreated({
     required String investmentType,
     bool hasNotes = false,
@@ -170,7 +420,28 @@ class AnalyticsService {
     );
   }
 
-  /// Log cash flow added
+  /// Log cash flow added (transaction tracking).
+  ///
+  /// Tracks when a user adds a transaction (buy, sell, dividend, etc.).
+  ///
+  /// ## Parameters
+  ///
+  /// - [flowType]: Type of cash flow (e.g., "buy", "sell", "dividend", "interest")
+  /// - [amountRange]: Amount range (e.g., "under_1k", "1k_10k", "10k_100k", "over_100k")
+  ///
+  /// ## Privacy
+  ///
+  /// **NEVER log exact amounts** - always use ranges.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // For amount = ₹5,000
+  /// await analyticsService.logCashFlowAdded(
+  ///   flowType: 'buy',
+  ///   amountRange: '1k_10k',
+  /// );
+  /// ```
   Future<void> logCashFlowAdded({
     required String flowType,
     required String amountRange,
