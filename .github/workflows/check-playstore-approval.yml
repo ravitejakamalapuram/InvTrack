@@ -105,11 +105,11 @@ jobs:
 
               const editId = editResponse.data.id;
 
-              // Get alpha track info (matching your deploy workflow)
+              // Get production track info (matching your deploy workflow)
               const trackResponse = await androidPublisher.edits.tracks.get({
                 packageName: packageName,
                 editId: editId,
-                track: 'alpha',  // Matches your deploy workflow
+                track: 'production',  // Matches your deploy workflow
               });
 
               // Delete the edit (we're just reading)
@@ -121,7 +121,7 @@ jobs:
               const releases = trackResponse.data.releases || [];
 
               if (releases.length === 0) {
-                console.log('⚠️  No releases found in alpha track');
+                console.log('⚠️  No releases found in production track');
                 console.log('🧹 Clearing stale pending flag (no releases in Play Store)...');
 
                 await db.collection('app_config').doc('version_info').update({
@@ -215,9 +215,9 @@ jobs:
 
               const approvalTime = new Date().toISOString();
 
-              // Rollout delay: 30 minutes (average time for alpha track propagation)
-              // Research shows alpha/closed testing typically takes 15-30 minutes to propagate
-              const rolloutDelayMinutes = 30;
+              // Rollout delay: 2 hours (average time for production track propagation)
+              // Production releases typically take 1-3 hours to propagate globally
+              const rolloutDelayMinutes = 120;
               const releaseDate = new Date(Date.now() + (rolloutDelayMinutes * 60 * 1000));
 
               const whatsNew = latestRelease.releaseNotes?.[0]?.text || '- Bug fixes and improvements';

@@ -164,14 +164,14 @@ jobs:
           echo "What's New content:"
           cat whatsnew/whatsnew-en-US
 
-      - name: Deploy to Google Play (Closed Testing)
+      - name: Deploy to Google Play (Production)
         id: deploy
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           packageName: com.invtracker.inv_tracker
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: alpha
+          track: production
           status: completed
           releaseName: v${{ steps.version.outputs.version }}
           whatsNewDirectory: whatsnew
@@ -280,7 +280,7 @@ jobs:
           body: |
             ## Release v${{ steps.version.outputs.version }}
 
-            App has been deployed to Google Play closed testing (alpha track).
+            App has been deployed to Google Play production.
 
             ### 📦 App Size
             ${{ steps.app_size.outputs.size_mb }} MB
@@ -311,7 +311,7 @@ jobs:
                 {
                   "type": "section",
                   "fields": [
-                    {"type": "mrkdwn", "text": "*Track:*\nAlpha (Closed Testing)"},
+                    {"type": "mrkdwn", "text": "*Track:*\nProduction"},
                     {"type": "mrkdwn", "text": "*App Size:*\n${{ steps.app_size.outputs.size_mb }} MB"}
                   ]
                 },
@@ -396,7 +396,7 @@ jobs:
           echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Version | v${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Track | Alpha (Closed Testing) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Track | Production |" >> $GITHUB_STEP_SUMMARY
           echo "| App Size | ${{ steps.app_size.outputs.size_mb }} MB |" >> $GITHUB_STEP_SUMMARY
           echo "| Security | ${{ steps.gitleaks.outcome == 'success' && '✅ Pass' || '⚠️ Check' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Outdated Deps | ${{ steps.security.outputs.outdated_count }} |" >> $GITHUB_STEP_SUMMARY

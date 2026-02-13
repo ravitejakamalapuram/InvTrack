@@ -186,8 +186,8 @@ npm install -g firebase-admin@12.0.0 googleapis@131.0.0
 ### **Issue: "Invalid credentials"**
 **Solution:** Verify GitHub secrets are valid JSON (copy entire file content).
 
-### **Issue: "No releases found in alpha track"**
-**Solution:** Verify deploy workflow uploaded to `alpha` track (check cd-deploy-android.yml line 173).
+### **Issue: "No releases found in production track"**
+**Solution:** Verify deploy workflow uploaded to `production` track (check cd-deploy-android.yml line 174).
 
 ---
 

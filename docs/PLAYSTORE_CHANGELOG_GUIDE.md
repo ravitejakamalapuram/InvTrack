@@ -189,7 +189,7 @@ The **CD: Deploy to Play Store** workflow (`.github/workflows/cd-deploy-android.
 
 1. Builds release bundle
 2. Uses the generated changelog from `changelogs/{version_code}.txt`
-3. Deploys to Play Store alpha track
+3. Deploys to Play Store production track
 4. Creates GitHub Release with changelog
 
 ---
