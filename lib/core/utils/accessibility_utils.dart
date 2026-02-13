@@ -76,14 +76,17 @@ class AccessibilityUtils {
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
+    bool shouldMask = false,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
-    final value = formatCurrencyForScreenReader(currentValue, currencySymbol);
+    final value = shouldMask
+        ? 'Hidden amount'
+        : formatCurrencyForScreenReader(currentValue, currencySymbol);
     final invested = totalInvested != null && totalInvested > 0
-        ? 'Invested: ${formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
+        ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
         : '';
     final returns = returnPercent != null
-        ? 'Returns: ${formatPercentageForScreenReader(returnPercent)}'
+        ? 'Returns: ${shouldMask ? "Hidden percentage" : formatPercentageForScreenReader(returnPercent)}'
         : '';
     final lastActivity = lastActivityDate != null
         ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'
