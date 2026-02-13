@@ -160,6 +160,26 @@ void main() {
           isNot(contains('Matures')),
         );
       });
+
+      test('masks sensitive values when shouldMask is true', () {
+        final label = AccessibilityUtils.investmentCardLabel(
+          name: 'Secret Fund',
+          type: 'Stock',
+          currentValue: 1000000,
+          returnPercent: 25.5,
+          currencySymbol: '\$',
+          isClosed: false,
+          shouldMask: true,
+          totalInvested: 800000,
+        );
+
+        expect(label, contains('Current value: Hidden amount'));
+        expect(label, contains('Invested: Hidden amount'));
+        expect(label, contains('Returns: Hidden percentage'));
+        expect(label, isNot(contains('1,000,000')));
+        expect(label, isNot(contains('800,000')));
+        expect(label, isNot(contains('25.5')));
+      });
     });
   });
 }
