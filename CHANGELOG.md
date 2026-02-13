@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- P2 Task 1 - Code Documentation Improvements (#179)
+
+## [3.37.2] - 2026-02-13
+
 ### 🔧 Miscellaneous
 
 - Change Play Store deployment from closed testing to production
