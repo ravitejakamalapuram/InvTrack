@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Remove READ_MEDIA_IMAGES permission to comply with Play Store policy
+
+### 📚 Documentation
+
+- Update TODO.md - Mark P3 Task 2 (Accessibility) as complete
+- Update TODO.md - Mark P3 Tasks 1, 3, 4, 5 as complete
+- Update TODO.md - Mark P2 Tasks 2 & 3 as complete
+
+## [3.37.4] - 2026-02-13
+
 ### 🧪 Testing
 
 - P2 Tasks 2 & 3 - Test Coverage Expansion (#180)
