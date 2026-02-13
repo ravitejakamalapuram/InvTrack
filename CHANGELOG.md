@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🔧 Miscellaneous
+
+- Change Play Store deployment from closed testing to production
+
 ## [3.37.0] - 2026-02-12
 
 ### ✨ Features
