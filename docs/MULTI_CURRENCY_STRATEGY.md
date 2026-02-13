@@ -733,24 +733,474 @@ Future<double> _getExchangeRateForDate({
 
 ---
 
-## ✅ **Recommendation**
+## ✅ **FINAL RECOMMENDATION: Two-Cache Approach** ⭐
 
-**For MVP:** Use **Simpler Approach** (always use yesterday's rate for today)
+### **Strategy: Separate Historical and Live Caches**
 
-**Pros:**
-- ✅ No background jobs
-- ✅ No rate updates
-- ✅ Consistent data
-- ✅ Simpler code
-- ✅ Acceptable accuracy
-
-**Cons:**
-- ❌ 1 day lag for today's transactions
-- ❌ Slightly less accurate
-
-**For Future:** Implement **Provisional Rate Updates** if users demand real-time accuracy
+**Core Principle:** Clear separation between historical rates (immutable) and live rates (refreshable)
 
 ---
 
-**Updated Key Insight:** For today's transactions, use yesterday's closing rate and mark as final. Simple, consistent, and accurate enough! 🎯
+## 🏗️ **Two-Cache Architecture**
+
+### **Cache Type 1: Historical Cache**
+
+**Purpose:** Store exchange rates for past dates (< today)
+
+**Characteristics:**
+- ✅ Never expires (historical rates don't change)
+- ✅ Immutable (once cached, never updated)
+- ✅ Used for all past transactions
+- ✅ Used for XIRR calculations
+
+**Cache Key Format:** `historical/{date}_{from}_{to}`
+
+**Example:**
+```
+historical/2024-01-01_USD_INR
+{
+  "type": "historical",
+  "date": "2024-01-01",
+  "from": "USD",
+  "to": "INR",
+  "rate": 83.00,
+  "expiresAt": null,  // Never expires
+  "fetchedAt": "2024-01-01T10:30:00Z"
+}
+```
+
+---
+
+### **Cache Type 2: Live Cache**
+
+**Purpose:** Store exchange rates for today's date
+
+**Characteristics:**
+- ⏰ Expires at end of day (23:59:59)
+- 🔄 Refreshable (can be cleared and refetched)
+- ✅ Used for today's transactions
+- ✅ Used for current portfolio value
+
+**Cache Key Format:** `live/{date}_{from}_{to}`
+
+**Example:**
+```
+live/2026-02-13_USD_INR
+{
+  "type": "live",
+  "date": "2026-02-13",
+  "from": "USD",
+  "to": "INR",
+  "rate": 85.50,
+  "expiresAt": "2026-02-13T23:59:59Z",
+  "fetchedAt": "2026-02-13T10:30:00Z",
+  "lastRefreshedAt": "2026-02-13T14:30:00Z"
+}
+```
+
+---
+
+## 💻 **Implementation**
+
+### **1. Get Exchange Rate (Main Entry Point)**
+
+```dart
+Future<double> getExchangeRateForDate({
+  required DateTime transactionDate,
+  required String from,
+  required String to,
+}) async {
+  final today = DateTime.now();
+  final isToday = _isSameDay(transactionDate, today);
+
+  if (isToday) {
+    // Use LIVE cache for today
+    return await _getLiveRate(transactionDate, from, to);
+  } else if (transactionDate.isBefore(today)) {
+    // Use HISTORICAL cache for past dates
+    return await _getHistoricalRate(transactionDate, from, to);
+  } else {
+    // Future date - not allowed
+    throw ArgumentError('Cannot fetch exchange rate for future dates');
+  }
+}
+
+bool _isSameDay(DateTime date1, DateTime date2) {
+  return date1.year == date2.year &&
+         date1.month == date2.month &&
+         date1.day == date2.day;
+}
+```
+
+---
+
+### **2. Historical Rate Fetching**
+
+```dart
+Future<double> _getHistoricalRate(
+  DateTime date,
+  String from,
+  String to,
+) async {
+  // 1. Check historical cache
+  final cacheKey = 'historical/${_formatDate(date)}_${from}_$to';
+  final cached = await _getFromCache(cacheKey);
+  if (cached != null) {
+    return cached['rate'] as double;
+  }
+
+  // 2. Fetch from Frankfurter API
+  final dateStr = _formatDate(date);
+  final response = await http.get(
+    Uri.parse('https://api.frankfurter.dev/v1/$dateStr?base=$from&symbols=$to'),
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to fetch exchange rate for $dateStr');
+  }
+
+  final data = jsonDecode(response.body);
+  final rate = data['rates'][to] as double;
+
+  // 3. Cache forever (historical rates never change)
+  await _saveToCache(
+    key: cacheKey,
+    data: {
+      'type': 'historical',
+      'date': dateStr,
+      'from': from,
+      'to': to,
+      'rate': rate,
+      'expiresAt': null,  // Never expires
+      'fetchedAt': FieldValue.serverTimestamp(),
+    },
+  );
+
+  return rate;
+}
+```
+
+---
+
+### **3. Live Rate Fetching**
+
+```dart
+Future<double> _getLiveRate(
+  DateTime date,
+  String from,
+  String to,
+) async {
+  // 1. Check live cache
+  final cacheKey = 'live/${_formatDate(date)}_${from}_$to';
+  final cached = await _getFromCache(cacheKey);
+
+  if (cached != null) {
+    // Check if cache is still valid (not expired)
+    final expiresAt = (cached['expiresAt'] as Timestamp?)?.toDate();
+    if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
+      return cached['rate'] as double;
+    }
+    // Cache expired - will refetch
+  }
+
+  // 2. Fetch latest rate from Frankfurter API
+  final response = await http.get(
+    Uri.parse('https://api.frankfurter.dev/v1/latest?base=$from&symbols=$to'),
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to fetch latest exchange rate');
+  }
+
+  final data = jsonDecode(response.body);
+  final rate = data['rates'][to] as double;
+
+  // 3. Cache until end of day
+  final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+  await _saveToCache(
+    key: cacheKey,
+    data: {
+      'type': 'live',
+      'date': _formatDate(date),
+      'from': from,
+      'to': to,
+      'rate': rate,
+      'expiresAt': Timestamp.fromDate(endOfDay),
+      'fetchedAt': FieldValue.serverTimestamp(),
+      'lastRefreshedAt': FieldValue.serverTimestamp(),
+    },
+  );
+
+  return rate;
+}
+```
+
+---
+
+### **4. Cache Refresh Strategy** 🔄
+
+**Trigger 1: App Start**
+
+```dart
+Future<void> refreshLiveCacheOnAppStart() async {
+  // Get last refresh time from shared preferences
+  final prefs = await SharedPreferences.getInstance();
+  final lastRefreshStr = prefs.getString('last_live_cache_refresh');
+
+  if (lastRefreshStr != null) {
+    final lastRefresh = DateTime.parse(lastRefreshStr);
+    final hoursSinceRefresh = DateTime.now().difference(lastRefresh).inHours;
+
+    // Only refresh if more than 1 hour ago
+    if (hoursSinceRefresh < 1) {
+      return; // Skip refresh
+    }
+  }
+
+  // Clear all live cache entries
+  await _clearLiveCache();
+
+  // Update last refresh time
+  await prefs.setString('last_live_cache_refresh', DateTime.now().toIso8601String());
+}
+
+Future<void> _clearLiveCache() async {
+  final snapshot = await firestore
+      .collection('users')
+      .doc(userId)
+      .collection('exchangeRates')
+      .where('type', isEqualTo: 'live')
+      .get();
+
+  // Delete all live cache entries
+  final batch = firestore.batch();
+  for (final doc in snapshot.docs) {
+    batch.delete(doc.reference);
+  }
+  await batch.commit();
+}
+```
+
+**Trigger 2: Pull to Refresh**
+
+```dart
+Future<void> onPullToRefresh() async {
+  // Get last refresh time
+  final prefs = await SharedPreferences.getInstance();
+  final lastRefreshStr = prefs.getString('last_live_cache_refresh');
+
+  if (lastRefreshStr != null) {
+    final lastRefresh = DateTime.parse(lastRefreshStr);
+    final hoursSinceRefresh = DateTime.now().difference(lastRefresh).inHours;
+
+    // Only refresh if more than 1 hour ago
+    if (hoursSinceRefresh < 1) {
+      // Show message to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Exchange rates were updated ${hoursSinceRefresh * 60} minutes ago'),
+        ),
+      );
+      return;
+    }
+  }
+
+  // Clear live cache and refetch
+  await _clearLiveCache();
+
+  // Update last refresh time
+  await prefs.setString('last_live_cache_refresh', DateTime.now().toIso8601String());
+
+  // Refresh portfolio (will fetch new rates)
+  ref.invalidate(portfolioValueProvider);
+
+  // Show success message
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Exchange rates updated successfully'),
+      backgroundColor: Colors.green,
+    ),
+  );
+}
+```
+
+---
+
+### **5. Automatic Migration (Live → Historical)**
+
+**Background job runs daily at 00:01:**
+
+```dart
+Future<void> migrateLiveCacheToHistorical() async {
+  final yesterday = DateTime.now().subtract(Duration(days: 1));
+  final yesterdayStr = _formatDate(yesterday);
+
+  // Find all live cache entries from yesterday
+  final liveCaches = await firestore
+      .collection('users')
+      .doc(userId)
+      .collection('exchangeRates')
+      .where('type', isEqualTo: 'live')
+      .where('date', isEqualTo: yesterdayStr)
+      .get();
+
+  final batch = firestore.batch();
+
+  for (final doc in liveCaches.docs) {
+    final data = doc.data();
+
+    // Create historical cache entry
+    final historicalKey = 'historical_${yesterdayStr}_${data['from']}_${data['to']}';
+    final historicalRef = firestore
+        .collection('users')
+        .doc(userId)
+        .collection('exchangeRates')
+        .doc(historicalKey);
+
+    batch.set(historicalRef, {
+      'type': 'historical',
+      'date': data['date'],
+      'from': data['from'],
+      'to': data['to'],
+      'rate': data['rate'],
+      'expiresAt': null,  // Never expires
+      'fetchedAt': data['fetchedAt'],
+      'migratedFrom': 'live',
+      'migratedAt': FieldValue.serverTimestamp(),
+    });
+
+    // Delete live cache entry
+    batch.delete(doc.reference);
+  }
+
+  await batch.commit();
+}
+```
+
+---
+
+## 📊 **Complete Flow Examples**
+
+### **Example 1: User Adds Transaction for Jan 1, 2024 (Past Date)**
+
+```dart
+1. User enters: $10,000 USD on Jan 1, 2024
+2. System checks: isToday? No (past date)
+3. Check cache: "historical/2024-01-01_USD_INR"
+4. Cache miss → Fetch from API: GET /v1/2024-01-01
+5. Response: { "date": "2024-01-01", "rates": { "INR": 83.00 } }
+6. Cache forever: historical/2024-01-01_USD_INR (never expires)
+7. Save transaction: $10,000 @ 83.00 = ₹8,30,000
+```
+
+---
+
+### **Example 2: User Adds Transaction for Today (Feb 13, 2026)**
+
+```dart
+1. User enters: $5,000 USD on Feb 13, 2026 (today)
+2. System checks: isToday? Yes
+3. Check cache: "live/2026-02-13_USD_INR"
+4. Cache miss → Fetch from API: GET /v1/latest
+5. Response: { "date": "2026-02-12", "rates": { "INR": 85.50 } }
+6. Cache until end of day: live/2026-02-13_USD_INR (expires 23:59:59)
+7. Save transaction: $5,000 @ 85.50 = ₹4,27,500
+```
+
+---
+
+### **Example 3: Another User Adds Transaction for Today (1 hour later)**
+
+```dart
+1. User enters: $3,000 USD on Feb 13, 2026 (today)
+2. System checks: isToday? Yes
+3. Check cache: "live/2026-02-13_USD_INR"
+4. Cache HIT! ✅ (not expired yet)
+5. Use cached rate: 85.50 (NO API call)
+6. Save transaction: $3,000 @ 85.50 = ₹2,55,500
+```
+
+---
+
+### **Example 4: User Opens App Next Day (Feb 14, 2026)**
+
+```dart
+1. App starts → Check last refresh time
+2. Last refresh: Feb 13, 2026 14:30 (>1 hour ago)
+3. Clear all live cache entries
+4. Update last refresh time: Feb 14, 2026 09:00
+5. User adds transaction for Feb 14 → Fetch new live rate
+```
+
+---
+
+### **Example 5: User Pulls to Refresh (30 minutes after app start)**
+
+```dart
+1. User pulls to refresh
+2. Check last refresh time: Feb 14, 2026 09:00
+3. Time since refresh: 30 minutes (<1 hour)
+4. Show message: "Exchange rates were updated 30 minutes ago"
+5. Skip refresh (no API call)
+```
+
+---
+
+### **Example 6: Background Job Runs at Midnight**
+
+```dart
+1. Time: Feb 14, 2026 00:01
+2. Find all live cache entries for Feb 13
+3. Migrate to historical cache:
+   - live/2026-02-13_USD_INR → historical/2026-02-13_USD_INR
+4. Delete live cache entries
+5. Feb 13 rates now immutable (historical)
+```
+
+---
+
+## 📋 **Summary Table**
+
+| Use Case | Cache Type | Cache Key | Expiration | Refresh? |
+|----------|------------|-----------|------------|----------|
+| **Past Transaction** | Historical | `historical/{date}_{from}_{to}` | Never | ❌ No |
+| **Today's Transaction** | Live | `live/{date}_{from}_{to}` | End of day | ✅ Yes (>1hr) |
+| **XIRR Calculation** | Historical | Cached | Never | ❌ No |
+| **Current Portfolio** | Live | Cached | End of day | ✅ Yes (>1hr) |
+| **App Start** | Live | All live entries | - | ✅ Clear if >1hr |
+| **Pull to Refresh** | Live | All live entries | - | ✅ Clear if >1hr |
+| **Midnight Migration** | Live → Historical | All yesterday's live | - | ✅ Migrate |
+
+---
+
+## ✅ **Key Benefits**
+
+1. **Consistency** 🎯
+   - Same date always uses same cache key
+   - Historical rates never change
+   - Live rates refreshable
+
+2. **Performance** ⚡
+   - Historical: Cached forever (instant)
+   - Live: Cached until end of day (fast)
+   - Refresh only when needed (>1 hour)
+
+3. **Accuracy** 📊
+   - Historical: Exact date rates
+   - Live: Latest available rates
+   - Auto-migration ensures data integrity
+
+4. **User Control** 🔄
+   - Pull to refresh for latest rates
+   - 1-hour throttle prevents excessive API calls
+   - Clear feedback on refresh status
+
+5. **Offline Support** 📴
+   - Historical cache works offline forever
+   - Live cache works offline until expiry
+   - Graceful degradation
+
+---
+
+**Final Key Insight:** Two-cache approach provides the perfect balance of accuracy, performance, and user control! 🎯
 
