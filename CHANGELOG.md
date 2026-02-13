@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🧪 Testing
+
+- P2 Tasks 2 & 3 - Test Coverage Expansion (#180)
+
+## [3.37.3] - 2026-02-13
+
 ### 📚 Documentation
 
 - P2 Task 1 - Code Documentation Improvements (#179)
