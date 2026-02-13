@@ -408,3 +408,349 @@ Future<double?> _getCachedRate(DateTime date, String from, String to) async {
 
 **Key Insight:** Historical rates for accuracy, Current rates for relevance! 🎯
 
+---
+
+## 🚨 **Critical Edge Case: Today's Transactions**
+
+### **The Problem**
+
+**Scenario:**
+- User adds transaction for **TODAY** (Feb 13, 2026) at 10:00 AM
+- Frankfurter returns **yesterday's closing rate** (Feb 12, 2026)
+- Tomorrow (Feb 14), Frankfurter will return **Feb 13's actual closing rate**
+- **Same date, different rates!** 😱
+
+**Example:**
+```dart
+// Today (Feb 13) at 10:00 AM
+GET /v1/2026-02-13
+Response: { "date": "2026-02-12", "rates": { "INR": 85.00 } }  // Yesterday's rate
+
+// Tomorrow (Feb 14) at 10:00 AM
+GET /v1/2026-02-13
+Response: { "date": "2026-02-13", "rates": { "INR": 85.50 } }  // Today's actual rate
+```
+
+**Impact:** Inconsistent data! Two users adding transactions for Feb 13 get different rates.
+
+---
+
+### **The Solution: "Effective Date" Strategy**
+
+**Core Principle:** Always use the **most recent PUBLISHED rate** available at transaction time.
+
+#### **Implementation:**
+
+```dart
+Future<ExchangeRateResult> _getExchangeRateForDate({
+  required DateTime transactionDate,
+  required String from,
+  required String to,
+}) async {
+  // 1. Check cache first
+  final cachedRate = await _getCachedRate(transactionDate, from, to);
+  if (cachedRate != null) {
+    return cachedRate;
+  }
+
+  // 2. Fetch from Frankfurter
+  final dateStr = DateFormat('yyyy-MM-dd').format(transactionDate);
+  final response = await http.get(
+    Uri.parse('https://api.frankfurter.dev/v1/$dateStr?base=$from&symbols=$to'),
+  );
+  final data = jsonDecode(response.body);
+
+  // 3. CRITICAL: Check the "effective date" in response
+  final effectiveDate = data['date'];  // Date of the rate returned
+  final rate = data['rates'][to];
+
+  // 4. Determine if this is a "final" rate or "provisional" rate
+  final isFinalRate = effectiveDate == dateStr;
+
+  // 5. Cache with appropriate expiration
+  await _cacheRate(
+    transactionDate: transactionDate,
+    effectiveDate: DateTime.parse(effectiveDate),
+    from: from,
+    to: to,
+    rate: rate,
+    isFinal: isFinalRate,
+  );
+
+  return ExchangeRateResult(
+    rate: rate,
+    effectiveDate: DateTime.parse(effectiveDate),
+    isFinal: isFinalRate,
+  );
+}
+
+class ExchangeRateResult {
+  final double rate;
+  final DateTime effectiveDate;  // Actual date of the rate
+  final bool isFinal;            // Is this the final rate for the date?
+
+  const ExchangeRateResult({
+    required this.rate,
+    required this.effectiveDate,
+    required this.isFinal,
+  });
+}
+```
+
+---
+
+### **Updated Caching Strategy**
+
+```dart
+// Firestore structure
+users/{userId}/exchangeRates/{cacheKey}
+{
+  "transactionDate": "2026-02-13",     // Date user entered
+  "effectiveDate": "2026-02-12",       // Actual date of the rate
+  "from": "USD",
+  "to": "INR",
+  "rate": 85.00,
+  "isFinal": false,                    // Not final yet (using yesterday's rate)
+  "fetchedAt": "2026-02-13T10:30:00Z",
+  "expiresAt": "2026-02-14T16:00:00Z"  // Expires tomorrow at 16:00 CET
+}
+
+// Next day, after ECB publishes rates:
+users/{userId}/exchangeRates/{cacheKey}
+{
+  "transactionDate": "2026-02-13",
+  "effectiveDate": "2026-02-13",       // Now matches transaction date
+  "from": "USD",
+  "to": "INR",
+  "rate": 85.50,                       // Updated to actual Feb 13 rate
+  "isFinal": true,                     // Final rate available
+  "fetchedAt": "2026-02-14T16:30:00Z",
+  "expiresAt": null                    // Never expires (final rate)
+}
+```
+
+---
+
+### **Cache Expiration Logic (Updated)**
+
+```dart
+Future<ExchangeRateResult?> _getCachedRate(
+  DateTime transactionDate,
+  String from,
+  String to,
+) async {
+  final cacheKey = '${DateFormat('yyyy-MM-dd').format(transactionDate)}_${from}_$to';
+  final doc = await firestore
+      .collection('users')
+      .doc(userId)
+      .collection('exchangeRates')
+      .doc(cacheKey)
+      .get();
+
+  if (!doc.exists) return null;
+
+  final data = doc.data()!;
+  final isFinal = data['isFinal'] as bool;
+
+  // If final rate, use it forever
+  if (isFinal) {
+    return ExchangeRateResult(
+      rate: data['rate'] as double,
+      effectiveDate: (data['effectiveDate'] as Timestamp).toDate(),
+      isFinal: true,
+    );
+  }
+
+  // If provisional rate, check expiration
+  final expiresAt = (data['expiresAt'] as Timestamp?)?.toDate();
+  if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
+    // Still valid
+    return ExchangeRateResult(
+      rate: data['rate'] as double,
+      effectiveDate: (data['effectiveDate'] as Timestamp).toDate(),
+      isFinal: false,
+    );
+  }
+
+  // Expired - fetch fresh rate
+  return null;
+}
+```
+
+---
+
+### **Background Job: Update Provisional Rates**
+
+**Run daily at 17:00 CET (after ECB publishes rates):**
+
+```dart
+Future<void> updateProvisionalRates() async {
+  // 1. Find all provisional rates from yesterday
+  final yesterday = DateTime.now().subtract(Duration(days: 1));
+  final yesterdayStr = DateFormat('yyyy-MM-dd').format(yesterday);
+
+  final provisionalRates = await firestore
+      .collection('users')
+      .doc(userId)
+      .collection('exchangeRates')
+      .where('isFinal', isEqualTo: false)
+      .where('transactionDate', isEqualTo: yesterdayStr)
+      .get();
+
+  // 2. Update each with final rate
+  for (final doc in provisionalRates.docs) {
+    final data = doc.data();
+    final from = data['from'] as String;
+    final to = data['to'] as String;
+
+    // Fetch final rate
+    final response = await http.get(
+      Uri.parse('https://api.frankfurter.dev/v1/$yesterdayStr?base=$from&symbols=$to'),
+    );
+    final responseData = jsonDecode(response.body);
+
+    // Check if we got the final rate
+    if (responseData['date'] == yesterdayStr) {
+      // Update to final rate
+      await doc.reference.update({
+        'effectiveDate': yesterdayStr,
+        'rate': responseData['rates'][to],
+        'isFinal': true,
+        'expiresAt': null,  // Never expires
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+}
+```
+
+---
+
+### **User Communication**
+
+**When user adds today's transaction, show:**
+
+```
+┌─────────────────────────────────────────┐
+│ Transaction Added                       │
+├─────────────────────────────────────────┤
+│ Amount:         $5,000 USD              │
+│ Date:           Feb 13, 2026            │
+│ Exchange Rate:  @ 85.00 INR/USD         │
+│                 (Feb 12 closing rate)   │
+│ Converted:      ₹4,25,000 INR           │
+│                                         │
+│ ℹ️ Note: Using yesterday's closing rate│
+│ Rate will be updated tomorrow with      │
+│ today's official closing rate.          │
+└─────────────────────────────────────────┘
+```
+
+**Next day, after update:**
+
+```
+┌─────────────────────────────────────────┐
+│ 🔄 Exchange Rate Updated                │
+├─────────────────────────────────────────┤
+│ Transaction: $5,000 USD (Feb 13, 2026)  │
+│                                         │
+│ Previous Rate:  @ 85.00 INR/USD         │
+│ Updated Rate:   @ 85.50 INR/USD         │
+│                                         │
+│ Previous Value: ₹4,25,000 INR           │
+│ Updated Value:  ₹4,27,500 INR           │
+│                                         │
+│ Difference:     +₹2,500 INR             │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### **Alternative: Simpler Approach (Recommended for MVP)**
+
+**Strategy:** Always use **yesterday's closing rate** for today's transactions, mark as final.
+
+**Rationale:**
+- ✅ Simpler implementation
+- ✅ No background jobs needed
+- ✅ Consistent data (no updates)
+- ✅ Acceptable accuracy (1 day lag)
+- ❌ Slightly less accurate (uses yesterday's rate)
+
+**Implementation:**
+
+```dart
+Future<double> _getExchangeRateForDate({
+  required DateTime transactionDate,
+  required String from,
+  required String to,
+}) async {
+  final today = DateTime.now();
+  final isToday = transactionDate.year == today.year &&
+                  transactionDate.month == today.month &&
+                  transactionDate.day == today.day;
+
+  DateTime effectiveDate;
+  if (isToday) {
+    // For today's transactions, use yesterday's rate
+    effectiveDate = today.subtract(Duration(days: 1));
+  } else {
+    // For past transactions, use actual date
+    effectiveDate = transactionDate;
+  }
+
+  // Fetch rate for effective date
+  final dateStr = DateFormat('yyyy-MM-dd').format(effectiveDate);
+  final response = await http.get(
+    Uri.parse('https://api.frankfurter.dev/v1/$dateStr?base=$from&symbols=$to'),
+  );
+  final data = jsonDecode(response.body);
+  final rate = data['rates'][to];
+
+  // Cache forever (no updates needed)
+  await _cacheRate(transactionDate, from, to, rate, isFinal: true);
+
+  return rate;
+}
+```
+
+**User Communication:**
+
+```
+┌─────────────────────────────────────────┐
+│ Transaction Added                       │
+├─────────────────────────────────────────┤
+│ Amount:         $5,000 USD              │
+│ Date:           Feb 13, 2026            │
+│ Exchange Rate:  @ 85.00 INR/USD         │
+│                 (Feb 12 closing rate)   │
+│ Converted:      ₹4,25,000 INR           │
+│                                         │
+│ ℹ️ Note: Exchange rates are based on   │
+│ previous day's closing rates.           │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## ✅ **Recommendation**
+
+**For MVP:** Use **Simpler Approach** (always use yesterday's rate for today)
+
+**Pros:**
+- ✅ No background jobs
+- ✅ No rate updates
+- ✅ Consistent data
+- ✅ Simpler code
+- ✅ Acceptable accuracy
+
+**Cons:**
+- ❌ 1 day lag for today's transactions
+- ❌ Slightly less accurate
+
+**For Future:** Implement **Provisional Rate Updates** if users demand real-time accuracy
+
+---
+
+**Updated Key Insight:** For today's transactions, use yesterday's closing rate and mark as final. Simple, consistent, and accurate enough! 🎯
+
