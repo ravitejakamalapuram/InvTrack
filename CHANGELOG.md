@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🔧 Miscellaneous
+
+- Remove temporary fix workflow
+
+## [3.38.1] - 2026-02-14
+
 ### 🐛 Bug Fixes
 
 - Prevent clearing pendingRelease during Play Store review
