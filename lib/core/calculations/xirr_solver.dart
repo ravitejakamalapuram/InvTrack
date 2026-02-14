@@ -159,15 +159,21 @@ class XirrSolver {
     // Calculate total inflows and outflows to determine initial guess direction
     double totalInflows = 0;
     double totalOutflows = 0;
+    double weightedInflowTimeSum = 0;
+    double weightedOutflowTimeSum = 0;
     bool hasNonNegativeAmount = false;
     bool hasNegativeAmount = false;
 
-    for (final amount in amounts) {
+    for (int i = 0; i < amounts.length; i++) {
+      final amount = amounts[i];
       if (amount >= 0) {
         totalInflows += amount;
+        weightedInflowTimeSum += amount * yearsFromStart[i];
         hasNonNegativeAmount = true;
       } else {
-        totalOutflows += amount.abs();
+        final absAmount = amount.abs();
+        totalOutflows += absAmount;
+        weightedOutflowTimeSum += absAmount * yearsFromStart[i];
         hasNegativeAmount = true;
       }
     }
@@ -179,7 +185,27 @@ class XirrSolver {
     }
 
     // Try Newton-Raphson with multiple initial guesses
-    final initialGuesses = <double>[
+    final initialGuesses = <double>[];
+
+    // Smart guess: Calculate approximate CAGR based on effective duration
+    // Formula: (Total Inflows / Total Outflows)^(1/Duration) - 1
+    // Duration = AvgInflowTime - AvgOutflowTime
+    // This handles both lump sum and SIPs (periodic investments) accurately.
+    if (totalOutflows > 0 && totalInflows > 0) {
+      final avgInflowTime = weightedInflowTimeSum / totalInflows;
+      final avgOutflowTime = weightedOutflowTimeSum / totalOutflows;
+      final duration = avgInflowTime - avgOutflowTime;
+
+      if (duration > 0.1) {
+        final totalReturn = totalInflows / totalOutflows;
+        final smartGuess = pow(totalReturn, 1 / duration) - 1;
+        if (smartGuess.isFinite && smartGuess > -1.0) {
+          initialGuesses.add(smartGuess as double);
+        }
+      }
+    }
+
+    initialGuesses.addAll([
       0.1, // 10% gain
       -0.1, // 10% loss
       0.0, // break even
@@ -187,12 +213,12 @@ class XirrSolver {
       -0.5, // 50% loss
       -0.9, // 90% loss (near total loss)
       1.0, // 100% gain
-    ];
+    ]);
 
     // If it looks like a loss, try negative guesses first
     if (totalInflows < totalOutflows) {
-      initialGuesses.insert(0, -0.3);
-      initialGuesses.insert(0, -0.5);
+      initialGuesses.insert(1, -0.3); // Insert after smart guess
+      initialGuesses.insert(1, -0.5);
     }
 
     for (final guess in initialGuesses) {
