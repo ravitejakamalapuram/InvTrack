@@ -501,37 +501,45 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                           Row(
                             children: [
                               // Tappable type chip for per-file type selection
-                              GestureDetector(
-                                onTap: _isLoading
-                                    ? null
-                                    : () => _showTypePickerForFile(index, isDark),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: file.selectedType.color.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color: file.selectedType.color.withValues(alpha: 0.3),
-                                      width: 1,
+                              Semantics(
+                                button: true,
+                                label:
+                                    'Change document type: ${file.selectedType.displayName}',
+                                child: GestureDetector(
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => _showTypePickerForFile(index, isDark),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: file.selectedType.color
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: file.selectedType.color
+                                            .withValues(alpha: 0.3),
+                                        width: 1,
+                                      ),
                                     ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        file.selectedType.displayName,
-                                        style: AppTypography.caption.copyWith(
-                                          color: file.selectedType.color,
-                                          fontWeight: FontWeight.w500,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          file.selectedType.displayName,
+                                          style: AppTypography.caption.copyWith(
+                                            color: file.selectedType.color,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
-                                      ),
-                                      SizedBox(width: 2),
-                                      Icon(
-                                        Icons.arrow_drop_down,
-                                        size: 14,
-                                        color: file.selectedType.color,
-                                      ),
-                                    ],
+                                        SizedBox(width: 2),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          size: 14,
+                                          color: file.selectedType.color,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -551,6 +559,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                     if (!_isLoading)
                       IconButton(
                         icon: Icon(Icons.close, size: 20),
+                        tooltip: 'Remove file',
                         onPressed: () {
                           setState(() {
                             _multipleFiles.removeAt(index);
@@ -696,15 +705,23 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               runSpacing: AppSpacing.sm,
               children: DocumentType.values.map((type) {
                 final isSelected = file.selectedType == type;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _multipleFiles[fileIndex].selectedType = type;
-                    });
-                    Navigator.pop(context);
-                    HapticFeedback.selectionClick();
-                  },
-                  child: Container(
+                void onTap() {
+                  setState(() {
+                    _multipleFiles[fileIndex].selectedType = type;
+                  });
+                  Navigator.pop(context);
+                  HapticFeedback.selectionClick();
+                }
+
+                return Semantics(
+                  button: true,
+                  selected: isSelected,
+                  label: type.displayName,
+                  excludeSemantics: true,
+                  onTap: onTap,
+                  child: GestureDetector(
+                    onTap: onTap,
+                    child: Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                       vertical: AppSpacing.sm,
@@ -742,6 +759,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                           ),
                         ),
                       ],
+                    ),
                     ),
                   ),
                 );
