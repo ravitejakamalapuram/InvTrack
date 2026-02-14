@@ -1,0 +1,64 @@
+name: "Fix Pending Release Flag"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-flag:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup dependencies
+        run: |
+          echo "📦 Setting up Node.js dependencies..."
+          SYSTEM_NODE_MODULES="/opt/homebrew/lib/node_modules"
+          
+          if [ -d "$SYSTEM_NODE_MODULES/googleapis" ] && [ -d "$SYSTEM_NODE_MODULES/firebase-admin" ]; then
+            echo "✅ Using system globally installed packages"
+            echo "NODE_PATH=$SYSTEM_NODE_MODULES" >> $GITHUB_ENV
+            exit 0
+          fi
+          
+          echo "❌ Required packages not found"
+          exit 1
+
+      - name: Fix Pending Release Flag
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+        run: |
+          node << 'EOF'
+          const admin = require('firebase-admin');
+
+          async function fixPendingFlag() {
+            try {
+              // Initialize Firebase Admin
+              const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              });
+
+              const db = admin.firestore();
+
+              console.log('📝 Setting pendingRelease back to true...');
+
+              await db.collection('app_config').doc('version_info').update({
+                pendingRelease: true,
+              });
+
+              console.log('✅ Pending release flag restored!');
+              console.log('ℹ️  The automated workflow will now correctly monitor for approval.');
+              
+            } catch (error) {
+              console.error('❌ Error:', error.message);
+              throw error;
+            }
+          }
+
+          fixPendingFlag();
+          EOF
+
