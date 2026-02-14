@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Prevent clearing pendingRelease during Play Store review
+
+## [3.38.0] - 2026-02-14
+
 ### ✨ Features
 
 - **a11y**: Improve accessibility in AddDocumentSheet (#187)
