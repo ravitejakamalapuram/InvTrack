@@ -4,6 +4,12 @@
 
 ### 🔧 Miscellaneous
 
+- Change deployment back to closed testing (alpha track)
+
+## [3.38.2] - 2026-02-14
+
+### 🔧 Miscellaneous
+
 - Remove temporary fix workflow
 
 ## [3.38.1] - 2026-02-14
