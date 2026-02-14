@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Remove READ_MEDIA_IMAGES permission to comply with Play Store policy

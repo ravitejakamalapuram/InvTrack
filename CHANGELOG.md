@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **a11y**: Improve accessibility in AddDocumentSheet (#187)
+- **core**: Optimize XIRR calculation with smart initial guess (#185)
+- Optimize XIRR calculation with bulk processing (#183)
+- **a11y**: Prevent privacy data leakage in investment card semantics (#181)
+
+### 🐛 Bug Fixes
+
+- **security**: Enforce Fail Closed on storage errors during PIN verification (#182)
+
+### 📚 Documentation
+
+- Add comprehensive WCAG AAA accessibility guide (#184)
+
+## [3.37.5] - 2026-02-13
+
 ### 🐛 Bug Fixes
 
 - Remove READ_MEDIA_IMAGES permission to comply with Play Store policy
