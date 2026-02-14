@@ -22,6 +22,8 @@ class SecurityService {
   static const int _maxAttempts = 5;
   static const int _lockoutDurationSeconds = 900; // 15 minutes
 
+  bool _isVerifying = false;
+
   SecurityService(this._secureStorage, this._localAuth, this._prefs);
 
   // --- PIN Management ---
@@ -56,8 +58,8 @@ class SecurityService {
 
   Future<void> setPin(String pin) async {
     final salt = _generateSalt();
-    // Use PBKDF2 with 10,000 iterations (v3 format: salt:iterations:hash)
-    final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 10000);
+    // Use PBKDF2 with 100,000 iterations (v3 format: salt:iterations:hash)
+    final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 100000);
     await _secureStorage.write(
       key: _pinKey,
       value: hashedPin,
@@ -181,69 +183,83 @@ class SecurityService {
   }
 
   Future<bool> verifyPin(String pin) async {
-    // Check lockout first
-    final remainingLockout = await getLockoutRemainingSeconds();
-    if (remainingLockout != null) {
-      return false; // Still locked out
-    }
+    if (_isVerifying) return false;
+    _isVerifying = true;
 
-    final storedPin = await _secureStorage.read(
-      key: _pinKey,
-      aOptions: _getAndroidOptions(),
-      iOptions: _getIOSOptions(),
-    );
+    try {
+      // Check lockout first
+      final remainingLockout = await getLockoutRemainingSeconds();
+      if (remainingLockout != null) {
+        return false; // Still locked out
+      }
 
-    if (storedPin == null) return false;
+      final storedPin = await _secureStorage.read(
+        key: _pinKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
 
-    bool isMatch = false;
-    bool needsUpgrade = false;
+      if (storedPin == null) return false;
 
-    // v3: PBKDF2 (contains 2 colons 'salt:iterations:hash')
-    if (storedPin.split(':').length == 3) {
-      isMatch = SecurityUtils.verifyPin(pin, storedPin);
-    }
-    // v2: Salted Hash (contains 1 colon 'salt:hash')
-    else if (storedPin.contains(':')) {
-      final parts = storedPin.split(':');
-      if (parts.length == 2) {
-        final salt = parts[0];
-        final expectedHash = parts[1];
-        // Re-hash input with extracted salt (Legacy SHA-256)
-        final bytes = utf8.encode(pin + salt);
-        final actualHash = sha256.convert(bytes).toString();
-        isMatch = actualHash == expectedHash;
+      bool isMatch = false;
+      bool needsUpgrade = false;
+
+      // v3: PBKDF2 (contains 2 colons 'salt:iterations:hash')
+      if (storedPin.split(':').length == 3) {
+        isMatch = SecurityUtils.verifyPin(pin, storedPin);
+        if (isMatch) {
+          final parts = storedPin.split(':');
+          final iterations = int.tryParse(parts[1]) ?? 0;
+          if (iterations < 100000) {
+            needsUpgrade = true;
+          }
+        }
+      }
+      // v2: Salted Hash (contains 1 colon 'salt:hash')
+      else if (storedPin.contains(':')) {
+        final parts = storedPin.split(':');
+        if (parts.length == 2) {
+          final salt = parts[0];
+          final expectedHash = parts[1];
+          // Re-hash input with extracted salt (Legacy SHA-256)
+          final bytes = utf8.encode(pin + salt);
+          final actualHash = sha256.convert(bytes).toString();
+          isMatch = actualHash == expectedHash;
+          if (isMatch) needsUpgrade = true;
+        }
+      }
+      // v1: Unsalted Hash (SHA-256 is 64 chars hex)
+      else if (storedPin.length == 64) {
+        final hashedInput = _hashPinLegacy(pin);
+        isMatch = storedPin == hashedInput;
         if (isMatch) needsUpgrade = true;
       }
-    }
-    // v1: Unsalted Hash (SHA-256 is 64 chars hex)
-    else if (storedPin.length == 64) {
-      final hashedInput = _hashPinLegacy(pin);
-      isMatch = storedPin == hashedInput;
-      if (isMatch) needsUpgrade = true;
-    }
-    // v0: Plaintext (Legacy)
-    else {
-      isMatch = storedPin == pin;
-      if (isMatch) needsUpgrade = true;
-    }
-
-    if (isMatch) {
-      // Reset failed attempts on success
-      await _clearRateLimit();
-
-      if (needsUpgrade) {
-        await setPin(pin); // Upgrade to PBKDF2
+      // v0: Plaintext (Legacy)
+      else {
+        isMatch = storedPin == pin;
+        if (isMatch) needsUpgrade = true;
       }
-      return true;
-    } else {
-      // Handle failure
-      int failedAttempts = (await _getFailedAttempts()) + 1;
-      await _setFailedAttempts(failedAttempts);
 
-      if (failedAttempts >= _maxAttempts) {
-        await _setLockoutTimestamp(DateTime.now().millisecondsSinceEpoch);
+      if (isMatch) {
+        // Reset failed attempts on success
+        await _clearRateLimit();
+
+        if (needsUpgrade) {
+          await setPin(pin); // Upgrade to PBKDF2
+        }
+        return true;
+      } else {
+        // Handle failure
+        int failedAttempts = (await _getFailedAttempts()) + 1;
+        await _setFailedAttempts(failedAttempts);
+
+        if (failedAttempts >= _maxAttempts) {
+          await _setLockoutTimestamp(DateTime.now().millisecondsSinceEpoch);
+        }
+        return false;
       }
-      return false;
+    } finally {
+      _isVerifying = false;
     }
   }
 
