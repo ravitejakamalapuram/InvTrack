@@ -75,6 +75,18 @@ class AppDateUtils {
     return _getFormatter('MMM', locale).format(date);
   }
 
+  /// Formats a date using the "yMMM" skeleton (e.g., "Dec 2025" or "2025 Dec" depending on locale).
+  /// Unlike [formatMonthYear], this respects the locale's preferred order for Year-Month.
+  static String formatYearMonth(DateTime date, {String? locale}) {
+    final effectiveLocale = locale ?? Intl.defaultLocale;
+    final key = 'skeleton_yMMM|$effectiveLocale';
+
+    return _formatters.putIfAbsent(
+      key,
+      () => DateFormat.yMMM(effectiveLocale),
+    ).format(date);
+  }
+
   /// Format date based on user's preferred date format pattern
   /// Returns date in format based on DateFormatPattern (MDY, DMY, or YMD)
   static String formatByPattern(

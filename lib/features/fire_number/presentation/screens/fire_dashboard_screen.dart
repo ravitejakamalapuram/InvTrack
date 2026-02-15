@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -9,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
@@ -339,7 +339,6 @@ class FireDashboardScreen extends ConsumerWidget {
     final projectedDate = calculation.projectedFireDate;
     // Use locale-aware date formatting
     final locale = Localizations.localeOf(context).languageCode;
-    final dateFormat = DateFormat.yMMM(locale);
 
     return Row(
       children: [
@@ -364,7 +363,9 @@ class FireDashboardScreen extends ConsumerWidget {
               isDark ? Brightness.dark : Brightness.light,
             ),
             label: 'Projected',
-            value: projectedDate != null ? dateFormat.format(projectedDate) : 'N/A',
+            value: projectedDate != null
+                ? AppDateUtils.formatYearMonth(projectedDate, locale: locale)
+                : 'N/A',
             subtitle: calculation.status.shortSubtitle,
           ),
         ),
