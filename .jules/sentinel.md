@@ -109,3 +109,10 @@
 **Prevention:**
 1. Sanitize all filenames before adding them to a ZIP archive using `path.basename`.
 2. Ensure metadata pointing to these files also uses the sanitized name to maintain referential integrity.
+
+## 2026-06-27 - [Timing Attack in PIN Verification]
+**Vulnerability:** The PIN verification logic used the standard equality operator (`==`) to compare the stored hash with the computed hash. This comparison returns `false` immediately upon finding the first mismatching character, leaking information about the valid hash prefix through timing differences. An attacker could theoretically use this to deduce the hash byte-by-byte.
+**Learning:** Standard string comparison is optimized for performance, not security. For sensitive values like hashes, MACs, or tokens, early-exit behavior creates a side-channel vulnerability.
+**Prevention:**
+1. Use a constant-time comparison function (like `constantTimeEquals`) for all security-sensitive string comparisons.
+2. Ensure the comparison takes the same amount of time regardless of whether the inputs match or where the mismatch occurs (e.g., using XOR accumulation).
