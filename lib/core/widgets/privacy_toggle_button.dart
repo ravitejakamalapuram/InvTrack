@@ -48,13 +48,15 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -94,14 +96,13 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
         transitionBuilder: (child, animation) {
           return ScaleTransition(
             scale: animation,
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+            child: FadeTransition(opacity: animation, child: child),
           );
         },
         child: Icon(
-          isPrivacyMode ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+          isPrivacyMode
+              ? Icons.visibility_off_rounded
+              : Icons.visibility_rounded,
           key: ValueKey(isPrivacyMode),
           size: widget.iconSize,
           color: effectiveIconColor,
@@ -113,12 +114,13 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
       return Semantics(
         button: true,
         label: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
-        child: GestureDetector(
-          onTap: _handleTap,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: iconButton,
+        child: Tooltip(
+          message: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+          excludeFromSemantics: true,
+          child: GestureDetector(
+            onTap: _handleTap,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(padding: const EdgeInsets.all(8), child: iconButton),
           ),
         ),
       );
@@ -127,43 +129,50 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
     return Semantics(
       button: true,
       label: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: isPrivacyMode ? 1.0 : 0.0),
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            final bgColor = widget.backgroundColor ??
-                Color.lerp(
-                  Colors.white.withValues(alpha: 0.15),
-                  Colors.white.withValues(alpha: 0.25),
-                  value,
-                )!;
-            final shadowOpacity = 0.2 * value;
+      child: Tooltip(
+        message: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+        excludeFromSemantics: true,
+        child: GestureDetector(
+          onTap: _handleTap,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: isPrivacyMode ? 1.0 : 0.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              final bgColor =
+                  widget.backgroundColor ??
+                  Color.lerp(
+                    Colors.white.withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.25),
+                    value,
+                  )!;
+              final shadowOpacity = 0.2 * value;
 
-            return Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1,
+              return Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                  boxShadow: value > 0.01
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: shadowOpacity,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-                boxShadow: value > 0.01
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: shadowOpacity),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: iconButton,
-            );
-          },
+                child: iconButton,
+              );
+            },
+          ),
         ),
       ),
     );
@@ -178,17 +187,14 @@ class CompactPrivacyToggle extends ConsumerWidget {
   /// Icon color.
   final Color? color;
 
-  const CompactPrivacyToggle({
-    super.key,
-    this.size = 24,
-    this.color,
-  });
+  const CompactPrivacyToggle({super.key, this.size = 24, this.color});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveColor = color ??
+    final effectiveColor =
+        color ??
         (isDark ? Colors.white.withValues(alpha: 0.8) : Colors.black87);
 
     return IconButton(
@@ -199,7 +205,9 @@ class CompactPrivacyToggle extends ConsumerWidget {
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: Icon(
-          isPrivacyMode ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+          isPrivacyMode
+              ? Icons.visibility_off_rounded
+              : Icons.visibility_rounded,
           key: ValueKey(isPrivacyMode),
           size: size,
           color: effectiveColor,
