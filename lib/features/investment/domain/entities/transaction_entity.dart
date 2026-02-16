@@ -121,6 +121,11 @@ class CashFlowEntity {
   final String? notes;
   final DateTime createdAt;
 
+  /// Currency of this cash flow
+  /// Each cash flow can have its own currency (not inherited from investment)
+  /// Default: 'USD' for backward compatibility
+  final String currency;
+
   const CashFlowEntity({
     required this.id,
     required this.investmentId,
@@ -129,6 +134,7 @@ class CashFlowEntity {
     required this.amount,
     this.notes,
     required this.createdAt,
+    this.currency = 'USD', // Default for backward compatibility
   });
 
   /// Returns the signed amount for calculations
@@ -143,6 +149,7 @@ class CashFlowEntity {
     double? amount,
     String? notes,
     DateTime? createdAt,
+    String? currency,
   }) {
     return CashFlowEntity(
       id: id ?? this.id,
@@ -152,6 +159,7 @@ class CashFlowEntity {
       amount: amount ?? this.amount,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
+      currency: currency ?? this.currency,
     );
   }
 
@@ -165,7 +173,8 @@ class CashFlowEntity {
         other.type == type &&
         other.amount == amount &&
         other.notes == notes &&
-        other.createdAt == createdAt;
+        other.createdAt == createdAt &&
+        other.currency == currency;
   }
 
   @override
@@ -176,6 +185,7 @@ class CashFlowEntity {
         type.hashCode ^
         amount.hashCode ^
         notes.hashCode ^
-        createdAt.hashCode;
+        createdAt.hashCode ^
+        currency.hashCode;
   }
 }

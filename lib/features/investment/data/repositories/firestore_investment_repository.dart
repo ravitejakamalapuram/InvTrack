@@ -532,6 +532,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'autoRenewal': investment.autoRenewal,
       'riskLevel': investment.riskLevel?.name,
       'compoundingFrequency': investment.compoundingFrequency?.name,
+      // Multi-currency support
+      'currency': investment.currency,
     };
   }
 
@@ -574,6 +576,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       compoundingFrequency: CompoundingFrequency.fromString(
         data['compoundingFrequency'] as String?,
       ),
+      // Multi-currency support (default to USD for backward compatibility)
+      currency: data['currency'] as String? ?? 'USD',
     );
   }
 
@@ -585,6 +589,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'amount': cashFlow.amount,
       'notes': cashFlow.notes,
       'createdAt': Timestamp.fromDate(cashFlow.createdAt),
+      // Multi-currency support
+      'currency': cashFlow.currency,
     };
   }
 
@@ -597,6 +603,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       amount: (data['amount'] as num).toDouble(),
       notes: data['notes'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      // Multi-currency support (default to USD for backward compatibility)
+      currency: data['currency'] as String? ?? 'USD',
     );
   }
 }

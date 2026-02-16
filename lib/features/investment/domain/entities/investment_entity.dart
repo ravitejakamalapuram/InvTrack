@@ -439,6 +439,11 @@ class InvestmentEntity {
   /// How often interest is compounded
   final CompoundingFrequency? compoundingFrequency;
 
+  /// Primary/display currency for this investment
+  /// All cash flows will be converted to this currency for display
+  /// Default: 'USD' for backward compatibility
+  final String currency;
+
   const InvestmentEntity({
     required this.id,
     required this.name,
@@ -460,6 +465,7 @@ class InvestmentEntity {
     this.autoRenewal,
     this.riskLevel,
     this.compoundingFrequency,
+    this.currency = 'USD', // Default for backward compatibility
   });
 
   bool get isOpen => status == InvestmentStatus.open;
@@ -526,6 +532,7 @@ class InvestmentEntity {
     bool? autoRenewal,
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
+    String? currency,
   }) {
     return InvestmentEntity(
       id: id ?? this.id,
@@ -548,6 +555,7 @@ class InvestmentEntity {
       autoRenewal: autoRenewal ?? this.autoRenewal,
       riskLevel: riskLevel ?? this.riskLevel,
       compoundingFrequency: compoundingFrequency ?? this.compoundingFrequency,
+      currency: currency ?? this.currency,
     );
   }
 
@@ -574,7 +582,8 @@ class InvestmentEntity {
         other.interestPayoutMode == interestPayoutMode &&
         other.autoRenewal == autoRenewal &&
         other.riskLevel == riskLevel &&
-        other.compoundingFrequency == compoundingFrequency;
+        other.compoundingFrequency == compoundingFrequency &&
+        other.currency == currency;
   }
 
   @override
@@ -600,6 +609,7 @@ class InvestmentEntity {
       autoRenewal,
       riskLevel,
       compoundingFrequency,
+      currency,
     );
   }
 }
