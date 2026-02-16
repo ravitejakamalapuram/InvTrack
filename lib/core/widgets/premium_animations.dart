@@ -7,6 +7,7 @@ class ShimmerEffect extends StatefulWidget {
   final Color? baseColor;
   final Color? highlightColor;
   final Duration duration;
+  final String? semanticLabel;
 
   const ShimmerEffect({
     super.key,
@@ -14,6 +15,7 @@ class ShimmerEffect extends StatefulWidget {
     this.baseColor,
     this.highlightColor,
     this.duration = const Duration(milliseconds: 1500),
+    this.semanticLabel,
   });
 
   @override
@@ -47,27 +49,32 @@ class _ShimmerEffectState extends State<ShimmerEffect>
         widget.highlightColor ??
         (isDark ? const Color(0xFF334155) : const Color(0xFFF8FAFC));
 
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) {
-        return ShaderMask(
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [base, highlight, base],
-              stops: [
-                (_controller.value - 0.3).clamp(0.0, 1.0),
-                _controller.value,
-                (_controller.value + 0.3).clamp(0.0, 1.0),
-              ],
-            ).createShader(bounds);
-          },
-          blendMode: BlendMode.srcATop,
-          child: child,
-        );
-      },
+    return Semantics(
+      label: widget.semanticLabel ?? 'Loading content',
+      container: true,
+      excludeSemantics: true,
+      child: AnimatedBuilder(
+        animation: _controller,
+        child: widget.child,
+        builder: (context, child) {
+          return ShaderMask(
+            shaderCallback: (bounds) {
+              return LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [base, highlight, base],
+                stops: [
+                  (_controller.value - 0.3).clamp(0.0, 1.0),
+                  _controller.value,
+                  (_controller.value + 0.3).clamp(0.0, 1.0),
+                ],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.srcATop,
+            child: child,
+          );
+        },
+      ),
     );
   }
 }

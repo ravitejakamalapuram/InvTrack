@@ -10,6 +10,7 @@ class HeroCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShimmerEffect(
+      semanticLabel: 'Loading summary',
       child: GlassHeroCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,6 +116,7 @@ class InvestmentCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ShimmerEffect(
+      semanticLabel: 'Loading investment',
       child: GlassCard(
         padding: const EdgeInsets.all(16),
         child: Row(
