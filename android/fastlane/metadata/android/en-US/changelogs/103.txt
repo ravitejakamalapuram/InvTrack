@@ -1,0 +1,10 @@
+🔧 Bug Fix: Photo/Video Permissions
+
+Fixed Play Store policy compliance issue:
+✅ Removed READ_MEDIA_IMAGES permission
+✅ Removed READ_MEDIA_VIDEO permission
+✅ App now uses system photo picker (SAF)
+✅ No permission prompts for file selection
+
+All features work exactly the same - just more privacy-friendly!
+
