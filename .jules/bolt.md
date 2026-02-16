@@ -69,3 +69,11 @@ Iterative numerical methods like Newton-Raphson often compute $f(x)$ and $f'(x)$
 
 **Action:**
 Combined $f(x)$ and $f'(x)$ calculation into a single pass that returns a record `(double, double)`. This allows reusing the expensive `pow((1+x), t)` result for both terms, reducing execution time by ~45% for XIRR calculations.
+
+## 2026-02-12 - Replacing pow() with exp() in Tight Loops
+
+**Learning:**
+In Dart (and many languages), `pow(base, exponent)` is implemented as `exp(exponent * log(base))`. When the base is constant inside a loop (like `(1+x)` in XIRR calculations), calling `pow` repeatedly re-calculates `log(base)` O(N) times. By hoisting `log(base)` out of the loop and using `exp(p * lnBase)`, we save N expensive log calculations.
+
+**Action:**
+Identify loops where `pow(base, variable)` is called with a loop-invariant base. Replace with pre-calculated log and `exp()` for a ~2x speedup. Also, avoid redundant verification steps in iterative solvers if the convergence criteria already implies the result is correct.
