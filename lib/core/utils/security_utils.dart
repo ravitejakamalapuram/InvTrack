@@ -51,7 +51,28 @@ class SecurityUtils {
     );
 
     final actualHash = base64.encode(key);
-    return actualHash == expectedHash;
+    return constantTimeEquals(actualHash, expectedHash);
+  }
+
+  /// Compares two strings in constant time to prevent timing attacks.
+  ///
+  /// This avoids the early-exit optimization of standard string comparison,
+  /// ensuring that the comparison time depends only on the length of the strings,
+  /// not on how many characters match.
+  static bool constantTimeEquals(String a, String b) {
+    if (a.length != b.length) {
+      return false;
+    }
+
+    final aUnits = a.codeUnits;
+    final bUnits = b.codeUnits;
+    var result = 0;
+
+    for (var i = 0; i < aUnits.length; i++) {
+      result |= aUnits[i] ^ bUnits[i];
+    }
+
+    return result == 0;
   }
 
   /// PBKDF2 implementation using HMAC-SHA256.

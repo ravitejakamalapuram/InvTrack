@@ -125,5 +125,30 @@ void main() {
 
       expect(SecurityUtils.verifyPin(pin, expectedStoredHash), isTrue);
     });
+
+    group('constantTimeEquals', () {
+      test('returns true for equal strings', () {
+        expect(SecurityUtils.constantTimeEquals('abc', 'abc'), isTrue);
+        expect(SecurityUtils.constantTimeEquals('', ''), isTrue);
+        expect(SecurityUtils.constantTimeEquals('1234', '1234'), isTrue);
+      });
+
+      test('returns false for unequal strings of same length', () {
+        expect(SecurityUtils.constantTimeEquals('abc', 'abd'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('1234', '1235'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('aaaa', 'bbbb'), isFalse);
+      });
+
+      test('returns false for strings of different length', () {
+        expect(SecurityUtils.constantTimeEquals('abc', 'abcd'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('1234', '123'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('', 'a'), isFalse);
+      });
+
+      test('handles unicode characters correctly', () {
+        expect(SecurityUtils.constantTimeEquals('😊', '😊'), isTrue);
+        expect(SecurityUtils.constantTimeEquals('😊', '😢'), isFalse);
+      });
+    });
   });
 }

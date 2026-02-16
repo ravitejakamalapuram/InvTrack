@@ -224,19 +224,19 @@ class SecurityService {
           // Re-hash input with extracted salt (Legacy SHA-256)
           final bytes = utf8.encode(pin + salt);
           final actualHash = sha256.convert(bytes).toString();
-          isMatch = actualHash == expectedHash;
+          isMatch = SecurityUtils.constantTimeEquals(actualHash, expectedHash);
           if (isMatch) needsUpgrade = true;
         }
       }
       // v1: Unsalted Hash (SHA-256 is 64 chars hex)
       else if (storedPin.length == 64) {
         final hashedInput = _hashPinLegacy(pin);
-        isMatch = storedPin == hashedInput;
+        isMatch = SecurityUtils.constantTimeEquals(storedPin, hashedInput);
         if (isMatch) needsUpgrade = true;
       }
       // v0: Plaintext (Legacy)
       else {
-        isMatch = storedPin == pin;
+        isMatch = SecurityUtils.constantTimeEquals(storedPin, pin);
         if (isMatch) needsUpgrade = true;
       }
 
