@@ -1,0 +1,2 @@
+🆕 What's New
+• Implement constant-time PIN verification (#188)

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+
+- Cache DateFormat.yMMM to reduce build overhead (#189)
+
+### ✨ Features
+
+- **a11y**: Add semantics to ShimmerEffect for loading states (#191)
+- Add Tooltip to PrivacyToggleButton (#190)
+
+## [3.39.0] - 2026-02-16
+
 ### ✨ Features
 
 - **security**: Implement constant-time PIN verification (#188)
