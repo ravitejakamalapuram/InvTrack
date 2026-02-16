@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **security**: Implement constant-time PIN verification (#188)
+
+## [3.38.5] - 2026-02-16
+
 ### 🐛 Bug Fixes
 
 - Remove READ_MEDIA_IMAGES/VIDEO permissions and clean up dead code
