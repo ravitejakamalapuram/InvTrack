@@ -49,3 +49,7 @@
 ## 2026-10-27 - [Accessibility: Contextual Metadata in List Items]
 **Learning:** Screen reader users often miss context available to sighted users through auxiliary text (e.g., "Last activity", "Total invested" in a footer). Grouping primary data (Name, Value) with secondary metadata into a single semantic label ensures users get the full picture without navigating multiple small elements.
 **Action:** Consolidate all relevant data points into a single, comprehensive `semanticLabel` for complex list items (like investment cards), using clear separators (e.g., ". ") to allow screen readers to pause naturally between pieces of information.
+
+## 2026-10-28 - [Accessibility: Redundant Semantics in Tooltips]
+**Learning:** When wrapping a custom widget that already has a `Semantics(label: ...)` wrapper with a `Tooltip`, the screen reader announces both the label and the tooltip message, leading to redundant "Show amounts, Show amounts" announcements.
+**Action:** Set `excludeFromSemantics: true` on the `Tooltip` when the underlying widget already has a descriptive `Semantics` label to ensure a clean, single announcement while preserving the visual tooltip behavior.
