@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Remove READ_MEDIA_IMAGES/VIDEO permissions and clean up dead code
+
+## [3.38.3] - 2026-02-14
+
 ### 🔧 Miscellaneous
 
 - Change deployment back to closed testing (alpha track)
