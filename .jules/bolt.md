@@ -77,3 +77,11 @@ In Dart (and many languages), `pow(base, exponent)` is implemented as `exp(expon
 
 **Action:**
 Identify loops where `pow(base, variable)` is called with a loop-invariant base. Replace with pre-calculated log and `exp()` for a ~2x speedup. Also, avoid redundant verification steps in iterative solvers if the convergence criteria already implies the result is correct.
+
+## 2026-02-13 - Factoring Constants out of Summation Loops
+
+**Learning:**
+In numerical methods like Newton-Raphson, derivative calculations often involve a summation where a term is constant across all iterations of the loop (e.g., `invBase` in XIRR derivative). Factoring this multiplication out of the loop reduces N floating point multiplications per iteration.
+
+**Action:**
+Identify loop-invariant factors in mathematical summations and move them outside the loop to save CPU cycles in hot paths.

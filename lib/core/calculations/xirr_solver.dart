@@ -565,8 +565,12 @@ class XirrSolver {
       final termF = amounts[i] * exp(-p * lnBase);
 
       fSum += termF;
-      dfSum += termF * (-p) * invBase;
+      // Optimization: factor out invBase from the loop
+      // df term: termF * (-p) * invBase
+      // We sum (termF * -p) here and multiply by invBase after the loop
+      dfSum += termF * (-p);
     }
-    return (fSum, dfSum);
+    // Multiply by invBase (1/(1+x)) once at the end instead of in every iteration
+    return (fSum, dfSum * invBase);
   }
 }
