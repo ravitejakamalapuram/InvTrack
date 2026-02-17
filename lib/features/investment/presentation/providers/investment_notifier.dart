@@ -404,6 +404,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required double amount,
     required DateTime date,
     String? notes,
+    String? currency,
   }) async {
     // Input validation
     _validateAmount(amount);
@@ -419,6 +420,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         notes: notes?.trim(),
         createdAt: DateTime.now(),
+        currency: currency ?? 'USD',
       );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
@@ -456,6 +458,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required DateTime date,
     String? notes,
     required DateTime createdAt,
+    String? currency,
   }) async {
     // Input validation
     _validateAmount(amount);
@@ -471,6 +474,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         notes: notes?.trim(),
         createdAt: createdAt,
+        currency: currency ?? 'USD',
       );
       await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
