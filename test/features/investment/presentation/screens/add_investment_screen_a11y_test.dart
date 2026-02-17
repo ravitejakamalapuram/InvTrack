@@ -96,6 +96,23 @@ void main() {
 
       // For Payout Mode "Monthly" - Not shown for P2P Lending by default, so skipping.
       // We already verified _buildEnumChip works with Risk Level.
+
+      // 4. Check Income Frequency (uses _buildFrequencyChip)
+      // This is ALWAYS visible at the bottom of the form.
+      // Find "Monthly income frequency" semantics label.
+      final monthlyFrequencyFinder = find.bySemanticsLabel('Monthly income frequency');
+
+      // Scroll to ensure it is visible (it's at the bottom)
+      await tester.scrollUntilVisible(monthlyFrequencyFinder, 500, scrollable: scrollable);
+      expect(monthlyFrequencyFinder, findsOneWidget, reason: 'Monthly income frequency chip should exist');
+
+      final monthlyFreqNode = tester.getSemantics(monthlyFrequencyFinder);
+      final monthlyFreqData = (monthlyFreqNode as dynamic).getSemanticsData();
+
+      expect(monthlyFreqData.label, 'Monthly income frequency');
+      // ignore: deprecated_member_use
+      expect(monthlyFreqData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Frequency chip should be a button');
+      expect(monthlyFreqData.hasAction(SemanticsAction.tap), isTrue, reason: 'Frequency chip should be tappable (onTap added)');
     },
   );
 }

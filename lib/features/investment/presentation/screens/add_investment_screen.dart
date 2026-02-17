@@ -1356,6 +1356,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       selected: isSelected,
       label: '$label income frequency',
       excludeSemantics: true,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _incomeFrequency = frequency);
+      },
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();

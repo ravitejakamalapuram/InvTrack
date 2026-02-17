@@ -57,3 +57,7 @@
 ## 2026-02-15 - [Accessibility: Swipe Actions]
 **Learning:** Swipe actions (like `Dismissible`) are gesture-based and effectively invisible to screen reader users who cannot easily perform complex swipe gestures. These actions must be exposed via the accessibility menu.
 **Action:** Wrap `Dismissible` widgets with `Semantics` and provide `customSemanticsActions` (e.g., 'Delete', 'Archive') mapped to the corresponding logic. This allows users to access these critical actions through the screen reader's "Actions" rotor/menu.
+
+## 2026-02-19 - [Testing: Verify Accessibility Actions]
+**Learning:** Visual inspections of code or UI often miss functional accessibility bugs (like missing actions). Writing a widget test that explicitly checks `hasAction(SemanticsAction.tap)` on semantic nodes is the most reliable way to prevent "button-like" widgets from being non-interactive for screen readers.
+**Action:** When fixing accessibility bugs involving interactivity, always add a `testWidgets` case that finds the widget by its semantic label and asserts `tester.getSemantics(finder).getSemanticsData().hasAction(SemanticsAction.tap)`.
