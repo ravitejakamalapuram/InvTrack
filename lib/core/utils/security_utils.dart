@@ -14,7 +14,7 @@ class SecurityUtils {
   static String hashPin(
     String pin,
     String salt, {
-    int iterations = 10000,
+    int iterations = 100000,
     int keyLength = 32,
   }) {
     final key = _pbkdf2(
@@ -56,20 +56,23 @@ class SecurityUtils {
 
   /// Compares two strings in constant time to prevent timing attacks.
   ///
-  /// This avoids the early-exit optimization of standard string comparison,
-  /// ensuring that the comparison time depends only on the length of the strings,
-  /// not on how many characters match.
+  /// This avoids the early-exit optimization of standard string comparison.
+  /// The execution time depends on the length of [a].
+  ///
+  /// **Security Note:** To prevent leaking the length of the secret, pass the
+  /// public (or attacker-controlled) input as [a] and the secret as [b].
   static bool constantTimeEquals(String a, String b) {
-    if (a.length != b.length) {
-      return false;
-    }
-
     final aUnits = a.codeUnits;
     final bUnits = b.codeUnits;
-    var result = 0;
+    final aLength = aUnits.length;
+    final bLength = bUnits.length;
 
-    for (var i = 0; i < aUnits.length; i++) {
-      result |= aUnits[i] ^ bUnits[i];
+    var result = aLength ^ bLength;
+
+    for (var i = 0; i < aLength; i++) {
+      var x = aUnits[i];
+      var y = (i < bLength) ? bUnits[i] : 0;
+      result |= x ^ y;
     }
 
     return result == 0;

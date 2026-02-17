@@ -33,6 +33,15 @@ void main() {
       // part 2 is the hash
     });
 
+    test('hashPin uses default iterations of 100,000', () {
+      const pin = '1234';
+      const salt = 'salt';
+      final hash = SecurityUtils.hashPin(pin, salt);
+
+      final parts = hash.split(':');
+      expect(parts[1], equals('100000'));
+    });
+
     test('verifyPin returns true for correct PIN', () {
       const pin = '1234';
       const salt = 'salt';

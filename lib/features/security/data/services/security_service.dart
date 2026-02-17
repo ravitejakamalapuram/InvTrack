@@ -236,7 +236,8 @@ class SecurityService {
       }
       // v0: Plaintext (Legacy)
       else {
-        isMatch = SecurityUtils.constantTimeEquals(storedPin, pin);
+        // Pass user input (pin) as first argument to prevent leaking storedPin length
+        isMatch = SecurityUtils.constantTimeEquals(pin, storedPin);
         if (isMatch) needsUpgrade = true;
       }
 
