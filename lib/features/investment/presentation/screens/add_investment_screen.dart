@@ -16,6 +16,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
+import 'package:inv_tracker/core/widgets/currency_selector.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
@@ -71,6 +72,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   RiskLevel? _riskLevel;
   CompoundingFrequency? _compoundingFrequency;
 
+  // Multi-currency support
+  late String _selectedCurrency;
+
   // Smart defaults tracking
   bool _maturityDateAutoCalculated = false;
 
@@ -109,8 +113,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       _autoRenewal = investment.autoRenewal;
       _riskLevel = investment.riskLevel;
       _compoundingFrequency = investment.compoundingFrequency;
+      _selectedCurrency = investment.currency;
       // Hide template selector when editing
       _showTemplateSelector = false;
+    } else {
+      // Default to user's base currency for new investments
+      _selectedCurrency = ref.read(currencyCodeProvider);
     }
 
     // Apply preselected template if provided (from empty state quick-add)
@@ -275,6 +283,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               autoRenewal: _autoRenewal,
               riskLevel: _riskLevel,
               compoundingFrequency: _compoundingFrequency,
+              // Multi-currency
+              currency: _selectedCurrency,
             );
       } else {
         await ref
@@ -294,6 +304,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               autoRenewal: _autoRenewal,
               riskLevel: _riskLevel,
               compoundingFrequency: _compoundingFrequency,
+              // Multi-currency
+              currency: _selectedCurrency,
             );
 
         // Track enhanced fields usage for new investments
@@ -462,6 +474,18 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         textCapitalization: TextCapitalization.sentences,
                         maxLines: 2,
                         maxLength: ValidationConstants.maxNotesLength,
+                      ),
+
+                      SizedBox(height: AppSpacing.sectionSpacing),
+
+                      // Currency Selector
+                      CurrencySelector(
+                        selectedCurrency: _selectedCurrency,
+                        onCurrencySelected: (code) {
+                          setState(() => _selectedCurrency = code);
+                        },
+                        label: 'Investment Currency',
+                        subtitle: 'Primary currency for this investment',
                       ),
 
                       SizedBox(height: AppSpacing.sectionSpacing),

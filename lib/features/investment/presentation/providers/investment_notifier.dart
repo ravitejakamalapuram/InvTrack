@@ -43,6 +43,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     bool? autoRenewal,
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
+    // Multi-currency support
+    String? currency,
   }) async {
     // Input validation
     _validateName(name);
@@ -69,6 +71,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
+        // Multi-currency (defaults to USD if not provided)
+        currency: currency ?? 'USD',
       );
 
       // Track performance of investment creation
@@ -126,6 +130,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     bool? autoRenewal,
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
+    // Multi-currency support
+    String? currency,
   }) async {
     // Input validation
     _validateName(name);
@@ -154,6 +160,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
+        // Multi-currency
+        currency: currency,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
