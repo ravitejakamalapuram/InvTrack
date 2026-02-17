@@ -37,6 +37,9 @@ class CurrencyConversionService {
   // Tier 1: Memory cache (current session)
   final Map<String, double> _memoryCache = {};
 
+  // Memory cache size limit (LRU eviction)
+  static const int _maxMemoryCacheSize = 100;
+
   // Frankfurter API base URL
   static const String _apiBaseUrl = 'https://api.frankfurter.dev/v1';
 
@@ -54,6 +57,17 @@ class CurrencyConversionService {
   // Collection reference for exchange rate cache
   CollectionReference<Map<String, dynamic>> get _exchangeRatesRef =>
       _firestore.collection('users').doc(_userId).collection('exchangeRates');
+
+  /// Add entry to memory cache with LRU eviction
+  void _addToMemoryCache(String key, double value) {
+    // If cache is full, remove oldest entry (first entry in map)
+    if (_memoryCache.length >= _maxMemoryCacheSize) {
+      final oldestKey = _memoryCache.keys.first;
+      _memoryCache.remove(oldestKey);
+    }
+
+    _memoryCache[key] = value;
+  }
 
   /// Convert single amount from one currency to another
   /// 
@@ -175,7 +189,7 @@ class CurrencyConversionService {
 
     if (doc.exists) {
       final rate = doc.data()!['rate'] as double;
-      _memoryCache[memKey] = rate;
+      _addToMemoryCache(memKey, rate);
       return rate;
     }
 
@@ -210,7 +224,7 @@ class CurrencyConversionService {
       // Offline - will sync when back online
     }
 
-    _memoryCache[memKey] = rate;
+    _addToMemoryCache(memKey, rate);
     return rate;
   }
 
@@ -242,7 +256,7 @@ class CurrencyConversionService {
       // Check if expired
       if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
         final rate = data['rate'] as double;
-        _memoryCache[memKey] = rate;
+        _addToMemoryCache(memKey, rate);
         return rate;
       }
     }
@@ -279,7 +293,7 @@ class CurrencyConversionService {
       // Offline - will sync when back online
     }
 
-    _memoryCache[memKey] = rate;
+    _addToMemoryCache(memKey, rate);
     return rate;
   }
 
