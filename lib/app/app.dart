@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
 import 'package:inv_tracker/core/widgets/connectivity_listener.dart';
+import 'package:inv_tracker/core/widgets/currency_cache_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
@@ -24,8 +25,9 @@ class InvTrackerApp extends ConsumerWidget {
     return NotificationSyncInitializer(
       child: _NotificationNavigationHandler(
         child: VersionCheckInitializer(
-          child: ConnectivityListener(
-            child: MaterialApp.router(
+          child: CurrencyCacheInitializer(
+            child: ConnectivityListener(
+              child: MaterialApp.router(
               title: 'InvTracker',
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
@@ -33,11 +35,12 @@ class InvTrackerApp extends ConsumerWidget {
               routerConfig: router,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              builder: (context, child) {
-                return PrivacyProtectionWrapper(
-                  child: child!,
-                );
-              },
+                builder: (context, child) {
+                  return PrivacyProtectionWrapper(
+                    child: child!,
+                  );
+                },
+              ),
             ),
           ),
         ),
