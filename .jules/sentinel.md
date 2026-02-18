@@ -116,3 +116,11 @@
 **Prevention:**
 1. Use a constant-time comparison function (like `constantTimeEquals`) for all security-sensitive string comparisons.
 2. Ensure the comparison takes the same amount of time regardless of whether the inputs match or where the mismatch occurs (e.g., using XOR accumulation).
+
+## 2026-06-28 - [Timing Attack in Constant Time Comparison]
+**Vulnerability:** The `constantTimeEquals` utility returned early if the lengths of the two strings differed. This timing difference leaked the length of the secret (when compared against attacker input), narrowing the brute-force search space.
+**Learning:** "Constant time" must be constant relative to the *secret*. Any early exit, even for length, leaks information. True constant-time comparison must iterate the entire length of the secret, regardless of the input.
+**Prevention:**
+1. Remove early exit conditions in constant-time comparison functions.
+2. Initialize the result based on length difference (e.g., XOR lengths).
+3. Always iterate over the full length of the secret (or a known upper bound) to ensure execution time is independent of the input content and length match.
