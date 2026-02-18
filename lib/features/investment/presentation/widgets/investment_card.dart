@@ -68,6 +68,7 @@ class InvestmentCard extends ConsumerWidget {
         maturityDate: investment.maturityDate,
         totalInvested: stats.totalInvested,
         lastActivityDate: stats.lastCashFlowDate ?? investment.createdAt,
+        cashFlowCount: stats.cashFlowCount,
         shouldMask: isPrivacyMode,
       ),
       orElse: () =>

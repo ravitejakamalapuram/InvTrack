@@ -54,6 +54,10 @@
 **Learning:** When wrapping a custom widget that already has a `Semantics(label: ...)` wrapper with a `Tooltip`, the screen reader announces both the label and the tooltip message, leading to redundant "Show amounts, Show amounts" announcements.
 **Action:** Set `excludeFromSemantics: true` on the `Tooltip` when the underlying widget already has a descriptive `Semantics` label to ensure a clean, single announcement while preserving the visual tooltip behavior.
 
+## 2026-10-28 - [Accessibility: Activity Context in Lists]
+**Learning:** For financial items, users benefit significantly from knowing the volume of activity (e.g., "5 entries") as part of the summary, not just the current balance. This context helps differentiate between active and dormant investments.
+**Action:** Include transaction counts or activity summaries in the `semanticLabel` of list items to provide depth without requiring detailed navigation.
+
 ## 2026-02-15 - [Accessibility: Swipe Actions]
 **Learning:** Swipe actions (like `Dismissible`) are gesture-based and effectively invisible to screen reader users who cannot easily perform complex swipe gestures. These actions must be exposed via the accessibility menu.
 **Action:** Wrap `Dismissible` widgets with `Semantics` and provide `customSemanticsActions` (e.g., 'Delete', 'Archive') mapped to the corresponding logic. This allows users to access these critical actions through the screen reader's "Actions" rotor/menu.

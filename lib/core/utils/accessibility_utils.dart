@@ -76,6 +76,7 @@ class AccessibilityUtils {
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
+    int? cashFlowCount,
     bool shouldMask = false,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
@@ -90,6 +91,9 @@ class AccessibilityUtils {
         : '';
     final lastActivity = lastActivityDate != null
         ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'
+        : '';
+    final entries = cashFlowCount != null && cashFlowCount > 0
+        ? '$cashFlowCount ${cashFlowCount == 1 ? "entry" : "entries"}'
         : '';
 
     String maturityInfo = '';
@@ -119,6 +123,7 @@ class AccessibilityUtils {
       if (invested.isNotEmpty) invested,
       if (returns.isNotEmpty) returns,
       if (lastActivity.isNotEmpty) lastActivity,
+      if (entries.isNotEmpty) entries,
     ].join('. ');
 
     return maturityInfo.isNotEmpty ? '$mainLabel. $maturityInfo' : mainLabel;

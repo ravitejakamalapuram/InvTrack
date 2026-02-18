@@ -180,6 +180,34 @@ void main() {
         expect(label, isNot(contains('800,000')));
         expect(label, isNot(contains('25.5')));
       });
+
+      test('generates correct label with cash flow count', () {
+        final label = AccessibilityUtils.investmentCardLabel(
+          name: 'Active Stock',
+          type: 'Stock',
+          currentValue: 55000,
+          returnPercent: 10.0,
+          currencySymbol: '\$',
+          isClosed: false,
+          cashFlowCount: 5,
+        );
+
+        expect(label, contains('5 entries'));
+      });
+
+      test('generates correct label with single cash flow entry', () {
+        final label = AccessibilityUtils.investmentCardLabel(
+          name: 'New Stock',
+          type: 'Stock',
+          currentValue: 1000,
+          returnPercent: 0.0,
+          currencySymbol: '\$',
+          isClosed: false,
+          cashFlowCount: 1,
+        );
+
+        expect(label, contains('1 entry'));
+      });
     });
   });
 }
