@@ -96,6 +96,7 @@ class AccessibilityUtils {
     String maturityInfo = '';
     if (maturityDate != null && !isClosed) {
       // OPTIMIZATION: Use passed referenceDate to avoid creating DateTime.now() repeatedly in lists.
+      // This is critical for scrolling performance in long lists of investments.
       final now = referenceDate ?? DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final maturity = DateTime(
