@@ -77,6 +77,7 @@ class AccessibilityUtils {
     double? totalInvested,
     DateTime? lastActivityDate,
     bool shouldMask = false,
+    DateTime? referenceDate,
   }) {
     final status = isClosed ? 'Closed investment' : 'Open investment';
     final value = shouldMask
@@ -94,7 +95,8 @@ class AccessibilityUtils {
 
     String maturityInfo = '';
     if (maturityDate != null && !isClosed) {
-      final now = DateTime.now();
+      // OPTIMIZATION: Use passed referenceDate to avoid creating DateTime.now() repeatedly in lists.
+      final now = referenceDate ?? DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final maturity = DateTime(
         maturityDate.year,
