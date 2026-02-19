@@ -40,6 +40,20 @@ class DocumentStorageService {
     return invDir;
   }
 
+  /// Validate that the path is within the allowed documents directory
+  Future<void> _validatePath(String path) async {
+    final docsDir = await _documentsDirectory;
+    final canonicalDocsPath = path_lib.canonicalize(docsDir.path);
+    final canonicalPath = path_lib.canonicalize(path);
+
+    if (!path_lib.isWithin(canonicalDocsPath, canonicalPath)) {
+      throw FileSystemException(
+        'Access denied: Path outside document storage',
+        path,
+      );
+    }
+  }
+
   /// Save a document file and return the local path
   /// [investmentId] - The investment this document belongs to
   /// [documentId] - Unique ID for the document
@@ -67,6 +81,7 @@ class DocumentStorageService {
 
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
+    await _validatePath(localPath);
     final file = File(localPath);
     if (!await file.exists()) return null;
     return file.readAsBytes();
@@ -74,12 +89,14 @@ class DocumentStorageService {
 
   /// Check if a document file exists
   Future<bool> documentExists(String localPath) async {
+    await _validatePath(localPath);
     final file = File(localPath);
     return file.exists();
   }
 
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
+    await _validatePath(localPath);
     final file = File(localPath);
     if (await file.exists()) {
       await file.delete();
@@ -96,6 +113,7 @@ class DocumentStorageService {
 
   /// Get the file size in bytes
   Future<int> getFileSize(String localPath) async {
+    await _validatePath(localPath);
     final file = File(localPath);
     if (!await file.exists()) return 0;
     return file.length();
