@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
@@ -80,12 +78,6 @@ void main() {
     // 3. Verify Semantics
     // The GlassCard wraps content in Semantics with a custom label.
     // We expect the label to contain "Returns: positive 12.5 percent".
-
-    // Find the Semantics widget created inside GlassCard
-    final semanticsFinder = find.descendant(
-      of: find.byType(InvestmentCard),
-      matching: find.byType(Semantics)
-    );
 
     // There might be multiple semantics, we want the one with 'Test Investment'
     // But GlassCard wraps everything in one Semantics with label.
