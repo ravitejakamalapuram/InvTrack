@@ -493,6 +493,13 @@ class XirrSolver {
 
     for (int i = 0; i < amounts.length; i++) {
       final power = yearsFromStart[i];
+
+      // Optimization: exp(0) is 1.0, so skip the expensive call for the first cash flow
+      if (power == 0.0) {
+        sum += amounts[i];
+        continue;
+      }
+
       // Reuse precomputed log(base)
       sum += amounts[i] * exp(-power * lnBase);
     }
@@ -557,6 +564,13 @@ class XirrSolver {
 
     for (int i = 0; i < amounts.length; i++) {
       final p = yearsFromStart[i];
+
+      // Optimization: exp(0) is 1.0, so skip the expensive call for the first cash flow
+      if (p == 0.0) {
+        fSum += amounts[i];
+        continue;
+      }
+
       // Calculate pow once and reuse for both f and df
       // f term: amount / (1+x)^p = amount * exp(-p * ln(1+x))
       // df term: amount * -p / (1+x)^(p+1) = (f term) * -p / (1+x)
@@ -565,8 +579,15 @@ class XirrSolver {
       final termF = amounts[i] * exp(-p * lnBase);
 
       fSum += termF;
-      dfSum += termF * (-p) * invBase;
+      // Optimization: Factor out invBase multiplication from the loop
+      // dfSum += termF * (-p) * invBase
+      // We accumulate termF * (-p) and multiply by invBase once at the end
+      dfSum += termF * (-p);
     }
+
+    // Apply the factored-out multiplication
+    dfSum *= invBase;
+
     return (fSum, dfSum);
   }
 }
