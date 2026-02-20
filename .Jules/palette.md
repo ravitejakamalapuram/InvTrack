@@ -54,6 +54,10 @@
 **Learning:** When wrapping a custom widget that already has a `Semantics(label: ...)` wrapper with a `Tooltip`, the screen reader announces both the label and the tooltip message, leading to redundant "Show amounts, Show amounts" announcements.
 **Action:** Set `excludeFromSemantics: true` on the `Tooltip` when the underlying widget already has a descriptive `Semantics` label to ensure a clean, single announcement while preserving the visual tooltip behavior.
 
+## 2026-02-11 - [Accessibility: Late-bound Semantics]
+**Learning:** Complex widgets (like investment cards) often defer expensive calculations (like XIRR) to async providers to unblock UI rendering. If the semantic label is constructed only once during the initial build using synchronous data, the screen reader misses the critical late-bound information.
+**Action:** Watch the async data provider in the parent widget and rebuild the semantic label when data arrives, ensuring the `Semantics` widget updates to include the full context (e.g., "Returns: 12.5%") once available.
+
 ## 2026-02-15 - [Accessibility: Swipe Actions]
 **Learning:** Swipe actions (like `Dismissible`) are gesture-based and effectively invisible to screen reader users who cannot easily perform complex swipe gestures. These actions must be exposed via the accessibility menu.
 **Action:** Wrap `Dismissible` widgets with `Semantics` and provide `customSemanticsActions` (e.g., 'Delete', 'Archive') mapped to the corresponding logic. This allows users to access these critical actions through the screen reader's "Actions" rotor/menu.
