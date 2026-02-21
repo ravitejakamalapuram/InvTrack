@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
@@ -121,6 +122,20 @@ class SwipeActions extends StatelessWidget {
       background = _buildDeleteBackground();
     }
 
+    // Configure custom semantic actions for accessibility
+    final customSemanticsActions = <CustomSemanticsAction, VoidCallback>{};
+
+    if (deleteConfig != null) {
+      customSemanticsActions[const CustomSemanticsAction(label: 'Delete')] =
+          () => _confirmDismiss(context, DismissDirection.endToStart);
+    }
+
+    if (archiveConfig != null) {
+      final label = archiveConfig!.isArchived ? 'Unarchive' : 'Archive';
+      customSemanticsActions[CustomSemanticsAction(label: label)] =
+          () => _confirmDismiss(context, DismissDirection.startToEnd);
+    }
+
     return Dismissible(
       key: Key(itemKey),
       direction: _direction,
@@ -129,7 +144,12 @@ class SwipeActions extends StatelessWidget {
       confirmDismiss: (direction) => _confirmDismiss(context, direction),
       // Note: We handle the action in confirmDismiss and return false,
       // so the item is removed by provider update, not by Dismissible
-      child: child,
+      child: customSemanticsActions.isNotEmpty
+          ? Semantics(
+              customSemanticsActions: customSemanticsActions,
+              child: child,
+            )
+          : child,
     );
   }
 
