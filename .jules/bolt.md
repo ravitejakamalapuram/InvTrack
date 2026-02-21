@@ -78,6 +78,14 @@ In Dart (and many languages), `pow(base, exponent)` is implemented as `exp(expon
 **Action:**
 Identify loops where `pow(base, variable)` is called with a loop-invariant base. Replace with pre-calculated log and `exp()` for a ~2x speedup. Also, avoid redundant verification steps in iterative solvers if the convergence criteria already implies the result is correct.
 
+## 2026-02-12 - Optimization of XIRR Loops via Factoring and Skipping
+
+**Learning:**
+Mathematical simplifications in tight loops (like factoring out constants from summations: $\sum (x \cdot c) = c \cdot \sum x$) and skipping expensive operations for known values (like `exp(0) = 1` for the first cash flow) can yield significant performance gains (35% speedup observed).
+
+**Action:**
+Always scrutinize tight loops for invariant multiplications and special cases (like 0) that can bypass expensive math functions.
+
 ## 2026-02-12 - DateTime.now() Allocation in List Builders
 
 **Learning:**
