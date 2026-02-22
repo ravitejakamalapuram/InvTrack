@@ -9,12 +9,18 @@ class SecurityUtils {
   ///
   /// [pin] The PIN to hash.
   /// [salt] The salt to use (should be random and unique per user).
-  /// [iterations] The number of iterations (default 10000).
+  /// [iterations] The number of iterations (default 100,000).
+  ///
+  /// **Security Note:**
+  /// OWASP recommends 600,000 iterations for PBKDF2-HMAC-SHA256 (as of 2023).
+  /// However, due to performance constraints of pure Dart implementation on mobile devices,
+  /// we default to 100,000 iterations which provides a balance between security and UX (~1s on older devices).
+  ///
   /// [keyLength] The length of the derived key in bytes (default 32 for SHA-256).
   static String hashPin(
     String pin,
     String salt, {
-    int iterations = 10000,
+    int iterations = 100000,
     int keyLength = 32,
   }) {
     final key = _pbkdf2(
