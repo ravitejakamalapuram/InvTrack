@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Sentinel
+
+- Fix timing attack in legacy PIN verification (#214)
+
+### ⚡ Performance
+
+- Optimize XIRR solver loop by factoring out constant multiplication (#213)
+
+### ✨ Features
+
+- Improve accessibility for add investment screen (#210)
+- **security**: Increase default PBKDF2 iterations to 100,000 (#211)
+- **a11y**: Add semantic copy action to CompactAmountText (#216)
+
+## [3.40.0] - 2026-02-16
+
 ### ⚡ Performance
 
 - Cache DateFormat.yMMM to reduce build overhead (#189)
