@@ -53,3 +53,7 @@
 ## 2026-10-28 - [Accessibility: Redundant Semantics in Tooltips]
 **Learning:** When wrapping a custom widget that already has a `Semantics(label: ...)` wrapper with a `Tooltip`, the screen reader announces both the label and the tooltip message, leading to redundant "Show amounts, Show amounts" announcements.
 **Action:** Set `excludeFromSemantics: true` on the `Tooltip` when the underlying widget already has a descriptive `Semantics` label to ensure a clean, single announcement while preserving the visual tooltip behavior.
+
+## 2026-10-29 - [Accessibility: Semantic Actions for Copy]
+**Learning:** Relying on `onLongPress` to reveal a transient copy action (like in a SnackBar) is cumbersome and error-prone for screen reader users.
+**Action:** Implement `onCopy` in `Semantics` to provide a direct, system-native copy action. Provide clear auditory feedback (e.g., "Copied to clipboard") upon successful execution.
