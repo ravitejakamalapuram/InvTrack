@@ -1,0 +1,7 @@
+⚡ Performance Improvements
+• Optimize XIRR solver loop by factoring out constant multiplication (#213)
+
+🆕 What's New
+• Improve accessibility for add investment screen (#210)
+• Increase default PBKDF2 iterations to 100,000 (#211)
+• Add semantic copy action to CompactAmountText (#216)
