@@ -69,6 +69,7 @@ class InvestmentCard extends ConsumerWidget {
         totalInvested: stats.totalInvested,
         lastActivityDate: stats.lastCashFlowDate ?? investment.createdAt,
         shouldMask: isPrivacyMode,
+        referenceDate: referenceDate,
       ),
       orElse: () =>
           '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
