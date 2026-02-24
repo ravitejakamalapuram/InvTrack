@@ -40,6 +40,18 @@ class DocumentStorageService {
     return invDir;
   }
 
+  /// Validate that the path is within the application documents directory
+  Future<bool> _isSafePath(String path) async {
+    try {
+      final docsDir = await _documentsDirectory;
+      final resolvedPath = path_lib.canonicalize(path);
+      final resolvedDocsDir = path_lib.canonicalize(docsDir.path);
+      return path_lib.isWithin(resolvedDocsDir, resolvedPath);
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Save a document file and return the local path
   /// [investmentId] - The investment this document belongs to
   /// [documentId] - Unique ID for the document
