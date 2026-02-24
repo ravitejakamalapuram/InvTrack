@@ -65,8 +65,23 @@ class DocumentStorageService {
     return filePath;
   }
 
+  /// Validate that the file path is within the allowed user directory
+  /// Prevents Path Traversal and Local File Inclusion (LFI) attacks
+  Future<bool> _isSafePath(String localPath) async {
+    try {
+      final baseDir = await _documentsDirectory;
+      final canonicalBase = path_lib.canonicalize(baseDir.path);
+      final canonicalPath = path_lib.canonicalize(localPath);
+      return path_lib.isWithin(canonicalBase, canonicalPath);
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
+    if (!await _isSafePath(localPath)) return null;
+
     final file = File(localPath);
     if (!await file.exists()) return null;
     return file.readAsBytes();
@@ -74,12 +89,16 @@ class DocumentStorageService {
 
   /// Check if a document file exists
   Future<bool> documentExists(String localPath) async {
+    if (!await _isSafePath(localPath)) return false;
+
     final file = File(localPath);
     return file.exists();
   }
 
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
+    if (!await _isSafePath(localPath)) return;
+
     final file = File(localPath);
     if (await file.exists()) {
       await file.delete();
@@ -96,6 +115,8 @@ class DocumentStorageService {
 
   /// Get the file size in bytes
   Future<int> getFileSize(String localPath) async {
+    if (!await _isSafePath(localPath)) return 0;
+
     final file = File(localPath);
     if (!await file.exists()) return 0;
     return file.length();

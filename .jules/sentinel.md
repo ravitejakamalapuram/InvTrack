@@ -116,3 +116,11 @@
 **Prevention:**
 1. Use a constant-time comparison function (like `constantTimeEquals`) for all security-sensitive string comparisons.
 2. Ensure the comparison takes the same amount of time regardless of whether the inputs match or where the mismatch occurs (e.g., using XOR accumulation).
+
+## 2026-06-29 - [Local File Inclusion in Document Reader]
+**Vulnerability:** The `DocumentStorageService.readDocument` method accepted an arbitrary file path (`localPath`) and read the file without validating it was within the allowed application directory. This allowed an attacker (or compromised local data) to read sensitive files from the device filesystem (LFI).
+**Learning:** `path_provider` methods return safe base directories, but subsequent file operations using concatenated strings or stored paths are vulnerable if not validated. Trusting a stored path is dangerous if the storage medium (e.g. Firestore, local DB) can be tampered with.
+**Prevention:**
+1. Always validate file paths before opening them.
+2. Use `path.canonicalize` to resolve symlinks and `..` segments.
+3. Use `path.isWithin` to ensure the resolved path is strictly inside the intended directory.
