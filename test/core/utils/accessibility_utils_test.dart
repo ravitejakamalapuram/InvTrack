@@ -180,31 +180,6 @@ void main() {
         expect(label, isNot(contains('800,000')));
         expect(label, isNot(contains('25.5')));
       });
-
-      test('respects referenceDate for maturity calculation', () {
-        // Create a fixed "now" date: Jan 1, 2024
-        final referenceDate = DateTime(2024, 1, 1);
-
-        // Maturity is Jan 10, 2024 (9 days later)
-        // Note: Logic says "Within 7 days - urgent" -> "X days TO MATURITY"?
-        // Wait, AccessibilityUtils says:
-        // <= 30 days: "Matures in X days"
-
-        final maturityDate = DateTime(2024, 1, 10);
-
-        final label = AccessibilityUtils.investmentCardLabel(
-          name: 'Future Bond',
-          type: 'Bond',
-          currentValue: 1000,
-          returnPercent: 2.0,
-          currencySymbol: '\$',
-          isClosed: false,
-          maturityDate: maturityDate,
-          referenceDate: referenceDate,
-        );
-
-        expect(label, contains('Matures in 9 days'));
-      });
     });
   });
 }

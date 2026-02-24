@@ -120,81 +120,68 @@ class _TemplateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final semanticLabel = StringBuffer(template.name);
-    semanticLabel.write(', ${template.description}');
-    if (template.typicalRate != null) {
-      semanticLabel.write(
-          ', typical return ${template.typicalRate!.toStringAsFixed(0)}%');
-    }
-
-    return Semantics(
-      button: true,
-      label: semanticLabel.toString(),
-      excludeSemantics: true,
+    return GestureDetector(
       onTap: onTap,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          width: 130,
-          padding: EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        width: 130,
+        padding: EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? template.color.withValues(alpha: 0.15)
+              : (isDark ? AppColors.surfaceDark : Colors.white),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
             color: isSelected
-                ? template.color.withValues(alpha: 0.15)
-                : (isDark ? AppColors.surfaceDark : Colors.white),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? template.color
-                  : (isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light),
-              width: isSelected ? 2 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: template.color.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
+                ? template.color
+                : (isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light),
+            width: isSelected ? 2 : 1,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(template.emoji, style: const TextStyle(fontSize: 20)),
-              const SizedBox(height: 4),
-              Text(
-                template.name,
-                style: AppTypography.label.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  color: isSelected
-                      ? template.color
-                      : (isDark ? Colors.white : AppColors.neutral900Light),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (template.typicalRate != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  '~${template.typicalRate!.toStringAsFixed(0)}% p.a.',
-                  style: AppTypography.caption.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
-                    fontSize: 10,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: template.color.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(template.emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(height: 4),
+            Text(
+              template.name,
+              style: AppTypography.label.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: isSelected
+                    ? template.color
+                    : (isDark ? Colors.white : AppColors.neutral900Light),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (template.typicalRate != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                '~${template.typicalRate!.toStringAsFixed(0)}% p.a.',
+                style: AppTypography.caption.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
+                  fontSize: 10,
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

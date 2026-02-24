@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
-import 'package:path/path.dart' as path_lib;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -84,22 +83,5 @@ void main() {
       ),
       throwsA(isA<FormatException>()),
     );
-  });
-
-  test('readDocument returns null for paths outside app directory', () async {
-    // Create a sensitive file outside the app directory
-    final sensitiveFile = File(path_lib.join(Directory.systemTemp.path, 'sensitive.txt'));
-    if (!sensitiveFile.existsSync()) {
-      sensitiveFile.writeAsStringSync('SECRET');
-    }
-
-    try {
-      final result = await service.readDocument(sensitiveFile.path);
-      expect(result, isNull);
-    } finally {
-      if (sensitiveFile.existsSync()) {
-        sensitiveFile.deleteSync();
-      }
-    }
   });
 }

@@ -85,11 +85,3 @@ Mathematical simplifications in tight loops (like factoring out constants from s
 
 **Action:**
 Always scrutinize tight loops for invariant multiplications and special cases (like 0) that can bypass expensive math functions.
-
-## 2026-02-12 - DateTime.now() Allocation in List Builders
-
-**Learning:**
-Accessibility label generation (`AccessibilityUtils.investmentCardLabel`) was calling `DateTime.now()` and creating derived `DateTime` objects for maturity calculations on every build of every `InvestmentCard`. In a long list, this creates thousands of unnecessary allocations during scroll.
-
-**Action:**
-Capture `DateTime.now()` once at the parent level (e.g., `InvestmentListScreen`) and pass it down as a `referenceDate` to child widgets and utility functions. This ensures O(1) allocation for the entire list render instead of O(N).

@@ -40,14 +40,14 @@ class DocumentStorageService {
     return invDir;
   }
 
-  /// Validate that the path is within the application documents directory
-  Future<bool> _isSafePath(String path) async {
+  /// Validate path to prevent directory traversal
+  Future<bool> _isSafePath(String localPath) async {
     try {
-      final docsDir = await _documentsDirectory;
-      final resolvedPath = path_lib.canonicalize(path);
-      final resolvedDocsDir = path_lib.canonicalize(docsDir.path);
-      return path_lib.isWithin(resolvedDocsDir, resolvedPath);
-    } catch (e) {
+      final baseDir = await _documentsDirectory;
+      final resolvedPath = path_lib.canonicalize(localPath);
+      final resolvedBase = path_lib.canonicalize(baseDir.path);
+      return path_lib.isWithin(resolvedBase, resolvedPath);
+    } catch (_) {
       return false;
     }
   }
@@ -71,29 +71,19 @@ class DocumentStorageService {
     final localFileName = '$documentId$extension';
     final filePath = path_lib.join(invDir.path, localFileName);
 
+    if (!await _isSafePath(filePath)) {
+      throw const FileSystemException('Invalid file path');
+    }
+
     final file = File(filePath);
     await file.writeAsBytes(bytes);
 
     return filePath;
   }
 
-  /// Validate that the file path is within the allowed user directory
-  /// Prevents Path Traversal and Local File Inclusion (LFI) attacks
-  Future<bool> _isSafePath(String localPath) async {
-    try {
-      final baseDir = await _documentsDirectory;
-      final canonicalBase = path_lib.canonicalize(baseDir.path);
-      final canonicalPath = path_lib.canonicalize(localPath);
-      return path_lib.isWithin(canonicalBase, canonicalPath);
-    } catch (e) {
-      return false;
-    }
-  }
-
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
     if (!await _isSafePath(localPath)) return null;
-
     final file = File(localPath);
     if (!await file.exists()) return null;
     return file.readAsBytes();
@@ -102,7 +92,6 @@ class DocumentStorageService {
   /// Check if a document file exists
   Future<bool> documentExists(String localPath) async {
     if (!await _isSafePath(localPath)) return false;
-
     final file = File(localPath);
     return file.exists();
   }
@@ -110,7 +99,6 @@ class DocumentStorageService {
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
     if (!await _isSafePath(localPath)) return;
-
     final file = File(localPath);
     if (await file.exists()) {
       await file.delete();
@@ -120,7 +108,7 @@ class DocumentStorageService {
   /// Delete all documents for an investment
   Future<void> deleteInvestmentDocuments(String investmentId) async {
     final invDir = await _getInvestmentDirectory(investmentId);
-    if (await invDir.exists()) {
+    if (await _isSafePath(invDir.path) && await invDir.exists()) {
       await invDir.delete(recursive: true);
     }
   }
@@ -128,7 +116,6 @@ class DocumentStorageService {
   /// Get the file size in bytes
   Future<int> getFileSize(String localPath) async {
     if (!await _isSafePath(localPath)) return 0;
-
     final file = File(localPath);
     if (!await file.exists()) return 0;
     return file.length();

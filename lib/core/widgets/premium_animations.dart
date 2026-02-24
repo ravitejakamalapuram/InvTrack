@@ -197,11 +197,8 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    // Optimization: Clamp index to prevent huge delays for items deep in the list.
-    // For items beyond the initial viewport (index > 4), use a minimal delay
-    // (50ms) to ensure they appear quickly during scrolling while maintaining
-    // a subtle entry animation.
-    final effectiveIndex = widget.index > 4 ? 1 : widget.index;
+    // Optimization: Clamp index to prevent huge delays for items deep in the list
+    final effectiveIndex = widget.index > 5 ? 5 : widget.index;
     Future.delayed(widget.delay * effectiveIndex, () {
       if (mounted) _controller.forward();
     });
