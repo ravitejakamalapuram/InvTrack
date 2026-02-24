@@ -51,7 +51,7 @@ void main() {
       expect(semantics.label, contains('rupees'));
 
       // Verify hint is present
-      expect(semantics.hint, contains('view exact amount'));
+      expect(semantics.hint, contains('copy exact amount'));
     });
 
     testWidgets('Privacy mode: Should have "Hidden amount" label', (tester) async {
@@ -89,8 +89,7 @@ void main() {
         tester.getSemantics(find.byType(CompactAmountText)),
         matchesSemantics(
           hasLongPressAction: true,
-          hasCopyAction: true,
-          hint: 'Double tap and hold to view exact amount',
+          hint: 'Double tap and hold to copy exact amount',
         ),
       );
 

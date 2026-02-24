@@ -21,6 +21,18 @@ class DocumentStorageService {
     return docsDir;
   }
 
+  /// Check if a path is safe (prevent path traversal)
+  Future<bool> _isSafePath(String path) async {
+    try {
+      final docsDir = await _documentsDirectory;
+      final canonicalDocsPath = path_lib.canonicalize(docsDir.path);
+      final canonicalPath = path_lib.canonicalize(path);
+      return path_lib.isWithin(canonicalDocsPath, canonicalPath);
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Validate ID format to prevent path traversal
   bool _isValidId(String id) {
     // Only allow alphanumeric characters, dashes, and underscores
@@ -38,18 +50,6 @@ class DocumentStorageService {
       await invDir.create(recursive: true);
     }
     return invDir;
-  }
-
-  /// Validate that the path is within the application documents directory
-  Future<bool> _isSafePath(String path) async {
-    try {
-      final docsDir = await _documentsDirectory;
-      final resolvedPath = path_lib.canonicalize(path);
-      final resolvedDocsDir = path_lib.canonicalize(docsDir.path);
-      return path_lib.isWithin(resolvedDocsDir, resolvedPath);
-    } catch (e) {
-      return false;
-    }
   }
 
   /// Save a document file and return the local path
@@ -71,23 +71,14 @@ class DocumentStorageService {
     final localFileName = '$documentId$extension';
     final filePath = path_lib.join(invDir.path, localFileName);
 
+    if (!await _isSafePath(filePath)) {
+      throw const FormatException('Invalid file path');
+    }
+
     final file = File(filePath);
     await file.writeAsBytes(bytes);
 
     return filePath;
-  }
-
-  /// Validate that the file path is within the allowed user directory
-  /// Prevents Path Traversal and Local File Inclusion (LFI) attacks
-  Future<bool> _isSafePath(String localPath) async {
-    try {
-      final baseDir = await _documentsDirectory;
-      final canonicalBase = path_lib.canonicalize(baseDir.path);
-      final canonicalPath = path_lib.canonicalize(localPath);
-      return path_lib.isWithin(canonicalBase, canonicalPath);
-    } catch (e) {
-      return false;
-    }
   }
 
   /// Read a document file as bytes
@@ -120,6 +111,7 @@ class DocumentStorageService {
   /// Delete all documents for an investment
   Future<void> deleteInvestmentDocuments(String investmentId) async {
     final invDir = await _getInvestmentDirectory(investmentId);
+    // Directory is safe by construction of _getInvestmentDirectory
     if (await invDir.exists()) {
       await invDir.delete(recursive: true);
     }

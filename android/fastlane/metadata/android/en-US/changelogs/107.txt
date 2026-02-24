@@ -1,6 +1,0 @@
-⚡ Performance Improvements
-• Cache DateFormat.yMMM to reduce build overhead (#189)
-
-🆕 What's New
-• Add semantics to ShimmerEffect for loading states (#191)
-• Add Tooltip to PrivacyToggleButton (#190)
