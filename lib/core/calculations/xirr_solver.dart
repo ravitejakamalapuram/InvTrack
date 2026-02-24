@@ -565,8 +565,11 @@ class XirrSolver {
       final termF = amounts[i] * exp(-p * lnBase);
 
       fSum += termF;
-      dfSum += termF * (-p) * invBase;
+      dfSum += termF * (-p);
     }
+    // Optimization: Factor out invBase multiplication from the loop
+    dfSum *= invBase;
+
     return (fSum, dfSum);
   }
 }
