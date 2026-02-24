@@ -77,11 +77,3 @@ In Dart (and many languages), `pow(base, exponent)` is implemented as `exp(expon
 
 **Action:**
 Identify loops where `pow(base, variable)` is called with a loop-invariant base. Replace with pre-calculated log and `exp()` for a ~2x speedup. Also, avoid redundant verification steps in iterative solvers if the convergence criteria already implies the result is correct.
-
-## 2026-02-12 - DateTime.now() Allocation in List Builders
-
-**Learning:**
-Accessibility label generation (`AccessibilityUtils.investmentCardLabel`) was calling `DateTime.now()` and creating derived `DateTime` objects for maturity calculations on every build of every `InvestmentCard`. In a long list, this creates thousands of unnecessary allocations during scroll.
-
-**Action:**
-Capture `DateTime.now()` once at the parent level (e.g., `InvestmentListScreen`) and pass it down as a `referenceDate` to child widgets and utility functions. This ensures O(1) allocation for the entire list render instead of O(N).

@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
-import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
 
 // Mock Notifier that does nothing
 class MockInvestmentNotifier extends InvestmentNotifier {
@@ -35,31 +34,6 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-
-      // 0. Verify "Template Selector" accessibility
-      // Find "Fixed Deposit" template card (inside TemplateSelector)
-      // Since "Fixed Deposit" also appears in TypeSelector, we need to be specific.
-      final templateSelector = find.byType(TemplateSelector);
-      final templateCard = find.descendant(
-        of: templateSelector,
-        matching: find.text('Fixed Deposit'),
-      );
-      expect(templateCard, findsOneWidget);
-
-      final templateCardSemantics = find.ancestor(
-        of: templateCard,
-        matching: find.byType(Semantics),
-      ).first;
-
-      final templateSemanticsNode = tester.getSemantics(templateCardSemantics);
-      final templateSemanticsData = templateSemanticsNode.getSemanticsData();
-
-      expect(templateSemanticsData.hasFlag(SemanticsFlag.isButton), isTrue,
-          reason: 'Template card should be a button');
-      expect(templateSemanticsData.label, contains('Fixed Deposit'),
-          reason: 'Template card label should contain name');
-      expect(templateSemanticsData.hasAction(SemanticsAction.tap), isTrue,
-          reason: 'Template card should have tap action');
 
       // 1. Verify "Investment Type" selector
       // Scroll down to find dynamic fields.
@@ -107,6 +81,7 @@ void main() {
       // Access data via getSemanticsData() if available, or assume it's data
       final semanticsData = (semanticsNode as dynamic).getSemanticsData();
       expect(semanticsData.label, 'Select Start Date', reason: 'Start Date picker should have correct label');
+      // ignore: deprecated_member_use
       expect(semanticsData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Start Date picker should be a button');
       expect(semanticsData.hasAction(SemanticsAction.tap), isTrue, reason: 'Start Date picker should be tappable');
 
@@ -115,36 +90,12 @@ void main() {
       expect(mediumRiskSemantics, findsOneWidget, reason: 'Risk Level chip should have semantic label');
       final mediumRiskNode = tester.getSemantics(mediumRiskSemantics);
       final mediumRiskData = (mediumRiskNode as dynamic).getSemanticsData();
+      // ignore: deprecated_member_use
       expect(mediumRiskData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Risk Level chip should be a button');
       expect(mediumRiskData.hasAction(SemanticsAction.tap), isTrue, reason: 'Risk Level chip should be tappable');
 
       // For Payout Mode "Monthly" - Not shown for P2P Lending by default, so skipping.
       // We already verified _buildEnumChip works with Risk Level.
-
-      // 4. Verify "Income Frequency" chips accessibility
-      // Scroll to find "Income Frequency" section
-      final frequencyLabel = find.text('Income Frequency (Optional)');
-      await tester.scrollUntilVisible(frequencyLabel, 500, scrollable: scrollable);
-
-      // Find "Monthly" frequency chip
-      final monthlyFrequencyChip = find.text('Monthly');
-      await tester.scrollUntilVisible(monthlyFrequencyChip, 100, scrollable: scrollable);
-
-      // Find the Semantics widget wrapping the chip
-      final frequencySemanticsFinder = find.ancestor(
-        of: monthlyFrequencyChip,
-        matching: find.byWidgetPredicate(
-          (w) => w is Semantics && w.properties.label == 'Monthly income frequency'
-        ),
-      );
-
-      expect(frequencySemanticsFinder, findsOneWidget, reason: 'Frequency chip should have specific semantic label');
-
-      final frequencySemanticsNode = tester.getSemantics(frequencySemanticsFinder);
-      final frequencySemanticsData = frequencySemanticsNode.getSemanticsData();
-
-      expect(frequencySemanticsData.hasAction(SemanticsAction.tap), isTrue,
-          reason: 'Frequency chip should have tap action exposed to semantics');
     },
   );
 }

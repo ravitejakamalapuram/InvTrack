@@ -74,34 +74,10 @@ class CompactAmountText extends ConsumerWidget {
   String get _displayText =>
       prefix != null ? '$prefix$compactText' : compactText;
 
-  void _copyToClipboard(BuildContext context, String text) {
-    Clipboard.setData(ClipboardData(text: text));
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text('Copied to clipboard'),
-          ],
-        ),
-        backgroundColor: AppColors.successLight,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
   void _showFullAmount(BuildContext context, WidgetRef ref) {
     HapticFeedback.mediumImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fullAmount = _fullFormattedAmount(ref);
-    final textToCopy = prefix != null ? '$prefix$fullAmount' : fullAmount;
 
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -122,7 +98,9 @@ class CompactAmountText extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    textToCopy,
+                    prefix != null
+                        ? '$prefix$fullAmount'
+                        : fullAmount,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -138,7 +116,34 @@ class CompactAmountText extends ConsumerWidget {
                 color: Colors.white,
                 size: 20,
               ),
-              onPressed: () => _copyToClipboard(context, textToCopy),
+              onPressed: () {
+                Clipboard.setData(
+                  ClipboardData(
+                    text: prefix != null
+                        ? '$prefix$fullAmount'
+                        : fullAmount,
+                  ),
+                );
+                HapticFeedback.lightImpact();
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Row(
+                      children: [
+                        Icon(Icons.check, color: Colors.white, size: 18),
+                        SizedBox(width: 8),
+                        Text('Copied to clipboard'),
+                      ],
+                    ),
+                    backgroundColor: AppColors.successLight,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
               tooltip: 'Copy',
             ),
           ],
@@ -177,13 +182,8 @@ class CompactAmountText extends ConsumerWidget {
         amount,
         currencySymbol,
       ),
-      hint: 'Double tap and hold to view exact amount',
+      hint: 'Double tap and hold to copy exact amount',
       onLongPress: () => _showFullAmount(context, ref),
-      onCopy: () {
-        final fullAmount = _fullFormattedAmount(ref);
-        final textToCopy = prefix != null ? '$prefix$fullAmount' : fullAmount;
-        _copyToClipboard(context, textToCopy);
-      },
       excludeSemantics: true,
       child: GestureDetector(
         onLongPress: () => _showFullAmount(context, ref),
