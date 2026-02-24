@@ -698,47 +698,44 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     Color? valueColor,
     bool isHighlighted = false,
   }) {
-    return Semantics(
-      container: true,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral600Light,
+                ),
+              ),
+              if (subtitle != null)
                 Text(
-                  label,
-                  style: AppTypography.bodyMedium.copyWith(
+                  subtitle,
+                  style: AppTypography.caption.copyWith(
                     color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral600Light,
+                        ? AppColors.neutral500Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
-                if (subtitle != null)
-                  Text(
-                    subtitle,
-                    style: AppTypography.caption.copyWith(
-                      color: isDark
-                          ? AppColors.neutral500Dark
-                          : AppColors.neutral500Light,
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
-          Text(
-            value,
-            style: (isHighlighted ? AppTypography.h4 : AppTypography.bodyLarge)
-                .copyWith(
-              fontWeight: FontWeight.w600,
-              color: valueColor ??
-                  (isDark ? Colors.white : AppColors.neutral900Light),
-            ),
+        ),
+        Text(
+          value,
+          style: (isHighlighted ? AppTypography.h4 : AppTypography.bodyLarge)
+              .copyWith(
+            fontWeight: FontWeight.w600,
+            color: valueColor ??
+                (isDark ? Colors.white : AppColors.neutral900Light),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1359,10 +1356,6 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       selected: isSelected,
       label: '$label income frequency',
       excludeSemantics: true,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _incomeFrequency = frequency);
-      },
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();

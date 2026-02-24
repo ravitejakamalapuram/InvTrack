@@ -57,7 +57,3 @@
 ## 2026-02-15 - [Accessibility: Swipe Actions]
 **Learning:** Swipe actions (like `Dismissible`) are gesture-based and effectively invisible to screen reader users who cannot easily perform complex swipe gestures. These actions must be exposed via the accessibility menu.
 **Action:** Wrap `Dismissible` widgets with `Semantics` and provide `customSemanticsActions` (e.g., 'Delete', 'Archive') mapped to the corresponding logic. This allows users to access these critical actions through the screen reader's "Actions" rotor/menu.
-
-## 2026-10-29 - [Accessibility: Semantic Actions for Copy]
-**Learning:** Relying on `onLongPress` to reveal a transient copy action (like in a SnackBar) is cumbersome and error-prone for screen reader users.
-**Action:** Implement `onCopy` in `Semantics` to provide a direct, system-native copy action. Provide clear auditory feedback (e.g., "Copied to clipboard") upon successful execution.

@@ -40,18 +40,6 @@ class DocumentStorageService {
     return invDir;
   }
 
-  /// Validate that the path is within the application documents directory
-  Future<bool> _isSafePath(String path) async {
-    try {
-      final docsDir = await _documentsDirectory;
-      final resolvedPath = path_lib.canonicalize(path);
-      final resolvedDocsDir = path_lib.canonicalize(docsDir.path);
-      return path_lib.isWithin(resolvedDocsDir, resolvedPath);
-    } catch (e) {
-      return false;
-    }
-  }
-
   /// Save a document file and return the local path
   /// [investmentId] - The investment this document belongs to
   /// [documentId] - Unique ID for the document
@@ -79,8 +67,6 @@ class DocumentStorageService {
 
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
-    if (!await _isSafePath(localPath)) return null;
-
     final file = File(localPath);
     if (!await file.exists()) return null;
     return file.readAsBytes();
@@ -88,16 +74,12 @@ class DocumentStorageService {
 
   /// Check if a document file exists
   Future<bool> documentExists(String localPath) async {
-    if (!await _isSafePath(localPath)) return false;
-
     final file = File(localPath);
     return file.exists();
   }
 
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
-    if (!await _isSafePath(localPath)) return;
-
     final file = File(localPath);
     if (await file.exists()) {
       await file.delete();
@@ -114,8 +96,6 @@ class DocumentStorageService {
 
   /// Get the file size in bytes
   Future<int> getFileSize(String localPath) async {
-    if (!await _isSafePath(localPath)) return 0;
-
     final file = File(localPath);
     if (!await file.exists()) return 0;
     return file.length();

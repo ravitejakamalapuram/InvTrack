@@ -236,21 +236,7 @@ class SecurityService {
       }
       // v0: Plaintext (Legacy)
       else {
-        // Mitigate timing attack by hashing both before comparison
-        // We use a fixed salt and low iterations just for the equality check
-        // This ensures constantTimeEquals receives fixed-length strings
-        const comparisonSalt = 'legacy_pin_verification_salt';
-        final hashedStored = SecurityUtils.hashPin(
-          storedPin,
-          comparisonSalt,
-          iterations: 1000,
-        );
-        final hashedInput = SecurityUtils.hashPin(
-          pin,
-          comparisonSalt,
-          iterations: 1000,
-        );
-        isMatch = SecurityUtils.constantTimeEquals(hashedStored, hashedInput);
+        isMatch = SecurityUtils.constantTimeEquals(storedPin, pin);
         if (isMatch) needsUpgrade = true;
       }
 
