@@ -224,6 +224,17 @@ final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
     return 0.0;
   }
 
+  // OPTIMIZATION: For small number of cash flows (< 50), run synchronously.
+  // The overhead of spawning an isolate (latency + memory) exceeds the calculation time.
+  // XIRR for < 50 items takes < 1ms on modern devices.
+  if (cashFlows.length < 50) {
+    return ref.read(performanceServiceProvider).trackSync(
+      'xirr_calculation_archived_sync',
+      () => FinancialCalculator.calculateXirrFromCashFlows(cashFlows),
+      metrics: {'cash_flow_count': cashFlows.length},
+    );
+  }
+
   // Track performance of XIRR calculation for archived investments
   return ref.read(performanceServiceProvider).trackOperation(
     'xirr_calculation_archived',
