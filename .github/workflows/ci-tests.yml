@@ -12,7 +12,7 @@ concurrency:
 jobs:
   test:
     name: Test & Analyze
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.4'
-          cache: false  # Self-hosted runners have Flutter installed locally
+          cache: true
 
       - run: flutter pub get
 
@@ -34,7 +34,7 @@ jobs:
 
   code-quality:
     name: Code Quality Checks
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
 
     steps:
