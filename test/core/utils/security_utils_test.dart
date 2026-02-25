@@ -21,6 +21,16 @@ void main() {
       expect(hash1, isNot(equals(hash2)));
     });
 
+    test('hashPin uses default 100,000 iterations', () {
+      const pin = '1234';
+      const salt = 'salt';
+      final hash = SecurityUtils.hashPin(pin, salt); // No iterations specified
+
+      final parts = hash.split(':');
+      expect(parts.length, equals(3));
+      expect(parts[1], equals('100000'));
+    });
+
     test('hashPin includes iteration count in format', () {
       const pin = '1234';
       const salt = 'salt';
@@ -143,11 +153,21 @@ void main() {
         expect(SecurityUtils.constantTimeEquals('abc', 'abcd'), isFalse);
         expect(SecurityUtils.constantTimeEquals('1234', '123'), isFalse);
         expect(SecurityUtils.constantTimeEquals('', 'a'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('a', ''), isFalse);
+        expect(SecurityUtils.constantTimeEquals('verylongstring', 'short'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('short', 'verylongstring'), isFalse);
       });
 
       test('handles unicode characters correctly', () {
         expect(SecurityUtils.constantTimeEquals('😊', '😊'), isTrue);
         expect(SecurityUtils.constantTimeEquals('😊', '😢'), isFalse);
+        expect(SecurityUtils.constantTimeEquals('😊', 'a'), isFalse);
+      });
+
+      test('handles empty strings', () {
+        expect(SecurityUtils.constantTimeEquals('', ''), isTrue);
+        expect(SecurityUtils.constantTimeEquals('a', ''), isFalse);
+        expect(SecurityUtils.constantTimeEquals('', 'a'), isFalse);
       });
     });
   });
