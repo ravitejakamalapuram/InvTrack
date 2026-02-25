@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -75,9 +76,7 @@ class DataImportService {
     Uint8List zipBytes,
     ImportStrategy strategy,
   ) async {
-    if (kDebugMode) {
-      debugPrint('📥 Starting ZIP import with strategy: ${strategy.name}...');
-    }
+    LoggerService.info('Starting ZIP import', metadata: {'strategy': strategy.name});
 
     final errors = <String>[];
     final warnings = <String>[];
@@ -275,23 +274,20 @@ class DataImportService {
 
           await _fireSettingsRepository.saveSettings(fireSettings);
           fireSettingsImported = true;
-          if (kDebugMode) {
-            debugPrint('📥 FIRE settings imported successfully');
-          }
+          LoggerService.info('FIRE settings imported successfully');
         } catch (e) {
           warnings.add('Failed to import FIRE settings: $e');
         }
       }
     }
 
-    if (kDebugMode) {
-      debugPrint('📥 Import complete: '
-          '$investmentsImported investments, '
-          '$cashflowsImported cashflows, '
-          '$goalsImported goals, '
-          '$documentsImported documents, '
-          'FIRE settings: ${fireSettingsImported ? 'yes' : 'no'}');
-    }
+    LoggerService.info('Import complete', metadata: {
+      'investments': investmentsImported,
+      'cashflows': cashflowsImported,
+      'goals': goalsImported,
+      'documents': documentsImported,
+      'fireSettings': fireSettingsImported,
+    });
 
     return ZipImportResult(
       investmentsImported: investmentsImported,

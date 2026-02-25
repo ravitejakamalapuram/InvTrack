@@ -8,9 +8,9 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -35,9 +35,10 @@ Stream<String> get pendingNavigationStream =>
 /// Queue a navigation for when the app is ready
 void queueNotificationNavigation(String payload) {
   _pendingNavigationController.add(payload);
-  if (kDebugMode) {
-    debugPrint('🔔 Queued notification navigation: $payload');
-  }
+  LoggerService.debug(
+    'Queued notification navigation',
+    metadata: {'payload': payload},
+  );
 }
 
 /// Handles navigation from notification payloads
@@ -53,9 +54,10 @@ class NotificationNavigator {
     }
 
     final payload = NotificationPayload.parse(payloadString);
-    if (kDebugMode) {
-      debugPrint('🔔 Handling notification: $payload');
-    }
+    LoggerService.debug(
+      'Handling notification',
+      metadata: {'payload': payload.toString()},
+    );
 
     switch (payload.type) {
       case NotificationPayloadType.investmentDetail:
@@ -97,9 +99,10 @@ class NotificationNavigator {
 
     final investment = await _findInvestment(investmentId);
     if (investment == null) {
-      if (kDebugMode) {
-        debugPrint('🔔 Investment not found: $investmentId');
-      }
+      LoggerService.warn(
+        'Investment not found for notification',
+        metadata: {'investmentId': investmentId},
+      );
       return false;
     }
 
@@ -170,9 +173,10 @@ class NotificationNavigator {
       ),
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Navigated to goal detail: $goalId');
-    }
+    LoggerService.debug(
+      'Navigated to goal detail',
+      metadata: {'goalId': goalId},
+    );
     return true;
   }
 
@@ -187,9 +191,10 @@ class NotificationNavigator {
         orElse: () => null,
       );
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔔 Error finding investment: $e');
-      }
+      LoggerService.warn(
+        'Error finding investment',
+        metadata: {'error': e.toString()},
+      );
       return null;
     }
   }

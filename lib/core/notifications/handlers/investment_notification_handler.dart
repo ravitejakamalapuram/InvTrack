@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
@@ -107,19 +107,23 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.incomeReminder(investmentId),
     );
 
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Income reminder scheduled for $investmentName on $nextIncomeDate',
-      );
-    }
+    LoggerService.info(
+      'Income reminder scheduled',
+      metadata: {
+        'investmentId': investmentId,
+        'investmentName': investmentName,
+        'nextIncomeDate': nextIncomeDate.toString(),
+      },
+    );
   }
 
   /// Cancel income reminder for a specific investment.
   Future<void> cancelIncomeReminder(String investmentId) async {
     await _plugin.cancel(NotificationIds.incomeReminder(investmentId));
-    if (kDebugMode) {
-      debugPrint('🔔 Income reminder cancelled for investment $investmentId');
-    }
+    LoggerService.info(
+      'Income reminder cancelled',
+      metadata: {'investmentId': investmentId},
+    );
   }
 
   // ============ Maturity Reminders ============
@@ -204,11 +208,14 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         payload: NotificationPayload.maturityReminder(investmentId, 7),
       );
 
-      if (kDebugMode) {
-        debugPrint(
-          '🔔 7-day maturity reminder scheduled for $investmentName on $scheduledDate',
-        );
-      }
+      LoggerService.info(
+        '7-day maturity reminder scheduled',
+        metadata: {
+          'investmentId': investmentId,
+          'investmentName': investmentName,
+          'scheduledDate': scheduledDate.toString(),
+        },
+      );
     }
 
     // Schedule 1-day reminder
@@ -239,11 +246,14 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         payload: NotificationPayload.maturityReminder(investmentId, 1),
       );
 
-      if (kDebugMode) {
-        debugPrint(
-          '🔔 1-day maturity reminder scheduled for $investmentName on $scheduledDate',
-        );
-      }
+      LoggerService.info(
+        '1-day maturity reminder scheduled',
+        metadata: {
+          'investmentId': investmentId,
+          'investmentName': investmentName,
+          'scheduledDate': scheduledDate.toString(),
+        },
+      );
     }
   }
 
@@ -251,11 +261,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   Future<void> cancelMaturityReminders(String investmentId) async {
     await _plugin.cancel(NotificationIds.maturityReminder7Days(investmentId));
     await _plugin.cancel(NotificationIds.maturityReminder1Day(investmentId));
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Maturity reminders cancelled for investment $investmentId',
-      );
-    }
+    LoggerService.info(
+      'Maturity reminders cancelled',
+      metadata: {'investmentId': investmentId},
+    );
   }
 
   String _buildMaturityNotificationBody({
@@ -303,11 +312,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   Future<void> rescheduleAllNotifications(
     List<InvestmentEntity> investments,
   ) async {
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Re-scheduling notifications for ${investments.length} investments',
-      );
-    }
+    LoggerService.info(
+      'Re-scheduling notifications',
+      metadata: {'investmentCount': investments.length},
+    );
 
     await scheduleWeeklySummary();
     await scheduleMonthlySummary();
@@ -333,9 +341,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       }
     }
 
-    if (kDebugMode) {
-      debugPrint('🔔 Finished re-scheduling all notifications');
-    }
+    LoggerService.info('Finished re-scheduling all notifications');
   }
 
   // ============ Summary Notifications ============
@@ -495,11 +501,14 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.milestone(investmentId, reachedMilestone),
     );
 
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Milestone notification shown: ${reachedMilestone}x for $investmentName',
-      );
-    }
+    LoggerService.info(
+      'Milestone notification shown',
+      metadata: {
+        'investmentId': investmentId,
+        'investmentName': investmentName,
+        'milestone': reachedMilestone,
+      },
+    );
   }
 
   // ============ Helper Methods ============

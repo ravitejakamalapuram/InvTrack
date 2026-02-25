@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:inv_tracker/features/user_profile/domain/entities/user_profile_entity.dart';
 import 'package:inv_tracker/features/user_profile/domain/repositories/user_profile_repository.dart';
@@ -23,42 +23,46 @@ class ProfileInitializationService {
       // Check if profile already exists
       final exists = await _profileRepository.profileExists();
       if (exists) {
-        if (kDebugMode) {
-          debugPrint('📍 User profile already exists for $userId');
-        }
+        LoggerService.debug('User profile already exists', metadata: {
+          'userId': userId,
+        });
         return false;
       }
 
       // Check if we've already initialized (in case of offline mode)
       final hasInitialized = _prefs.getBool('profile_initialized_$userId') ?? false;
       if (hasInitialized) {
-        if (kDebugMode) {
-          debugPrint('📍 Profile initialization already attempted for $userId');
-        }
+        LoggerService.debug('Profile initialization already attempted', metadata: {
+          'userId': userId,
+        });
         return false;
       }
 
-      if (kDebugMode) {
-        debugPrint('📍 Initializing profile for new user: $userId');
-      }
+      LoggerService.info('Initializing profile for new user', metadata: {
+        'userId': userId,
+      });
 
       // Detect device locale
       final deviceLocale = LocaleDetectionService.detectDeviceLocale();
       final countryCode = LocaleDetectionService.getCountryCode(deviceLocale);
       final languageCode = LocaleDetectionService.getLanguageCode(deviceLocale);
 
-      if (kDebugMode) {
-        debugPrint('📍 Detected locale: $languageCode-$countryCode');
-      }
+      LoggerService.debug('Detected locale', metadata: {
+        'locale': '$languageCode-$countryCode',
+        'languageCode': languageCode,
+        'countryCode': countryCode,
+      });
 
       // Auto-select currency based on country
       final currency = LocaleDetectionService.getCurrencyForCountry(countryCode);
       final localeString = LocaleDetectionService.getLocaleStringForCountry(countryCode);
       final dateFormat = LocaleDetectionService.getDateFormatForCountry(countryCode);
 
-      if (kDebugMode) {
-        debugPrint('📍 Auto-selected: currency=$currency, locale=$localeString, dateFormat=${dateFormat.name}');
-      }
+      LoggerService.debug('Auto-selected settings', metadata: {
+        'currency': currency,
+        'locale': localeString,
+        'dateFormat': dateFormat.name,
+      });
 
       // Create profile
       final profile = UserProfileEntity.fromDetectedLocale(
@@ -73,20 +77,22 @@ class ProfileInitializationService {
       // Mark as initialized
       await _prefs.setBool('profile_initialized_$userId', true);
 
-      if (kDebugMode) {
-        debugPrint('✅ Profile initialized successfully for $userId');
-        debugPrint('   Currency: $currency');
-        debugPrint('   Locale: $localeString');
-        debugPrint('   Country: $countryCode');
-        debugPrint('   Date Format: ${dateFormat.name}');
-      }
+      LoggerService.info('Profile initialized successfully', metadata: {
+        'userId': userId,
+        'currency': currency,
+        'locale': localeString,
+        'country': countryCode,
+        'dateFormat': dateFormat.name,
+      });
 
       return true;
     } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('❌ Error initializing profile: $e');
-        debugPrint('Stack trace: $stackTrace');
-      }
+      LoggerService.error(
+        'Error initializing profile',
+        error: e,
+        stackTrace: stackTrace,
+        metadata: {'userId': userId},
+      );
       return false;
     }
   }
@@ -99,13 +105,16 @@ class ProfileInitializationService {
       await _prefs.setString('locale', profile.preferredLocale);
       await _prefs.setString('dateFormatPattern', profile.dateFormatPattern.name);
 
-      if (kDebugMode) {
-        debugPrint('✅ Synced profile to local settings');
-      }
+      LoggerService.debug('Synced profile to local settings', metadata: {
+        'currency': profile.preferredCurrency,
+        'locale': profile.preferredLocale,
+        'dateFormat': profile.dateFormatPattern.name,
+      });
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error syncing profile to local settings: $e');
-      }
+      LoggerService.error(
+        'Error syncing profile to local settings',
+        error: e,
+      );
     }
   }
 }

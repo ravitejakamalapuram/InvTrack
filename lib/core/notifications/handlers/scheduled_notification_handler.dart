@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
@@ -83,9 +83,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.weeklySummary,
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Weekly summary scheduled for $scheduledDate');
-    }
+    LoggerService.info(
+      'Weekly summary scheduled',
+      metadata: {'scheduledDate': scheduledDate.toString()},
+    );
   }
 
   /// Schedule monthly income summary (last day of each month at 6 PM)
@@ -136,9 +137,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.monthlySummary,
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Monthly summary scheduled for $lastDayOfMonth');
-    }
+    LoggerService.info(
+      'Monthly summary scheduled',
+      metadata: {'scheduledDate': lastDayOfMonth.toString()},
+    );
   }
 
   // ============ Tax Reminder Notifications ============
@@ -231,9 +233,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
           payload: NotificationPayload.taxReminder(reminder.id.toString()),
         );
 
-        if (kDebugMode) {
-          debugPrint('🔔 Tax reminder scheduled: ${reminder.title}');
-        }
+        LoggerService.info(
+          'Tax reminder scheduled',
+          metadata: {'title': reminder.title, 'date': reminder.date.toString()},
+        );
       }
     }
   }
@@ -294,9 +297,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.weeklyCheckIn,
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Weekly check-in scheduled for $nextSunday');
-    }
+    LoggerService.info(
+      'Weekly check-in scheduled',
+      metadata: {'scheduledDate': nextSunday.toString()},
+    );
   }
 
   // ============ Financial Year Summary ============
@@ -341,9 +345,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.fySummary,
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 FY summary scheduled for $nextApril1');
-    }
+    LoggerService.info(
+      'FY summary scheduled',
+      metadata: {'scheduledDate': nextApril1.toString()},
+    );
   }
 
   /// Show immediate FY summary notification with custom data.
@@ -390,9 +395,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.fySummary,
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 FY summary shown');
-    }
+    LoggerService.info('FY summary shown');
   }
 }
 

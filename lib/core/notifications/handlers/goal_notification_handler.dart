@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
@@ -108,11 +108,14 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.goalMilestone(goalId, reachedMilestone),
     );
 
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Goal milestone notification shown: $reachedMilestone% for $goalName',
-      );
-    }
+    LoggerService.info(
+      'Goal milestone notification shown',
+      metadata: {
+        'goalId': goalId,
+        'goalName': goalName,
+        'milestone': reachedMilestone,
+      },
+    );
   }
 
   // ============ Goal At-Risk Notifications ============
@@ -174,9 +177,10 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.goalAtRisk(goalId),
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Goal at-risk notification shown for $goalName');
-    }
+    LoggerService.info(
+      'Goal at-risk notification shown',
+      metadata: {'goalId': goalId, 'goalName': goalName},
+    );
   }
 
   // ============ Goal Stale Notifications ============
@@ -243,8 +247,9 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.goalStale(goalId),
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Goal stale notification shown for $goalName');
-    }
+    LoggerService.info(
+      'Goal stale notification shown',
+      metadata: {'goalId': goalId, 'goalName': goalName},
+    );
   }
 }

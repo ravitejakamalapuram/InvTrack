@@ -100,10 +100,10 @@
 /// platform-specific initialization.
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/handlers/alert_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/goal_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/investment_notification_handler.dart';
@@ -301,9 +301,7 @@ class NotificationService with NotificationPreferencesMixin {
     );
 
     _isInitialized = true;
-    if (kDebugMode) {
-      debugPrint('🔔 NotificationService initialized');
-    }
+    LoggerService.info('NotificationService initialized');
   }
 
   /// Configure the local timezone from the device.
@@ -313,14 +311,16 @@ class NotificationService with NotificationPreferencesMixin {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();
       final timeZoneName = timezoneInfo.identifier;
       tz.setLocalLocation(tz.getLocation(timeZoneName));
-      if (kDebugMode) {
-        debugPrint('🔔 Local timezone set to: $timeZoneName');
-      }
+      LoggerService.debug(
+        'Local timezone set',
+        metadata: {'timezone': timeZoneName},
+      );
     } catch (e) {
       // Fallback to UTC if we can't get the local timezone
-      if (kDebugMode) {
-        debugPrint('🔔 Failed to get local timezone, using UTC: $e');
-      }
+      LoggerService.warn(
+        'Failed to get local timezone, using UTC',
+        error: e,
+      );
       // tz.local defaults to UTC, which is fine as a fallback
     }
   }
@@ -352,9 +352,10 @@ class NotificationService with NotificationPreferencesMixin {
     // The actual check happens when we try to show
 
     final granted = androidEnabled ?? true;
-    if (kDebugMode) {
-      debugPrint('🔔 Notification permissions status: $granted');
-    }
+    LoggerService.debug(
+      'Notification permissions status',
+      metadata: {'granted': granted},
+    );
     return granted;
   }
 
@@ -382,9 +383,10 @@ class NotificationService with NotificationPreferencesMixin {
     // We use inexact scheduling which is sufficient for reminder notifications.
 
     final granted = (iosResult ?? true) && (androidResult ?? true);
-    if (kDebugMode) {
-      debugPrint('🔔 Notification permissions granted: $granted');
-    }
+    LoggerService.info(
+      'Notification permissions granted',
+      metadata: {'granted': granted},
+    );
     return granted;
   }
 
@@ -396,19 +398,21 @@ class NotificationService with NotificationPreferencesMixin {
   /// All notification-showing methods should call this before attempting to show.
   Future<bool> _ensurePermissionsForShow() async {
     final granted = await arePermissionsGranted();
-    if (!granted && kDebugMode) {
-      debugPrint('🔔 Cannot show notification: permissions not granted');
+    if (!granted) {
+      LoggerService.warn('Cannot show notification: permissions not granted');
     }
     return granted;
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Notification response: type=${response.notificationResponseType}, '
-        'actionId=${response.actionId}, payload=${response.payload}',
-      );
-    }
+    LoggerService.debug(
+      'Notification response',
+      metadata: {
+        'type': response.notificationResponseType.toString(),
+        'actionId': response.actionId ?? 'none',
+        'payload': response.payload ?? 'none',
+      },
+    );
 
     final payload = response.payload;
     final actionId = response.actionId;
@@ -427,9 +431,10 @@ class NotificationService with NotificationPreferencesMixin {
 
   /// Handle notification action button taps
   void _handleNotificationAction(String actionId, String? payload) {
-    if (kDebugMode) {
-      debugPrint('🔔 Handling action: $actionId with payload: $payload');
-    }
+    LoggerService.debug(
+      'Handling notification action',
+      metadata: {'actionId': actionId, 'payload': payload ?? 'none'},
+    );
 
     switch (actionId) {
       case NotificationActionIds.recordIncome:
@@ -471,11 +476,10 @@ class NotificationService with NotificationPreferencesMixin {
 
     // For now, we can't directly reschedule from here without investment details
     // The snooze will be handled by the notification navigator
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Snoozed notification for ${parsed.investmentId} by $days days',
-      );
-    }
+    LoggerService.debug(
+      'Snoozed notification',
+      metadata: {'investmentId': parsed.investmentId, 'days': days},
+    );
     // Note: Full snooze implementation would require storing investment details
     // or looking them up via repository. For MVP, the notification is dismissed.
   }
@@ -612,9 +616,7 @@ class NotificationService with NotificationPreferencesMixin {
     // Request permissions first
     final hasPermission = await requestPermissions();
     if (!hasPermission) {
-      if (kDebugMode) {
-        debugPrint('🔔 Test notification failed: no permission');
-      }
+      LoggerService.warn('Test notification failed: no permission');
       return false;
     }
 
@@ -648,9 +650,7 @@ class NotificationService with NotificationPreferencesMixin {
       payload: 'test_notification',
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Test notification sent successfully');
-    }
+    LoggerService.info('Test notification sent successfully');
     return true;
   }
 
@@ -663,9 +663,7 @@ class NotificationService with NotificationPreferencesMixin {
     // Request permissions first
     final hasPermission = await requestPermissions();
     if (!hasPermission) {
-      if (kDebugMode) {
-        debugPrint('🔔 Scheduled test notification failed: no permission');
-      }
+      LoggerService.warn('Scheduled test notification failed: no permission');
       return false;
     }
 
@@ -703,11 +701,13 @@ class NotificationService with NotificationPreferencesMixin {
       payload: 'test_scheduled_notification',
     );
 
-    if (kDebugMode) {
-      debugPrint(
-        '🔔 Test notification scheduled for $scheduledTime ($delaySeconds seconds from now)',
-      );
-    }
+    LoggerService.info(
+      'Test notification scheduled',
+      metadata: {
+        'scheduledTime': scheduledTime.toString(),
+        'delaySeconds': delaySeconds,
+      },
+    );
     return true;
   }
 
@@ -969,9 +969,10 @@ class NotificationService with NotificationPreferencesMixin {
         payload: NotificationPayload.activationDay0,
       );
       await _markActivationDaySent(0);
-      if (kDebugMode) {
-        debugPrint('🔔 Activation Day 0 scheduled for $day0Time');
-      }
+      LoggerService.info(
+        'Activation Day 0 scheduled',
+        metadata: {'scheduledTime': day0Time.toString()},
+      );
     }
 
     // Day 1: First investment nudge (24 hours after signup, at 10 AM)
@@ -988,9 +989,10 @@ class NotificationService with NotificationPreferencesMixin {
         payload: NotificationPayload.activationDay1,
       );
       await _markActivationDaySent(1);
-      if (kDebugMode) {
-        debugPrint('🔔 Activation Day 1 scheduled for $day1Time');
-      }
+      LoggerService.info(
+        'Activation Day 1 scheduled',
+        metadata: {'scheduledTime': day1Time.toString()},
+      );
     }
 
     // Day 3: Import reminder (3 days after signup, at 6 PM)
@@ -1007,9 +1009,10 @@ class NotificationService with NotificationPreferencesMixin {
         payload: NotificationPayload.activationDay3,
       );
       await _markActivationDaySent(3);
-      if (kDebugMode) {
-        debugPrint('🔔 Activation Day 3 scheduled for $day3Time');
-      }
+      LoggerService.info(
+        'Activation Day 3 scheduled',
+        metadata: {'scheduledTime': day3Time.toString()},
+      );
     }
 
     // Day 7: Tips & benefits (7 days after signup, at 11 AM)
@@ -1026,9 +1029,10 @@ class NotificationService with NotificationPreferencesMixin {
         payload: NotificationPayload.activationDay7,
       );
       await _markActivationDaySent(7);
-      if (kDebugMode) {
-        debugPrint('🔔 Activation Day 7 scheduled for $day7Time');
-      }
+      LoggerService.info(
+        'Activation Day 7 scheduled',
+        metadata: {'scheduledTime': day7Time.toString()},
+      );
     }
 
     // Day 14: Social proof / last chance (14 days after signup, at 10 AM)
@@ -1046,9 +1050,10 @@ class NotificationService with NotificationPreferencesMixin {
         payload: NotificationPayload.activationDay14,
       );
       await _markActivationDaySent(14);
-      if (kDebugMode) {
-        debugPrint('🔔 Activation Day 14 scheduled for $day14Time');
-      }
+      LoggerService.info(
+        'Activation Day 14 scheduled',
+        metadata: {'scheduledTime': day14Time.toString()},
+      );
     }
   }
 
@@ -1062,9 +1067,7 @@ class NotificationService with NotificationPreferencesMixin {
     await _plugin.cancel(NotificationIds.activationDay7);
     await _plugin.cancel(NotificationIds.activationDay14);
 
-    if (kDebugMode) {
-      debugPrint('🔔 Activation sequence cancelled');
-    }
+    LoggerService.info('Activation sequence cancelled');
   }
 
   /// Reset activation sequence state (for testing or re-onboarding).

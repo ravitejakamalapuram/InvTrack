@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -290,9 +290,7 @@ class SecurityService {
       // Check if biometrics are available before attempting auth
       final isAvailable = await isBiometricAvailable();
       if (!isAvailable) {
-        if (kDebugMode) {
-          debugPrint('🔐 Biometrics not available on this device');
-        }
+        LoggerService.debug('Biometrics not available on this device');
         return false;
       }
 
@@ -312,14 +310,13 @@ class SecurityService {
         sensitiveTransaction: false, // Don't require re-auth for app resume
       );
 
-      if (kDebugMode) {
-        debugPrint('🔐 Biometric auth result: $result');
-      }
+      LoggerService.debug('Biometric auth result', metadata: {'result': result});
       return result;
     } on PlatformException catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔐 Biometric platform error: ${e.code} - ${e.message}');
-      }
+      LoggerService.warn('Biometric platform error', error: e, metadata: {
+        'code': e.code,
+        'message': e.message,
+      });
       // Handle specific error codes
       if (e.code == 'NotAvailable' || e.code == 'NotEnrolled') {
         return false;
@@ -327,9 +324,7 @@ class SecurityService {
       // For other errors (like user cancelled), just return false
       return false;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔐 Biometric auth error: $e');
-      }
+      LoggerService.warn('Biometric auth error', error: e);
       return false;
     }
   }
