@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- Enhanced Firebase Performance Monitoring (#222)
+
 ## [3.41.0] - 2026-02-25
 
 ### ✨ Features
