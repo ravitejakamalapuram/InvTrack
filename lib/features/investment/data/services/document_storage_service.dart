@@ -1,6 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_lib;
 
@@ -39,9 +40,7 @@ class DocumentStorageService {
       return path_lib.isWithin(canonicalAppDir, canonicalPath) ||
           canonicalPath == canonicalAppDir;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Security: Failed to validate path safety: $e');
-      }
+      LoggerService.warn('Security: Failed to validate path safety', error: e);
       return false;
     }
   }
@@ -87,9 +86,9 @@ class DocumentStorageService {
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
     if (!await _isSafePath(localPath)) {
-      if (kDebugMode) {
-        debugPrint('Security: Blocked access to unsafe path: $localPath');
-      }
+      LoggerService.warn('Security: Blocked access to unsafe path', metadata: {
+        'path': localPath,
+      });
       return null;
     }
 
@@ -110,9 +109,9 @@ class DocumentStorageService {
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
     if (!await _isSafePath(localPath)) {
-      if (kDebugMode) {
-        debugPrint('Security: Blocked deletion of unsafe path: $localPath');
-      }
+      LoggerService.warn('Security: Blocked deletion of unsafe path', metadata: {
+        'path': localPath,
+      });
       return;
     }
 

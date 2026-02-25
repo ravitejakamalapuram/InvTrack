@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -84,9 +84,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      if (kDebugMode) {
-        debugPrint('SignInScreen: Starting Google Sign-In...');
-      }
+      LoggerService.info('Starting Google Sign-In');
 
       // Ensure Google Sign-In is initialized before attempting auth
       await ref.read(googleSignInInitializedProvider.future);
@@ -95,11 +93,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (!mounted) return;
 
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-      if (kDebugMode) {
-        debugPrint(
-          'SignInScreen: Sign-in result: ${user != null ? 'Success' : 'Failed'}',
-        );
-      }
+      LoggerService.info('Sign-in result', metadata: {
+        'success': user != null,
+      });
 
       // Check if widget is still mounted after sign-in completes
       if (!mounted) return;
@@ -133,9 +129,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (appException is AuthException &&
           appException.userMessage == 'Sign in was cancelled.') {
         // User cancelled - no error feedback needed
-        if (kDebugMode) {
-          debugPrint('SignInScreen: User cancelled sign-in');
-        }
+        LoggerService.debug('User cancelled sign-in');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
