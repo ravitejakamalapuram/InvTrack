@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -18,11 +19,14 @@ class MockDocumentRepository extends Mock implements DocumentRepository {}
 
 class MockDocumentStorageService extends Mock implements DocumentStorageService {}
 
+class MockPerformanceService extends Mock implements PerformanceService {}
+
 void main() {
   late FakeInvestmentRepository investmentRepository;
   late FakeGoalRepository goalRepository;
   late MockDocumentRepository documentRepository;
   late MockDocumentStorageService documentStorageService;
+  late MockPerformanceService performanceService;
   late DataImportService service;
 
   setUpAll(() {
@@ -46,11 +50,25 @@ void main() {
     goalRepository = FakeGoalRepository();
     documentRepository = MockDocumentRepository();
     documentStorageService = MockDocumentStorageService();
+    performanceService = MockPerformanceService();
+
+    // Mock performance service to just execute the operation
+    when(() => performanceService.trackOperation<ZipImportResult>(
+          any(),
+          any(),
+          metrics: any(named: 'metrics'),
+          attributes: any(named: 'attributes'),
+        )).thenAnswer((invocation) async {
+      final operation = invocation.positionalArguments[1] as Future<ZipImportResult> Function();
+      return await operation();
+    });
+
     service = DataImportService(
       investmentRepository: investmentRepository,
       goalRepository: goalRepository,
       documentRepository: documentRepository,
       documentStorageService: documentStorageService,
+      performanceService: performanceService,
     );
 
     // Setup default mock behaviors
@@ -207,6 +225,7 @@ Archived Goal,targetAmount,25000''',
           documentRepository: documentRepository,
           documentStorageService: documentStorageService,
           fireSettingsRepository: fireSettingsRepository,
+          performanceService: performanceService,
         );
       });
 
