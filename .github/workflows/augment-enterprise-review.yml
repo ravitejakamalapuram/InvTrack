@@ -48,9 +48,10 @@ jobs:
 
       - name: Classify PR
         id: classify
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          echo "is_bugfix=$([[ "$TITLE" =~ (fix|bug|hotfix) ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "is_bugfix=$([[ "$PR_TITLE" =~ (fix|bug|hotfix) ]] && echo true || echo false)" >> $GITHUB_OUTPUT
 
   # ============ CODE HEALTH & SECURITY ============
   code-health:
