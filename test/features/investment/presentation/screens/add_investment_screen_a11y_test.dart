@@ -81,7 +81,6 @@ void main() {
       // Access data via getSemanticsData() if available, or assume it's data
       final semanticsData = (semanticsNode as dynamic).getSemanticsData();
       expect(semanticsData.label, 'Select Start Date', reason: 'Start Date picker should have correct label');
-      // ignore: deprecated_member_use
       expect(semanticsData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Start Date picker should be a button');
       expect(semanticsData.hasAction(SemanticsAction.tap), isTrue, reason: 'Start Date picker should be tappable');
 
@@ -90,7 +89,6 @@ void main() {
       expect(mediumRiskSemantics, findsOneWidget, reason: 'Risk Level chip should have semantic label');
       final mediumRiskNode = tester.getSemantics(mediumRiskSemantics);
       final mediumRiskData = (mediumRiskNode as dynamic).getSemanticsData();
-      // ignore: deprecated_member_use
       expect(mediumRiskData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Risk Level chip should be a button');
       expect(mediumRiskData.hasAction(SemanticsAction.tap), isTrue, reason: 'Risk Level chip should be tappable');
 
