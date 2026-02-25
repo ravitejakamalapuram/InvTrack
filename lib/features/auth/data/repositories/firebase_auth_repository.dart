@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 
@@ -38,62 +38,53 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<UserEntity?> signInWithGoogle() async {
     try {
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Starting Google Sign-In...');
-      }
+      LoggerService.info('Starting Google Sign-In');
 
       // Use authenticate() in google_sign_in v7
       // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
       final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
 
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Got Google user');
-      }
+      LoggerService.debug('Got Google user');
 
       // Get Google auth credentials
       // In google_sign_in v7, authentication only provides idToken
       // For Firebase Auth, idToken is sufficient (accessToken is optional)
       final googleAuth = googleUser.authentication;
 
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Got authentication tokens');
-      }
+      LoggerService.debug('Got authentication tokens');
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
 
       // Sign in to Firebase with Google credentials
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Signing in to Firebase...');
-      }
+      LoggerService.info('Signing in to Firebase with Google credentials');
       final userCredential = await _firebaseAuth.signInWithCredential(
         credential,
       );
 
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Signed in successfully');
-      }
+      LoggerService.info('Google Sign-In successful', metadata: {
+        'userId': userCredential.user?.uid,
+      });
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: GoogleSignInException - code: ${e.code}');
-      }
+      LoggerService.warn(
+        'GoogleSignInException during sign-in',
+        metadata: {'code': e.code.toString()},
+      );
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        if (kDebugMode) {
-          debugPrint('FirebaseAuth: User cancelled sign-in');
-        }
+        LoggerService.info('User cancelled Google Sign-In');
         return null;
       }
       rethrow;
     } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Error - $e');
-        // Do not log stack trace in production to prevent leakage of internal structure
-        debugPrint('FirebaseAuth: StackTrace - $stackTrace');
-      }
+      LoggerService.error(
+        'Google Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -114,15 +105,11 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<bool> reauthenticateWithGoogle() async {
     try {
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Re-authenticating with Google...');
-      }
+      LoggerService.info('Re-authenticating with Google');
 
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        if (kDebugMode) {
-          debugPrint('FirebaseAuth: No current user for re-authentication');
-        }
+        LoggerService.warn('No current user for re-authentication');
         return false;
       }
 
@@ -137,28 +124,26 @@ class FirebaseAuthRepository implements AuthRepository {
       );
 
       await user.reauthenticateWithCredential(credential);
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Re-authentication successful');
-      }
+      LoggerService.info('Re-authentication successful', metadata: {
+        'userId': user.uid,
+      });
       return true;
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        if (kDebugMode) {
-          debugPrint('FirebaseAuth: User cancelled re-authentication');
-        }
+        LoggerService.info('User cancelled re-authentication');
         return false;
       }
-      if (kDebugMode) {
-        debugPrint(
-          'FirebaseAuth: GoogleSignInException during reauth - ${e.code}',
-        );
-      }
+      LoggerService.warn(
+        'GoogleSignInException during re-authentication',
+        metadata: {'code': e.code.toString()},
+      );
       rethrow;
     } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Re-authentication error - $e');
-        debugPrint('FirebaseAuth: StackTrace - $stackTrace');
-      }
+      LoggerService.error(
+        'Re-authentication failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
@@ -173,9 +158,9 @@ class FirebaseAuthRepository implements AuthRepository {
       );
     }
 
-    if (kDebugMode) {
-      debugPrint('FirebaseAuth: Deleting user account...');
-    }
+    LoggerService.info('Deleting user account', metadata: {
+      'userId': user.uid,
+    });
 
     try {
       // Sign out from Google first
@@ -184,14 +169,10 @@ class FirebaseAuthRepository implements AuthRepository {
       // Delete the Firebase Auth account
       await user.delete();
 
-      if (kDebugMode) {
-        debugPrint('FirebaseAuth: Account deleted successfully');
-      }
+      LoggerService.info('Account deleted successfully');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        if (kDebugMode) {
-          debugPrint('FirebaseAuth: Re-authentication required for deletion');
-        }
+        LoggerService.warn('Re-authentication required for account deletion');
       }
       rethrow;
     }
