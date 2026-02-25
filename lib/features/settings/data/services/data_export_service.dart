@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -28,6 +29,7 @@ class DataExportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
+  final PerformanceService _performanceService;
 
   DataExportService({
     required InvestmentRepository investmentRepository,
@@ -35,15 +37,25 @@ class DataExportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
+    required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
-       _fireSettingsRepository = fireSettingsRepository;
+       _fireSettingsRepository = fireSettingsRepository,
+       _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
   Future<String> exportAsZip() async {
+    return _performanceService.trackOperation(
+      'data_export',
+      () => _exportAsZipInternal(),
+    );
+  }
+
+  /// Internal export implementation with performance tracking
+  Future<String> _exportAsZipInternal() async {
     LoggerService.info('Starting data export');
 
     // 1. Fetch all data

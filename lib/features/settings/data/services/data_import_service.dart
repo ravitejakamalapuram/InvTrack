@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -56,6 +57,7 @@ class DataImportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
+  final PerformanceService _performanceService;
 
   static const _uuid = Uuid();
 
@@ -65,14 +67,33 @@ class DataImportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
+    required PerformanceService performanceService,
   })  : _investmentRepository = investmentRepository,
         _goalRepository = goalRepository,
         _documentRepository = documentRepository,
         _documentStorageService = documentStorageService,
-        _fireSettingsRepository = fireSettingsRepository;
+        _fireSettingsRepository = fireSettingsRepository,
+        _performanceService = performanceService;
 
   /// Import data from a ZIP file
   Future<ZipImportResult> importFromZip(
+    Uint8List zipBytes,
+    ImportStrategy strategy,
+  ) async {
+    return _performanceService.trackOperation(
+      'data_import',
+      () => _importFromZipInternal(zipBytes, strategy),
+      metrics: {
+        'zip_size_kb': (zipBytes.length / 1024).round(),
+      },
+      attributes: {
+        'strategy': strategy.name,
+      },
+    );
+  }
+
+  /// Internal import implementation with performance tracking
+  Future<ZipImportResult> _importFromZipInternal(
     Uint8List zipBytes,
     ImportStrategy strategy,
   ) async {
