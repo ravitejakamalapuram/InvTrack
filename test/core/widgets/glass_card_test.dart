@@ -16,7 +16,13 @@ void main() {
       final handle = tester.ensureSemantics();
       expect(
         tester.getSemantics(find.byType(GlassCard)),
-        matchesSemantics(isButton: true, hasTapAction: true, label: 'Content'),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          isFocusable: true,
+          hasFocusAction: true,
+          label: 'Content',
+        ),
       );
       handle.dispose();
     });
@@ -58,6 +64,8 @@ void main() {
         matchesSemantics(
           isButton: true,
           hasTapAction: true,
+          isFocusable: true,
+          hasFocusAction: true,
           label: 'Custom Label',
         ),
       );
@@ -127,6 +135,8 @@ void main() {
           isSelected: true,
           hasSelectedState: true,
           hasTapAction: true,
+          isFocusable: true,
+          hasFocusAction: true,
           label: 'Content',
         ),
       );
