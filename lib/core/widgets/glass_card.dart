@@ -1,10 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 
 /// A premium glassmorphism card widget with blur effect and subtle border.
 /// Inspired by CRED's design language.
-class GlassCard extends StatelessWidget {
+class GlassCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
@@ -31,6 +32,13 @@ class GlassCard extends StatelessWidget {
   });
 
   @override
+  State<GlassCard> createState() => _GlassCardState();
+}
+
+class _GlassCardState extends State<GlassCard> {
+  bool _isFocused = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -38,31 +46,51 @@ class GlassCard extends StatelessWidget {
         ? AppColors.cardDark.withValues(alpha: 0.8)
         : AppColors.cardLight.withValues(alpha: 0.9);
 
-    final borderColor = isDark
+    final defaultBorderColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.05);
 
+    // Focus state overrides border
+    final borderColor =
+        _isFocused
+            ? (isDark ? AppColors.primaryLightDark : AppColors.primaryLight)
+            : defaultBorderColor;
+    final borderWidth = _isFocused ? 2.0 : 1.0;
+
     final decoration = BoxDecoration(
-      color: backgroundColor ?? defaultBgColor,
-      borderRadius: BorderRadius.circular(borderRadius),
-      border: showBorder ? Border.all(color: borderColor, width: 1) : null,
-      boxShadow: isDark ? null : AppColors.cardShadowLight,
+      color: widget.backgroundColor ?? defaultBgColor,
+      borderRadius: BorderRadius.circular(widget.borderRadius),
+      border:
+          (widget.showBorder || _isFocused)
+              ? Border.all(color: borderColor, width: borderWidth)
+              : null,
+      boxShadow:
+          (_isFocused && !isDark)
+              ? [
+                BoxShadow(
+                  color: AppColors.primaryLight.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+                ...AppColors.cardShadowLight,
+              ]
+              : (isDark ? null : AppColors.cardShadowLight),
     );
 
     // OPTIMIZATION: Skip expensive BackdropFilter if blur is 0.
     // BackdropFilter forces a saveLayer which triggers an offscreen render pass.
     // When blur is not needed (or set to 0 for performance), we can render a simple container.
     Widget cardContent;
-    if (blur > 0) {
+    if (widget.blur > 0) {
       cardContent = ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
           child: Container(
-            padding: padding,
+            padding: widget.padding,
             // OPTIMIZATION: Remove shadow when blurred because ClipRRect clips it anyway.
             decoration: decoration.copyWith(boxShadow: []),
-            child: child,
+            child: widget.child,
           ),
         ),
       );
@@ -70,30 +98,45 @@ class GlassCard extends StatelessWidget {
       // Use ClipRRect to ensure child content is clipped to the border radius,
       // matching the behavior of the blurred version.
       cardContent = ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
         child: Container(
-          padding: padding,
+          padding: widget.padding,
           // OPTIMIZATION: Remove shadow when blur is 0 because ClipRRect clips it anyway.
           // This avoids calculating expensive shadows (blur radius 24) that are invisible.
           decoration: decoration.copyWith(boxShadow: []),
-          child: child,
+          child: widget.child,
         ),
       );
     }
 
-    if (onTap != null || onLongPress != null) {
-      final bool hasCustomLabel = semanticLabel != null;
-      return Semantics(
-        button: true,
-        label: semanticLabel,
-        selected: selected,
-        excludeSemantics: hasCustomLabel,
-        onTap: hasCustomLabel ? onTap : null,
-        onLongPress: hasCustomLabel ? onLongPress : null,
-        child: GestureDetector(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: cardContent,
+    if (widget.onTap != null || widget.onLongPress != null) {
+      final bool hasCustomLabel = widget.semanticLabel != null;
+      return Focus(
+        onFocusChange: (value) => setState(() => _isFocused = value),
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.space)) {
+            if (widget.onTap != null) {
+              HapticFeedback.lightImpact();
+              widget.onTap!();
+              return KeyEventResult.handled;
+            }
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Semantics(
+          button: true,
+          label: widget.semanticLabel,
+          selected: widget.selected,
+          excludeSemantics: hasCustomLabel,
+          onTap: hasCustomLabel ? widget.onTap : null,
+          onLongPress: hasCustomLabel ? widget.onLongPress : null,
+          child: GestureDetector(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            child: cardContent,
+          ),
         ),
       );
     }
