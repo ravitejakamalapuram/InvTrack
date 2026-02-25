@@ -230,14 +230,30 @@ class FireCalculationService {
     if (monthlySavings <= 0) return 100; // Never if not saving
 
     final monthlyRate = annualReturn / 100 / 12;
-    var balance = currentAmount;
-    var months = 0;
     const maxMonths = 600; // 50 years max
 
-    while (balance < targetAmount && months < maxMonths) {
-      balance = balance * (1 + monthlyRate) + monthlySavings;
-      months++;
+    // Use logarithmic formula for O(1) calculation instead of O(N) loop
+    // Formula: n = ln((FV*r + PMT) / (PV*r + PMT)) / ln(1+r)
+    int months;
+
+    if (monthlyRate.abs() < 1e-9) {
+      // Simple linear growth if rate is effectively zero
+      // FV = PV + n*PMT => n = (FV - PV) / PMT
+      months = ((targetAmount - currentAmount) / monthlySavings).ceil();
+    } else {
+      final r = monthlyRate;
+      final num = targetAmount * r + monthlySavings;
+      final den = currentAmount * r + monthlySavings;
+
+      // Logarithm domain check (should be positive given checks above)
+      if (num <= 0 || den <= 0) return 100;
+
+      final monthsFloat = math.log(num / den) / math.log(1 + r);
+      months = monthsFloat.ceil();
     }
+
+    if (months > maxMonths) months = maxMonths;
+    if (months < 0) months = 0; // Should not happen due to initial check
 
     return currentAge + (months / 12).ceil();
   }
