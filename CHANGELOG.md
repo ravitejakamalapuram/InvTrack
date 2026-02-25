@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.41.0] - 2026-02-25
 
 ### ✨ Features
 
@@ -10,7 +10,7 @@
 
 - **security**: Prevent timing attacks in legacy PIN verification (#220)
 
-## [3.41.0] - 2026-02-24
+## [3.41.1] - 2026-02-24
 
 ### Sentinel
 
