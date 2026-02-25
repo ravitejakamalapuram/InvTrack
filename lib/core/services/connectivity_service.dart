@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Service for monitoring network connectivity status
 class ConnectivityService {
@@ -17,10 +17,13 @@ class ConnectivityService {
           result == ConnectivityResult.wifi ||
           result == ConnectivityResult.ethernet);
 
-      if (kDebugMode) {
-        debugPrint(
-            '🌐 Connectivity changed: ${isConnected ? "ONLINE" : "OFFLINE"} (${results.join(", ")})');
-      }
+      LoggerService.info(
+        'Connectivity changed',
+        metadata: {
+          'status': isConnected ? 'ONLINE' : 'OFFLINE',
+          'results': results.map((r) => r.name).join(', '),
+        },
+      );
 
       return isConnected;
     });
@@ -35,16 +38,21 @@ class ConnectivityService {
           result == ConnectivityResult.wifi ||
           result == ConnectivityResult.ethernet);
 
-      if (kDebugMode) {
-        debugPrint(
-            '🌐 Current connectivity: ${isConnected ? "ONLINE" : "OFFLINE"} (${results.join(", ")})');
-      }
+      LoggerService.debug(
+        'Current connectivity',
+        metadata: {
+          'status': isConnected ? 'ONLINE' : 'OFFLINE',
+          'results': results.map((r) => r.name).join(', '),
+        },
+      );
 
       return isConnected;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error checking connectivity: $e');
-      }
+      LoggerService.error(
+        'Error checking connectivity',
+        error: e,
+        metadata: {'operation': 'checkConnectivity'},
+      );
       return false;
     }
   }
