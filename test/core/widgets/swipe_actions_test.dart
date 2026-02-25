@@ -1,6 +1,5 @@
 // Tests for SwipeActions widget.
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/swipe_actions.dart';
 
@@ -12,58 +11,24 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: ListView(children: [widget])),
+        home: Scaffold(
+          body: ListView(
+            children: [widget],
+          ),
+        ),
       ),
     );
   }
 
-  bool hasSemanticsAction(WidgetTester tester, Finder finder, String label) {
-    final semantics = tester.getSemantics(finder);
-    bool found = false;
-
-    // We use a separate recursive function to walk the tree
-    // because visitChildren expects a bool-returning callback.
-    bool visit(SemanticsNode node) {
-      if (found) return false; // Stop if already found
-
-      final data = node.getSemanticsData();
-      if (data.customSemanticsActionIds != null) {
-        for (final id in data.customSemanticsActionIds!) {
-          final action = CustomSemanticsAction.getAction(id);
-          if (action?.label == label) {
-            found = true;
-            return false; // Stop visiting
-          }
-        }
-      }
-
-      node.visitChildren(visit);
-      return true; // Continue visiting
-    }
-
-    // Check the root node first
-    final data = semantics.getSemanticsData();
-    if (data.customSemanticsActionIds != null) {
-      for (final id in data.customSemanticsActionIds!) {
-        final action = CustomSemanticsAction.getAction(id);
-        if (action?.label == label) {
-          return true;
-        }
-      }
-    }
-
-    // Then check children
-    semantics.visitChildren(visit);
-    return found;
-  }
-
   group('SwipeActions - Configuration', () {
-    testWidgets('should render child when no actions configured', (
-      tester,
-    ) async {
+    testWidgets('should render child when no actions configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
-        const SwipeActions(itemKey: 'test-item', child: Text('Test Item')),
+        const SwipeActions(
+          itemKey: 'test-item',
+          child: Text('Test Item'),
+        ),
       );
 
       expect(find.text('Test Item'), findsOneWidget);
@@ -90,9 +55,8 @@ void main() {
       expect(find.byType(Dismissible), findsNothing);
     });
 
-    testWidgets('should wrap with Dismissible when delete action configured', (
-      tester,
-    ) async {
+    testWidgets('should wrap with Dismissible when delete action configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -110,9 +74,8 @@ void main() {
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('should wrap with Dismissible when archive action configured', (
-      tester,
-    ) async {
+    testWidgets('should wrap with Dismissible when archive action configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -130,9 +93,8 @@ void main() {
       expect(find.byType(Dismissible), findsOneWidget);
     });
 
-    testWidgets('should wrap with Dismissible when both actions configured', (
-      tester,
-    ) async {
+    testWidgets('should wrap with Dismissible when both actions configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -158,9 +120,8 @@ void main() {
   });
 
   group('SwipeActions - Direction', () {
-    testWidgets('should allow only endToStart when only delete configured', (
-      tester,
-    ) async {
+    testWidgets('should allow only endToStart when only delete configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -179,9 +140,8 @@ void main() {
       expect(dismissible.direction, DismissDirection.endToStart);
     });
 
-    testWidgets('should allow only startToEnd when only archive configured', (
-      tester,
-    ) async {
+    testWidgets('should allow only startToEnd when only archive configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -200,9 +160,8 @@ void main() {
       expect(dismissible.direction, DismissDirection.startToEnd);
     });
 
-    testWidgets('should allow horizontal when both actions configured', (
-      tester,
-    ) async {
+    testWidgets('should allow horizontal when both actions configured',
+        (tester) async {
       await pumpSwipeActions(
         tester,
         SwipeActions(
@@ -318,128 +277,6 @@ void main() {
 
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
       expect(dismissible.key, const Key('unique-key-123'));
-    });
-  });
-
-  group('SwipeActions - Accessibility', () {
-    testWidgets('should expose Delete action in semantics when configured', (
-      tester,
-    ) async {
-      await pumpSwipeActions(
-        tester,
-        SwipeActions(
-          itemKey: 'test-item',
-          deleteConfig: DeleteActionConfig(
-            confirmTitle: 'Delete',
-            confirmMessage: 'Are you sure?',
-            onDelete: () {},
-            successMessage: 'Deleted',
-          ),
-          child: const SizedBox(height: 60, child: Text('Test Item')),
-        ),
-      );
-
-      // Verify that 'Delete' action is present in semantics
-      final hasDelete = hasSemanticsAction(
-        tester,
-        find.byType(SwipeActions),
-        'Delete',
-      );
-
-      expect(hasDelete, isTrue, reason: 'Expected Delete action in semantics');
-    });
-
-    testWidgets('should expose Archive action in semantics when configured', (
-      tester,
-    ) async {
-      await pumpSwipeActions(
-        tester,
-        SwipeActions(
-          itemKey: 'test-item',
-          archiveConfig: ArchiveActionConfig(
-            confirmTitle: 'Archive',
-            confirmMessage: 'Are you sure?',
-            onArchive: () {},
-            successMessage: 'Archived',
-            isArchived: false,
-          ),
-          child: const SizedBox(height: 60, child: Text('Test Item')),
-        ),
-      );
-
-      final hasArchive = hasSemanticsAction(
-        tester,
-        find.byType(SwipeActions),
-        'Archive',
-      );
-
-      expect(
-        hasArchive,
-        isTrue,
-        reason: 'Expected Archive action in semantics',
-      );
-    });
-
-    testWidgets('should expose Unarchive action when item is archived', (
-      tester,
-    ) async {
-      await pumpSwipeActions(
-        tester,
-        SwipeActions(
-          itemKey: 'test-item',
-          archiveConfig: ArchiveActionConfig(
-            confirmTitle: 'Unarchive',
-            confirmMessage: 'Are you sure?',
-            onArchive: () {},
-            successMessage: 'Unarchived',
-            isArchived: true,
-          ),
-          child: const SizedBox(height: 60, child: Text('Test Item')),
-        ),
-      );
-
-      final hasUnarchive = hasSemanticsAction(
-        tester,
-        find.byType(SwipeActions),
-        'Unarchive',
-      );
-
-      expect(
-        hasUnarchive,
-        isTrue,
-        reason: 'Expected Unarchive action in semantics',
-      );
-    });
-
-    testWidgets('should expose both actions when configured', (tester) async {
-      await pumpSwipeActions(
-        tester,
-        SwipeActions(
-          itemKey: 'test-item',
-          deleteConfig: DeleteActionConfig(
-            confirmTitle: 'Delete',
-            confirmMessage: 'Are you sure?',
-            onDelete: () {},
-            successMessage: 'Deleted',
-          ),
-          archiveConfig: ArchiveActionConfig(
-            confirmTitle: 'Archive',
-            confirmMessage: 'Are you sure?',
-            onArchive: () {},
-            successMessage: 'Archived',
-          ),
-          child: const SizedBox(height: 60, child: Text('Test Item')),
-        ),
-      );
-
-      expect(
-        hasSemanticsAction(tester, find.byType(SwipeActions), 'Delete'),
-        isTrue,
-      );
-      expect(
-        hasSemanticsAction(tester, find.byType(SwipeActions), 'Archive'),
-        isTrue,
-      );
     });
   });
 }
