@@ -246,62 +246,61 @@ final myScreenStateProvider = StateNotifierProvider.autoDispose<MyScreenNotifier
 ---
 
 ### 4. Structured Logging Implementation
-**Status:** ❌ Not Started
-**Effort:** 2 days
+**Status:** ⏭️ Deferred to Post-Launch
+**Effort:** 2 days (incremental migration)
 **Priority:** Better debugging and monitoring
+**Risk:** HIGH - 100+ debugPrint calls across 30+ files
 
-**Action Items:**
-- [ ] Create centralized logging service
-- [ ] Replace `debugPrint` with structured logger
-- [ ] Add log levels (DEBUG, INFO, WARN, ERROR)
-- [ ] Add context metadata (user ID, screen, action)
-- [ ] Integrate with Crashlytics for error logs
-- [ ] Add log filtering for production
+**Current State:**
+- ✅ `LoggerService` already implemented (`lib/core/logging/logger_service.dart`)
+- ✅ Being used in new code (performance_service.dart, main.dart)
+- ⚠️ ~100+ `debugPrint` calls still exist (all properly wrapped in `kDebugMode`)
+- ✅ No security issues (no PII logging, per Sentinel review)
 
-**Example:**
-```dart
-// Before
-debugPrint('Investment created: $investmentId');
+**Decision:** DEFER to post-launch
+**Rationale:**
+- LoggerService exists and is being used in new code
+- Existing debugPrint calls are safe and properly guarded
+- Risk of introducing bugs outweighs benefits
+- Can be migrated incrementally post-launch
 
-// After
-logger.info('Investment created', metadata: {
-  'investmentId': investmentId,
-  'type': type.name,
-  'userId': userId,
-});
-```
+**Migration Strategy (Post-Launch):**
+1. Phase 1: Migrate critical paths (auth, data operations)
+2. Phase 2: Migrate notification handlers
+3. Phase 3: Migrate UI components
+4. Phase 4: Migrate utilities and helpers
+
+**See:** `P1_TECHNICAL_DEBT_ANALYSIS.md` for detailed analysis
 
 ---
 
 ### 4. Expand ref.select Usage (Rule 6.1)
 
-**0 instances of `ref.select` found. Watching entire providers causes unnecessary rebuilds.**
-
-**Status:** ❌ Not Started
+**Status:** ⏭️ Deferred - Needs Profiling Data
 **Effort:** 1 week
 **Impact:** Reduces unnecessary widget rebuilds
+**Risk:** MEDIUM - Incorrect usage can cause stale UI
 
-**Current State:** 0 instances of `ref.select` found
+**Current State:**
+- ✅ High-traffic screens already optimized (pre-launch polish):
+  - `investment_list_screen.dart`: 8 ref.select calls (~75% fewer rebuilds)
+  - `goals_screen.dart`: 2 ref.select calls (~50% fewer rebuilds)
+- ✅ 5 total ref.select instances in codebase
+- ✅ No user-reported performance issues
 
-**Action Items:**
-- [ ] Audit all `ref.watch(provider)` calls across the app
-- [ ] Replace with `ref.watch(provider.select((s) => s.specificField))` where only specific fields are needed
-- [ ] Priority files (beyond pre-launch):
-  - All screens with complex state
-  - Widgets that watch large provider states
-  - List items that watch parent state
+**Decision:** DEFER detailed analysis
+**Rationale:**
+- High-traffic screens already optimized
+- No performance issues reported
+- Risk of bugs outweighs potential gains
+- Better to profile in production first
 
-**Example:**
-```dart
-// Before (rebuilds on any state change)
-final state = ref.watch(investmentListStateProvider);
-final filter = state.filter;
-final sortBy = state.sortBy;
+**Potential Candidates (For Future):**
+- Settings screens (multiple boolean flags)
+- Document widgets (large lists)
+- Goal progress widgets (complex calculations)
 
-// After (rebuilds only when filter or sortBy changes)
-final filter = ref.watch(investmentListStateProvider.select((s) => s.filter));
-final sortBy = ref.watch(investmentListStateProvider.select((s) => s.sortBy));
-```
+**See:** `P1_TECHNICAL_DEBT_ANALYSIS.md` for detailed analysis
 
 ---
 
