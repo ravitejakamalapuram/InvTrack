@@ -236,7 +236,12 @@ class SecurityService {
       }
       // v0: Plaintext (Legacy)
       else {
-        isMatch = SecurityUtils.constantTimeEquals(storedPin, pin);
+        // Hash both to ensure constant time comparison (prevent length leaks)
+        const fixedSalt = 'legacy_pin_verification_salt';
+        final storedHash = _hashPinLegacy(storedPin + fixedSalt);
+        final inputHash = _hashPinLegacy(pin + fixedSalt);
+
+        isMatch = SecurityUtils.constantTimeEquals(storedHash, inputHash);
         if (isMatch) needsUpgrade = true;
       }
 
