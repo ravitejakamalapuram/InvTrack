@@ -337,6 +337,7 @@ final currencyFormatCompactProvider = Provider<NumberFormat>((ref) {
     type: 'compact',
     symbol: symbol,
     locale: locale,
+    decimalDigits: 2,
   );
 });
 
