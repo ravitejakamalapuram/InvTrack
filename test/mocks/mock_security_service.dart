@@ -69,6 +69,7 @@ class FakeFlutterSecureStorage extends FlutterSecureStorage {
   /// Reset storage for test isolation
   void reset() {
     _storage.clear();
+    _shouldThrowRead.clear();
   }
 
   /// Get current storage contents for assertions

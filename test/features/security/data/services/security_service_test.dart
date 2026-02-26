@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../mocks/mock_security_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late FakeFlutterSecureStorage fakeSecureStorage;
   late FakeLocalAuthentication fakeLocalAuth;
   late SharedPreferences prefs;
