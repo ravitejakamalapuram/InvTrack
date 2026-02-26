@@ -70,6 +70,24 @@ class SecuritySettingsScreen extends ConsumerWidget {
               ],
             ),
 
+          // Privacy section
+          SettingsSection(
+            title: l10n.privacySection,
+            children: [
+              SettingsToggleTile(
+                icon: Icons.security_rounded,
+                iconColor: securityState.isSecureScreenEnabled
+                    ? AppColors.primaryLight
+                    : null,
+                title: l10n.secureScreen,
+                subtitle: l10n.blockScreenshots,
+                value: securityState.isSecureScreenEnabled,
+                onChanged: (value) =>
+                    securityNotifier.toggleSecureScreen(value),
+              ),
+            ],
+          ),
+
           // PIN management (only show if PIN is set)
           if (securityState.hasPin)
             SettingsSection(

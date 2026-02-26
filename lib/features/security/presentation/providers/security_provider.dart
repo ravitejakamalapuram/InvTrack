@@ -30,12 +30,14 @@ class SecurityState {
   final bool hasPin;
   final bool isBiometricEnabled;
   final bool isBiometricAvailable;
+  final bool isSecureScreenEnabled;
 
   const SecurityState({
     this.isLocked = false,
     this.hasPin = false,
     this.isBiometricEnabled = false,
     this.isBiometricAvailable = false,
+    this.isSecureScreenEnabled = false,
   });
 
   SecurityState copyWith({
@@ -43,12 +45,15 @@ class SecurityState {
     bool? hasPin,
     bool? isBiometricEnabled,
     bool? isBiometricAvailable,
+    bool? isSecureScreenEnabled,
   }) {
     return SecurityState(
       isLocked: isLocked ?? this.isLocked,
       hasPin: hasPin ?? this.hasPin,
       isBiometricEnabled: isBiometricEnabled ?? this.isBiometricEnabled,
       isBiometricAvailable: isBiometricAvailable ?? this.isBiometricAvailable,
+      isSecureScreenEnabled:
+          isSecureScreenEnabled ?? this.isSecureScreenEnabled,
     );
   }
 }
@@ -85,6 +90,7 @@ class SecurityNotifier extends Notifier<SecurityState>
     try {
       final hasPin = await _service.hasPin();
       final isBiometricEnabled = _service.isBiometricEnabled;
+      final isSecureScreenEnabled = _service.isSecureScreenEnabled;
 
       // Biometric check can fail on emulators, so wrap in try-catch
       bool isBiometricAvailable = false;
@@ -103,7 +109,13 @@ class SecurityNotifier extends Notifier<SecurityState>
         isBiometricEnabled: isBiometricEnabled,
         isBiometricAvailable: isBiometricAvailable,
         isLocked: hasPin, // Lock on startup if PIN exists
+        isSecureScreenEnabled: isSecureScreenEnabled,
       );
+
+      // Apply secure screen setting
+      if (isSecureScreenEnabled) {
+        await _service.setSecureWindow(true);
+      }
     } catch (e) {
       // If initialization fails, just use default state
       if (!ref.mounted) return;
@@ -233,6 +245,18 @@ class SecurityNotifier extends Notifier<SecurityState>
       await _service.setBiometricEnabled(false);
       state = state.copyWith(isBiometricEnabled: false);
       // Note: We don't track biometric disable separately since it's a secondary auth method
+    }
+  }
+
+  Future<void> toggleSecureScreen(bool enabled) async {
+    await _service.setSecureScreenEnabled(enabled);
+    await _service.setSecureWindow(enabled);
+    state = state.copyWith(isSecureScreenEnabled: enabled);
+
+    if (enabled) {
+      ref
+          .read(analyticsServiceProvider)
+          .logSecurityEnabled(method: 'secure_screen');
     }
   }
 

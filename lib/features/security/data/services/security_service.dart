@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -16,6 +18,7 @@ class SecurityService {
 
   static const String _pinKey = 'user_pin';
   static const String _biometricEnabledKey = 'biometric_enabled';
+  static const String _secureScreenEnabledKey = 'secure_screen_enabled';
   static const String _autoLockDurationKey = 'auto_lock_duration';
   static const String _failedAttemptsKey = 'pin_failed_attempts';
   static const String _lockoutTimestampKey = 'pin_lockout_timestamp';
@@ -342,5 +345,28 @@ class SecurityService {
 
   Future<void> setAutoLockDuration(int seconds) async {
     await _prefs.setInt(_autoLockDurationKey, seconds);
+  }
+
+  // --- Secure Screen ---
+
+  static const _platform = MethodChannel('com.invtracker/security');
+
+  bool get isSecureScreenEnabled =>
+      _prefs.getBool(_secureScreenEnabledKey) ?? false;
+
+  Future<void> setSecureScreenEnabled(bool enabled) async {
+    await _prefs.setBool(_secureScreenEnabledKey, enabled);
+  }
+
+  /// Sets the secure window flag on Android (prevents screenshots/recording).
+  /// This is used for global secure screen setting AND temporarily for PasscodeScreen.
+  Future<void> setSecureWindow(bool secure) async {
+    try {
+      if (!kIsWeb && Platform.isAndroid) {
+        await _platform.invokeMethod('setSecureMode', {'secure': secure});
+      }
+    } catch (e) {
+      LoggerService.warn('Failed to set secure mode', error: e);
+    }
   }
 }

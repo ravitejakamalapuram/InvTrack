@@ -1,8 +1,4 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
@@ -41,22 +37,12 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   static const int _maxBiometricAttempts = 3;
   // Cooldown period between auto-retry attempts
   static const Duration _biometricCooldown = Duration(seconds: 2);
-  static const platform = MethodChannel('com.invtracker/security');
-
-  Future<void> _setSecureMode(bool secure) async {
-    try {
-      if (!kIsWeb && Platform.isAndroid) {
-        await platform.invokeMethod('setSecureMode', {'secure': secure});
-      }
-    } catch (e) {
-      LoggerService.warn('Failed to set secure mode', error: e);
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-    _setSecureMode(true);
+    // Always enable secure mode for passcode screen
+    ref.read(securityServiceProvider).setSecureWindow(true);
     WidgetsBinding.instance.addObserver(this);
     _updateMessage();
     if (widget.mode == PasscodeMode.unlock) {
@@ -74,7 +60,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
   @override
   void dispose() {
-    _setSecureMode(false);
+    // Revert to user setting when leaving passcode screen
+    final isSecureEnabled = ref.read(securityProvider).isSecureScreenEnabled;
+    ref.read(securityServiceProvider).setSecureWindow(isSecureEnabled);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
