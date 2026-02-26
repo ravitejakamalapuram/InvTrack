@@ -65,3 +65,7 @@
 ## 2026-02-19 - [Testing: Verify Accessibility Actions]
 **Learning:** Visual inspections of code or UI often miss functional accessibility bugs (like missing actions). Writing a widget test that explicitly checks `hasAction(SemanticsAction.tap)` on semantic nodes is the most reliable way to prevent "button-like" widgets from being non-interactive for screen readers.
 **Action:** When fixing accessibility bugs involving interactivity, always add a `testWidgets` case that finds the widget by its semantic label and asserts `tester.getSemantics(finder).getSemanticsData().hasAction(SemanticsAction.tap)`.
+
+## 2026-06-25 - [Accessibility: Selection State in Lists]
+**Learning:** Custom selection lists built with `ListTile` often rely on visual cues (like trailing checkmarks) to indicate selection, but screen readers miss this state unless explicitly told. The `selected` property on `ListTile` is crucial for exposing this state to assistive technologies.
+**Action:** Always set `selected: true` on `ListTile` when the item is selected, even if custom styling (like `trailing` icons) is used. This ensures screen readers announce "Selected" along with the item label.

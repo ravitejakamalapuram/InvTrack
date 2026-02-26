@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
@@ -101,9 +102,56 @@ void main() {
       // Also verify it's a button
       final semantics = tester.getSemantics(clearFilterSemantics);
       expect(
-        semantics.flagsCollection.isButton,
+        semantics.getSemanticsData().hasFlag(SemanticsFlag.isButton),
         isTrue,
-        reason: 'Filter chip close button should be identified as a button'
+        reason: 'Filter chip close button should be identified as a button',
+      );
+    },
+  );
+
+  testWidgets(
+    'Filter list items should have selected state semantics',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: getOverrides(),
+          child: const MaterialApp(home: InvestmentListScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open filter sheet
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.pumpAndSettle();
+
+      // Find the first list tile
+      final firstTileFinder = find.byType(ListTile).first;
+
+      // Verify it is NOT selected initially
+      final initialSemantics = tester.getSemantics(firstTileFinder);
+      expect(
+        initialSemantics.getSemanticsData().hasFlag(SemanticsFlag.isSelected),
+        isFalse,
+        reason: 'Item should not be selected initially',
+      );
+
+      // Tap it to select
+      await tester.tap(firstTileFinder);
+      await tester.pumpAndSettle();
+
+      // Re-open filter sheet
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.pumpAndSettle();
+
+      // Find the same tile again
+      final selectedTileFinder = find.byType(ListTile).first;
+
+      // Verify it IS selected now
+      final selectedSemantics = tester.getSemantics(selectedTileFinder);
+      expect(
+        selectedSemantics.getSemanticsData().hasFlag(SemanticsFlag.isSelected),
+        isTrue,
+        reason: 'Item should have isSelected=true in semantics when selected',
       );
     },
   );
