@@ -45,7 +45,9 @@ class InvestmentCard extends ConsumerWidget {
     final typeColor = investment.type.color;
     final isClosed = investment.status == InvestmentStatus.closed;
     final currencySymbol = ref.watch(currencySymbolProvider);
-    final currencyFormat = ref.watch(currencyFormatProvider);
+    // OPTIMIZATION: Use compact format provider directly to avoid cache lookup overhead
+    // in extension methods during build.
+    final compactCurrencyFormat = ref.watch(currencyFormatCompactProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     // OPTIMIZATION: Use basic stats provider which skips expensive XIRR calculation
@@ -137,7 +139,7 @@ class InvestmentCard extends ConsumerWidget {
                     xirrAsync: xirrAsync,
                     isDark: isDark,
                     statsAsync: statsAsync,
-                    currencyFormat: currencyFormat,
+                    compactCurrencyFormat: compactCurrencyFormat,
                     isPrivacyMode: isPrivacyMode,
                   ),
                 ],
@@ -148,7 +150,7 @@ class InvestmentCard extends ConsumerWidget {
               investment: investment,
               isDark: isDark,
               statsAsync: statsAsync,
-              currencyFormat: currencyFormat,
+              compactCurrencyFormat: compactCurrencyFormat,
               isPrivacyMode: isPrivacyMode,
               referenceDate: referenceDate,
             ),
@@ -379,14 +381,14 @@ class _InvestmentValueColumn extends StatelessWidget {
   final AsyncValue<double> xirrAsync;
   final bool isDark;
   final AsyncValue<InvestmentStats> statsAsync;
-  final NumberFormat currencyFormat;
+  final NumberFormat compactCurrencyFormat;
   final bool isPrivacyMode;
 
   const _InvestmentValueColumn({
     required this.xirrAsync,
     required this.isDark,
     required this.statsAsync,
-    required this.currencyFormat,
+    required this.compactCurrencyFormat,
     required this.isPrivacyMode,
   });
 
@@ -420,15 +422,15 @@ class _InvestmentValueColumn extends StatelessWidget {
             isPrivacyMode
                 ? MaskedAmountText(
                     text:
-                        '${isPositive ? '+' : '-'}${currencyFormat.formatCompact(stats.netCashFlow.abs())}',
+                        '${isPositive ? '+' : '-'}${compactCurrencyFormat.format(stats.netCashFlow.abs())}',
                     style: valueStyle,
                   )
                 : CompactAmountText(
                     amount: stats.netCashFlow.abs(),
-                    compactText: currencyFormat.formatCompact(
+                    compactText: compactCurrencyFormat.format(
                       stats.netCashFlow.abs(),
                     ),
-                    currencySymbol: currencyFormat.currencySymbol,
+                    currencySymbol: compactCurrencyFormat.currencySymbol,
                     prefix: isPositive ? '+' : '-',
                     style: valueStyle,
                   ),
@@ -495,7 +497,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
   final InvestmentEntity investment;
   final bool isDark;
   final AsyncValue<InvestmentStats> statsAsync;
-  final NumberFormat currencyFormat;
+  final NumberFormat compactCurrencyFormat;
   final bool isPrivacyMode;
   final DateTime? referenceDate;
 
@@ -503,7 +505,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
     required this.investment,
     required this.isDark,
     required this.statsAsync,
-    required this.currencyFormat,
+    required this.compactCurrencyFormat,
     required this.isPrivacyMode,
     this.referenceDate,
   });
@@ -583,7 +585,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                     ),
                     isPrivacyMode
                         ? MaskedAmountText(
-                            text: currencyFormat.formatCompact(
+                            text: compactCurrencyFormat.format(
                               stats.totalInvested,
                             ),
                             style: subtleTextStyle.copyWith(
@@ -592,10 +594,10 @@ class _InvestmentBottomStrip extends StatelessWidget {
                           )
                         : CompactAmountText(
                             amount: stats.totalInvested,
-                            compactText: currencyFormat.formatCompact(
+                            compactText: compactCurrencyFormat.format(
                               stats.totalInvested,
                             ),
-                            currencySymbol: currencyFormat.currencySymbol,
+                            currencySymbol: compactCurrencyFormat.currencySymbol,
                             style: subtleTextStyle.copyWith(
                               fontWeight: FontWeight.w500,
                             ),

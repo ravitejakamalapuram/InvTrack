@@ -57,6 +57,9 @@ void main() {
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
           ),
+          currencyFormatCompactProvider.overrideWith(
+            (ref) => NumberFormat.compactCurrency(symbol: '\$', decimalDigits: 2),
+          ),
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(
@@ -124,6 +127,9 @@ void main() {
            currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
+          ),
+          currencyFormatCompactProvider.overrideWith(
+            (ref) => NumberFormat.compactCurrency(symbol: '\$', decimalDigits: 2),
           ),
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
