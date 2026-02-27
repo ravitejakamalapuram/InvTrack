@@ -42,11 +42,17 @@ class CurrencyConversionService {
   // Memory cache size limit (LRU eviction)
   static const int _maxMemoryCacheSize = 100;
 
-  // Frankfurter API base URL
-  static const String _apiBaseUrl = 'https://api.frankfurter.dev/v1';
+  // Primary API: Frankfurter (free, unlimited, 33 currencies)
+  static const String _primaryApiBaseUrl = 'https://api.frankfurter.dev/v1';
+
+  // Fallback API: ExchangeRate-API (free tier: 1500 requests/month, 161 currencies)
+  static const String _fallbackApiBaseUrl = 'https://api.exchangerate-api.com/v4';
 
   // Write timeout for offline-first pattern
   static const Duration _writeTimeout = Duration(seconds: 5);
+
+  // API timeout for network calls
+  static const Duration _apiTimeout = Duration(seconds: 10);
 
   CurrencyConversionService({
     required FirebaseFirestore firestore,
@@ -205,27 +211,14 @@ class CurrencyConversionService {
       return rate;
     }
 
-    // 3. Fetch from API
+    // 3. Fetch from API (with fallback)
     final dateStr = _formatDate(date);
     try {
-      final response = await _httpClient.get(
-        Uri.parse('$_apiBaseUrl/$dateStr?base=$from&symbols=$to'),
+      final rate = await _fetchFromApiWithFallback(
+        from: from,
+        to: to,
+        date: date,
       );
-
-      if (response.statusCode != 200) {
-        _analytics?.logCurrencyConversionFailed(
-          fromCurrency: from,
-          toCurrency: to,
-          errorType: 'api_error_${response.statusCode}',
-        );
-        throw CurrencyConversionException(
-          'Failed to fetch historical rate: ${response.statusCode}',
-          response.body,
-        );
-      }
-
-      final data = jsonDecode(response.body);
-      final rate = data['rates'][to] as double;
 
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'api',
@@ -301,26 +294,13 @@ class CurrencyConversionService {
       }
     }
 
-    // 3. Fetch from API
+    // 3. Fetch from API (with fallback)
     try {
-      final response = await _httpClient.get(
-        Uri.parse('$_apiBaseUrl/latest?base=$from&symbols=$to'),
+      final rate = await _fetchFromApiWithFallback(
+        from: from,
+        to: to,
+        date: null, // Live rate
       );
-
-      if (response.statusCode != 200) {
-        _analytics?.logCurrencyConversionFailed(
-          fromCurrency: from,
-          toCurrency: to,
-          errorType: 'api_error_${response.statusCode}',
-        );
-        throw CurrencyConversionException(
-          'Failed to fetch live rate: ${response.statusCode}',
-          response.body,
-        );
-      }
-
-      final data = jsonDecode(response.body);
-      final rate = data['rates'][to] as double;
 
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'api',
@@ -354,6 +334,95 @@ class CurrencyConversionService {
         errorType: e is TimeoutException ? 'timeout' : 'network',
       );
       rethrow;
+    }
+  }
+
+  /// Fetch exchange rate from API with fallback support
+  ///
+  /// Tries primary API (Frankfurter) first, falls back to ExchangeRate-API on failure
+  ///
+  /// [from] - Source currency code
+  /// [to] - Target currency code
+  /// [date] - Optional date for historical rates (null for live rates)
+  ///
+  /// Returns exchange rate
+  Future<double> _fetchFromApiWithFallback({
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    // Try primary API (Frankfurter)
+    try {
+      final dateStr = date != null ? _formatDate(date) : 'latest';
+      final url = '$_primaryApiBaseUrl/$dateStr?base=$from&symbols=$to';
+
+      final response = await _httpClient
+          .get(Uri.parse(url))
+          .timeout(_apiTimeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['rates'][to] as double;
+      }
+
+      // Non-200 status, try fallback
+      throw CurrencyConversionException(
+        'Primary API returned ${response.statusCode}',
+      );
+    } catch (primaryError) {
+      // Log primary API failure
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: from,
+        toCurrency: to,
+        errorType: 'primary_api_failed',
+      );
+
+      // Try fallback API (ExchangeRate-API)
+      try {
+        // Note: ExchangeRate-API free tier doesn't support historical rates
+        // Only use for live rates
+        if (date != null) {
+          // No fallback for historical rates
+          throw CurrencyConversionException(
+            'Historical rates not available from fallback API',
+            primaryError,
+          );
+        }
+
+        final url = '$_fallbackApiBaseUrl/latest/$from';
+        final response = await _httpClient
+            .get(Uri.parse(url))
+            .timeout(_apiTimeout);
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final rates = data['rates'] as Map<String, dynamic>;
+
+          if (!rates.containsKey(to)) {
+            throw CurrencyConversionException(
+              'Currency $to not supported by fallback API',
+            );
+          }
+
+          return (rates[to] as num).toDouble();
+        }
+
+        throw CurrencyConversionException(
+          'Fallback API returned ${response.statusCode}',
+        );
+      } catch (fallbackError) {
+        // Both APIs failed
+        _analytics?.logCurrencyConversionFailed(
+          fromCurrency: from,
+          toCurrency: to,
+          errorType: 'both_apis_failed',
+        );
+
+        throw CurrencyConversionException(
+          'Both primary and fallback APIs failed',
+          fallbackError,
+        );
+      }
     }
   }
 
