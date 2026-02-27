@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -114,8 +115,18 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       backgroundColor: isDark
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
-      body: CustomScrollView(
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Refresh live exchange rate cache
+          final conversionService = ref.read(currencyConversionServiceProvider);
+          await conversionService.refreshLiveCacheIfStale();
+
+          // Invalidate providers to trigger re-fetch
+          ref.invalidate(allInvestmentsProvider);
+          ref.invalidate(allCashFlowsStreamProvider);
+        },
+        child: CustomScrollView(
+          slivers: [
           // Premium App Bar with Search
           SliverAppBar(
             expandedHeight: isSearching ? 60 : 56,
@@ -173,6 +184,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           // Content
           _buildContent(isDark, filteredAsync, allInvestmentsAsync),
         ],
+        ),
       ),
       floatingActionButton: isSelectionMode
           ? null
