@@ -8,6 +8,8 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import '../../mocks/mock_notification_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late FakeFlutterLocalNotificationsPlugin fakePlugin;
   late SharedPreferences prefs;
   late NotificationService service;

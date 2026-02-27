@@ -454,6 +454,21 @@
     "description": "Biometric toggle subtitle"
   },
 
+  "privacySection": "Privacy",
+  "@privacySection": {
+    "description": "Privacy section title"
+  },
+
+  "secureScreen": "Secure Screen",
+  "@secureScreen": {
+    "description": "Secure screen toggle title"
+  },
+
+  "blockScreenshots": "Block screenshots & hide content",
+  "@blockScreenshots": {
+    "description": "Secure screen subtitle"
+  },
+
   "managePin": "Manage PIN",
   "@managePin": {
     "description": "Manage PIN section title"

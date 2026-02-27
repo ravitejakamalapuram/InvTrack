@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('NotificationPayload - Parsing', () {
     test('should parse null payload as unknown', () {
       final payload = NotificationPayload.parse(null);
