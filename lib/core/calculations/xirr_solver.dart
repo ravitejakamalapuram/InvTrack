@@ -152,9 +152,16 @@ class XirrSolver {
 
     // Normalize dates to years from the first date
     final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
-    final yearsFromStart = dates
-        .map((d) => d.difference(firstDate).inDays / 365.0)
-        .toList();
+
+    // Optimization: Group transactions by date to reduce solver iterations
+    final flowMap = <double, double>{};
+    for (int i = 0; i < dates.length; i++) {
+      final t = dates[i].difference(firstDate).inDays / 365.0;
+      flowMap.update(t, (v) => v + amounts[i], ifAbsent: () => amounts[i]);
+    }
+
+    final yearsFromStart = flowMap.keys.toList();
+    final groupedAmounts = flowMap.values.toList();
 
     // Calculate total inflows and outflows to determine initial guess direction
     double totalInflows = 0;
@@ -164,8 +171,8 @@ class XirrSolver {
     bool hasNonNegativeAmount = false;
     bool hasNegativeAmount = false;
 
-    for (int i = 0; i < amounts.length; i++) {
-      final amount = amounts[i];
+    for (int i = 0; i < groupedAmounts.length; i++) {
+      final amount = groupedAmounts[i];
       if (amount >= 0) {
         totalInflows += amount;
         weightedInflowTimeSum += amount * yearsFromStart[i];
@@ -222,14 +229,14 @@ class XirrSolver {
     }
 
     for (final guess in initialGuesses) {
-      final result = _newtonRaphson(guess, yearsFromStart, amounts);
+      final result = _newtonRaphson(guess, yearsFromStart, groupedAmounts);
       if (result != null && result > -1.0 && result.isFinite) {
         return result;
       }
     }
 
     // Fallback: bisection method for stubborn cases
-    final bisectionResult = _bisection(yearsFromStart, amounts);
+    final bisectionResult = _bisection(yearsFromStart, groupedAmounts);
     if (bisectionResult != null) {
       return bisectionResult;
     }
@@ -493,13 +500,6 @@ class XirrSolver {
 
     for (int i = 0; i < amounts.length; i++) {
       final power = yearsFromStart[i];
-
-      // Optimization: exp(0) is 1.0, so skip the expensive call for the first cash flow
-      if (power == 0.0) {
-        sum += amounts[i];
-        continue;
-      }
-
       // Reuse precomputed log(base)
       sum += amounts[i] * exp(-power * lnBase);
     }
@@ -564,12 +564,6 @@ class XirrSolver {
 
     for (int i = 0; i < amounts.length; i++) {
       final p = yearsFromStart[i];
-
-      // Optimization: exp(0) is 1.0, so skip the expensive call for the first cash flow
-      if (p == 0.0) {
-        fSum += amounts[i];
-        continue;
-      }
 
       // Calculate pow once and reuse for both f and df
       // f term: amount / (1+x)^p = amount * exp(-p * ln(1+x))
