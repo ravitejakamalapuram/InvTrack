@@ -49,8 +49,8 @@ class _CurrencyCacheInitializerState
       final service = ref.read(currencyConversionServiceProvider);
       final baseCurrency = ref.read(currencyCodeProvider);
 
-      // 1. Refresh live cache if needed (throttled)
-      await service.refreshLiveCacheOnAppStart();
+      // 1. Refresh live cache if stale (>1 hour old)
+      await service.refreshLiveCacheIfStale();
 
       // 2. Preload common rates in background (don't block UI)
       // Get all unique currencies from investments

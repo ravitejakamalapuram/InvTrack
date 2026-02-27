@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -19,6 +21,59 @@ class CurrencyConversionException implements Exception {
 
   @override
   String toString() => 'CurrencyConversionException: $message';
+}
+
+/// Token bucket rate limiter for API calls
+///
+/// Prevents excessive API calls by limiting to [_maxTokens] calls per minute
+/// Tokens refill at rate of 1 per [_refillInterval]
+class RateLimiter {
+  int _availableTokens;
+  DateTime _lastRefillTime;
+
+  static const int _maxTokens = 10;
+  static const Duration _refillInterval = Duration(seconds: 6); // 10 tokens/min
+
+  RateLimiter()
+      : _availableTokens = _maxTokens,
+        _lastRefillTime = DateTime.now();
+
+  /// Check if a request can be made (without consuming token)
+  bool canMakeRequest() {
+    _refillTokens();
+    return _availableTokens > 0;
+  }
+
+  /// Consume a token for an API call
+  ///
+  /// Returns true if token was consumed, false if no tokens available
+  bool consumeToken() {
+    _refillTokens();
+    if (_availableTokens > 0) {
+      _availableTokens--;
+      return true;
+    }
+    return false;
+  }
+
+  /// Refill tokens based on elapsed time
+  void _refillTokens() {
+    final now = DateTime.now();
+    final elapsed = now.difference(_lastRefillTime);
+    final tokensToAdd =
+        (elapsed.inSeconds / _refillInterval.inSeconds).floor();
+
+    if (tokensToAdd > 0) {
+      _availableTokens = min(_maxTokens, _availableTokens + tokensToAdd);
+      _lastRefillTime = now;
+    }
+  }
+
+  /// Get current number of available tokens (for debugging/monitoring)
+  int get availableTokens {
+    _refillTokens();
+    return _availableTokens;
+  }
 }
 
 /// Service for converting currencies with three-tier caching
@@ -42,6 +97,9 @@ class CurrencyConversionService {
   // Memory cache size limit (LRU eviction)
   static const int _maxMemoryCacheSize = 100;
 
+  // Rate limiter for API calls
+  final RateLimiter _rateLimiter = RateLimiter();
+
   // Primary API: Frankfurter (free, unlimited, 33 currencies)
   static const String _primaryApiBaseUrl = 'https://api.frankfurter.dev/v1';
 
@@ -53,6 +111,9 @@ class CurrencyConversionService {
 
   // API timeout for network calls
   static const Duration _apiTimeout = Duration(seconds: 10);
+
+  // Live cache staleness threshold (refresh if older than 1 hour)
+  static const Duration _liveCacheStaleness = Duration(hours: 1);
 
   CurrencyConversionService({
     required FirebaseFirestore firestore,
@@ -340,17 +401,31 @@ class CurrencyConversionService {
   /// Fetch exchange rate from API with fallback support
   ///
   /// Tries primary API (Frankfurter) first, falls back to ExchangeRate-API on failure
+  /// Uses rate limiter to prevent excessive API calls
   ///
   /// [from] - Source currency code
   /// [to] - Target currency code
   /// [date] - Optional date for historical rates (null for live rates)
   ///
   /// Returns exchange rate
+  /// Throws [CurrencyConversionException] if rate limit hit or both APIs fail
   Future<double> _fetchFromApiWithFallback({
     required String from,
     required String to,
     DateTime? date,
   }) async {
+    // Check rate limiter
+    if (!_rateLimiter.consumeToken()) {
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: from,
+        toCurrency: to,
+        errorType: 'rate_limit_hit',
+      );
+      throw CurrencyConversionException(
+        'Rate limit exceeded. Please wait a moment and try again.',
+      );
+    }
+
     // Try primary API (Frankfurter)
     try {
       final dateStr = date != null ? _formatDate(date) : 'latest';
@@ -447,6 +522,45 @@ class CurrencyConversionService {
 
     // Clear memory cache
     _memoryCache.clear();
+  }
+
+  /// Refresh live cache if stale (older than 1 hour)
+  ///
+  /// Called on app start to ensure fresh rates for today's transactions
+  /// Non-blocking - failures are logged but don't throw
+  Future<void> refreshLiveCacheIfStale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastRefreshKey = 'currency_live_cache_last_refresh';
+      final lastRefreshMs = prefs.getInt(lastRefreshKey);
+
+      if (lastRefreshMs != null) {
+        final lastRefresh = DateTime.fromMillisecondsSinceEpoch(lastRefreshMs);
+        final now = DateTime.now();
+
+        if (now.difference(lastRefresh) < _liveCacheStaleness) {
+          // Cache is fresh, no need to refresh
+          debugPrint('Live cache is fresh (last refresh: $lastRefresh)');
+          return;
+        }
+      }
+
+      // Cache is stale or never refreshed - clear it
+      debugPrint('Refreshing stale live cache...');
+      await _clearLiveCache();
+
+      // Update last refresh timestamp
+      await prefs.setInt(lastRefreshKey, DateTime.now().millisecondsSinceEpoch);
+      debugPrint('Live cache refreshed successfully');
+    } catch (e) {
+      // Non-blocking - log error but don't throw
+      debugPrint('Failed to refresh live cache: $e');
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: 'N/A',
+        toCurrency: 'N/A',
+        errorType: 'cache_refresh_failed',
+      );
+    }
   }
 
   /// Format date as YYYY-MM-DD
