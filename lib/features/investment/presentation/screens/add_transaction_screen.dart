@@ -354,6 +354,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 selectedCurrency: _selectedCurrency,
                 onCurrencySelected: (code) {
                   setState(() => _selectedCurrency = code);
+                  // Track currency selection
+                  ref.read(analyticsServiceProvider).logCurrencySelected(
+                    currency: code,
+                    context: 'cashflow',
+                  );
                 },
                 label: 'Cash Flow Currency',
                 subtitle: 'Currency for this transaction',

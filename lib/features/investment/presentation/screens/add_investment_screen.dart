@@ -483,6 +483,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         selectedCurrency: _selectedCurrency,
                         onCurrencySelected: (code) {
                           setState(() => _selectedCurrency = code);
+                          // Track currency selection
+                          ref.read(analyticsServiceProvider).logCurrencySelected(
+                            currency: code,
+                            context: 'investment',
+                          );
                         },
                         label: 'Investment Currency',
                         subtitle: 'Primary currency for this investment',

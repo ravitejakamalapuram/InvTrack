@@ -65,4 +65,4 @@ final class CurrencyConversionServiceProvider
 }
 
 String _$currencyConversionServiceHash() =>
-    r'0869f999839ad2728cec03c31605482a62fa32fe';
+    r'e0e7d41c2af8965929214d8c7c01f951d43de27d';

@@ -173,6 +173,11 @@ class AnalyticsEvents {
 
   // Enhanced Fields usage
   static const String enhancedFieldsUsed = 'enhanced_fields_used';
+
+  // Multi-Currency events
+  static const String currencySelected = 'currency_selected';
+  static const String currencyConversionFailed = 'currency_conversion_failed';
+  static const String exchangeRateCacheHit = 'exchange_rate_cache_hit';
 }
 
 /// Analytics service that wraps Firebase Analytics.
@@ -726,6 +731,96 @@ class AnalyticsService {
         'fields_count': fieldsUsed.length,
         'fields': fieldsUsed.take(10).join(','), // Limit to 10 for param size
       },
+    );
+  }
+
+  // ============ Multi-Currency Events ============
+
+  /// Log currency selected for investment or cash flow
+  ///
+  /// Tracks currency selection to understand which currencies users are using.
+  ///
+  /// ## Parameters
+  ///
+  /// - [currency]: Currency code (e.g., "USD", "INR", "EUR")
+  /// - [context]: Where currency was selected (e.g., "investment", "cashflow")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logCurrencySelected(
+  ///   currency: 'INR',
+  ///   context: 'investment',
+  /// );
+  /// ```
+  Future<void> logCurrencySelected({
+    required String currency,
+    required String context,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.currencySelected,
+      parameters: {'currency': currency, 'context': context},
+    );
+  }
+
+  /// Log currency conversion failure
+  ///
+  /// Tracks when exchange rate API calls fail to help monitor service reliability.
+  ///
+  /// ## Parameters
+  ///
+  /// - [fromCurrency]: Source currency code
+  /// - [toCurrency]: Target currency code
+  /// - [errorType]: Type of error (e.g., "network", "timeout", "api_error")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logCurrencyConversionFailed(
+  ///   fromCurrency: 'USD',
+  ///   toCurrency: 'INR',
+  ///   errorType: 'network',
+  /// );
+  /// ```
+  Future<void> logCurrencyConversionFailed({
+    required String fromCurrency,
+    required String toCurrency,
+    required String errorType,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.currencyConversionFailed,
+      parameters: {
+        'from_currency': fromCurrency,
+        'to_currency': toCurrency,
+        'error_type': errorType,
+      },
+    );
+  }
+
+  /// Log exchange rate cache hit
+  ///
+  /// Tracks cache performance to optimize caching strategy.
+  ///
+  /// ## Parameters
+  ///
+  /// - [cacheType]: Type of cache hit (e.g., "memory", "firestore", "api")
+  /// - [rateType]: Type of rate (e.g., "historical", "live")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logExchangeRateCacheHit(
+  ///   cacheType: 'memory',
+  ///   rateType: 'historical',
+  /// );
+  /// ```
+  Future<void> logExchangeRateCacheHit({
+    required String cacheType,
+    required String rateType,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.exchangeRateCacheHit,
+      parameters: {'cache_type': cacheType, 'rate_type': rateType},
     );
   }
 

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,6 +34,7 @@ class CurrencyConversionService {
   final FirebaseFirestore _firestore;
   final String _userId;
   final http.Client _httpClient;
+  final AnalyticsService? _analytics;
 
   // Tier 1: Memory cache (current session)
   final Map<String, double> _memoryCache = {};
@@ -50,9 +52,11 @@ class CurrencyConversionService {
     required FirebaseFirestore firestore,
     required String userId,
     http.Client? httpClient,
+    AnalyticsService? analytics,
   })  : _firestore = firestore,
         _userId = userId,
-        _httpClient = httpClient ?? http.Client();
+        _httpClient = httpClient ?? http.Client(),
+        _analytics = analytics;
 
   // Collection reference for exchange rate cache
   CollectionReference<Map<String, dynamic>> get _exchangeRatesRef =>
@@ -181,6 +185,10 @@ class CurrencyConversionService {
     // 1. Check memory cache
     final memKey = 'historical_${_formatDate(date)}_${from}_$to';
     if (_memoryCache.containsKey(memKey)) {
+      _analytics?.logExchangeRateCacheHit(
+        cacheType: 'memory',
+        rateType: 'historical',
+      );
       return _memoryCache[memKey]!;
     }
 
@@ -190,42 +198,66 @@ class CurrencyConversionService {
     if (doc.exists) {
       final rate = doc.data()!['rate'] as double;
       _addToMemoryCache(memKey, rate);
+      _analytics?.logExchangeRateCacheHit(
+        cacheType: 'firestore',
+        rateType: 'historical',
+      );
       return rate;
     }
 
     // 3. Fetch from API
     final dateStr = _formatDate(date);
-    final response = await _httpClient.get(
-      Uri.parse('$_apiBaseUrl/$dateStr?base=$from&symbols=$to'),
-    );
-
-    if (response.statusCode != 200) {
-      throw CurrencyConversionException(
-        'Failed to fetch historical rate: ${response.statusCode}',
-        response.body,
-      );
-    }
-
-    final data = jsonDecode(response.body);
-    final rate = data['rates'][to] as double;
-
-    // 4. Cache forever (historical rates never change)
     try {
-      await _exchangeRatesRef.doc(memKey).set({
-        'type': 'historical',
-        'date': dateStr,
-        'from': from,
-        'to': to,
-        'rate': rate,
-        'expiresAt': null, // Never expires
-        'fetchedAt': FieldValue.serverTimestamp(),
-      }).timeout(_writeTimeout);
-    } on TimeoutException {
-      // Offline - will sync when back online
-    }
+      final response = await _httpClient.get(
+        Uri.parse('$_apiBaseUrl/$dateStr?base=$from&symbols=$to'),
+      );
 
-    _addToMemoryCache(memKey, rate);
-    return rate;
+      if (response.statusCode != 200) {
+        _analytics?.logCurrencyConversionFailed(
+          fromCurrency: from,
+          toCurrency: to,
+          errorType: 'api_error_${response.statusCode}',
+        );
+        throw CurrencyConversionException(
+          'Failed to fetch historical rate: ${response.statusCode}',
+          response.body,
+        );
+      }
+
+      final data = jsonDecode(response.body);
+      final rate = data['rates'][to] as double;
+
+      _analytics?.logExchangeRateCacheHit(
+        cacheType: 'api',
+        rateType: 'historical',
+      );
+
+      // 4. Cache forever (historical rates never change)
+      try {
+        await _exchangeRatesRef.doc(memKey).set({
+          'type': 'historical',
+          'date': dateStr,
+          'from': from,
+          'to': to,
+          'rate': rate,
+          'expiresAt': null, // Never expires
+          'fetchedAt': FieldValue.serverTimestamp(),
+        }).timeout(_writeTimeout);
+      } on TimeoutException {
+        // Offline - will sync when back online
+      }
+
+      _addToMemoryCache(memKey, rate);
+      return rate;
+    } catch (e) {
+      // Network or parsing error
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: from,
+        toCurrency: to,
+        errorType: e is TimeoutException ? 'timeout' : 'network',
+      );
+      rethrow;
+    }
   }
 
   /// Get live exchange rate (current/today's rate)
@@ -243,6 +275,10 @@ class CurrencyConversionService {
     // 1. Check memory cache
     final memKey = 'live_${dateStr}_${from}_$to';
     if (_memoryCache.containsKey(memKey)) {
+      _analytics?.logExchangeRateCacheHit(
+        cacheType: 'memory',
+        rateType: 'live',
+      );
       return _memoryCache[memKey]!;
     }
 
@@ -257,44 +293,68 @@ class CurrencyConversionService {
       if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
         final rate = data['rate'] as double;
         _addToMemoryCache(memKey, rate);
+        _analytics?.logExchangeRateCacheHit(
+          cacheType: 'firestore',
+          rateType: 'live',
+        );
         return rate;
       }
     }
 
     // 3. Fetch from API
-    final response = await _httpClient.get(
-      Uri.parse('$_apiBaseUrl/latest?base=$from&symbols=$to'),
-    );
-
-    if (response.statusCode != 200) {
-      throw CurrencyConversionException(
-        'Failed to fetch live rate: ${response.statusCode}',
-        response.body,
-      );
-    }
-
-    final data = jsonDecode(response.body);
-    final rate = data['rates'][to] as double;
-
-    // 4. Cache until end of day
-    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
-
     try {
-      await _exchangeRatesRef.doc(memKey).set({
-        'type': 'live',
-        'date': dateStr,
-        'from': from,
-        'to': to,
-        'rate': rate,
-        'expiresAt': Timestamp.fromDate(endOfDay),
-        'fetchedAt': FieldValue.serverTimestamp(),
-      }).timeout(_writeTimeout);
-    } on TimeoutException {
-      // Offline - will sync when back online
-    }
+      final response = await _httpClient.get(
+        Uri.parse('$_apiBaseUrl/latest?base=$from&symbols=$to'),
+      );
 
-    _addToMemoryCache(memKey, rate);
-    return rate;
+      if (response.statusCode != 200) {
+        _analytics?.logCurrencyConversionFailed(
+          fromCurrency: from,
+          toCurrency: to,
+          errorType: 'api_error_${response.statusCode}',
+        );
+        throw CurrencyConversionException(
+          'Failed to fetch live rate: ${response.statusCode}',
+          response.body,
+        );
+      }
+
+      final data = jsonDecode(response.body);
+      final rate = data['rates'][to] as double;
+
+      _analytics?.logExchangeRateCacheHit(
+        cacheType: 'api',
+        rateType: 'live',
+      );
+
+      // 4. Cache until end of day
+      final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
+
+      try {
+        await _exchangeRatesRef.doc(memKey).set({
+          'type': 'live',
+          'date': dateStr,
+          'from': from,
+          'to': to,
+          'rate': rate,
+          'expiresAt': Timestamp.fromDate(endOfDay),
+          'fetchedAt': FieldValue.serverTimestamp(),
+        }).timeout(_writeTimeout);
+      } on TimeoutException {
+        // Offline - will sync when back online
+      }
+
+      _addToMemoryCache(memKey, rate);
+      return rate;
+    } catch (e) {
+      // Network or parsing error
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: from,
+        toCurrency: to,
+        errorType: e is TimeoutException ? 'timeout' : 'network',
+      );
+      rethrow;
+    }
   }
 
   /// Clear all live cache entries
@@ -350,6 +410,7 @@ CurrencyConversionService currencyConversionService(
     firestore: firestore,
     userId: userId,
     httpClient: http.Client(),
+    analytics: ref.watch(analyticsServiceProvider),
   );
 
   // Dispose when provider is destroyed
