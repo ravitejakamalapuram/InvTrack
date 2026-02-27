@@ -140,13 +140,34 @@ class CurrencyConversionService {
     _memoryCache[key] = value;
   }
 
+  /// Get exchange rate between two currencies
+  ///
+  /// [from] - Source currency code (e.g., 'USD')
+  /// [to] - Target currency code (e.g., 'INR')
+  /// [date] - Optional date for historical rate. If null, uses live rate.
+  ///
+  /// Returns exchange rate (1 unit of 'from' currency = X units of 'to' currency)
+  Future<double> getRate({
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    // Same currency = rate is 1.0
+    if (from == to) return 1.0;
+
+    // Get rate using three-tier caching
+    return date != null
+        ? await getHistoricalRate(date, from, to)
+        : await getLiveRate(from, to);
+  }
+
   /// Convert single amount from one currency to another
-  /// 
+  ///
   /// [amount] - Amount to convert
   /// [from] - Source currency code (e.g., 'USD')
   /// [to] - Target currency code (e.g., 'INR')
   /// [date] - Optional date for historical rate. If null, uses live rate.
-  /// 
+  ///
   /// Returns converted amount
   Future<double> convert({
     required double amount,
@@ -158,9 +179,7 @@ class CurrencyConversionService {
     if (from == to) return amount;
 
     // Get rate using three-tier caching
-    final rate = date != null
-        ? await getHistoricalRate(date, from, to)
-        : await getLiveRate(from, to);
+    final rate = await getRate(from: from, to: to, date: date);
 
     return amount * rate;
   }
