@@ -4,6 +4,13 @@
 
 ### ✨ Features
 
+- **core**: Optimize XirrSolver input processing (#226)
+- **security**: Validate file signature on document upload (#228)
+
+## [3.44.0] - 2026-02-27
+
+### ✨ Features
+
 - **a11y**: Improve accessibility of investment list filters (#225)
 
 ## [3.43.0] - 2026-02-25
