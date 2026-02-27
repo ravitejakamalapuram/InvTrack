@@ -3,6 +3,8 @@
 ## Overview
 This document outlines the comprehensive test strategy for the multi-currency feature (Rule 21) implemented in InvTrack.
 
+**Test Status:** ✅ **67 tests passing** (55 multi-currency + 12 currency conversion)
+
 ---
 
 ## ✅ Completed Implementation
@@ -117,29 +119,41 @@ expect(currencies, contains('EUR'));
 expect(cashFlow.currency, investment.currency);
 ```
 
-#### 4. Currency Conversion Tests
+#### 4. Currency Conversion Tests ✅ **COMPLETE (12 tests)**
 **Test File:** `test/core/services/currency_conversion_service_test.dart`
 
 **Test Cases:**
-- ✅ 3-tier caching (memory → Firestore → API)
-- ✅ Historical rates never expire
-- ✅ Live rates refresh daily
-- ✅ Rate limiting (max 10 calls/minute)
-- ✅ Fallback API on primary failure
-- ✅ Offline support (Firestore cache)
-- ✅ Same currency returns original amount
-- ✅ Invalid currency codes handled gracefully
+- ✅ Same currency returns original amount (2 tests)
+- ✅ 3-tier caching (memory → Firestore → API) (2 tests)
+- ✅ Historical rates never expire (1 test)
+- ✅ Live rates refresh daily (1 test)
+- ✅ Rate limiting (max 10 calls/minute) (2 tests)
+- ✅ Batch conversion efficiency (1 test)
+- ✅ Error handling (invalid currency, timeout) (2 tests)
+- ✅ Offline support (Firestore cache) (1 test)
 
-**Assertions:**
+**Mocking Strategy:**
+- Uses `mocktail` to mock `FirebaseFirestore`, `CollectionReference`, `DocumentReference`, `DocumentSnapshot`
+- Uses `MockClient` from `http/testing.dart` for HTTP requests
+- Verifies Firestore `set()` calls with predicate matchers
+
+**Key Assertions:**
 ```dart
-// Verify caching
-expect(memoryCache.containsKey(cacheKey), true);
+// Verify memory cache reuse
+expect(apiCallCount, 1); // No additional API call on second request
 
-// Verify conversion
-expect(convertedAmount, closeTo(expectedAmount, 0.01));
+// Verify conversion accuracy
+expect(results['USD'], closeTo(83120, 1)); // 1000 * 83.12
+
+// Verify historical rates never expire
+verify(() => mockDocRef.set(any(
+  that: predicate<Map<String, dynamic>>((data) {
+    return data['type'] == 'historical' && data['expiresAt'] == null;
+  }),
+))).called(1);
 
 // Verify offline support
-expect(await service.convert(...), isNotNull); // Uses cache
+expect(rate, 83.12); // Uses Firestore cache when API fails
 ```
 
 ---

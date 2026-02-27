@@ -602,7 +602,7 @@ class CurrencyConversionService {
 /// Provides access to currency conversion with three-tier caching
 @riverpod
 CurrencyConversionService currencyConversionService(
-  CurrencyConversionServiceRef ref,
+  Ref ref,
 ) {
   final firestore = FirebaseFirestore.instance;
   final userId = FirebaseAuth.instance.currentUser?.uid;
