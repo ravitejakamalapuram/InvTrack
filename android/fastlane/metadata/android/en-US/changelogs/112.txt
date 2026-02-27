@@ -1,0 +1,2 @@
+🆕 What's New
+• Enhanced Firebase Performance Monitoring (#222)

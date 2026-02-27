@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- **a11y**: Improve accessibility of investment list filters (#225)
+
+## [3.43.0] - 2026-02-25
+
+### ✨ Features
+
 - Enhanced Firebase Performance Monitoring (#222)
 
 ## [3.41.0] - 2026-02-25
