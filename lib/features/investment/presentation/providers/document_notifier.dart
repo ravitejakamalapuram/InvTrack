@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -74,6 +75,14 @@ class DocumentNotifier {
         userMessage:
             'Unsupported file type. Supported: PDF, JPG, PNG, GIF, WEBP',
         technicalMessage: 'Unsupported file type: $fileName',
+      );
+    }
+
+    // Validate file content signature
+    if (!FileSignatureUtils.validateFileSignature(bytes, fileName)) {
+      throw ValidationException(
+        userMessage: 'File content does not match its extension.',
+        technicalMessage: 'File signature validation failed for $fileName',
       );
     }
 
