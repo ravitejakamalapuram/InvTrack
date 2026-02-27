@@ -20,22 +20,19 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(home: Scaffold(body: child)),
       ),
     );
   }
 
   group('PrivacyMask Text Mode Security', () {
-    testWidgets('should announce "Hidden content" when useTextMask is true', (tester) async {
+    testWidgets('should announce "Hidden content" when useTextMask is true', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
-        const PrivacyMask(
-          useTextMask: true,
-          child: Text('Secret'),
-        ),
+        const PrivacyMask(useTextMask: true, child: Text('Secret')),
         privacyModeEnabled: true,
       );
       await tester.pumpAndSettle();

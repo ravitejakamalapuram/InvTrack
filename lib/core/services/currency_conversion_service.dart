@@ -35,8 +35,8 @@ class RateLimiter {
   static const Duration _refillInterval = Duration(seconds: 6); // 10 tokens/min
 
   RateLimiter()
-      : _availableTokens = _maxTokens,
-        _lastRefillTime = DateTime.now();
+    : _availableTokens = _maxTokens,
+      _lastRefillTime = DateTime.now();
 
   /// Check if a request can be made (without consuming token)
   bool canMakeRequest() {
@@ -60,8 +60,7 @@ class RateLimiter {
   void _refillTokens() {
     final now = DateTime.now();
     final elapsed = now.difference(_lastRefillTime);
-    final tokensToAdd =
-        (elapsed.inSeconds / _refillInterval.inSeconds).floor();
+    final tokensToAdd = (elapsed.inSeconds / _refillInterval.inSeconds).floor();
 
     if (tokensToAdd > 0) {
       _availableTokens = min(_maxTokens, _availableTokens + tokensToAdd);
@@ -77,12 +76,12 @@ class RateLimiter {
 }
 
 /// Service for converting currencies with three-tier caching
-/// 
+///
 /// Caching Strategy:
 /// - Tier 1: Memory cache (current session, instant)
 /// - Tier 2: Firestore cache (persistent, offline support)
 /// - Tier 3: Frankfurter API (fallback)
-/// 
+///
 /// Historical rates: Cached forever (immutable)
 /// Live rates: Expire end of day (auto-refresh)
 class CurrencyConversionService {
@@ -104,7 +103,8 @@ class CurrencyConversionService {
   static const String _primaryApiBaseUrl = 'https://api.frankfurter.dev/v1';
 
   // Fallback API: ExchangeRate-API (free tier: 1500 requests/month, 161 currencies)
-  static const String _fallbackApiBaseUrl = 'https://api.exchangerate-api.com/v4';
+  static const String _fallbackApiBaseUrl =
+      'https://api.exchangerate-api.com/v4';
 
   // Write timeout for offline-first pattern
   static const Duration _writeTimeout = Duration(seconds: 5);
@@ -120,10 +120,10 @@ class CurrencyConversionService {
     required String userId,
     http.Client? httpClient,
     AnalyticsService? analytics,
-  })  : _firestore = firestore,
-        _userId = userId,
-        _httpClient = httpClient ?? http.Client(),
-        _analytics = analytics;
+  }) : _firestore = firestore,
+       _userId = userId,
+       _httpClient = httpClient ?? http.Client(),
+       _analytics = analytics;
 
   // Collection reference for exchange rate cache
   CollectionReference<Map<String, dynamic>> get _exchangeRatesRef =>
@@ -185,10 +185,10 @@ class CurrencyConversionService {
   }
 
   /// Batch convert multiple amounts to target currency (optimized)
-  /// 
+  ///
   /// [amounts] - Map of currency code to amount
   /// [to] - Target currency code
-  /// 
+  ///
   /// Returns map of currency code to converted amount
   Future<Map<String, double>> batchConvert({
     required Map<String, double> amounts,
@@ -307,15 +307,18 @@ class CurrencyConversionService {
 
       // 4. Cache forever (historical rates never change)
       try {
-        await _exchangeRatesRef.doc(memKey).set({
-          'type': 'historical',
-          'date': dateStr,
-          'from': from,
-          'to': to,
-          'rate': rate,
-          'expiresAt': null, // Never expires
-          'fetchedAt': FieldValue.serverTimestamp(),
-        }).timeout(_writeTimeout);
+        await _exchangeRatesRef
+            .doc(memKey)
+            .set({
+              'type': 'historical',
+              'date': dateStr,
+              'from': from,
+              'to': to,
+              'rate': rate,
+              'expiresAt': null, // Never expires
+              'fetchedAt': FieldValue.serverTimestamp(),
+            })
+            .timeout(_writeTimeout);
       } on TimeoutException {
         // Offline - will sync when back online
       }
@@ -382,24 +385,24 @@ class CurrencyConversionService {
         date: null, // Live rate
       );
 
-      _analytics?.logExchangeRateCacheHit(
-        cacheType: 'api',
-        rateType: 'live',
-      );
+      _analytics?.logExchangeRateCacheHit(cacheType: 'api', rateType: 'live');
 
       // 4. Cache until end of day
       final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
       try {
-        await _exchangeRatesRef.doc(memKey).set({
-          'type': 'live',
-          'date': dateStr,
-          'from': from,
-          'to': to,
-          'rate': rate,
-          'expiresAt': Timestamp.fromDate(endOfDay),
-          'fetchedAt': FieldValue.serverTimestamp(),
-        }).timeout(_writeTimeout);
+        await _exchangeRatesRef
+            .doc(memKey)
+            .set({
+              'type': 'live',
+              'date': dateStr,
+              'from': from,
+              'to': to,
+              'rate': rate,
+              'expiresAt': Timestamp.fromDate(endOfDay),
+              'fetchedAt': FieldValue.serverTimestamp(),
+            })
+            .timeout(_writeTimeout);
       } on TimeoutException {
         // Offline - will sync when back online
       }
@@ -622,4 +625,3 @@ CurrencyConversionService currencyConversionService(
 
   return service;
 }
-

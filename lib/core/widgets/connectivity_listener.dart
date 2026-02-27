@@ -100,10 +100,7 @@ class _ConnectedToastState extends State<_ConnectedToast>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _controller.forward();
   }
@@ -140,11 +137,7 @@ class _ConnectedToastState extends State<_ConnectedToast>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.wifi_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                const Icon(Icons.wifi_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -164,4 +157,3 @@ class _ConnectedToastState extends State<_ConnectedToast>
     );
   }
 }
-

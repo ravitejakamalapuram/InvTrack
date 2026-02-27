@@ -139,10 +139,7 @@ class _AccessibleChip extends StatefulWidget {
   final VoidCallback onTap;
   final Widget Function(BuildContext context, bool isFocused) builder;
 
-  const _AccessibleChip({
-    required this.onTap,
-    required this.builder,
-  });
+  const _AccessibleChip({required this.onTap, required this.builder});
 
   @override
   State<_AccessibleChip> createState() => _AccessibleChipState();
@@ -262,7 +259,8 @@ class _TypeSelectorChip extends StatelessWidget {
                 ),
               if (isFocused)
                 BoxShadow(
-                  color: (isDark ? Colors.white : AppColors.primaryLight).withValues(alpha: 0.3),
+                  color: (isDark ? Colors.white : AppColors.primaryLight)
+                      .withValues(alpha: 0.3),
                   blurRadius: 8,
                   spreadRadius: 1,
                 ),
@@ -270,8 +268,9 @@ class _TypeSelectorChip extends StatelessWidget {
           ),
           child: Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
-            mainAxisAlignment:
-                expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+            mainAxisAlignment: expanded
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.center,
             children: [
               // Icon container
               Container(
@@ -293,10 +292,9 @@ class _TypeSelectorChip extends StatelessWidget {
                   style: AppTypography.body.copyWith(
                     fontSize: compactMode ? 13 : 14,
                     color: textColor,
-                    fontWeight:
-                        selectionProgress > 0.5
-                            ? FontWeight.w600
-                            : FontWeight.w500,
+                    fontWeight: selectionProgress > 0.5
+                        ? FontWeight.w600
+                        : FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -8,4 +8,3 @@ import 'package:inv_tracker/core/performance/performance_service.dart';
 final performanceServiceProvider = Provider<PerformanceService>((ref) {
   return PerformanceService();
 });
-

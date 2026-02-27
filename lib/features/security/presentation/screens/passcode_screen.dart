@@ -85,7 +85,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     super.didChangeAppLifecycleState(state);
     // When app resumes from background, try biometrics again if we're on unlock screen
     // BUT only if we haven't exceeded max attempts and aren't in cooldown
-    if (state == AppLifecycleState.resumed && widget.mode == PasscodeMode.unlock) {
+    if (state == AppLifecycleState.resumed &&
+        widget.mode == PasscodeMode.unlock) {
       // Don't auto-retry if we've had too many failed attempts
       if (_biometricAttemptCount >= _maxBiometricAttempts) {
         if (kDebugMode) {
@@ -264,11 +265,11 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
           widget.onSuccess?.call();
         } else {
           // Check if we are now locked out
-           final newLockout = await ref
-            .read(securityServiceProvider)
-            .getLockoutRemainingSeconds();
+          final newLockout = await ref
+              .read(securityServiceProvider)
+              .getLockoutRemainingSeconds();
           if (newLockout != null) {
-             _showError('Locked out. Try again in ${newLockout}s');
+            _showError('Locked out. Try again in ${newLockout}s');
           } else {
             _showError('Incorrect PIN');
           }
@@ -286,9 +287,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
             await ref.read(securityProvider.notifier).setPin(pin);
             if (mounted) {
               context.safePop(); // Close screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('App Lock enabled')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('App Lock enabled')));
             }
           } else {
             _tempPin = null;
@@ -351,10 +352,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                   height: 16,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                        index < _input.length
-                            ? AppColors.primaryLight
-                            : AppColors.neutral300Light,
+                    color: index < _input.length
+                        ? AppColors.primaryLight
+                        : AppColors.neutral300Light,
                   ),
                 );
               }),
@@ -394,27 +394,25 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
             return SizedBox(
               width: 80,
               height: 80,
-              child:
-                  showBiometric
-                      ? IconButton(
-                        icon: Icon(
-                          Icons.fingerprint,
-                          size: 32,
-                          color: AppColors.primaryLight,
-                        ),
-                        onPressed: _onBiometricButtonPressed,
-                      )
-                      : IconButton(
-                        icon: Icon(
-                          Icons.clear,
-                          size: 28,
-                          color:
-                              _input.isNotEmpty
-                                  ? AppColors.textPrimaryLight
-                                  : AppColors.neutral300Light,
-                        ),
-                        onPressed: _input.isNotEmpty ? _onClear : null,
+              child: showBiometric
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.fingerprint,
+                        size: 32,
+                        color: AppColors.primaryLight,
                       ),
+                      onPressed: _onBiometricButtonPressed,
+                    )
+                  : IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        size: 28,
+                        color: _input.isNotEmpty
+                            ? AppColors.textPrimaryLight
+                            : AppColors.neutral300Light,
+                      ),
+                      onPressed: _input.isNotEmpty ? _onClear : null,
+                    ),
             );
           }
           if (key == 'backspace') {
@@ -425,10 +423,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                 icon: Icon(
                   Icons.backspace_outlined,
                   size: 28,
-                  color:
-                      _input.isNotEmpty
-                          ? AppColors.textPrimaryLight
-                          : AppColors.neutral300Light,
+                  color: _input.isNotEmpty
+                      ? AppColors.textPrimaryLight
+                      : AppColors.neutral300Light,
                 ),
                 onPressed: _input.isNotEmpty ? _onDelete : null,
               ),

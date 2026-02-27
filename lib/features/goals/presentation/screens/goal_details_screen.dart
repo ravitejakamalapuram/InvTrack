@@ -238,7 +238,8 @@ class GoalDetailsScreen extends ConsumerWidget {
   ) {
     final percent = progress?.progressPercent ?? 0;
     final progressText =
-        progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
+        progress?.getProgressMessage(currencySymbol, locale) ??
+        'Calculating...';
     final progressTextStyle = AppTypography.bodyLarge.copyWith(
       color: isDark ? Colors.white : AppColors.neutral900Light,
       fontWeight: FontWeight.w600,
@@ -433,8 +434,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                       currencySymbol: currencySymbol,
                       style: valueStyle,
                     ),
-              if (suffix != null)
-                Text(suffix, style: valueStyle),
+              if (suffix != null) Text(suffix, style: valueStyle),
             ],
           ),
         ],

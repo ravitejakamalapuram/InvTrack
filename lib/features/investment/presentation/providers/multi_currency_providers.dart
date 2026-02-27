@@ -8,12 +8,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'multi_currency_providers.g.dart';
 
 /// Provider for multi-currency invested amount calculation
-/// 
+///
 /// Converts all outflow cash flows to user's base currency before summing
-/// 
+///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
-/// 
+///
 /// **Returns:**
 /// - Total invested amount in user's base currency
 @riverpod
@@ -49,12 +49,12 @@ Future<double> multiCurrencyInvestedAmount(
 }
 
 /// Provider for multi-currency returned amount calculation
-/// 
+///
 /// Converts all inflow cash flows to user's base currency before summing
-/// 
+///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
-/// 
+///
 /// **Returns:**
 /// - Total returned amount in user's base currency
 @riverpod
@@ -90,13 +90,13 @@ Future<double> multiCurrencyReturnedAmount(
 }
 
 /// Provider for multi-currency XIRR calculation
-/// 
+///
 /// Converts all cash flows to user's base currency using historical rates
 /// before calculating XIRR
-/// 
+///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
-/// 
+///
 /// **Returns:**
 /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
 @riverpod
@@ -126,10 +126,7 @@ Future<double> multiCurrencyXirr(
 
     // Create new cash flow with converted amount
     convertedCashFlows.add(
-      cf.copyWith(
-        amount: convertedAmount,
-        currency: userBaseCurrency,
-      ),
+      cf.copyWith(amount: convertedAmount, currency: userBaseCurrency),
     );
   }
 
@@ -180,7 +177,9 @@ Future<double> multiCurrencyPortfolioValue(
       );
 
       // Add to net (inflows positive, outflows negative)
-      netInBaseCurrency += cf.type.isInflow ? convertedAmount : -convertedAmount;
+      netInBaseCurrency += cf.type.isInflow
+          ? convertedAmount
+          : -convertedAmount;
     }
 
     totalValue += netInBaseCurrency;
@@ -188,4 +187,3 @@ Future<double> multiCurrencyPortfolioValue(
 
   return totalValue;
 }
-

@@ -203,4 +203,3 @@ class InvestmentTemplates {
     return all.where((t) => t.id == id).firstOrNull;
   }
 }
-

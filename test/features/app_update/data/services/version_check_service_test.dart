@@ -6,9 +6,15 @@ import 'package:mocktail/mocktail.dart';
 
 // Mock classes
 class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
-class MockCollectionReference extends Mock implements CollectionReference<Map<String, dynamic>> {}
-class MockDocumentReference extends Mock implements DocumentReference<Map<String, dynamic>> {}
-class MockDocumentSnapshot extends Mock implements DocumentSnapshot<Map<String, dynamic>> {}
+
+class MockCollectionReference extends Mock
+    implements CollectionReference<Map<String, dynamic>> {}
+
+class MockDocumentReference extends Mock
+    implements DocumentReference<Map<String, dynamic>> {}
+
+class MockDocumentSnapshot extends Mock
+    implements DocumentSnapshot<Map<String, dynamic>> {}
 
 void main() {
   late VersionCheckService service;
@@ -31,19 +37,22 @@ void main() {
   });
 
   group('VersionCheckService', () {
-    test('fetchLatestVersion returns null when document does not exist', () async {
-      // Arrange
-      when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
-      when(() => mockDocSnap.exists).thenReturn(false);
+    test(
+      'fetchLatestVersion returns null when document does not exist',
+      () async {
+        // Arrange
+        when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnap);
+        when(() => mockDocSnap.exists).thenReturn(false);
 
-      // Act
-      final result = await service.fetchLatestVersion();
+        // Act
+        final result = await service.fetchLatestVersion();
 
-      // Assert
-      expect(result, isNull);
-      verify(() => mockFirestore.collection('app_config')).called(1);
-      verify(() => mockCollection.doc('version_info')).called(1);
-    });
+        // Assert
+        expect(result, isNull);
+        verify(() => mockFirestore.collection('app_config')).called(1);
+        verify(() => mockCollection.doc('version_info')).called(1);
+      },
+    );
 
     test('fetchLatestVersion returns null when data is null', () async {
       // Arrange

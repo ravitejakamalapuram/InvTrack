@@ -21,8 +21,8 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
     required SharedPreferences prefs,
     required this.ensureInitialized,
     required this.ensurePermissionsForShow,
-  })  : _plugin = plugin,
-        _prefs = prefs;
+  }) : _plugin = plugin,
+       _prefs = prefs;
 
   @override
   SharedPreferences get prefs => _prefs;

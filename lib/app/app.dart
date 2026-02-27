@@ -28,17 +28,15 @@ class InvTrackerApp extends ConsumerWidget {
           child: CurrencyCacheInitializer(
             child: ConnectivityListener(
               child: MaterialApp.router(
-              title: 'InvTracker',
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: settings.themeMode,
-              routerConfig: router,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
+                title: 'InvTracker',
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: settings.themeMode,
+                routerConfig: router,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 builder: (context, child) {
-                  return PrivacyProtectionWrapper(
-                    child: child!,
-                  );
+                  return PrivacyProtectionWrapper(child: child!);
                 },
               ),
             ),

@@ -33,7 +33,9 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
     final currency = ref.watch(settingsProvider.select((s) => s.currency));
     final hasPin = ref.watch(securityProvider.select((s) => s.hasPin));
-    final isBiometricEnabled = ref.watch(securityProvider.select((s) => s.isBiometricEnabled));
+    final isBiometricEnabled = ref.watch(
+      securityProvider.select((s) => s.isBiometricEnabled),
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
@@ -203,7 +205,9 @@ class SettingsScreen extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.neutral600Dark : AppColors.neutral300Light,
+                  color: isDark
+                      ? AppColors.neutral600Dark
+                      : AppColors.neutral300Light,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -224,11 +228,16 @@ class SettingsScreen extends ConsumerWidget {
                       title: Text(
                         name,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                       trailing: isSelected
-                          ? Icon(Icons.check_circle, color: AppColors.primaryLight)
+                          ? Icon(
+                              Icons.check_circle,
+                              color: AppColors.primaryLight,
+                            )
                           : null,
                       onTap: () {
                         notifier.setCurrency(code);

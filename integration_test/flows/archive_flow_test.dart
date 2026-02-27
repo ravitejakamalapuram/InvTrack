@@ -56,8 +56,9 @@ void main() {
       investments.verifyInvestmentNotDisplayed('My FD to Archive');
     });
 
-    testWidgets('should show archived investment in archived tab',
-        (tester) async {
+    testWidgets('should show archived investment in archived tab', (
+      tester,
+    ) async {
       testApp = await TestApp.create(tester);
 
       final now = DateTime.now();
@@ -104,8 +105,9 @@ void main() {
       investments.verifyInvestmentNotDisplayed('Active Investment');
     });
 
-    testWidgets('should unarchive investment from archived view',
-        (tester) async {
+    testWidgets('should unarchive investment from archived view', (
+      tester,
+    ) async {
       testApp = await TestApp.create(tester);
 
       final now = DateTime.now();

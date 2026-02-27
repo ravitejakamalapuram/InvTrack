@@ -132,7 +132,8 @@ class SeedDataService {
       status: InvestmentStatus.open,
       createdAt: now.subtract(const Duration(days: 730)),
       incomeFrequency: IncomeFrequency.monthly,
-      notes: 'Prestige Lakeside. Tenant: Infosys employee. Lease till Dec 2025.',
+      notes:
+          'Prestige Lakeside. Tenant: Infosys employee. Lease till Dec 2025.',
     );
     addCashFlow(
       bangaloreFlat.id,
@@ -164,7 +165,8 @@ class SeedDataService {
       createdAt: now.subtract(const Duration(days: 180)),
       maturityDate: now.add(const Duration(days: 2740)), // 8 years
       incomeFrequency: IncomeFrequency.semiAnnual,
-      notes: 'Issue price ₹6,263/gm. 2.5% annual interest. Tax-free on maturity.',
+      notes:
+          'Issue price ₹6,263/gm. 2.5% annual interest. Tax-free on maturity.',
     );
     addCashFlow(
       sgb.id,
@@ -451,7 +453,9 @@ class SeedDataService {
       type: InvestmentType.fixedDeposit,
       status: InvestmentStatus.open, // Still open despite maturity passed
       createdAt: now.subtract(const Duration(days: 400)),
-      maturityDate: now.subtract(const Duration(days: 35)), // Matured 35 days ago!
+      maturityDate: now.subtract(
+        const Duration(days: 35),
+      ), // Matured 35 days ago!
       incomeFrequency: IncomeFrequency.quarterly,
       notes: 'Matured on 25th Nov. Pending renewal decision.',
     );
@@ -693,7 +697,9 @@ class SeedDataService {
       targetAmount: 120000, // ₹1L annual for display
       targetMonthlyIncome: 10000,
       trackingMode: GoalTrackingMode.byType,
-      linkedTypes: [InvestmentType.stocks], // Only stocks, not much dividend yet
+      linkedTypes: [
+        InvestmentType.stocks,
+      ], // Only stocks, not much dividend yet
       icon: '📈',
       colorValue: GoalColors.available[0].toARGB32(), // Blue
       createdAt: now.subtract(const Duration(days: 60)),

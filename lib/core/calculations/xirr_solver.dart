@@ -259,7 +259,9 @@ class XirrSolver {
       // Check for convergence
       if ((x1 - x).abs() < _tolerance) {
         // Verify the solution is valid
-        if (x1 > -1.0 && x1.isFinite && _f(x1, yearsFromStart, amounts).abs() < 0.01) {
+        if (x1 > -1.0 &&
+            x1.isFinite &&
+            _f(x1, yearsFromStart, amounts).abs() < 0.01) {
           return x1;
         }
       }
@@ -451,7 +453,11 @@ class XirrSolver {
   /// //     = -10000 + 476.73 + 10000 = 476.73
   /// // (Positive NPV means actual return > 10%)
   /// ```
-  static double _f(double x, List<double> yearsFromStart, List<double> amounts) {
+  static double _f(
+    double x,
+    List<double> yearsFromStart,
+    List<double> amounts,
+  ) {
     if (x <= -1.0) return double.infinity;
 
     final base = 1 + x;

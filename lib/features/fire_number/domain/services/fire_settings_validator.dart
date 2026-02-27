@@ -9,8 +9,8 @@ class FireSettingsValidationResult {
   final List<String> errors;
 
   const FireSettingsValidationResult.valid()
-      : isValid = true,
-        errors = const [];
+    : isValid = true,
+      errors = const [];
 
   const FireSettingsValidationResult.invalid(this.errors) : isValid = false;
 

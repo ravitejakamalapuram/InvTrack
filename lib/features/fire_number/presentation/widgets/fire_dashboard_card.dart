@@ -80,14 +80,18 @@ class FireDashboardCard extends ConsumerWidget {
                 Text(
                   'Calculate Your FIRE Number',
                   style: AppTypography.bodyMedium.copyWith(
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   'Set up your financial independence goals',
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
               ],
@@ -96,7 +100,9 @@ class FireDashboardCard extends ConsumerWidget {
           Icon(
             Icons.arrow_forward_ios,
             size: 16,
-            color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+            color: isDark
+                ? AppColors.neutral500Dark
+                : AppColors.neutral400Light,
           ),
         ],
       ),
@@ -124,16 +130,14 @@ class FireDashboardCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.local_fire_department,
-                color: status.color,
-                size: 24,
-              ),
+              Icon(Icons.local_fire_department, color: status.color, size: 24),
               SizedBox(width: AppSpacing.sm),
               Text(
                 'FIRE Progress',
                 style: AppTypography.h4.copyWith(
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : AppColors.textPrimaryLight,
                 ),
               ),
               const Spacer(),
@@ -162,7 +166,9 @@ class FireDashboardCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress / 100,
-              backgroundColor: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              backgroundColor: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
               valueColor: AlwaysStoppedAnimation<Color>(status.color),
               minHeight: 8,
             ),
@@ -174,16 +180,28 @@ class FireDashboardCard extends ConsumerWidget {
               // Current portfolio value - mask in privacy mode
               isPrivacyMode
                   ? MaskedAmountText(
-                      text: formatCompactCurrency(calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale),
+                      text: formatCompactCurrency(
+                        calculation.currentPortfolioValue,
+                        symbol: currencySymbol,
+                        locale: locale,
+                      ),
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                         fontWeight: FontWeight.w600,
                       ),
                     )
                   : Text(
-                      formatCompactCurrency(calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale),
+                      formatCompactCurrency(
+                        calculation.currentPortfolioValue,
+                        symbol: currencySymbol,
+                        locale: locale,
+                      ),
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -202,15 +220,27 @@ class FireDashboardCard extends ConsumerWidget {
               // FIRE target number - mask in privacy mode
               isPrivacyMode
                   ? MaskedAmountText(
-                      text: formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
+                      text: formatCompactCurrency(
+                        calculation.fireNumber,
+                        symbol: currencySymbol,
+                        locale: locale,
+                      ),
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                       ),
                     )
                   : Text(
-                      formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale),
+                      formatCompactCurrency(
+                        calculation.fireNumber,
+                        symbol: currencySymbol,
+                        locale: locale,
+                      ),
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                       ),
                     ),
             ],
@@ -228,7 +258,9 @@ class FireDashboardCard extends ConsumerWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -241,7 +273,9 @@ class FireDashboardCard extends ConsumerWidget {
                   width: 150,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                    color: isDark
+                        ? AppColors.neutral700Dark
+                        : AppColors.neutral200Light,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -250,7 +284,9 @@ class FireDashboardCard extends ConsumerWidget {
                   width: 100,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+                    color: isDark
+                        ? AppColors.neutral700Dark
+                        : AppColors.neutral200Light,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),

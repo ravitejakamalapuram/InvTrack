@@ -90,22 +90,25 @@ void main() {
       expect(investments[2].id, 'no-maturity');
     });
 
-    test('multiple investments without maturity should maintain relative order', () {
-      final investments = [
-        investmentWithNoMaturity,
-        investmentWithMidMaturity,
-        anotherWithNoMaturity,
-      ];
+    test(
+      'multiple investments without maturity should maintain relative order',
+      () {
+        final investments = [
+          investmentWithNoMaturity,
+          investmentWithMidMaturity,
+          anotherWithNoMaturity,
+        ];
 
-      investments.sort((a, b) => _compareByMaturityDate(a, b));
+        investments.sort((a, b) => _compareByMaturityDate(a, b));
 
-      // Investment with maturity date should come first
-      expect(investments[0].id, 'mid');
-      // Both no-maturity investments should be at the end
-      // Their relative order is preserved (comparison = 0)
-      expect(investments[1].maturityDate, isNull);
-      expect(investments[2].maturityDate, isNull);
-    });
+        // Investment with maturity date should come first
+        expect(investments[0].id, 'mid');
+        // Both no-maturity investments should be at the end
+        // Their relative order is preserved (comparison = 0)
+        expect(investments[1].maturityDate, isNull);
+        expect(investments[2].maturityDate, isNull);
+      },
+    );
 
     test('all investments without maturity should compare as equal', () {
       final result = _compareByMaturityDate(

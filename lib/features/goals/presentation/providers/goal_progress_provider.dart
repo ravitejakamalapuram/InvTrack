@@ -272,21 +272,23 @@ final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((
           return cashFlowsAsync.when(
             data: (cashFlows) {
               // Track performance of goal progress calculation
-              final progressList = ref.read(performanceServiceProvider).trackSync(
-                'goal_progress_calculation',
-                () => goals.map((goal) {
-                  return GoalProgressCalculator.calculate(
-                    goal: goal,
-                    allInvestments: investments,
-                    allCashFlows: cashFlows,
+              final progressList = ref
+                  .read(performanceServiceProvider)
+                  .trackSync(
+                    'goal_progress_calculation',
+                    () => goals.map((goal) {
+                      return GoalProgressCalculator.calculate(
+                        goal: goal,
+                        allInvestments: investments,
+                        allCashFlows: cashFlows,
+                      );
+                    }).toList(),
+                    metrics: {
+                      'goal_count': goals.length,
+                      'investment_count': investments.length,
+                      'cash_flow_count': cashFlows.length,
+                    },
                   );
-                }).toList(),
-                metrics: {
-                  'goal_count': goals.length,
-                  'investment_count': investments.length,
-                  'cash_flow_count': cashFlows.length,
-                },
-              );
               return AsyncValue.data(progressList);
             },
             loading: () => const AsyncValue.loading(),

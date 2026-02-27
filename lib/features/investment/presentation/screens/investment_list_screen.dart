@@ -127,63 +127,65 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         },
         child: CustomScrollView(
           slivers: [
-          // Premium App Bar with Search
-          SliverAppBar(
-            expandedHeight: isSearching ? 60 : 56,
-            floating: true,
-            pinned: true,
-            backgroundColor: isDark
-                ? AppColors.surfaceDark
-                : AppColors.surfaceLight,
-            titleSpacing: AppSpacing.md,
-            title: isSearching
-                ? const InvestmentListSearchField()
-                : Text(
-                    'Investments',
-                    style: AppTypography.h2.copyWith(
-                      color: isDark ? Colors.white : AppColors.neutral900Light,
-                      fontSize: 22,
+            // Premium App Bar with Search
+            SliverAppBar(
+              expandedHeight: isSearching ? 60 : 56,
+              floating: true,
+              pinned: true,
+              backgroundColor: isDark
+                  ? AppColors.surfaceDark
+                  : AppColors.surfaceLight,
+              titleSpacing: AppSpacing.md,
+              title: isSearching
+                  ? const InvestmentListSearchField()
+                  : Text(
+                      'Investments',
+                      style: AppTypography.h2.copyWith(
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
+                        fontSize: 22,
+                      ),
                     ),
-                  ),
-            actions: isSearching
-                ? null
-                : _buildAppBarActions(isDark),
-          ),
-
-          // Filter Tabs or Selection Controls
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              child: isSelectionMode
-                  ? const InvestmentListSelectionControls()
-                  : const InvestmentListFilterTabs(),
+              actions: isSearching ? null : _buildAppBarActions(isDark),
             ),
-          ),
 
-          // Active Type Filter Chip
-          if (hasTypeFilter)
+            // Filter Tabs or Selection Controls
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                   vertical: AppSpacing.xs,
                 ),
-                child: _ActiveTypeFilterChip(
-                  type: typeFilter!,
-                  isDark: isDark,
-                  onClear: () {
-                    ref.read(investmentListStateProvider.notifier).clearTypeFilter();
-                  },
-                ),
+                child: isSelectionMode
+                    ? const InvestmentListSelectionControls()
+                    : const InvestmentListFilterTabs(),
               ),
             ),
 
-          // Content
-          _buildContent(isDark, filteredAsync, allInvestmentsAsync),
-        ],
+            // Active Type Filter Chip
+            if (hasTypeFilter)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: _ActiveTypeFilterChip(
+                    type: typeFilter!,
+                    isDark: isDark,
+                    onClear: () {
+                      ref
+                          .read(investmentListStateProvider.notifier)
+                          .clearTypeFilter();
+                    },
+                  ),
+                ),
+              ),
+
+            // Content
+            _buildContent(isDark, filteredAsync, allInvestmentsAsync),
+          ],
         ),
       ),
       floatingActionButton: isSelectionMode
@@ -226,9 +228,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     final isSelectionMode = ref.watch(
       investmentListStateProvider.select((s) => s.isSelectionMode),
     );
-    final sort = ref.watch(
-      investmentListStateProvider.select((s) => s.sort),
-    );
+    final sort = ref.watch(investmentListStateProvider.select((s) => s.sort));
     final hasTypeFilter = ref.watch(
       investmentListStateProvider.select((s) => s.hasTypeFilter),
     );
@@ -248,9 +248,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
             borderRadius: AppSizes.borderRadiusMd,
           ),
           child: Icon(
-            isSelectionMode
-                ? Icons.close_rounded
-                : Icons.checklist_rounded,
+            isSelectionMode ? Icons.close_rounded : Icons.checklist_rounded,
             color: isSelectionMode
                 ? Colors.white
                 : (isDark ? Colors.white : AppColors.neutral700Light),
@@ -354,8 +352,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
     // Get counts to check if there are ANY investments (active or archived)
     final counts = ref.watch(investmentCountsProvider);
-    final hasAnyInvestments =
-        counts.all > 0 || counts.archived > 0;
+    final hasAnyInvestments = counts.all > 0 || counts.archived > 0;
 
     return filteredAsync.when(
       data: (filteredInvestments) {
@@ -571,12 +568,19 @@ class _TypeFilterSheet extends StatelessWidget {
                       title: Text(
                         type.displayName,
                         style: AppTypography.body.copyWith(
-                          color: isDark ? Colors.white : AppColors.neutral900Light,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                       trailing: isSelected
-                          ? Icon(Icons.check_rounded, color: AppColors.primaryLight)
+                          ? Icon(
+                              Icons.check_rounded,
+                              color: AppColors.primaryLight,
+                            )
                           : null,
                       onTap: () {
                         HapticFeedback.selectionClick();
@@ -619,9 +623,7 @@ class _ActiveTypeFilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: type.color.withValues(alpha: 0.15),
             borderRadius: AppSizes.borderRadiusMd,
-            border: Border.all(
-              color: type.color.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: type.color.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -228,7 +228,10 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Bulk delete multiple goals (handles both active and archived)
-  Future<int> bulkDelete(List<String> goalIds, {bool isArchived = false}) async {
+  Future<int> bulkDelete(
+    List<String> goalIds, {
+    bool isArchived = false,
+  }) async {
     if (goalIds.isEmpty) return 0;
 
     state = const AsyncValue.loading();

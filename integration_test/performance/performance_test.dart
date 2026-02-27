@@ -72,7 +72,9 @@ void main() {
       }
 
       final avgTime = times.reduce((a, b) => a + b) / times.length;
-      debugPrint('📊 Average tab navigation time: ${avgTime.toStringAsFixed(1)}ms');
+      debugPrint(
+        '📊 Average tab navigation time: ${avgTime.toStringAsFixed(1)}ms',
+      );
 
       // Assert navigation is under 500ms on average
       expect(
@@ -106,31 +108,30 @@ void main() {
       // Measure scroll performance with traceAction
       final stopwatch = Stopwatch()..start();
 
-      await binding.traceAction(
-        () async {
-          // Scroll down
-          for (var i = 0; i < 5; i++) {
-            await tester.drag(
-              find.byType(Scrollable).first,
-              const Offset(0, -300),
-            );
-            await tester.pump();
-          }
+      await binding.traceAction(() async {
+        // Scroll down
+        for (var i = 0; i < 5; i++) {
+          await tester.drag(
+            find.byType(Scrollable).first,
+            const Offset(0, -300),
+          );
+          await tester.pump();
+        }
 
-          // Scroll back up
-          for (var i = 0; i < 5; i++) {
-            await tester.drag(
-              find.byType(Scrollable).first,
-              const Offset(0, 300),
-            );
-            await tester.pump();
-          }
-        },
-        reportKey: 'scroll_timeline',
-      );
+        // Scroll back up
+        for (var i = 0; i < 5; i++) {
+          await tester.drag(
+            find.byType(Scrollable).first,
+            const Offset(0, 300),
+          );
+          await tester.pump();
+        }
+      }, reportKey: 'scroll_timeline');
 
       stopwatch.stop();
-      debugPrint('📊 Scroll test completed in ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint(
+        '📊 Scroll test completed in ${stopwatch.elapsedMilliseconds}ms',
+      );
 
       // Assert scroll performance is reasonable
       expect(
@@ -149,18 +150,17 @@ void main() {
       final stopwatch = Stopwatch()..start();
 
       // Capture frame timing during navigation animations
-      await binding.traceAction(
-        () async {
-          await nav.goToInvestments();
-          await nav.goToGoals();
-          await nav.goToSettings();
-          await nav.goToOverview();
-        },
-        reportKey: 'navigation_timeline',
-      );
+      await binding.traceAction(() async {
+        await nav.goToInvestments();
+        await nav.goToGoals();
+        await nav.goToSettings();
+        await nav.goToOverview();
+      }, reportKey: 'navigation_timeline');
 
       stopwatch.stop();
-      debugPrint('📊 Navigation animation test completed in ${stopwatch.elapsedMilliseconds}ms');
+      debugPrint(
+        '📊 Navigation animation test completed in ${stopwatch.elapsedMilliseconds}ms',
+      );
 
       // Assert navigation animations are smooth
       expect(

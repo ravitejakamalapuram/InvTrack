@@ -39,10 +39,7 @@ void main() {
         final result = SimpleCsvParser.parseString(csv);
 
         expect(result.hasErrors, true);
-        expect(
-          result.errors.first,
-          contains('Missing required columns'),
-        );
+        expect(result.errors.first, contains('Missing required columns'));
       });
 
       test('handles column header variations', () {
@@ -296,6 +293,7 @@ bad-date,Bad,invest,1000
           investmentName: 'Test',
           type: CashFlowType.invest,
           amount: 1000,
+          currency: 'USD', // Multi-currency support (Rule 21.4)
         );
 
         expect(row.isValid, true);
@@ -320,6 +318,7 @@ bad-date,Bad,invest,1000
           investmentName: 'Test',
           type: CashFlowType.invest,
           amount: 1000,
+          currency: 'USD', // Multi-currency support (Rule 21.4)
         );
         final invalidRow = ParsedCashFlowRow.withError(
           rowNumber: 2,

@@ -84,8 +84,11 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.privacy_tip,
                 iconColor: Colors.purple,
                 title: l10n.privacyPolicy,
-                onTap: () =>
-                    _openLegalScreen(context, l10n.privacyPolicy, _privacyPolicy),
+                onTap: () => _openLegalScreen(
+                  context,
+                  l10n.privacyPolicy,
+                  _privacyPolicy,
+                ),
               ),
               SettingsNavTile(
                 icon: Icons.description,
@@ -151,11 +154,9 @@ class AboutScreen extends ConsumerWidget {
 
   /// Opens the Help & FAQ page
   void _openHelpPage(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const HelpFaqScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const HelpFaqScreen()));
   }
 
   /// Opens the email client for support
@@ -205,10 +206,7 @@ class AboutScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {},
-          ),
+          action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
     }
@@ -217,8 +215,10 @@ class AboutScreen extends ConsumerWidget {
   /// Encodes query parameters for mailto URI
   String? _encodeQueryParameters(Map<String, String> params) {
     return params.entries
-        .map((e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map(
+          (e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+        )
         .join('&');
   }
 }

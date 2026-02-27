@@ -140,7 +140,9 @@ void main() {
           languageCode: 'en',
         );
 
-        final updated = original.copyWith(dateFormatPattern: DateFormatPattern.dmy);
+        final updated = original.copyWith(
+          dateFormatPattern: DateFormatPattern.dmy,
+        );
 
         expect(updated.dateFormatPattern, DateFormatPattern.dmy);
         expect(updated.preferredCurrency, original.preferredCurrency);
@@ -203,4 +205,3 @@ void main() {
     });
   });
 }
-

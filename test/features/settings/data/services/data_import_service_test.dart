@@ -16,7 +16,8 @@ import '../../../investment/data/repositories/mock_investment_repository.dart';
 
 class MockDocumentRepository extends Mock implements DocumentRepository {}
 
-class MockDocumentStorageService extends Mock implements DocumentStorageService {}
+class MockDocumentStorageService extends Mock
+    implements DocumentStorageService {}
 
 void main() {
   late FakeInvestmentRepository investmentRepository;
@@ -26,18 +27,20 @@ void main() {
   late DataImportService service;
 
   setUpAll(() {
-    registerFallbackValue(DocumentEntity(
-      id: 'test',
-      investmentId: 'test',
-      name: 'test',
-      fileName: 'test.pdf',
-      type: DocumentType.other,
-      mimeType: 'application/pdf',
-      localPath: '/test',
-      fileSize: 0,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ));
+    registerFallbackValue(
+      DocumentEntity(
+        id: 'test',
+        investmentId: 'test',
+        name: 'test',
+        fileName: 'test.pdf',
+        type: DocumentType.other,
+        mimeType: 'application/pdf',
+        localPath: '/test',
+        fileSize: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
     registerFallbackValue(Uint8List(0));
   });
 
@@ -54,14 +57,17 @@ void main() {
     );
 
     // Setup default mock behaviors
-    when(() => documentRepository.createDocument(any()))
-        .thenAnswer((_) async {});
-    when(() => documentStorageService.saveDocument(
-          investmentId: any(named: 'investmentId'),
-          documentId: any(named: 'documentId'),
-          fileName: any(named: 'fileName'),
-          bytes: any(named: 'bytes'),
-        )).thenAnswer((_) async => '/path/to/file');
+    when(
+      () => documentRepository.createDocument(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => documentStorageService.saveDocument(
+        investmentId: any(named: 'investmentId'),
+        documentId: any(named: 'documentId'),
+        fileName: any(named: 'fileName'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer((_) async => '/path/to/file');
   });
 
   tearDown(() {
@@ -106,7 +112,8 @@ void main() {
 
       test('returns error for missing metadata.json', () async {
         final bytes = createZipArchive({
-          'cashflows.csv': 'Date,Investment Name,Type,Amount\n2024-01-01,Test,invest,1000',
+          'cashflows.csv':
+              'Date,Investment Name,Type,Amount\n2024-01-01,Test,invest,1000',
         });
 
         final result = await service.importFromZip(bytes, ImportStrategy.merge);
@@ -119,7 +126,8 @@ void main() {
     group('importFromZip - Cashflows Import', () {
       test('imports cashflows successfully', () async {
         final bytes = createZipArchive({
-          'metadata.json': '{"version":"1.0","files":[{"fileName":"cashflows.csv","type":"cashflows"}]}',
+          'metadata.json':
+              '{"version":"1.0","files":[{"fileName":"cashflows.csv","type":"cashflows"}]}',
           'cashflows.csv': '''Date,Investment Name,Type,Amount,Notes
 2024-01-15,Test Investment,INVEST,100000,Initial investment
 2024-02-15,Test Investment,INCOME,1500,Monthly interest''',
@@ -135,7 +143,8 @@ void main() {
 
       test('groups cashflows by investment name', () async {
         final bytes = createZipArchive({
-          'metadata.json': '{"version":"1.0","files":[{"fileName":"cashflows.csv","type":"cashflows"}]}',
+          'metadata.json':
+              '{"version":"1.0","files":[{"fileName":"cashflows.csv","type":"cashflows"}]}',
           'cashflows.csv': '''Date,Investment Name,Type,Amount
 2024-01-15,Investment A,INVEST,100000
 2024-02-15,Investment B,INVEST,50000
@@ -153,8 +162,10 @@ void main() {
     group('importFromZip - Goals Import', () {
       test('imports goals successfully', () async {
         final bytes = createZipArchive({
-          'metadata.json': '{"version":"1.0","files":[{"fileName":"goals.csv","type":"goals"}]}',
-          'goals.csv': '''Name,Type,Target Amount,Target Monthly Income,Target Date,Tracking Mode,Linked Investment IDs,Linked Types,Icon,Color
+          'metadata.json':
+              '{"version":"1.0","files":[{"fileName":"goals.csv","type":"goals"}]}',
+          'goals.csv':
+              '''Name,Type,Target Amount,Target Monthly Income,Target Date,Tracking Mode,Linked Investment IDs,Linked Types,Icon,Color
 Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765''',
         });
 
@@ -170,7 +181,8 @@ Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765''',
     group('importFromZip - Archived Data', () {
       test('imports archived cashflows', () async {
         final bytes = createZipArchive({
-          'metadata.json': '{"version":"1.0","files":[{"fileName":"cashflows_archived.csv","type":"cashflowsArchived"}]}',
+          'metadata.json':
+              '{"version":"1.0","files":[{"fileName":"cashflows_archived.csv","type":"cashflowsArchived"}]}',
           'cashflows_archived.csv': '''Date,Investment Name,Type,Amount
 2024-01-15,Archived Investment,INVEST,50000''',
         });
@@ -183,7 +195,8 @@ Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765''',
 
       test('imports archived goals', () async {
         final bytes = createZipArchive({
-          'metadata.json': '{"version":"1.0","files":[{"fileName":"goals_archived.csv","type":"goalsArchived"}]}',
+          'metadata.json':
+              '{"version":"1.0","files":[{"fileName":"goals_archived.csv","type":"goalsArchived"}]}',
           'goals_archived.csv': '''Name,Type,Target Amount
 Archived Goal,targetAmount,25000''',
         });
@@ -240,7 +253,10 @@ Archived Goal,targetAmount,25000''',
           'fire_settings.json': fireSettingsJson,
         });
 
-        final result = await serviceWithFire.importFromZip(bytes, ImportStrategy.merge);
+        final result = await serviceWithFire.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+        );
 
         expect(result.isSuccess, true);
         expect(result.fireSettingsImported, true);
@@ -256,7 +272,10 @@ Archived Goal,targetAmount,25000''',
           'metadata.json': '{"version":"1.0","files":[]}',
         });
 
-        final result = await serviceWithFire.importFromZip(bytes, ImportStrategy.merge);
+        final result = await serviceWithFire.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+        );
 
         expect(result.isSuccess, true);
         expect(result.fireSettingsImported, false);
@@ -269,7 +288,10 @@ Archived Goal,targetAmount,25000''',
           'fire_settings.json': 'invalid json',
         });
 
-        final result = await serviceWithFire.importFromZip(bytes, ImportStrategy.merge);
+        final result = await serviceWithFire.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+        );
 
         expect(result.isSuccess, true);
         expect(result.fireSettingsImported, false);
@@ -279,7 +301,8 @@ Archived Goal,targetAmount,25000''',
       test('does not import FIRE settings when repository is null', () async {
         final bytes = createZipArchive({
           'metadata.json': '{"version":"1.0","files":[]}',
-          'fire_settings.json': '{"monthlyExpenses":50000,"currentAge":30,"targetFireAge":45}',
+          'fire_settings.json':
+              '{"monthlyExpenses":50000,"currentAge":30,"targetFireAge":45}',
         });
 
         // Use the original service without FIRE repository

@@ -10,7 +10,8 @@ class MockSecurityNotifier extends SecurityNotifier {
   @override
   SecurityState build() {
     return const SecurityState(
-      isBiometricEnabled: false, // Disable biometrics to avoid further async calls
+      isBiometricEnabled:
+          false, // Disable biometrics to avoid further async calls
       isBiometricAvailable: false,
     );
   }
@@ -26,9 +27,9 @@ void main() {
     log.clear();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-      log.add(methodCall);
-      return null;
-    });
+          log.add(methodCall);
+          return null;
+        });
   });
 
   tearDown(() {
@@ -36,43 +37,43 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  testWidgets('PasscodeScreen enables secure mode on init and disables on dispose',
-      (tester) async {
-    // Resize surface to avoid overflow
-    await tester.binding.setSurfaceSize(const Size(1080, 1920));
+  testWidgets(
+    'PasscodeScreen enables secure mode on init and disables on dispose',
+    (tester) async {
+      // Resize surface to avoid overflow
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
 
-    // 1. Pump the widget
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          securityProvider.overrideWith(() => MockSecurityNotifier()),
-        ],
-        child: const MaterialApp(
-          home: PasscodeScreen(),
+      // 1. Pump the widget
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            securityProvider.overrideWith(() => MockSecurityNotifier()),
+          ],
+          child: const MaterialApp(home: PasscodeScreen()),
         ),
-      ),
-    );
+      );
 
-    // Wait for the initial Future.delayed to trigger and complete
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
+      // Wait for the initial Future.delayed to trigger and complete
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(PasscodeScreen), findsOneWidget);
+      expect(find.byType(PasscodeScreen), findsOneWidget);
 
-    // Note: We cannot assert that `setSecureMode` was called here because
-    // the implementation checks `Platform.isAndroid`. In the test environment
-    // (Linux/macOS), `Platform.isAndroid` is false, so the channel is skipped.
-    //
-    // To properly test this, we would need to wrap `Platform` calls or run
-    // integration tests on an Android device/emulator.
-    //
-    // Current test ensures:
-    // 1. Widget renders without crashing
-    // 2. Logic executes without errors
-    // 3. Cleanup logic runs
+      // Note: We cannot assert that `setSecureMode` was called here because
+      // the implementation checks `Platform.isAndroid`. In the test environment
+      // (Linux/macOS), `Platform.isAndroid` is false, so the channel is skipped.
+      //
+      // To properly test this, we would need to wrap `Platform` calls or run
+      // integration tests on an Android device/emulator.
+      //
+      // Current test ensures:
+      // 1. Widget renders without crashing
+      // 2. Logic executes without errors
+      // 3. Cleanup logic runs
 
-    // 2. Dispose the widget
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpAndSettle();
-  });
+      // 2. Dispose the widget
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    },
+  );
 }

@@ -77,8 +77,12 @@ class _CurrencySelectorState extends State<CurrencySelector> {
           return Container(
             height: MediaQuery.of(context).size.height * 0.75,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              color: isDark
+                  ? AppColors.backgroundDark
+                  : AppColors.backgroundLight,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: Column(
               children: [
@@ -106,7 +110,9 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                       Text(
                         'Select Currency',
                         style: AppTypography.h2.copyWith(
-                          color: isDark ? Colors.white : AppColors.neutral900Light,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -164,11 +170,15 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? (isDark
-                                        ? AppColors.primaryDark.withOpacity(0.2)
-                                        : AppColors.primaryLight.withOpacity(0.2))
+                                          ? AppColors.primaryDark.withOpacity(
+                                              0.2,
+                                            )
+                                          : AppColors.primaryLight.withOpacity(
+                                              0.2,
+                                            ))
                                     : (isDark
-                                        ? AppColors.neutral800Dark
-                                        : AppColors.neutral100Light),
+                                          ? AppColors.neutral800Dark
+                                          : AppColors.neutral100Light),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Center(
@@ -177,11 +187,11 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                                   style: AppTypography.h3.copyWith(
                                     color: isSelected
                                         ? (isDark
-                                            ? AppColors.primaryDark
-                                            : AppColors.primaryLight)
+                                              ? AppColors.primaryDark
+                                              : AppColors.primaryLight)
                                         : (isDark
-                                            ? AppColors.neutral400Dark
-                                            : AppColors.neutral500Light),
+                                              ? AppColors.neutral400Dark
+                                              : AppColors.neutral500Light),
                                   ),
                                 ),
                               ),
@@ -240,7 +250,8 @@ class _CurrencySelectorState extends State<CurrencySelector> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final symbol = getCurrencySymbol(widget.selectedCurrency);
     final currencies = LocaleDetectionService.getSupportedCurrencies();
-    final currencyName = currencies[widget.selectedCurrency] ?? widget.selectedCurrency;
+    final currencyName =
+        currencies[widget.selectedCurrency] ?? widget.selectedCurrency;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +313,9 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                       widget.selectedCurrency,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -331,4 +344,3 @@ class _CurrencySelectorState extends State<CurrencySelector> {
     );
   }
 }
-

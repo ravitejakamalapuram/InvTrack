@@ -44,9 +44,9 @@ enum InterestPayoutMode {
   static InterestPayoutMode? fromString(String? value) {
     if (value == null) return null;
     return InterestPayoutMode.values.cast<InterestPayoutMode?>().firstWhere(
-          (e) => e?.name == value,
-          orElse: () => null,
-        );
+      (e) => e?.name == value,
+      orElse: () => null,
+    );
   }
 }
 
@@ -112,9 +112,9 @@ enum RiskLevel {
   static RiskLevel? fromString(String? value) {
     if (value == null) return null;
     return RiskLevel.values.cast<RiskLevel?>().firstWhere(
-          (e) => e?.name == value,
-          orElse: () => null,
-        );
+      (e) => e?.name == value,
+      orElse: () => null,
+    );
   }
 }
 
@@ -165,9 +165,9 @@ enum CompoundingFrequency {
   static CompoundingFrequency? fromString(String? value) {
     if (value == null) return null;
     return CompoundingFrequency.values.cast<CompoundingFrequency?>().firstWhere(
-          (e) => e?.name == value,
-          orElse: () => null,
-        );
+      (e) => e?.name == value,
+      orElse: () => null,
+    );
   }
 }
 

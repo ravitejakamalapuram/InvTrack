@@ -628,10 +628,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.templateSelected,
-      parameters: {
-        'template_id': templateId,
-        'template_name': templateName,
-      },
+      parameters: {'template_id': templateId, 'template_name': templateName},
     );
   }
 
@@ -644,10 +641,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.sampleDataActivated,
-      parameters: {
-        'investments': investmentCount,
-        'goals': goalCount,
-      },
+      parameters: {'investments': investmentCount, 'goals': goalCount},
     );
   }
 
@@ -658,10 +652,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.sampleDataKept,
-      parameters: {
-        'investments': investmentCount,
-        'goals': goalCount,
-      },
+      parameters: {'investments': investmentCount, 'goals': goalCount},
     );
   }
 
@@ -672,10 +663,7 @@ class AnalyticsService {
   }) async {
     await logEvent(
       name: AnalyticsEvents.sampleDataCleared,
-      parameters: {
-        'investments': investmentCount,
-        'goals': goalCount,
-      },
+      parameters: {'investments': investmentCount, 'goals': goalCount},
     );
   }
 

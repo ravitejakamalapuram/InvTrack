@@ -333,11 +333,7 @@ final currencyFormatPreciseProvider = Provider<NumberFormat>((ref) {
 final currencyFormatCompactProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return _getCachedFormatter(
-    type: 'compact',
-    symbol: symbol,
-    locale: locale,
-  );
+  return _getCachedFormatter(type: 'compact', symbol: symbol, locale: locale);
 });
 
 /// Format a number as currency with proper locale formatting.
@@ -459,7 +455,9 @@ const double _thousandThreshold = 1000;
 /// [symbol] - Currency symbol (e.g., "₹")
 /// [maxDecimals] - Maximum decimal places (default 1)
 /// [alwaysShowDecimals] - If true, always show decimal places
-@Deprecated('Use formatCompactCurrency() with locale parameter for multi-currency support')
+@Deprecated(
+  'Use formatCompactCurrency() with locale parameter for multi-currency support',
+)
 String formatCompactIndian(
   double amount, {
   String symbol = '₹',

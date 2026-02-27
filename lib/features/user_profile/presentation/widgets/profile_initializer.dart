@@ -12,10 +12,7 @@ import 'package:inv_tracker/features/user_profile/presentation/providers/user_pr
 class ProfileInitializer extends ConsumerStatefulWidget {
   final Widget child;
 
-  const ProfileInitializer({
-    super.key,
-    required this.child,
-  });
+  const ProfileInitializer({super.key, required this.child});
 
   @override
   ConsumerState<ProfileInitializer> createState() => _ProfileInitializerState();
@@ -47,20 +44,20 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer> {
         .initializeProfileForNewUser(user.id);
 
     // Listen to profile changes and sync to settings
-    ref.listen<AsyncValue<UserProfileEntity?>>(
-      userProfileNotifierProvider,
-      (previous, next) {
-        next.whenData((profile) {
-          if (profile != null) {
-            // Sync profile to local settings
-            final settingsNotifier = ref.read(settingsProvider.notifier);
-            settingsNotifier.setCurrency(profile.preferredCurrency);
-            settingsNotifier.setLocale(profile.preferredLocale);
-            settingsNotifier.setDateFormatPattern(profile.dateFormatPattern);
-          }
-        });
-      },
-    );
+    ref.listen<AsyncValue<UserProfileEntity?>>(userProfileNotifierProvider, (
+      previous,
+      next,
+    ) {
+      next.whenData((profile) {
+        if (profile != null) {
+          // Sync profile to local settings
+          final settingsNotifier = ref.read(settingsProvider.notifier);
+          settingsNotifier.setCurrency(profile.preferredCurrency);
+          settingsNotifier.setLocale(profile.preferredLocale);
+          settingsNotifier.setDateFormatPattern(profile.dateFormatPattern);
+        }
+      });
+    });
 
     _hasInitialized = true;
   }
@@ -68,18 +65,14 @@ class _ProfileInitializerState extends ConsumerState<ProfileInitializer> {
   @override
   Widget build(BuildContext context) {
     // Listen to auth state changes
-    ref.listen<AsyncValue<UserEntity?>>(
-      authStateProvider,
-      (previous, next) {
-        next.whenData((user) {
-          if (user != null && !_hasInitialized) {
-            _initializeProfile();
-          }
-        });
-      },
-    );
+    ref.listen<AsyncValue<UserEntity?>>(authStateProvider, (previous, next) {
+      next.whenData((user) {
+        if (user != null && !_hasInitialized) {
+          _initializeProfile();
+        }
+      });
+    });
 
     return widget.child;
   }
 }
-

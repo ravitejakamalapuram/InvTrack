@@ -67,7 +67,9 @@ class NavigationRobot extends BaseRobot {
       await tap(backButton);
     } else {
       // Use navigator pop
-      final navigatorState = tester.state<NavigatorState>(find.byType(Navigator).first);
+      final navigatorState = tester.state<NavigatorState>(
+        find.byType(Navigator).first,
+      );
       navigatorState.pop();
       await pumpAndSettle();
     }

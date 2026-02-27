@@ -20,9 +20,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(home: Scaffold(body: child)),
       ),
     );
@@ -57,8 +55,9 @@ void main() {
       expect(find.semantics.byLabel('Total Returns'), findsNothing);
     });
 
-    testWidgets('should announce hidden amount (and hide subtitle) when masked',
-        (tester) async {
+    testWidgets('should announce hidden amount (and hide subtitle) when masked', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const QuickStatCard(
@@ -99,10 +98,7 @@ void main() {
         privacyModeEnabled: false,
       );
 
-      expect(
-        find.semantics.byLabel('MOIC: 1.5x'),
-        findsOneWidget,
-      );
+      expect(find.semantics.byLabel('MOIC: 1.5x'), findsOneWidget);
     });
   });
 }

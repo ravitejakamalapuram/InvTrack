@@ -90,7 +90,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     _incomeFrequency = investment?.incomeFrequency;
 
     // Initialize new field controllers
-    _platformController = TextEditingController(text: investment?.platform ?? '');
+    _platformController = TextEditingController(
+      text: investment?.platform ?? '',
+    );
     _expectedRateController = TextEditingController(
       text: investment?.expectedRate != null
           ? investment!.expectedRate!.toString()
@@ -192,10 +194,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     });
 
     // Track analytics
-    ref.read(analyticsServiceProvider).logTemplateSelected(
-      templateId: template.id,
-      templateName: template.name,
-    );
+    ref
+        .read(analyticsServiceProvider)
+        .logTemplateSelected(
+          templateId: template.id,
+          templateName: template.name,
+        );
   }
 
   @override
@@ -320,17 +324,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         if (_compoundingFrequency != null) enhancedFields.add('compounding');
 
         if (enhancedFields.isNotEmpty) {
-          ref.read(analyticsServiceProvider).logEnhancedFieldsUsed(
-            investmentType: _selectedType.name,
-            fieldsUsed: enhancedFields,
-          );
+          ref
+              .read(analyticsServiceProvider)
+              .logEnhancedFieldsUsed(
+                investmentType: _selectedType.name,
+                fieldsUsed: enhancedFields,
+              );
         }
 
         // Track smart default usage
         if (_maturityDateAutoCalculated && _maturityDate != null) {
-          ref.read(analyticsServiceProvider).logSmartDefaultApplied(
-            fieldName: 'maturity_date',
-          );
+          ref
+              .read(analyticsServiceProvider)
+              .logSmartDefaultApplied(fieldName: 'maturity_date');
         }
       }
 
@@ -428,10 +434,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       // Investment Type Selector
                       TypeSelector<InvestmentType>(
                         label: 'Investment Type',
-                        subtitle: 'Select the category that best describes this investment',
+                        subtitle:
+                            'Select the category that best describes this investment',
                         values: InvestmentType.values,
                         selectedValue: _selectedType,
-                        onSelected: (type) => setState(() => _selectedType = type),
+                        onSelected: (type) =>
+                            setState(() => _selectedType = type),
                         colorBuilder: (type) => type.color,
                         iconBuilder: (type) => type.icon,
                         labelBuilder: (type) => type.displayName,
@@ -484,10 +492,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         onCurrencySelected: (code) {
                           setState(() => _selectedCurrency = code);
                           // Track currency selection
-                          ref.read(analyticsServiceProvider).logCurrencySelected(
-                            currency: code,
-                            context: 'investment',
-                          );
+                          ref
+                              .read(analyticsServiceProvider)
+                              .logCurrencySelected(
+                                currency: code,
+                                context: 'investment',
+                              );
                         },
                         label: 'Investment Currency',
                         subtitle: 'Primary currency for this investment',
@@ -518,7 +528,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         icon: widget.isEditing
                             ? Icons.save_rounded
                             : Icons.add_rounded,
-                        label: widget.isEditing ? 'Save Changes' : 'Add Investment',
+                        label: widget.isEditing
+                            ? 'Save Changes'
+                            : 'Add Investment',
                       ),
 
                       SizedBox(height: AppSpacing.lg),
@@ -654,8 +666,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         'Estimated Returns',
                         style: AppTypography.label.copyWith(
                           fontWeight: FontWeight.w600,
-                          color:
-                              isDark ? Colors.white : AppColors.neutral900Light,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
                         ),
                       ),
                     ),
@@ -684,7 +697,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 _buildProjectionRow(
                   isDark: isDark,
                   label: 'Maturity Value',
-                  value: formatCompactCurrency(projection.maturityValue, symbol: currencySymbol, locale: locale),
+                  value: formatCompactCurrency(
+                    projection.maturityValue,
+                    symbol: currencySymbol,
+                    locale: locale,
+                  ),
                   isHighlighted: true,
                 ),
                 SizedBox(height: AppSpacing.xs),
@@ -693,7 +710,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                 _buildProjectionRow(
                   isDark: isDark,
                   label: 'Interest Earned',
-                  value: '+${formatCompactCurrency(projection.interestEarned, symbol: currencySymbol, locale: locale)}',
+                  value:
+                      '+${formatCompactCurrency(projection.interestEarned, symbol: currencySymbol, locale: locale)}',
                   valueColor: AppColors.successLight,
                 ),
 
@@ -759,10 +777,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           value,
           style: (isHighlighted ? AppTypography.h4 : AppTypography.bodyLarge)
               .copyWith(
-            fontWeight: FontWeight.w600,
-            color: valueColor ??
-                (isDark ? Colors.white : AppColors.neutral900Light),
-          ),
+                fontWeight: FontWeight.w600,
+                color:
+                    valueColor ??
+                    (isDark ? Colors.white : AppColors.neutral900Light),
+              ),
         ),
       ],
     );
@@ -825,11 +844,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         fontWeight: FontWeight.w500,
                         color: _startDate != null
                             ? (isDark
-                                ? Colors.white
-                                : AppColors.neutral900Light)
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
                             : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
                       ),
                     ),
                   ),
@@ -947,16 +966,18 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: InterestPayoutMode.values.map(
-            (mode) => _buildEnumChip<InterestPayoutMode>(
-              value: mode,
-              isSelected: _interestPayoutMode == mode,
-              label: mode.displayName,
-              icon: mode.icon,
-              onTap: () => setState(() => _interestPayoutMode = mode),
-              isDark: isDark,
-            ),
-          ).toList(),
+          children: InterestPayoutMode.values
+              .map(
+                (mode) => _buildEnumChip<InterestPayoutMode>(
+                  value: mode,
+                  isSelected: _interestPayoutMode == mode,
+                  label: mode.displayName,
+                  icon: mode.icon,
+                  onTap: () => setState(() => _interestPayoutMode = mode),
+                  isDark: isDark,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -986,16 +1007,18 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: CompoundingFrequency.values.map(
-            (freq) => _buildEnumChip<CompoundingFrequency>(
-              value: freq,
-              isSelected: _compoundingFrequency == freq,
-              label: freq.displayName,
-              icon: Icons.autorenew_rounded,
-              onTap: () => setState(() => _compoundingFrequency = freq),
-              isDark: isDark,
-            ),
-          ).toList(),
+          children: CompoundingFrequency.values
+              .map(
+                (freq) => _buildEnumChip<CompoundingFrequency>(
+                  value: freq,
+                  isSelected: _compoundingFrequency == freq,
+                  label: freq.displayName,
+                  icon: Icons.autorenew_rounded,
+                  onTap: () => setState(() => _compoundingFrequency = freq),
+                  isDark: isDark,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -1025,17 +1048,19 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: RiskLevel.values.map(
-            (risk) => _buildEnumChip<RiskLevel>(
-              value: risk,
-              isSelected: _riskLevel == risk,
-              label: risk.displayName,
-              icon: risk.icon,
-              color: risk.color,
-              onTap: () => setState(() => _riskLevel = risk),
-              isDark: isDark,
-            ),
-          ).toList(),
+          children: RiskLevel.values
+              .map(
+                (risk) => _buildEnumChip<RiskLevel>(
+                  value: risk,
+                  isSelected: _riskLevel == risk,
+                  label: risk.displayName,
+                  icon: risk.icon,
+                  color: risk.color,
+                  onTap: () => setState(() => _riskLevel = risk),
+                  isDark: isDark,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -1123,74 +1148,75 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         },
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: isSelected ? 1.0 : 0.0),
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        builder: (context, progress, child) {
-          final backgroundColor = Color.lerp(
-            isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            chipColor,
-            progress,
-          )!;
-          final borderColor = Color.lerp(
-            isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
-            Colors.transparent,
-            progress,
-          )!;
-          final iconBgColor = Color.lerp(
-            chipColor.withValues(alpha: 0.12),
-            Colors.white.withValues(alpha: 0.2),
-            progress,
-          )!;
-          final iconColor = Color.lerp(chipColor, Colors.white, progress)!;
-          final textColor = Color.lerp(
-            isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
-            Colors.white,
-            progress,
-          )!;
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          builder: (context, progress, child) {
+            final backgroundColor = Color.lerp(
+              isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+              chipColor,
+              progress,
+            )!;
+            final borderColor = Color.lerp(
+              isDark ? AppColors.neutral700Dark : AppColors.neutral300Light,
+              Colors.transparent,
+              progress,
+            )!;
+            final iconBgColor = Color.lerp(
+              chipColor.withValues(alpha: 0.12),
+              Colors.white.withValues(alpha: 0.2),
+              progress,
+            )!;
+            final iconColor = Color.lerp(chipColor, Colors.white, progress)!;
+            final textColor = Color.lerp(
+              isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+              Colors.white,
+              progress,
+            )!;
 
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor, width: 1.5),
-              boxShadow: progress > 0.1
-                  ? [
-                      BoxShadow(
-                        color: chipColor.withValues(alpha: progress * 0.35),
-                        blurRadius: 12 * progress,
-                        offset: Offset(0, 4 * progress),
-                        spreadRadius: -2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: iconBgColor,
-                    borderRadius: BorderRadius.circular(6),
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor, width: 1.5),
+                boxShadow: progress > 0.1
+                    ? [
+                        BoxShadow(
+                          color: chipColor.withValues(alpha: progress * 0.35),
+                          blurRadius: 12 * progress,
+                          offset: Offset(0, 4 * progress),
+                          spreadRadius: -2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: iconBgColor,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(icon, size: 16, color: iconColor),
                   ),
-                  child: Icon(icon, size: 16, color: iconColor),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: AppTypography.body.copyWith(
-                    fontSize: 13,
-                    color: textColor,
-                    fontWeight:
-                        progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: AppTypography.body.copyWith(
+                      fontSize: 13,
+                      color: textColor,
+                      fontWeight: progress > 0.5
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -1253,8 +1279,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           onTap: () => _selectMaturityDate(context, isDark),
           customSemanticsActions: _maturityDate != null
               ? {
-                  const CustomSemanticsAction(label: 'Clear maturity date'):
-                      () {
+                  const CustomSemanticsAction(
+                    label: 'Clear maturity date',
+                  ): () {
                     setState(() {
                       _maturityDate = null;
                       _maturityDateAutoCalculated = false;
@@ -1290,11 +1317,11 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         fontWeight: FontWeight.w500,
                         color: _maturityDate != null
                             ? (isDark
-                                ? Colors.white
-                                : AppColors.neutral900Light)
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
                             : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
                       ),
                     ),
                   ),
@@ -1451,8 +1478,9 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     style: AppTypography.body.copyWith(
                       fontSize: 13,
                       color: textColor,
-                      fontWeight:
-                          progress > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: progress > 0.5
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ],

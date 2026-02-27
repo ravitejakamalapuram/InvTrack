@@ -36,7 +36,6 @@ class CashFlowCardWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isOutflow = cashFlow.type.isOutflow;
     final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
-    final baseCurrency = ref.watch(currencyCodeProvider);
 
     return RepaintBoundary(
       child: Padding(
@@ -80,13 +79,15 @@ class CashFlowCardWidget extends ConsumerWidget {
             // Only called for delete action
             onDeleted();
           },
-          child: _buildCardContent(color, isOutflow),
+          child: _buildCardContent(color, isOutflow, ref),
         ),
       ),
     );
   }
 
-  Widget _buildCardContent(Color color, bool isOutflow) {
+  Widget _buildCardContent(Color color, bool isOutflow, WidgetRef ref) {
+    final baseCurrency = ref.watch(currencyCodeProvider);
+
     return Material(
       color: isDark ? AppColors.cardDark : AppColors.cardLight,
       borderRadius: BorderRadius.circular(16),
@@ -160,7 +161,9 @@ class CashFlowCardWidget extends ConsumerWidget {
         Text(
           AppDateUtils.formatShort(cashFlow.date),
           style: AppTypography.small.copyWith(
-            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
         ),
         // Show exchange rate info if currency differs from base
@@ -173,7 +176,9 @@ class CashFlowCardWidget extends ConsumerWidget {
           Text(
             cashFlow.notes!,
             style: AppTypography.small.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
               fontStyle: FontStyle.italic,
             ),
             maxLines: 1,
@@ -206,14 +211,18 @@ class CashFlowCardWidget extends ConsumerWidget {
             Icon(
               Icons.currency_exchange_rounded,
               size: 11,
-              color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+              color: isDark
+                  ? AppColors.neutral500Dark
+                  : AppColors.neutral400Light,
             ),
             const SizedBox(width: 3),
             Expanded(
               child: Text(
                 '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                  color: isDark
+                      ? AppColors.neutral500Dark
+                      : AppColors.neutral400Light,
                   fontSize: 10,
                 ),
                 maxLines: 1,

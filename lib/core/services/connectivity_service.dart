@@ -12,14 +12,17 @@ class ConnectivityService {
   /// Emits true when connected, false when disconnected
   Stream<bool> get connectivityStream {
     return _connectivity.onConnectivityChanged.map((results) {
-      final isConnected = results.any((result) =>
-          result == ConnectivityResult.mobile ||
-          result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.ethernet);
+      final isConnected = results.any(
+        (result) =>
+            result == ConnectivityResult.mobile ||
+            result == ConnectivityResult.wifi ||
+            result == ConnectivityResult.ethernet,
+      );
 
       if (kDebugMode) {
         debugPrint(
-            '🌐 Connectivity changed: ${isConnected ? "ONLINE" : "OFFLINE"} (${results.join(", ")})');
+          '🌐 Connectivity changed: ${isConnected ? "ONLINE" : "OFFLINE"} (${results.join(", ")})',
+        );
       }
 
       return isConnected;
@@ -30,14 +33,17 @@ class ConnectivityService {
   Future<bool> checkConnectivity() async {
     try {
       final results = await _connectivity.checkConnectivity();
-      final isConnected = results.any((result) =>
-          result == ConnectivityResult.mobile ||
-          result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.ethernet);
+      final isConnected = results.any(
+        (result) =>
+            result == ConnectivityResult.mobile ||
+            result == ConnectivityResult.wifi ||
+            result == ConnectivityResult.ethernet,
+      );
 
       if (kDebugMode) {
         debugPrint(
-            '🌐 Current connectivity: ${isConnected ? "ONLINE" : "OFFLINE"} (${results.join(", ")})');
+          '🌐 Current connectivity: ${isConnected ? "ONLINE" : "OFFLINE"} (${results.join(", ")})',
+        );
       }
 
       return isConnected;
@@ -54,4 +60,3 @@ class ConnectivityService {
     _subscription?.cancel();
   }
 }
-

@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 
 void main() {
-  testWidgets('AppTextField shows clear button only when text is not empty', (WidgetTester tester) async {
+  testWidgets('AppTextField shows clear button only when text is not empty', (
+    WidgetTester tester,
+  ) async {
     // Create a controller to check text updates
     final controller = TextEditingController();
 
@@ -20,7 +22,10 @@ void main() {
     );
 
     // Initial state: empty, no clear button
-    expect(find.byType(TextField), findsOneWidget); // AppTextField uses TextFormField which uses TextField
+    expect(
+      find.byType(TextField),
+      findsOneWidget,
+    ); // AppTextField uses TextFormField which uses TextField
     expect(find.byIcon(Icons.cancel), findsNothing);
 
     // Enter text "a"
@@ -56,16 +61,15 @@ void main() {
     expect(find.byIcon(Icons.cancel), findsNothing);
   });
 
-  testWidgets('AppTextField does not show clear button when readOnly is true', (WidgetTester tester) async {
+  testWidgets('AppTextField does not show clear button when readOnly is true', (
+    WidgetTester tester,
+  ) async {
     final controller = TextEditingController(text: 'test');
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: AppTextField(
-            controller: controller,
-            readOnly: true,
-          ),
+          body: AppTextField(controller: controller, readOnly: true),
         ),
       ),
     );
@@ -74,16 +78,15 @@ void main() {
     expect(find.byIcon(Icons.cancel), findsNothing);
   });
 
-  testWidgets('AppTextField external FocusNode focus test', (WidgetTester tester) async {
+  testWidgets('AppTextField external FocusNode focus test', (
+    WidgetTester tester,
+  ) async {
     final focusNode = FocusNode();
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: AppTextField(
-            label: 'Click Me',
-            focusNode: focusNode,
-          ),
+          body: AppTextField(label: 'Click Me', focusNode: focusNode),
         ),
       ),
     );
@@ -98,14 +101,12 @@ void main() {
     expect(focusNode.hasFocus, isTrue);
   });
 
-  testWidgets('AppTextField internal FocusNode focus test', (WidgetTester tester) async {
+  testWidgets('AppTextField internal FocusNode focus test', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: AppTextField(
-            label: 'Click Me Internal',
-          ),
-        ),
+        home: Scaffold(body: AppTextField(label: 'Click Me Internal')),
       ),
     );
 
@@ -124,11 +125,7 @@ void main() {
   testWidgets('AppTextField semantics test', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: AppTextField(
-            label: 'Semantic Label',
-          ),
-        ),
+        home: Scaffold(body: AppTextField(label: 'Semantic Label')),
       ),
     );
 

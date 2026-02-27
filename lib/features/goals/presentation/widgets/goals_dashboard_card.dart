@@ -177,11 +177,17 @@ class GoalsDashboardCard extends ConsumerWidget {
                       // Mask the progress message (contains amounts)
                       isPrivacyMode
                           ? MaskedAmountText(
-                              text: closest.getProgressMessage(currencySymbol, locale),
+                              text: closest.getProgressMessage(
+                                currencySymbol,
+                                locale,
+                              ),
                               style: progressTextStyle,
                             )
                           : Text(
-                              closest.getProgressMessage(currencySymbol, locale),
+                              closest.getProgressMessage(
+                                currencySymbol,
+                                locale,
+                              ),
                               style: progressTextStyle,
                             ),
                     ],

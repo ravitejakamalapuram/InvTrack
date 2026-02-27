@@ -18,10 +18,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 class CurrencyCacheInitializer extends ConsumerStatefulWidget {
   final Widget child;
 
-  const CurrencyCacheInitializer({
-    super.key,
-    required this.child,
-  });
+  const CurrencyCacheInitializer({super.key, required this.child});
 
   @override
   ConsumerState<CurrencyCacheInitializer> createState() =>
@@ -81,4 +78,3 @@ class _CurrencyCacheInitializerState
     return widget.child;
   }
 }
-

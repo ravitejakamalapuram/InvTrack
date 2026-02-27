@@ -149,11 +149,11 @@ class PerformanceService {
       metadata: {
         'trace': traceName,
         'duration_ms': stopwatch.elapsedMilliseconds,
-        if (metrics != null) ...metrics.map((k, v) => MapEntry(k, v.toString())),
+        if (metrics != null)
+          ...metrics.map((k, v) => MapEntry(k, v.toString())),
       },
     );
 
     return result;
   }
 }
-

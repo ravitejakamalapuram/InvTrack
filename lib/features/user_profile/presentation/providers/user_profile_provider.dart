@@ -9,12 +9,12 @@ import 'package:inv_tracker/features/user_profile/domain/repositories/user_profi
 /// Provider for user profile repository
 final userProfileRepositoryProvider =
     Provider.family<UserProfileRepository, String>((ref, userId) {
-  final firestore = ref.watch(firestoreProvider);
-  return FirestoreUserProfileRepository(
-    firestore: firestore,
-    userId: userId,
-  );
-});
+      final firestore = ref.watch(firestoreProvider);
+      return FirestoreUserProfileRepository(
+        firestore: firestore,
+        userId: userId,
+      );
+    });
 
 /// Stream provider for user profile
 /// Returns null if user is not authenticated or profile doesn't exist
@@ -33,12 +33,11 @@ final userProfileProvider = StreamProvider<UserProfileEntity?>((ref) {
 /// Provider for user profile notifier
 final userProfileNotifierProvider =
     NotifierProvider<UserProfileNotifier, AsyncValue<UserProfileEntity?>>(
-  UserProfileNotifier.new,
-);
+      UserProfileNotifier.new,
+    );
 
 /// Notifier for managing user profile state and operations
-class UserProfileNotifier
-    extends Notifier<AsyncValue<UserProfileEntity?>> {
+class UserProfileNotifier extends Notifier<AsyncValue<UserProfileEntity?>> {
   @override
   AsyncValue<UserProfileEntity?> build() {
     // Watch the stream provider
@@ -158,4 +157,3 @@ class UserProfileNotifier
     }
   }
 }
-

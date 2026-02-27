@@ -219,10 +219,12 @@ class OverviewScreen extends ConsumerWidget {
   ) {
     // Track empty state view for analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(analyticsServiceProvider).logEvent(
-        name: 'empty_state_viewed',
-        parameters: {'screen': 'overview'},
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logEvent(
+            name: 'empty_state_viewed',
+            parameters: {'screen': 'overview'},
+          );
     });
 
     return SliverList(
@@ -261,15 +263,14 @@ class OverviewScreen extends ConsumerWidget {
           },
           onTemplateSelected: (template) {
             HapticFeedback.selectionClick();
-            ref.read(analyticsServiceProvider).logEmptyStateActionTapped(
-              action: 'template_${template.id}',
-            );
+            ref
+                .read(analyticsServiceProvider)
+                .logEmptyStateActionTapped(action: 'template_${template.id}');
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => AddInvestmentScreen(
-                  preselectedTemplate: template,
-                ),
+                builder: (_) =>
+                    AddInvestmentScreen(preselectedTemplate: template),
               ),
             );
           },
@@ -294,7 +295,9 @@ class OverviewScreen extends ConsumerWidget {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Failed to load sample data. Please try again.'),
+                  content: Text(
+                    'Failed to load sample data. Please try again.',
+                  ),
                   behavior: SnackBarBehavior.floating,
                   backgroundColor: Colors.red,
                 ),

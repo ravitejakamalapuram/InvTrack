@@ -56,8 +56,10 @@ void main() {
       );
       final result = validator.validate(settings);
       expect(result.isValid, isFalse);
-      expect(result.errors,
-          contains('Target FIRE age must be greater than current age'));
+      expect(
+        result.errors,
+        contains('Target FIRE age must be greater than current age'),
+      );
     });
 
     test('rejects target FIRE age above 100', () {
@@ -80,7 +82,9 @@ void main() {
       final result = validator.validate(settings);
       expect(result.isValid, isFalse);
       expect(
-          result.errors, contains('Monthly expenses must be greater than zero'));
+        result.errors,
+        contains('Monthly expenses must be greater than zero'),
+      );
     });
 
     test('rejects negative monthly expenses', () {
@@ -128,10 +132,7 @@ void main() {
     });
 
     test('validateOrThrow does not throw on valid settings', () {
-      expect(
-        () => validator.validateOrThrow(validSettings),
-        returnsNormally,
-      );
+      expect(() => validator.validateOrThrow(validSettings), returnsNormally);
     });
 
     test('collects multiple errors', () {

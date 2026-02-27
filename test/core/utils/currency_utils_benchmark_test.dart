@@ -23,7 +23,11 @@ void main() {
     }
     stopwatch.stop();
 
-    print('Benchmark Result: Time taken for $iterations iterations: ${stopwatch.elapsedMilliseconds}ms');
-    print('Average time per iteration: ${stopwatch.elapsedMicroseconds / iterations}µs');
+    print(
+      'Benchmark Result: Time taken for $iterations iterations: ${stopwatch.elapsedMilliseconds}ms',
+    );
+    print(
+      'Average time per iteration: ${stopwatch.elapsedMicroseconds / iterations}µs',
+    );
   });
 }

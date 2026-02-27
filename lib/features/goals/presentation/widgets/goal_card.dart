@@ -147,7 +147,8 @@ class GoalCard extends ConsumerWidget {
       color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
     );
     final progressText =
-        progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
+        progress?.getProgressMessage(currencySymbol, locale) ??
+        'Calculating...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

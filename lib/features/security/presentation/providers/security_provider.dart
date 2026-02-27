@@ -138,9 +138,7 @@ class SecurityNotifier extends Notifier<SecurityState>
           _suspendedAt = null;
         } else {
           if (kDebugMode) {
-            debugPrint(
-              '🔐 Auto-lock suspended for picker operation, skipping',
-            );
+            debugPrint('🔐 Auto-lock suspended for picker operation, skipping');
           }
           return;
         }

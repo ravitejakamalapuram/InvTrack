@@ -129,7 +129,9 @@ class _NotificationSyncInitializerState
             // Schedule the activation notification sequence
             await notificationService.scheduleActivationSequence();
             if (kDebugMode) {
-              debugPrint('🔔 New user detected - activation sequence scheduled');
+              debugPrint(
+                '🔔 New user detected - activation sequence scheduled',
+              );
             }
           } catch (e) {
             if (kDebugMode) {

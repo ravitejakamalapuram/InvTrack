@@ -162,11 +162,14 @@ final investmentXirrProvider = FutureProvider.family<double, String>((
   }
 
   // Track performance of XIRR calculation
-  return ref.read(performanceServiceProvider).trackOperation(
-    'xirr_calculation',
-    () => compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
-    metrics: {'cash_flow_count': cashFlows.length},
-  );
+  return ref
+      .read(performanceServiceProvider)
+      .trackOperation(
+        'xirr_calculation',
+        () =>
+            compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
+        metrics: {'cash_flow_count': cashFlows.length},
+      );
 });
 
 /// XIRR ONLY provider for archived investments.
@@ -186,11 +189,14 @@ final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
   }
 
   // Track performance of XIRR calculation for archived investments
-  return ref.read(performanceServiceProvider).trackOperation(
-    'xirr_calculation_archived',
-    () => compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
-    metrics: {'cash_flow_count': cashFlows.length},
-  );
+  return ref
+      .read(performanceServiceProvider)
+      .trackOperation(
+        'xirr_calculation_archived',
+        () =>
+            compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
+        metrics: {'cash_flow_count': cashFlows.length},
+      );
 });
 
 // ============ AGGREGATE STATS PROVIDERS ============
@@ -347,10 +353,9 @@ InvestmentStats calculateStats(
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
 
   // XIRR calculation using pre-populated lists
-  final xirr =
-      includeXirr
-          ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
-          : 0.0;
+  final xirr = includeXirr
+      ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
+      : 0.0;
 
   return InvestmentStats(
     totalInvested: totalInvested,
