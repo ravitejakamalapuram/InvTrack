@@ -51,7 +51,7 @@ class _CurrencyCacheInitializerState
 
       // 2. Preload common rates in background (don't block UI)
       // Get all unique currencies from investments
-      final investments = await ref.read(investmentsStreamProvider.future);
+      final investments = await ref.read(allInvestmentsProvider.future);
       final currencies = investments.map((inv) => inv.currency).toSet();
 
       // Preload rates for all currencies (background)
