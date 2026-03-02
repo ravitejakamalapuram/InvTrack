@@ -439,6 +439,7 @@ class DataImportService {
             date: row.date,
             notes: row.notes,
             createdAt: now,
+            currency: row.currency, // Multi-currency support (Rule 21.4)
           ),
         );
       }
