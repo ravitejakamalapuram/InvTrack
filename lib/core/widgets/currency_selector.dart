@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:inv_tracker/core/design/app_colors.dart';
-import 'package:inv_tracker/core/design/app_spacing.dart';
-import 'package:inv_tracker/core/design/app_typography.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -154,14 +154,15 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                       final symbol = getCurrencySymbol(code);
                       final isSelected = code == widget.selectedCurrency;
 
-                      return GlassCard(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        onTap: () {
-                          widget.onCurrencySelected(code);
-                          Navigator.pop(context);
-                        },
-                        child: Row(
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(12),
+                          onTap: () {
+                            widget.onCurrencySelected(code);
+                            Navigator.pop(context);
+                          },
+                          child: Row(
                           children: [
                             // Currency symbol
                             Container(
@@ -232,6 +233,7 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                                     : AppColors.primaryLight,
                               ),
                           ],
+                        ),
                         ),
                       );
                     },
