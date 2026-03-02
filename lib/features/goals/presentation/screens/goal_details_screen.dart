@@ -166,6 +166,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           : AppColors.backgroundLight,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
+        tooltip: 'Back',
         onPressed: () => context.safePop(),
       ),
       actions: [
