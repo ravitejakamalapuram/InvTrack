@@ -124,3 +124,4 @@
 1. Remove early exit conditions in constant-time comparison functions.
 2. Initialize the result based on length difference (e.g., XOR lengths).
 3. Always iterate over the full length of the secret (or a known upper bound) to ensure execution time is independent of the input content and length match.
+## 2025-01-20 - Ensure URL Scheme Validation\n**Vulnerability:** Use of `canLaunchUrl` and `launchUrl` without validating the URL scheme, which allows execution of arbitrary intents (`intent://`) or javascript (`javascript:`).\n**Learning:** Maliciously configured URLs in external data sources (e.g., Firestore) can trigger deep link execution or arbitrary intent execution if not sanitized.\n**Prevention:** Validate that the URI scheme is strictly `http` or `https` prior to invoking `canLaunchUrl` or `launchUrl`.

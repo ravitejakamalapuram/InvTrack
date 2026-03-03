@@ -132,6 +132,19 @@ class UpdateDialog extends ConsumerWidget {
 
     try {
       final uri = Uri.parse(updateUrl);
+
+      // Security: Validate URL scheme to prevent arbitrary intent/javascript execution
+      if (uri.scheme != 'https' && uri.scheme != 'http') {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid update link format'),
+            ),
+          );
+        }
+        return;
+      }
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
