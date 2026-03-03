@@ -494,14 +494,18 @@ class XirrSolver {
     if (base <= 0) return double.infinity;
 
     double sum = 0.0;
-    // Optimization: Use exp(p * lnBase) instead of pow(base, p)
-    // Benchmarks show this is ~2x faster in Dart
-    final lnBase = log(base);
+    // Optimization: Pre-negate log(base) to avoid per-iteration negation operations
+    // Benchmarks show exp(p * negLnBase) is significantly faster
+    final negLnBase = -log(base);
 
     for (int i = 0; i < amounts.length; i++) {
-      final power = yearsFromStart[i];
-      // Reuse precomputed log(base)
-      sum += amounts[i] * exp(-power * lnBase);
+      final amt = amounts[i];
+      // Optimization: skip expensive mathematical operations for zero-value iterations
+      if (amt == 0.0) continue;
+
+      final p = yearsFromStart[i];
+      // Reuse precomputed negated log(base)
+      sum += amt * exp(p * negLnBase);
     }
     return sum;
   }
@@ -559,24 +563,29 @@ class XirrSolver {
 
     // Pre-calculate inverse base to replace division with multiplication in loop
     final invBase = 1.0 / base;
-    // Optimization: Use log(base) once for exp()
-    final lnBase = log(base);
+    // Optimization: Pre-negate log(base) once for exp() to avoid per-iteration negation
+    final negLnBase = -log(base);
 
     for (int i = 0; i < amounts.length; i++) {
+      final amt = amounts[i];
+      // Optimization: skip expensive mathematical operations for zero-value iterations
+      if (amt == 0.0) continue;
+
       final p = yearsFromStart[i];
 
       // Calculate pow once and reuse for both f and df
-      // f term: amount / (1+x)^p = amount * exp(-p * ln(1+x))
+      // f term: amount / (1+x)^p = amount * exp(p * -ln(1+x))
       // df term: amount * -p / (1+x)^(p+1) = (f term) * -p / (1+x)
 
-      // Benchmarks show exp(k * log(base)) is ~2x faster than pow(base, k)
-      final termF = amounts[i] * exp(-p * lnBase);
+      // Benchmarks show exp(k * negLnBase) is faster than exp(-k * log(base))
+      final termF = amt * exp(p * negLnBase);
 
       fSum += termF;
       // Optimization: Factor out invBase multiplication from the loop
       // dfSum += termF * (-p) * invBase
-      // We accumulate termF * (-p) and multiply by invBase once at the end
-      dfSum += termF * (-p);
+      // We accumulate termF * (-p) and multiply by invBase once at the end.
+      // Simplify termF * (-p) to -(termF * p) to avoid negative sign multiplication overhead.
+      dfSum -= termF * p;
     }
 
     // Apply the factored-out multiplication

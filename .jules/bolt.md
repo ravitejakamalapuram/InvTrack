@@ -77,3 +77,11 @@ In Dart (and many languages), `pow(base, exponent)` is implemented as `exp(expon
 
 **Action:**
 Identify loops where `pow(base, variable)` is called with a loop-invariant base. Replace with pre-calculated log and `exp()` for a ~2x speedup. Also, avoid redundant verification steps in iterative solvers if the convergence criteria already implies the result is correct.
+
+## 2026-03-05 - Branch prediction and skipping iterations in Tight numerical loops
+
+**Learning:**
+In tight numerical loops (e.g., `XirrSolver`), introducing conditional checks to skip iterations with expensive mathematical functions (like `exp` where `amount == 0.0`) provides a measurable, significant performance improvement. Additionally, simplifying arithmetic negations (such as replacing `dfSum += termF * (-p)` with `dfSum -= termF * p`) eliminates unnecessary per-iteration negation overhead.
+
+**Action:**
+Always check for mathematically identity-yielding input variables (e.g., an amount of 0.0 in a sum operation) and continue early in expensive loops, as this reduces CPU cycles significantly. Clean up signs by pushing subtraction logic into operations to avoid runtime negation logic. When benchmarking these changes in Dart, remember to include warm-up iterations to account for JIT behavior which otherwise hides the benefits of these micro-optimizations.
