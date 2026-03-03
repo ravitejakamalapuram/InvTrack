@@ -382,6 +382,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               child:
                   showBiometric
                       ? IconButton(
+                        tooltip: 'Use biometric authentication',
                         icon: Icon(
                           Icons.fingerprint,
                           size: 32,
@@ -390,6 +391,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                         onPressed: _onBiometricButtonPressed,
                       )
                       : IconButton(
+                        tooltip: 'Clear',
                         icon: Icon(
                           Icons.clear,
                           size: 28,
@@ -407,6 +409,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               width: 80,
               height: 80,
               child: IconButton(
+                tooltip: 'Delete last digit',
                 icon: Icon(
                   Icons.backspace_outlined,
                   size: 28,

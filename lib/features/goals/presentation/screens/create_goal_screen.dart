@@ -186,6 +186,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         ),
       ),
       leading: IconButton(
+        tooltip: 'Close',
         icon: const Icon(Icons.close),
         onPressed: () => context.safePop(),
       ),
@@ -408,6 +409,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
           ),
           if (_targetDate != null)
             IconButton(
+              tooltip: 'Clear target date',
               icon: const Icon(Icons.clear, size: 18),
               onPressed: () => setState(() => _targetDate = null),
             ),
