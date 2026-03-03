@@ -212,6 +212,7 @@ class GoalEntity {
   final bool isArchived;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String currency; // Multi-currency support (Rule 21.2)
 
   const GoalEntity({
     required this.id,
@@ -228,6 +229,7 @@ class GoalEntity {
     this.isArchived = false,
     required this.createdAt,
     required this.updatedAt,
+    this.currency = 'USD', // Default for backward compatibility
   });
 
   Color get color => Color(colorValue);
@@ -266,6 +268,7 @@ class GoalEntity {
     bool? isArchived,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currency,
   }) {
     return GoalEntity(
       id: id ?? this.id,
@@ -282,6 +285,7 @@ class GoalEntity {
       isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currency: currency ?? this.currency,
     );
   }
 
@@ -298,7 +302,8 @@ class GoalEntity {
         other.trackingMode == trackingMode &&
         other.icon == icon &&
         other.colorValue == colorValue &&
-        other.isArchived == isArchived;
+        other.isArchived == isArchived &&
+        other.currency == currency;
   }
 
   @override
@@ -312,6 +317,7 @@ class GoalEntity {
         trackingMode.hashCode ^
         icon.hashCode ^
         colorValue.hashCode ^
-        isArchived.hashCode;
+        isArchived.hashCode ^
+        currency.hashCode;
   }
 }

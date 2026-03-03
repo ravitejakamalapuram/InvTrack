@@ -125,6 +125,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     List<InvestmentType> linkedTypes = const [],
     String? icon,
     int? colorValue,
+    String? currency, // Multi-currency support (Rule 21.2)
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -141,6 +142,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
         linkedTypes: linkedTypes,
         icon: icon ?? GoalIcons.defaultIcon,
         colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
+        currency: currency ?? 'USD', // Default to USD if not specified
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
