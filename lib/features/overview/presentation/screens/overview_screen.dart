@@ -276,6 +276,9 @@ class OverviewScreen extends ConsumerWidget {
           onTrySampleData: () async {
             HapticFeedback.mediumImpact();
 
+            // Capture l10n before async operation
+            final localizations = AppLocalizations.of(context);
+
             // Activate sample data mode
             final success = await ref
                 .read(sampleDataModeProvider.notifier)
@@ -285,16 +288,16 @@ class OverviewScreen extends ConsumerWidget {
 
             if (success) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🧪 Sample data loaded! Explore the app.'),
+                SnackBar(
+                  content: Text(localizations.sampleDataLoaded),
                   behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 3),
+                  duration: const Duration(seconds: 3),
                 ),
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Failed to load sample data. Please try again.'),
+                SnackBar(
+                  content: Text(localizations.sampleDataLoadFailed),
                   behavior: SnackBarBehavior.floating,
                   backgroundColor: Colors.red,
                 ),

@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -138,6 +139,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -244,7 +246,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
                         // Tagline with subtle animation
                         Text(
-                          'Track investments. Grow wealth.',
+                          l10n.signInTagline,
                           style: AppTypography.bodyLarge.copyWith(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.7)
@@ -290,7 +292,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
                         // Terms text
                         Text(
-                          'By continuing, you agree to our Terms of Service\nand Privacy Policy',
+                          l10n.signInTermsText,
                           style: AppTypography.small.copyWith(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.5)
