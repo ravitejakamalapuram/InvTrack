@@ -160,7 +160,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                 stepNumber: 1,
                 title: 'Download Template',
                 description: 'Get our CSV template with sample data',
-                buttonLabel: 'Download',
+                buttonLabel: l10n.downloadTemplate,
                 buttonIcon: Icons.download_rounded,
                 onPressed: _downloadTemplate,
               ),
@@ -182,7 +182,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                 stepNumber: 3,
                 title: 'Upload CSV',
                 description: 'Import your filled template',
-                buttonLabel: 'Upload',
+                buttonLabel: l10n.uploadCsv,
                 buttonIcon: Icons.upload_rounded,
                 onPressed: _isLoading ? null : _uploadFile,
                 isLoading: _isLoading,
@@ -197,7 +197,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Type Values:', style: AppTypography.h4),
+                      Text(l10n.typeValuesHeader, style: AppTypography.h4),
                       const SizedBox(height: AppSpacing.sm),
                       _buildTypeLegend(
                         'INVEST',

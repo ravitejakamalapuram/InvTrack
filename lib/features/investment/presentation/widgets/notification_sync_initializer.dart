@@ -93,9 +93,8 @@ class _NotificationSyncInitializerState
       previous,
       next,
     ) {
-      // Only process when data is available
-      final investments = next.value;
-      if (investments != null) {
+      // Only process when data is available (not loading or error)
+      next.whenData((investments) {
         if (investments.isNotEmpty) {
           _scheduleNotificationsDebounced(investments);
           // User has investments, cancel activation nudges
@@ -104,7 +103,7 @@ class _NotificationSyncInitializerState
           // User has no investments, schedule activation nudges for new users
           _scheduleActivationSequenceIfNeeded();
         }
-      }
+      });
     });
 
     // Render child immediately without waiting for notifications

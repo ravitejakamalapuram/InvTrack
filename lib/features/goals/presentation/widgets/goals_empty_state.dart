@@ -36,7 +36,7 @@ class GoalsEmptyState extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text('🎯', style: const TextStyle(fontSize: 56)),
+              child: Text(l10n.goalEmoji, style: const TextStyle(fontSize: 56)),
             ),
           ),
           SizedBox(height: AppSpacing.xl),
