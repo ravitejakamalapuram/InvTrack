@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -212,6 +214,111 @@ class GoalProgressCalculator {
     linkedCashFlows.sort((a, b) => b.date.compareTo(a.date));
     return linkedCashFlows.first.date;
   }
+
+  /// Calculate progress for a goal with multi-currency support
+  ///
+  /// Converts all cash flows to the goal's target currency (or base currency)
+  /// before calculating progress. This ensures accurate progress tracking
+  /// when investments are in different currencies.
+  ///
+  /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+  static Future<GoalProgress> calculateMultiCurrency({
+    required GoalEntity goal,
+    required List<InvestmentEntity> allInvestments,
+    required List<CashFlowEntity> allCashFlows,
+    required CurrencyConversionService conversionService,
+    required String baseCurrency,
+  }) async {
+    // Filter investments based on tracking mode
+    final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
+    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
+
+    // Filter cash flows for linked investments
+    final linkedCashFlows = allCashFlows
+        .where((cf) => linkedIds.contains(cf.investmentId))
+        .toList();
+
+    // Convert all cash flows to base currency
+    final convertedCashFlows = <CashFlowEntity>[];
+    for (final cf in linkedCashFlows) {
+      final convertedAmount = await conversionService.convert(
+        amount: cf.amount,
+        from: cf.currency,
+        to: baseCurrency,
+        date: cf.date,
+      );
+
+      convertedCashFlows.add(
+        cf.copyWith(amount: convertedAmount, currency: baseCurrency),
+      );
+    }
+
+    // Calculate current amount based on goal type
+    double currentAmount;
+    double monthlyIncome = 0;
+
+    if (goal.isIncomeGoal) {
+      // For income goals, calculate average monthly income
+      monthlyIncome = _calculateMonthlyIncome(convertedCashFlows);
+      currentAmount = monthlyIncome;
+    } else {
+      // For corpus goals, calculate net value (returns + income - invested - fees)
+      currentAmount = _calculateNetValue(convertedCashFlows);
+    }
+
+    // Calculate target
+    final targetAmount = goal.isIncomeGoal
+        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
+        : goal.targetAmount;
+
+    // Calculate progress percentage
+    final progressPercent = targetAmount > 0
+        ? (currentAmount / targetAmount * 100).clamp(0.0, 100.0)
+        : 0.0;
+
+    // Calculate monthly velocity (average monthly contribution)
+    final monthlyVelocity = _calculateMonthlyVelocity(convertedCashFlows);
+
+    // Project completion date
+    DateTime? projectedDate;
+    if (monthlyVelocity > 0 && currentAmount < targetAmount) {
+      final remaining = targetAmount - currentAmount;
+      final monthsNeeded = remaining / monthlyVelocity;
+      projectedDate = DateTime.now().add(
+        Duration(days: (monthsNeeded * 30).round()),
+      );
+    } else if (currentAmount >= targetAmount) {
+      projectedDate = DateTime.now(); // Already achieved
+    }
+
+    // Determine status
+    final status = _determineStatus(
+      goal: goal,
+      currentAmount: currentAmount,
+      targetAmount: targetAmount,
+      projectedDate: projectedDate,
+    );
+
+    // Determine current milestone
+    final currentMilestone = GoalMilestone.forPercentage(progressPercent);
+
+    // Get achieved milestones
+    final achievedMilestones = GoalMilestone.achievedMilestones(progressPercent);
+
+    return GoalProgress(
+      goal: goal,
+      currentAmount: currentAmount,
+      progressPercent: progressPercent,
+      monthlyVelocity: monthlyVelocity,
+      monthlyIncome: monthlyIncome,
+      projectedCompletionDate: projectedDate,
+      status: status,
+      currentMilestone: currentMilestone,
+      achievedMilestones: achievedMilestones,
+      linkedInvestmentCount: linkedInvestments.length,
+      calculatedAt: DateTime.now(),
+    );
+  }
 }
 
 /// Provider for a single goal's progress (works for any goal including archived)
@@ -393,3 +500,104 @@ class GoalsSummary {
   bool get hasGoals => totalGoals > 0;
   bool get hasActiveGoals => totalGoals > achievedGoals;
 }
+
+/// Multi-currency provider for a single goal's progress
+///
+/// Converts all cash flows to base currency before calculating progress.
+/// This ensures accurate progress tracking when investments are in different currencies.
+///
+/// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+final multiCurrencyGoalProgressProvider = FutureProvider.family<GoalProgress?, String>((
+  ref,
+  goalId,
+) async {
+  // Watch the goal directly (not from active list - works for any goal)
+  final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
+  // Use activeInvestmentsProvider to exclude archived investments
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
+  // Use validCashFlowsProvider to only include cash flows from active investments
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+  final goal = await goalAsync.when(
+    data: (g) async => g,
+    loading: () async => null,
+    error: (e, s) async => null,
+  );
+
+  if (goal == null) return null;
+
+  final investments = await investmentsAsync.when(
+    data: (i) async => i,
+    loading: () async => <InvestmentEntity>[],
+    error: (e, s) async => <InvestmentEntity>[],
+  );
+
+  final cashFlows = await cashFlowsAsync.when(
+    data: (cf) async => cf,
+    loading: () async => <CashFlowEntity>[],
+    error: (e, s) async => <CashFlowEntity>[],
+  );
+
+  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final baseCurrency = ref.watch(currencyCodeProvider);
+
+  return GoalProgressCalculator.calculateMultiCurrency(
+    goal: goal,
+    allInvestments: investments,
+    allCashFlows: cashFlows,
+    conversionService: conversionService,
+    baseCurrency: baseCurrency,
+  );
+});
+
+/// Multi-currency provider for all goals with their progress
+///
+/// Converts all cash flows to base currency before calculating progress.
+/// This ensures accurate progress tracking when investments are in different currencies.
+///
+/// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>((
+  ref,
+) async {
+  final goalsAsync = ref.watch(activeGoalsProvider);
+  // Use activeInvestmentsProvider to exclude archived investments
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
+  // Use validCashFlowsProvider to only include cash flows from active investments
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+  final goals = await goalsAsync.when(
+    data: (g) async => g,
+    loading: () async => <GoalEntity>[],
+    error: (e, s) async => <GoalEntity>[],
+  );
+
+  final investments = await investmentsAsync.when(
+    data: (i) async => i,
+    loading: () async => <InvestmentEntity>[],
+    error: (e, s) async => <InvestmentEntity>[],
+  );
+
+  final cashFlows = await cashFlowsAsync.when(
+    data: (cf) async => cf,
+    loading: () async => <CashFlowEntity>[],
+    error: (e, s) async => <CashFlowEntity>[],
+  );
+
+  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final baseCurrency = ref.watch(currencyCodeProvider);
+
+  // Calculate progress for each goal with currency conversion
+  final progressList = <GoalProgress>[];
+  for (final goal in goals) {
+    final progress = await GoalProgressCalculator.calculateMultiCurrency(
+      goal: goal,
+      allInvestments: investments,
+      allCashFlows: cashFlows,
+      conversionService: conversionService,
+      baseCurrency: baseCurrency,
+    );
+    progressList.add(progress);
+  }
+
+  return progressList;
+});
