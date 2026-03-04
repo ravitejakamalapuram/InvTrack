@@ -350,10 +350,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   }
 
   Widget _buildGoogleButton(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       button: true,
       enabled: !_isLoading,
-      label: _isLoading ? 'Signing in...' : 'Continue with Google',
+      label: _isLoading ? l10n.signingIn : l10n.continueWithGoogle,
       excludeSemantics: true,
       onTap: _isLoading ? null : _signInWithGoogle,
       child: Container(
@@ -417,7 +418,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                         ),
                         SizedBox(width: AppSpacing.sm + 2),
                         Text(
-                          'Continue with Google',
+                          l10n.continueWithGoogle,
                           style: AppTypography.buttonLarge.copyWith(
                             color: isDark
                                 ? AppColors.neutral900Light

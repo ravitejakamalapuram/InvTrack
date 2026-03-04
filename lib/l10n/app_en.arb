@@ -1165,6 +1165,21 @@
     "description": "Snackbar message when content is copied to clipboard"
   },
 
+  "doubleTapHoldToCopy": "Double tap and hold to copy exact amount",
+  "@doubleTapHoldToCopy": {
+    "description": "Accessibility hint for long-press to copy amount"
+  },
+
+  "continueWithGoogle": "Continue with Google",
+  "@continueWithGoogle": {
+    "description": "Google Sign-In button text"
+  },
+
+  "signingIn": "Signing in...",
+  "@signingIn": {
+    "description": "Loading state text for sign-in button"
+  },
+
   "sampleDataLoaded": "🧪 Sample data loaded! Explore the app.",
   "@sampleDataLoaded": {
     "description": "Success message when sample data is loaded"

@@ -179,12 +179,13 @@ class CompactAmountText extends ConsumerWidget {
       );
     }
 
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       label: AccessibilityUtils.formatCurrencyForScreenReader(
         amount,
         currencySymbol,
       ),
-      hint: 'Double tap and hold to copy exact amount',
+      hint: l10n.doubleTapHoldToCopy,
       onLongPress: () => _showFullAmount(context, ref),
       excludeSemantics: true,
       child: GestureDetector(
