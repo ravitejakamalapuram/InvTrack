@@ -152,12 +152,19 @@ class XirrSolver {
 
     // Normalize dates to years from the first date
     final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
+    final firstMs = firstDate.millisecondsSinceEpoch;
 
     // Optimization: Group transactions by date to reduce solver iterations
     final flowMap = <double, double>{};
     for (int i = 0; i < dates.length; i++) {
-      final t = dates[i].difference(firstDate).inDays / 365.0;
-      flowMap.update(t, (v) => v + amounts[i], ifAbsent: () => amounts[i]);
+      // Optimization: Calculate days difference using milliseconds instead of Duration for better performance
+      final t = ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
+      final existing = flowMap[t];
+      if (existing == null) {
+        flowMap[t] = amounts[i];
+      } else {
+        flowMap[t] = existing + amounts[i];
+      }
     }
 
     final yearsFromStart = flowMap.keys.toList();
