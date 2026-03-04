@@ -331,15 +331,15 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           progressList.fold(0.0, (sum, p) => sum + p.progressPercent) /
           totalGoals;
 
-      // Find the goal closest to completion (but not achieved)
-      final activeGoals = progressList
+      // Get all active goals (not achieved) sorted by progress (highest first)
+      final activeGoalsList = progressList
           .where((p) => p.status != GoalStatus.achieved)
           .toList();
-      activeGoals.sort(
+      activeGoalsList.sort(
         (a, b) => b.progressPercent.compareTo(a.progressPercent),
       );
-      final closestToCompletion = activeGoals.isNotEmpty
-          ? activeGoals.first
+      final closestToCompletion = activeGoalsList.isNotEmpty
+          ? activeGoalsList.first
           : null;
 
       return AsyncValue.data(
@@ -350,6 +350,7 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           behindGoals: behindGoals,
           averageProgress: avgProgress,
           closestToCompletion: closestToCompletion,
+          activeGoals: activeGoalsList, // Pass all active goals for carousel
         ),
       );
     },
@@ -366,6 +367,7 @@ class GoalsSummary {
   final int behindGoals;
   final double averageProgress;
   final GoalProgress? closestToCompletion;
+  final List<GoalProgress> activeGoals; // All active goals for carousel
 
   const GoalsSummary({
     required this.totalGoals,
@@ -374,6 +376,7 @@ class GoalsSummary {
     required this.behindGoals,
     required this.averageProgress,
     this.closestToCompletion,
+    this.activeGoals = const [],
   });
 
   factory GoalsSummary.empty() => const GoalsSummary(
@@ -382,6 +385,7 @@ class GoalsSummary {
     onTrackGoals: 0,
     behindGoals: 0,
     averageProgress: 0,
+    activeGoals: [],
   );
 
   bool get hasGoals => totalGoals > 0;
