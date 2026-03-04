@@ -230,4 +230,41 @@ class FakeAnalyticsService implements AnalyticsService {
     'fields_count': fieldsUsed.length,
     'fields': fieldsUsed.take(10).join(','),
   });
+
+  // ============ Multi-Currency Events ============
+
+  @override
+  Future<void> logCurrencySelected({
+    required String currency,
+    required String context,
+  }) async {
+    _log('currency_selected', {
+      'currency': currency,
+      'context': context,
+    });
+  }
+
+  @override
+  Future<void> logCurrencyConversionFailed({
+    required String fromCurrency,
+    required String toCurrency,
+    required String errorType,
+  }) async {
+    _log('currency_conversion_failed', {
+      'from_currency': fromCurrency,
+      'to_currency': toCurrency,
+      'error_type': errorType,
+    });
+  }
+
+  @override
+  Future<void> logExchangeRateCacheHit({
+    required String cacheType,
+    required String rateType,
+  }) async {
+    _log('exchange_rate_cache_hit', {
+      'cache_type': cacheType,
+      'rate_type': rateType,
+    });
+  }
 }
