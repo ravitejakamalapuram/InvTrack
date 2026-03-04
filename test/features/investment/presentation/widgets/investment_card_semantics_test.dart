@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_card.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class MockPrivacyModeNotifier extends PrivacyModeNotifier {
   @override
@@ -60,6 +61,8 @@ void main() {
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: InvestmentCard(
               investment: investment,
@@ -128,6 +131,8 @@ void main() {
           privacyModeProvider.overrideWith(MockPrivacyModeNotifier.new),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: InvestmentCard(
               investment: investment,
