@@ -6,25 +6,30 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
-import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../mocks/mock_analytics_service.dart';
+
 void main() {
   group('Base Currency Change Integration Tests', () {
     late ProviderContainer container;
     late _MockCurrencyConversionService mockConversionService;
+    late FakeAnalyticsService fakeAnalytics;
 
     setUp(() {
       mockConversionService = _MockCurrencyConversionService();
+      fakeAnalytics = FakeAnalyticsService();
     });
 
     tearDown(() {
       container.dispose();
+      fakeAnalytics.reset();
     });
 
     test('changing base currency from USD to EUR updates global stats', () async {
@@ -63,6 +68,7 @@ void main() {
           ),
           currencyConversionServiceProvider.overrideWithValue(mockConversionService),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
         ],
       );
 
@@ -133,6 +139,7 @@ void main() {
           ),
           currencyConversionServiceProvider.overrideWithValue(mockConversionService),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
         ],
       );
 

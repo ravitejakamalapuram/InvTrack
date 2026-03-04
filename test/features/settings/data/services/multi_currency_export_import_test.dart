@@ -17,7 +17,18 @@ import 'package:mocktail/mocktail.dart';
 import '../../../goals/data/repositories/mock_goal_repository.dart';
 import '../../../investment/data/repositories/mock_investment_repository.dart';
 
-class MockPerformanceService extends Mock implements PerformanceService {}
+class MockPerformanceService extends Mock implements PerformanceService {
+  @override
+  Future<T> trackOperation<T>(
+    String traceName,
+    Future<T> Function() operation, {
+    Map<String, int>? metrics,
+    Map<String, String>? attributes,
+  }) async {
+    // Simply execute the operation without tracking
+    return await operation();
+  }
+}
 
 /// Tests for multi-currency export/import round-trip (Rule 21.4)
 ///
