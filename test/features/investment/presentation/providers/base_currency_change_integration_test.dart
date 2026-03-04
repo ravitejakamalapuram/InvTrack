@@ -59,7 +59,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           validCashFlowsProvider.overrideWith(
-            (ref) => Stream.fromIterable([mixedCurrencyCashFlows]),
+            (ref) => AsyncValue.data(mixedCurrencyCashFlows),
           ),
           currencyConversionServiceProvider.overrideWithValue(mockConversionService),
           sharedPreferencesProvider.overrideWithValue(prefs),

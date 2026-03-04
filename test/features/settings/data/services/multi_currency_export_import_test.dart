@@ -11,10 +11,13 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../goals/data/repositories/mock_goal_repository.dart';
 import '../../../investment/data/repositories/mock_investment_repository.dart';
+
+class MockPerformanceService extends Mock implements PerformanceService {}
 
 /// Tests for multi-currency export/import round-trip (Rule 21.4)
 ///
@@ -28,6 +31,7 @@ void main() {
   late FakeGoalRepository goalRepository;
   late MockDocumentRepository documentRepository;
   late MockDocumentStorageService documentStorageService;
+  late MockPerformanceService performanceService;
   late DataExportService exportService;
   late DataImportService importService;
   late Directory tempDir;
@@ -47,6 +51,7 @@ void main() {
     goalRepository = FakeGoalRepository();
     documentRepository = MockDocumentRepository();
     documentStorageService = MockDocumentStorageService();
+    performanceService = MockPerformanceService();
 
     // Default mock behavior
     when(
@@ -62,6 +67,7 @@ void main() {
       goalRepository: goalRepository,
       documentRepository: documentRepository,
       documentStorageService: documentStorageService,
+      performanceService: performanceService,
     );
 
     importService = DataImportService(
@@ -69,6 +75,7 @@ void main() {
       goalRepository: goalRepository,
       documentRepository: documentRepository,
       documentStorageService: documentStorageService,
+      performanceService: performanceService,
     );
   });
 
