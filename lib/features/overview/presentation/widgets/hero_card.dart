@@ -120,8 +120,10 @@ class HeroCardContent extends ConsumerWidget {
             _buildValueRow(netPosition, isPositive, stats, ref),
             const SizedBox(height: 16),
             _buildStatsRow(stats, ref),
+            const SizedBox(height: 8),
+            _buildCurrencyIndicator(ref),
             if (showRealizedOnly) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'Showing closed investments only',
                 style: TextStyle(
@@ -306,6 +308,30 @@ class HeroCardContent extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrencyIndicator(WidgetRef ref) {
+    final baseCurrency = ref.watch(currencyCodeProvider);
+    final currencySymbol = getCurrencySymbol(baseCurrency);
+
+    return Row(
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 12,
+          color: Colors.white.withValues(alpha: 0.4),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'All amounts shown in $currencySymbol ($baseCurrency)',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 10,
+            fontStyle: FontStyle.italic,
+          ),
         ),
       ],
     );

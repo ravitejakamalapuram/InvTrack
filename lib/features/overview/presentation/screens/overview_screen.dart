@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
@@ -31,9 +32,30 @@ class OverviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final globalStats = ref.watch(globalStatsProvider);
-    final openStats = ref.watch(openInvestmentsStatsProvider);
-    final closedStats = ref.watch(closedInvestmentsStatsProvider);
+
+    // Use multi-currency stats providers (Rule 21.3 compliance)
+    // Convert all amounts to base currency before displaying
+    final globalStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
+    final globalStats = globalStatsAsync.when<AsyncValue<InvestmentStats>>(
+      data: (stats) => AsyncValue.data(stats),
+      loading: () => const AsyncValue.loading(),
+      error: (e, st) => AsyncValue.error(e, st),
+    );
+
+    final openStatsAsync = ref.watch(multiCurrencyOpenStatsProvider);
+    final openStats = openStatsAsync.when<AsyncValue<InvestmentStats>>(
+      data: (stats) => AsyncValue.data(stats),
+      loading: () => const AsyncValue.loading(),
+      error: (e, st) => AsyncValue.error(e, st),
+    );
+
+    final closedStatsAsync = ref.watch(multiCurrencyClosedStatsProvider);
+    final closedStats = closedStatsAsync.when<AsyncValue<InvestmentStats>>(
+      data: (stats) => AsyncValue.data(stats),
+      loading: () => const AsyncValue.loading(),
+      error: (e, st) => AsyncValue.error(e, st),
+    );
+
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 

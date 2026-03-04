@@ -89,7 +89,7 @@ final class MultiCurrencyInvestedAmountProvider
 }
 
 String _$multiCurrencyInvestedAmountHash() =>
-    r'60cb022520bf5bffff62b7052d822435fe4a4c06';
+    r'947920d051f9935e4b76a6b787ce9ea2b9a3de43';
 
 /// Provider for multi-currency invested amount calculation
 ///
@@ -210,7 +210,7 @@ final class MultiCurrencyReturnedAmountProvider
 }
 
 String _$multiCurrencyReturnedAmountHash() =>
-    r'4e4d98a0fb24cf664f38bb0efdc534d2f2fea9cb';
+    r'953b19d1a774de65d09d892ac1f41e1d2daa9095';
 
 /// Provider for multi-currency returned amount calculation
 ///
@@ -331,7 +331,7 @@ final class MultiCurrencyXirrProvider
   }
 }
 
-String _$multiCurrencyXirrHash() => r'254c8b68b8d7ddeaf3c20627a0267e3716bab00b';
+String _$multiCurrencyXirrHash() => r'16e9af6e184f0c17096152dff42030bd3a1dc14a';
 
 /// Provider for multi-currency XIRR calculation
 ///
@@ -432,4 +432,328 @@ final class MultiCurrencyPortfolioValueProvider
 }
 
 String _$multiCurrencyPortfolioValueHash() =>
-    r'771912654ac10432a6399b8d1a246ce56122948b';
+    r'cf9d646e1f128e5bf4de843df02301b4176e4dc7';
+
+/// Provider for multi-currency investment stats
+///
+/// Calculates investment statistics with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Parameters:**
+/// - [investmentId]: Investment ID
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+@ProviderFor(multiCurrencyInvestmentStats)
+const multiCurrencyInvestmentStatsProvider =
+    MultiCurrencyInvestmentStatsFamily._();
+
+/// Provider for multi-currency investment stats
+///
+/// Calculates investment statistics with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Parameters:**
+/// - [investmentId]: Investment ID
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+final class MultiCurrencyInvestmentStatsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<InvestmentStats>,
+          InvestmentStats,
+          FutureOr<InvestmentStats>
+        >
+    with $FutureModifier<InvestmentStats>, $FutureProvider<InvestmentStats> {
+  /// Provider for multi-currency investment stats
+  ///
+  /// Calculates investment statistics with proper currency conversion.
+  /// All cash flows are converted to user's base currency before aggregation.
+  ///
+  /// **Parameters:**
+  /// - [investmentId]: Investment ID
+  ///
+  /// **Returns:**
+  /// - InvestmentStats with amounts in user's base currency
+  const MultiCurrencyInvestmentStatsProvider._({
+    required MultiCurrencyInvestmentStatsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'multiCurrencyInvestmentStatsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$multiCurrencyInvestmentStatsHash();
+
+  @override
+  String toString() {
+    return r'multiCurrencyInvestmentStatsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<InvestmentStats> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<InvestmentStats> create(Ref ref) {
+    final argument = this.argument as String;
+    return multiCurrencyInvestmentStats(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MultiCurrencyInvestmentStatsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$multiCurrencyInvestmentStatsHash() =>
+    r'f72a10b1e6d1448d4cc0ca6cd03132615b3e233a';
+
+/// Provider for multi-currency investment stats
+///
+/// Calculates investment statistics with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Parameters:**
+/// - [investmentId]: Investment ID
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+final class MultiCurrencyInvestmentStatsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<InvestmentStats>, String> {
+  const MultiCurrencyInvestmentStatsFamily._()
+    : super(
+        retry: null,
+        name: r'multiCurrencyInvestmentStatsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Provider for multi-currency investment stats
+  ///
+  /// Calculates investment statistics with proper currency conversion.
+  /// All cash flows are converted to user's base currency before aggregation.
+  ///
+  /// **Parameters:**
+  /// - [investmentId]: Investment ID
+  ///
+  /// **Returns:**
+  /// - InvestmentStats with amounts in user's base currency
+
+  MultiCurrencyInvestmentStatsProvider call(String investmentId) =>
+      MultiCurrencyInvestmentStatsProvider._(
+        argument: investmentId,
+        from: this,
+      );
+
+  @override
+  String toString() => r'multiCurrencyInvestmentStatsProvider';
+}
+
+/// Provider for multi-currency global stats
+///
+/// Calculates global statistics across all investments with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+@ProviderFor(multiCurrencyGlobalStats)
+const multiCurrencyGlobalStatsProvider = MultiCurrencyGlobalStatsProvider._();
+
+/// Provider for multi-currency global stats
+///
+/// Calculates global statistics across all investments with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+final class MultiCurrencyGlobalStatsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<InvestmentStats>,
+          InvestmentStats,
+          FutureOr<InvestmentStats>
+        >
+    with $FutureModifier<InvestmentStats>, $FutureProvider<InvestmentStats> {
+  /// Provider for multi-currency global stats
+  ///
+  /// Calculates global statistics across all investments with proper currency conversion.
+  /// All cash flows are converted to user's base currency before aggregation.
+  ///
+  /// **Returns:**
+  /// - InvestmentStats with amounts in user's base currency
+  const MultiCurrencyGlobalStatsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'multiCurrencyGlobalStatsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$multiCurrencyGlobalStatsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<InvestmentStats> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<InvestmentStats> create(Ref ref) {
+    return multiCurrencyGlobalStats(ref);
+  }
+}
+
+String _$multiCurrencyGlobalStatsHash() =>
+    r'8e552a60df6423a5a6dbb64240a016cee992df26';
+
+/// Provider for multi-currency open investments stats
+///
+/// Calculates statistics for open investments with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+@ProviderFor(multiCurrencyOpenStats)
+const multiCurrencyOpenStatsProvider = MultiCurrencyOpenStatsProvider._();
+
+/// Provider for multi-currency open investments stats
+///
+/// Calculates statistics for open investments with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+final class MultiCurrencyOpenStatsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<InvestmentStats>,
+          InvestmentStats,
+          FutureOr<InvestmentStats>
+        >
+    with $FutureModifier<InvestmentStats>, $FutureProvider<InvestmentStats> {
+  /// Provider for multi-currency open investments stats
+  ///
+  /// Calculates statistics for open investments with proper currency conversion.
+  /// All cash flows are converted to user's base currency before aggregation.
+  ///
+  /// **Returns:**
+  /// - InvestmentStats with amounts in user's base currency
+  const MultiCurrencyOpenStatsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'multiCurrencyOpenStatsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$multiCurrencyOpenStatsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<InvestmentStats> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<InvestmentStats> create(Ref ref) {
+    return multiCurrencyOpenStats(ref);
+  }
+}
+
+String _$multiCurrencyOpenStatsHash() =>
+    r'9686712f61821cafa39586e47d769e50ce1b1ac3';
+
+/// Provider for multi-currency closed investments stats
+///
+/// Calculates statistics for closed investments with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+@ProviderFor(multiCurrencyClosedStats)
+const multiCurrencyClosedStatsProvider = MultiCurrencyClosedStatsProvider._();
+
+/// Provider for multi-currency closed investments stats
+///
+/// Calculates statistics for closed investments with proper currency conversion.
+/// All cash flows are converted to user's base currency before aggregation.
+///
+/// **Returns:**
+/// - InvestmentStats with amounts in user's base currency
+
+final class MultiCurrencyClosedStatsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<InvestmentStats>,
+          InvestmentStats,
+          FutureOr<InvestmentStats>
+        >
+    with $FutureModifier<InvestmentStats>, $FutureProvider<InvestmentStats> {
+  /// Provider for multi-currency closed investments stats
+  ///
+  /// Calculates statistics for closed investments with proper currency conversion.
+  /// All cash flows are converted to user's base currency before aggregation.
+  ///
+  /// **Returns:**
+  /// - InvestmentStats with amounts in user's base currency
+  const MultiCurrencyClosedStatsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'multiCurrencyClosedStatsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$multiCurrencyClosedStatsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<InvestmentStats> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<InvestmentStats> create(Ref ref) {
+    return multiCurrencyClosedStats(ref);
+  }
+}
+
+String _$multiCurrencyClosedStatsHash() =>
+    r'6025c6cc91d5f0954933446161d032cf0164a8cc';

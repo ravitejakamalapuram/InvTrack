@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
@@ -60,9 +61,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final cashFlowsAsync = isArchived
         ? ref.watch(archivedCashFlowsByInvestmentProvider(widget.investment.id))
         : ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
+
+    // Use multi-currency stats provider for active investments (Rule 21.3 compliance)
+    // Archived investments still use old provider (no currency conversion needed for historical data)
     final statsAsync = isArchived
         ? ref.watch(archivedInvestmentStatsProvider(widget.investment.id))
-        : ref.watch(investmentStatsProvider(widget.investment.id));
+        : ref.watch(multiCurrencyInvestmentStatsProvider(widget.investment.id));
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;

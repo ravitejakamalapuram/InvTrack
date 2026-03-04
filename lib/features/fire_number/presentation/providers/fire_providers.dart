@@ -11,6 +11,7 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 
 // ============ REPOSITORY PROVIDER ============
 
@@ -64,7 +65,14 @@ final isFireSetupCompleteProvider = Provider<bool>((ref) {
 final fireCalculationProvider =
     Provider.autoDispose<AsyncValue<FireCalculationResult>>((ref) {
       final settingsAsync = ref.watch(fireSettingsProvider);
-      final portfolioStatsAsync = ref.watch(globalStatsProvider);
+
+      // Use multi-currency global stats (Rule 21.3 compliance)
+      final multiCurrencyStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
+      final portfolioStatsAsync = multiCurrencyStatsAsync.when<AsyncValue<InvestmentStats>>(
+        data: (stats) => AsyncValue.data(stats),
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
 
       return settingsAsync.when(
         data: (settings) {
@@ -131,7 +139,14 @@ final fireProjectionsProvider = Provider.autoDispose<List<FireProjectionPoint>>(
   (ref) {
     final settingsAsync = ref.watch(fireSettingsProvider);
     final calculationAsync = ref.watch(fireCalculationProvider);
-    final portfolioStatsAsync = ref.watch(globalStatsProvider);
+
+    // Use multi-currency global stats (Rule 21.3 compliance)
+    final multiCurrencyStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
+    final portfolioStatsAsync = multiCurrencyStatsAsync.when<AsyncValue<InvestmentStats>>(
+      data: (stats) => AsyncValue.data(stats),
+      loading: () => const AsyncValue.loading(),
+      error: (e, st) => AsyncValue.error(e, st),
+    );
 
     final settings = settingsAsync.value;
     final calculation = calculationAsync.value;
