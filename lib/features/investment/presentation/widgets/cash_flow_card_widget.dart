@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
+import 'package:flutter/semantics.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
@@ -40,46 +41,59 @@ class CashFlowCardWidget extends ConsumerWidget {
     return RepaintBoundary(
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: Dismissible(
-          key: Key(cashFlow.id),
-          direction: DismissDirection.horizontal,
-          // Swipe right (startToEnd) - Edit action
-          background: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 24),
-            child: const Icon(Icons.edit_rounded, color: Colors.white),
-          ),
-          // Swipe left (endToStart) - Delete action
-          secondaryBackground: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              gradient: AppColors.dangerGradient,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 24),
-            child: const Icon(Icons.delete_rounded, color: Colors.white),
-          ),
-          confirmDismiss: (direction) async {
-            if (direction == DismissDirection.startToEnd) {
-              // Swipe right - Navigate to edit screen
+        child: Semantics(
+          customSemanticsActions: {
+            const CustomSemanticsAction(label: 'Edit'): () {
               onEdit();
-              return false; // Don't dismiss, just navigate
-            } else {
-              // Swipe left - Confirm delete
-              return onConfirmDelete();
-            }
+            },
+            const CustomSemanticsAction(label: 'Delete'): () async {
+              final confirmed = await onConfirmDelete();
+              if (confirmed == true) {
+                onDeleted();
+              }
+            },
           },
-          onDismissed: (direction) {
-            // Only called for delete action
-            onDeleted();
-          },
-          child: _buildCardContent(color, isOutflow, ref),
+          child: Dismissible(
+            key: Key(cashFlow.id),
+            direction: DismissDirection.horizontal,
+            // Swipe right (startToEnd) - Edit action
+            background: Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 24),
+              child: const Icon(Icons.edit_rounded, color: Colors.white),
+            ),
+            // Swipe left (endToStart) - Delete action
+            secondaryBackground: Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                gradient: AppColors.dangerGradient,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 24),
+              child: const Icon(Icons.delete_rounded, color: Colors.white),
+            ),
+            confirmDismiss: (direction) async {
+              if (direction == DismissDirection.startToEnd) {
+                // Swipe right - Navigate to edit screen
+                onEdit();
+                return false; // Don't dismiss, just navigate
+              } else {
+                // Swipe left - Confirm delete
+                return onConfirmDelete();
+              }
+            },
+            onDismissed: (direction) {
+              // Only called for delete action
+              onDeleted();
+            },
+            child: _buildCardContent(color, isOutflow, ref),
+          ),
         ),
       ),
     );

@@ -1,9 +1,12 @@
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -75,6 +78,14 @@ class DocumentNotifier {
       );
     }
 
+    // Validate file content signature
+    if (!FileSignatureUtils.validateFileSignature(bytes, fileName)) {
+      throw ValidationException(
+        userMessage: 'File content does not match its extension.',
+        technicalMessage: 'File signature validation failed for $fileName',
+      );
+    }
+
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (bytes.length > maxSize) {
@@ -118,11 +129,10 @@ class DocumentNotifier {
       fileType: DocumentMimeTypes.isImage(fileName) ? 'image' : 'pdf',
     );
 
-    if (kDebugMode) {
-      debugPrint(
-        '📄 Document added: ${document.name} to investment $investmentId',
-      );
-    }
+    LoggerService.info('Document added', metadata: {
+      'documentName': document.name,
+      'investmentId': investmentId,
+    });
 
     return document;
   }
@@ -161,9 +171,7 @@ class DocumentNotifier {
 
     await _repository.updateDocument(updated);
 
-    if (kDebugMode) {
-      debugPrint('📄 Document updated: ${updated.name}');
-    }
+    LoggerService.info('Document updated', metadata: {'documentName': updated.name});
   }
 
   /// Delete a document and its file
@@ -179,9 +187,7 @@ class DocumentNotifier {
     // Delete from Firestore
     await _repository.deleteDocument(documentId);
 
-    if (kDebugMode) {
-      debugPrint('📄 Document deleted: ${document.name}');
-    }
+    LoggerService.info('Document deleted', metadata: {'documentName': document.name});
   }
 
   /// Delete all documents for an investment
@@ -192,9 +198,9 @@ class DocumentNotifier {
     // Delete from Firestore
     await _repository.deleteDocumentsByInvestment(investmentId);
 
-    if (kDebugMode) {
-      debugPrint('📄 All documents deleted for investment $investmentId');
-    }
+    LoggerService.info('All documents deleted for investment', metadata: {
+      'investmentId': investmentId,
+    });
   }
 
   /// Check if a document file exists locally

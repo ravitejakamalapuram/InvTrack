@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
@@ -121,15 +122,29 @@ class SwipeActions extends StatelessWidget {
       background = _buildDeleteBackground();
     }
 
-    return Dismissible(
-      key: Key(itemKey),
-      direction: _direction,
-      background: background,
-      secondaryBackground: secondaryBackground,
-      confirmDismiss: (direction) => _confirmDismiss(context, direction),
-      // Note: We handle the action in confirmDismiss and return false,
-      // so the item is removed by provider update, not by Dismissible
-      child: child,
+    return Semantics(
+      customSemanticsActions: {
+        if (deleteConfig != null)
+          const CustomSemanticsAction(label: 'Delete'): () {
+            _confirmDismiss(context, DismissDirection.endToStart);
+          },
+        if (archiveConfig != null)
+          CustomSemanticsAction(
+            label: archiveConfig!.isArchived ? 'Unarchive' : 'Archive',
+          ): () {
+            _confirmDismiss(context, DismissDirection.startToEnd);
+          },
+      },
+      child: Dismissible(
+        key: Key(itemKey),
+        direction: _direction,
+        background: background,
+        secondaryBackground: secondaryBackground,
+        confirmDismiss: (direction) => _confirmDismiss(context, direction),
+        // Note: We handle the action in confirmDismiss and return false,
+        // so the item is removed by provider update, not by Dismissible
+        child: child,
+      ),
     );
   }
 

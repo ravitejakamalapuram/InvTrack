@@ -1,0 +1,8 @@
+🆕 What's New
+• Improve accessibility in AddDocumentSheet (#187)
+• Optimize XIRR calculation with smart initial guess (#185)
+• Optimize XIRR calculation with bulk processing (#183)
+• Prevent privacy data leakage in investment card semantics (#181)
+
+🐛 Bug Fixes & Improvements
+• Enforce Fail Closed on storage errors during PIN verification (#182)

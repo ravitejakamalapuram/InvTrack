@@ -54,21 +54,32 @@ class InvestmentCard extends ConsumerWidget {
         ? ref.watch(archivedInvestmentBasicStatsProvider(investment.id))
         : ref.watch(investmentBasicStatsProvider(investment.id));
 
+    // Watch XIRR separately to include in accessibility label when ready
+    final xirrAsync = investment.isArchived
+        ? ref.watch(archivedInvestmentXirrProvider(investment.id))
+        : ref.watch(investmentXirrProvider(investment.id));
+
     // Build accessibility label
     final baseLabel = statsAsync.maybeWhen(
-      data: (stats) => AccessibilityUtils.investmentCardLabel(
-        name: investment.name,
-        type: investment.type.displayName,
-        currentValue: stats.netCashFlow,
-        // XIRR might be 0.0 if not calculated, which is acceptable for semantic label
-        // rather than blocking UI for calculation
-        returnPercent: stats.xirr != 0 ? stats.xirr * 100 : null,
-        currencySymbol: currencySymbol,
-        isClosed: isClosed,
-        maturityDate: investment.maturityDate,
-        totalInvested: stats.totalInvested,
-        lastActivityDate: stats.lastCashFlowDate ?? investment.createdAt,
-      ),
+      data: (stats) {
+        // Use XIRR from async provider if available, otherwise fallback to stats (usually 0)
+        final xirrValue = xirrAsync.value ?? stats.xirr;
+
+        return AccessibilityUtils.investmentCardLabel(
+          name: investment.name,
+          type: investment.type.displayName,
+          currentValue: stats.netCashFlow,
+          // XIRR might be 0.0 if not calculated, which is acceptable for semantic label
+          // rather than blocking UI for calculation
+          returnPercent: xirrValue != 0 ? xirrValue * 100 : null,
+          currencySymbol: currencySymbol,
+          isClosed: isClosed,
+          maturityDate: investment.maturityDate,
+          totalInvested: stats.totalInvested,
+          lastActivityDate: stats.lastCashFlowDate ?? investment.createdAt,
+          shouldMask: isPrivacyMode,
+        );
+      },
       orElse: () =>
           '${isClosed ? "Closed" : "Open"} investment: ${investment.name}, Type: ${investment.type.displayName}',
     );
@@ -123,8 +134,7 @@ class InvestmentCard extends ConsumerWidget {
                   SizedBox(width: AppSpacing.sm),
                   // Stats
                   _InvestmentValueColumn(
-                    investmentId: investment.id,
-                    isArchived: investment.isArchived,
+                    xirrAsync: xirrAsync,
                     isDark: isDark,
                     statsAsync: statsAsync,
                     currencyFormat: currencyFormat,
@@ -365,17 +375,15 @@ class _MaturityInfo {
 }
 
 /// Displays the investment value and return percentage.
-class _InvestmentValueColumn extends ConsumerWidget {
-  final String investmentId;
-  final bool isArchived;
+class _InvestmentValueColumn extends StatelessWidget {
+  final AsyncValue<double> xirrAsync;
   final bool isDark;
   final AsyncValue<InvestmentStats> statsAsync;
   final NumberFormat currencyFormat;
   final bool isPrivacyMode;
 
   const _InvestmentValueColumn({
-    required this.investmentId,
-    required this.isArchived,
+    required this.xirrAsync,
     required this.isDark,
     required this.statsAsync,
     required this.currencyFormat,
@@ -383,15 +391,7 @@ class _InvestmentValueColumn extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // OPTIMIZATION: Removed redundant provider watches. Data is passed from parent.
-    // Also allows parent to manage rebuilds more effectively.
-
-    // Watch XIRR separately (slow) - this must still be watched here as it's separate
-    final xirrAsync = isArchived
-        ? ref.watch(archivedInvestmentXirrProvider(investmentId))
-        : ref.watch(investmentXirrProvider(investmentId));
-
+  Widget build(BuildContext context) {
     return statsAsync.when(
       data: (stats) {
         if (!stats.hasData) {

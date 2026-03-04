@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +21,8 @@ class SecurityService {
   static const String _lockoutTimestampKey = 'pin_lockout_timestamp';
   static const int _maxAttempts = 5;
   static const int _lockoutDurationSeconds = 900; // 15 minutes
+
+  bool _isVerifying = false;
 
   SecurityService(this._secureStorage, this._localAuth, this._prefs);
 
@@ -56,8 +58,8 @@ class SecurityService {
 
   Future<void> setPin(String pin) async {
     final salt = _generateSalt();
-    // Use PBKDF2 with 10,000 iterations (v3 format: salt:iterations:hash)
-    final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 10000);
+    // Use PBKDF2 with 100,000 iterations (v3 format: salt:iterations:hash)
+    final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 100000);
     await _secureStorage.write(
       key: _pinKey,
       value: hashedPin,
@@ -70,126 +72,96 @@ class SecurityService {
 
   /// Get failed attempts from secure storage (migrating from prefs if needed)
   Future<int> _getFailedAttempts() async {
-    try {
-      // Check Secure Storage first
-      final stored = await _secureStorage.read(
-        key: _failedAttemptsKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      if (stored != null) {
-        return int.tryParse(stored) ?? 0;
-      }
+    // Check Secure Storage first
+    final stored = await _secureStorage.read(
+      key: _failedAttemptsKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    if (stored != null) {
+      return int.tryParse(stored) ?? 0;
+    }
 
-      // Fallback/Migrate from SharedPreferences
-      final legacy = _prefs.getInt(_failedAttemptsKey);
-      if (legacy != null) {
-        // Migrate to Secure Storage
-        await _setFailedAttempts(legacy);
-        // Cleanup legacy is handled in _setFailedAttempts
-        return legacy;
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error reading failed attempts: $e');
-      }
+    // Fallback/Migrate from SharedPreferences
+    final legacy = _prefs.getInt(_failedAttemptsKey);
+    if (legacy != null) {
+      // Migrate to Secure Storage
+      await _setFailedAttempts(legacy);
+      // Cleanup legacy is handled in _setFailedAttempts
+      return legacy;
     }
     return 0;
   }
 
   /// Set failed attempts to secure storage
   Future<void> _setFailedAttempts(int attempts) async {
-    try {
-      await _secureStorage.write(
-        key: _failedAttemptsKey,
-        value: attempts.toString(),
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      // Ensure legacy is cleaned up
-      if (_prefs.containsKey(_failedAttemptsKey)) {
-        await _prefs.remove(_failedAttemptsKey);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error writing failed attempts: $e');
-      }
+    await _secureStorage.write(
+      key: _failedAttemptsKey,
+      value: attempts.toString(),
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    // Ensure legacy is cleaned up
+    if (_prefs.containsKey(_failedAttemptsKey)) {
+      await _prefs.remove(_failedAttemptsKey);
     }
   }
 
   /// Get lockout timestamp from secure storage (migrating from prefs if needed)
   Future<int?> _getLockoutTimestamp() async {
-    try {
-      // Check Secure Storage first
-      final stored = await _secureStorage.read(
-        key: _lockoutTimestampKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      if (stored != null) {
-        return int.tryParse(stored);
-      }
+    // Check Secure Storage first
+    final stored = await _secureStorage.read(
+      key: _lockoutTimestampKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    if (stored != null) {
+      return int.tryParse(stored);
+    }
 
-      // Fallback/Migrate from SharedPreferences
-      final legacy = _prefs.getInt(_lockoutTimestampKey);
-      if (legacy != null) {
-        // Migrate
-        await _setLockoutTimestamp(legacy);
-        // Cleanup legacy is handled in _setLockoutTimestamp
-        return legacy;
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error reading lockout timestamp: $e');
-      }
+    // Fallback/Migrate from SharedPreferences
+    final legacy = _prefs.getInt(_lockoutTimestampKey);
+    if (legacy != null) {
+      // Migrate
+      await _setLockoutTimestamp(legacy);
+      // Cleanup legacy is handled in _setLockoutTimestamp
+      return legacy;
     }
     return null;
   }
 
   /// Set lockout timestamp to secure storage
   Future<void> _setLockoutTimestamp(int timestamp) async {
-    try {
-      await _secureStorage.write(
-        key: _lockoutTimestampKey,
-        value: timestamp.toString(),
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      // Ensure legacy is cleaned up
-      if (_prefs.containsKey(_lockoutTimestampKey)) {
-        await _prefs.remove(_lockoutTimestampKey);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error writing lockout timestamp: $e');
-      }
+    await _secureStorage.write(
+      key: _lockoutTimestampKey,
+      value: timestamp.toString(),
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    // Ensure legacy is cleaned up
+    if (_prefs.containsKey(_lockoutTimestampKey)) {
+      await _prefs.remove(_lockoutTimestampKey);
     }
   }
 
   /// Clear all rate limiting data
   Future<void> _clearRateLimit() async {
-    try {
-      await _secureStorage.delete(
-        key: _failedAttemptsKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      await _secureStorage.delete(
-        key: _lockoutTimestampKey,
-        aOptions: _getAndroidOptions(),
-        iOptions: _getIOSOptions(),
-      );
-      // Also clear legacy just in case
-      if (_prefs.containsKey(_failedAttemptsKey)) {
-        await _prefs.remove(_failedAttemptsKey);
-      }
-      if (_prefs.containsKey(_lockoutTimestampKey)) {
-        await _prefs.remove(_lockoutTimestampKey);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Error clearing rate limit: $e');
-      }
+    await _secureStorage.delete(
+      key: _failedAttemptsKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    await _secureStorage.delete(
+      key: _lockoutTimestampKey,
+      aOptions: _getAndroidOptions(),
+      iOptions: _getIOSOptions(),
+    );
+    // Also clear legacy just in case
+    if (_prefs.containsKey(_failedAttemptsKey)) {
+      await _prefs.remove(_failedAttemptsKey);
+    }
+    if (_prefs.containsKey(_lockoutTimestampKey)) {
+      await _prefs.remove(_lockoutTimestampKey);
     }
   }
 
@@ -211,69 +183,88 @@ class SecurityService {
   }
 
   Future<bool> verifyPin(String pin) async {
-    // Check lockout first
-    final remainingLockout = await getLockoutRemainingSeconds();
-    if (remainingLockout != null) {
-      return false; // Still locked out
-    }
+    if (_isVerifying) return false;
+    _isVerifying = true;
 
-    final storedPin = await _secureStorage.read(
-      key: _pinKey,
-      aOptions: _getAndroidOptions(),
-      iOptions: _getIOSOptions(),
-    );
+    try {
+      // Check lockout first
+      final remainingLockout = await getLockoutRemainingSeconds();
+      if (remainingLockout != null) {
+        return false; // Still locked out
+      }
 
-    if (storedPin == null) return false;
+      final storedPin = await _secureStorage.read(
+        key: _pinKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
 
-    bool isMatch = false;
-    bool needsUpgrade = false;
+      if (storedPin == null) return false;
 
-    // v3: PBKDF2 (contains 2 colons 'salt:iterations:hash')
-    if (storedPin.split(':').length == 3) {
-      isMatch = SecurityUtils.verifyPin(pin, storedPin);
-    }
-    // v2: Salted Hash (contains 1 colon 'salt:hash')
-    else if (storedPin.contains(':')) {
-      final parts = storedPin.split(':');
-      if (parts.length == 2) {
-        final salt = parts[0];
-        final expectedHash = parts[1];
-        // Re-hash input with extracted salt (Legacy SHA-256)
-        final bytes = utf8.encode(pin + salt);
-        final actualHash = sha256.convert(bytes).toString();
-        isMatch = actualHash == expectedHash;
+      bool isMatch = false;
+      bool needsUpgrade = false;
+
+      // v3: PBKDF2 (contains 2 colons 'salt:iterations:hash')
+      if (storedPin.split(':').length == 3) {
+        isMatch = SecurityUtils.verifyPin(pin, storedPin);
+        if (isMatch) {
+          final parts = storedPin.split(':');
+          final iterations = int.tryParse(parts[1]) ?? 0;
+          if (iterations < 100000) {
+            needsUpgrade = true;
+          }
+        }
+      }
+      // v2: Salted Hash (contains 1 colon 'salt:hash')
+      else if (storedPin.contains(':')) {
+        final parts = storedPin.split(':');
+        if (parts.length == 2) {
+          final salt = parts[0];
+          final expectedHash = parts[1];
+          // Re-hash input with extracted salt (Legacy SHA-256)
+          final bytes = utf8.encode(pin + salt);
+          final actualHash = sha256.convert(bytes).toString();
+          isMatch = SecurityUtils.constantTimeEquals(actualHash, expectedHash);
+          if (isMatch) needsUpgrade = true;
+        }
+      }
+      // v1: Unsalted Hash (SHA-256 is 64 chars hex)
+      else if (storedPin.length == 64) {
+        final hashedInput = _hashPinLegacy(pin);
+        isMatch = SecurityUtils.constantTimeEquals(storedPin, hashedInput);
         if (isMatch) needsUpgrade = true;
       }
-    }
-    // v1: Unsalted Hash (SHA-256 is 64 chars hex)
-    else if (storedPin.length == 64) {
-      final hashedInput = _hashPinLegacy(pin);
-      isMatch = storedPin == hashedInput;
-      if (isMatch) needsUpgrade = true;
-    }
-    // v0: Plaintext (Legacy)
-    else {
-      isMatch = storedPin == pin;
-      if (isMatch) needsUpgrade = true;
-    }
+      // v0: Plaintext (Legacy)
+      else {
+        // Hash both to ensure constant time comparison (prevent length leaks)
+        const fixedSalt = 'legacy_pin_verification_salt';
+        final storedHash = _hashPinLegacy(storedPin + fixedSalt);
+        final inputHash = _hashPinLegacy(pin + fixedSalt);
 
-    if (isMatch) {
-      // Reset failed attempts on success
-      await _clearRateLimit();
-
-      if (needsUpgrade) {
-        await setPin(pin); // Upgrade to PBKDF2
+        isMatch = SecurityUtils.constantTimeEquals(storedHash, inputHash);
+        if (isMatch) needsUpgrade = true;
       }
-      return true;
-    } else {
-      // Handle failure
-      int failedAttempts = (await _getFailedAttempts()) + 1;
-      await _setFailedAttempts(failedAttempts);
 
-      if (failedAttempts >= _maxAttempts) {
-        await _setLockoutTimestamp(DateTime.now().millisecondsSinceEpoch);
+      if (isMatch) {
+        // Reset failed attempts on success
+        await _clearRateLimit();
+
+        if (needsUpgrade) {
+          await setPin(pin); // Upgrade to PBKDF2
+        }
+        return true;
+      } else {
+        // Handle failure
+        int failedAttempts = (await _getFailedAttempts()) + 1;
+        await _setFailedAttempts(failedAttempts);
+
+        if (failedAttempts >= _maxAttempts) {
+          await _setLockoutTimestamp(DateTime.now().millisecondsSinceEpoch);
+        }
+        return false;
       }
-      return false;
+    } finally {
+      _isVerifying = false;
     }
   }
 
@@ -299,9 +290,7 @@ class SecurityService {
       // Check if biometrics are available before attempting auth
       final isAvailable = await isBiometricAvailable();
       if (!isAvailable) {
-        if (kDebugMode) {
-          debugPrint('🔐 Biometrics not available on this device');
-        }
+        LoggerService.debug('Biometrics not available on this device');
         return false;
       }
 
@@ -321,14 +310,13 @@ class SecurityService {
         sensitiveTransaction: false, // Don't require re-auth for app resume
       );
 
-      if (kDebugMode) {
-        debugPrint('🔐 Biometric auth result: $result');
-      }
+      LoggerService.debug('Biometric auth result', metadata: {'result': result});
       return result;
     } on PlatformException catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔐 Biometric platform error: ${e.code} - ${e.message}');
-      }
+      LoggerService.warn('Biometric platform error', error: e, metadata: {
+        'code': e.code,
+        'message': e.message,
+      });
       // Handle specific error codes
       if (e.code == 'NotAvailable' || e.code == 'NotEnrolled') {
         return false;
@@ -336,9 +324,7 @@ class SecurityService {
       // For other errors (like user cancelled), just return false
       return false;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔐 Biometric auth error: $e');
-      }
+      LoggerService.warn('Biometric auth error', error: e);
       return false;
     }
   }

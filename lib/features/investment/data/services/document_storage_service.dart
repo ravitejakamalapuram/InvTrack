@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_lib;
 
@@ -25,6 +26,23 @@ class DocumentStorageService {
   bool _isValidId(String id) {
     // Only allow alphanumeric characters, dashes, and underscores
     return RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(id);
+  }
+
+  /// Validates that the path is within the allowed documents directory
+  Future<bool> _isSafePath(String path) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final canonicalAppDir = path_lib.canonicalize(appDir.path);
+      final canonicalPath = path_lib.canonicalize(path);
+
+      // Allow access to anything within the application documents directory
+      // This includes the specific user's documents folder
+      return path_lib.isWithin(canonicalAppDir, canonicalPath) ||
+          canonicalPath == canonicalAppDir;
+    } catch (e) {
+      LoggerService.warn('Security: Failed to validate path safety', error: e);
+      return false;
+    }
   }
 
   /// Get the directory for a specific investment's documents
@@ -67,6 +85,13 @@ class DocumentStorageService {
 
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
+    if (!await _isSafePath(localPath)) {
+      LoggerService.warn('Security: Blocked access to unsafe path', metadata: {
+        'path': localPath,
+      });
+      return null;
+    }
+
     final file = File(localPath);
     if (!await file.exists()) return null;
     return file.readAsBytes();
@@ -74,12 +99,22 @@ class DocumentStorageService {
 
   /// Check if a document file exists
   Future<bool> documentExists(String localPath) async {
+    if (!await _isSafePath(localPath)) {
+      return false;
+    }
     final file = File(localPath);
     return file.exists();
   }
 
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
+    if (!await _isSafePath(localPath)) {
+      LoggerService.warn('Security: Blocked deletion of unsafe path', metadata: {
+        'path': localPath,
+      });
+      return;
+    }
+
     final file = File(localPath);
     if (await file.exists()) {
       await file.delete();
@@ -96,6 +131,9 @@ class DocumentStorageService {
 
   /// Get the file size in bytes
   Future<int> getFileSize(String localPath) async {
+    if (!await _isSafePath(localPath)) {
+      return 0;
+    }
     final file = File(localPath);
     if (!await file.exists()) return 0;
     return file.length();

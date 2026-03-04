@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_navigator.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/theme/app_theme.dart';
@@ -87,9 +87,10 @@ class _NotificationNavigationHandlerState
     final navigator = ref.read(notificationNavigatorProvider);
     final success = await navigator.handleNotificationTap(payload);
 
-    if (kDebugMode) {
-      debugPrint('🔔 Navigation result: $success for payload: $payload');
-    }
+    LoggerService.debug('Notification navigation result', metadata: {
+      'success': success,
+      'payload': payload,
+    });
   }
 
   @override

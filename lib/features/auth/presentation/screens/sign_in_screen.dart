@@ -1,15 +1,16 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -84,9 +85,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      if (kDebugMode) {
-        debugPrint('SignInScreen: Starting Google Sign-In...');
-      }
+      LoggerService.info('Starting Google Sign-In');
 
       // Ensure Google Sign-In is initialized before attempting auth
       await ref.read(googleSignInInitializedProvider.future);
@@ -95,11 +94,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (!mounted) return;
 
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-      if (kDebugMode) {
-        debugPrint(
-          'SignInScreen: Sign-in result: ${user != null ? 'Success' : 'Failed'}',
-        );
-      }
+      LoggerService.info('Sign-in result', metadata: {
+        'success': user != null,
+      });
 
       // Check if widget is still mounted after sign-in completes
       if (!mounted) return;
@@ -133,9 +130,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (appException is AuthException &&
           appException.userMessage == 'Sign in was cancelled.') {
         // User cancelled - no error feedback needed
-        if (kDebugMode) {
-          debugPrint('SignInScreen: User cancelled sign-in');
-        }
+        LoggerService.debug('User cancelled sign-in');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -144,6 +139,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -250,7 +246,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
                         // Tagline with subtle animation
                         Text(
-                          'Track investments. Grow wealth.',
+                          l10n.signInTagline,
                           style: AppTypography.bodyLarge.copyWith(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.7)
@@ -296,7 +292,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
 
                         // Terms text
                         Text(
-                          'By continuing, you agree to our Terms of Service\nand Privacy Policy',
+                          l10n.signInTermsText,
                           style: AppTypography.small.copyWith(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.5)
@@ -354,10 +350,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   }
 
   Widget _buildGoogleButton(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       button: true,
       enabled: !_isLoading,
-      label: _isLoading ? 'Signing in...' : 'Continue with Google',
+      label: _isLoading ? l10n.signingIn : l10n.continueWithGoogle,
       excludeSemantics: true,
       onTap: _isLoading ? null : _signInWithGoogle,
       child: Container(
@@ -421,7 +418,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                         ),
                         SizedBox(width: AppSpacing.sm + 2),
                         Text(
-                          'Continue with Google',
+                          l10n.continueWithGoogle,
                           style: AppTypography.buttonLarge.copyWith(
                             color: isDark
                                 ? AppColors.neutral900Light

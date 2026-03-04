@@ -373,6 +373,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Close',
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -1412,6 +1413,10 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
       selected: isSelected,
       label: '$label income frequency',
       excludeSemantics: true,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _incomeFrequency = frequency);
+      },
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();

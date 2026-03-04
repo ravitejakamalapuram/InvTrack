@@ -1,3 +1,7 @@
+---
+type: "always_apply"
+---
+
 # InvTrack Enterprise Rules
 
 **All code must comply with these rules. Violations block PRs.**

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/app_update/domain/entities/app_version_entity.dart';
 
 /// Service to check for app updates from Firestore
@@ -34,25 +35,30 @@ class VersionCheckService {
           );
 
       if (!doc.exists) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Version info document does not exist');
-        }
+        LoggerService.warn('Version info document does not exist');
         return null;
       }
 
       final data = doc.data();
       if (data == null) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Version info data is null');
-        }
+        LoggerService.warn('Version info data is null');
         return null;
       }
 
       return AppVersionEntity.fromMap(data);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error fetching version info: $e');
+    } catch (e, st) {
+      // Map exception to AppException to properly classify transient errors
+      final appException = ErrorHandler.mapException(e, st);
+
+      // Only log to Crashlytics if it's a reportable error
+      // Transient network errors (unavailable, timeout) have shouldReport = false
+      if (appException.shouldReport) {
+        LoggerService.error('Error fetching version info', error: e, stackTrace: st);
+      } else {
+        // Just log as warning for transient errors (no Crashlytics spam)
+        LoggerService.warn('Version check failed (transient)', error: e);
       }
+
       return null;
     }
   }

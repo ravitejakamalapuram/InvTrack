@@ -9,9 +9,9 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
@@ -77,15 +77,11 @@ class _NotificationSyncInitializerState
         try {
           await notificationService.rescheduleAllNotifications(investments);
         } catch (e) {
-          if (kDebugMode) {
-            debugPrint('🔔 Error rescheduling notifications: $e');
-          }
+          LoggerService.warn('Error rescheduling notifications', error: e);
         }
       });
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔔 NotificationService not available yet: $e');
-      }
+      LoggerService.debug('NotificationService not available yet');
     }
   }
 
@@ -97,9 +93,8 @@ class _NotificationSyncInitializerState
       previous,
       next,
     ) {
-      // Only process when data is available
-      final investments = next.value;
-      if (investments != null) {
+      // Only process when data is available (not loading or error)
+      next.whenData((investments) {
         if (investments.isNotEmpty) {
           _scheduleNotificationsDebounced(investments);
           // User has investments, cancel activation nudges
@@ -108,7 +103,7 @@ class _NotificationSyncInitializerState
           // User has no investments, schedule activation nudges for new users
           _scheduleActivationSequenceIfNeeded();
         }
-      }
+      });
     });
 
     // Render child immediately without waiting for notifications
@@ -128,22 +123,14 @@ class _NotificationSyncInitializerState
             await notificationService.setUserSignupDate(DateTime.now());
             // Schedule the activation notification sequence
             await notificationService.scheduleActivationSequence();
-            if (kDebugMode) {
-              debugPrint(
-                '🔔 New user detected - activation sequence scheduled',
-              );
-            }
+            LoggerService.info('New user detected - activation sequence scheduled');
           } catch (e) {
-            if (kDebugMode) {
-              debugPrint('🔔 Error scheduling activation sequence: $e');
-            }
+            LoggerService.warn('Error scheduling activation sequence', error: e);
           }
         });
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔔 NotificationService not available for activation: $e');
-      }
+      LoggerService.debug('NotificationService not available for activation');
     }
   }
 
@@ -157,15 +144,11 @@ class _NotificationSyncInitializerState
         try {
           await notificationService.cancelActivationSequence();
         } catch (e) {
-          if (kDebugMode) {
-            debugPrint('🔔 Error cancelling activation sequence: $e');
-          }
+          LoggerService.warn('Error cancelling activation sequence', error: e);
         }
       });
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🔔 NotificationService not available for cancellation: $e');
-      }
+      LoggerService.debug('NotificationService not available for cancellation');
     }
   }
 }

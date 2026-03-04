@@ -1082,6 +1082,29 @@
     "description": "Button text to create first goal"
   },
 
+  "setYourFirstGoal": "Set Your First Goal",
+  "@setYourFirstGoal": {
+    "description": "Empty state title for goals dashboard"
+  },
+
+  "trackProgressTowardsTargets": "Track progress towards your financial targets",
+  "@trackProgressTowardsTargets": {
+    "description": "Empty state subtitle for goals dashboard"
+  },
+
+  "goalsAchieved": "{achieved}/{total} achieved",
+  "@goalsAchieved": {
+    "description": "Goals achievement badge showing completed vs total goals",
+    "placeholders": {
+      "achieved": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+
   "done": "Done",
   "@done": {
     "description": "Button text to complete an action"
@@ -1125,6 +1148,76 @@
   "maybeLater": "Maybe Later",
   "@maybeLater": {
     "description": "Button text to dismiss premium offer"
+  },
+
+  "signInTagline": "Track investments. Grow wealth.",
+  "@signInTagline": {
+    "description": "Tagline on sign-in screen"
+  },
+
+  "signInTermsText": "By continuing, you agree to our Terms of Service\nand Privacy Policy",
+  "@signInTermsText": {
+    "description": "Terms and privacy policy text on sign-in screen"
+  },
+
+  "copiedToClipboard": "Copied to clipboard",
+  "@copiedToClipboard": {
+    "description": "Snackbar message when content is copied to clipboard"
+  },
+
+  "doubleTapHoldToCopy": "Double tap and hold to copy exact amount",
+  "@doubleTapHoldToCopy": {
+    "description": "Accessibility hint for long-press to copy amount"
+  },
+
+  "continueWithGoogle": "Continue with Google",
+  "@continueWithGoogle": {
+    "description": "Google Sign-In button text"
+  },
+
+  "signingIn": "Signing in...",
+  "@signingIn": {
+    "description": "Loading state text for sign-in button"
+  },
+
+  "sampleDataLoaded": "🧪 Sample data loaded! Explore the app.",
+  "@sampleDataLoaded": {
+    "description": "Success message when sample data is loaded"
+  },
+
+  "sampleDataLoadFailed": "Failed to load sample data. Please try again.",
+  "@sampleDataLoadFailed": {
+    "description": "Error message when sample data fails to load"
+  },
+
+  "downloadTemplate": "Download",
+  "@downloadTemplate": {
+    "description": "Button label to download CSV template"
+  },
+
+  "uploadCsv": "Upload",
+  "@uploadCsv": {
+    "description": "Button label to upload CSV file"
+  },
+
+  "typeValuesHeader": "Type Values:",
+  "@typeValuesHeader": {
+    "description": "Header for transaction type values legend"
+  },
+
+  "welcomeToPremium": "Welcome to Premium!",
+  "@welcomeToPremium": {
+    "description": "Success message when user upgrades to premium"
+  },
+
+  "upgradeForPrice": "Upgrade for $4.99/mo",
+  "@upgradeForPrice": {
+    "description": "Premium upgrade button text with price"
+  },
+
+  "goalEmoji": "🎯",
+  "@goalEmoji": {
+    "description": "Emoji for goals empty state"
   }
 }
 

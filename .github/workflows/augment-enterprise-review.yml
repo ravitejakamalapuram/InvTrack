@@ -20,7 +20,7 @@ jobs:
   # ============ PRE-REVIEW CHECKS ============
   pre-checks:
     name: Pre-Review
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     outputs:
       has_dart: ${{ steps.changed.outputs.has_dart }}
@@ -48,14 +48,15 @@ jobs:
 
       - name: Classify PR
         id: classify
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
-          echo "is_bugfix=$([[ "$TITLE" =~ (fix|bug|hotfix) ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "is_bugfix=$([[ "$PR_TITLE" =~ (fix|bug|hotfix) ]] && echo true || echo false)" >> $GITHUB_OUTPUT
 
   # ============ CODE HEALTH & SECURITY ============
   code-health:
     name: Code Health & Security
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: pre-checks
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
@@ -71,7 +72,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: false  # Self-hosted runners have Flutter installed locally
+          cache: true  # Use GitHub Actions cache
       - run: flutter clean && flutter pub get
       - run: flutter gen-l10n
 
@@ -153,7 +154,7 @@ jobs:
   # ============ TESTS ============
   tests:
     name: Tests
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: pre-checks
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
@@ -168,7 +169,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: false  # Self-hosted runners have Flutter installed locally
+          cache: true  # Use GitHub Actions cache
       - run: flutter clean && flutter pub get
       - run: flutter gen-l10n
 
@@ -204,7 +205,7 @@ jobs:
   # ============ ARCHITECTURE ============
   architecture:
     name: Architecture
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: pre-checks
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
@@ -250,7 +251,7 @@ jobs:
   # ============ AUGMENT AI ============
   augment-ai:
     name: AI (Describe + Review)
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: pre-checks
     if: github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
 
@@ -282,7 +283,7 @@ jobs:
   # ============ POST CHECKLIST COMMENT ============
   checklist:
     name: Review Checklist
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: [pre-checks, code-health, tests, architecture]
     if: always() && needs.pre-checks.result == 'success'
 
@@ -353,7 +354,7 @@ jobs:
   # ============ FAILURE REPORTER ============
   failure-reporter:
     name: Report Failures
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: [code-health, tests, architecture]
     if: always() && (needs.code-health.outputs.analysis == '❌' || needs.tests.outputs.status == '❌' || needs.architecture.outputs.boundaries == '❌')
 
@@ -437,7 +438,7 @@ jobs:
   # ============ MERGE GATE ============
   merge-gate:
     name: Merge Gate
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: [code-health, tests, architecture]
     if: always()
 

@@ -3,7 +3,8 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
-import 'package:flutter/foundation.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -28,6 +29,7 @@ class DataExportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
+  final PerformanceService _performanceService;
 
   DataExportService({
     required InvestmentRepository investmentRepository,
@@ -35,18 +37,26 @@ class DataExportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
+    required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
-       _fireSettingsRepository = fireSettingsRepository;
+       _fireSettingsRepository = fireSettingsRepository,
+       _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
   Future<String> exportAsZip() async {
-    if (kDebugMode) {
-      debugPrint('📦 Starting data export...');
-    }
+    return _performanceService.trackOperation(
+      'data_export',
+      () => _exportAsZipInternal(),
+    );
+  }
+
+  /// Internal export implementation with performance tracking
+  Future<String> _exportAsZipInternal() async {
+    LoggerService.info('Starting data export');
 
     // 1. Fetch all data
     final investments = await _investmentRepository.getAllInvestments();
@@ -86,14 +96,13 @@ class DataExportService {
       allDocuments.addAll(docs);
     }
 
-    if (kDebugMode) {
-      debugPrint(
-        '📦 Found ${activeCashFlows.length} active cashflows, '
-        '${archivedCashFlows.length} archived cashflows, '
-        '${goals.length} goals, ${archivedGoals.length} archived goals, '
-        '${allDocuments.length} documents',
-      );
-    }
+    LoggerService.info('Data export: fetched all data', metadata: {
+      'activeCashFlows': activeCashFlows.length,
+      'archivedCashFlows': archivedCashFlows.length,
+      'goals': goals.length,
+      'archivedGoals': archivedGoals.length,
+      'documents': allDocuments.length,
+    });
 
     // 2. Generate CSV files
     final cashflowsCsv = _generateCashFlowsCsv(activeCashFlows);
@@ -168,9 +177,7 @@ class DataExportService {
             fireSettingsBytes,
           ),
         );
-        if (kDebugMode) {
-          debugPrint('📦 Added FIRE settings to export');
-        }
+        LoggerService.debug('Added FIRE settings to export');
       }
     }
 
@@ -188,12 +195,10 @@ class DataExportService {
     final file = File(filePath);
     await file.writeAsBytes(zipData);
 
-    if (kDebugMode) {
-      debugPrint('📦 Export saved to: $filePath');
-      debugPrint(
-        '📦 File size: ${(zipData.length / 1024).toStringAsFixed(1)} KB',
-      );
-    }
+    LoggerService.info('Export saved', metadata: {
+      'filePath': filePath,
+      'fileSizeKB': (zipData.length / 1024).toStringAsFixed(1),
+    });
 
     return filePath;
   }

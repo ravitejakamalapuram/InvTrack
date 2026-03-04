@@ -9,12 +9,12 @@ class SecurityUtils {
   ///
   /// [pin] The PIN to hash.
   /// [salt] The salt to use (should be random and unique per user).
-  /// [iterations] The number of iterations (default 10000).
+  /// [iterations] The number of iterations (default 100000).
   /// [keyLength] The length of the derived key in bytes (default 32 for SHA-256).
   static String hashPin(
     String pin,
     String salt, {
-    int iterations = 10000,
+    int iterations = 100000,
     int keyLength = 32,
   }) {
     final key = _pbkdf2(
@@ -51,7 +51,32 @@ class SecurityUtils {
     );
 
     final actualHash = base64.encode(key);
-    return actualHash == expectedHash;
+    return constantTimeEquals(actualHash, expectedHash);
+  }
+
+  /// Compares two strings in constant time to prevent timing attacks.
+  ///
+  /// This avoids the early-exit optimization of standard string comparison,
+  /// ensuring that the comparison time depends only on the length of [a],
+  /// not on how many characters match or when the first mismatch occurs.
+  ///
+  /// **Important:** To prevent leaking information about the secret,
+  /// pass the secret (stored value) as [a] and the user input as [b].
+  /// This ensures timing is constant for a given secret length.
+  static bool constantTimeEquals(String a, String b) {
+    // If lengths differ, we still iterate to avoid timing leakage
+    // about *where* the difference is (or that it's just length).
+    // We XOR lengths to flag result if they differ.
+    var result = a.length ^ b.length;
+
+    // Iterate over a.length (secret length)
+    for (var i = 0; i < a.length; i++) {
+      // Safe access to b, using 0 if out of bounds (doesn't affect result logic)
+      final bChar = (i < b.length) ? b.codeUnitAt(i) : 0;
+      result |= a.codeUnitAt(i) ^ bChar;
+    }
+
+    return result == 0;
   }
 
   /// PBKDF2 implementation using HMAC-SHA256.

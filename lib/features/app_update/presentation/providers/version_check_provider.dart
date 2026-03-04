@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/app_update/data/services/version_check_service.dart';
 import 'package:inv_tracker/features/app_update/domain/entities/app_version_entity.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -110,7 +110,7 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
         await checkForUpdates();
       }
     } catch (e) {
-      debugPrint('❌ Error initializing version check: $e');
+      LoggerService.error('Error initializing version check', error: e);
     }
   }
 
@@ -141,9 +141,11 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
         lastCheckedAt: now,
       );
 
-      debugPrint('✅ Version check complete: ${latestVersion?.latestVersion}');
+      LoggerService.info('Version check complete', metadata: {
+        'latestVersion': latestVersion?.latestVersion,
+      });
     } catch (e) {
-      debugPrint('❌ Error checking for updates: $e');
+      LoggerService.error('Error checking for updates', error: e);
       state = state.copyWith(isLoading: false, hasChecked: true);
     }
   }

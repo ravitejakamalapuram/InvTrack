@@ -9,6 +9,7 @@ import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
@@ -55,7 +56,11 @@ void main() {
           crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
           googleSignInInitializedProvider.overrideWith((ref) async {}),
         ],
-        child: const MaterialApp(home: SignInScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SignInScreen(),
+        ),
       ),
     );
 

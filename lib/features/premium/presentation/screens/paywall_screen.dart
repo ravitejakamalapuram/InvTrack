@@ -59,12 +59,12 @@ class PaywallScreen extends ConsumerWidget {
                   if (context.mounted) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Welcome to Premium!')),
+                      SnackBar(content: Text(l10n.welcomeToPremium)),
                     );
                   }
                 },
                 child: Text(
-                  'Upgrade for \$4.99/mo',
+                  l10n.upgradeForPrice,
                   style: AppTypography.h3.copyWith(color: Colors.white),
                 ),
               ),

@@ -1,9 +1,9 @@
-/// Permission handling service for camera, photos, and storage access.
+/// Permission handling service for camera access.
+///
+/// Note: We use system photo picker (SAF - Storage Access Framework) for file selection,
+/// which doesn't require READ_MEDIA_IMAGES or READ_MEDIA_VIDEO permissions.
 library;
 
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Result of a permission request
@@ -28,46 +28,15 @@ enum PermissionResult {
 class PermissionService {
   const PermissionService();
 
-  /// Request camera permission
+  /// Request camera permission for document capture
   Future<PermissionResult> requestCamera() async {
     return _requestPermission(Permission.camera);
-  }
-
-  /// Request photo library permission
-  /// On Android 13+, this uses READ_MEDIA_IMAGES
-  /// On older Android, uses READ_EXTERNAL_STORAGE
-  Future<PermissionResult> requestPhotos() async {
-    if (Platform.isAndroid) {
-      // Android 13+ uses granular media permissions
-      return _requestPermission(Permission.photos);
-    } else {
-      // iOS uses photos permission
-      return _requestPermission(Permission.photos);
-    }
-  }
-
-  /// Request storage permission for file picker (PDFs, etc.)
-  /// On Android 13+, storage permission is deprecated
-  Future<PermissionResult> requestStorage() async {
-    if (Platform.isAndroid) {
-      // For file picker on Android, we don't need explicit permission
-      // FilePicker uses SAF (Storage Access Framework) which handles its own permissions
-      return PermissionResult.granted;
-    }
-    // iOS doesn't need storage permission for document picker
-    return PermissionResult.granted;
   }
 
   /// Check if camera permission is granted
   Future<bool> isCameraGranted() async {
     final status = await Permission.camera.status;
     return status.isGranted;
-  }
-
-  /// Check if photos permission is granted
-  Future<bool> isPhotosGranted() async {
-    final status = await Permission.photos.status;
-    return status.isGranted || status.isLimited;
   }
 
   /// Open app settings for user to manually enable permissions
@@ -115,12 +84,5 @@ class PermissionService {
     }
 
     return PermissionResult.denied;
-  }
-
-  /// Log permission status for debugging
-  void logPermissionStatus(String name, PermissionResult result) {
-    if (kDebugMode) {
-      debugPrint('🔐 Permission [$name]: $result');
-    }
   }
 }

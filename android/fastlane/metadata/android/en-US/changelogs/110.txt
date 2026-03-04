@@ -1,0 +1,5 @@
+🆕 What's New
+• Make GlassCard keyboard accessible (#219)
+
+🐛 Bug Fixes & Improvements
+• Prevent timing attacks in legacy PIN verification (#220)

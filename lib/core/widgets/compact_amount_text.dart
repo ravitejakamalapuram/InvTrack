@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A text widget that displays amounts in compact format (e.g., ₹1.05Cr)
 /// with long-press to reveal full amount and copy functionality.
@@ -76,6 +77,7 @@ class CompactAmountText extends ConsumerWidget {
 
   void _showFullAmount(BuildContext context, WidgetRef ref) {
     HapticFeedback.mediumImpact();
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fullAmount = _fullFormattedAmount(ref);
 
@@ -124,11 +126,11 @@ class CompactAmountText extends ConsumerWidget {
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Row(
+                    content: Row(
                       children: [
-                        Icon(Icons.check, color: Colors.white, size: 18),
-                        SizedBox(width: 8),
-                        Text('Copied to clipboard'),
+                        const Icon(Icons.check, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Text(l10n.copiedToClipboard),
                       ],
                     ),
                     backgroundColor: AppColors.successLight,
@@ -173,12 +175,13 @@ class CompactAmountText extends ConsumerWidget {
       );
     }
 
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       label: AccessibilityUtils.formatCurrencyForScreenReader(
         amount,
         currencySymbol,
       ),
-      hint: 'Double tap and hold to copy exact amount',
+      hint: l10n.doubleTapHoldToCopy,
       onLongPress: () => _showFullAmount(context, ref),
       excludeSemantics: true,
       child: GestureDetector(

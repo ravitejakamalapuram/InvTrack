@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/data/repositories/firestore_goal_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -112,6 +114,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
 
   GoalRepository get _repository => ref.read(goalRepositoryProvider);
   AnalyticsService get _analytics => ref.read(analyticsServiceProvider);
+  PerformanceService get _performanceService => ref.read(performanceServiceProvider);
 
   /// Create a new goal
   Future<String> createGoal({
@@ -129,24 +132,34 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      final id = _uuid.v4();
-      final goal = GoalEntity(
-        id: id,
-        name: name,
-        type: type,
-        targetAmount: targetAmount,
-        targetMonthlyIncome: targetMonthlyIncome,
-        targetDate: targetDate,
-        trackingMode: trackingMode,
-        linkedInvestmentIds: linkedInvestmentIds,
-        linkedTypes: linkedTypes,
-        icon: icon ?? GoalIcons.defaultIcon,
-        colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
-        currency: currency ?? 'USD', // Default to USD if not specified
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+      final id = await _performanceService.trackOperation(
+        'goal_create',
+        () async {
+          final goalId = _uuid.v4();
+          final goal = GoalEntity(
+            id: goalId,
+            name: name,
+            type: type,
+            targetAmount: targetAmount,
+            targetMonthlyIncome: targetMonthlyIncome,
+            targetDate: targetDate,
+            trackingMode: trackingMode,
+            linkedInvestmentIds: linkedInvestmentIds,
+            linkedTypes: linkedTypes,
+            icon: icon ?? GoalIcons.defaultIcon,
+            colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
+            currency: currency ?? 'USD', // Default to USD if not specified (Rule 21.2)
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          await _repository.createGoal(goal);
+          return goalId;
+        },
+        attributes: {
+          'goal_type': type.name,
+          'tracking_mode': trackingMode.name,
+        },
       );
-      await _repository.createGoal(goal);
       _analytics.logGoalCreated(
         goalType: type.name,
         trackingMode: trackingMode.name,
@@ -164,12 +177,20 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> updateGoal(GoalEntity goal) async {
     state = const AsyncValue.loading();
     try {
-      final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
-      if (goal.isArchived) {
-        await _repository.updateArchivedGoal(updatedGoal);
-      } else {
-        await _repository.updateGoal(updatedGoal);
-      }
+      await _performanceService.trackOperation(
+        'goal_update',
+        () async {
+          final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
+          if (goal.isArchived) {
+            await _repository.updateArchivedGoal(updatedGoal);
+          } else {
+            await _repository.updateGoal(updatedGoal);
+          }
+        },
+        attributes: {
+          'is_archived': goal.isArchived.toString(),
+        },
+      );
       _analytics.logGoalUpdated(goalId: goal.id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -182,7 +203,10 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> archiveGoal(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.archiveGoal(id);
+      await _performanceService.trackOperation(
+        'goal_archive',
+        () => _repository.archiveGoal(id),
+      );
       _analytics.logGoalArchived(goalId: id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -195,7 +219,10 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> unarchiveGoal(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.unarchiveGoal(id);
+      await _performanceService.trackOperation(
+        'goal_unarchive',
+        () => _repository.unarchiveGoal(id),
+      );
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -207,7 +234,10 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> deleteGoal(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.deleteGoal(id);
+      await _performanceService.trackOperation(
+        'goal_delete',
+        () => _repository.deleteGoal(id),
+      );
       _analytics.logGoalDeleted(goalId: id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -220,7 +250,10 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> deleteArchivedGoal(String id) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.deleteArchivedGoal(id);
+      await _performanceService.trackOperation(
+        'goal_delete_archived',
+        () => _repository.deleteArchivedGoal(id),
+      );
       _analytics.logGoalDeleted(goalId: id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -238,16 +271,28 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
 
     state = const AsyncValue.loading();
     try {
-      var deletedCount = 0;
-      for (final id in goalIds) {
-        if (isArchived) {
-          await _repository.deleteArchivedGoal(id);
-        } else {
-          await _repository.deleteGoal(id);
-        }
-        _analytics.logGoalDeleted(goalId: id);
-        deletedCount++;
-      }
+      final deletedCount = await _performanceService.trackOperation(
+        'goal_bulk_delete',
+        () async {
+          var count = 0;
+          for (final id in goalIds) {
+            if (isArchived) {
+              await _repository.deleteArchivedGoal(id);
+            } else {
+              await _repository.deleteGoal(id);
+            }
+            _analytics.logGoalDeleted(goalId: id);
+            count++;
+          }
+          return count;
+        },
+        metrics: {
+          'goal_count': goalIds.length,
+        },
+        attributes: {
+          'is_archived': isArchived.toString(),
+        },
+      );
       state = const AsyncValue.data(null);
       return deletedCount;
     } catch (e, st) {

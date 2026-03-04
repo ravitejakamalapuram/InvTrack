@@ -557,6 +557,7 @@ class _TypeFilterSheet extends StatelessWidget {
                   children: InvestmentType.values.map((type) {
                     final isSelected = currentType == type;
                     return ListTile(
+                      selected: isSelected,
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -650,7 +651,7 @@ class _ActiveTypeFilterChip extends StatelessWidget {
                   },
                   behavior: HitTestBehavior.opaque,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(AppSpacing.xs),
                     child: Icon(
                       Icons.close_rounded,
                       color: type.color,

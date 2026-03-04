@@ -56,6 +56,13 @@ void main() {
       expect(find.bySemanticsLabel('Show amounts'), findsOneWidget);
     });
 
+    testWidgets('has tooltip', (tester) async {
+      await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
+
+      // Verify the widget contains a Tooltip
+      expect(find.byTooltip('Hide amounts'), findsOneWidget);
+    });
+
     testWidgets('is tappable as a button', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
 

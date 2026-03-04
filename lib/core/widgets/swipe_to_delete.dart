@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 
@@ -45,25 +46,38 @@ class SwipeToDelete extends StatelessWidget {
       return child;
     }
 
-    return Dismissible(
-      key: Key(itemKey),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          gradient: AppColors.dangerGradient,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: const Icon(Icons.delete_rounded, color: Colors.white),
-      ),
-      confirmDismiss: (_) => _confirmDelete(context),
-      onDismissed: (_) {
-        onDismissed();
-        AppFeedback.showSuccess(context, successMessage);
+    return Semantics(
+      customSemanticsActions: {
+        const CustomSemanticsAction(label: 'Delete'): () async {
+          final confirmed = await _confirmDelete(context);
+          if (confirmed == true) {
+            onDismissed();
+            if (context.mounted) {
+              AppFeedback.showSuccess(context, successMessage);
+            }
+          }
+        },
       },
-      child: child,
+      child: Dismissible(
+        key: Key(itemKey),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            gradient: AppColors.dangerGradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 24),
+          child: const Icon(Icons.delete_rounded, color: Colors.white),
+        ),
+        confirmDismiss: (_) => _confirmDelete(context),
+        onDismissed: (_) {
+          onDismissed();
+          AppFeedback.showSuccess(context, successMessage);
+        },
+        child: child,
+      ),
     );
   }
 

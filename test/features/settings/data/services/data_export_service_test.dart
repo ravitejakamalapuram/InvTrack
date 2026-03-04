@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
@@ -14,15 +15,15 @@ import '../../../goals/data/repositories/mock_goal_repository.dart';
 import '../../../investment/data/repositories/mock_investment_repository.dart';
 
 class MockDocumentRepository extends Mock implements DocumentRepository {}
-
-class MockDocumentStorageService extends Mock
-    implements DocumentStorageService {}
+class MockDocumentStorageService extends Mock implements DocumentStorageService {}
+class MockPerformanceService extends Mock implements PerformanceService {}
 
 void main() {
   late FakeInvestmentRepository investmentRepository;
   late FakeGoalRepository goalRepository;
   late MockDocumentRepository documentRepository;
   late MockDocumentStorageService documentStorageService;
+  late MockPerformanceService performanceService;
   late DataExportService service;
   late Directory tempDir;
 
@@ -41,12 +42,25 @@ void main() {
     goalRepository = FakeGoalRepository();
     documentRepository = MockDocumentRepository();
     documentStorageService = MockDocumentStorageService();
+    performanceService = MockPerformanceService();
+
+    // Mock performance service to just execute the operation
+    when(() => performanceService.trackOperation<String>(
+          any(),
+          any(),
+          metrics: any(named: 'metrics'),
+          attributes: any(named: 'attributes'),
+        )).thenAnswer((invocation) async {
+      final operation = invocation.positionalArguments[1] as Future<String> Function();
+      return await operation();
+    });
 
     service = DataExportService(
       investmentRepository: investmentRepository,
       goalRepository: goalRepository,
       documentRepository: documentRepository,
       documentStorageService: documentStorageService,
+      performanceService: performanceService,
     );
 
     // Default mock behavior

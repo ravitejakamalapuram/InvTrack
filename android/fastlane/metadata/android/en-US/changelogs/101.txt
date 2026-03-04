@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Prevent clearing pendingRelease during Play Store review

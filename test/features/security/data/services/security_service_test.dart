@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
@@ -56,7 +57,7 @@ void main() {
       expect(() => base64.decode(salt), returnsNormally);
 
       // Verify iterations
-      expect(iterations, equals(10000));
+      expect(iterations, equals(100000));
 
       // Verify hash is base64
       expect(() => base64.decode(hash), returnsNormally);
@@ -90,6 +91,24 @@ void main() {
       final storedValue = fakeSecureStorage.storage['user_pin'];
       expect(storedValue!.split(':').length, equals(3));
       expect(SecurityUtils.verifyPin(plaintextPin, storedValue), isTrue);
+    });
+
+    test('verifyPin upgrades low iteration PBKDF2 hash', () async {
+      // Setup: Manually store a PIN with 10,000 iterations
+      const pin = '1234';
+      final salt = 'salt';
+      final lowIterHash = SecurityUtils.hashPin(pin, salt, iterations: 10000);
+      await fakeSecureStorage.write(key: 'user_pin', value: lowIterHash);
+
+      // Verify: Authenticate
+      final result = await service.verifyPin(pin);
+      expect(result, isTrue);
+
+      // Check: Storage should now be updated to 100,000 iterations
+      final storedValue = fakeSecureStorage.storage['user_pin'];
+      final parts = storedValue!.split(':');
+      final iterations = int.parse(parts[1]);
+      expect(iterations, equals(100000));
     });
 
     test('verifyPin upgrades legacy unsalted hash to PBKDF2 hash', () async {
@@ -434,6 +453,21 @@ void main() {
 
       await service.setAutoLockDuration(300);
       expect(service.autoLockDurationSeconds, equals(300));
+    });
+  });
+
+  group('SecurityService - Fail Securely', () {
+    test('verifyPin throws when reading failed attempts fails', () async {
+      await service.setPin('1234');
+
+      // Simulate read error for failed attempts
+      fakeSecureStorage.setThrowRead('pin_failed_attempts', true);
+
+      // Should throw exception instead of allowing access or retry
+      expect(
+        () => service.verifyPin('5678'),
+        throwsA(isA<PlatformException>())
+      );
     });
   });
 }

@@ -64,8 +64,8 @@
 library;
 
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Provider for the analytics service.
 ///
@@ -246,13 +246,15 @@ class AnalyticsService {
   }) async {
     try {
       await _analytics.logEvent(name: name, parameters: parameters);
-      if (kDebugMode) {
-        debugPrint('📊 Analytics: $name ${parameters ?? ''}');
-      }
+      LoggerService.debug(
+        'Analytics event logged',
+        metadata: {'event': name, 'parameters': parameters?.toString() ?? 'none'},
+      );
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Analytics error: $e');
-      }
+      LoggerService.warn(
+        'Analytics error',
+        metadata: {'event': name, 'error': e.toString()},
+      );
     }
   }
 
@@ -284,13 +286,15 @@ class AnalyticsService {
         screenName: screenName,
         screenClass: screenClass,
       );
-      if (kDebugMode) {
-        debugPrint('📊 Screen: $screenName');
-      }
+      LoggerService.debug(
+        'Screen view logged',
+        metadata: {'screen': screenName},
+      );
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Analytics error: $e');
-      }
+      LoggerService.warn(
+        'Analytics error logging screen view',
+        metadata: {'screen': screenName, 'error': e.toString()},
+      );
     }
   }
 
@@ -315,9 +319,10 @@ class AnalyticsService {
     try {
       await _analytics.setUserId(id: userId);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Analytics error setting user ID: $e');
-      }
+      LoggerService.warn(
+        'Analytics error setting user ID',
+        metadata: {'error': e.toString()},
+      );
     }
   }
 
@@ -360,9 +365,10 @@ class AnalyticsService {
     try {
       await _analytics.setUserProperty(name: name, value: value);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Analytics error setting user property: $e');
-      }
+      LoggerService.warn(
+        'Analytics error setting user property',
+        metadata: {'property': name, 'error': e.toString()},
+      );
     }
   }
 

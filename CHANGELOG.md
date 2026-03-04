@@ -2,6 +2,121 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **core**: Optimize XirrSolver input processing (#226)
+- **security**: Validate file signature on document upload (#228)
+
+## [3.44.0] - 2026-02-27
+
+### ✨ Features
+
+- **a11y**: Improve accessibility of investment list filters (#225)
+
+## [3.43.0] - 2026-02-25
+
+### ✨ Features
+
+- Enhanced Firebase Performance Monitoring (#222)
+
+## [3.41.0] - 2026-02-25
+
+### ✨ Features
+
+- **ui**: Make GlassCard keyboard accessible (#219)
+
+### 🐛 Bug Fixes
+
+- **security**: Prevent timing attacks in legacy PIN verification (#220)
+
+## [3.41.1] - 2026-02-24
+
+### Sentinel
+
+- Fix timing attack in legacy PIN verification (#214)
+
+### ⚡ Performance
+
+- Optimize XIRR solver loop by factoring out constant multiplication (#213)
+
+### ✨ Features
+
+- Improve accessibility for add investment screen (#210)
+- **security**: Increase default PBKDF2 iterations to 100,000 (#211)
+- **a11y**: Add semantic copy action to CompactAmountText (#216)
+
+## [3.40.0] - 2026-02-16
+
+### ⚡ Performance
+
+- Cache DateFormat.yMMM to reduce build overhead (#189)
+
+### ✨ Features
+
+- **a11y**: Add semantics to ShimmerEffect for loading states (#191)
+- Add Tooltip to PrivacyToggleButton (#190)
+
+## [3.39.0] - 2026-02-16
+
+### ✨ Features
+
+- **security**: Implement constant-time PIN verification (#188)
+
+## [3.38.5] - 2026-02-16
+
+### 🐛 Bug Fixes
+
+- Remove READ_MEDIA_IMAGES/VIDEO permissions and clean up dead code
+
+## [3.38.3] - 2026-02-14
+
+### 🔧 Miscellaneous
+
+- Change deployment back to closed testing (alpha track)
+
+## [3.38.2] - 2026-02-14
+
+### 🔧 Miscellaneous
+
+- Remove temporary fix workflow
+
+## [3.38.1] - 2026-02-14
+
+### 🐛 Bug Fixes
+
+- Prevent clearing pendingRelease during Play Store review
+
+## [3.38.0] - 2026-02-14
+
+### ✨ Features
+
+- **a11y**: Improve accessibility in AddDocumentSheet (#187)
+- **core**: Optimize XIRR calculation with smart initial guess (#185)
+- Optimize XIRR calculation with bulk processing (#183)
+- **a11y**: Prevent privacy data leakage in investment card semantics (#181)
+
+### 🐛 Bug Fixes
+
+- **security**: Enforce Fail Closed on storage errors during PIN verification (#182)
+
+### 📚 Documentation
+
+- Add comprehensive WCAG AAA accessibility guide (#184)
+
+## [3.37.5] - 2026-02-13
+
+### 🐛 Bug Fixes
+
+- Remove READ_MEDIA_IMAGES permission to comply with Play Store policy
+
+### 📚 Documentation
+
+- Update TODO.md - Mark P3 Task 2 (Accessibility) as complete
+- Update TODO.md - Mark P3 Tasks 1, 3, 4, 5 as complete
+- Update TODO.md - Mark P2 Tasks 2 & 3 as complete
+
+## [3.37.4] - 2026-02-13
+
 ### 🧪 Testing
 
 - P2 Tasks 2 & 3 - Test Coverage Expansion (#180)

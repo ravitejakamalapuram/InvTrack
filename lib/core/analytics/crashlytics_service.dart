@@ -7,6 +7,7 @@ library;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Provider for the crashlytics service
 final crashlyticsServiceProvider = Provider<CrashlyticsService>((ref) {
@@ -33,9 +34,7 @@ class CrashlyticsService {
       }
     };
 
-    if (kDebugMode) {
-      debugPrint('🔥 Crashlytics initialized (disabled in debug mode)');
-    }
+    LoggerService.info('Crashlytics initialized (disabled in debug mode)');
   }
 
   /// Record a non-fatal error
@@ -47,10 +46,12 @@ class CrashlyticsService {
     Iterable<Object> information = const [],
   }) async {
     if (kDebugMode) {
-      debugPrint('🔴 Crashlytics recording error: $exception');
-      if (stack != null) {
-        debugPrint('Stack trace: $stack');
-      }
+      LoggerService.error(
+        'Crashlytics recording error',
+        error: exception,
+        stackTrace: stack,
+        metadata: {'reason': reason, 'fatal': fatal},
+      );
       return;
     }
 
@@ -90,15 +91,16 @@ class CrashlyticsService {
   /// Log a message to Crashlytics (appears in crash reports)
   Future<void> log(String message) async {
     await _crashlytics.log(message);
-    if (kDebugMode) {
-      debugPrint('📝 Crashlytics log: $message');
-    }
+    LoggerService.debug(
+      'Crashlytics log',
+      metadata: {'message': message},
+    );
   }
 
   /// Force a crash for testing (only use in debug/testing!)
   void testCrash() {
     if (kDebugMode) {
-      debugPrint('⚠️ Test crash requested (disabled in debug mode)');
+      LoggerService.warn('Test crash requested (disabled in debug mode)');
       return;
     }
     _crashlytics.crash();

@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
@@ -64,9 +64,10 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
       payload: NotificationPayload.riskAlert(alertType),
     );
 
-    if (kDebugMode) {
-      debugPrint('🔔 Risk alert shown: $title');
-    }
+    LoggerService.info(
+      'Risk alert shown',
+      metadata: {'title': title, 'body': body, 'alertType': alertType},
+    );
   }
 
   // ============ Idle Investment Alerts ============
@@ -133,9 +134,10 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
         payload: NotificationPayload.idleAlert(inv.id),
       );
 
-      if (kDebugMode) {
-        debugPrint('🔔 Idle alert shown for ${inv.name}');
-      }
+      LoggerService.info(
+        'Idle alert shown',
+        metadata: {'investmentId': inv.id, 'investmentName': inv.name},
+      );
     }
   }
 }

@@ -1,0 +1,2 @@
+🆕 What's New
+• Improve accessibility of investment list filters (#225)

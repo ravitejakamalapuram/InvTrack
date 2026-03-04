@@ -1,0 +1,13 @@
+🎉 InvTrack v3.38.3 - First Production Release!
+
+Track alternative investments (FDs, P2P, Gold, Chit Funds) with professional metrics:
+✅ XIRR, MOIC, CAGR calculations
+✅ 40+ currencies with auto-detection
+✅ Goal tracking & FIRE calculator
+✅ Smart notifications (11 types)
+✅ Privacy mode & offline-first
+✅ Document management
+✅ Multi-device sync
+✅ WCAG accessibility compliant
+
+Made with ❤️ in India for smart investors!

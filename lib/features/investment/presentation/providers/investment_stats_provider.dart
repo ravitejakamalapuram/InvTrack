@@ -2,6 +2,7 @@
 /// All stats derive from stream providers for automatic updates.
 library;
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
@@ -63,6 +64,55 @@ final activeInvestmentBasicStatsMapProvider =
 
       return AsyncValue.data(statsMap);
     });
+
+/// Top-level function for calculating XIRR for multiple investments in a single isolate.
+Map<String, double> _calculateAllXirrs(List<CashFlowEntity> allFlows) {
+  final grouped = <String, List<CashFlowEntity>>{};
+  for (final cf in allFlows) {
+    grouped.putIfAbsent(cf.investmentId, () => []).add(cf);
+  }
+
+  final results = <String, double>{};
+  for (final entry in grouped.entries) {
+    results[entry.key] = FinancialCalculator.calculateXirrFromCashFlows(
+      entry.value,
+    );
+  }
+  return results;
+}
+
+/// Map of all active investment XIRRs, computed in a single isolate batch.
+/// This prevents N+1 isolate overhead when rendering lists.
+final activeInvestmentXirrMapProvider = FutureProvider<Map<String, double>>((
+  ref,
+) async {
+  // Wait for valid cash flows to be available
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+  if (cashFlowsAsync.isLoading) {
+    return Completer<Map<String, double>>().future;
+  }
+
+  if (cashFlowsAsync.hasError) {
+    throw cashFlowsAsync.error!;
+  }
+
+  final cashFlows = cashFlowsAsync.value ?? [];
+
+  if (cashFlows.isEmpty) {
+    return {};
+  }
+
+  // Track performance of bulk XIRR calculation
+  return ref.read(performanceServiceProvider).trackOperation(
+    'bulk_xirr_calculation',
+    () => compute<List<CashFlowEntity>, Map<String, double>>(
+      _calculateAllXirrs,
+      cashFlows,
+    ),
+    metrics: {'total_cash_flows': cashFlows.length},
+  );
+});
 
 /// Calculate stats for a single active investment (reactive - watches the stream)
 ///
@@ -160,26 +210,12 @@ final investmentXirrProvider = FutureProvider.family<double, String>((
   ref,
   investmentId,
 ) async {
-  // We use .selectAsync to get the future value of the stream.
-  // This suspends the FutureProvider until data is available,
-  // effectively propagating loading/error states.
-  final cashFlows = await ref.watch(
-    cashFlowsByInvestmentProvider(investmentId).selectAsync((data) => data),
-  );
+  // Use the bulk calculation provider to avoid N+1 isolate overhead.
+  // This waits for the single batch calculation to complete and then
+  // returns the specific value for this investment.
+  final xirrMap = await ref.watch(activeInvestmentXirrMapProvider.future);
 
-  if (cashFlows.isEmpty) {
-    return 0.0;
-  }
-
-  // Track performance of XIRR calculation
-  return ref
-      .read(performanceServiceProvider)
-      .trackOperation(
-        'xirr_calculation',
-        () =>
-            compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
-        metrics: {'cash_flow_count': cashFlows.length},
-      );
+  return xirrMap[investmentId] ?? 0.0;
 });
 
 /// XIRR ONLY provider for archived investments.

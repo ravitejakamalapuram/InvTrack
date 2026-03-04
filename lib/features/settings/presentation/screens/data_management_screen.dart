@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -496,9 +497,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       } on FirebaseAuthException catch (e) {
         // If requires-recent-login, try to re-authenticate and retry
         if (e.code == 'requires-recent-login') {
-          debugPrint(
-            'Account deletion requires recent login, attempting re-auth...',
-          );
+          LoggerService.info('Account deletion requires recent login, attempting re-auth');
 
           try {
             final reauthenticated = await authRepo.reauthenticateWithGoogle();
@@ -520,7 +519,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               return;
             }
           } catch (reauthError) {
-            debugPrint('Re-authentication failed: $reauthError');
+            LoggerService.error('Re-authentication failed', error: reauthError);
             if (mounted) {
               scaffoldMessenger.showSnackBar(
                 const SnackBar(

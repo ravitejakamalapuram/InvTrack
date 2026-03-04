@@ -3,10 +3,10 @@
 /// actions to activate, keep, or clear sample data.
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/sample_data_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -123,18 +123,14 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
             goalCount: result.goalIds.length,
           );
 
-      if (kDebugMode) {
-        debugPrint(
-          '🧪 Sample data activated: ${result.investmentIds.length} investments, '
-          '${result.goalIds.length} goals',
-        );
-      }
+      LoggerService.info('Sample data activated', metadata: {
+        'investmentCount': result.investmentIds.length,
+        'goalCount': result.goalIds.length,
+      });
 
       return true;
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('🧪 Sample data activation failed: $e\n$st');
-      }
+      LoggerService.error('Sample data activation failed', error: e, stackTrace: st);
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
@@ -156,9 +152,7 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
 
     state = const SampleDataState(isActive: false);
 
-    if (kDebugMode) {
-      debugPrint('🧪 Sample data kept as real data');
-    }
+    LoggerService.info('Sample data kept as real data');
   }
 
   /// Clear sample data and exit sample mode
@@ -189,13 +183,9 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
 
       state = const SampleDataState(isActive: false);
 
-      if (kDebugMode) {
-        debugPrint('🧪 Sample data cleared');
-      }
+      LoggerService.info('Sample data cleared');
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('🧪 Sample data clear failed: $e\n$st');
-      }
+      LoggerService.error('Sample data clear failed', error: e, stackTrace: st);
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
