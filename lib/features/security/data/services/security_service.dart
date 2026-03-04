@@ -28,7 +28,7 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  AndroidOptions _getAndroidOptions() => const AndroidOptions();
+  AndroidOptions _getAndroidOptions() => const AndroidOptions(encryptedSharedPreferences: true);
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
