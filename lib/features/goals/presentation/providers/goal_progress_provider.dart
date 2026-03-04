@@ -601,3 +601,59 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
 
   return progressList;
 });
+
+/// Multi-currency provider for goals summary (for dashboard card)
+///
+/// Uses multi-currency goal progress calculations to ensure accurate
+/// summary statistics when investments are in different currencies.
+///
+/// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((ref) async {
+  final progressList = await ref.watch(multiCurrencyAllGoalsProgressProvider.future);
+
+  if (progressList.isEmpty) {
+    return GoalsSummary(
+      totalGoals: 0,
+      achievedGoals: 0,
+      onTrackGoals: 0,
+      behindGoals: 0,
+      averageProgress: 0,
+      closestToCompletion: null,
+      activeGoals: [],
+    );
+  }
+
+  // Calculate summary statistics
+  final totalGoals = progressList.length;
+  final achievedGoals = progressList.where((p) => p.status == GoalStatus.achieved).length;
+  final onTrackGoals = progressList.where((p) => p.status == GoalStatus.onTrack).length;
+  final behindGoals = progressList.where((p) => p.status == GoalStatus.behind).length;
+
+  // Calculate average progress
+  final totalProgress = progressList.fold<double>(
+    0,
+    (sum, p) => sum + p.progressPercent,
+  );
+  final avgProgress = totalProgress / totalGoals;
+
+  // Get all active goals (not achieved) sorted by progress (highest first)
+  final activeGoalsList = progressList
+      .where((p) => p.status != GoalStatus.achieved)
+      .toList();
+  activeGoalsList.sort(
+    (a, b) => b.progressPercent.compareTo(a.progressPercent),
+  );
+  final closestToCompletion = activeGoalsList.isNotEmpty
+      ? activeGoalsList.first
+      : null;
+
+  return GoalsSummary(
+    totalGoals: totalGoals,
+    achievedGoals: achievedGoals,
+    onTrackGoals: onTrackGoals,
+    behindGoals: behindGoals,
+    averageProgress: avgProgress,
+    closestToCompletion: closestToCompletion,
+    activeGoals: activeGoalsList, // Pass all active goals for carousel
+  );
+});

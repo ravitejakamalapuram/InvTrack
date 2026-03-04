@@ -110,45 +110,50 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalEntity goal,
     bool isDark,
   ) {
-    final progress = ref.watch(goalProgressProvider(goal.id));
+    // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
+    final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
-    return CustomScrollView(
-      slivers: [
-        _buildAppBar(context, ref, goal, isDark),
-        SliverPadding(
-          padding: EdgeInsets.all(AppSpacing.md),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _buildProgressSection(
-                context,
-                goal,
-                progress,
-                isDark,
-                currencySymbol,
-                isPrivacyMode,
-                locale,
-              ),
-              SizedBox(height: AppSpacing.lg),
-              _buildDetailsSection(
-                context,
-                goal,
-                isDark,
-                currencySymbol,
-                isPrivacyMode,
-                locale,
-              ),
-              SizedBox(height: AppSpacing.lg),
-              _buildMilestonesSection(context, progress, isDark),
-              SizedBox(height: AppSpacing.lg),
-              _buildActionsSection(context, ref, goal, isDark),
-              SizedBox(height: AppSpacing.xl),
-            ]),
+    return progressAsync.when(
+      data: (progress) => CustomScrollView(
+        slivers: [
+          _buildAppBar(context, ref, goal, isDark),
+          SliverPadding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildProgressSection(
+                  context,
+                  goal,
+                  progress,
+                  isDark,
+                  currencySymbol,
+                  isPrivacyMode,
+                  locale,
+                ),
+                SizedBox(height: AppSpacing.lg),
+                _buildDetailsSection(
+                  context,
+                  goal,
+                  isDark,
+                  currencySymbol,
+                  isPrivacyMode,
+                  locale,
+                ),
+                SizedBox(height: AppSpacing.lg),
+                _buildMilestonesSection(context, progress, isDark),
+                SizedBox(height: AppSpacing.lg),
+                _buildActionsSection(context, ref, goal, isDark),
+                SizedBox(height: AppSpacing.xl),
+              ]),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _buildError(context, isDark, error),
     );
   }
 
