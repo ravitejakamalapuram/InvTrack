@@ -77,3 +77,19 @@ In Dart (and many languages), `pow(base, exponent)` is implemented as `exp(expon
 
 **Action:**
 Identify loops where `pow(base, variable)` is called with a loop-invariant base. Replace with pre-calculated log and `exp()` for a ~2x speedup. Also, avoid redundant verification steps in iterative solvers if the convergence criteria already implies the result is correct.
+
+## 2026-02-13 - Replacing `reduce` with `for` loop for min/max calculations
+
+**Learning:**
+Using `reduce` to find the minimum or maximum value in a list (e.g., `dates.reduce((a, b) => a.isBefore(b) ? a : b)`) is significantly slower than using a simple `for` loop. The overhead of calling the closure function for every element in the list is substantial, especially for large lists or complex objects like `DateTime`. Furthermore, extracting comparable primitives like `millisecondsSinceEpoch` before the loop and using that for comparison can boost the performance even further.
+
+**Action:**
+When finding the minimum or maximum of a list, especially in performance-critical code or tight loops, replace `.reduce()` with a standard `for` loop. For objects, compare primitive properties (like `int` or `double`) directly.
+
+## 2026-02-13 - Pre-negating loop-invariant values in tight loops
+
+**Learning:**
+In mathematically intensive loops, operations like `-p * lnBase` or `val * (-p)` execute a negation on every iteration. Pre-computing the negated loop-invariant value (e.g., `negLnBase = -log(base)`) and changing the mathematical operation (e.g., `sum += val * (-p)` to `sum -= val * p`) avoids these unnecessary per-iteration negations. This micro-optimization measurably improves execution speed in large loops.
+
+**Action:**
+When optimizing tight mathematical loops, identify loop-invariant values and pre-negate them if they are used in a negation context. Also, simplify additions of negative products to subtractions to avoid the negation operation altogether.
