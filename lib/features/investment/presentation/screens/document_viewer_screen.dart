@@ -48,6 +48,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Close',
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -60,6 +61,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Share document',
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -71,6 +73,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
             onPressed: () => _shareDocument(context),
           ),
           IconButton(
+            tooltip: 'Toggle information',
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
