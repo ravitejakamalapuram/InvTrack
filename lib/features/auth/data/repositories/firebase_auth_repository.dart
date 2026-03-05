@@ -40,9 +40,23 @@ class FirebaseAuthRepository implements AuthRepository {
     try {
       LoggerService.info('Starting Google Sign-In');
 
-      // Use authenticate() in google_sign_in v7
-      // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
-      final googleUser = await _googleSignIn.authenticate();
+      // For Firebase Auth, we DON'T use authenticate() because it tries to get OAuth tokens
+      // which causes NETWORK_ERROR. Instead, we use the lightweight authentication flow.
+      // First try lightweight authentication (silent sign-in)
+      var googleUser = await _googleSignIn.attemptLightweightAuthentication();
+
+      if (googleUser == null) {
+        // If lightweight auth fails, we need platform-specific sign-in
+        // On Android/iOS, we can use signIn() from the old API (still available in v7)
+        // Note: This is the recommended approach for Firebase Auth per the migration guide
+        LoggerService.info('Lightweight auth failed, trying full sign-in');
+        googleUser = await _googleSignIn.signIn();
+      }
+
+      if (googleUser == null) {
+        LoggerService.info('User cancelled Google Sign-In');
+        return null;
+      }
 
       LoggerService.debug('Got Google user: ${googleUser.email}');
 
