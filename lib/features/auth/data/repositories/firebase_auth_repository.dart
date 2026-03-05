@@ -42,18 +42,19 @@ class FirebaseAuthRepository implements AuthRepository {
 
       // Use authenticate() in google_sign_in v7
       // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
-      // Don't specify scopeHint - let Google Sign-In use default scopes (email, profile)
       final googleUser = await _googleSignIn.authenticate();
 
-      LoggerService.debug('Got Google user');
+      LoggerService.debug('Got Google user: ${googleUser.email}');
 
       // Get Google auth credentials
-      // In google_sign_in v7, authentication only provides idToken
-      // For Firebase Auth, idToken is sufficient (accessToken is optional)
+      // In google_sign_in v7, authentication property (not Future) only provides idToken
+      // Firebase Auth only needs idToken, not accessToken
       final googleAuth = googleUser.authentication;
 
-      LoggerService.debug('Got authentication tokens');
+      LoggerService.debug('Got idToken: ${googleAuth.idToken != null}');
 
+      // Create Firebase credential with idToken only
+      // accessToken is not needed for Firebase Auth
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
@@ -71,15 +72,21 @@ class FirebaseAuthRepository implements AuthRepository {
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
-      LoggerService.warn(
+      LoggerService.error(
         'GoogleSignInException during sign-in',
-        metadata: {'code': e.code.toString()},
+        error: e,
+        metadata: {
+          'code': e.code.name,
+          'description': e.description,
+          'details': e.details.toString(),
+        },
       );
       if (e.code == GoogleSignInExceptionCode.canceled) {
         LoggerService.info('User cancelled Google Sign-In');
         return null;
       }
-      rethrow;
+      // Map exception to user-friendly message
+      throw Exception(_mapGoogleSignInException(e));
     } catch (e, stackTrace) {
       LoggerService.error(
         'Google Sign-In failed',
@@ -87,6 +94,27 @@ class FirebaseAuthRepository implements AuthRepository {
         stackTrace: stackTrace,
       );
       rethrow;
+    }
+  }
+
+  /// Map GoogleSignInException to user-friendly error message
+  String _mapGoogleSignInException(GoogleSignInException exception) {
+    switch (exception.code) {
+      case GoogleSignInExceptionCode.canceled:
+        return 'Sign-in was cancelled. Please try again if you want to continue.';
+      case GoogleSignInExceptionCode.interrupted:
+        return 'Sign-in was interrupted. Please try again.';
+      case GoogleSignInExceptionCode.clientConfigurationError:
+        return 'There is a configuration issue with Google Sign-In. Please contact support.';
+      case GoogleSignInExceptionCode.providerConfigurationError:
+        return 'Google Sign-In is currently unavailable. Please try again later or contact support.';
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return 'Google Sign-In is currently unavailable. Please try again later or contact support.';
+      case GoogleSignInExceptionCode.userMismatch:
+        return 'There was an issue with your account. Please sign out and try again.';
+      case GoogleSignInExceptionCode.unknownError:
+      default:
+        return 'An unexpected error occurred during Google Sign-In: ${exception.description ?? "Unknown error"}. Please try again.';
     }
   }
 
@@ -117,7 +145,7 @@ class FirebaseAuthRepository implements AuthRepository {
       // Sign out first to force fresh authentication
       await _googleSignIn.signOut();
 
-      // Don't specify scopeHint - let Google Sign-In use default scopes (email, profile)
+      // Authenticate with Google
       final googleUser = await _googleSignIn.authenticate();
       final googleAuth = googleUser.authentication;
 
@@ -131,15 +159,20 @@ class FirebaseAuthRepository implements AuthRepository {
       });
       return true;
     } on GoogleSignInException catch (e) {
+      LoggerService.error(
+        'GoogleSignInException during re-authentication',
+        error: e,
+        metadata: {
+          'code': e.code.name,
+          'description': e.description,
+          'details': e.details.toString(),
+        },
+      );
       if (e.code == GoogleSignInExceptionCode.canceled) {
         LoggerService.info('User cancelled re-authentication');
         return false;
       }
-      LoggerService.warn(
-        'GoogleSignInException during re-authentication',
-        metadata: {'code': e.code.toString()},
-      );
-      rethrow;
+      throw Exception(_mapGoogleSignInException(e));
     } catch (e, stackTrace) {
       LoggerService.error(
         'Re-authentication failed',
