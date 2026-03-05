@@ -42,7 +42,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
       // Use authenticate() in google_sign_in v7
       // Note: initialize() must be called before authenticate() - handled by googleSignInInitializedProvider
-      final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
+      // Don't specify scopeHint - let Google Sign-In use default scopes (email, profile)
+      final googleUser = await _googleSignIn.authenticate();
 
       LoggerService.debug('Got Google user');
 
@@ -116,7 +117,8 @@ class FirebaseAuthRepository implements AuthRepository {
       // Sign out first to force fresh authentication
       await _googleSignIn.signOut();
 
-      final googleUser = await _googleSignIn.authenticate(scopeHint: ['email']);
+      // Don't specify scopeHint - let Google Sign-In use default scopes (email, profile)
+      final googleUser = await _googleSignIn.authenticate();
       final googleAuth = googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
