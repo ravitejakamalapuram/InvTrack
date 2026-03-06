@@ -151,14 +151,22 @@ class XirrSolver {
     if (dates.length == 1) return 0.0;
 
     // Normalize dates to years from the first date
-    final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
-    final firstMs = firstDate.millisecondsSinceEpoch;
+    // Optimization: Find minimum date using a single pass for loop over millisecondsSinceEpoch
+    // This avoids the overhead of List.reduce and DateTime.isBefore closure allocations.
+    int firstMs = dates[0].millisecondsSinceEpoch;
+    for (int i = 1; i < dates.length; i++) {
+      final ms = dates[i].millisecondsSinceEpoch;
+      if (ms < firstMs) {
+        firstMs = ms;
+      }
+    }
 
     // Optimization: Group transactions by date to reduce solver iterations
     final flowMap = <double, double>{};
     for (int i = 0; i < dates.length; i++) {
       // Optimization: Calculate days difference using milliseconds instead of Duration for better performance
-      final t = ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
+      final t =
+          ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
       final existing = flowMap[t];
       if (existing == null) {
         flowMap[t] = amounts[i];
@@ -442,8 +450,15 @@ class XirrSolver {
 
     // Find time span in years
     // Note: yearsFromStart already contains years (converted at line 19)
-    final maxYear = yearsFromStart.reduce((a, b) => a > b ? a : b);
-    final minYear = yearsFromStart.reduce((a, b) => a < b ? a : b);
+    // Optimization: Calculate min and max in a single O(n) pass using a standard for loop
+    // This is faster than making two separate O(n) passes with List.reduce and closures.
+    double maxYear = yearsFromStart[0];
+    double minYear = yearsFromStart[0];
+    for (int i = 1; i < yearsFromStart.length; i++) {
+      final y = yearsFromStart[i];
+      if (y > maxYear) maxYear = y;
+      if (y < minYear) minYear = y;
+    }
     final timeSpanYears = maxYear - minYear;
 
     if (timeSpanYears <= 0) return simpleReturn;
@@ -494,7 +509,11 @@ class XirrSolver {
   /// //     = -10000 + 476.73 + 10000 = 476.73
   /// // (Positive NPV means actual return > 10%)
   /// ```
-  static double _f(double x, List<double> yearsFromStart, List<double> amounts) {
+  static double _f(
+    double x,
+    List<double> yearsFromStart,
+    List<double> amounts,
+  ) {
     if (x <= -1.0) return double.infinity;
 
     final base = 1 + x;
