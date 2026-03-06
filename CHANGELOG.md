@@ -4,6 +4,18 @@
 
 ### ✨ Features
 
+- Add Mac Dock-style carousel animation to Goals widget (#241)
+
+### 🐛 Bug Fixes
+
+- Use manual git checkout instead of actions/checkout
+- Downgrade checkout action to v3 for runner compatibility
+- Resolve Crashlytics spam and deprecation warnings (#242)
+
+## [3.45.0] - 2026-02-27
+
+### ✨ Features
+
 - **core**: Optimize XirrSolver input processing (#226)
 - **security**: Validate file signature on document upload (#228)
 

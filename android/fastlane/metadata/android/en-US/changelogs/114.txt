@@ -1,0 +1,3 @@
+🆕 What's New
+• Optimize XirrSolver input processing (#226)
+• Validate file signature on document upload (#228)
