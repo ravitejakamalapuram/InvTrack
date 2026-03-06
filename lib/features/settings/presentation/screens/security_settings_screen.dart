@@ -131,7 +131,10 @@ class SecuritySettingsScreen extends ConsumerWidget {
     if (enable) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => const PasscodeScreen(mode: PasscodeMode.create),
+          builder: (context) => const PasscodeScreen(
+            mode: PasscodeMode.create,
+            promptBiometricAfterCreate: true, // GPay-like flow
+          ),
         ),
       );
     } else {
