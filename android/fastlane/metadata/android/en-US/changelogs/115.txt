@@ -1,0 +1,7 @@
+🆕 What's New
+• Add Mac Dock-style carousel animation to Goals widget (#241)
+
+🐛 Bug Fixes & Improvements
+• Use manual git checkout instead of actions/checkout
+• Downgrade checkout action to v3 for runner compatibility
+• Resolve Crashlytics spam and deprecation warnings (#242)

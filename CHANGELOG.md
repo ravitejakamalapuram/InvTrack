@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Streamline app lock setup with GPay-like UX (#248)
+
+## [3.46.0] - 2026-03-06
+
+### ✨ Features
+
 - Add Mac Dock-style carousel animation to Goals widget (#241)
 
 ### 🐛 Bug Fixes
