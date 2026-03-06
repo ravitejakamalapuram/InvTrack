@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Use actions/checkout@v3 for better runner compatibility
+- Restore actions/checkout@v4 after runner upgrade
+
+### 🔧 Miscellaneous
+
+- Clean runner directories and restart
+- Create _runner_file_commands directory for runners
+- Test runner upgrade to v2.332.0
+
+## [3.47.0] - 2026-03-06
+
 ### ✨ Features
 
 - Streamline app lock setup with GPay-like UX (#248)
