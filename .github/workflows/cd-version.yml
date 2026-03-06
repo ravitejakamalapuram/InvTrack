@@ -26,11 +26,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        run: |
-          cd $GITHUB_WORKSPACE
-          git fetch --all --tags
-          git checkout main
-          git pull origin main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
