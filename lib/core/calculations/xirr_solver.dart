@@ -151,7 +151,13 @@ class XirrSolver {
     if (dates.length == 1) return 0.0;
 
     // Normalize dates to years from the first date
-    final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
+    // Optimization: A simple for-loop is significantly faster than dates.reduce()
+    var firstDate = dates[0];
+    for (int i = 1; i < dates.length; i++) {
+      if (dates[i].isBefore(firstDate)) {
+        firstDate = dates[i];
+      }
+    }
     final firstMs = firstDate.millisecondsSinceEpoch;
 
     // Optimization: Group transactions by date to reduce solver iterations
@@ -442,8 +448,17 @@ class XirrSolver {
 
     // Find time span in years
     // Note: yearsFromStart already contains years (converted at line 19)
-    final maxYear = yearsFromStart.reduce((a, b) => a > b ? a : b);
-    final minYear = yearsFromStart.reduce((a, b) => a < b ? a : b);
+    // Optimization: Find min and max in a single pass rather than two reduce() calls
+    double minYear = yearsFromStart[0];
+    double maxYear = yearsFromStart[0];
+    for (int i = 1; i < yearsFromStart.length; i++) {
+      final y = yearsFromStart[i];
+      if (y < minYear) {
+        minYear = y;
+      } else if (y > maxYear) {
+        maxYear = y;
+      }
+    }
     final timeSpanYears = maxYear - minYear;
 
     if (timeSpanYears <= 0) return simpleReturn;
