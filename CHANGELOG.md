@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🧪 Testing
+
+- Verify CD workflow is working consistently
+
+## [3.47.1] - 2026-03-06
+
 ### 🐛 Bug Fixes
 
 - Use actions/checkout@v3 for better runner compatibility
