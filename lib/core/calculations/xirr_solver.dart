@@ -151,8 +151,14 @@ class XirrSolver {
     if (dates.length == 1) return 0.0;
 
     // Normalize dates to years from the first date
-    final firstDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
-    final firstMs = firstDate.millisecondsSinceEpoch;
+    // Optimization: Find minimum date using loop and ms comparison rather than reduce()
+    int firstMs = dates[0].millisecondsSinceEpoch;
+    for (int i = 1; i < dates.length; i++) {
+      final ms = dates[i].millisecondsSinceEpoch;
+      if (ms < firstMs) {
+        firstMs = ms;
+      }
+    }
 
     // Optimization: Group transactions by date to reduce solver iterations
     final flowMap = <double, double>{};
@@ -441,9 +447,15 @@ class XirrSolver {
     final simpleReturn = (totalInflows - totalOutflows) / totalOutflows;
 
     // Find time span in years
-    // Note: yearsFromStart already contains years (converted at line 19)
-    final maxYear = yearsFromStart.reduce((a, b) => a > b ? a : b);
-    final minYear = yearsFromStart.reduce((a, b) => a < b ? a : b);
+    // Note: yearsFromStart already contains years (converted earlier)
+    // Optimization: Calculate min and max simultaneously in a single O(n) loop
+    double maxYear = yearsFromStart[0];
+    double minYear = yearsFromStart[0];
+    for (int i = 1; i < yearsFromStart.length; i++) {
+      final year = yearsFromStart[i];
+      if (year > maxYear) maxYear = year;
+      if (year < minYear) minYear = year;
+    }
     final timeSpanYears = maxYear - minYear;
 
     if (timeSpanYears <= 0) return simpleReturn;
