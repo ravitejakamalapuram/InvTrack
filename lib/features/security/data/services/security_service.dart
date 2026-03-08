@@ -28,7 +28,8 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  AndroidOptions _getAndroidOptions() => const AndroidOptions();
+  AndroidOptions _getAndroidOptions() =>
+      const AndroidOptions(encryptedSharedPreferences: true);
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
@@ -310,13 +311,17 @@ class SecurityService {
         sensitiveTransaction: false, // Don't require re-auth for app resume
       );
 
-      LoggerService.debug('Biometric auth result', metadata: {'result': result});
+      LoggerService.debug(
+        'Biometric auth result',
+        metadata: {'result': result},
+      );
       return result;
     } on PlatformException catch (e) {
-      LoggerService.warn('Biometric platform error', error: e, metadata: {
-        'code': e.code,
-        'message': e.message,
-      });
+      LoggerService.warn(
+        'Biometric platform error',
+        error: e,
+        metadata: {'code': e.code, 'message': e.message},
+      );
       // Handle specific error codes
       if (e.code == 'NotAvailable' || e.code == 'NotEnrolled') {
         return false;
