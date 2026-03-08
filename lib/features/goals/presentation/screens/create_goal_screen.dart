@@ -288,26 +288,30 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
       padding: EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => _showIconPicker(context),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    _selectedColor,
-                    _selectedColor.withValues(alpha: 0.7),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          Semantics(
+            button: true,
+            label: 'Choose icon and color',
+            child: GestureDetector(
+              onTap: () => _showIconPicker(context),
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _selectedColor,
+                      _selectedColor.withValues(alpha: 0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Text(
-                  _selectedIcon,
-                  style: const TextStyle(fontSize: 32),
+                child: Center(
+                  child: Text(
+                    _selectedIcon,
+                    style: const TextStyle(fontSize: 32),
+                  ),
                 ),
               ),
             ),
