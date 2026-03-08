@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.47.2] - 2026-03-07
 
 ### 🧪 Testing
 
