@@ -106,9 +106,17 @@ class InvestmentListActionBar extends ConsumerWidget {
     for (final inv in toMerge) {
       typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
     }
-    final defaultType = typeCount.isNotEmpty
-        ? typeCount.entries.reduce((a, b) => a.value > b.value ? a : b).key
-        : InvestmentType.other;
+
+    // Optimization: Replace .reduce() with a standard loop to avoid closure overhead
+    int maxCount = -1;
+    InvestmentType? mostCommonType;
+    for (final entry in typeCount.entries) {
+      if (entry.value > maxCount) {
+        maxCount = entry.value;
+        mostCommonType = entry.key;
+      }
+    }
+    final defaultType = mostCommonType ?? InvestmentType.other;
 
     final result = await MergeInvestmentsDialog.show(
       context: context,

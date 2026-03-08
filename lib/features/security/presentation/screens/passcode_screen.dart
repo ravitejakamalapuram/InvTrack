@@ -9,17 +9,20 @@ import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 enum PasscodeMode { unlock, create, verify }
 
 class PasscodeScreen extends ConsumerStatefulWidget {
   final PasscodeMode mode;
   final VoidCallback? onSuccess;
+  final bool promptBiometricAfterCreate;
 
   const PasscodeScreen({
     super.key,
     this.mode = PasscodeMode.unlock,
     this.onSuccess,
+    this.promptBiometricAfterCreate = false,
   });
 
   @override
@@ -271,10 +274,17 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
           if (pin == _tempPin) {
             await ref.read(securityProvider.notifier).setPin(pin);
             if (mounted) {
-              context.safePop(); // Close screen
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('App Lock enabled')));
+              // Check if we should prompt for biometric enrollment
+              if (widget.promptBiometricAfterCreate) {
+                await _promptBiometricEnrollment();
+              }
+
+              if (mounted) {
+                context.safePop(); // Close screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('App Lock enabled')),
+                );
+              }
             }
           } else {
             _tempPin = null;
@@ -305,6 +315,56 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
       _message = msg;
     });
     // Shake animation could go here
+  }
+
+  /// Prompt user to enable biometric authentication after PIN creation
+  Future<void> _promptBiometricEnrollment() async {
+    final securityState = ref.read(securityProvider);
+
+    // Only prompt if biometrics are available and not already enabled
+    if (!securityState.isBiometricAvailable || securityState.isBiometricEnabled) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    final l10n = AppLocalizations.of(context);
+
+    // Show dialog asking if user wants to enable biometrics
+    final shouldEnable = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.enableBiometricUnlock),
+        content: Text(l10n.useFingerprintOrFaceForFasterAccess),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.notNow),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.enable),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldEnable == true && mounted) {
+      // Attempt to authenticate with biometrics to enable it
+      final success = await ref
+          .read(securityProvider.notifier)
+          .unlockWithBiometrics();
+
+      if (success && mounted) {
+        await ref.read(securityProvider.notifier).toggleBiometrics(true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.biometricUnlockEnabled)),
+          );
+        }
+      }
+    }
   }
 
   @override

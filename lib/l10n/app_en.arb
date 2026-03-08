@@ -454,6 +454,31 @@
     "description": "Biometric toggle subtitle"
   },
 
+  "enableBiometricUnlock": "Enable Biometric Unlock?",
+  "@enableBiometricUnlock": {
+    "description": "Biometric enrollment dialog title"
+  },
+
+  "useFingerprintOrFaceForFasterAccess": "Use fingerprint or face recognition for faster access to your app.",
+  "@useFingerprintOrFaceForFasterAccess": {
+    "description": "Biometric enrollment dialog message"
+  },
+
+  "notNow": "Not Now",
+  "@notNow": {
+    "description": "Biometric enrollment dialog negative button"
+  },
+
+  "enable": "Enable",
+  "@enable": {
+    "description": "Biometric enrollment dialog positive button"
+  },
+
+  "biometricUnlockEnabled": "Biometric unlock enabled",
+  "@biometricUnlockEnabled": {
+    "description": "Snackbar message when biometric is enabled"
+  },
+
   "managePin": "Manage PIN",
   "@managePin": {
     "description": "Manage PIN section title"

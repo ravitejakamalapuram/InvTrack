@@ -1,0 +1,2 @@
+🆕 What's New
+• Streamline app lock setup with GPay-like UX (#248)

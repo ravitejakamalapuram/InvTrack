@@ -543,9 +543,16 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         for (final inv in toMerge) {
           typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
         }
-        finalType = typeCount.entries
-            .reduce((a, b) => a.value > b.value ? a : b)
-            .key;
+        // Optimization: Replace .reduce() with a standard loop to avoid closure overhead
+        int maxCount = -1;
+        InvestmentType? mostCommonType;
+        for (final entry in typeCount.entries) {
+          if (entry.value > maxCount) {
+            maxCount = entry.value;
+            mostCommonType = entry.key;
+          }
+        }
+        finalType = mostCommonType ?? InvestmentType.other;
       }
 
       // Create new merged investment
