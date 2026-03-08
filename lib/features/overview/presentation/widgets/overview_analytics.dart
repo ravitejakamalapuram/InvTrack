@@ -2,6 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
@@ -31,10 +33,11 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
+        // Optimization: Replace list creation and .reduce() with faster math.max calls
+        // to avoid allocating a new list and invoking closures on every iteration.
         final maxValue = data.fold<double>(
           0,
-          (max, d) =>
-              [max, d.inflows, d.outflows].reduce((a, b) => a > b ? a : b),
+          (max, d) => math.max(max, math.max(d.inflows, d.outflows)),
         );
 
         return GlassCard(
