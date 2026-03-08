@@ -77,9 +77,15 @@ class _SegmentTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: label,
+      selected: isSelected,
+      excludeSemantics: true,
       onTap: onTap,
-      child: TweenAnimationBuilder<double>(
+      child: GestureDetector(
+        onTap: onTap,
+        child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
@@ -159,6 +165,7 @@ class _SegmentTab extends StatelessWidget {
           );
         },
       ),
+    ),
     );
   }
 }
