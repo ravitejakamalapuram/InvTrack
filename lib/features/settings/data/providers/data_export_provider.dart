@@ -5,6 +5,7 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 /// Provider for DataExportService
 final dataExportServiceProvider = Provider<DataExportService?>((ref) {
@@ -21,6 +22,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
   final documentStorageService = ref.watch(documentStorageServiceProvider);
   final fireSettingsRepository = ref.watch(fireSettingsRepositoryProvider);
   final performanceService = ref.watch(performanceServiceProvider);
+  final settings = ref.watch(settingsProvider);
 
   return DataExportService(
     investmentRepository: investmentRepository,
@@ -29,6 +31,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
     documentStorageService: documentStorageService,
     fireSettingsRepository: fireSettingsRepository,
     performanceService: performanceService,
+    baseCurrency: settings.currency,
   );
 });
 

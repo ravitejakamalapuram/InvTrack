@@ -8,8 +8,9 @@ import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   final InvestmentRepository _investmentRepository;
+  final String _baseCurrency;
 
-  ExportService(this._investmentRepository);
+  ExportService(this._investmentRepository, this._baseCurrency);
 
   /// Converts CashFlowType to the format expected by import template
   String _typeToExportString(CashFlowType type) {
@@ -48,11 +49,11 @@ class ExportService {
     );
 
     // 2. Prepare CSV Data - matching import template format exactly
-    // Import template: Date, Investment Name, Type, Amount, Notes
+    // Import template: Date, Investment Name, Type, Amount, Currency, Notes
     final List<List<dynamic>> rows = [];
 
     // Header Row - matches CsvTemplateService.headers exactly
-    rows.add(['Date', 'Investment Name', 'Type', 'Amount', 'Notes']);
+    rows.add(['Date', 'Investment Name', 'Type', 'Amount', 'Currency', 'Notes']);
 
     // Data Rows
     for (final item in allCashFlows) {
@@ -64,6 +65,7 @@ class ExportService {
         CsvUtils.sanitizeField(investment.name),
         _typeToExportString(cf.type), // INVEST, INCOME, RETURN, FEE
         cf.amount,
+        _baseCurrency, // Add base currency for all transactions
         CsvUtils.sanitizeField(cf.notes ?? ''),
       ]);
     }

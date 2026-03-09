@@ -25,14 +25,15 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
   Future<void> _downloadTemplate() async {
     HapticFeedback.mediumImpact();
+    final l10n = AppLocalizations.of(context)!;
     try {
       await CsvTemplateService.downloadTemplate();
       if (mounted) {
-        AppFeedback.showSuccess(context, 'Template ready to share/save');
+        AppFeedback.showSuccess(context, l10n.templateReadyToShare);
       }
     } catch (e) {
       if (mounted) {
-        AppFeedback.showError(context, 'Failed to create template: $e');
+        AppFeedback.showError(context, l10n.failedToCreateTemplate);
       }
     }
   }

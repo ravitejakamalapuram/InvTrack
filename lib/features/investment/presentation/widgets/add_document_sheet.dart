@@ -328,7 +328,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       }
     } catch (e) {
       if (mounted) {
-        AppFeedback.showError(context, 'Could not access camera');
+        final l10n = AppLocalizations.of(context)!;
+        AppFeedback.showError(context, l10n.couldNotAccessCamera);
       }
     } finally {
       // Resume auto-lock after camera operation completes
@@ -400,7 +401,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isReadingFiles = false);
-        AppFeedback.showError(context, 'Could not access files');
+        final l10n = AppLocalizations.of(context)!;
+        AppFeedback.showError(context, l10n.couldNotAccessFiles);
       }
     } finally {
       ref.read(securityProvider.notifier).resumeAutoLock();
@@ -799,7 +801,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        AppFeedback.showSuccess(context, '$successCount documents added');
+        final l10n = AppLocalizations.of(context)!;
+        AppFeedback.showSuccess(context, l10n.documentsAdded(successCount));
       }
     } catch (e) {
       if (mounted) {

@@ -137,9 +137,10 @@ class UpdateDialog extends ConsumerWidget {
       // Allow https, http, and standard app store schemes
       const allowedSchemes = ['https', 'http', 'market', 'itms-apps'];
       if (!allowedSchemes.contains(uri.scheme)) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid update link format.'),
+          SnackBar(
+            content: Text(l10n.invalidUpdateLink),
           ),
         );
         return;
@@ -149,9 +150,10 @@ class UpdateDialog extends ConsumerWidget {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not open update link'),
+            SnackBar(
+              content: Text(l10n.couldNotOpenUpdateLink),
             ),
           );
         }

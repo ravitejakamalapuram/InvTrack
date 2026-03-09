@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/widgets/selection_list_action_bar.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/merge_investments_dialog.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Bottom action bar shown during selection mode
 class InvestmentListActionBar extends ConsumerWidget {
@@ -72,12 +73,14 @@ class InvestmentListActionBar extends ConsumerWidget {
   ) async {
     final listState = ref.read(investmentListStateProvider);
     final selectedCount = listState.selectedIds.length;
+    final l10n = AppLocalizations.of(context)!;
+    final plural = selectedCount > 1 ? 's' : '';
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      title: 'Delete $selectedCount Investment${selectedCount > 1 ? 's' : ''}?',
-      message: 'This action cannot be undone.',
-      confirmText: 'Delete',
+      title: l10n.deleteInvestmentsCount(selectedCount, plural),
+      message: l10n.actionCannotBeUndone,
+      confirmText: l10n.delete,
     );
 
     if (confirmed && context.mounted) {

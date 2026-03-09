@@ -1,6 +1,7 @@
 /// Unified data and account management screen.
 library;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -614,6 +615,20 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
     // Delete FIRE settings (Rule 18: Data Lifecycle)
     await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
+
+    // Delete exchange rate cache (Rule 21.6: Data Lifecycle - Multi-Currency)
+    final userId = user.id;
+    final exchangeRatesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('exchangeRates');
+
+    final snapshot = await exchangeRatesRef.get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
 
     // Clear sample data mode preferences (Rule 18: Data Lifecycle)
     final prefs = ref.read(sharedPreferencesProvider);

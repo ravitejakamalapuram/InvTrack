@@ -19,6 +19,10 @@ class ParsedCashFlowRow {
   final InvestmentType? investmentType;
   final InvestmentStatus? investmentStatus;
 
+  /// Optional currency code (for multi-currency support)
+  /// Defaults to base currency if not specified
+  final String? currency;
+
   const ParsedCashFlowRow({
     required this.rowNumber,
     required this.date,
@@ -29,6 +33,7 @@ class ParsedCashFlowRow {
     this.error,
     this.investmentType,
     this.investmentStatus,
+    this.currency,
   });
 
   bool get isValid => error == null;
@@ -40,7 +45,8 @@ class ParsedCashFlowRow {
       amount = 0,
       notes = null,
       investmentType = null,
-      investmentStatus = null;
+      investmentStatus = null,
+      currency = null;
 }
 
 /// Result of parsing a CSV file
@@ -221,6 +227,8 @@ class _CsvParserSession {
         map['amount'] = i;
       } else if (header.contains('note')) {
         map['notes'] = i;
+      } else if (header.contains('currency')) {
+        map['currency'] = i;
       }
     }
     return map;
@@ -247,6 +255,11 @@ class _CsvParserSession {
           : null;
       final investmentStatusStr = columnMap.containsKey('investmentStatus')
           ? _getValue(values, columnMap['investmentStatus']!)
+          : null;
+
+      // Optional currency (for multi-currency support)
+      final currency = columnMap.containsKey('currency')
+          ? _getValue(values, columnMap['currency']!)
           : null;
 
       // Validate required fields
@@ -328,6 +341,7 @@ class _CsvParserSession {
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,
+        currency: currency?.isNotEmpty == true ? currency : null,
       );
     } catch (e) {
       return ParsedCashFlowRow.withError(

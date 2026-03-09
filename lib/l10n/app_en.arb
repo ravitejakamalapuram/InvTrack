@@ -1243,6 +1243,167 @@
   "goalEmoji": "🎯",
   "@goalEmoji": {
     "description": "Emoji for goals empty state"
+  },
+
+  "documentDeleted": "Document deleted",
+  "@documentDeleted": {
+    "description": "Success message when document is deleted"
+  },
+
+  "failedToDeleteDocument": "Failed to delete document",
+  "@failedToDeleteDocument": {
+    "description": "Error message when document deletion fails"
+  },
+
+  "couldNotAccessCamera": "Could not access camera",
+  "@couldNotAccessCamera": {
+    "description": "Error message when camera access fails"
+  },
+
+  "couldNotAccessFiles": "Could not access files",
+  "@couldNotAccessFiles": {
+    "description": "Error message when file access fails"
+  },
+
+  "documentsAdded": "{count} documents added",
+  "@documentsAdded": {
+    "description": "Success message when multiple documents are added",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "invalidUpdateLink": "Invalid update link format.",
+  "@invalidUpdateLink": {
+    "description": "Error message for invalid update URL"
+  },
+
+  "couldNotOpenUpdateLink": "Could not open update link",
+  "@couldNotOpenUpdateLink": {
+    "description": "Error message when update link cannot be opened"
+  },
+
+  "yearsFormat": "{age} years",
+  "@yearsFormat": {
+    "description": "Format for displaying age in years",
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+
+  "percentageFormat": "{value}%",
+  "@percentageFormat": {
+    "description": "Format for displaying percentage values",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+
+  "addDocument": "Add Document",
+  "@addDocument": {
+    "description": "Button text to add a document"
+  },
+
+  "templateReadyToShare": "Template ready to share/save",
+  "@templateReadyToShare": {
+    "description": "Success message when CSV template is ready"
+  },
+
+  "failedToCreateTemplate": "Failed to create template",
+  "@failedToCreateTemplate": {
+    "description": "Error message when template creation fails"
+  },
+
+  "deleteTransaction": "Delete Transaction?",
+  "@deleteTransaction": {
+    "description": "Confirmation dialog title for deleting a transaction"
+  },
+
+  "deleteInvestment": "Delete Investment?",
+  "@deleteInvestment": {
+    "description": "Confirmation dialog title for deleting an investment"
+  },
+
+  "deleteInvestmentMessage": "This will permanently delete this investment and all its transactions. This action cannot be undone.",
+  "@deleteInvestmentMessage": {
+    "description": "Confirmation message for deleting an investment"
+  },
+
+  "investmentDeleted": "Investment deleted",
+  "@investmentDeleted": {
+    "description": "Success message after investment is deleted"
+  },
+
+  "failedToDeleteInvestment": "Failed to delete investment",
+  "@failedToDeleteInvestment": {
+    "description": "Error message when investment deletion fails"
+  },
+
+  "fileNotFound": "File not found. It may have been moved or deleted.",
+  "@fileNotFound": {
+    "description": "Error message when document file is not found"
+  },
+
+  "deleteInvestmentsCount": "Delete {count} Investment{plural}?",
+  "@deleteInvestmentsCount": {
+    "description": "Bulk delete confirmation title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "actionCannotBeUndone": "This action cannot be undone.",
+  "@actionCannotBeUndone": {
+    "description": "Warning message for irreversible actions"
+  },
+
+  "deleteGoalsCount": "Delete {count} Goal{plural}?",
+  "@deleteGoalsCount": {
+    "description": "Bulk delete goals confirmation title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "deleteGoalsMessage": "This action cannot be undone. The selected goal{plural} will be permanently deleted.",
+  "@deleteGoalsMessage": {
+    "description": "Bulk delete goals confirmation message",
+    "placeholders": {
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "deleteDocument": "Delete Document?",
+  "@deleteDocument": {
+    "description": "Delete document confirmation title"
+  },
+
+  "deleteDocumentMessage": "Are you sure you want to delete \"{name}\"? This cannot be undone.",
+  "@deleteDocumentMessage": {
+    "description": "Delete document confirmation message",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
 

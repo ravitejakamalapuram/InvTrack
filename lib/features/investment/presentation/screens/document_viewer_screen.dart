@@ -272,9 +272,10 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     // Check if file exists before trying to open
     if (!await file.exists()) {
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('File not found. It may have been moved or deleted.'),
+          SnackBar(
+            content: Text(l10n.fileNotFound),
             backgroundColor: Colors.red,
           ),
         );
@@ -336,9 +337,10 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     // Check if file exists before trying to share
     if (!await file.exists()) {
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('File not found. It may have been moved or deleted.'),
+          SnackBar(
+            content: Text(l10n.fileNotFound),
             backgroundColor: Colors.red,
           ),
         );

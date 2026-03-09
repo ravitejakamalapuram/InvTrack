@@ -489,11 +489,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     BuildContext context,
     bool isDark,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      title: 'Delete Transaction?',
-      message: 'This action cannot be undone.',
-      confirmText: 'Delete',
+      title: l10n.deleteTransaction,
+      message: l10n.actionCannotBeUndone,
+      confirmText: l10n.delete,
     );
     return confirmed;
   }
@@ -505,13 +506,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      title: 'Delete Investment?',
-      message:
-          'This will permanently delete this investment and all its transactions. This action cannot be undone.',
-      confirmText: 'Delete',
+      title: l10n.deleteInvestment,
+      message: l10n.deleteInvestmentMessage,
+      confirmText: l10n.delete,
     );
 
     if (confirmed && mounted) {
@@ -533,7 +534,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                const Expanded(child: Text('Investment deleted')),
+                Expanded(child: Text(l10n.investmentDeleted)),
               ],
             ),
             backgroundColor: isDark
@@ -555,7 +556,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               children: [
                 const Icon(Icons.error_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
-                const Expanded(child: Text('Failed to delete investment')),
+                Expanded(child: Text(l10n.failedToDeleteInvestment)),
               ],
             ),
             backgroundColor: isDark

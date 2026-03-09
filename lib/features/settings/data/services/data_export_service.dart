@@ -30,6 +30,7 @@ class DataExportService {
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
   final PerformanceService _performanceService;
+  final String _baseCurrency;
 
   DataExportService({
     required InvestmentRepository investmentRepository,
@@ -38,12 +39,14 @@ class DataExportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     required PerformanceService performanceService,
+    required String baseCurrency,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
-       _performanceService = performanceService;
+       _performanceService = performanceService,
+       _baseCurrency = baseCurrency;
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file
@@ -219,16 +222,17 @@ class DataExportService {
   // ============ CSV Generation ============
 
   /// Generate CSV for cashflows with full investment metadata
-  /// Format: Date, Investment Name, Type, Amount, Notes, Investment Type, Investment Status
+  /// Format: Date, Investment Name, Type, Amount, Currency, Notes, Investment Type, Investment Status
   String _generateCashFlowsCsv(List<_CashFlowWithInvestment> items) {
     final rows = <List<dynamic>>[];
 
-    // Header row - extended format with investment metadata
+    // Header row - extended format with investment metadata and currency
     rows.add([
       'Date',
       'Investment Name',
       'Type',
       'Amount',
+      'Currency',
       'Notes',
       'Investment Type',
       'Investment Status',
@@ -244,6 +248,7 @@ class DataExportService {
         CsvUtils.sanitizeField(item.investment.name),
         _typeToExportString(item.cashFlow.type),
         item.cashFlow.amount,
+        _baseCurrency, // Add base currency for all transactions
         CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,

@@ -303,7 +303,7 @@ class FireSettingsScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('$selectedAge years', style: AppTypography.h1.copyWith(
+                    Text(l10n.yearsFormat(selectedAge), style: AppTypography.h1.copyWith(
                       color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
                     )),
                   ],
@@ -467,7 +467,7 @@ class FireSettingsScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('${selectedValue.toStringAsFixed(1)}%', style: AppTypography.h1.copyWith(
+                    Text(l10n.percentageFormat(selectedValue.toStringAsFixed(1)), style: AppTypography.h1.copyWith(
                       color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
                     )),
                   ],
