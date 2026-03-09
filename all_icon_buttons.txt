@@ -1,0 +1,108 @@
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart:132:            ? IconButton(
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-133-                icon: const Icon(Icons.arrow_back),
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-135-                tooltip: 'Go back',
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart:137:            : IconButton(
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-138-                icon: const Icon(Icons.close),
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-140-                tooltip: 'Close setup',
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart:239:                    IconButton(
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-243-                      icon: const Icon(Icons.remove_circle_outline),
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-244-                      tooltip: 'Decrease age',
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart:254:                    IconButton(
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-258-                      icon: const Icon(Icons.add_circle_outline),
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-259-                      tooltip: 'Increase age',
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart:291:                    IconButton(
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-295-                      icon: const Icon(Icons.remove_circle_outline),
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-296-                      tooltip: 'Decrease target age',
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart:306:                    IconButton(
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-310-                      icon: const Icon(Icons.add_circle_outline),
+lib/features/fire_number/presentation/screens/fire_setup_screen.dart-311-                      tooltip: 'Increase target age',
+lib/features/fire_number/presentation/screens/fire_settings_screen.dart:35:        leading: IconButton(
+lib/features/fire_number/presentation/screens/fire_settings_screen.dart-36-          icon: const Icon(Icons.arrow_back),
+lib/features/fire_number/presentation/screens/fire_settings_screen.dart-38-          tooltip: 'Back',
+lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart:42:        leading: IconButton(
+lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart-43-          icon: const Icon(Icons.arrow_back),
+lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart-45-          tooltip: 'Back',
+lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart:48:          IconButton(
+lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart-49-            icon: const Icon(Icons.settings_outlined),
+lib/features/fire_number/presentation/screens/fire_dashboard_screen.dart-51-            tooltip: 'FIRE Settings',
+lib/features/goals/presentation/screens/goal_details_screen.dart:172:      leading: IconButton(
+lib/features/goals/presentation/screens/goal_details_screen.dart-173-        tooltip: 'Back',
+lib/features/goals/presentation/screens/goal_details_screen.dart-174-        icon: const Icon(Icons.arrow_back_rounded),
+lib/features/goals/presentation/screens/goal_details_screen.dart:178:        IconButton(
+lib/features/goals/presentation/screens/goal_details_screen.dart-179-          icon: const Icon(Icons.edit_rounded),
+lib/features/goals/presentation/screens/goal_details_screen.dart-180-          tooltip: 'Edit Goal',
+lib/features/goals/presentation/screens/create_goal_screen.dart:194:      leading: IconButton(
+lib/features/goals/presentation/screens/create_goal_screen.dart-195-        tooltip: 'Close',
+lib/features/goals/presentation/screens/create_goal_screen.dart-196-        icon: const Icon(Icons.close),
+lib/features/goals/presentation/screens/create_goal_screen.dart:436:            IconButton(
+lib/features/goals/presentation/screens/create_goal_screen.dart-437-              tooltip: 'Clear target date',
+lib/features/goals/presentation/screens/create_goal_screen.dart-438-              icon: const Icon(Icons.clear, size: 18),
+lib/features/goals/presentation/screens/goals_screen.dart:138:      IconButton(
+lib/features/goals/presentation/screens/goals_screen.dart-139-        icon: Container(
+lib/features/goals/presentation/screens/goals_screen.dart:165:        IconButton(
+lib/features/goals/presentation/screens/goals_screen.dart-166-          icon: const Icon(Icons.add_rounded),
+lib/features/goals/presentation/screens/goals_screen.dart-168-          tooltip: 'Add Goal',
+lib/features/investment/presentation/screens/investment_detail_screen.dart:92:            leading: IconButton(
+lib/features/investment/presentation/screens/investment_detail_screen.dart-93-              tooltip: 'Back',
+lib/features/investment/presentation/screens/investment_detail_screen.dart-94-              icon: Container(
+lib/features/investment/presentation/screens/investment_detail_screen.dart:118:              IconButton(
+lib/features/investment/presentation/screens/investment_detail_screen.dart-119-                tooltip: 'More options',
+lib/features/investment/presentation/screens/investment_detail_screen.dart-120-                icon: Container(
+lib/features/investment/presentation/screens/investment_list_screen.dart:238:      IconButton(
+lib/features/investment/presentation/screens/investment_list_screen.dart-239-        tooltip: 'Toggle selection mode',
+lib/features/investment/presentation/screens/investment_list_screen.dart-240-        icon: Container(
+lib/features/investment/presentation/screens/investment_list_screen.dart:264:      IconButton(
+lib/features/investment/presentation/screens/investment_list_screen.dart-265-        tooltip: 'Sort investments',
+lib/features/investment/presentation/screens/investment_list_screen.dart-266-        icon: Container(
+lib/features/investment/presentation/screens/investment_list_screen.dart:287:      IconButton(
+lib/features/investment/presentation/screens/investment_list_screen.dart-288-        tooltip: 'Filter investments',
+lib/features/investment/presentation/screens/investment_list_screen.dart-289-        icon: Container(
+lib/features/investment/presentation/screens/investment_list_screen.dart:309:      IconButton(
+lib/features/investment/presentation/screens/investment_list_screen.dart-310-        tooltip: 'Search investments',
+lib/features/investment/presentation/screens/investment_list_screen.dart-311-        icon: Container(
+lib/features/investment/presentation/screens/document_viewer_screen.dart:50:        leading: IconButton(
+lib/features/investment/presentation/screens/document_viewer_screen.dart-51-          tooltip: 'Close',
+lib/features/investment/presentation/screens/document_viewer_screen.dart-52-          icon: Container(
+lib/features/investment/presentation/screens/document_viewer_screen.dart:63:          IconButton(
+lib/features/investment/presentation/screens/document_viewer_screen.dart-64-            tooltip: 'Share document',
+lib/features/investment/presentation/screens/document_viewer_screen.dart-65-            icon: Container(
+lib/features/investment/presentation/screens/document_viewer_screen.dart:75:          IconButton(
+lib/features/investment/presentation/screens/document_viewer_screen.dart-76-            tooltip: 'Toggle information',
+lib/features/investment/presentation/screens/document_viewer_screen.dart-77-            icon: Container(
+lib/features/investment/presentation/screens/add_investment_screen.dart:375:        leading: IconButton(
+lib/features/investment/presentation/screens/add_investment_screen.dart-376-          tooltip: 'Close',
+lib/features/investment/presentation/screens/add_investment_screen.dart-377-          icon: Container(
+lib/features/investment/presentation/screens/add_investment_screen.dart:857:                    IconButton(
+lib/features/investment/presentation/screens/add_investment_screen.dart-858-                      icon: Icon(
+lib/features/investment/presentation/screens/add_investment_screen.dart-865-                      tooltip: 'Clear start date',
+lib/features/investment/presentation/screens/add_investment_screen.dart:1330:                    IconButton(
+lib/features/investment/presentation/screens/add_investment_screen.dart-1331-                      icon: Icon(
+lib/features/investment/presentation/screens/add_investment_screen.dart-1338-                      tooltip: 'Clear maturity date',
+lib/features/investment/presentation/screens/add_transaction_screen.dart:185:        leading: IconButton(
+lib/features/investment/presentation/screens/add_transaction_screen.dart-186-          tooltip: 'Close',
+lib/features/investment/presentation/screens/add_transaction_screen.dart-187-          icon: Container(
+lib/features/investment/presentation/widgets/add_document_sheet.dart:570:                      IconButton(
+lib/features/investment/presentation/widgets/add_document_sheet.dart-571-                        icon: Icon(Icons.close, size: 20),
+lib/features/investment/presentation/widgets/add_document_sheet.dart-572-                        tooltip: 'Remove file',
+lib/features/investment/presentation/widgets/investment_list_search_field.dart:131:                    ? IconButton(
+lib/features/investment/presentation/widgets/investment_list_search_field.dart-132-                        icon: Icon(
+lib/features/investment/presentation/widgets/investment_list_search_field.dart-139-                        tooltip: 'Clear text',
+lib/features/investment/presentation/widgets/investment_list_search_field.dart:149:        IconButton(
+lib/features/investment/presentation/widgets/investment_list_search_field.dart-150-          icon: const Icon(Icons.close_rounded),
+lib/features/investment/presentation/widgets/investment_list_search_field.dart-153-          tooltip: 'Close search',
+lib/features/security/presentation/screens/passcode_screen.dart:444:                      ? IconButton(
+lib/features/security/presentation/screens/passcode_screen.dart-445-                        tooltip: 'Use biometric authentication',
+lib/features/security/presentation/screens/passcode_screen.dart-446-                        icon: Icon(
+lib/features/security/presentation/screens/passcode_screen.dart:453:                      : IconButton(
+lib/features/security/presentation/screens/passcode_screen.dart-454-                        tooltip: 'Clear',
+lib/features/security/presentation/screens/passcode_screen.dart-455-                        icon: Icon(
+lib/features/security/presentation/screens/passcode_screen.dart:471:              child: IconButton(
+lib/features/security/presentation/screens/passcode_screen.dart-472-                tooltip: 'Delete last digit',
+lib/features/security/presentation/screens/passcode_screen.dart-473-                icon: Icon(
+lib/core/widgets/app_text_field.dart:243:                    child: IconButton(
+lib/core/widgets/app_text_field.dart-244-                      icon: Icon(
+lib/core/widgets/app_text_field.dart-251-                      tooltip: 'Clear text',
+lib/core/widgets/compact_amount_text.dart:113:            IconButton(
+lib/core/widgets/compact_amount_text.dart-114-              icon: const Icon(
+lib/core/widgets/privacy_toggle_button.dart:200:    return IconButton(
+lib/core/widgets/privacy_toggle_button.dart-205-      icon: AnimatedSwitcher(
