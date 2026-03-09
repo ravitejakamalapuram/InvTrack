@@ -61,8 +61,14 @@ void main() {
 
     test('verifyPin handles malformed hash strings', () {
       expect(SecurityUtils.verifyPin('1234', 'malformed'), isFalse);
-      expect(SecurityUtils.verifyPin('1234', 'salt:hash'), isFalse); // v2 format
-      expect(SecurityUtils.verifyPin('1234', 'salt:invalid_iterations:hash'), isFalse);
+      expect(
+        SecurityUtils.verifyPin('1234', 'salt:hash'),
+        isFalse,
+      ); // v2 format
+      expect(
+        SecurityUtils.verifyPin('1234', 'salt:invalid_iterations:hash'),
+        isFalse,
+      );
     });
 
     test('Performance: 10,000 iterations is reasonable (<500ms)', () {

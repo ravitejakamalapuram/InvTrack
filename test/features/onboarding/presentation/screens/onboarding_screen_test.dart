@@ -14,21 +14,19 @@ void main() {
   testWidgets('OnboardingScreen loads and shows first page', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp(
-          home: OnboardingScreen(onComplete: () {}),
-        ),
+        child: MaterialApp(home: OnboardingScreen(onComplete: () {})),
       ),
     );
 
     expect(find.text('Track Money In & Out'), findsOneWidget);
   });
 
-  testWidgets('Onboarding dots are interactive and have correct semantics', (tester) async {
+  testWidgets('Onboarding dots are interactive and have correct semantics', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp(
-          home: OnboardingScreen(onComplete: () {}),
-        ),
+        child: MaterialApp(home: OnboardingScreen(onComplete: () {})),
       ),
     );
 
@@ -45,7 +43,10 @@ void main() {
     final dot2Finder = find.bySemanticsLabel('Page 2 of 4');
     expect(dot2Finder, findsOneWidget);
     final dot2Semantics = tester.getSemantics(dot2Finder);
-    expect(dot2Semantics.flagsCollection.isSelected, isNot(equals(Tristate.isTrue)));
+    expect(
+      dot2Semantics.flagsCollection.isSelected,
+      isNot(equals(Tristate.isTrue)),
+    );
 
     // Tap the second dot
     await tester.tap(dot2Finder);
@@ -55,10 +56,20 @@ void main() {
     expect(find.text('Know Your Real Returns'), findsOneWidget);
 
     // Verify selection state updated
-    final dot1SemanticsAfter = tester.getSemantics(find.bySemanticsLabel('Page 1 of 4'));
-    final dot2SemanticsAfter = tester.getSemantics(find.bySemanticsLabel('Page 2 of 4'));
+    final dot1SemanticsAfter = tester.getSemantics(
+      find.bySemanticsLabel('Page 1 of 4'),
+    );
+    final dot2SemanticsAfter = tester.getSemantics(
+      find.bySemanticsLabel('Page 2 of 4'),
+    );
 
-    expect(dot1SemanticsAfter.flagsCollection.isSelected, isNot(equals(Tristate.isTrue)));
-    expect(dot2SemanticsAfter.flagsCollection.isSelected, equals(Tristate.isTrue));
+    expect(
+      dot1SemanticsAfter.flagsCollection.isSelected,
+      isNot(equals(Tristate.isTrue)),
+    );
+    expect(
+      dot2SemanticsAfter.flagsCollection.isSelected,
+      equals(Tristate.isTrue),
+    );
   });
 }

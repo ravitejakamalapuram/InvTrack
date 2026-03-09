@@ -10,10 +10,7 @@ import 'package:inv_tracker/features/app_update/presentation/widgets/update_dial
 class VersionCheckInitializer extends ConsumerStatefulWidget {
   final Widget child;
 
-  const VersionCheckInitializer({
-    super.key,
-    required this.child,
-  });
+  const VersionCheckInitializer({super.key, required this.child});
 
   @override
   ConsumerState<VersionCheckInitializer> createState() =>
@@ -102,10 +99,8 @@ class _VersionCheckInitializerState
       showDialog(
         context: navigatorContext,
         barrierDismissible: !forceUpdate,
-        builder: (context) => UpdateDialog(
-          versionInfo: versionInfo,
-          forceUpdate: forceUpdate,
-        ),
+        builder: (context) =>
+            UpdateDialog(versionInfo: versionInfo, forceUpdate: forceUpdate),
       );
     });
   }
@@ -127,4 +122,3 @@ class _VersionCheckInitializerState
     return widget.child;
   }
 }
-

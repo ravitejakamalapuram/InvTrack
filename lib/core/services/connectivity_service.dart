@@ -12,10 +12,12 @@ class ConnectivityService {
   /// Emits true when connected, false when disconnected
   Stream<bool> get connectivityStream {
     return _connectivity.onConnectivityChanged.map((results) {
-      final isConnected = results.any((result) =>
-          result == ConnectivityResult.mobile ||
-          result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.ethernet);
+      final isConnected = results.any(
+        (result) =>
+            result == ConnectivityResult.mobile ||
+            result == ConnectivityResult.wifi ||
+            result == ConnectivityResult.ethernet,
+      );
 
       LoggerService.info(
         'Connectivity changed',
@@ -33,10 +35,12 @@ class ConnectivityService {
   Future<bool> checkConnectivity() async {
     try {
       final results = await _connectivity.checkConnectivity();
-      final isConnected = results.any((result) =>
-          result == ConnectivityResult.mobile ||
-          result == ConnectivityResult.wifi ||
-          result == ConnectivityResult.ethernet);
+      final isConnected = results.any(
+        (result) =>
+            result == ConnectivityResult.mobile ||
+            result == ConnectivityResult.wifi ||
+            result == ConnectivityResult.ethernet,
+      );
 
       LoggerService.debug(
         'Current connectivity',
@@ -62,4 +66,3 @@ class ConnectivityService {
     _subscription?.cancel();
   }
 }
-

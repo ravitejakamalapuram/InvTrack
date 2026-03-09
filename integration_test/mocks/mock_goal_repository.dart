@@ -23,10 +23,7 @@ class FakeGoalRepository implements GoalRepository {
   }
 
   /// Seed with test data
-  void seed({
-    List<GoalEntity>? goals,
-    List<GoalEntity>? archivedGoals,
-  }) {
+  void seed({List<GoalEntity>? goals, List<GoalEntity>? archivedGoals}) {
     if (goals != null) _goals.addAll(goals);
     if (archivedGoals != null) _archivedGoals.addAll(archivedGoals);
   }
@@ -51,24 +48,24 @@ class FakeGoalRepository implements GoalRepository {
   @override
   Future<GoalEntity?> getGoalById(String id) async {
     return _goals.cast<GoalEntity?>().firstWhere(
-          (g) => g?.id == id,
-          orElse: () => _archivedGoals.cast<GoalEntity?>().firstWhere(
-                (g) => g?.id == id,
-                orElse: () => null,
-              ),
-        );
+      (g) => g?.id == id,
+      orElse: () => _archivedGoals.cast<GoalEntity?>().firstWhere(
+        (g) => g?.id == id,
+        orElse: () => null,
+      ),
+    );
   }
 
   @override
   Stream<GoalEntity?> watchGoalById(String id) {
     return Stream.value(
       _goals.cast<GoalEntity?>().firstWhere(
-            (g) => g?.id == id,
-            orElse: () => _archivedGoals.cast<GoalEntity?>().firstWhere(
-                  (g) => g?.id == id,
-                  orElse: () => null,
-                ),
-          ),
+        (g) => g?.id == id,
+        orElse: () => _archivedGoals.cast<GoalEntity?>().firstWhere(
+          (g) => g?.id == id,
+          orElse: () => null,
+        ),
+      ),
     );
   }
 
@@ -125,9 +122,9 @@ class FakeGoalRepository implements GoalRepository {
   @override
   Future<GoalEntity?> getArchivedGoalById(String id) async {
     return _archivedGoals.cast<GoalEntity?>().firstWhere(
-          (g) => g?.id == id,
-          orElse: () => null,
-        );
+      (g) => g?.id == id,
+      orElse: () => null,
+    );
   }
 
   @override

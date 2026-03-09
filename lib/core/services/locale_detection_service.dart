@@ -449,4 +449,3 @@ enum DateFormatPattern {
   /// **Used in**: Japan, China, Korea, Canada
   ymd,
 }
-

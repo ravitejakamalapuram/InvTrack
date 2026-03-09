@@ -162,10 +162,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           TextButton.icon(
             onPressed: () => _shareDocument(context),
             icon: const Icon(Icons.share_rounded, color: Colors.white70),
-            label: Text(
-              'Share',
-              style: TextStyle(color: Colors.white70),
-            ),
+            label: Text('Share', style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),

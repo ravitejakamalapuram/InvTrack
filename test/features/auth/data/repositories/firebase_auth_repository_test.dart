@@ -47,64 +47,76 @@ void main() {
   });
 
   group('FirebaseAuthRepository - Google Sign-In Fix Tests', () {
-    test('signInWithGoogle uses only idToken (no authorizationForScopes)', () async {
-      // Arrange
-      const testEmail = 'test@example.com';
-      const testIdToken = 'test-id-token-12345';
-      const testUid = 'test-uid-12345';
+    test(
+      'signInWithGoogle uses only idToken (no authorizationForScopes)',
+      () async {
+        // Arrange
+        const testEmail = 'test@example.com';
+        const testIdToken = 'test-id-token-12345';
+        const testUid = 'test-uid-12345';
 
-      // Mock GoogleSignIn.authenticate() to return GoogleSignInAccount
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenAnswer((_) async => mockGoogleSignInAccount);
+        // Mock GoogleSignIn.authenticate() to return GoogleSignInAccount
+        // No scopeHint parameter - identity-only mode
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
 
-      // Mock GoogleSignInAccount properties
-      when(() => mockGoogleSignInAccount.email).thenReturn(testEmail);
-      when(() => mockGoogleSignInAccount.authentication)
-          .thenReturn(mockGoogleSignInAuthentication);
+        // Mock GoogleSignInAccount properties
+        when(() => mockGoogleSignInAccount.email).thenReturn(testEmail);
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
 
-      // Mock GoogleSignInAuthentication to provide only idToken
-      when(() => mockGoogleSignInAuthentication.idToken).thenReturn(testIdToken);
+        // Mock GoogleSignInAuthentication to provide only idToken
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn(testIdToken);
 
-      // Mock FirebaseAuth.signInWithCredential
-      when(() => mockFirebaseAuth.signInWithCredential(any()))
-          .thenAnswer((_) async => mockUserCredential);
+        // Mock FirebaseAuth.signInWithCredential
+        when(
+          () => mockFirebaseAuth.signInWithCredential(any()),
+        ).thenAnswer((_) async => mockUserCredential);
 
-      // Mock UserCredential and User
-      when(() => mockUserCredential.user).thenReturn(mockUser);
-      when(() => mockUser.uid).thenReturn(testUid);
-      when(() => mockUser.email).thenReturn(testEmail);
-      when(() => mockUser.displayName).thenReturn('Test User');
-      when(() => mockUser.photoURL).thenReturn(null);
+        // Mock UserCredential and User
+        when(() => mockUserCredential.user).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn(testUid);
+        when(() => mockUser.email).thenReturn(testEmail);
+        when(() => mockUser.displayName).thenReturn('Test User');
+        when(() => mockUser.photoURL).thenReturn(null);
 
-      // Act
-      final result = await repository.signInWithGoogle();
+        // Act
+        final result = await repository.signInWithGoogle();
 
-      // Assert
-      expect(result, isNotNull);
-      expect(result!.id, testUid);
-      expect(result.email, testEmail);
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.id, testUid);
+        expect(result.email, testEmail);
 
-      // Verify authenticate was called with correct scope
-      verify(() => mockGoogleSignIn.authenticate(scopeHint: ['email'])).called(1);
+        // Verify authenticate was called with NO scopeHint (identity-only mode)
+        verify(
+          () => mockGoogleSignIn.authenticate(),
+        ).called(1);
 
-      // Verify authentication property was accessed (not authorizationForScopes)
-      verify(() => mockGoogleSignInAccount.authentication).called(1);
+        // Verify authentication property was accessed (not authorizationForScopes)
+        verify(() => mockGoogleSignInAccount.authentication).called(1);
 
-      // Verify idToken was used
-      verify(() => mockGoogleSignInAuthentication.idToken).called(1);
+        // Verify idToken was used (called twice: once for null check, once for credential)
+        verify(() => mockGoogleSignInAuthentication.idToken).called(2);
 
-      // Verify Firebase sign-in was called
-      verify(() => mockFirebaseAuth.signInWithCredential(any())).called(1);
+        // Verify Firebase sign-in was called
+        verify(() => mockFirebaseAuth.signInWithCredential(any())).called(1);
 
-      // CRITICAL: Verify authorizationClient was NEVER accessed
-      // (This would be the hanging call we fixed)
-      verifyNever(() => mockGoogleSignInAccount.authorizationClient);
-    });
+        // CRITICAL: Verify authorizationClient was NEVER accessed
+        // (This would be the hanging call we fixed)
+        verifyNever(() => mockGoogleSignInAccount.authorizationClient);
+      },
+    );
 
     test('signInWithGoogle handles GoogleSignInException.canceled', () async {
       // Arrange
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenThrow(
+      when(
+        () => mockGoogleSignIn.authenticate(),
+      ).thenThrow(
         const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
       );
 
@@ -113,131 +125,166 @@ void main() {
 
       // Assert
       expect(result, isNull);
-      verify(() => mockGoogleSignIn.authenticate(scopeHint: ['email'])).called(1);
+      verify(
+        () => mockGoogleSignIn.authenticate(),
+      ).called(1);
       verifyNever(() => mockFirebaseAuth.signInWithCredential(any()));
     });
 
-    test('signInWithGoogle rethrows non-canceled GoogleSignInException', () async {
-      // Arrange
-      // Use 'interrupted' code (valid GoogleSignInExceptionCode value)
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenThrow(
-        const GoogleSignInException(code: GoogleSignInExceptionCode.interrupted),
-      );
+    test(
+      'signInWithGoogle rethrows non-canceled GoogleSignInException',
+      () async {
+        // Arrange
+        // Use 'interrupted' code (valid GoogleSignInExceptionCode value)
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenThrow(
+          const GoogleSignInException(
+            code: GoogleSignInExceptionCode.interrupted,
+          ),
+        );
 
-      // Act & Assert
-      expect(
-        () => repository.signInWithGoogle(),
-        throwsA(isA<GoogleSignInException>()),
-      );
-    });
+        // Act & Assert
+        // The implementation converts GoogleSignInException to Exception with user-friendly message
+        expect(
+          () => repository.signInWithGoogle(),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
 
     test('signInWithGoogle rethrows generic exceptions', () async {
       // Arrange
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenThrow(Exception('Network error'));
+      when(
+        () => mockGoogleSignIn.authenticate(),
+      ).thenThrow(Exception('Network error'));
 
       // Act & Assert
-      expect(
-        () => repository.signInWithGoogle(),
-        throwsA(isA<Exception>()),
-      );
+      expect(() => repository.signInWithGoogle(), throwsA(isA<Exception>()));
     });
 
-    test('signInWithGoogle returns null when user is null in credential', () async {
-      // Arrange
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenAnswer((_) async => mockGoogleSignInAccount);
-      when(() => mockGoogleSignInAccount.email).thenReturn('test@example.com');
-      when(() => mockGoogleSignInAccount.authentication)
-          .thenReturn(mockGoogleSignInAuthentication);
-      when(() => mockGoogleSignInAuthentication.idToken).thenReturn('test-token');
-      when(() => mockFirebaseAuth.signInWithCredential(any()))
-          .thenAnswer((_) async => mockUserCredential);
-      when(() => mockUserCredential.user).thenReturn(null);
+    test(
+      'signInWithGoogle returns null when user is null in credential',
+      () async {
+        // Arrange
+        when(
+          () =>
+              mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(
+          () => mockGoogleSignInAccount.email,
+        ).thenReturn('test@example.com');
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn('test-token');
+        when(
+          () => mockFirebaseAuth.signInWithCredential(any()),
+        ).thenAnswer((_) async => mockUserCredential);
+        when(() => mockUserCredential.user).thenReturn(null);
 
-      // Act
-      final result = await repository.signInWithGoogle();
+        // Act
+        final result = await repository.signInWithGoogle();
 
-      // Assert
-      expect(result, isNull);
-    });
+        // Assert
+        expect(result, isNull);
+      },
+    );
   });
 
   group('FirebaseAuthRepository - reauthenticateWithGoogle Fix Tests', () {
-    test('reauthenticateWithGoogle uses only idToken (no authorizationForScopes)', () async {
-      // Arrange
-      const testEmail = 'test@example.com';
-      const testIdToken = 'test-id-token-12345';
-      const testUid = 'test-uid-12345';
+    test(
+      'reauthenticateWithGoogle uses only idToken (no authorizationForScopes)',
+      () async {
+        // Arrange
+        const testEmail = 'test@example.com';
+        const testIdToken = 'test-id-token-12345';
+        const testUid = 'test-uid-12345';
 
-      // Mock current user
-      when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-      when(() => mockUser.uid).thenReturn(testUid);
-      when(() => mockUser.email).thenReturn(testEmail);
+        // Mock current user
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn(testUid);
+        when(() => mockUser.email).thenReturn(testEmail);
 
-      // Mock GoogleSignIn.signOut
-      when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+        // Mock GoogleSignIn.signOut
+        when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
 
-      // Mock GoogleSignIn.authenticate
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenAnswer((_) async => mockGoogleSignInAccount);
+        // Mock GoogleSignIn.authenticate
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
 
-      // Mock GoogleSignInAccount
-      when(() => mockGoogleSignInAccount.authentication)
-          .thenReturn(mockGoogleSignInAuthentication);
+        // Mock GoogleSignInAccount
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
 
-      // Mock GoogleSignInAuthentication to provide only idToken
-      when(() => mockGoogleSignInAuthentication.idToken).thenReturn(testIdToken);
+        // Mock GoogleSignInAuthentication to provide only idToken
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn(testIdToken);
 
-      // Mock User.reauthenticateWithCredential
-      when(() => mockUser.reauthenticateWithCredential(any()))
-          .thenAnswer((_) async => mockUserCredential);
+        // Mock User.reauthenticateWithCredential
+        when(
+          () => mockUser.reauthenticateWithCredential(any()),
+        ).thenAnswer((_) async => mockUserCredential);
 
-      // Act
-      final result = await repository.reauthenticateWithGoogle();
+        // Act
+        final result = await repository.reauthenticateWithGoogle();
 
-      // Assert
-      expect(result, isTrue);
+        // Assert
+        expect(result, isTrue);
 
-      // Verify sign out was called first
-      verify(() => mockGoogleSignIn.signOut()).called(1);
+        // Verify sign out was called first
+        verify(() => mockGoogleSignIn.signOut()).called(1);
 
-      // Verify authenticate was called
-      verify(() => mockGoogleSignIn.authenticate(scopeHint: ['email'])).called(1);
+        // Verify authenticate was called
+        verify(
+          () => mockGoogleSignIn.authenticate(),
+        ).called(1);
 
-      // Verify authentication property was accessed
-      verify(() => mockGoogleSignInAccount.authentication).called(1);
+        // Verify authentication property was accessed
+        verify(() => mockGoogleSignInAccount.authentication).called(1);
 
-      // Verify idToken was used
-      verify(() => mockGoogleSignInAuthentication.idToken).called(1);
+        // Verify idToken was used
+        verify(() => mockGoogleSignInAuthentication.idToken).called(1);
 
-      // Verify reauthentication was called
-      verify(() => mockUser.reauthenticateWithCredential(any())).called(1);
+        // Verify reauthentication was called
+        verify(() => mockUser.reauthenticateWithCredential(any())).called(1);
 
-      // CRITICAL: Verify authorizationClient was NEVER accessed
-      verifyNever(() => mockGoogleSignInAccount.authorizationClient);
-    });
+        // CRITICAL: Verify authorizationClient was NEVER accessed
+        verifyNever(() => mockGoogleSignInAccount.authorizationClient);
+      },
+    );
 
-    test('reauthenticateWithGoogle returns false when no current user', () async {
-      // Arrange
-      when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+    test(
+      'reauthenticateWithGoogle returns false when no current user',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-      // Act
-      final result = await repository.reauthenticateWithGoogle();
+        // Act
+        final result = await repository.reauthenticateWithGoogle();
 
-      // Assert
-      expect(result, isFalse);
-      verifyNever(() => mockGoogleSignIn.signOut());
-      verifyNever(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')));
-    });
+        // Assert
+        expect(result, isFalse);
+        verifyNever(() => mockGoogleSignIn.signOut());
+        verifyNever(
+          () =>
+              mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+        );
+      },
+    );
 
     test('reauthenticateWithGoogle handles exceptions', () async {
       // Arrange
       when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
       when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
-      when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
-          .thenThrow(Exception('Re-auth failed'));
+      when(
+        () => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+      ).thenThrow(Exception('Re-auth failed'));
 
       // Act & Assert
       expect(
@@ -318,5 +365,3 @@ void main() {
     });
   });
 }
-
-

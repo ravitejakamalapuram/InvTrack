@@ -136,8 +136,8 @@ class _TemplateCard extends StatelessWidget {
             color: isSelected
                 ? template.color
                 : (isDark
-                    ? AppColors.neutral700Dark
-                    : AppColors.neutral200Light),
+                      ? AppColors.neutral700Dark
+                      : AppColors.neutral200Light),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected

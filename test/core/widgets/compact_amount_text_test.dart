@@ -19,9 +19,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -34,14 +32,12 @@ void main() {
   }
 
   group('CompactAmountText Accessibility', () {
-    testWidgets('Normal mode: Should have accessible label with full amount',
-        (tester) async {
+    testWidgets('Normal mode: Should have accessible label with full amount', (
+      tester,
+    ) async {
       await pumpWidget(
         tester,
-        const CompactAmountText(
-          amount: 150000,
-          compactText: '₹1.5L',
-        ),
+        const CompactAmountText(amount: 150000, compactText: '₹1.5L'),
         privacyModeEnabled: false,
       );
 
@@ -57,13 +53,12 @@ void main() {
       expect(semantics.hint, contains('copy exact amount'));
     });
 
-    testWidgets('Privacy mode: Should have "Hidden amount" label', (tester) async {
+    testWidgets('Privacy mode: Should have "Hidden amount" label', (
+      tester,
+    ) async {
       await pumpWidget(
         tester,
-        const CompactAmountText(
-          amount: 150000,
-          compactText: '₹1.5L',
-        ),
+        const CompactAmountText(amount: 150000, compactText: '₹1.5L'),
         privacyModeEnabled: true,
       );
 
@@ -74,14 +69,12 @@ void main() {
       expect(semantics.label, isNot(contains('•')));
     });
 
-    testWidgets('Normal mode: Should support long press action via Semantics',
-        (tester) async {
+    testWidgets('Normal mode: Should support long press action via Semantics', (
+      tester,
+    ) async {
       await pumpWidget(
         tester,
-        const CompactAmountText(
-          amount: 150000,
-          compactText: '₹1.5L',
-        ),
+        const CompactAmountText(amount: 150000, compactText: '₹1.5L'),
         privacyModeEnabled: false,
       );
 

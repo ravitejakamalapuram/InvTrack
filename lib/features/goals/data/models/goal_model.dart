@@ -20,6 +20,7 @@ class GoalModel {
       'icon': goal.icon,
       'colorValue': goal.colorValue,
       'isArchived': goal.isArchived,
+      'currency': goal.currency, // Multi-currency support (Rule 21.2)
       'createdAt': Timestamp.fromDate(goal.createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -49,6 +50,7 @@ class GoalModel {
       colorValue:
           data['colorValue'] as int? ?? GoalColors.defaultColor.toARGB32(),
       isArchived: data['isArchived'] as bool? ?? false,
+      currency: data['currency'] as String? ?? 'USD', // Backward compatibility
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()

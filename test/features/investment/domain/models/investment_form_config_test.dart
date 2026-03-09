@@ -18,7 +18,9 @@ void main() {
 
     group('forType', () {
       test('fixedDeposit should show all relevant fields', () {
-        final config = InvestmentFormConfig.forType(InvestmentType.fixedDeposit);
+        final config = InvestmentFormConfig.forType(
+          InvestmentType.fixedDeposit,
+        );
         expect(config.showStartDate, isTrue);
         expect(config.showExpectedRate, isTrue);
         expect(config.showTenure, isTrue);
@@ -150,4 +152,3 @@ void main() {
     });
   });
 }
-

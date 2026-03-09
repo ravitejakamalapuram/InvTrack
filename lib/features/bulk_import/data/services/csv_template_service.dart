@@ -6,19 +6,22 @@ import 'package:share_plus/share_plus.dart';
 /// Service for generating and sharing CSV import templates
 class CsvTemplateService {
   /// CSV headers for the template
-  /// Note: Investment Type and Investment Status are optional columns
+  /// Note: Currency, Investment Type and Investment Status are optional columns
+  /// Currency defaults to user's base currency if not specified
   static const List<String> headers = [
     'Date',
     'Investment Name',
     'Type',
     'Amount',
+    'Currency',
     'Notes',
     'Investment Type',
     'Investment Status',
   ];
 
   /// Sample data rows covering all scenarios
-  /// Includes optional Investment Type and Investment Status columns
+  /// Includes optional Currency, Investment Type and Investment Status columns
+  /// Demonstrates multi-currency support (USD, INR, EUR)
   static const List<List<String>> sampleRows = [
     // Investment examples with type and status
     [
@@ -26,6 +29,7 @@ class CsvTemplateService {
       'Bhive Investment',
       'INVEST',
       '100000',
+      'INR',
       'Initial investment',
       'p2p',
       'open',
@@ -35,6 +39,7 @@ class CsvTemplateService {
       'Bhive Investment',
       'INCOME',
       '1500',
+      'INR',
       'Monthly interest',
       'p2p',
       'open',
@@ -44,6 +49,7 @@ class CsvTemplateService {
       'Bhive Investment',
       'INCOME',
       '1500',
+      'INR',
       'Monthly interest',
       'p2p',
       'open',
@@ -54,6 +60,7 @@ class CsvTemplateService {
       'P2P Lending - LenDenClub',
       'INVEST',
       '50000',
+      'INR',
       'Started P2P',
       'p2p',
       'open',
@@ -63,6 +70,7 @@ class CsvTemplateService {
       'P2P Lending - LenDenClub',
       'INCOME',
       '750',
+      'INR',
       'Interest received',
       'p2p',
       'open',
@@ -72,44 +80,49 @@ class CsvTemplateService {
       'P2P Lending - LenDenClub',
       'RETURN',
       '10000',
+      'INR',
       'Partial withdrawal',
       'p2p',
       'open',
     ],
-    // Third investment with fees
+    // Third investment with fees (USD example)
     [
       '2024-02-01',
-      'Gold Bonds',
+      'US Tech Stocks',
       'INVEST',
-      '200000',
-      'Sovereign Gold Bonds',
-      'bonds',
+      '1000',
+      'USD',
+      'Initial investment',
+      'stocks',
       'open',
     ],
     [
       '2024-08-01',
-      'Gold Bonds',
+      'US Tech Stocks',
       'INCOME',
-      '2500',
-      'Interest payout',
-      'bonds',
+      '25',
+      'USD',
+      'Dividend payout',
+      'stocks',
       'open',
     ],
-    // Investment with exit (closed status)
+    // Investment with exit (closed status, EUR example)
     [
       '2023-06-01',
-      'Fixed Deposit - HDFC',
+      'European Bonds',
       'INVEST',
-      '100000',
-      'FD for 1 year',
-      'fixedDeposit',
+      '800',
+      'EUR',
+      'Government bonds',
+      'bonds',
       'closed',
     ],
     [
       '2024-06-01',
-      'Fixed Deposit - HDFC',
+      'European Bonds',
       'RETURN',
-      '107000',
+      '850',
+      'EUR',
       'Maturity amount',
       'fixedDeposit',
       'closed',
@@ -123,6 +136,10 @@ class CsvTemplateService {
 # INCOME  - Returns/dividends received while invested (inflow)
 # RETURN  - Money withdrawn or returned from investment (inflow)
 # FEE     - Fees paid (outflow)
+#
+# Currency Column Values (optional):
+# ISO 4217 currency codes: USD, INR, EUR, GBP, JPY, etc.
+# If not specified, defaults to your base currency setting
 #
 # Investment Type Column Values (optional):
 # p2p, fixedDeposit, bonds, mutualFund, stocks, realEstate, gold, crypto, other

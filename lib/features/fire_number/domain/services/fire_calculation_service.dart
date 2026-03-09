@@ -130,12 +130,11 @@ class FireCalculationService {
       currentValue: currentPortfolioValue,
     );
 
-    final achievedMilestones =
-        milestones.where((m) => m.isAchieved).toList();
+    final achievedMilestones = milestones.where((m) => m.isAchieved).toList();
     final nextMilestone = milestones.cast<FireMilestone?>().firstWhere(
-          (m) => !m!.isAchieved,
-          orElse: () => null,
-        );
+      (m) => !m!.isAchieved,
+      orElse: () => null,
+    );
 
     return FireCalculationResult(
       fireNumber: finalFireNumber,
@@ -347,13 +346,15 @@ class FireCalculationService {
       final age = settings.currentAge + year;
       final date = DateTime.now().add(Duration(days: year * 365));
 
-      points.add(FireProjectionPoint(
-        date: date,
-        age: age,
-        projectedValue: balance,
-        targetValue: fireNumber,
-        isHistorical: year == 0,
-      ));
+      points.add(
+        FireProjectionPoint(
+          date: date,
+          age: age,
+          projectedValue: balance,
+          targetValue: fireNumber,
+          isHistorical: year == 0,
+        ),
+      );
 
       // Compound for next year using real returns
       for (var month = 0; month < 12; month++) {

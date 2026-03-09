@@ -70,8 +70,8 @@ class VersionCheckState {
 /// Provider for version check state
 final versionCheckProvider =
     NotifierProvider<VersionCheckNotifier, VersionCheckState>(
-  VersionCheckNotifier.new,
-);
+      VersionCheckNotifier.new,
+    );
 
 class VersionCheckNotifier extends Notifier<VersionCheckState> {
   late final VersionCheckService _service;
@@ -87,10 +87,7 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
 
     _initialize();
 
-    return VersionCheckState(
-      currentVersion: '0.0.0',
-      currentBuildNumber: 0,
-    );
+    return VersionCheckState(currentVersion: '0.0.0', currentBuildNumber: 0);
   }
 
   Future<void> _initialize() async {
@@ -102,8 +99,9 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
       state = state.copyWith(
         currentVersion: packageInfo.version,
         currentBuildNumber: int.tryParse(packageInfo.buildNumber) ?? 0,
-        lastCheckedAt:
-            lastChecked != null ? DateTime.tryParse(lastChecked) : null,
+        lastCheckedAt: lastChecked != null
+            ? DateTime.tryParse(lastChecked)
+            : null,
         updateDismissed: dismissedVersion == packageInfo.version,
       );
 
@@ -118,8 +116,9 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
 
   bool _shouldAutoCheck() {
     if (state.lastCheckedAt == null) return true;
-    final hoursSinceCheck =
-        DateTime.now().difference(state.lastCheckedAt!).inHours;
+    final hoursSinceCheck = DateTime.now()
+        .difference(state.lastCheckedAt!)
+        .inHours;
     return hoursSinceCheck >= 24;
   }
 
@@ -163,4 +162,3 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
     state = state.copyWith(updateDismissed: false);
   }
 }
-

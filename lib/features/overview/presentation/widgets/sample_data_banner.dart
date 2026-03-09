@@ -96,9 +96,14 @@ class SampleDataBanner extends ConsumerWidget {
                   isLoading: sampleState.isLoading,
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
-                    final confirmed = await _showClearConfirmation(context, l10n);
+                    final confirmed = await _showClearConfirmation(
+                      context,
+                      l10n,
+                    );
                     if (confirmed == true) {
-                      ref.read(sampleDataModeProvider.notifier).clearSampleData();
+                      ref
+                          .read(sampleDataModeProvider.notifier)
+                          .clearSampleData();
                     }
                   },
                 ),
@@ -112,9 +117,14 @@ class SampleDataBanner extends ConsumerWidget {
                   isLoading: sampleState.isLoading,
                   onPressed: () async {
                     HapticFeedback.mediumImpact();
-                    final confirmed = await _showKeepConfirmation(context, l10n);
+                    final confirmed = await _showKeepConfirmation(
+                      context,
+                      l10n,
+                    );
                     if (confirmed == true) {
-                      ref.read(sampleDataModeProvider.notifier).keepSampleData();
+                      ref
+                          .read(sampleDataModeProvider.notifier)
+                          .keepSampleData();
                     }
                   },
                 ),
@@ -126,7 +136,10 @@ class SampleDataBanner extends ConsumerWidget {
     );
   }
 
-  Future<bool?> _showClearConfirmation(BuildContext context, AppLocalizations l10n) {
+  Future<bool?> _showClearConfirmation(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -150,7 +163,10 @@ class SampleDataBanner extends ConsumerWidget {
     );
   }
 
-  Future<bool?> _showKeepConfirmation(BuildContext context, AppLocalizations l10n) {
+  Future<bool?> _showKeepConfirmation(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -203,10 +219,7 @@ class _ActionButton extends StatelessWidget {
           ? SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: color,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: color),
             )
           : Icon(icon, size: 18),
       label: Text(
@@ -220,11 +233,8 @@ class _ActionButton extends StatelessWidget {
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 }
-

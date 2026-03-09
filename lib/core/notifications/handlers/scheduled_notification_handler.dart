@@ -27,8 +27,8 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     required this.ensureInitialized,
     required this.ensurePermissionsForShow,
     required this.formatCurrency,
-  })  : _plugin = plugin,
-        _prefs = prefs;
+  }) : _plugin = plugin,
+       _prefs = prefs;
 
   @override
   SharedPreferences get prefs => _prefs;
@@ -188,7 +188,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
         body: 'Final installment of advance tax (100%) is due by March 15.',
         date: DateTime(
           now.month >= 3 && now.day > 15 ? nextYear : currentYear,
-          3, 10, 9, 0,
+          3,
+          10,
+          9,
+          0,
         ),
       ),
       _TaxReminder(
@@ -197,7 +200,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
         body: 'July 31 is the deadline for filing Income Tax Returns.',
         date: DateTime(
           now.month >= 7 && now.day > 25 ? nextYear : currentYear,
-          7, 25, 9, 0,
+          7,
+          25,
+          9,
+          0,
         ),
       ),
     ];
@@ -219,7 +225,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     for (final reminder in reminders) {
       if (reminder.date.isAfter(now)) {
@@ -264,7 +273,13 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     while (nextSunday.weekday != DateTime.sunday) {
       nextSunday = nextSunday.add(const Duration(days: 1));
     }
-    nextSunday = DateTime(nextSunday.year, nextSunday.month, nextSunday.day, 18, 0);
+    nextSunday = DateTime(
+      nextSunday.year,
+      nextSunday.month,
+      nextSunday.day,
+      18,
+      0,
+    );
 
     if (nextSunday.isBefore(DateTime.now())) {
       nextSunday = nextSunday.add(const Duration(days: 7));

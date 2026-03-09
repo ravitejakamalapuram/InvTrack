@@ -219,16 +219,17 @@ class DataExportService {
   // ============ CSV Generation ============
 
   /// Generate CSV for cashflows with full investment metadata
-  /// Format: Date, Investment Name, Type, Amount, Notes, Investment Type, Investment Status
+  /// Format: Date, Investment Name, Type, Amount, Currency, Notes, Investment Type, Investment Status
   String _generateCashFlowsCsv(List<_CashFlowWithInvestment> items) {
     final rows = <List<dynamic>>[];
 
-    // Header row - extended format with investment metadata
+    // Header row - extended format with investment metadata (Rule 21.4: Multi-Currency)
     rows.add([
       'Date',
       'Investment Name',
       'Type',
       'Amount',
+      'Currency',
       'Notes',
       'Investment Type',
       'Investment Status',
@@ -244,6 +245,7 @@ class DataExportService {
         CsvUtils.sanitizeField(item.investment.name),
         _typeToExportString(item.cashFlow.type),
         item.cashFlow.amount,
+        item.cashFlow.currency, // Multi-currency support (Rule 21.4)
         CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,

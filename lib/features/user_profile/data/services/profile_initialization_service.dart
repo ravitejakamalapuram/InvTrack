@@ -13,8 +13,8 @@ class ProfileInitializationService {
   ProfileInitializationService({
     required UserProfileRepository profileRepository,
     required SharedPreferences prefs,
-  })  : _profileRepository = profileRepository,
-        _prefs = prefs;
+  }) : _profileRepository = profileRepository,
+       _prefs = prefs;
 
   /// Initialize profile for a user if it doesn't exist
   /// Returns true if profile was created, false if it already existed
@@ -30,7 +30,8 @@ class ProfileInitializationService {
       }
 
       // Check if we've already initialized (in case of offline mode)
-      final hasInitialized = _prefs.getBool('profile_initialized_$userId') ?? false;
+      final hasInitialized =
+          _prefs.getBool('profile_initialized_$userId') ?? false;
       if (hasInitialized) {
         LoggerService.debug('Profile initialization already attempted', metadata: {
           'userId': userId,
@@ -54,9 +55,15 @@ class ProfileInitializationService {
       });
 
       // Auto-select currency based on country
-      final currency = LocaleDetectionService.getCurrencyForCountry(countryCode);
-      final localeString = LocaleDetectionService.getLocaleStringForCountry(countryCode);
-      final dateFormat = LocaleDetectionService.getDateFormatForCountry(countryCode);
+      final currency = LocaleDetectionService.getCurrencyForCountry(
+        countryCode,
+      );
+      final localeString = LocaleDetectionService.getLocaleStringForCountry(
+        countryCode,
+      );
+      final dateFormat = LocaleDetectionService.getDateFormatForCountry(
+        countryCode,
+      );
 
       LoggerService.debug('Auto-selected settings', metadata: {
         'currency': currency,
@@ -103,7 +110,10 @@ class ProfileInitializationService {
     try {
       await _prefs.setString('currency', profile.preferredCurrency);
       await _prefs.setString('locale', profile.preferredLocale);
-      await _prefs.setString('dateFormatPattern', profile.dateFormatPattern.name);
+      await _prefs.setString(
+        'dateFormatPattern',
+        profile.dateFormatPattern.name,
+      );
 
       LoggerService.debug('Synced profile to local settings', metadata: {
         'currency': profile.preferredCurrency,
@@ -118,4 +128,3 @@ class ProfileInitializationService {
     }
   }
 }
-

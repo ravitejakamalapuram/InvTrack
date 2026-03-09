@@ -69,10 +69,7 @@ class TransactionFab extends StatelessWidget {
 class DocumentFab extends StatelessWidget {
   final VoidCallback onTap;
 
-  const DocumentFab({
-    super.key,
-    required this.onTap,
-  });
+  const DocumentFab({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

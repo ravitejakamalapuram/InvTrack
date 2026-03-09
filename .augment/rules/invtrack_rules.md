@@ -828,6 +828,7 @@ Before marking PR as ready for review:
 - [ ] Currency: All amounts use `formatCompactCurrency()` with locale parameter
 - [ ] Currency: No direct calls to `formatCompactIndian()` (deprecated)
 - [ ] Currency: Tested with different currencies (USD, EUR, INR) for correct notation
+- [ ] **Multi-Currency: Feature complies with base currency change (see Rule 21)**
 - [ ] Privacy: Financial data wrapped in `PrivacyProtectionWrapper`
 - [ ] Security: No sensitive data in logs/analytics
 - [ ] Accessibility: Semantic labels, touch targets ≥44dp
@@ -846,4 +847,234 @@ Before marking PR as ready for review:
 - [ ] No merge conflicts
 - [ ] All CI checks passing
 - [ ] Ready for manual review
+
+---
+
+## 21. MULTI-CURRENCY COMPLIANCE
+
+### 21.1 Core Principle
+**Original data is NEVER changed when base currency changes.**
+
+All features that handle investment/cashflow data MUST comply with multi-currency architecture:
+- Store original amounts and currencies
+- Convert on-demand for display
+- Preserve data integrity across currency changes
+
+### 21.2 Data Storage Requirements
+
+**✅ REQUIRED for all entities storing monetary amounts:**
+```dart
+class MyEntity {
+  final double amount;      // Original amount
+  final String currency;    // Original currency (e.g., 'USD', 'INR', 'EUR')
+  // ❌ NO pre-converted amounts
+  // ❌ NO base-currency-only fields
+}
+```
+
+**Examples:**
+- ✅ `InvestmentEntity` has `currency` field
+- ✅ `CashFlowEntity` has `currency` field
+- ⚠️ `GoalEntity` should have `currency` field (pending)
+- ⚠️ `FireSettingsEntity` amounts are in base currency (user preference)
+
+### 21.3 Display/Calculation Requirements
+
+**All monetary displays MUST:**
+1. Convert to user's base currency using `CurrencyConversionService`
+2. Show exchange rate when currency differs (transparency)
+3. Use `formatCompactCurrency()` with locale parameter
+
+```dart
+// ✅ GOOD: Convert for display
+final baseCurrency = ref.watch(currencyCodeProvider);
+final convertedAmount = await conversionService.convert(
+  amount: cashFlow.amount,
+  from: cashFlow.currency,
+  to: baseCurrency,
+  date: cashFlow.date,
+);
+
+// ❌ BAD: Assume base currency
+final displayAmount = cashFlow.amount; // Wrong if currencies differ
+```
+
+### 21.4 Import/Export Requirements
+
+**CSV/ZIP exports MUST include currency information:**
+
+**✅ REQUIRED CSV columns:**
+```csv
+Date, Investment Name, Type, Amount, Currency, Notes
+2024-01-01, US Stocks, INVEST, 1000, USD, Initial
+2024-01-01, Indian FD, INVEST, 50000, INR, Fixed deposit
+```
+
+**❌ REJECT exports without currency:**
+```csv
+Date, Investment Name, Type, Amount, Notes
+2024-01-01, US Stocks, INVEST, 1000, Initial  # Lost currency info!
+```
+
+**Import parsers MUST:**
+- Read currency column if present
+- Default to base currency if missing (backward compatibility)
+- Validate currency codes (ISO 4217)
+
+### 21.5 Sample Data Requirements
+
+**Sample data MUST showcase multi-currency:**
+- Include investments in at least 2-3 different currencies
+- Demonstrate currency conversion in UI
+- Show exchange rate transparency
+
+```dart
+// ✅ GOOD: Multi-currency sample data
+createInvestment(name: 'US Stocks', currency: 'USD', ...);
+createInvestment(name: 'Indian FD', currency: 'INR', ...);
+createInvestment(name: 'European Bonds', currency: 'EUR', ...);
+
+// ❌ BAD: All same currency
+createInvestment(name: 'Investment 1', currency: 'USD', ...);
+createInvestment(name: 'Investment 2', currency: 'USD', ...);
+```
+
+### 21.6 Data Lifecycle Requirements
+
+**Delete user data MUST clean up:**
+- [ ] All investments (includes currency field)
+- [ ] All cashflows (includes currency field)
+- [ ] All goals (includes currency field if added)
+- [ ] **Exchange rate cache** (`users/{userId}/exchangeRates` collection)
+- [ ] FIRE settings
+- [ ] Sample data preferences
+
+**Exchange rate cache cleanup:**
+```dart
+// ✅ REQUIRED in deleteAllUserData()
+final exchangeRatesRef = FirebaseFirestore.instance
+    .collection('users')
+    .doc(userId)
+    .collection('exchangeRates');
+
+final snapshot = await exchangeRatesRef.get();
+final batch = FirebaseFirestore.instance.batch();
+for (final doc in snapshot.docs) {
+  batch.delete(doc.reference);
+}
+await batch.commit();
+```
+
+### 21.7 Feature Compliance Checklist
+
+**Before implementing ANY feature that handles monetary amounts, verify:**
+
+- [ ] **Data Model:** Entity has `currency` field for all amounts
+- [ ] **Storage:** Original currency stored in Firestore/database
+- [ ] **Display:** Amounts converted to base currency for UI
+- [ ] **Transparency:** Exchange rates shown when currencies differ
+- [ ] **Import:** CSV/file import reads currency column
+- [ ] **Export:** CSV/file export includes currency column
+- [ ] **Sample Data:** Includes multiple currencies (if applicable)
+- [ ] **Calculations:** Uses converted amounts (XIRR, CAGR, totals)
+- [ ] **Data Lifecycle:** Currency data cleaned up on delete
+- [ ] **Cache Cleanup:** Exchange rate cache deleted (if applicable)
+
+### 21.8 Common Violations
+
+**❌ REJECT these patterns:**
+
+1. **Storing converted amounts:**
+```dart
+class Investment {
+  final double amountInBaseCurrency;  // ❌ Wrong! Breaks on currency change
+}
+```
+
+2. **Assuming base currency:**
+```dart
+final total = cashFlows.map((cf) => cf.amount).sum();  // ❌ Wrong! Mixed currencies
+```
+
+3. **Export without currency:**
+```dart
+csv.add([date, name, type, amount]);  // ❌ Missing currency column
+```
+
+4. **Sample data in single currency:**
+```dart
+// ❌ All USD - doesn't showcase feature
+createInvestment('Inv 1', currency: 'USD');
+createInvestment('Inv 2', currency: 'USD');
+```
+
+5. **Forgetting cache cleanup:**
+```dart
+await deleteAllUserData() {
+  // Delete investments, cashflows, goals...
+  // ❌ Missing: Delete exchange rate cache!
+}
+```
+
+### 21.9 Testing Requirements
+
+**Multi-currency tests MUST verify:**
+- [ ] Display updates when base currency changes
+- [ ] Original data unchanged after currency change
+- [ ] Exchange rates fetched correctly
+- [ ] Import/export preserves currency info
+- [ ] Calculations use converted amounts
+- [ ] Cache cleanup on data deletion
+
+**Example test:**
+```dart
+testWidgets('changing base currency updates display', (tester) async {
+  // Create investment in USD
+  final investment = InvestmentEntity(
+    amount: 1000,
+    currency: 'USD',
+    ...
+  );
+
+  // Set base currency to INR
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [currencyCodeProvider.overrideWith((ref) => 'INR')],
+      child: MyApp(),
+    ),
+  );
+
+  // Verify display shows converted amount (not original)
+  expect(find.text('₹83,120'), findsOneWidget);  // 1000 USD × 83.12
+  expect(find.text('$1,000'), findsNothing);
+
+  // Verify original data unchanged
+  expect(investment.amount, 1000);
+  expect(investment.currency, 'USD');
+});
+```
+
+### 21.10 Migration Considerations
+
+**When adding currency support to existing features:**
+
+1. **Add currency field with default:**
+```dart
+final String currency;  // Default to 'USD' for backward compatibility
+```
+
+2. **Provide migration path for existing users:**
+- Show one-time dialog: "Set currency for existing data?"
+- Allow bulk update to base currency
+- Allow individual review
+
+3. **Update Firestore schema:**
+```dart
+// Read with fallback
+currency: data['currency'] as String? ?? 'USD',
+```
+
+---
+
+**End of Multi-Currency Compliance Rules** 🌍
 

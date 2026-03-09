@@ -28,9 +28,7 @@ class UpdateDialog extends ConsumerWidget {
     return PopScope(
       canPop: !forceUpdate,
       child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: AppSizes.borderRadiusLg,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppSizes.borderRadiusLg),
         title: Row(
           children: [
             Container(
@@ -127,7 +125,8 @@ class UpdateDialog extends ConsumerWidget {
   }
 
   Future<void> _launchUpdate(BuildContext context, String? url) async {
-    final updateUrl = url ??
+    final updateUrl =
+        url ??
         'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker';
 
     try {
@@ -150,9 +149,7 @@ class UpdateDialog extends ConsumerWidget {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not open update link'),
-            ),
+            const SnackBar(content: Text('Could not open update link')),
           );
         }
       }
@@ -167,4 +164,3 @@ class UpdateDialog extends ConsumerWidget {
     }
   }
 }
-

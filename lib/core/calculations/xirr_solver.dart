@@ -508,7 +508,11 @@ class XirrSolver {
   /// //     = -10000 + 476.73 + 10000 = 476.73
   /// // (Positive NPV means actual return > 10%)
   /// ```
-  static double _f(double x, List<double> yearsFromStart, List<double> amounts) {
+  static double _f(
+    double x,
+    List<double> yearsFromStart,
+    List<double> amounts,
+  ) {
     if (x <= -1.0) return double.infinity;
 
     final base = 1 + x;

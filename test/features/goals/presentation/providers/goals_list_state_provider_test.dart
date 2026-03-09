@@ -96,15 +96,18 @@ void main() {
       expect(state.selectedIds, {'goal-2'});
     });
 
-    test('toggleSelection should exit selection mode when last item removed', () {
-      final notifier = container.read(goalsListStateProvider.notifier);
-      notifier.enterSelectionMode('goal-1');
-      notifier.toggleSelection('goal-1');
-      final state = container.read(goalsListStateProvider);
+    test(
+      'toggleSelection should exit selection mode when last item removed',
+      () {
+        final notifier = container.read(goalsListStateProvider.notifier);
+        notifier.enterSelectionMode('goal-1');
+        notifier.toggleSelection('goal-1');
+        final state = container.read(goalsListStateProvider);
 
-      expect(state.isSelectionMode, isFalse);
-      expect(state.selectedIds, isEmpty);
-    });
+        expect(state.isSelectionMode, isFalse);
+        expect(state.selectedIds, isEmpty);
+      },
+    );
 
     test('selectAll should select all provided ids', () {
       final notifier = container.read(goalsListStateProvider.notifier);

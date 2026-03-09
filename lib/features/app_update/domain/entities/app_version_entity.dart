@@ -8,7 +8,8 @@ class AppVersionEntity {
   final String? updateMessage;
   final String? whatsNew;
   final String? downloadUrl;
-  final DateTime? releaseDate; // When the update becomes available on Play Store
+  final DateTime?
+  releaseDate; // When the update becomes available on Play Store
 
   const AppVersionEntity({
     required this.latestVersion,
@@ -79,4 +80,3 @@ class AppVersionEntity {
     };
   }
 }
-

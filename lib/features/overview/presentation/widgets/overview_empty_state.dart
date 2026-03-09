@@ -85,8 +85,9 @@ class _OverviewEmptyStateState extends State<OverviewEmptyState>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor =
-        isDark ? AppColors.primaryDark : AppColors.primaryLight;
+    final primaryColor = isDark
+        ? AppColors.primaryDark
+        : AppColors.primaryLight;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -172,11 +173,7 @@ class _XIRRDemoCard extends StatelessWidget {
               ),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.insights_rounded,
-              size: 40,
-              color: primaryColor,
-            ),
+            child: Icon(Icons.insights_rounded, size: 40, color: primaryColor),
           ),
           SizedBox(height: AppSpacing.md),
 
@@ -211,8 +208,9 @@ class _XIRRDemoCard extends StatelessWidget {
               return Container(
                 padding: EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black)
-                      .withValues(alpha: 0.05),
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.05,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -242,8 +240,7 @@ class _XIRRDemoCard extends StatelessWidget {
                       label: 'Your XIRR',
                       rate: '${animatedXirr.toStringAsFixed(1)}%',
                       icon: Icons.trending_down_rounded,
-                      color:
-                          isComplete ? AppColors.warningLight : primaryColor,
+                      color: isComplete ? AppColors.warningLight : primaryColor,
                       isDark: isDark,
                       highlight: isComplete,
                     ),
@@ -308,8 +305,9 @@ class _RateColumn extends StatelessWidget {
         Text(
           label,
           style: AppTypography.small.copyWith(
-            color:
-                isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            color: isDark
+                ? AppColors.neutral400Dark
+                : AppColors.neutral500Light,
           ),
         ),
       ],
@@ -415,10 +413,7 @@ class _QuickStartButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: color.withValues(alpha: 0.3),
-              width: 1,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           ),
           child: Column(
             children: [
@@ -455,16 +450,12 @@ class _QuickStartButton extends StatelessWidget {
   }
 }
 
-
 /// Template Chips Section for quick template access
 class _TemplateChipsSection extends StatelessWidget {
   final bool isDark;
   final void Function(InvestmentTemplate)? onTemplateSelected;
 
-  const _TemplateChipsSection({
-    required this.isDark,
-    this.onTemplateSelected,
-  });
+  const _TemplateChipsSection({required this.isDark, this.onTemplateSelected});
 
   @override
   Widget build(BuildContext context) {

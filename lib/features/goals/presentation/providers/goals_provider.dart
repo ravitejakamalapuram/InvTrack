@@ -128,6 +128,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
     List<InvestmentType> linkedTypes = const [],
     String? icon,
     int? colorValue,
+    String? currency, // Multi-currency support (Rule 21.2)
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -147,6 +148,7 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
             linkedTypes: linkedTypes,
             icon: icon ?? GoalIcons.defaultIcon,
             colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
+            currency: currency ?? 'USD', // Default to USD if not specified (Rule 21.2)
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -261,7 +263,10 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Bulk delete multiple goals (handles both active and archived)
-  Future<int> bulkDelete(List<String> goalIds, {bool isArchived = false}) async {
+  Future<int> bulkDelete(
+    List<String> goalIds, {
+    bool isArchived = false,
+  }) async {
     if (goalIds.isEmpty) return 0;
 
     state = const AsyncValue.loading();

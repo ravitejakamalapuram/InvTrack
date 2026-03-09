@@ -17,4 +17,3 @@ abstract class UserProfileRepository {
   /// Check if profile exists
   Future<bool> profileExists();
 }
-

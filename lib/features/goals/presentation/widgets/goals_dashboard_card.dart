@@ -70,7 +70,8 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
 
   @override
   Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(goalsSummaryProvider);
+    // Use multi-currency provider for accurate summary with mixed currencies (Rule 21.3)
+    final summaryAsync = ref.watch(multiCurrencyGoalsSummaryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return summaryAsync.when(

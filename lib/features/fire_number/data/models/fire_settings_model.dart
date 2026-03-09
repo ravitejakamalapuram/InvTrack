@@ -38,7 +38,8 @@ class FireSettingsModel {
     return FireSettingsEntity(
       id: id,
       monthlyExpenses: (data['monthlyExpenses'] as num).toDouble(),
-      safeWithdrawalRate: (data['safeWithdrawalRate'] as num?)?.toDouble() ?? 4.0,
+      safeWithdrawalRate:
+          (data['safeWithdrawalRate'] as num?)?.toDouble() ?? 4.0,
       currentAge: data['currentAge'] as int,
       targetFireAge: data['targetFireAge'] as int,
       lifeExpectancy: data['lifeExpectancy'] as int? ?? 85,

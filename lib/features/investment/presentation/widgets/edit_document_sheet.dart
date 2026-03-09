@@ -171,7 +171,9 @@ class _EditDocumentSheetState extends ConsumerState<EditDocumentSheet> {
     HapticFeedback.selectionClick();
 
     try {
-      await ref.read(documentNotifierProvider).updateDocument(
+      await ref
+          .read(documentNotifierProvider)
+          .updateDocument(
             documentId: widget.document.id,
             name: hasNameChanged ? newName : null,
             type: hasTypeChanged ? _selectedType : null,

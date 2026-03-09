@@ -48,11 +48,18 @@ class ExportService {
     );
 
     // 2. Prepare CSV Data - matching import template format exactly
-    // Import template: Date, Investment Name, Type, Amount, Notes
+    // Import template: Date, Investment Name, Type, Amount, Currency, Notes
     final List<List<dynamic>> rows = [];
 
-    // Header Row - matches CsvTemplateService.headers exactly
-    rows.add(['Date', 'Investment Name', 'Type', 'Amount', 'Notes']);
+    // Header Row - includes Currency column for multi-currency support (Rule 21.4)
+    rows.add([
+      'Date',
+      'Investment Name',
+      'Type',
+      'Amount',
+      'Currency',
+      'Notes',
+    ]);
 
     // Data Rows
     for (final item in allCashFlows) {
@@ -64,6 +71,7 @@ class ExportService {
         CsvUtils.sanitizeField(investment.name),
         _typeToExportString(cf.type), // INVEST, INCOME, RETURN, FEE
         cf.amount,
+        cf.currency, // Multi-currency support (Rule 21.4)
         CsvUtils.sanitizeField(cf.notes ?? ''),
       ]);
     }

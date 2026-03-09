@@ -100,9 +100,7 @@ class CompactAmountText extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    prefix != null
-                        ? '$prefix$fullAmount'
-                        : fullAmount,
+                    prefix != null ? '$prefix$fullAmount' : fullAmount,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -121,9 +119,7 @@ class CompactAmountText extends ConsumerWidget {
               onPressed: () {
                 Clipboard.setData(
                   ClipboardData(
-                    text: prefix != null
-                        ? '$prefix$fullAmount'
-                        : fullAmount,
+                    text: prefix != null ? '$prefix$fullAmount' : fullAmount,
                   ),
                 );
                 HapticFeedback.lightImpact();

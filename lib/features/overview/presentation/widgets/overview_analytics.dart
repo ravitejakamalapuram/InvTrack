@@ -88,14 +88,12 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                             ? (d.outflows / maxValue * 80)
                                             : 0,
                                         decoration: BoxDecoration(
-                                          color:
-                                              AppColors.errorLight.withValues(
-                                            alpha: 0.7,
-                                          ),
+                                          color: AppColors.errorLight
+                                              .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
-                                            top: Radius.circular(4),
-                                          ),
+                                                top: Radius.circular(4),
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -110,8 +108,8 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
                                               .withValues(alpha: 0.7),
                                           borderRadius:
                                               const BorderRadius.vertical(
-                                            top: Radius.circular(4),
-                                          ),
+                                                top: Radius.circular(4),
+                                              ),
                                         ),
                                       ),
                                     ),

@@ -1,6 +1,7 @@
 /// Unified data and account management screen.
 library;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -154,8 +155,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                 icon: Icons.delete_forever,
                 iconColor: AppColors.errorLight,
                 title: 'Delete Account',
-                subtitle:
-                    _isDeleting ? 'Deleting...' : 'Permanently delete all data',
+                subtitle: _isDeleting
+                    ? 'Deleting...'
+                    : 'Permanently delete all data',
                 trailing: _isDeleting
                     ? const SizedBox(
                         width: 20,
@@ -187,8 +189,11 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning_amber,
-                      color: AppColors.errorLight, size: 20),
+                  Icon(
+                    Icons.warning_amber,
+                    color: AppColors.errorLight,
+                    size: 20,
+                  ),
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -284,8 +289,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               iconColor: AppColors.warningLight,
               title: 'Replace',
               description: 'Delete existing data first',
-              onTap: () =>
-                  Navigator.pop(dialogContext, ImportStrategy.replace),
+              onTap: () => Navigator.pop(dialogContext, ImportStrategy.replace),
               isDangerous: true,
             ),
           ],
@@ -367,7 +371,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         if (importResult.hasErrors) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.importCompletedWithErrors(importResult.errors.first)),
+              content: Text(
+                l10n.importCompletedWithErrors(importResult.errors.first),
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -552,7 +558,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToDeleteAccount(e.message ?? 'Unknown error')),
+            content: Text(
+              l10n.failedToDeleteAccount(e.message ?? 'Unknown error'),
+            ),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -584,8 +592,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Delete all investments (which cascades to cash flows and documents)
     final investmentRepo = ref.read(investmentRepositoryProvider);
     final investments = await investmentRepo.getAllInvestments();
-    final archivedInvestments =
-        await investmentRepo.watchArchivedInvestments().first;
+    final archivedInvestments = await investmentRepo
+        .watchArchivedInvestments()
+        .first;
 
     for (final inv in [...investments, ...archivedInvestments]) {
       if (inv.isArchived) {
@@ -615,11 +624,28 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Delete FIRE settings (Rule 18: Data Lifecycle)
     await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
 
+    // Delete exchange rate cache (Rule 18: Data Lifecycle - Multi-Currency Support)
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      final exchangeRatesRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('exchangeRates');
+
+      final snapshot = await exchangeRatesRef.get();
+      for (final doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    }
+
     // Clear sample data mode preferences (Rule 18: Data Lifecycle)
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove('sample_data_mode_active');
     await prefs.remove('sample_data_investment_ids');
     await prefs.remove('sample_data_goal_ids');
+    await prefs.remove(
+      'last_live_cache_refresh',
+    ); // Multi-currency cache refresh timestamp
   }
 }
 
@@ -715,8 +741,8 @@ class _ImportOptionTile extends StatelessWidget {
               color: isDangerous
                   ? AppColors.warningLight.withValues(alpha: 0.5)
                   : (isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light),
+                        ? AppColors.neutral700Dark
+                        : AppColors.neutral200Light),
               width: 1.5,
             ),
             borderRadius: BorderRadius.circular(12),
@@ -740,7 +766,9 @@ class _ImportOptionTile extends StatelessWidget {
                       title,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                       ),
                     ),
                     const SizedBox(height: 2),

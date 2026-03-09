@@ -14,10 +14,7 @@ class GoalsListState {
     this.selectedIds = const {},
   });
 
-  GoalsListState copyWith({
-    bool? isSelectionMode,
-    Set<String>? selectedIds,
-  }) {
+  GoalsListState copyWith({bool? isSelectionMode, Set<String>? selectedIds}) {
     return GoalsListState(
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       selectedIds: selectedIds ?? this.selectedIds,

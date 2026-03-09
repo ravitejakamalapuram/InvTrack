@@ -363,26 +363,28 @@ void main() {
       expect(unarchived.status, InvestmentStatus.closed);
     });
 
-    test('should fetch investment from archived collection during unarchive',
-        () async {
-      final notifier = container.read(investmentNotifierProvider.notifier);
-      final created = await notifier.addInvestment(
-        name: 'Test Investment',
-        type: InvestmentType.p2pLending,
-      );
-      await notifier.archiveInvestment(created.id);
+    test(
+      'should fetch investment from archived collection during unarchive',
+      () async {
+        final notifier = container.read(investmentNotifierProvider.notifier);
+        final created = await notifier.addInvestment(
+          name: 'Test Investment',
+          type: InvestmentType.p2pLending,
+        );
+        await notifier.archiveInvestment(created.id);
 
-      // Verify investment is in archived collection
-      expect(fakeRepository.archivedInvestments, hasLength(1));
-      expect(fakeRepository.investments, isEmpty);
+        // Verify investment is in archived collection
+        expect(fakeRepository.archivedInvestments, hasLength(1));
+        expect(fakeRepository.investments, isEmpty);
 
-      // Unarchive should successfully find it in archived collection
-      await notifier.unarchiveInvestment(created.id);
+        // Unarchive should successfully find it in archived collection
+        await notifier.unarchiveInvestment(created.id);
 
-      // Should be back in active collection
-      expect(fakeRepository.investments, hasLength(1));
-      expect(fakeRepository.archivedInvestments, isEmpty);
-    });
+        // Should be back in active collection
+        expect(fakeRepository.investments, hasLength(1));
+        expect(fakeRepository.archivedInvestments, isEmpty);
+      },
+    );
 
     test('should move cash flows back when unarchiving', () async {
       final notifier = container.read(investmentNotifierProvider.notifier);
@@ -463,34 +465,36 @@ void main() {
       expect(fakeRepository.archivedCashFlows, isEmpty);
     });
 
-    test('should not affect active investments when deleting archived',
-        () async {
-      final notifier = container.read(investmentNotifierProvider.notifier);
+    test(
+      'should not affect active investments when deleting archived',
+      () async {
+        final notifier = container.read(investmentNotifierProvider.notifier);
 
-      // Create two investments
-      final inv1 = await notifier.addInvestment(
-        name: 'Active Investment',
-        type: InvestmentType.p2pLending,
-      );
-      final inv2 = await notifier.addInvestment(
-        name: 'To Be Archived',
-        type: InvestmentType.stocks,
-      );
+        // Create two investments
+        final inv1 = await notifier.addInvestment(
+          name: 'Active Investment',
+          type: InvestmentType.p2pLending,
+        );
+        final inv2 = await notifier.addInvestment(
+          name: 'To Be Archived',
+          type: InvestmentType.stocks,
+        );
 
-      // Archive one
-      await notifier.archiveInvestment(inv2.id);
+        // Archive one
+        await notifier.archiveInvestment(inv2.id);
 
-      expect(fakeRepository.investments, hasLength(1));
-      expect(fakeRepository.archivedInvestments, hasLength(1));
+        expect(fakeRepository.investments, hasLength(1));
+        expect(fakeRepository.archivedInvestments, hasLength(1));
 
-      // Delete the archived one
-      await notifier.deleteArchivedInvestment(inv2.id);
+        // Delete the archived one
+        await notifier.deleteArchivedInvestment(inv2.id);
 
-      // Active investment should still exist
-      expect(fakeRepository.investments, hasLength(1));
-      expect(fakeRepository.investments.first.id, inv1.id);
-      expect(fakeRepository.archivedInvestments, isEmpty);
-    });
+        // Active investment should still exist
+        expect(fakeRepository.investments, hasLength(1));
+        expect(fakeRepository.investments.first.id, inv1.id);
+        expect(fakeRepository.archivedInvestments, isEmpty);
+      },
+    );
   });
 
   group('InvestmentNotifier - archiveInvestment with cash flows', () {
@@ -530,43 +534,45 @@ void main() {
       expect(fakeRepository.archivedCashFlows, hasLength(3));
     });
 
-    test('should not affect cash flows of other investments when archiving',
-        () async {
-      final notifier = container.read(investmentNotifierProvider.notifier);
+    test(
+      'should not affect cash flows of other investments when archiving',
+      () async {
+        final notifier = container.read(investmentNotifierProvider.notifier);
 
-      final inv1 = await notifier.addInvestment(
-        name: 'Investment 1',
-        type: InvestmentType.p2pLending,
-      );
-      final inv2 = await notifier.addInvestment(
-        name: 'Investment 2',
-        type: InvestmentType.stocks,
-      );
+        final inv1 = await notifier.addInvestment(
+          name: 'Investment 1',
+          type: InvestmentType.p2pLending,
+        );
+        final inv2 = await notifier.addInvestment(
+          name: 'Investment 2',
+          type: InvestmentType.stocks,
+        );
 
-      // Add cash flows to both
-      await notifier.addCashFlow(
-        investmentId: inv1.id,
-        type: CashFlowType.invest,
-        amount: 1000,
-        date: DateTime.now(),
-      );
-      await notifier.addCashFlow(
-        investmentId: inv2.id,
-        type: CashFlowType.invest,
-        amount: 2000,
-        date: DateTime.now(),
-      );
+        // Add cash flows to both
+        await notifier.addCashFlow(
+          investmentId: inv1.id,
+          type: CashFlowType.invest,
+          amount: 1000,
+          date: DateTime.now(),
+        );
+        await notifier.addCashFlow(
+          investmentId: inv2.id,
+          type: CashFlowType.invest,
+          amount: 2000,
+          date: DateTime.now(),
+        );
 
-      expect(fakeRepository.cashFlows, hasLength(2));
+        expect(fakeRepository.cashFlows, hasLength(2));
 
-      // Archive only inv1
-      await notifier.archiveInvestment(inv1.id);
+        // Archive only inv1
+        await notifier.archiveInvestment(inv1.id);
 
-      // inv2's cash flow should still be active
-      expect(fakeRepository.cashFlows, hasLength(1));
-      expect(fakeRepository.cashFlows.first.investmentId, inv2.id);
-      expect(fakeRepository.archivedCashFlows, hasLength(1));
-      expect(fakeRepository.archivedCashFlows.first.investmentId, inv1.id);
-    });
+        // inv2's cash flow should still be active
+        expect(fakeRepository.cashFlows, hasLength(1));
+        expect(fakeRepository.cashFlows.first.investmentId, inv2.id);
+        expect(fakeRepository.archivedCashFlows, hasLength(1));
+        expect(fakeRepository.archivedCashFlows.first.investmentId, inv1.id);
+      },
+    );
   });
 }

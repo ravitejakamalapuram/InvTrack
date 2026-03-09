@@ -68,37 +68,39 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Active filter chip close button should be accessible',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: getOverrides(),
-          child: const MaterialApp(home: InvestmentListScreen()),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('Active filter chip close button should be accessible', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: getOverrides(),
+        child: const MaterialApp(home: InvestmentListScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // Open filter sheet
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
-      await tester.pumpAndSettle();
+    // Open filter sheet
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.pumpAndSettle();
 
-      // Select a filter type (e.g., first one found in the sheet)
-      final listTileFinder = find.byType(ListTile).first;
-      await tester.tap(listTileFinder);
-      await tester.pumpAndSettle();
+    // Select a filter type (e.g., first one found in the sheet)
+    final listTileFinder = find.byType(ListTile).first;
+    await tester.tap(listTileFinder);
+    await tester.pumpAndSettle();
 
-      // Verify filter chip is shown
-      expect(find.byType(Icon), findsWidgets);
+    // Verify filter chip is shown
+    expect(find.byType(Icon), findsWidgets);
 
-      // Look for the Close button semantics
-      final clearFilterSemantics = find.bySemanticsLabel(RegExp(r'Clear .* filter'));
+    // Look for the Close button semantics
+    final clearFilterSemantics = find.bySemanticsLabel(
+      RegExp(r'Clear .* filter'),
+    );
 
-      expect(
-        clearFilterSemantics,
-        findsOneWidget,
-        reason: 'Filter chip close button should have a semantic label'
-      );
+    expect(
+      clearFilterSemantics,
+      findsOneWidget,
+      reason: 'Filter chip close button should have a semantic label',
+    );
 
       // Also verify it's a button
       final semantics = tester.getSemantics(clearFilterSemantics);

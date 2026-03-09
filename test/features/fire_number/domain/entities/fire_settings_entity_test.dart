@@ -12,11 +12,26 @@ void main() {
     });
 
     test('description returns correct descriptions', () {
-      expect(FireType.lean.description, 'Minimalist lifestyle - basic needs only');
-      expect(FireType.regular.description, 'Maintain your current lifestyle comfortably');
-      expect(FireType.fat.description, 'Premium lifestyle with travel & luxuries');
-      expect(FireType.coast.description, 'Stop aggressive saving, let compound growth work');
-      expect(FireType.barista.description, 'Partial independence + part-time work');
+      expect(
+        FireType.lean.description,
+        'Minimalist lifestyle - basic needs only',
+      );
+      expect(
+        FireType.regular.description,
+        'Maintain your current lifestyle comfortably',
+      );
+      expect(
+        FireType.fat.description,
+        'Premium lifestyle with travel & luxuries',
+      );
+      expect(
+        FireType.coast.description,
+        'Stop aggressive saving, let compound growth work',
+      );
+      expect(
+        FireType.barista.description,
+        'Partial independence + part-time work',
+      );
     });
 
     test('expenseMultiplier returns correct values', () {

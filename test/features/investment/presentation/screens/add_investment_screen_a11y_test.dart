@@ -13,68 +13,81 @@ class MockInvestmentNotifier extends InvestmentNotifier {
 }
 
 void main() {
-  testWidgets(
-    'AddInvestmentScreen accessibility test',
-    (tester) async {
-      // Setup overrides
-      final overrides = [
-        currencyCodeProvider.overrideWithValue('USD'),
-        currencySymbolProvider.overrideWithValue('\$'),
-        currencyLocaleProvider.overrideWithValue('en_US'),
-        investmentNotifierProvider.overrideWith(MockInvestmentNotifier.new),
-      ];
+  testWidgets('AddInvestmentScreen accessibility test', (tester) async {
+    // Setup overrides
+    final overrides = [
+      currencyCodeProvider.overrideWithValue('USD'),
+      currencySymbolProvider.overrideWithValue('\$'),
+      currencyLocaleProvider.overrideWithValue('en_US'),
+      investmentNotifierProvider.overrideWith(MockInvestmentNotifier.new),
+    ];
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: overrides,
-          child: const MaterialApp(
-            home: AddInvestmentScreen(),
-          ),
-        ),
-      );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: const MaterialApp(home: AddInvestmentScreen()),
+      ),
+    );
 
-      await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-      // 1. Verify "Investment Type" selector
-      // Scroll down to find dynamic fields.
-      final scrollable = find.byType(Scrollable).first;
+    // 1. Verify "Investment Type" selector
+    // Scroll down to find dynamic fields.
+    final scrollable = find.byType(Scrollable).first;
 
-      // 2. Check "Start Date" picker semantics
-      // It might be hidden if config doesn't show it, but P2P Lending usually shows most fields.
-      // Let's check if we can find "Start Date (Optional)" text.
-      expect(find.text('Start Date (Optional)'), findsOneWidget);
+    // 2. Check "Start Date" picker semantics
+    // It might be hidden if config doesn't show it, but P2P Lending usually shows most fields.
+    // Let's check if we can find "Start Date (Optional)" text.
+    expect(find.text('Start Date (Optional)'), findsOneWidget);
 
-      // Find the GlassCard or GestureDetector that allows picking date.
-      // Currently it likely lacks proper semantics, so we look for what we *expect* to have after fix.
-      // Or we can look for what acts as the button.
-      // The button is "When did you invest?" text inside the card if not set.
+    // Find the GlassCard or GestureDetector that allows picking date.
+    // Currently it likely lacks proper semantics, so we look for what we *expect* to have after fix.
+    // Or we can look for what acts as the button.
+    // The button is "When did you invest?" text inside the card if not set.
 
-      final startDateText = find.text('When did you invest?');
-      expect(startDateText, findsOneWidget);
+    final startDateText = find.text('When did you invest?');
+    expect(startDateText, findsOneWidget);
 
-      // 3. Check Enum Chips (Risk Level, Payout Mode)
-      // Find "Medium Risk" risk level chip
-      final mediumRiskFinder = find.text('Medium Risk');
-      await tester.scrollUntilVisible(mediumRiskFinder, 100, scrollable: scrollable);
-      expect(mediumRiskFinder, findsOneWidget);
+    // 3. Check Enum Chips (Risk Level, Payout Mode)
+    // Find "Medium Risk" risk level chip
+    final mediumRiskFinder = find.text('Medium Risk');
+    await tester.scrollUntilVisible(
+      mediumRiskFinder,
+      100,
+      scrollable: scrollable,
+    );
+    expect(mediumRiskFinder, findsOneWidget);
 
-      // Find "Monthly" payout mode chip
-      final monthlyPayoutFinder = find.text('Monthly');
-      await tester.scrollUntilVisible(monthlyPayoutFinder, 100, scrollable: scrollable);
-      expect(monthlyPayoutFinder, findsOneWidget);
+    // Find "Monthly" payout mode chip
+    final monthlyPayoutFinder = find.text('Monthly');
+    await tester.scrollUntilVisible(
+      monthlyPayoutFinder,
+      100,
+      scrollable: scrollable,
+    );
+    expect(monthlyPayoutFinder, findsOneWidget);
 
-      // We expect these to be buttons with proper labels.
-      // Currently they are just gesture detectors without button semantics.
+    // We expect these to be buttons with proper labels.
+    // Currently they are just gesture detectors without button semantics.
 
-      // Use Semantics check
-      // For Start Date
-      // First verify the widget exists
-      final semanticsWidget = find.byWidgetPredicate(
-        (widget) => widget is Semantics && widget.properties.label == 'Select Start Date'
-      );
-      // Ensure it's visible by scrolling to it (it wraps the GlassCard)
-      await tester.scrollUntilVisible(semanticsWidget, 100, scrollable: scrollable);
-      expect(semanticsWidget, findsOneWidget, reason: 'Semantics widget should exist in the tree');
+    // Use Semantics check
+    // For Start Date
+    // First verify the widget exists
+    final semanticsWidget = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics && widget.properties.label == 'Select Start Date',
+    );
+    // Ensure it's visible by scrolling to it (it wraps the GlassCard)
+    await tester.scrollUntilVisible(
+      semanticsWidget,
+      100,
+      scrollable: scrollable,
+    );
+    expect(
+      semanticsWidget,
+      findsOneWidget,
+      reason: 'Semantics widget should exist in the tree',
+    );
 
       // Verify semantics on the widget we found
       final semanticsNode = tester.getSemantics(semanticsWidget);
