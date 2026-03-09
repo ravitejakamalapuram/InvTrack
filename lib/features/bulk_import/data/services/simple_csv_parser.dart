@@ -12,7 +12,6 @@ class ParsedCashFlowRow {
   final String investmentName;
   final CashFlowType type;
   final double amount;
-  final String currency; // Multi-currency support (Rule 21.4)
   final String? notes;
   final String? error;
 
@@ -252,12 +251,6 @@ class _CsvParserSession {
       final notes = columnMap.containsKey('notes')
           ? _getValue(values, columnMap['notes']!)
           : null;
-
-      // Multi-currency support (Rule 21.4)
-      // Default to 'USD' if currency column is missing (backward compatibility)
-      final currency = columnMap.containsKey('currency')
-          ? _getValue(values, columnMap['currency']!)
-          : 'USD';
 
       // Optional investment metadata (from enhanced export format)
       final investmentTypeStr = columnMap.containsKey('investmentType')
