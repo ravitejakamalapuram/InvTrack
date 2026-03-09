@@ -1,0 +1,1 @@
+Analysis complete. The file `lib/features/goals/presentation/screens/goals_screen.dart` has `_buildFilterTabs` where it iterates over `GoalsFilter.values` and creates filter tabs using `GestureDetector` inside a `Padding`. We will modify this to use `Semantics`.
