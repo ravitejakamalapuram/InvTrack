@@ -69,10 +69,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: true  # Ensure clean workspace on self-hosted runners
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true  # Use GitHub Actions cache
+          token: ${{ secrets.GH_PAT }}
+
+      # Self-hosted runners have Flutter pre-installed, skip installation
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
+          flutter doctor -v
       - run: flutter clean && flutter pub get
       - run: flutter gen-l10n
 
@@ -166,10 +169,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: true  # Ensure clean workspace on self-hosted runners
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          cache: true  # Use GitHub Actions cache
+          token: ${{ secrets.GH_PAT }}
+
+      # Self-hosted runners have Flutter pre-installed, skip installation
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
+          flutter doctor -v
       - run: flutter clean && flutter pub get
       - run: flutter gen-l10n
 
