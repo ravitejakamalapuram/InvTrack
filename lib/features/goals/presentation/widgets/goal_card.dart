@@ -168,7 +168,9 @@ class GoalCard extends ConsumerWidget {
                         Text(
                           goal.name,
                           style: AppTypography.h4.copyWith(
-                            color: isDark ? Colors.white : AppColors.neutral900Light,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.neutral900Light,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

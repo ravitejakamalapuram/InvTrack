@@ -94,9 +94,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (!mounted) return;
 
       final user = await ref.read(authRepositoryProvider).signInWithGoogle();
-      LoggerService.info('Sign-in result', metadata: {
-        'success': user != null,
-      });
+      LoggerService.info('Sign-in result', metadata: {'success': user != null});
 
       // Check if widget is still mounted after sign-in completes
       if (!mounted) return;

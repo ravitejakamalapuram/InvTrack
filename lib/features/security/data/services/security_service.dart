@@ -239,8 +239,16 @@ class SecurityService {
       else {
         // Hash both to ensure constant time comparison (prevent length leaks)
         const fixedSalt = 'legacy_pin_verification_salt';
-        final storedHash = SecurityUtils.hashPin(storedPin, fixedSalt, iterations: 1000);
-        final inputHash = SecurityUtils.hashPin(pin, fixedSalt, iterations: 1000);
+        final storedHash = SecurityUtils.hashPin(
+          storedPin,
+          fixedSalt,
+          iterations: 1000,
+        );
+        final inputHash = SecurityUtils.hashPin(
+          pin,
+          fixedSalt,
+          iterations: 1000,
+        );
 
         isMatch = SecurityUtils.constantTimeEquals(storedHash, inputHash);
         if (isMatch) needsUpgrade = true;

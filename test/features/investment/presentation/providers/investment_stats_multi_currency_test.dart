@@ -4,8 +4,7 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 
 void main() {
   group('InvestmentStats Multi-Currency Tests', () {
-    test('KNOWN ISSUE: stats aggregate mixed currencies without conversion',
-        () {
+    test('KNOWN ISSUE: stats aggregate mixed currencies without conversion', () {
       // This test documents the current bug where InvestmentStats
       // aggregates amounts directly without currency conversion.
       // This violates Rule 21.3: "All monetary displays MUST convert to base currency"
@@ -59,18 +58,27 @@ void main() {
       //   Total Returned = 500
       //   Net Cash Flow = 500 - 51,000 = -50,500
 
-      expect(stats.totalInvested, 51000.0,
-          reason:
-              'BUG: Stats aggregate mixed currencies without conversion. '
-              'This should be ~1601.54 USD after proper conversion.');
+      expect(
+        stats.totalInvested,
+        51000.0,
+        reason:
+            'BUG: Stats aggregate mixed currencies without conversion. '
+            'This should be ~1601.54 USD after proper conversion.',
+      );
 
-      expect(stats.totalReturned, 500.0,
-          reason: 'Total returned is correct (single currency)');
+      expect(
+        stats.totalReturned,
+        500.0,
+        reason: 'Total returned is correct (single currency)',
+      );
 
-      expect(stats.netCashFlow, -50500.0,
-          reason:
-              'BUG: Net cash flow uses mixed currencies. '
-              'Should be ~-1101.54 USD after proper conversion.');
+      expect(
+        stats.netCashFlow,
+        -50500.0,
+        reason:
+            'BUG: Net cash flow uses mixed currencies. '
+            'Should be ~-1101.54 USD after proper conversion.',
+      );
 
       // Document the fix needed:
       // 1. InvestmentStats should accept base currency parameter
@@ -114,4 +122,3 @@ void main() {
     });
   });
 }
-

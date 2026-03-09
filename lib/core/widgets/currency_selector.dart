@@ -163,77 +163,76 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                             Navigator.pop(context);
                           },
                           child: Row(
-                          children: [
-                            // Currency symbol
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? (isDark
-                                          ? AppColors.primaryDark.withOpacity(
-                                              0.2,
-                                            )
-                                          : AppColors.primaryLight.withOpacity(
-                                              0.2,
-                                            ))
-                                    : (isDark
-                                          ? AppColors.neutral800Dark
-                                          : AppColors.neutral100Light),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  symbol,
-                                  style: AppTypography.h3.copyWith(
-                                    color: isSelected
-                                        ? (isDark
-                                              ? AppColors.primaryDark
-                                              : AppColors.primaryLight)
-                                        : (isDark
-                                              ? AppColors.neutral400Dark
-                                              : AppColors.neutral500Light),
+                            children: [
+                              // Currency symbol
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (isDark
+                                            ? AppColors.primaryDark.withOpacity(
+                                                0.2,
+                                              )
+                                            : AppColors.primaryLight
+                                                  .withOpacity(0.2))
+                                      : (isDark
+                                            ? AppColors.neutral800Dark
+                                            : AppColors.neutral100Light),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    symbol,
+                                    style: AppTypography.h3.copyWith(
+                                      color: isSelected
+                                          ? (isDark
+                                                ? AppColors.primaryDark
+                                                : AppColors.primaryLight)
+                                          : (isDark
+                                                ? AppColors.neutral400Dark
+                                                : AppColors.neutral500Light),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Currency info
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    code,
-                                    style: AppTypography.bodyLarge.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.white
-                                          : AppColors.neutral900Light,
+                              const SizedBox(width: 12),
+                              // Currency info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      code,
+                                      style: AppTypography.bodyLarge.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? Colors.white
+                                            : AppColors.neutral900Light,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    name,
-                                    style: AppTypography.caption.copyWith(
-                                      color: isDark
-                                          ? AppColors.neutral400Dark
-                                          : AppColors.neutral500Light,
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      name,
+                                      style: AppTypography.caption.copyWith(
+                                        color: isDark
+                                            ? AppColors.neutral400Dark
+                                            : AppColors.neutral500Light,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            // Selected indicator
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle_rounded,
-                                color: isDark
-                                    ? AppColors.primaryDark
-                                    : AppColors.primaryLight,
-                              ),
-                          ],
-                        ),
+                              // Selected indicator
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: isDark
+                                      ? AppColors.primaryDark
+                                      : AppColors.primaryLight,
+                                ),
+                            ],
+                          ),
                         ),
                       );
                     },

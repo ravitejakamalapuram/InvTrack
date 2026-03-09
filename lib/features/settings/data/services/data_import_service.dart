@@ -71,12 +71,12 @@ class DataImportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     required PerformanceService performanceService,
-  })  : _investmentRepository = investmentRepository,
-        _goalRepository = goalRepository,
-        _documentRepository = documentRepository,
-        _documentStorageService = documentStorageService,
-        _fireSettingsRepository = fireSettingsRepository,
-        _performanceService = performanceService;
+  }) : _investmentRepository = investmentRepository,
+       _goalRepository = goalRepository,
+       _documentRepository = documentRepository,
+       _documentStorageService = documentStorageService,
+       _fireSettingsRepository = fireSettingsRepository,
+       _performanceService = performanceService;
 
   /// Import data from a ZIP file
   Future<ZipImportResult> importFromZip(
@@ -86,12 +86,8 @@ class DataImportService {
     return _performanceService.trackOperation(
       'data_import',
       () => _importFromZipInternal(zipBytes, strategy),
-      metrics: {
-        'zip_size_kb': (zipBytes.length / 1024).round(),
-      },
-      attributes: {
-        'strategy': strategy.name,
-      },
+      metrics: {'zip_size_kb': (zipBytes.length / 1024).round()},
+      attributes: {'strategy': strategy.name},
     );
   }
 
@@ -100,7 +96,10 @@ class DataImportService {
     Uint8List zipBytes,
     ImportStrategy strategy,
   ) async {
-    LoggerService.info('Starting ZIP import', metadata: {'strategy': strategy.name});
+    LoggerService.info(
+      'Starting ZIP import',
+      metadata: {'strategy': strategy.name},
+    );
 
     final errors = <String>[];
     final warnings = <String>[];
@@ -317,13 +316,16 @@ class DataImportService {
       }
     }
 
-    LoggerService.info('Import complete', metadata: {
-      'investments': investmentsImported,
-      'cashflows': cashflowsImported,
-      'goals': goalsImported,
-      'documents': documentsImported,
-      'fireSettings': fireSettingsImported,
-    });
+    LoggerService.info(
+      'Import complete',
+      metadata: {
+        'investments': investmentsImported,
+        'cashflows': cashflowsImported,
+        'goals': goalsImported,
+        'documents': documentsImported,
+        'fireSettings': fireSettingsImported,
+      },
+    );
 
     return ZipImportResult(
       investmentsImported: investmentsImported,

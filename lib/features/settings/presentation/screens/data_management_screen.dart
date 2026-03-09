@@ -497,7 +497,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       } on FirebaseAuthException catch (e) {
         // If requires-recent-login, try to re-authenticate and retry
         if (e.code == 'requires-recent-login') {
-          LoggerService.info('Account deletion requires recent login, attempting re-auth');
+          LoggerService.info(
+            'Account deletion requires recent login, attempting re-auth',
+          );
 
           try {
             final reauthenticated = await authRepo.reauthenticateWithGoogle();

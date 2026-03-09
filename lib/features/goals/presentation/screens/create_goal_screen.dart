@@ -67,7 +67,8 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     _selectedColor = goal?.color ?? GoalColors.defaultColor;
     _linkedInvestmentIds = goal?.linkedInvestmentIds ?? [];
     _linkedTypes = goal?.linkedTypes ?? [];
-    _selectedCurrency = goal?.currency ?? 'USD'; // Default to USD if not editing
+    _selectedCurrency =
+        goal?.currency ?? 'USD'; // Default to USD if not editing
   }
 
   @override
@@ -132,7 +133,8 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 linkedTypes: _linkedTypes,
                 icon: _selectedIcon,
                 colorValue: _selectedColor.toARGB32(),
-                currency: _selectedCurrency, // Multi-currency support (Rule 21.2)
+                currency:
+                    _selectedCurrency, // Multi-currency support (Rule 21.2)
               ),
             );
       } else {

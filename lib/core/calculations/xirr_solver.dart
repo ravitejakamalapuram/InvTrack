@@ -165,7 +165,8 @@ class XirrSolver {
     final flowMap = <double, double>{};
     for (int i = 0; i < dates.length; i++) {
       // Optimization: Calculate days difference using milliseconds instead of Duration for better performance
-      final t = ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
+      final t =
+          ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
       final existing = flowMap[t];
       if (existing == null) {
         flowMap[t] = amounts[i];

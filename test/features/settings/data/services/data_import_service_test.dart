@@ -56,13 +56,17 @@ void main() {
     performanceService = MockPerformanceService();
 
     // Mock performance service to just execute the operation
-    when(() => performanceService.trackOperation<ZipImportResult>(
-          any(),
-          any(),
-          metrics: any(named: 'metrics'),
-          attributes: any(named: 'attributes'),
-        )).thenAnswer((invocation) async {
-      final operation = invocation.positionalArguments[1] as Future<ZipImportResult> Function();
+    when(
+      () => performanceService.trackOperation<ZipImportResult>(
+        any(),
+        any(),
+        metrics: any(named: 'metrics'),
+        attributes: any(named: 'attributes'),
+      ),
+    ).thenAnswer((invocation) async {
+      final operation =
+          invocation.positionalArguments[1]
+              as Future<ZipImportResult> Function();
       return await operation();
     });
 

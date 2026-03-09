@@ -10,9 +10,7 @@ void main() {
     // 1. Pump the widget
     await tester.pumpWidget(
       const MaterialApp(
-        home: ShimmerEffect(
-          child: SizedBox(width: 100, height: 100),
-        ),
+        home: ShimmerEffect(child: SizedBox(width: 100, height: 100)),
       ),
     );
 

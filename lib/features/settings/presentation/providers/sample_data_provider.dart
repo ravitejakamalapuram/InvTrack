@@ -123,14 +123,21 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
             goalCount: result.goalIds.length,
           );
 
-      LoggerService.info('Sample data activated', metadata: {
-        'investmentCount': result.investmentIds.length,
-        'goalCount': result.goalIds.length,
-      });
+      LoggerService.info(
+        'Sample data activated',
+        metadata: {
+          'investmentCount': result.investmentIds.length,
+          'goalCount': result.goalIds.length,
+        },
+      );
 
       return true;
     } catch (e, st) {
-      LoggerService.error('Sample data activation failed', error: e, stackTrace: st);
+      LoggerService.error(
+        'Sample data activation failed',
+        error: e,
+        stackTrace: st,
+      );
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }

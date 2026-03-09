@@ -51,30 +51,27 @@ class _GlassCardState extends State<GlassCard> {
         : Colors.black.withValues(alpha: 0.05);
 
     // Focus state overrides border
-    final borderColor =
-        _isFocused
-            ? (isDark ? AppColors.primaryLightDark : AppColors.primaryLight)
-            : defaultBorderColor;
+    final borderColor = _isFocused
+        ? (isDark ? AppColors.primaryLightDark : AppColors.primaryLight)
+        : defaultBorderColor;
     final borderWidth = _isFocused ? 2.0 : 1.0;
 
     final decoration = BoxDecoration(
       color: widget.backgroundColor ?? defaultBgColor,
       borderRadius: BorderRadius.circular(widget.borderRadius),
-      border:
-          (widget.showBorder || _isFocused)
-              ? Border.all(color: borderColor, width: borderWidth)
-              : null,
-      boxShadow:
-          (_isFocused && !isDark)
-              ? [
-                BoxShadow(
-                  color: AppColors.primaryLight.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-                ...AppColors.cardShadowLight,
-              ]
-              : (isDark ? null : AppColors.cardShadowLight),
+      border: (widget.showBorder || _isFocused)
+          ? Border.all(color: borderColor, width: borderWidth)
+          : null,
+      boxShadow: (_isFocused && !isDark)
+          ? [
+              BoxShadow(
+                color: AppColors.primaryLight.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+              ...AppColors.cardShadowLight,
+            ]
+          : (isDark ? null : AppColors.cardShadowLight),
     );
 
     // OPTIMIZATION: Skip expensive BackdropFilter if blur is 0.

@@ -33,49 +33,57 @@ void main() {
 
     final currencyFormat = NumberFormat.currency(symbol: '\$');
 
-    testWidgets('shows exchange rate when currency differs from base currency',
-        (tester) async {
-      // Mock exchange rate
-      when(() => mockConversionService.getRate(
+    testWidgets(
+      'shows exchange rate when currency differs from base currency',
+      (tester) async {
+        // Mock exchange rate
+        when(
+          () => mockConversionService.getRate(
             from: 'USD',
             to: 'INR',
             date: any(named: 'date'),
-          )).thenAnswer((_) async => 83.12);
+          ),
+        ).thenAnswer((_) async => 83.12);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currencyCodeProvider.overrideWith((ref) => 'INR'), // Base currency
-            currencyConversionServiceProvider
-                .overrideWith((ref) => mockConversionService),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: CashFlowCardWidget(
-                cashFlow: testCashFlow,
-                isDark: false,
-                currencyFormat: currencyFormat,
-                onTap: () {},
-                onEdit: () {},
-                onConfirmDelete: () async => false,
-                onDeleted: () {},
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currencyCodeProvider.overrideWith(
+                (ref) => 'INR',
+              ), // Base currency
+              currencyConversionServiceProvider.overrideWith(
+                (ref) => mockConversionService,
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: CashFlowCardWidget(
+                  cashFlow: testCashFlow,
+                  isDark: false,
+                  currencyFormat: currencyFormat,
+                  onTap: () {},
+                  onEdit: () {},
+                  onConfirmDelete: () async => false,
+                  onDeleted: () {},
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Verify exchange rate icon is shown
-      expect(find.byIcon(Icons.currency_exchange_rounded), findsOneWidget);
+        // Verify exchange rate icon is shown
+        expect(find.byIcon(Icons.currency_exchange_rounded), findsOneWidget);
 
-      // Verify exchange rate text is shown
-      expect(find.textContaining('1 USD = 83.1200 INR'), findsOneWidget);
-    });
+        // Verify exchange rate text is shown
+        expect(find.textContaining('1 USD = 83.1200 INR'), findsOneWidget);
+      },
+    );
 
-    testWidgets('hides exchange rate when currency matches base currency',
-        (tester) async {
+    testWidgets('hides exchange rate when currency matches base currency', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -105,11 +113,13 @@ void main() {
 
     testWidgets('displays correct exchange rate format', (tester) async {
       // Mock exchange rate
-      when(() => mockConversionService.getRate(
-            from: 'EUR',
-            to: 'USD',
-            date: any(named: 'date'),
-          )).thenAnswer((_) async => 1.0850);
+      when(
+        () => mockConversionService.getRate(
+          from: 'EUR',
+          to: 'USD',
+          date: any(named: 'date'),
+        ),
+      ).thenAnswer((_) async => 1.0850);
 
       final eurCashFlow = testCashFlow.copyWith(currency: 'EUR', amount: 500);
 
@@ -117,8 +127,9 @@ void main() {
         ProviderScope(
           overrides: [
             currencyCodeProvider.overrideWith((ref) => 'USD'),
-            currencyConversionServiceProvider
-                .overrideWith((ref) => mockConversionService),
+            currencyConversionServiceProvider.overrideWith(
+              (ref) => mockConversionService,
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -143,18 +154,21 @@ void main() {
     });
 
     testWidgets('shows currency exchange icon', (tester) async {
-      when(() => mockConversionService.getRate(
-            from: 'USD',
-            to: 'INR',
-            date: any(named: 'date'),
-          )).thenAnswer((_) async => 83.12);
+      when(
+        () => mockConversionService.getRate(
+          from: 'USD',
+          to: 'INR',
+          date: any(named: 'date'),
+        ),
+      ).thenAnswer((_) async => 83.12);
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             currencyCodeProvider.overrideWith((ref) => 'INR'),
-            currencyConversionServiceProvider
-                .overrideWith((ref) => mockConversionService),
+            currencyConversionServiceProvider.overrideWith(
+              (ref) => mockConversionService,
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -184,4 +198,3 @@ void main() {
     });
   });
 }
-

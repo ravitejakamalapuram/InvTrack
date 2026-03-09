@@ -121,15 +121,21 @@ final investmentTypeDistributionProvider =
         data: (investments) {
           return cashFlowsAsync.when(
             data: (allCashFlows) {
+              // Optimization: Pre-calculate total invested per investment in O(C)
+              // instead of O(I * C) by iterating through all cash flows once.
+              final investedPerInvestment = <String, double>{};
+              for (final cf in allCashFlows) {
+                if (cf.type.isOutflow) {
+                  investedPerInvestment[cf.investmentId] =
+                      (investedPerInvestment[cf.investmentId] ?? 0.0) +
+                      cf.amount;
+                }
+              }
+
               final distribution = <InvestmentType, TypeDistribution>{};
 
               for (final inv in investments) {
-                final invCashFlows = allCashFlows.where(
-                  (cf) => cf.investmentId == inv.id,
-                );
-                final invested = invCashFlows
-                    .where((cf) => cf.type.isOutflow)
-                    .fold<double>(0, (sum, cf) => sum + cf.amount);
+                final invested = investedPerInvestment[inv.id] ?? 0.0;
 
                 if (distribution.containsKey(inv.type)) {
                   final existing = distribution[inv.type]!;

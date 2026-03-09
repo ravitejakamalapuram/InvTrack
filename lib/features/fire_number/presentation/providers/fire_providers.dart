@@ -67,12 +67,15 @@ final fireCalculationProvider =
       final settingsAsync = ref.watch(fireSettingsProvider);
 
       // Use multi-currency global stats (Rule 21.3 compliance)
-      final multiCurrencyStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
-      final portfolioStatsAsync = multiCurrencyStatsAsync.when<AsyncValue<InvestmentStats>>(
-        data: (stats) => AsyncValue.data(stats),
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
+      final multiCurrencyStatsAsync = ref.watch(
+        multiCurrencyGlobalStatsProvider,
       );
+      final portfolioStatsAsync = multiCurrencyStatsAsync
+          .when<AsyncValue<InvestmentStats>>(
+            data: (stats) => AsyncValue.data(stats),
+            loading: () => const AsyncValue.loading(),
+            error: (e, st) => AsyncValue.error(e, st),
+          );
 
       return settingsAsync.when(
         data: (settings) {
@@ -142,11 +145,12 @@ final fireProjectionsProvider = Provider.autoDispose<List<FireProjectionPoint>>(
 
     // Use multi-currency global stats (Rule 21.3 compliance)
     final multiCurrencyStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
-    final portfolioStatsAsync = multiCurrencyStatsAsync.when<AsyncValue<InvestmentStats>>(
-      data: (stats) => AsyncValue.data(stats),
-      loading: () => const AsyncValue.loading(),
-      error: (e, st) => AsyncValue.error(e, st),
-    );
+    final portfolioStatsAsync = multiCurrencyStatsAsync
+        .when<AsyncValue<InvestmentStats>>(
+          data: (stats) => AsyncValue.data(stats),
+          loading: () => const AsyncValue.loading(),
+          error: (e, st) => AsyncValue.error(e, st),
+        );
 
     final settings = settingsAsync.value;
     final calculation = calculationAsync.value;

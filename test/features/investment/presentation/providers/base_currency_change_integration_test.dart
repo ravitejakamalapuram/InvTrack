@@ -32,78 +32,93 @@ void main() {
       fakeAnalytics.reset();
     });
 
-    test('changing base currency from USD to EUR updates global stats', () async {
-      // Setup: Create cash flows in mixed currencies
-      final mixedCurrencyCashFlows = [
-        CashFlowEntity(
-          id: '1',
-          investmentId: 'inv_1',
-          type: CashFlowType.invest,
-          amount: 1000,
-          currency: 'USD', // $1,000 USD
-          date: DateTime(2024, 1, 1),
-          notes: 'US investment',
-          createdAt: DateTime(2024, 1, 1),
-        ),
-        CashFlowEntity(
-          id: '2',
-          investmentId: 'inv_1',
-          type: CashFlowType.invest,
-          amount: 900,
-          currency: 'EUR', // €900 EUR
-          date: DateTime(2024, 2, 1),
-          notes: 'European investment',
-          createdAt: DateTime(2024, 2, 1),
-        ),
-      ];
-
-      // Initialize with USD as base currency
-      SharedPreferences.setMockInitialValues({'currency': 'USD'});
-      final prefs = await SharedPreferences.getInstance();
-
-      container = ProviderContainer(
-        overrides: [
-          validCashFlowsProvider.overrideWith(
-            (ref) => AsyncValue.data(mixedCurrencyCashFlows),
+    test(
+      'changing base currency from USD to EUR updates global stats',
+      () async {
+        // Setup: Create cash flows in mixed currencies
+        final mixedCurrencyCashFlows = [
+          CashFlowEntity(
+            id: '1',
+            investmentId: 'inv_1',
+            type: CashFlowType.invest,
+            amount: 1000,
+            currency: 'USD', // $1,000 USD
+            date: DateTime(2024, 1, 1),
+            notes: 'US investment',
+            createdAt: DateTime(2024, 1, 1),
           ),
-          currencyConversionServiceProvider.overrideWithValue(mockConversionService),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-        ],
-      );
+          CashFlowEntity(
+            id: '2',
+            investmentId: 'inv_1',
+            type: CashFlowType.invest,
+            amount: 900,
+            currency: 'EUR', // €900 EUR
+            date: DateTime(2024, 2, 1),
+            notes: 'European investment',
+            createdAt: DateTime(2024, 2, 1),
+          ),
+        ];
 
-      // Keep the provider alive
-      final subscription = container.listen(
-        validCashFlowsProvider,
-        (previous, next) {},
-      );
+        // Initialize with USD as base currency
+        SharedPreferences.setMockInitialValues({'currency': 'USD'});
+        final prefs = await SharedPreferences.getInstance();
 
-      try {
-        // Step 1: Verify stats in USD (base currency)
-        final statsInUSD = await container.read(multiCurrencyGlobalStatsProvider.future);
+        container = ProviderContainer(
+          overrides: [
+            validCashFlowsProvider.overrideWith(
+              (ref) => AsyncValue.data(mixedCurrencyCashFlows),
+            ),
+            currencyConversionServiceProvider.overrideWithValue(
+              mockConversionService,
+            ),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            analyticsServiceProvider.overrideWithValue(fakeAnalytics),
+          ],
+        );
 
-        // Expected in USD (1 EUR = 1.1 USD):
-        //   Total Invested = $1,000 + (€900 * 1.1) = $1,000 + $990 = $1,990
-        expect(statsInUSD.totalInvested, closeTo(1990.0, 0.01),
-            reason: 'Should convert EUR to USD before summing');
+        // Keep the provider alive
+        final subscription = container.listen(
+          validCashFlowsProvider,
+          (previous, next) {},
+        );
 
-        // Step 2: Change base currency to EUR
-        await container.read(settingsProvider.notifier).setCurrency('EUR');
+        try {
+          // Step 1: Verify stats in USD (base currency)
+          final statsInUSD = await container.read(
+            multiCurrencyGlobalStatsProvider.future,
+          );
 
-        // Step 3: Invalidate the stats provider to force recalculation
-        container.invalidate(multiCurrencyGlobalStatsProvider);
+          // Expected in USD (1 EUR = 1.1 USD):
+          //   Total Invested = $1,000 + (€900 * 1.1) = $1,000 + $990 = $1,990
+          expect(
+            statsInUSD.totalInvested,
+            closeTo(1990.0, 0.01),
+            reason: 'Should convert EUR to USD before summing',
+          );
 
-        // Step 4: Verify stats in EUR (new base currency)
-        final statsInEUR = await container.read(multiCurrencyGlobalStatsProvider.future);
+          // Step 2: Change base currency to EUR
+          await container.read(settingsProvider.notifier).setCurrency('EUR');
 
-        // Expected in EUR (1 USD = 0.91 EUR):
-        //   Total Invested = ($1,000 * 0.91) + €900 = €910 + €900 = €1,810
-        expect(statsInEUR.totalInvested, closeTo(1810.0, 0.01),
-            reason: 'Should convert USD to EUR after currency change');
-      } finally {
-        subscription.close();
-      }
-    });
+          // Step 3: Invalidate the stats provider to force recalculation
+          container.invalidate(multiCurrencyGlobalStatsProvider);
+
+          // Step 4: Verify stats in EUR (new base currency)
+          final statsInEUR = await container.read(
+            multiCurrencyGlobalStatsProvider.future,
+          );
+
+          // Expected in EUR (1 USD = 0.91 EUR):
+          //   Total Invested = ($1,000 * 0.91) + €900 = €910 + €900 = €1,810
+          expect(
+            statsInEUR.totalInvested,
+            closeTo(1810.0, 0.01),
+            reason: 'Should convert USD to EUR after currency change',
+          );
+        } finally {
+          subscription.close();
+        }
+      },
+    );
 
     test('changing base currency updates investment-specific stats', () async {
       final cashFlows = [
@@ -134,10 +149,12 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
-          cashFlowsByInvestmentProvider('inv_1').overrideWith(
-            (ref) => Stream.fromIterable([cashFlows]),
+          cashFlowsByInvestmentProvider(
+            'inv_1',
+          ).overrideWith((ref) => Stream.fromIterable([cashFlows])),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockConversionService,
           ),
-          currencyConversionServiceProvider.overrideWithValue(mockConversionService),
           sharedPreferencesProvider.overrideWithValue(prefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
         ],
@@ -154,7 +171,10 @@ void main() {
           multiCurrencyInvestmentStatsProvider('inv_1').future,
         );
         expect(statsInUSD.totalInvested, 1000.0);
-        expect(statsInUSD.totalReturned, closeTo(550.0, 0.01)); // €500 * 1.1 = $550
+        expect(
+          statsInUSD.totalReturned,
+          closeTo(550.0, 0.01),
+        ); // €500 * 1.1 = $550
 
         // Change to EUR
         await container.read(settingsProvider.notifier).setCurrency('EUR');
@@ -164,7 +184,10 @@ void main() {
         final statsInEUR = await container.read(
           multiCurrencyInvestmentStatsProvider('inv_1').future,
         );
-        expect(statsInEUR.totalInvested, closeTo(910.0, 0.01)); // $1000 * 0.91 = €910
+        expect(
+          statsInEUR.totalInvested,
+          closeTo(910.0, 0.01),
+        ); // $1000 * 0.91 = €910
         expect(statsInEUR.totalReturned, 500.0);
       } finally {
         subscription.close();
@@ -190,7 +213,11 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
   }
 
   // Helper method for testing (not part of interface)
-  Future<double?> getExchangeRate({required String from, required String to, DateTime? date}) async {
+  Future<double?> getExchangeRate({
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
     if (from == to) return 1.0;
     if (from == 'EUR' && to == 'USD') return 1.1;
     if (from == 'USD' && to == 'EUR') return 0.91;
@@ -201,15 +228,26 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
   Future<void> clearCache() async {}
 
   @override
-  Future<void> preloadRates(Set<String> currencies, String baseCurrency) async {}
+  Future<void> preloadRates(
+    Set<String> currencies,
+    String baseCurrency,
+  ) async {}
 
   @override
-  Future<double> getRate({required String from, required String to, DateTime? date}) async {
+  Future<double> getRate({
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
     return (await getExchangeRate(from: from, to: to, date: date)) ?? 1.0;
   }
 
   @override
-  Future<double> getHistoricalRate(DateTime date, String from, String to) async {
+  Future<double> getHistoricalRate(
+    DateTime date,
+    String from,
+    String to,
+  ) async {
     return getRate(from: from, to: to, date: date);
   }
 
@@ -219,10 +257,17 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
   }
 
   @override
-  Future<Map<String, double>> batchConvert({required Map<String, double> amounts, required String to}) async {
+  Future<Map<String, double>> batchConvert({
+    required Map<String, double> amounts,
+    required String to,
+  }) async {
     final result = <String, double>{};
     for (final entry in amounts.entries) {
-      result[entry.key] = await convert(amount: entry.value, from: entry.key, to: to);
+      result[entry.key] = await convert(
+        amount: entry.value,
+        from: entry.key,
+        to: to,
+      );
     }
     return result;
   }
@@ -236,4 +281,3 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
   @override
   void dispose() {}
 }
-

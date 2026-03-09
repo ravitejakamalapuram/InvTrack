@@ -238,10 +238,7 @@ class FakeAnalyticsService implements AnalyticsService {
     required String currency,
     required String context,
   }) async {
-    _log('currency_selected', {
-      'currency': currency,
-      'context': context,
-    });
+    _log('currency_selected', {'currency': currency, 'context': context});
   }
 
   @override

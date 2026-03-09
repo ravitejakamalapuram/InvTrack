@@ -34,8 +34,12 @@ void main() {
 
     stopwatch.stop();
 
-    print('Benchmark Result: Time taken for $iterations XIRR calculations (260 cash flows each): ${stopwatch.elapsedMilliseconds}ms');
-    print('Average time per calculation: ${stopwatch.elapsedMicroseconds / iterations}µs');
+    print(
+      'Benchmark Result: Time taken for $iterations XIRR calculations (260 cash flows each): ${stopwatch.elapsedMilliseconds}ms',
+    );
+    print(
+      'Average time per calculation: ${stopwatch.elapsedMicroseconds / iterations}µs',
+    );
 
     // Sanity check
     expect(XirrSolver.calculateXirr(dates, amounts), isNotNull);

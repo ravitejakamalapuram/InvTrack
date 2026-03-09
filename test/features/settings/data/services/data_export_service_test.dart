@@ -15,7 +15,10 @@ import '../../../goals/data/repositories/mock_goal_repository.dart';
 import '../../../investment/data/repositories/mock_investment_repository.dart';
 
 class MockDocumentRepository extends Mock implements DocumentRepository {}
-class MockDocumentStorageService extends Mock implements DocumentStorageService {}
+
+class MockDocumentStorageService extends Mock
+    implements DocumentStorageService {}
+
 class MockPerformanceService extends Mock implements PerformanceService {}
 
 void main() {
@@ -45,13 +48,16 @@ void main() {
     performanceService = MockPerformanceService();
 
     // Mock performance service to just execute the operation
-    when(() => performanceService.trackOperation<String>(
-          any(),
-          any(),
-          metrics: any(named: 'metrics'),
-          attributes: any(named: 'attributes'),
-        )).thenAnswer((invocation) async {
-      final operation = invocation.positionalArguments[1] as Future<String> Function();
+    when(
+      () => performanceService.trackOperation<String>(
+        any(),
+        any(),
+        metrics: any(named: 'metrics'),
+        attributes: any(named: 'attributes'),
+      ),
+    ).thenAnswer((invocation) async {
+      final operation =
+          invocation.positionalArguments[1] as Future<String> Function();
       return await operation();
     });
 

@@ -87,10 +87,10 @@ class _NotificationNavigationHandlerState
     final navigator = ref.read(notificationNavigatorProvider);
     final success = await navigator.handleNotificationTap(payload);
 
-    LoggerService.debug('Notification navigation result', metadata: {
-      'success': success,
-      'payload': payload,
-    });
+    LoggerService.debug(
+      'Notification navigation result',
+      metadata: {'success': success, 'payload': payload},
+    );
   }
 
   @override

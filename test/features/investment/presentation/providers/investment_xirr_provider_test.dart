@@ -21,7 +21,8 @@ void main() {
         id: 'cf1-2',
         investmentId: 'inv1',
         date: DateTime(2024, 1, 1),
-        type: CashFlowType.returnFlow, // Using returnFlow to represent exit/valuation
+        type: CashFlowType
+            .returnFlow, // Using returnFlow to represent exit/valuation
         amount: 1500,
         createdAt: DateTime(2024, 1, 1),
       ),
@@ -52,7 +53,7 @@ void main() {
         overrides: [
           // Override validCashFlowsProvider directly to bypass repository and streams
           validCashFlowsProvider.overrideWithValue(
-             AsyncValue.data([...cashFlows1, ...cashFlows2])
+            AsyncValue.data([...cashFlows1, ...cashFlows2]),
           ),
           isAuthenticatedProvider.overrideWith((ref) => true),
         ],
@@ -97,11 +98,14 @@ void main() {
       expect(xirr3, 0.0);
     });
 
-    test('should return 0.0 for investment with empty cash flows in bulk', () async {
-      final xirr3 = await container.read(
-        investmentXirrProvider('inv3').future,
-      );
-      expect(xirr3, 0.0);
-    });
+    test(
+      'should return 0.0 for investment with empty cash flows in bulk',
+      () async {
+        final xirr3 = await container.read(
+          investmentXirrProvider('inv3').future,
+        );
+        expect(xirr3, 0.0);
+      },
+    );
   });
 }

@@ -517,13 +517,19 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                                 child: GestureDetector(
                                   onTap: _isLoading
                                       ? null
-                                      : () => _showTypePickerForFile(index, isDark),
+                                      : () => _showTypePickerForFile(
+                                          index,
+                                          isDark,
+                                        ),
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: file.selectedType.color
-                                          .withValues(alpha: 0.15),
+                                      color: file.selectedType.color.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
                                         color: file.selectedType.color
@@ -737,52 +743,51 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                   child: GestureDetector(
                     onTap: onTap,
                     child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? type.color.withValues(alpha: 0.15)
-                          : (isDark ? Colors.white : Colors.black).withValues(
-                              alpha: 0.05,
-                            ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected
-                            ? type.color
-                            : (isDark ? Colors.white : Colors.black).withValues(
-                                alpha: 0.1,
-                              ),
-                        width: isSelected ? 2 : 1,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          type.icon,
-                          size: 18,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? type.color.withValues(alpha: 0.15)
+                            : (isDark ? Colors.white : Colors.black).withValues(
+                                alpha: 0.05,
+                              ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: isSelected
                               ? type.color
                               : (isDark ? Colors.white : Colors.black)
-                                    .withValues(alpha: 0.6),
+                                    .withValues(alpha: 0.1),
+                          width: isSelected ? 2 : 1,
                         ),
-                        SizedBox(width: AppSpacing.xs),
-                        Text(
-                          type.displayName,
-                          style: AppTypography.body.copyWith(
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            type.icon,
+                            size: 18,
                             color: isSelected
                                 ? type.color
                                 : (isDark ? Colors.white : Colors.black)
-                                      .withValues(alpha: 0.8),
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
+                                      .withValues(alpha: 0.6),
                           ),
-                        ),
-                      ],
-                    ),
+                          SizedBox(width: AppSpacing.xs),
+                          Text(
+                            type.displayName,
+                            style: AppTypography.body.copyWith(
+                              color: isSelected
+                                  ? type.color
+                                  : (isDark ? Colors.white : Colors.black)
+                                        .withValues(alpha: 0.8),
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

@@ -66,9 +66,10 @@ class FirebaseAuthRepository implements AuthRepository {
         credential,
       );
 
-      LoggerService.info('Google Sign-In successful', metadata: {
-        'userId': userCredential.user?.uid,
-      });
+      LoggerService.info(
+        'Google Sign-In successful',
+        metadata: {'userId': userCredential.user?.uid},
+      );
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
@@ -154,9 +155,10 @@ class FirebaseAuthRepository implements AuthRepository {
       );
 
       await user.reauthenticateWithCredential(credential);
-      LoggerService.info('Re-authentication successful', metadata: {
-        'userId': user.uid,
-      });
+      LoggerService.info(
+        'Re-authentication successful',
+        metadata: {'userId': user.uid},
+      );
       return true;
     } on GoogleSignInException catch (e) {
       LoggerService.error(
@@ -193,9 +195,7 @@ class FirebaseAuthRepository implements AuthRepository {
       );
     }
 
-    LoggerService.info('Deleting user account', metadata: {
-      'userId': user.uid,
-    });
+    LoggerService.info('Deleting user account', metadata: {'userId': user.uid});
 
     try {
       // Sign out from Google first

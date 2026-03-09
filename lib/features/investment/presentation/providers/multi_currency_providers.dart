@@ -18,10 +18,7 @@ part 'multi_currency_providers.g.dart';
 /// **Returns:**
 /// - Total invested amount in user's base currency
 @riverpod
-Future<double> multiCurrencyInvestedAmount(
-  Ref ref,
-  String investmentId,
-) async {
+Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
   final cashFlows = await ref.watch(
     cashFlowsByInvestmentProvider(investmentId).selectAsync((data) => data),
   );
@@ -59,10 +56,7 @@ Future<double> multiCurrencyInvestedAmount(
 /// **Returns:**
 /// - Total returned amount in user's base currency
 @riverpod
-Future<double> multiCurrencyReturnedAmount(
-  Ref ref,
-  String investmentId,
-) async {
+Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   final cashFlows = await ref.watch(
     cashFlowsByInvestmentProvider(investmentId).selectAsync((data) => data),
   );
@@ -101,10 +95,7 @@ Future<double> multiCurrencyReturnedAmount(
 /// **Returns:**
 /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
 @riverpod
-Future<double> multiCurrencyXirr(
-  Ref ref,
-  String investmentId,
-) async {
+Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
   final cashFlows = await ref.watch(
     cashFlowsByInvestmentProvider(investmentId).selectAsync((data) => data),
   );
@@ -144,9 +135,7 @@ Future<double> multiCurrencyXirr(
 /// **Returns:**
 /// - Total portfolio value in user's base currency
 @riverpod
-Future<double> multiCurrencyPortfolioValue(
-  Ref ref,
-) async {
+Future<double> multiCurrencyPortfolioValue(Ref ref) async {
   final investments = await ref.watch(
     allInvestmentsProvider.selectAsync((data) => data),
   );
@@ -245,9 +234,7 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 @riverpod
-Future<InvestmentStats> multiCurrencyGlobalStats(
-  Ref ref,
-) async {
+Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
   // Wait for cash flows to load
@@ -293,9 +280,7 @@ Future<InvestmentStats> multiCurrencyGlobalStats(
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 @riverpod
-Future<InvestmentStats> multiCurrencyOpenStats(
-  Ref ref,
-) async {
+Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
@@ -359,9 +344,7 @@ Future<InvestmentStats> multiCurrencyOpenStats(
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
 @riverpod
-Future<InvestmentStats> multiCurrencyClosedStats(
-  Ref ref,
-) async {
+Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 

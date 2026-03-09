@@ -120,8 +120,9 @@ class _FilterChipState extends ConsumerState<_FilterChip> {
             curve: Curves.easeOutCubic,
             builder: (context, value, child) {
               final bgColor = Color.lerp(
-                (widget.isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: 0.05),
+                (widget.isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.05,
+                ),
                 AppColors.primaryLight,
                 value,
               )!;
@@ -164,15 +165,18 @@ class _FilterChipState extends ConsumerState<_FilterChip> {
                       widget.label,
                       style: AppTypography.small.copyWith(
                         color: textColor,
-                        fontWeight:
-                            widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                     if (widget.count > 0) ...[
                       const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: badgeBgColor,
                           borderRadius: BorderRadius.circular(10),

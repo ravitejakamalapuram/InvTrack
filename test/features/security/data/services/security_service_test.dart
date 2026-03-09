@@ -466,7 +466,7 @@ void main() {
       // Should throw exception instead of allowing access or retry
       expect(
         () => service.verifyPin('5678'),
-        throwsA(isA<PlatformException>())
+        throwsA(isA<PlatformException>()),
       );
     });
   });

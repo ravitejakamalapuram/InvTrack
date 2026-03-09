@@ -55,8 +55,8 @@ void main() {
     const channel = MethodChannel('plugins.flutter.io/path_provider');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-      return tempDir.path;
-    });
+          return tempDir.path;
+        });
 
     investmentRepository = FakeInvestmentRepository();
     goalRepository = FakeGoalRepository();
@@ -283,8 +283,8 @@ void main() {
       final metadata = {
         'version': '1.0',
         'files': [
-          {'fileName': 'cashflows.csv', 'type': 'cashflows'}
-        ]
+          {'fileName': 'cashflows.csv', 'type': 'cashflows'},
+        ],
       };
 
       // Old CSV format without Currency column
@@ -403,4 +403,3 @@ class MockDocumentRepository extends Mock implements DocumentRepository {}
 
 class MockDocumentStorageService extends Mock
     implements DocumentStorageService {}
-

@@ -53,7 +53,11 @@ class VersionCheckService {
       // Only log to Crashlytics if it's a reportable error
       // Transient network errors (unavailable, timeout) have shouldReport = false
       if (appException.shouldReport) {
-        LoggerService.error('Error fetching version info', error: e, stackTrace: st);
+        LoggerService.error(
+          'Error fetching version info',
+          error: e,
+          stackTrace: st,
+        );
       } else {
         // Just log as warning for transient errors (no Crashlytics spam)
         LoggerService.warn('Version check failed (transient)', error: e);

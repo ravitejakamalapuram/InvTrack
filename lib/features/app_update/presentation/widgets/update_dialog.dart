@@ -137,9 +137,7 @@ class UpdateDialog extends ConsumerWidget {
       const allowedSchemes = ['https', 'http', 'market', 'itms-apps'];
       if (!allowedSchemes.contains(uri.scheme)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid update link format.'),
-          ),
+          const SnackBar(content: Text('Invalid update link format.')),
         );
         return;
       }

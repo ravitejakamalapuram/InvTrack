@@ -93,9 +93,7 @@ void main() {
         expect(result.email, testEmail);
 
         // Verify authenticate was called with NO scopeHint (identity-only mode)
-        verify(
-          () => mockGoogleSignIn.authenticate(),
-        ).called(1);
+        verify(() => mockGoogleSignIn.authenticate()).called(1);
 
         // Verify authentication property was accessed (not authorizationForScopes)
         verify(() => mockGoogleSignInAccount.authentication).called(1);
@@ -114,9 +112,7 @@ void main() {
 
     test('signInWithGoogle handles GoogleSignInException.canceled', () async {
       // Arrange
-      when(
-        () => mockGoogleSignIn.authenticate(),
-      ).thenThrow(
+      when(() => mockGoogleSignIn.authenticate()).thenThrow(
         const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
       );
 
@@ -125,9 +121,7 @@ void main() {
 
       // Assert
       expect(result, isNull);
-      verify(
-        () => mockGoogleSignIn.authenticate(),
-      ).called(1);
+      verify(() => mockGoogleSignIn.authenticate()).called(1);
       verifyNever(() => mockFirebaseAuth.signInWithCredential(any()));
     });
 
@@ -136,9 +130,7 @@ void main() {
       () async {
         // Arrange
         // Use 'interrupted' code (valid GoogleSignInExceptionCode value)
-        when(
-          () => mockGoogleSignIn.authenticate(),
-        ).thenThrow(
+        when(() => mockGoogleSignIn.authenticate()).thenThrow(
           const GoogleSignInException(
             code: GoogleSignInExceptionCode.interrupted,
           ),
@@ -146,10 +138,7 @@ void main() {
 
         // Act & Assert
         // The implementation converts GoogleSignInException to Exception with user-friendly message
-        expect(
-          () => repository.signInWithGoogle(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => repository.signInWithGoogle(), throwsA(isA<Exception>()));
       },
     );
 
@@ -241,9 +230,7 @@ void main() {
         verify(() => mockGoogleSignIn.signOut()).called(1);
 
         // Verify authenticate was called
-        verify(
-          () => mockGoogleSignIn.authenticate(),
-        ).called(1);
+        verify(() => mockGoogleSignIn.authenticate()).called(1);
 
         // Verify authentication property was accessed
         verify(() => mockGoogleSignInAccount.authentication).called(1);
