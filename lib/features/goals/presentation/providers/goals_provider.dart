@@ -114,7 +114,8 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
 
   GoalRepository get _repository => ref.read(goalRepositoryProvider);
   AnalyticsService get _analytics => ref.read(analyticsServiceProvider);
-  PerformanceService get _performanceService => ref.read(performanceServiceProvider);
+  PerformanceService get _performanceService =>
+      ref.read(performanceServiceProvider);
 
   /// Create a new goal
   Future<String> createGoal({
@@ -148,7 +149,9 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
             linkedTypes: linkedTypes,
             icon: icon ?? GoalIcons.defaultIcon,
             colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
-            currency: currency ?? 'USD', // Default to USD if not specified (Rule 21.2)
+            currency:
+                currency ??
+                'USD', // Default to USD if not specified (Rule 21.2)
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -177,20 +180,14 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
   Future<void> updateGoal(GoalEntity goal) async {
     state = const AsyncValue.loading();
     try {
-      await _performanceService.trackOperation(
-        'goal_update',
-        () async {
-          final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
-          if (goal.isArchived) {
-            await _repository.updateArchivedGoal(updatedGoal);
-          } else {
-            await _repository.updateGoal(updatedGoal);
-          }
-        },
-        attributes: {
-          'is_archived': goal.isArchived.toString(),
-        },
-      );
+      await _performanceService.trackOperation('goal_update', () async {
+        final updatedGoal = goal.copyWith(updatedAt: DateTime.now());
+        if (goal.isArchived) {
+          await _repository.updateArchivedGoal(updatedGoal);
+        } else {
+          await _repository.updateGoal(updatedGoal);
+        }
+      }, attributes: {'is_archived': goal.isArchived.toString()});
       _analytics.logGoalUpdated(goalId: goal.id);
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -286,12 +283,8 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
           }
           return count;
         },
-        metrics: {
-          'goal_count': goalIds.length,
-        },
-        attributes: {
-          'is_archived': isArchived.toString(),
-        },
+        metrics: {'goal_count': goalIds.length},
+        attributes: {'is_archived': isArchived.toString()},
       );
       state = const AsyncValue.data(null);
       return deletedCount;

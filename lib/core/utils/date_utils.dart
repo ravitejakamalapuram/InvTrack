@@ -81,10 +81,9 @@ class AppDateUtils {
     final effectiveLocale = locale ?? Intl.defaultLocale;
     final key = 'skeleton_yMMM|$effectiveLocale';
 
-    return _formatters.putIfAbsent(
-      key,
-      () => DateFormat.yMMM(effectiveLocale),
-    ).format(date);
+    return _formatters
+        .putIfAbsent(key, () => DateFormat.yMMM(effectiveLocale))
+        .format(date);
   }
 
   /// Format date based on user's preferred date format pattern

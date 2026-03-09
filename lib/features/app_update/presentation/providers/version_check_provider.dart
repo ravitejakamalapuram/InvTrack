@@ -141,9 +141,10 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
         lastCheckedAt: now,
       );
 
-      LoggerService.info('Version check complete', metadata: {
-        'latestVersion': latestVersion?.latestVersion,
-      });
+      LoggerService.info(
+        'Version check complete',
+        metadata: {'latestVersion': latestVersion?.latestVersion},
+      );
     } catch (e) {
       LoggerService.error('Error checking for updates', error: e);
       state = state.copyWith(isLoading: false, hasChecked: true);

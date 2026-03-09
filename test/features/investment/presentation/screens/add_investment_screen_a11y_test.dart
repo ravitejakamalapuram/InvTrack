@@ -89,43 +89,84 @@ void main() {
       reason: 'Semantics widget should exist in the tree',
     );
 
-      // Verify semantics on the widget we found
-      final semanticsNode = tester.getSemantics(semanticsWidget);
-      // Access data via getSemanticsData() if available, or assume it's data
-      final semanticsData = (semanticsNode as dynamic).getSemanticsData();
-      expect(semanticsData.label, 'Select Start Date', reason: 'Start Date picker should have correct label');
-      // ignore: deprecated_member_use
-      expect(semanticsData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Start Date picker should be a button');
-      expect(semanticsData.hasAction(SemanticsAction.tap), isTrue, reason: 'Start Date picker should be tappable');
+    // Verify semantics on the widget we found
+    final semanticsNode = tester.getSemantics(semanticsWidget);
+    // Access data via getSemanticsData() if available, or assume it's data
+    final semanticsData = (semanticsNode as dynamic).getSemanticsData();
+    expect(
+      semanticsData.label,
+      'Select Start Date',
+      reason: 'Start Date picker should have correct label',
+    );
+    // ignore: deprecated_member_use
+    expect(
+      semanticsData.hasFlag(SemanticsFlag.isButton),
+      isTrue,
+      reason: 'Start Date picker should be a button',
+    );
+    expect(
+      semanticsData.hasAction(SemanticsAction.tap),
+      isTrue,
+      reason: 'Start Date picker should be tappable',
+    );
 
-      // For Risk Level "Medium Risk"
-      final mediumRiskSemantics = find.bySemanticsLabel('Medium Risk');
-      expect(mediumRiskSemantics, findsOneWidget, reason: 'Risk Level chip should have semantic label');
-      final mediumRiskNode = tester.getSemantics(mediumRiskSemantics);
-      final mediumRiskData = (mediumRiskNode as dynamic).getSemanticsData();
-      // ignore: deprecated_member_use
-      expect(mediumRiskData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Risk Level chip should be a button');
-      expect(mediumRiskData.hasAction(SemanticsAction.tap), isTrue, reason: 'Risk Level chip should be tappable');
+    // For Risk Level "Medium Risk"
+    final mediumRiskSemantics = find.bySemanticsLabel('Medium Risk');
+    expect(
+      mediumRiskSemantics,
+      findsOneWidget,
+      reason: 'Risk Level chip should have semantic label',
+    );
+    final mediumRiskNode = tester.getSemantics(mediumRiskSemantics);
+    final mediumRiskData = (mediumRiskNode as dynamic).getSemanticsData();
+    // ignore: deprecated_member_use
+    expect(
+      mediumRiskData.hasFlag(SemanticsFlag.isButton),
+      isTrue,
+      reason: 'Risk Level chip should be a button',
+    );
+    expect(
+      mediumRiskData.hasAction(SemanticsAction.tap),
+      isTrue,
+      reason: 'Risk Level chip should be tappable',
+    );
 
-      // For Payout Mode "Monthly" - Not shown for P2P Lending by default, so skipping.
-      // We already verified _buildEnumChip works with Risk Level.
+    // For Payout Mode "Monthly" - Not shown for P2P Lending by default, so skipping.
+    // We already verified _buildEnumChip works with Risk Level.
 
-      // 4. Check Income Frequency (uses _buildFrequencyChip)
-      // This is ALWAYS visible at the bottom of the form.
-      // Find "Monthly income frequency" semantics label.
-      final monthlyFrequencyFinder = find.bySemanticsLabel('Monthly income frequency');
+    // 4. Check Income Frequency (uses _buildFrequencyChip)
+    // This is ALWAYS visible at the bottom of the form.
+    // Find "Monthly income frequency" semantics label.
+    final monthlyFrequencyFinder = find.bySemanticsLabel(
+      'Monthly income frequency',
+    );
 
-      // Scroll to ensure it is visible (it's at the bottom)
-      await tester.scrollUntilVisible(monthlyFrequencyFinder, 500, scrollable: scrollable);
-      expect(monthlyFrequencyFinder, findsOneWidget, reason: 'Monthly income frequency chip should exist');
+    // Scroll to ensure it is visible (it's at the bottom)
+    await tester.scrollUntilVisible(
+      monthlyFrequencyFinder,
+      500,
+      scrollable: scrollable,
+    );
+    expect(
+      monthlyFrequencyFinder,
+      findsOneWidget,
+      reason: 'Monthly income frequency chip should exist',
+    );
 
-      final monthlyFreqNode = tester.getSemantics(monthlyFrequencyFinder);
-      final monthlyFreqData = (monthlyFreqNode as dynamic).getSemanticsData();
+    final monthlyFreqNode = tester.getSemantics(monthlyFrequencyFinder);
+    final monthlyFreqData = (monthlyFreqNode as dynamic).getSemanticsData();
 
-      expect(monthlyFreqData.label, 'Monthly income frequency');
-      // ignore: deprecated_member_use
-      expect(monthlyFreqData.hasFlag(SemanticsFlag.isButton), isTrue, reason: 'Frequency chip should be a button');
-      expect(monthlyFreqData.hasAction(SemanticsAction.tap), isTrue, reason: 'Frequency chip should be tappable (onTap added)');
-    },
-  );
+    expect(monthlyFreqData.label, 'Monthly income frequency');
+    // ignore: deprecated_member_use
+    expect(
+      monthlyFreqData.hasFlag(SemanticsFlag.isButton),
+      isTrue,
+      reason: 'Frequency chip should be a button',
+    );
+    expect(
+      monthlyFreqData.hasAction(SemanticsAction.tap),
+      isTrue,
+      reason: 'Frequency chip should be tappable (onTap added)',
+    );
+  });
 }

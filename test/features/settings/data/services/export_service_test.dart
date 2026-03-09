@@ -18,19 +18,23 @@ void main() {
     tempDir = Directory.systemTemp.createTempSync();
 
     // Mock path_provider
-    const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
+    const pathProviderChannel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(pathProviderChannel, (MethodCall methodCall) async {
-      return tempDir.path;
-    });
+        .setMockMethodCallHandler(pathProviderChannel, (
+          MethodCall methodCall,
+        ) async {
+          return tempDir.path;
+        });
 
     // Mock share_plus
     const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(shareChannel, (MethodCall methodCall) async {
-      // Mock successful share - just return null
-      return null;
-    });
+          // Mock successful share - just return null
+          return null;
+        });
 
     investmentRepository = FakeInvestmentRepository();
     exportService = ExportService(investmentRepository);
@@ -315,4 +319,3 @@ void main() {
     });
   });
 }
-

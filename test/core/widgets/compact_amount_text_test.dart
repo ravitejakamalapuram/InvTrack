@@ -23,9 +23,7 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Center(child: child),
-          ),
+          home: Scaffold(body: Center(child: child)),
         ),
       ),
     );

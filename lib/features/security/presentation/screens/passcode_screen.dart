@@ -148,9 +148,10 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
 
     // For auto-attempts, check if we've exceeded max attempts
     if (isAutoAttempt && _biometricAttemptCount >= _maxBiometricAttempts) {
-      LoggerService.debug('Max biometric attempts reached for auto-retry', metadata: {
-        'attemptCount': _biometricAttemptCount,
-      });
+      LoggerService.debug(
+        'Max biometric attempts reached for auto-retry',
+        metadata: {'attemptCount': _biometricAttemptCount},
+      );
       return;
     }
 
@@ -158,10 +159,13 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     _lastBiometricAttempt = DateTime.now();
 
     try {
-      LoggerService.debug('Starting biometric authentication', metadata: {
-        'isAutoAttempt': isAutoAttempt,
-        'attemptNumber': _biometricAttemptCount + 1,
-      });
+      LoggerService.debug(
+        'Starting biometric authentication',
+        metadata: {
+          'isAutoAttempt': isAutoAttempt,
+          'attemptNumber': _biometricAttemptCount + 1,
+        },
+      );
 
       final success = await ref
           .read(securityProvider.notifier)
@@ -322,7 +326,8 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
     final securityState = ref.read(securityProvider);
 
     // Only prompt if biometrics are available and not already enabled
-    if (!securityState.isBiometricAvailable || securityState.isBiometricEnabled) {
+    if (!securityState.isBiometricAvailable ||
+        securityState.isBiometricEnabled) {
       return;
     }
 
@@ -359,9 +364,9 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
       if (success && mounted) {
         await ref.read(securityProvider.notifier).toggleBiometrics(true);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.biometricUnlockEnabled)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.biometricUnlockEnabled)));
         }
       }
     }
@@ -439,29 +444,27 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
             return SizedBox(
               width: 80,
               height: 80,
-              child:
-                  showBiometric
-                      ? IconButton(
-                        tooltip: 'Use biometric authentication',
-                        icon: Icon(
-                          Icons.fingerprint,
-                          size: 32,
-                          color: AppColors.primaryLight,
-                        ),
-                        onPressed: _onBiometricButtonPressed,
-                      )
-                      : IconButton(
-                        tooltip: 'Clear',
-                        icon: Icon(
-                          Icons.clear,
-                          size: 28,
-                          color:
-                              _input.isNotEmpty
-                                  ? AppColors.textPrimaryLight
-                                  : AppColors.neutral300Light,
-                        ),
-                        onPressed: _input.isNotEmpty ? _onClear : null,
+              child: showBiometric
+                  ? IconButton(
+                      tooltip: 'Use biometric authentication',
+                      icon: Icon(
+                        Icons.fingerprint,
+                        size: 32,
+                        color: AppColors.primaryLight,
                       ),
+                      onPressed: _onBiometricButtonPressed,
+                    )
+                  : IconButton(
+                      tooltip: 'Clear',
+                      icon: Icon(
+                        Icons.clear,
+                        size: 28,
+                        color: _input.isNotEmpty
+                            ? AppColors.textPrimaryLight
+                            : AppColors.neutral300Light,
+                      ),
+                      onPressed: _input.isNotEmpty ? _onClear : null,
+                    ),
             );
           }
           if (key == 'backspace') {

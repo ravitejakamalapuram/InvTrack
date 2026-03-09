@@ -160,8 +160,14 @@ void main() {
         expect(SecurityUtils.constantTimeEquals('1234', '123'), isFalse);
         expect(SecurityUtils.constantTimeEquals('', 'a'), isFalse);
         expect(SecurityUtils.constantTimeEquals('a', ''), isFalse);
-        expect(SecurityUtils.constantTimeEquals('verylongstring', 'short'), isFalse);
-        expect(SecurityUtils.constantTimeEquals('short', 'verylongstring'), isFalse);
+        expect(
+          SecurityUtils.constantTimeEquals('verylongstring', 'short'),
+          isFalse,
+        );
+        expect(
+          SecurityUtils.constantTimeEquals('short', 'verylongstring'),
+          isFalse,
+        );
       });
 
       test('handles unicode characters correctly', () {

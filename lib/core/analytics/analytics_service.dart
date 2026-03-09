@@ -248,7 +248,10 @@ class AnalyticsService {
       await _analytics.logEvent(name: name, parameters: parameters);
       LoggerService.debug(
         'Analytics event logged',
-        metadata: {'event': name, 'parameters': parameters?.toString() ?? 'none'},
+        metadata: {
+          'event': name,
+          'parameters': parameters?.toString() ?? 'none',
+        },
       );
     } catch (e) {
       LoggerService.warn(

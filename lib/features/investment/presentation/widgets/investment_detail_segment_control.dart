@@ -86,86 +86,88 @@ class _SegmentTab extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          final bgColor = Color.lerp(
-            Colors.transparent,
-            isDark ? AppColors.neutral700Dark : Colors.white,
-            value,
-          )!;
-          final iconTextColor = Color.lerp(
-            isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-            isDark ? Colors.white : AppColors.neutral900Light,
-            value,
-          )!;
-          final badgeBgColor = Color.lerp(
-            isDark ? AppColors.neutral600Dark : AppColors.neutral200Light,
-            AppColors.primaryLight.withValues(alpha: 0.15),
-            value,
-          )!;
-          final badgeTextColor = Color.lerp(
-            isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-            AppColors.primaryLight,
-            value,
-          )!;
-          final shadowOpacity = 0.08 * value;
+          tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            final bgColor = Color.lerp(
+              Colors.transparent,
+              isDark ? AppColors.neutral700Dark : Colors.white,
+              value,
+            )!;
+            final iconTextColor = Color.lerp(
+              isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              isDark ? Colors.white : AppColors.neutral900Light,
+              value,
+            )!;
+            final badgeBgColor = Color.lerp(
+              isDark ? AppColors.neutral600Dark : AppColors.neutral200Light,
+              AppColors.primaryLight.withValues(alpha: 0.15),
+              value,
+            )!;
+            final badgeTextColor = Color.lerp(
+              isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              AppColors.primaryLight,
+              value,
+            )!;
+            final shadowOpacity = 0.08 * value;
 
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: value > 0.01
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: shadowOpacity),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: iconTextColor),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: iconTextColor,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-                if (count > 0) ...[
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: value > 0.01
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: shadowOpacity),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18, color: iconTextColor),
                   const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: badgeBgColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '$count',
-                      style: AppTypography.small.copyWith(
-                        color: badgeTextColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
+                  Text(
+                    label,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: iconTextColor,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
+                  if (count > 0) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeBgColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: AppTypography.small.copyWith(
+                          color: badgeTextColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
-    ),
     );
   }
 }

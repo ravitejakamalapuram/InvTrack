@@ -104,14 +104,16 @@ final activeInvestmentXirrMapProvider = FutureProvider<Map<String, double>>((
   }
 
   // Track performance of bulk XIRR calculation
-  return ref.read(performanceServiceProvider).trackOperation(
-    'bulk_xirr_calculation',
-    () => compute<List<CashFlowEntity>, Map<String, double>>(
-      _calculateAllXirrs,
-      cashFlows,
-    ),
-    metrics: {'total_cash_flows': cashFlows.length},
-  );
+  return ref
+      .read(performanceServiceProvider)
+      .trackOperation(
+        'bulk_xirr_calculation',
+        () => compute<List<CashFlowEntity>, Map<String, double>>(
+          _calculateAllXirrs,
+          cashFlows,
+        ),
+        metrics: {'total_cash_flows': cashFlows.length},
+      );
 });
 
 /// Calculate stats for a single active investment (reactive - watches the stream)

@@ -6,19 +6,22 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_filter_tabs.dart';
 
 void main() {
-  testWidgets('InvestmentListFilterTabs keyboard navigation test', (tester) async {
+  testWidgets('InvestmentListFilterTabs keyboard navigation test', (
+    tester,
+  ) async {
     // Setup
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          investmentCountsProvider.overrideWithValue(
-            (all: 10, open: 5, closed: 3, archived: 2),
-          ),
+          investmentCountsProvider.overrideWithValue((
+            all: 10,
+            open: 5,
+            closed: 3,
+            archived: 2,
+          )),
         ],
         child: const MaterialApp(
-          home: Scaffold(
-            body: InvestmentListFilterTabs(),
-          ),
+          home: Scaffold(body: InvestmentListFilterTabs()),
         ),
       ),
     );
@@ -42,7 +45,10 @@ void main() {
     // Verify "Open" is selected.
     final openText = tester.widget<Text>(find.text('Open'));
 
-    expect(openText.style?.fontWeight, FontWeight.w600,
-        reason: 'Open chip should be selected after pressing Enter');
+    expect(
+      openText.style?.fontWeight,
+      FontWeight.w600,
+      reason: 'Open chip should be selected after pressing Enter',
+    );
   });
 }

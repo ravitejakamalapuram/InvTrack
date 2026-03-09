@@ -303,7 +303,9 @@ class GoalProgressCalculator {
     final currentMilestone = GoalMilestone.forPercentage(progressPercent);
 
     // Get achieved milestones
-    final achievedMilestones = GoalMilestone.achievedMilestones(progressPercent);
+    final achievedMilestones = GoalMilestone.achievedMilestones(
+      progressPercent,
+    );
 
     return GoalProgress(
       goal: goal,
@@ -507,48 +509,46 @@ class GoalsSummary {
 /// This ensures accurate progress tracking when investments are in different currencies.
 ///
 /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
-final multiCurrencyGoalProgressProvider = FutureProvider.family<GoalProgress?, String>((
-  ref,
-  goalId,
-) async {
-  // Watch the goal directly (not from active list - works for any goal)
-  final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
-  // Use activeInvestmentsProvider to exclude archived investments
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  // Use validCashFlowsProvider to only include cash flows from active investments
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+final multiCurrencyGoalProgressProvider =
+    FutureProvider.family<GoalProgress?, String>((ref, goalId) async {
+      // Watch the goal directly (not from active list - works for any goal)
+      final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
+      // Use activeInvestmentsProvider to exclude archived investments
+      final investmentsAsync = ref.watch(activeInvestmentsProvider);
+      // Use validCashFlowsProvider to only include cash flows from active investments
+      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  final goal = await goalAsync.when(
-    data: (g) async => g,
-    loading: () async => null,
-    error: (e, s) async => null,
-  );
+      final goal = await goalAsync.when(
+        data: (g) async => g,
+        loading: () async => null,
+        error: (e, s) async => null,
+      );
 
-  if (goal == null) return null;
+      if (goal == null) return null;
 
-  final investments = await investmentsAsync.when(
-    data: (i) async => i,
-    loading: () async => <InvestmentEntity>[],
-    error: (e, s) async => <InvestmentEntity>[],
-  );
+      final investments = await investmentsAsync.when(
+        data: (i) async => i,
+        loading: () async => <InvestmentEntity>[],
+        error: (e, s) async => <InvestmentEntity>[],
+      );
 
-  final cashFlows = await cashFlowsAsync.when(
-    data: (cf) async => cf,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, s) async => <CashFlowEntity>[],
-  );
+      final cashFlows = await cashFlowsAsync.when(
+        data: (cf) async => cf,
+        loading: () async => <CashFlowEntity>[],
+        error: (e, s) async => <CashFlowEntity>[],
+      );
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
-  final baseCurrency = ref.watch(currencyCodeProvider);
+      final conversionService = ref.watch(currencyConversionServiceProvider);
+      final baseCurrency = ref.watch(currencyCodeProvider);
 
-  return GoalProgressCalculator.calculateMultiCurrency(
-    goal: goal,
-    allInvestments: investments,
-    allCashFlows: cashFlows,
-    conversionService: conversionService,
-    baseCurrency: baseCurrency,
-  );
-});
+      return GoalProgressCalculator.calculateMultiCurrency(
+        goal: goal,
+        allInvestments: investments,
+        allCashFlows: cashFlows,
+        conversionService: conversionService,
+        baseCurrency: baseCurrency,
+      );
+    });
 
 /// Multi-currency provider for all goals with their progress
 ///
@@ -608,8 +608,12 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
 /// summary statistics when investments are in different currencies.
 ///
 /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
-final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((ref) async {
-  final progressList = await ref.watch(multiCurrencyAllGoalsProgressProvider.future);
+final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
+  ref,
+) async {
+  final progressList = await ref.watch(
+    multiCurrencyAllGoalsProgressProvider.future,
+  );
 
   if (progressList.isEmpty) {
     return GoalsSummary(
@@ -625,9 +629,15 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((ref) asy
 
   // Calculate summary statistics
   final totalGoals = progressList.length;
-  final achievedGoals = progressList.where((p) => p.status == GoalStatus.achieved).length;
-  final onTrackGoals = progressList.where((p) => p.status == GoalStatus.onTrack).length;
-  final behindGoals = progressList.where((p) => p.status == GoalStatus.behind).length;
+  final achievedGoals = progressList
+      .where((p) => p.status == GoalStatus.achieved)
+      .length;
+  final onTrackGoals = progressList
+      .where((p) => p.status == GoalStatus.onTrack)
+      .length;
+  final behindGoals = progressList
+      .where((p) => p.status == GoalStatus.behind)
+      .length;
 
   // Calculate average progress
   final totalProgress = progressList.fold<double>(

@@ -32,11 +32,13 @@ void main() {
     mockExchangeRatesCollection = MockCollectionReference();
 
     // Setup Firestore mock chain
-    when(() => mockFirestore.collection('users'))
-        .thenReturn(mockUsersCollection);
+    when(
+      () => mockFirestore.collection('users'),
+    ).thenReturn(mockUsersCollection);
     when(() => mockUsersCollection.doc('test-user')).thenReturn(mockUserDoc);
-    when(() => mockUserDoc.collection('exchangeRates'))
-        .thenReturn(mockExchangeRatesCollection);
+    when(
+      () => mockUserDoc.collection('exchangeRates'),
+    ).thenReturn(mockExchangeRatesCollection);
   });
 
   group('CurrencyConversionService - Same Currency', () {
@@ -85,8 +87,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
       when(() => mockDocRef.set(any())).thenAnswer((_) async => {});
@@ -123,8 +124,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
       when(() => mockDocRef.set(any())).thenAnswer((_) async => {});
@@ -157,8 +157,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
       when(() => mockDocRef.set(any())).thenAnswer((_) async => {});
@@ -198,11 +197,15 @@ void main() {
       expect(rate2, 82.50);
 
       // Verify Firestore set was called with expiresAt: null
-      verify(() => mockDocRef.set(any(
-        that: predicate<Map<String, dynamic>>((data) {
-          return data['type'] == 'historical' && data['expiresAt'] == null;
-        }),
-      ))).called(1);
+      verify(
+        () => mockDocRef.set(
+          any(
+            that: predicate<Map<String, dynamic>>((data) {
+              return data['type'] == 'historical' && data['expiresAt'] == null;
+            }),
+          ),
+        ),
+      ).called(1);
     });
   });
 
@@ -214,8 +217,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
       when(() => mockDocRef.set(any())).thenAnswer((_) async => {});
@@ -240,11 +242,15 @@ void main() {
       expect(rate1, 83.12);
 
       // Verify Firestore set was called with expiresAt (not null)
-      verify(() => mockDocRef.set(any(
-        that: predicate<Map<String, dynamic>>((data) {
-          return data['type'] == 'live' && data['expiresAt'] != null;
-        }),
-      ))).called(1);
+      verify(
+        () => mockDocRef.set(
+          any(
+            that: predicate<Map<String, dynamic>>((data) {
+              return data['type'] == 'live' && data['expiresAt'] != null;
+            }),
+          ),
+        ),
+      ).called(1);
     });
   });
 
@@ -286,8 +292,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
       when(() => mockDocRef.set(any())).thenAnswer((_) async => {});
@@ -318,11 +323,7 @@ void main() {
       );
 
       final results = await service.batchConvert(
-        amounts: {
-          'USD': 1000,
-          'EUR': 800,
-          'INR': 50000,
-        },
+        amounts: {'USD': 1000, 'EUR': 800, 'INR': 50000},
         to: 'INR',
       );
 
@@ -339,8 +340,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
 
@@ -365,8 +365,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(false);
 
@@ -394,8 +393,7 @@ void main() {
       final mockDocSnapshot = MockDocumentSnapshot();
       final mockDocRef = MockDocumentReference();
 
-      when(() => mockExchangeRatesCollection.doc(any()))
-          .thenReturn(mockDocRef);
+      when(() => mockExchangeRatesCollection.doc(any())).thenReturn(mockDocRef);
       when(() => mockDocRef.get()).thenAnswer((_) async => mockDocSnapshot);
       when(() => mockDocSnapshot.exists).thenReturn(true);
       when(() => mockDocSnapshot.data()).thenReturn({
@@ -425,4 +423,3 @@ void main() {
     });
   });
 }
-

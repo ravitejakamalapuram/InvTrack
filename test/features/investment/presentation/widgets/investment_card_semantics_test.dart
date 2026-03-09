@@ -15,7 +15,9 @@ class MockPrivacyModeNotifier extends PrivacyModeNotifier {
 }
 
 void main() {
-  testWidgets('InvestmentCard semantics include XIRR when available', (tester) async {
+  testWidgets('InvestmentCard semantics include XIRR when available', (
+    tester,
+  ) async {
     // 1. Setup Data
     final investment = InvestmentEntity(
       id: 'inv-1',
@@ -46,13 +48,13 @@ void main() {
       ProviderScope(
         overrides: [
           // Basic stats provider returns stats with 0 XIRR
-          investmentBasicStatsProvider(investment.id).overrideWith(
-            (ref) => AsyncValue.data(stats),
-          ),
+          investmentBasicStatsProvider(
+            investment.id,
+          ).overrideWith((ref) => AsyncValue.data(stats)),
           // XIRR provider returns actual XIRR
-          investmentXirrProvider(investment.id).overrideWith(
-            (ref) => Future.value(xirrValue),
-          ),
+          investmentXirrProvider(
+            investment.id,
+          ).overrideWith((ref) => Future.value(xirrValue)),
           // Mock other dependencies
           currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(
@@ -99,7 +101,9 @@ void main() {
     expect(label, contains('positive 12.5 percent'));
   });
 
-  testWidgets('InvestmentCard semantics exclude XIRR when loading/error', (tester) async {
+  testWidgets('InvestmentCard semantics exclude XIRR when loading/error', (
+    tester,
+  ) async {
     // 1. Setup Data
     final investment = InvestmentEntity(
       id: 'inv-1',
@@ -117,14 +121,14 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          investmentBasicStatsProvider(investment.id).overrideWith(
-            (ref) => AsyncValue.data(stats),
-          ),
+          investmentBasicStatsProvider(
+            investment.id,
+          ).overrideWith((ref) => AsyncValue.data(stats)),
           // XIRR provider is loading
           investmentXirrProvider(investment.id).overrideWith(
             (ref) => Future<double>.delayed(const Duration(seconds: 10)),
           ),
-           currencySymbolProvider.overrideWith((ref) => '\$'),
+          currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(
             (ref) => NumberFormat.currency(symbol: '\$'),
           ),

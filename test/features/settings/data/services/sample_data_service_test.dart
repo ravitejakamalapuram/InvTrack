@@ -13,10 +13,7 @@ void main() {
   setUp(() {
     investmentRepository = FakeInvestmentRepository();
     goalRepository = FakeGoalRepository();
-    sampleDataService = SampleDataService(
-      investmentRepository,
-      goalRepository,
-    );
+    sampleDataService = SampleDataService(investmentRepository, goalRepository);
   });
 
   group('SampleDataService - Multi-Currency Support (Rule 21.5)', () {
@@ -69,15 +66,17 @@ void main() {
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
-        final inrInvestments =
-            investments.where((i) => i.currency == 'INR').toList();
+        final inrInvestments = investments
+            .where((i) => i.currency == 'INR')
+            .toList();
 
         expect(inrInvestments.length, greaterThan(0));
 
         // Verify INR cash flows exist
         final allCashFlows = await investmentRepository.getAllCashFlows();
-        final inrCashFlows =
-            allCashFlows.where((cf) => cf.currency == 'INR').toList();
+        final inrCashFlows = allCashFlows
+            .where((cf) => cf.currency == 'INR')
+            .toList();
 
         expect(inrCashFlows.length, greaterThan(0));
       });
@@ -88,15 +87,17 @@ void main() {
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
-        final usdInvestments =
-            investments.where((i) => i.currency == 'USD').toList();
+        final usdInvestments = investments
+            .where((i) => i.currency == 'USD')
+            .toList();
 
         expect(usdInvestments.length, greaterThan(0));
 
         // Verify USD cash flows exist
         final allCashFlows = await investmentRepository.getAllCashFlows();
-        final usdCashFlows =
-            allCashFlows.where((cf) => cf.currency == 'USD').toList();
+        final usdCashFlows = allCashFlows
+            .where((cf) => cf.currency == 'USD')
+            .toList();
 
         expect(usdCashFlows.length, greaterThan(0));
       });
@@ -107,15 +108,17 @@ void main() {
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
-        final eurInvestments =
-            investments.where((i) => i.currency == 'EUR').toList();
+        final eurInvestments = investments
+            .where((i) => i.currency == 'EUR')
+            .toList();
 
         expect(eurInvestments.length, greaterThan(0));
 
         // Verify EUR cash flows exist
         final allCashFlows = await investmentRepository.getAllCashFlows();
-        final eurCashFlows =
-            allCashFlows.where((cf) => cf.currency == 'EUR').toList();
+        final eurCashFlows = allCashFlows
+            .where((cf) => cf.currency == 'EUR')
+            .toList();
 
         expect(eurCashFlows.length, greaterThan(0));
       });
@@ -159,4 +162,3 @@ void main() {
     });
   });
 }
-

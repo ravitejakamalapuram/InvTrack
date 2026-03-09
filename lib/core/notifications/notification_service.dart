@@ -317,10 +317,7 @@ class NotificationService with NotificationPreferencesMixin {
       );
     } catch (e) {
       // Fallback to UTC if we can't get the local timezone
-      LoggerService.warn(
-        'Failed to get local timezone, using UTC',
-        error: e,
-      );
+      LoggerService.warn('Failed to get local timezone, using UTC', error: e);
       // tz.local defaults to UTC, which is fine as a fallback
     }
   }

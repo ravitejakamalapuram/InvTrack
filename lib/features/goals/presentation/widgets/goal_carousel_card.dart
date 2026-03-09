@@ -18,11 +18,7 @@ class GoalCarouselCard extends ConsumerWidget {
   final GoalProgress progress;
   final double width;
 
-  const GoalCarouselCard({
-    super.key,
-    required this.progress,
-    this.width = 280,
-  });
+  const GoalCarouselCard({super.key, required this.progress, this.width = 280});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,10 +59,7 @@ class GoalCarouselCard extends ConsumerWidget {
                 ),
               ),
               child: Center(
-                child: Text(
-                  goal.icon,
-                  style: const TextStyle(fontSize: 24),
-                ),
+                child: Text(goal.icon, style: const TextStyle(fontSize: 24)),
               ),
             ),
             SizedBox(width: AppSpacing.md),
@@ -85,7 +78,9 @@ class GoalCarouselCard extends ConsumerWidget {
                         child: Text(
                           goal.name,
                           style: AppTypography.bodyLarge.copyWith(
-                            color: isDark ? Colors.white : AppColors.neutral900Light,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.neutral900Light,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.3,
                           ),
@@ -123,16 +118,23 @@ class GoalCarouselCard extends ConsumerWidget {
                   // Progress amount
                   isPrivacyMode
                       ? MaskedAmountText(
-                          text: progress.getProgressMessage(currencySymbol, locale),
+                          text: progress.getProgressMessage(
+                            currencySymbol,
+                            locale,
+                          ),
                           style: AppTypography.caption.copyWith(
-                            color: isDark ? Colors.white54 : AppColors.neutral500Light,
+                            color: isDark
+                                ? Colors.white54
+                                : AppColors.neutral500Light,
                             fontSize: 11,
                           ),
                         )
                       : Text(
                           progress.getProgressMessage(currencySymbol, locale),
                           style: AppTypography.caption.copyWith(
-                            color: isDark ? Colors.white54 : AppColors.neutral500Light,
+                            color: isDark
+                                ? Colors.white54
+                                : AppColors.neutral500Light,
                             fontSize: 11,
                           ),
                           maxLines: 1,
@@ -157,7 +159,10 @@ class GoalCarouselCard extends ConsumerWidget {
                         ),
                         // Progress bar with gradient
                         FractionallySizedBox(
-                          widthFactor: (progress.progressPercent / 100).clamp(0.0, 1.0),
+                          widthFactor: (progress.progressPercent / 100).clamp(
+                            0.0,
+                            1.0,
+                          ),
                           child: Container(
                             height: 6,
                             decoration: BoxDecoration(
@@ -192,4 +197,3 @@ class GoalCarouselCard extends ConsumerWidget {
     );
   }
 }
-

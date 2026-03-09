@@ -37,8 +37,9 @@ void main() {
       calculatedAt: DateTime.now(),
     );
 
-    testWidgets('displays goal progress message with correct currency symbol',
-        (tester) async {
+    testWidgets('displays goal progress message with correct currency symbol', (
+      tester,
+    ) async {
       // Mock SharedPreferences for privacy mode
       SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
       final prefs = await SharedPreferences.getInstance();
@@ -50,16 +51,13 @@ void main() {
             currencySymbolProvider.overrideWith((ref) => '\$'),
             currencyLocaleProvider.overrideWith((ref) => 'en_US'),
             // Override the multi-currency provider that GoalCard actually uses
-            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
-              (ref) => Future.value(testProgress),
-            ),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: GoalCard(
-                goal: testGoal,
-                onTap: () {},
-              ),
+              body: GoalCard(goal: testGoal, onTap: () {}),
             ),
           ),
         ),
@@ -71,8 +69,9 @@ void main() {
       expect(find.textContaining('\$250K of \$1M'), findsOneWidget);
     });
 
-    testWidgets('shows progress with locale-aware formatting (Indian locale)',
-        (tester) async {
+    testWidgets('shows progress with locale-aware formatting (Indian locale)', (
+      tester,
+    ) async {
       // Mock SharedPreferences for privacy mode
       SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
       final prefs = await SharedPreferences.getInstance();
@@ -83,16 +82,13 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '₹'),
             currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
-            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
-              (ref) => Future.value(testProgress),
-            ),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: GoalCard(
-                goal: testGoal,
-                onTap: () {},
-              ),
+              body: GoalCard(goal: testGoal, onTap: () {}),
             ),
           ),
         ),
@@ -104,42 +100,41 @@ void main() {
       expect(find.textContaining('₹2.5L of ₹10L'), findsOneWidget);
     });
 
-    testWidgets('shows progress with locale-aware formatting (Western locale)',
-        (tester) async {
-      // Mock SharedPreferences for privacy mode
-      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
-      final prefs = await SharedPreferences.getInstance();
+    testWidgets(
+      'shows progress with locale-aware formatting (Western locale)',
+      (tester) async {
+        // Mock SharedPreferences for privacy mode
+        SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+        final prefs = await SharedPreferences.getInstance();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            currencySymbolProvider.overrideWith((ref) => '€'),
-            currencyLocaleProvider.overrideWith((ref) => 'de_DE'),
-            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
-              (ref) => Future.value(testProgress),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: GoalCard(
-                goal: testGoal,
-                onTap: () {},
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              currencySymbolProvider.overrideWith((ref) => '€'),
+              currencyLocaleProvider.overrideWith((ref) => 'de_DE'),
+              multiCurrencyGoalProgressProvider(
+                testGoal.id,
+              ).overrideWith((ref) => Future.value(testProgress)),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: GoalCard(goal: testGoal, onTap: () {}),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Verify widget renders successfully with German locale
-      // The GoalCard should render without errors
-      expect(find.byType(GoalCard), findsOneWidget);
+        // Verify widget renders successfully with German locale
+        // The GoalCard should render without errors
+        expect(find.byType(GoalCard), findsOneWidget);
 
-      // Verify the goal name is displayed
-      expect(find.text('Retirement Fund'), findsOneWidget);
-    });
+        // Verify the goal name is displayed
+        expect(find.text('Retirement Fund'), findsOneWidget);
+      },
+    );
 
     testWidgets('shows correct progress percentage', (tester) async {
       // Mock SharedPreferences for privacy mode
@@ -152,16 +147,13 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '\$'),
             currencyLocaleProvider.overrideWith((ref) => 'en_US'),
-            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
-              (ref) => Future.value(testProgress),
-            ),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: GoalCard(
-                goal: testGoal,
-                onTap: () {},
-              ),
+              body: GoalCard(goal: testGoal, onTap: () {}),
             ),
           ),
         ),
@@ -202,16 +194,13 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '\$'),
             currencyLocaleProvider.overrideWith((ref) => 'en_US'),
-            multiCurrencyGoalProgressProvider(incomeGoal.id).overrideWith(
-              (ref) => Future.value(incomeProgress),
-            ),
+            multiCurrencyGoalProgressProvider(
+              incomeGoal.id,
+            ).overrideWith((ref) => Future.value(incomeProgress)),
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: GoalCard(
-                goal: incomeGoal,
-                onTap: () {},
-              ),
+              body: GoalCard(goal: incomeGoal, onTap: () {}),
             ),
           ),
         ),
@@ -224,4 +213,3 @@ void main() {
     });
   });
 }
-

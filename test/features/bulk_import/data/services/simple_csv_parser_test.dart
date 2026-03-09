@@ -577,16 +577,28 @@ bad-date,Bad,invest,1000
           expect(result.hasErrors, false);
 
           final currencies = result.rows.map((r) => r.currency).toList();
-          expect(currencies, containsAll([
-            'USD', 'EUR', 'GBP', 'INR', 'JPY',
-            'AUD', 'CAD', 'CHF', 'CNY', 'SGD'
-          ]));
+          expect(
+            currencies,
+            containsAll([
+              'USD',
+              'EUR',
+              'GBP',
+              'INR',
+              'JPY',
+              'AUD',
+              'CAD',
+              'CHF',
+              'CNY',
+              'SGD',
+            ]),
+          );
         });
       });
 
       group('Edge Cases', () {
         test('handles CSV with extra columns after Currency', () {
-          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes,Extra Column
+          const csv =
+              '''Date,Investment Name,Type,Amount,Currency,Notes,Extra Column
 2024-01-01,Test,INVEST,1000,USD,Note,Extra Data''';
 
           final result = SimpleCsvParser.parseString(csv);
@@ -604,7 +616,9 @@ bad-date,Bad,invest,1000
 
           // First row should parse correctly
           expect(result.rows.any((r) => r.investmentName == 'Test 1'), true);
-          final test1 = result.rows.firstWhere((r) => r.investmentName == 'Test 1');
+          final test1 = result.rows.firstWhere(
+            (r) => r.investmentName == 'Test 1',
+          );
           expect(test1.currency, 'USD');
         });
 

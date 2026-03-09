@@ -117,7 +117,9 @@ void main() {
       // Enter search query
       await tester.enterText(find.byType(TextField), 'INR');
       await tester.pump(); // Trigger rebuild
-      await tester.pump(const Duration(milliseconds: 100)); // Wait for state update
+      await tester.pump(
+        const Duration(milliseconds: 100),
+      ); // Wait for state update
       await tester.pumpAndSettle();
 
       // Verify only INR is shown in the filtered list
@@ -150,4 +152,3 @@ void main() {
     });
   });
 }
-

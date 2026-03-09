@@ -23,9 +23,10 @@ class ProfileInitializationService {
       // Check if profile already exists
       final exists = await _profileRepository.profileExists();
       if (exists) {
-        LoggerService.debug('User profile already exists', metadata: {
-          'userId': userId,
-        });
+        LoggerService.debug(
+          'User profile already exists',
+          metadata: {'userId': userId},
+        );
         return false;
       }
 
@@ -33,26 +34,31 @@ class ProfileInitializationService {
       final hasInitialized =
           _prefs.getBool('profile_initialized_$userId') ?? false;
       if (hasInitialized) {
-        LoggerService.debug('Profile initialization already attempted', metadata: {
-          'userId': userId,
-        });
+        LoggerService.debug(
+          'Profile initialization already attempted',
+          metadata: {'userId': userId},
+        );
         return false;
       }
 
-      LoggerService.info('Initializing profile for new user', metadata: {
-        'userId': userId,
-      });
+      LoggerService.info(
+        'Initializing profile for new user',
+        metadata: {'userId': userId},
+      );
 
       // Detect device locale
       final deviceLocale = LocaleDetectionService.detectDeviceLocale();
       final countryCode = LocaleDetectionService.getCountryCode(deviceLocale);
       final languageCode = LocaleDetectionService.getLanguageCode(deviceLocale);
 
-      LoggerService.debug('Detected locale', metadata: {
-        'locale': '$languageCode-$countryCode',
-        'languageCode': languageCode,
-        'countryCode': countryCode,
-      });
+      LoggerService.debug(
+        'Detected locale',
+        metadata: {
+          'locale': '$languageCode-$countryCode',
+          'languageCode': languageCode,
+          'countryCode': countryCode,
+        },
+      );
 
       // Auto-select currency based on country
       final currency = LocaleDetectionService.getCurrencyForCountry(
@@ -65,11 +71,14 @@ class ProfileInitializationService {
         countryCode,
       );
 
-      LoggerService.debug('Auto-selected settings', metadata: {
-        'currency': currency,
-        'locale': localeString,
-        'dateFormat': dateFormat.name,
-      });
+      LoggerService.debug(
+        'Auto-selected settings',
+        metadata: {
+          'currency': currency,
+          'locale': localeString,
+          'dateFormat': dateFormat.name,
+        },
+      );
 
       // Create profile
       final profile = UserProfileEntity.fromDetectedLocale(
@@ -84,13 +93,16 @@ class ProfileInitializationService {
       // Mark as initialized
       await _prefs.setBool('profile_initialized_$userId', true);
 
-      LoggerService.info('Profile initialized successfully', metadata: {
-        'userId': userId,
-        'currency': currency,
-        'locale': localeString,
-        'country': countryCode,
-        'dateFormat': dateFormat.name,
-      });
+      LoggerService.info(
+        'Profile initialized successfully',
+        metadata: {
+          'userId': userId,
+          'currency': currency,
+          'locale': localeString,
+          'country': countryCode,
+          'dateFormat': dateFormat.name,
+        },
+      );
 
       return true;
     } catch (e, stackTrace) {
@@ -115,16 +127,16 @@ class ProfileInitializationService {
         profile.dateFormatPattern.name,
       );
 
-      LoggerService.debug('Synced profile to local settings', metadata: {
-        'currency': profile.preferredCurrency,
-        'locale': profile.preferredLocale,
-        'dateFormat': profile.dateFormatPattern.name,
-      });
-    } catch (e) {
-      LoggerService.error(
-        'Error syncing profile to local settings',
-        error: e,
+      LoggerService.debug(
+        'Synced profile to local settings',
+        metadata: {
+          'currency': profile.preferredCurrency,
+          'locale': profile.preferredLocale,
+          'dateFormat': profile.dateFormatPattern.name,
+        },
       );
+    } catch (e) {
+      LoggerService.error('Error syncing profile to local settings', error: e);
     }
   }
 }

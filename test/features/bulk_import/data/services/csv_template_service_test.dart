@@ -51,7 +51,9 @@ void main() {
       });
 
       test('includes multiple currencies (multi-currency support)', () {
-        final currencies = CsvTemplateService.sampleRows.map((r) => r[4]).toSet();
+        final currencies = CsvTemplateService.sampleRows
+            .map((r) => r[4])
+            .toSet();
         expect(currencies, contains('USD'));
         expect(currencies, contains('INR'));
         expect(currencies, contains('EUR'));
