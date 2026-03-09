@@ -14,18 +14,12 @@ jobs:
     runs-on: self-hosted
     
     steps:
-      - name: Setup SSH for checkout
+      - name: Configure Git to use SSH
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          # Use personal SSH key for checkout
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_ed25519_personal
+          git config --global url."git@github.com-personal:".insteadOf "https://github.com/"
 
       - name: Checkout code
-        run: |
-          git clone git@github.com:ravitejakamalapuram/InvTrack.git .
-          git checkout ${{ github.sha }}
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
