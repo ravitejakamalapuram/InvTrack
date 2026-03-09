@@ -79,6 +79,7 @@ void main() {
       documentRepository: documentRepository,
       documentStorageService: documentStorageService,
       performanceService: performanceService,
+      baseCurrency: 'USD',
     );
 
     importService = DataImportService(

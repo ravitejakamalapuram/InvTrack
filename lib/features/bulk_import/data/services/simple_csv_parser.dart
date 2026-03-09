@@ -30,12 +30,11 @@ class ParsedCashFlowRow {
     required this.investmentName,
     required this.type,
     required this.amount,
-    required this.currency,
+    this.currency,
     this.notes,
     this.error,
     this.investmentType,
     this.investmentStatus,
-    this.currency,
   });
 
   bool get isValid => error == null;
@@ -45,11 +44,10 @@ class ParsedCashFlowRow {
       investmentName = '',
       type = CashFlowType.invest,
       amount = 0,
-      currency = 'USD', // Default currency for error rows
+      currency = null,
       notes = null,
       investmentType = null,
-      investmentStatus = null,
-      currency = null;
+      investmentStatus = null;
 }
 
 /// Result of parsing a CSV file
@@ -350,13 +348,10 @@ class _CsvParserSession {
         investmentName: investmentName.trim(),
         type: type,
         amount: amount,
-        currency: currency.isEmpty
-            ? 'USD'
-            : currency.toUpperCase(), // Multi-currency support (Rule 21.4)
+        currency: currency?.isNotEmpty == true ? currency?.toUpperCase() : null,
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,
-        currency: currency?.isNotEmpty == true ? currency : null,
       );
     } catch (e) {
       return ParsedCashFlowRow.withError(

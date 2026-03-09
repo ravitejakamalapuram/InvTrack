@@ -37,7 +37,7 @@ void main() {
         });
 
     investmentRepository = FakeInvestmentRepository();
-    exportService = ExportService(investmentRepository);
+    exportService = ExportService(investmentRepository, 'USD');
   });
 
   tearDown(() {
