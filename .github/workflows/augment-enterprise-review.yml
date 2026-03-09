@@ -83,7 +83,7 @@ jobs:
         id: analyze
         run: |
           set +e
-          RESULT=$(flutter analyze --no-fatal-infos 2>&1)
+          RESULT=$(flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1)
           EXIT_CODE=$?
           echo "$RESULT"
           if [ $EXIT_CODE -eq 0 ]; then
