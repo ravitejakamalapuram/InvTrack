@@ -14,12 +14,10 @@ jobs:
     runs-on: self-hosted
     
     steps:
-      - name: Configure Git to use SSH
-        run: |
-          git config --global url."git@github.com-personal:".insteadOf "https://github.com/"
-
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
