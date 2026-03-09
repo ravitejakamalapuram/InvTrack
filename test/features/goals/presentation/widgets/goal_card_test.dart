@@ -49,7 +49,10 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '\$'),
             currencyLocaleProvider.overrideWith((ref) => 'en_US'),
-            goalProgressProvider(testGoal.id).overrideWith((ref) => testProgress),
+            // Override the multi-currency provider that GoalCard actually uses
+            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
+              (ref) => Future.value(testProgress),
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -80,7 +83,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '₹'),
             currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
-            goalProgressProvider(testGoal.id).overrideWith((ref) => testProgress),
+            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
+              (ref) => Future.value(testProgress),
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -111,7 +116,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '€'),
             currencyLocaleProvider.overrideWith((ref) => 'de_DE'),
-            goalProgressProvider(testGoal.id).overrideWith((ref) => testProgress),
+            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
+              (ref) => Future.value(testProgress),
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -145,7 +152,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '\$'),
             currencyLocaleProvider.overrideWith((ref) => 'en_US'),
-            goalProgressProvider(testGoal.id).overrideWith((ref) => testProgress),
+            multiCurrencyGoalProgressProvider(testGoal.id).overrideWith(
+              (ref) => Future.value(testProgress),
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -193,8 +202,9 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             currencySymbolProvider.overrideWith((ref) => '\$'),
             currencyLocaleProvider.overrideWith((ref) => 'en_US'),
-            goalProgressProvider(incomeGoal.id)
-                .overrideWith((ref) => incomeProgress),
+            multiCurrencyGoalProgressProvider(incomeGoal.id).overrideWith(
+              (ref) => Future.value(incomeProgress),
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
