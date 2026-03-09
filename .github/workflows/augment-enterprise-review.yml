@@ -20,7 +20,7 @@ jobs:
   # ============ PRE-REVIEW CHECKS ============
   pre-checks:
     name: Pre-Review
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.event.pull_request.draft == false
     outputs:
       has_dart: ${{ steps.changed.outputs.has_dart }}
@@ -56,7 +56,7 @@ jobs:
   # ============ CODE HEALTH & SECURITY ============
   code-health:
     name: Code Health & Security
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: pre-checks
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
@@ -154,7 +154,7 @@ jobs:
   # ============ TESTS ============
   tests:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: pre-checks
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
@@ -205,7 +205,7 @@ jobs:
   # ============ ARCHITECTURE ============
   architecture:
     name: Architecture
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: pre-checks
     if: needs.pre-checks.outputs.has_dart == 'true'
     outputs:
@@ -251,7 +251,7 @@ jobs:
   # ============ AUGMENT AI ============
   augment-ai:
     name: AI (Describe + Review)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: pre-checks
     if: github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
 
@@ -283,7 +283,7 @@ jobs:
   # ============ POST CHECKLIST COMMENT ============
   checklist:
     name: Review Checklist
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [pre-checks, code-health, tests, architecture]
     if: always() && needs.pre-checks.result == 'success'
 
@@ -354,7 +354,7 @@ jobs:
   # ============ FAILURE REPORTER ============
   failure-reporter:
     name: Report Failures
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [code-health, tests, architecture]
     if: always() && (needs.code-health.outputs.analysis == '❌' || needs.tests.outputs.status == '❌' || needs.architecture.outputs.boundaries == '❌')
 
@@ -438,7 +438,7 @@ jobs:
   # ============ MERGE GATE ============
   merge-gate:
     name: Merge Gate
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [code-health, tests, architecture]
     if: always()
 
