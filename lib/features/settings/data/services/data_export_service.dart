@@ -248,7 +248,7 @@ class DataExportService {
         CsvUtils.sanitizeField(item.investment.name),
         _typeToExportString(item.cashFlow.type),
         item.cashFlow.amount,
-        _baseCurrency, // Add base currency for all transactions
+        item.cashFlow.currency, // Preserve original currency (Rule 21.2)
         CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,

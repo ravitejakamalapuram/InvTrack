@@ -261,9 +261,13 @@ class _CsvParserSession {
           : null;
 
       // Optional currency (for multi-currency support)
-      final currency = columnMap.containsKey('currency')
+      // Default to 'USD' if column is missing or empty (backward compatibility)
+      final currencyRaw = columnMap.containsKey('currency')
           ? _getValue(values, columnMap['currency']!)
           : null;
+      final currency = (currencyRaw == null || currencyRaw.isEmpty)
+          ? 'USD'
+          : currencyRaw.toUpperCase();
 
       // Validate required fields
       if (dateStr.isEmpty) {
@@ -341,7 +345,7 @@ class _CsvParserSession {
         investmentName: investmentName.trim(),
         type: type,
         amount: amount,
-        currency: currency?.isNotEmpty == true ? currency?.toUpperCase() : null,
+        currency: currency, // Already processed above (defaults to 'USD')
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,

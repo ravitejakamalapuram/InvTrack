@@ -146,6 +146,17 @@ class CsvTemplateService {
       'stocks',
       'open',
     ],
+    // Multi-currency example (EUR)
+    [
+      '2024-02-01',
+      'European Bonds',
+      'INVEST',
+      '3000',
+      'EUR',
+      'EU government bonds',
+      'bonds',
+      'open',
+    ],
   ];
 
   /// Type descriptions for the template
@@ -157,7 +168,7 @@ class CsvTemplateService {
 # FEE     - Fees paid (outflow)
 #
 # Currency Column Values (optional, defaults to base currency):
-# INR, USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR
+# Use ISO 4217 currency codes: INR, USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR
 #
 # Investment Type Column Values (optional):
 # p2p, fixedDeposit, bonds, mutualFund, stocks, realEstate, gold, crypto, other

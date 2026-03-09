@@ -65,7 +65,7 @@ class ExportService {
         CsvUtils.sanitizeField(investment.name),
         _typeToExportString(cf.type), // INVEST, INCOME, RETURN, FEE
         cf.amount,
-        _baseCurrency, // Add base currency for all transactions
+        cf.currency, // Preserve original currency (Rule 21.2)
         CsvUtils.sanitizeField(cf.notes ?? ''),
       ]);
     }
