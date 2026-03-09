@@ -56,9 +56,9 @@ void main() {
         const testUid = 'test-uid-12345';
 
         // Mock GoogleSignIn.authenticate() to return GoogleSignInAccount
+        // No scopeHint parameter - identity-only mode
         when(
-          () =>
-              mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+          () => mockGoogleSignIn.authenticate(),
         ).thenAnswer((_) async => mockGoogleSignInAccount);
 
         // Mock GoogleSignInAccount properties
@@ -92,16 +92,16 @@ void main() {
         expect(result!.id, testUid);
         expect(result.email, testEmail);
 
-        // Verify authenticate was called with correct scope
+        // Verify authenticate was called with NO scopeHint (identity-only mode)
         verify(
-          () => mockGoogleSignIn.authenticate(scopeHint: ['email']),
+          () => mockGoogleSignIn.authenticate(),
         ).called(1);
 
         // Verify authentication property was accessed (not authorizationForScopes)
         verify(() => mockGoogleSignInAccount.authentication).called(1);
 
-        // Verify idToken was used
-        verify(() => mockGoogleSignInAuthentication.idToken).called(1);
+        // Verify idToken was used (called twice: once for null check, once for credential)
+        verify(() => mockGoogleSignInAuthentication.idToken).called(2);
 
         // Verify Firebase sign-in was called
         verify(() => mockFirebaseAuth.signInWithCredential(any())).called(1);
@@ -115,7 +115,7 @@ void main() {
     test('signInWithGoogle handles GoogleSignInException.canceled', () async {
       // Arrange
       when(
-        () => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+        () => mockGoogleSignIn.authenticate(),
       ).thenThrow(
         const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
       );
@@ -126,7 +126,7 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockGoogleSignIn.authenticate(scopeHint: ['email']),
+        () => mockGoogleSignIn.authenticate(),
       ).called(1);
       verifyNever(() => mockFirebaseAuth.signInWithCredential(any()));
     });
@@ -137,8 +137,7 @@ void main() {
         // Arrange
         // Use 'interrupted' code (valid GoogleSignInExceptionCode value)
         when(
-          () =>
-              mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+          () => mockGoogleSignIn.authenticate(),
         ).thenThrow(
           const GoogleSignInException(
             code: GoogleSignInExceptionCode.interrupted,
@@ -146,9 +145,10 @@ void main() {
         );
 
         // Act & Assert
+        // The implementation converts GoogleSignInException to Exception with user-friendly message
         expect(
           () => repository.signInWithGoogle(),
-          throwsA(isA<GoogleSignInException>()),
+          throwsA(isA<Exception>()),
         );
       },
     );
@@ -156,7 +156,7 @@ void main() {
     test('signInWithGoogle rethrows generic exceptions', () async {
       // Arrange
       when(
-        () => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+        () => mockGoogleSignIn.authenticate(),
       ).thenThrow(Exception('Network error'));
 
       // Act & Assert
@@ -213,8 +213,7 @@ void main() {
 
         // Mock GoogleSignIn.authenticate
         when(
-          () =>
-              mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')),
+          () => mockGoogleSignIn.authenticate(),
         ).thenAnswer((_) async => mockGoogleSignInAccount);
 
         // Mock GoogleSignInAccount
@@ -243,7 +242,7 @@ void main() {
 
         // Verify authenticate was called
         verify(
-          () => mockGoogleSignIn.authenticate(scopeHint: ['email']),
+          () => mockGoogleSignIn.authenticate(),
         ).called(1);
 
         // Verify authentication property was accessed
