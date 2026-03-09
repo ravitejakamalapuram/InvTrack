@@ -43,6 +43,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     bool? autoRenewal,
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
+    // Multi-currency support
+    String? currency,
   }) async {
     // Input validation
     _validateName(name);
@@ -69,14 +71,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
+        // Multi-currency (defaults to USD if not provided)
+        currency: currency ?? 'USD',
       );
 
       // Track performance of investment creation
-      await ref.read(performanceServiceProvider).trackOperation(
-        'investment_create',
-        () => ref.read(investmentRepositoryProvider).createInvestment(investment),
-        attributes: {'investment_type': type.name},
-      );
+      await ref
+          .read(performanceServiceProvider)
+          .trackOperation(
+            'investment_create',
+            () => ref
+                .read(investmentRepositoryProvider)
+                .createInvestment(investment),
+            attributes: {'investment_type': type.name},
+          );
 
       // Track analytics event
       ref
@@ -126,6 +134,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     bool? autoRenewal,
     RiskLevel? riskLevel,
     CompoundingFrequency? compoundingFrequency,
+    // Multi-currency support
+    String? currency,
   }) async {
     // Input validation
     _validateName(name);
@@ -154,6 +164,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
+        // Multi-currency
+        currency: currency,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
@@ -167,7 +179,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             await repo.updateInvestment(updated);
           }
         },
-        attributes: {'investment_type': type.name, 'is_archived': existing.isArchived.toString()},
+        attributes: {
+          'investment_type': type.name,
+          'is_archived': existing.isArchived.toString(),
+        },
       );
 
       // Update income reminder based on new frequency
@@ -199,8 +214,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Fetch investment first for analytics
-      final investment =
-          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).closeInvestment(id);
       // Cancel income reminder for closed investment
       await _cancelIncomeReminder(id);
@@ -258,8 +274,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Fetch investment first for analytics
-      final investment =
-          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).archiveInvestment(id);
       // Cancel notifications for archived investment
       await _cancelIncomeReminder(id);
@@ -316,18 +333,21 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Fetch investment first for analytics
-      final investment =
-          await ref.read(investmentRepositoryProvider).getInvestmentById(id);
+      final investment = await ref
+          .read(investmentRepositoryProvider)
+          .getInvestmentById(id);
       // Cancel all reminders before deleting
       await _cancelIncomeReminder(id);
       await _cancelMaturityReminders(id);
 
       // Track performance of investment deletion
-      await ref.read(performanceServiceProvider).trackOperation(
-        'investment_delete',
-        () => ref.read(investmentRepositoryProvider).deleteInvestment(id),
-        attributes: {'investment_type': investment?.type.name ?? 'unknown'},
-      );
+      await ref
+          .read(performanceServiceProvider)
+          .trackOperation(
+            'investment_delete',
+            () => ref.read(investmentRepositoryProvider).deleteInvestment(id),
+            attributes: {'investment_type': investment?.type.name ?? 'unknown'},
+          );
 
       // Track analytics
       if (investment != null) {
@@ -396,6 +416,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required double amount,
     required DateTime date,
     String? notes,
+    String? currency,
   }) async {
     // Input validation
     _validateAmount(amount);
@@ -411,6 +432,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         notes: notes?.trim(),
         createdAt: DateTime.now(),
+        currency: currency ?? 'USD',
       );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
@@ -448,6 +470,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     required DateTime date,
     String? notes,
     required DateTime createdAt,
+    String? currency,
   }) async {
     // Input validation
     _validateAmount(amount);
@@ -463,6 +486,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         notes: notes?.trim(),
         createdAt: createdAt,
+        currency: currency ?? 'USD',
       );
       await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
@@ -594,16 +618,18 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       // Track performance of bulk import
-      final result = await ref.read(performanceServiceProvider).trackOperation(
-        'investment_bulk_import',
-        () => ref
-            .read(investmentRepositoryProvider)
-            .bulkImport(investments: investments, cashFlows: cashFlows),
-        metrics: {
-          'investment_count': investments.length,
-          'cash_flow_count': cashFlows.length,
-        },
-      );
+      final result = await ref
+          .read(performanceServiceProvider)
+          .trackOperation(
+            'investment_bulk_import',
+            () => ref
+                .read(investmentRepositoryProvider)
+                .bulkImport(investments: investments, cashFlows: cashFlows),
+            metrics: {
+              'investment_count': investments.length,
+              'cash_flow_count': cashFlows.length,
+            },
+          );
 
       _invalidateAll();
       state = const AsyncValue.data(null);

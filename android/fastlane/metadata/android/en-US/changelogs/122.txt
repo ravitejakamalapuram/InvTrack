@@ -1,0 +1,2 @@
+🆕 What's New
+• Complete multi-currency stats display (Rule 21.3 compliance) (#243)

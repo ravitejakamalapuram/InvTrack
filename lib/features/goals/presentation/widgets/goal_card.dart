@@ -35,75 +35,159 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final progress = ref.watch(goalProgressProvider(goal.id));
+    // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
+    final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
-      child: GestureDetector(
-        onLongPress: onLongPress != null
-            ? () {
-                HapticFeedback.mediumImpact();
-                onLongPress!();
-              }
-            : null,
-        child: GlassCard(
-          onTap: isSelectionMode
-              ? () => onCheckboxChanged?.call(!isSelected)
-              : onTap,
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  children: [
-                    // Selection checkbox (shown in selection mode)
-                    if (isSelectionMode) ...[
-                      Checkbox(
-                        value: isSelected,
-                        onChanged: onCheckboxChanged,
-                        activeColor: goal.color,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+      child: progressAsync.when(
+        data: (progress) => GestureDetector(
+          onLongPress: onLongPress != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onLongPress!();
+                }
+              : null,
+          child: GlassCard(
+            onTap: isSelectionMode
+                ? () => onCheckboxChanged?.call(!isSelected)
+                : onTap,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      // Selection checkbox (shown in selection mode)
+                      if (isSelectionMode) ...[
+                        Checkbox(
+                          value: isSelected,
+                          onChanged: onCheckboxChanged,
+                          activeColor: goal.color,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.xs),
+                      ],
+                      // Goal icon
+                      _buildGoalIcon(goal),
+                      SizedBox(width: AppSpacing.md),
+                      // Name and details
+                      Expanded(
+                        child: _buildGoalInfo(
+                          context,
+                          isDark,
+                          progress,
+                          currencySymbol,
+                          locale,
+                          isPrivacyMode,
                         ),
                       ),
-                      SizedBox(width: AppSpacing.xs),
+                      SizedBox(width: AppSpacing.sm),
+                      // Progress ring - wrap in PrivacyMask
+                      PrivacyMask(
+                        useTextMask: true,
+                        maskedText: '••%',
+                        child: GoalProgressRing(
+                          progress: progress?.progressPercent ?? 0,
+                          size: 56,
+                          color: goal.color,
+                          strokeWidth: 5,
+                        ),
+                      ),
                     ],
-                    // Goal icon
-                    _buildGoalIcon(goal),
-                    SizedBox(width: AppSpacing.md),
-                    // Name and details
-                    Expanded(
-                      child: _buildGoalInfo(
-                        context,
-                        isDark,
-                        progress,
-                        currencySymbol,
-                        locale,
-                        isPrivacyMode,
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.sm),
-                    // Progress ring - wrap in PrivacyMask
-                    PrivacyMask(
-                      useTextMask: true,
-                      maskedText: '••%',
-                      child: GoalProgressRing(
-                        progress: progress?.progressPercent ?? 0,
-                        size: 56,
-                        color: goal.color,
-                        strokeWidth: 5,
-                      ),
-                    ),
-                  ],
+                  ),
+                ),
+                // Bottom strip with status
+                _buildBottomStrip(context, isDark, progress),
+              ],
+            ),
+          ),
+        ),
+        loading: () => GestureDetector(
+          onLongPress: onLongPress != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onLongPress!();
+                }
+              : null,
+          child: GlassCard(
+            onTap: isSelectionMode
+                ? () => onCheckboxChanged?.call(!isSelected)
+                : onTap,
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+              height: 120,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: isDark ? Colors.white54 : AppColors.neutral400Light,
                 ),
               ),
-              // Bottom strip with status
-              _buildBottomStrip(context, isDark, progress),
-            ],
+            ),
+          ),
+        ),
+        error: (error, _) => GestureDetector(
+          onLongPress: onLongPress != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onLongPress!();
+                }
+              : null,
+          child: GlassCard(
+            onTap: isSelectionMode
+                ? () => onCheckboxChanged?.call(!isSelected)
+                : onTap,
+            padding: EdgeInsets.zero,
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  if (isSelectionMode) ...[
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: onCheckboxChanged,
+                      activeColor: goal.color,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.xs),
+                  ],
+                  _buildGoalIcon(goal),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          goal.name,
+                          style: AppTypography.h4.copyWith(
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.neutral900Light,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: AppSpacing.xxs),
+                        Text(
+                          'Error loading progress',
+                          style: AppTypography.small.copyWith(
+                            color: AppColors.errorLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -147,7 +231,8 @@ class GoalCard extends ConsumerWidget {
       color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
     );
     final progressText =
-        progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
+        progress?.getProgressMessage(currencySymbol, locale) ??
+        'Calculating...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

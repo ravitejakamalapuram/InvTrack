@@ -4,7 +4,9 @@ import 'package:inv_tracker/core/widgets/metric_tile.dart';
 
 void main() {
   group('MetricTile Semantics', () {
-    testWidgets('constructs semantic label with trend information', (tester) async {
+    testWidgets('constructs semantic label with trend information', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -62,11 +64,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: MetricTile(
-              label: 'Balance',
-              value: '₹10,000',
-              onTap: () {},
-            ),
+            body: MetricTile(label: 'Balance', value: '₹10,000', onTap: () {}),
           ),
         ),
       );
@@ -87,10 +85,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: MetricTile(
-              label: 'Static Balance',
-              value: '₹10,000',
-            ),
+            body: MetricTile(label: 'Static Balance', value: '₹10,000'),
           ),
         ),
       );

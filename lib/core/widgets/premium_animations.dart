@@ -275,10 +275,7 @@ class _PulseAnimationState extends State<PulseAnimation>
       animation: _scaleAnimation,
       child: widget.child,
       builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: child,
-        );
+        return Transform.scale(scale: _scaleAnimation.value, child: child);
       },
     );
   }

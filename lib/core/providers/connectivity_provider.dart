@@ -21,4 +21,3 @@ final currentConnectivityProvider = FutureProvider.autoDispose<bool>((ref) {
   final service = ref.watch(connectivityServiceProvider);
   return service.checkConnectivity();
 });
-

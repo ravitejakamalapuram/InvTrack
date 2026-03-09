@@ -66,14 +66,8 @@ void main() {
           lastActivityDate: lastActivity,
         );
 
-        expect(
-          label,
-          contains('Invested:  50,000 dollars'),
-        );
-        expect(
-          label,
-          contains('Last activity: October 15, 2023'),
-        );
+        expect(label, contains('Invested:  50,000 dollars'));
+        expect(label, contains('Last activity: October 15, 2023'));
         // Verify order roughly
         expect(
           label,
@@ -95,10 +89,7 @@ void main() {
           maturityDate: maturityDate,
         );
 
-        expect(
-          label,
-          contains('Matured'),
-        );
+        expect(label, contains('Matured'));
         expect(label, endsWith('. Matured'));
       });
 
@@ -115,10 +106,7 @@ void main() {
           maturityDate: now,
         );
 
-        expect(
-          label,
-          contains('Matures today'),
-        );
+        expect(label, contains('Matures today'));
       });
 
       test('generates correct label for investment maturing soon', () {
@@ -135,10 +123,7 @@ void main() {
           maturityDate: maturityDate,
         );
 
-        expect(
-          label,
-          contains('Matures in 15 days'),
-        );
+        expect(label, contains('Matures in 15 days'));
       });
 
       test('generates label without maturity info if > 30 days', () {
@@ -155,10 +140,7 @@ void main() {
           maturityDate: maturityDate,
         );
 
-        expect(
-          label,
-          isNot(contains('Matures')),
-        );
+        expect(label, isNot(contains('Matures')));
       });
 
       test('masks sensitive values when shouldMask is true', () {

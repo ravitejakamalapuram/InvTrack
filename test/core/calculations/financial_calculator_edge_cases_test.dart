@@ -54,10 +54,13 @@ void main() {
     });
 
     group('calculateMOIC - Edge Cases', () {
-      test('should return 0 for zero invested (division by zero protection)', () {
-        final moic = FinancialCalculator.calculateMOIC(0, 100);
-        expect(moic, 0.0);
-      });
+      test(
+        'should return 0 for zero invested (division by zero protection)',
+        () {
+          final moic = FinancialCalculator.calculateMOIC(0, 100);
+          expect(moic, 0.0);
+        },
+      );
 
       test('should handle zero returned (total loss)', () {
         final moic = FinancialCalculator.calculateMOIC(100, 0);
@@ -84,10 +87,13 @@ void main() {
     });
 
     group('calculateAbsoluteReturn - Edge Cases', () {
-      test('should return 0 for zero invested (division by zero protection)', () {
-        final absReturn = FinancialCalculator.calculateAbsoluteReturn(0, 100);
-        expect(absReturn, 0.0);
-      });
+      test(
+        'should return 0 for zero invested (division by zero protection)',
+        () {
+          final absReturn = FinancialCalculator.calculateAbsoluteReturn(0, 100);
+          expect(absReturn, 0.0);
+        },
+      );
 
       test('should handle zero returned (total loss)', () {
         final absReturn = FinancialCalculator.calculateAbsoluteReturn(100, 0);
@@ -108,7 +114,10 @@ void main() {
       });
 
       test('should handle very small numbers', () {
-        final absReturn = FinancialCalculator.calculateAbsoluteReturn(0.01, 0.02);
+        final absReturn = FinancialCalculator.calculateAbsoluteReturn(
+          0.01,
+          0.02,
+        );
         expect(absReturn, closeTo(100.0, 0.0001)); // 100% return
       });
     });
@@ -185,4 +194,3 @@ void main() {
     });
   });
 }
-

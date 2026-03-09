@@ -85,39 +85,85 @@ void main() {
 
     group('formatCompactIndian (deprecated - use formatCompactCurrency)', () {
       test('formats crores correctly', () {
-        expect(formatCompactCurrency(10000000, symbol: '₹', locale: 'en_IN'), '₹1Cr');
-        expect(formatCompactCurrency(15000000, symbol: '₹', locale: 'en_IN'), '₹1.5Cr');
-        expect(formatCompactCurrency(25600000, symbol: '₹', locale: 'en_IN'), '₹2.56Cr');
+        expect(
+          formatCompactCurrency(10000000, symbol: '₹', locale: 'en_IN'),
+          '₹1Cr',
+        );
+        expect(
+          formatCompactCurrency(15000000, symbol: '₹', locale: 'en_IN'),
+          '₹1.5Cr',
+        );
+        expect(
+          formatCompactCurrency(25600000, symbol: '₹', locale: 'en_IN'),
+          '₹2.56Cr',
+        );
       });
 
       test('formats lakhs correctly', () {
-        expect(formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN'), '₹1L');
-        expect(formatCompactCurrency(150000, symbol: '₹', locale: 'en_IN'), '₹1.5L');
-        expect(formatCompactCurrency(256000, symbol: '₹', locale: 'en_IN'), '₹2.56L');
+        expect(
+          formatCompactCurrency(100000, symbol: '₹', locale: 'en_IN'),
+          '₹1L',
+        );
+        expect(
+          formatCompactCurrency(150000, symbol: '₹', locale: 'en_IN'),
+          '₹1.5L',
+        );
+        expect(
+          formatCompactCurrency(256000, symbol: '₹', locale: 'en_IN'),
+          '₹2.56L',
+        );
       });
 
       test('formats thousands correctly', () {
-        expect(formatCompactCurrency(1000, symbol: '₹', locale: 'en_IN'), '₹1K');
-        expect(formatCompactCurrency(1500, symbol: '₹', locale: 'en_IN'), '₹1.5K');
-        expect(formatCompactCurrency(2600, symbol: '₹', locale: 'en_IN'), '₹2.6K');
+        expect(
+          formatCompactCurrency(1000, symbol: '₹', locale: 'en_IN'),
+          '₹1K',
+        );
+        expect(
+          formatCompactCurrency(1500, symbol: '₹', locale: 'en_IN'),
+          '₹1.5K',
+        );
+        expect(
+          formatCompactCurrency(2600, symbol: '₹', locale: 'en_IN'),
+          '₹2.6K',
+        );
       });
 
       test('formats small amounts without suffix', () {
-        expect(formatCompactCurrency(500, symbol: '₹', locale: 'en_IN'), '₹500');
-        expect(formatCompactCurrency(999, symbol: '₹', locale: 'en_IN'), '₹999');
+        expect(
+          formatCompactCurrency(500, symbol: '₹', locale: 'en_IN'),
+          '₹500',
+        );
+        expect(
+          formatCompactCurrency(999, symbol: '₹', locale: 'en_IN'),
+          '₹999',
+        );
       });
 
       test('handles negative amounts', () {
-        expect(formatCompactCurrency(-100000, symbol: '₹', locale: 'en_IN'), '-₹1L');
-        expect(formatCompactCurrency(-1500, symbol: '₹', locale: 'en_IN'), '-₹1.5K');
+        expect(
+          formatCompactCurrency(-100000, symbol: '₹', locale: 'en_IN'),
+          '-₹1L',
+        );
+        expect(
+          formatCompactCurrency(-1500, symbol: '₹', locale: 'en_IN'),
+          '-₹1.5K',
+        );
       });
 
       test('uses custom symbol', () {
-        expect(formatCompactCurrency(100000, symbol: '\$', locale: 'en_IN'), '\$1L');
+        expect(
+          formatCompactCurrency(100000, symbol: '\$', locale: 'en_IN'),
+          '\$1L',
+        );
       });
 
       test('formats with appropriate precision', () {
-        final result = formatCompactCurrency(156789, symbol: '₹', locale: 'en_IN');
+        final result = formatCompactCurrency(
+          156789,
+          symbol: '₹',
+          locale: 'en_IN',
+        );
         expect(result, contains('1.5'));
       });
 
@@ -142,11 +188,7 @@ void main() {
       });
 
       test('uses full format below threshold', () {
-        final result = formatSmartCurrency(
-          50000,
-          symbol: '₹',
-          locale: 'en_IN',
-        );
+        final result = formatSmartCurrency(50000, symbol: '₹', locale: 'en_IN');
         expect(result, contains('50,000'));
         expect(result, isNot(contains('K')));
       });

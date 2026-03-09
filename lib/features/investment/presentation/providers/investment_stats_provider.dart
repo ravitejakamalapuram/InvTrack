@@ -104,17 +104,29 @@ final activeInvestmentXirrMapProvider = FutureProvider<Map<String, double>>((
   }
 
   // Track performance of bulk XIRR calculation
-  return ref.read(performanceServiceProvider).trackOperation(
-    'bulk_xirr_calculation',
-    () => compute<List<CashFlowEntity>, Map<String, double>>(
-      _calculateAllXirrs,
-      cashFlows,
-    ),
-    metrics: {'total_cash_flows': cashFlows.length},
-  );
+  return ref
+      .read(performanceServiceProvider)
+      .trackOperation(
+        'bulk_xirr_calculation',
+        () => compute<List<CashFlowEntity>, Map<String, double>>(
+          _calculateAllXirrs,
+          cashFlows,
+        ),
+        metrics: {'total_cash_flows': cashFlows.length},
+      );
 });
 
 /// Calculate stats for a single active investment (reactive - watches the stream)
+///
+/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
+/// Use [multiCurrencyInvestmentStatsProvider] instead for Rule 21.3 compliance.
+///
+/// This provider sums raw amounts from different currencies without conversion,
+/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
+@Deprecated(
+  'Use multiCurrencyInvestmentStatsProvider instead. '
+  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
+)
 final investmentStatsProvider =
     Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
       // Use filtered stream to avoid opening per-investment stream
@@ -225,16 +237,29 @@ final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
   }
 
   // Track performance of XIRR calculation for archived investments
-  return ref.read(performanceServiceProvider).trackOperation(
-    'xirr_calculation_archived',
-    () => compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
-    metrics: {'cash_flow_count': cashFlows.length},
-  );
+  return ref
+      .read(performanceServiceProvider)
+      .trackOperation(
+        'xirr_calculation_archived',
+        () =>
+            compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
+        metrics: {'cash_flow_count': cashFlows.length},
+      );
 });
 
 // ============ AGGREGATE STATS PROVIDERS ============
 
 /// Global stats across all investments (derived from streams - auto-updates)
+///
+/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
+/// Use [multiCurrencyGlobalStatsProvider] instead for Rule 21.3 compliance.
+///
+/// This provider sums raw amounts from different currencies without conversion,
+/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
+@Deprecated(
+  'Use multiCurrencyGlobalStatsProvider instead. '
+  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
+)
 final globalStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
@@ -252,6 +277,16 @@ final globalStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
 
 /// Stats for closed investments only (derived from streams - auto-updates)
 /// Only includes non-archived investments.
+///
+/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
+/// Use [multiCurrencyClosedStatsProvider] instead for Rule 21.3 compliance.
+///
+/// This provider sums raw amounts from different currencies without conversion,
+/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
+@Deprecated(
+  'Use multiCurrencyClosedStatsProvider instead. '
+  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
+)
 final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
   ref,
 ) {
@@ -290,6 +325,16 @@ final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 
 /// Stats for open investments only (derived from streams - auto-updates)
 /// Only includes non-archived investments.
+///
+/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
+/// Use [multiCurrencyOpenStatsProvider] instead for Rule 21.3 compliance.
+///
+/// This provider sums raw amounts from different currencies without conversion,
+/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
+@Deprecated(
+  'Use multiCurrencyOpenStatsProvider instead. '
+  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
+)
 final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
   ref,
 ) {
@@ -386,10 +431,9 @@ InvestmentStats calculateStats(
   final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
 
   // XIRR calculation using pre-populated lists
-  final xirr =
-      includeXirr
-          ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
-          : 0.0;
+  final xirr = includeXirr
+      ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
+      : 0.0;
 
   return InvestmentStats(
     totalInvested: totalInvested,

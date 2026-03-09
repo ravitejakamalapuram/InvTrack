@@ -12,6 +12,7 @@ class ParsedCashFlowRow {
   final String investmentName;
   final CashFlowType type;
   final double amount;
+  final String currency; // Multi-currency support (Rule 21.4)
   final String? notes;
   final String? error;
 
@@ -29,6 +30,7 @@ class ParsedCashFlowRow {
     required this.investmentName,
     required this.type,
     required this.amount,
+    required this.currency,
     this.notes,
     this.error,
     this.investmentType,
@@ -43,6 +45,7 @@ class ParsedCashFlowRow {
       investmentName = '',
       type = CashFlowType.invest,
       amount = 0,
+      currency = 'USD', // Default currency for error rows
       notes = null,
       investmentType = null,
       investmentStatus = null,
@@ -225,6 +228,9 @@ class _CsvParserSession {
         map['investment'] = i;
       } else if (header.contains('amount')) {
         map['amount'] = i;
+      } else if (header.contains('currency')) {
+        // Multi-currency support (Rule 21.4)
+        map['currency'] = i;
       } else if (header.contains('note')) {
         map['notes'] = i;
       } else if (header.contains('currency')) {
@@ -248,6 +254,12 @@ class _CsvParserSession {
       final notes = columnMap.containsKey('notes')
           ? _getValue(values, columnMap['notes']!)
           : null;
+
+      // Multi-currency support (Rule 21.4)
+      // Default to 'USD' if currency column is missing (backward compatibility)
+      final currency = columnMap.containsKey('currency')
+          ? _getValue(values, columnMap['currency']!)
+          : 'USD';
 
       // Optional investment metadata (from enhanced export format)
       final investmentTypeStr = columnMap.containsKey('investmentType')
@@ -338,6 +350,9 @@ class _CsvParserSession {
         investmentName: investmentName.trim(),
         type: type,
         amount: amount,
+        currency: currency.isEmpty
+            ? 'USD'
+            : currency.toUpperCase(), // Multi-currency support (Rule 21.4)
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,
@@ -488,6 +503,7 @@ class ParsedGoalRow {
   final double? targetMonthlyIncome;
   final DateTime? targetDate;
   final String trackingMode;
+
   /// Linked investment names (used for remapping to IDs during import)
   final List<String> linkedInvestmentNames;
   final List<String> linkedTypes;
@@ -513,16 +529,16 @@ class ParsedGoalRow {
   bool get isValid => error == null;
 
   ParsedGoalRow.withError({required this.rowNumber, required this.error})
-      : name = '',
-        type = 'targetAmount',
-        targetAmount = 0,
-        targetMonthlyIncome = null,
-        targetDate = null,
-        trackingMode = 'all',
-        linkedInvestmentNames = const [],
-        linkedTypes = const [],
-        icon = '🎯',
-        colorValue = 0xFF4CAF50;
+    : name = '',
+      type = 'targetAmount',
+      targetAmount = 0,
+      targetMonthlyIncome = null,
+      targetDate = null,
+      trackingMode = 'all',
+      linkedInvestmentNames = const [],
+      linkedTypes = const [],
+      icon = '🎯',
+      colorValue = 0xFF4CAF50;
 }
 
 /// Result of parsing a Goals CSV file
@@ -540,7 +556,8 @@ class ParsedGoalsResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedGoalRow> get validRowsOnly => rows.where((r) => r.isValid).toList();
+  List<ParsedGoalRow> get validRowsOnly =>
+      rows.where((r) => r.isValid).toList();
 }
 
 /// Parser for Goals CSV files
@@ -647,20 +664,30 @@ class GoalsCsvParser {
       final targetAmountStr = _getValue(values, columnMap['targetAmount']!);
 
       if (name.isEmpty) {
-        return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Missing name');
+        return ParsedGoalRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing name',
+        );
       }
       if (type.isEmpty) {
-        return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Missing type');
+        return ParsedGoalRow.withError(
+          rowNumber: rowNum,
+          error: 'Missing type',
+        );
       }
       if (targetAmountStr.isEmpty) {
         return ParsedGoalRow.withError(
-            rowNumber: rowNum, error: 'Missing target amount');
+          rowNumber: rowNum,
+          error: 'Missing target amount',
+        );
       }
 
       final targetAmount = double.tryParse(targetAmountStr);
       if (targetAmount == null) {
         return ParsedGoalRow.withError(
-            rowNumber: rowNum, error: 'Invalid target amount: $targetAmountStr');
+          rowNumber: rowNum,
+          error: 'Invalid target amount: $targetAmountStr',
+        );
       }
 
       // Optional fields
@@ -688,7 +715,10 @@ class GoalsCsvParser {
       if (columnMap.containsKey('linkedInvestmentNames')) {
         final str = _getValue(values, columnMap['linkedInvestmentNames']!);
         if (str.isNotEmpty) {
-          linkedInvestmentNames = str.split(';').where((s) => s.isNotEmpty).toList();
+          linkedInvestmentNames = str
+              .split(';')
+              .where((s) => s.isNotEmpty)
+              .toList();
         }
       }
 
@@ -700,8 +730,9 @@ class GoalsCsvParser {
         }
       }
 
-      final icon =
-          columnMap.containsKey('icon') ? _getValue(values, columnMap['icon']!) : '🎯';
+      final icon = columnMap.containsKey('icon')
+          ? _getValue(values, columnMap['icon']!)
+          : '🎯';
 
       int colorValue = 0xFF4CAF50;
       if (columnMap.containsKey('color')) {
@@ -725,7 +756,10 @@ class GoalsCsvParser {
         colorValue: colorValue,
       );
     } catch (e) {
-      return ParsedGoalRow.withError(rowNumber: rowNum, error: 'Parse error: $e');
+      return ParsedGoalRow.withError(
+        rowNumber: rowNum,
+        error: 'Parse error: $e',
+      );
     }
   }
 }

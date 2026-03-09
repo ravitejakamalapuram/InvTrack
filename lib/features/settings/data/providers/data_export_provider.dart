@@ -39,8 +39,8 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
 final zipExportStateProvider =
     NotifierProvider.autoDispose<ZipExportNotifier, AsyncValue<void>>(
-  ZipExportNotifier.new,
-);
+      ZipExportNotifier.new,
+    );
 
 class ZipExportNotifier extends Notifier<AsyncValue<void>> {
   @override

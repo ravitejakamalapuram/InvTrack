@@ -121,7 +121,7 @@ void main() {
     group('getSupportedCurrencies', () {
       test('returns map of supported currencies', () {
         final currencies = LocaleDetectionService.getSupportedCurrencies();
-        
+
         expect(currencies, isNotEmpty);
         expect(currencies.containsKey('USD'), isTrue);
         expect(currencies.containsKey('INR'), isTrue);
@@ -132,7 +132,7 @@ void main() {
 
       test('currency display names include symbols', () {
         final currencies = LocaleDetectionService.getSupportedCurrencies();
-        
+
         expect(currencies['USD'], contains('\$'));
         expect(currencies['INR'], contains('₹'));
         expect(currencies['EUR'], contains('€'));
@@ -142,4 +142,3 @@ void main() {
     });
   });
 }
-

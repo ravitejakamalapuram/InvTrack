@@ -15,8 +15,8 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// App version info - matches pubspec.yaml version: 3.5.1+19
-const String _appVersion = '3.47.5';
-const String _buildNumber = '120';
+const String _appVersion = '3.48.1';
+const String _buildNumber = '122';
 
 /// Screen showing app information and legal documents.
 class AboutScreen extends ConsumerWidget {
@@ -84,8 +84,11 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.privacy_tip,
                 iconColor: Colors.purple,
                 title: l10n.privacyPolicy,
-                onTap: () =>
-                    _openLegalScreen(context, l10n.privacyPolicy, _privacyPolicy),
+                onTap: () => _openLegalScreen(
+                  context,
+                  l10n.privacyPolicy,
+                  _privacyPolicy,
+                ),
               ),
               SettingsNavTile(
                 icon: Icons.description,
@@ -151,11 +154,9 @@ class AboutScreen extends ConsumerWidget {
 
   /// Opens the Help & FAQ page
   void _openHelpPage(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const HelpFaqScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const HelpFaqScreen()));
   }
 
   /// Opens the email client for support
@@ -205,10 +206,7 @@ class AboutScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {},
-          ),
+          action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
     }
@@ -217,8 +215,10 @@ class AboutScreen extends ConsumerWidget {
   /// Encodes query parameters for mailto URI
   String? _encodeQueryParameters(Map<String, String> params) {
     return params.entries
-        .map((e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .map(
+          (e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+        )
         .join('&');
   }
 }

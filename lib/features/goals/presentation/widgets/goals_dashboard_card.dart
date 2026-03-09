@@ -70,7 +70,8 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
 
   @override
   Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(goalsSummaryProvider);
+    // Use multi-currency provider for accurate summary with mixed currencies (Rule 21.3)
+    final summaryAsync = ref.watch(multiCurrencyGoalsSummaryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return summaryAsync.when(
@@ -178,7 +179,6 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
           ),
         ),
         SizedBox(height: AppSpacing.sm), // Reduced from md to sm
-
         // PageView carousel with peek and scale animation
         if (summary.activeGoals.isNotEmpty)
           SizedBox(
@@ -196,8 +196,10 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
                   builder: (context, child) {
                     // Calculate scale based on page position
                     double scale = 0.92; // Default scale for peeked cards
-                    if (_pageController.hasClients && _pageController.position.haveDimensions) {
-                      final page = _pageController.page ?? _currentPage.toDouble();
+                    if (_pageController.hasClients &&
+                        _pageController.position.haveDimensions) {
+                      final page =
+                          _pageController.page ?? _currentPage.toDouble();
                       final diff = (page - index).abs();
                       // Active card: scale 1.0, peeked cards: scale 0.92
                       scale = 1.0 - (diff.clamp(0.0, 1.0) * 0.08);
@@ -209,7 +211,9 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
                       scale: scale,
                       alignment: Alignment.center,
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xxs,
+                        ),
                         child: GoalCarouselCard(
                           progress: progress,
                           width: double.infinity,

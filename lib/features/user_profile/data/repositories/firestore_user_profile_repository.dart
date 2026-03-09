@@ -16,8 +16,8 @@ class FirestoreUserProfileRepository implements UserProfileRepository {
   FirestoreUserProfileRepository({
     required FirebaseFirestore firestore,
     required String userId,
-  })  : _firestore = firestore,
-        _userId = userId;
+  }) : _firestore = firestore,
+       _userId = userId;
 
   /// User profile document reference
   DocumentReference<Map<String, dynamic>> get _profileRef => _firestore
@@ -75,4 +75,3 @@ class FirestoreUserProfileRepository implements UserProfileRepository {
     return snapshot.exists;
   }
 }
-

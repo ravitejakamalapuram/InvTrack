@@ -172,4 +172,3 @@ class ProjectionSummary {
   /// Tenure in years (for display)
   double get tenureYears => tenureMonths / 12;
 }
-

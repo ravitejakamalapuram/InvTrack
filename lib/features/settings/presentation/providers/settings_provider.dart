@@ -91,16 +91,15 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setString('currency', currency);
     await prefs.setString('locale', locale);
 
-    state = state.copyWith(
-      currency: currency,
-      locale: locale,
-    );
+    state = state.copyWith(currency: currency, locale: locale);
 
     // Track analytics
-    ref.read(analyticsServiceProvider).logEvent(
-      name: 'currency_changed',
-      parameters: {'currency': currency, 'locale': locale},
-    );
+    ref
+        .read(analyticsServiceProvider)
+        .logEvent(
+          name: 'currency_changed',
+          parameters: {'currency': currency, 'locale': locale},
+        );
   }
 
   /// Map currency to its appropriate locale for number formatting
@@ -133,10 +132,9 @@ class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(locale: locale);
 
     // Track analytics
-    ref.read(analyticsServiceProvider).logEvent(
-      name: 'locale_changed',
-      parameters: {'locale': locale},
-    );
+    ref
+        .read(analyticsServiceProvider)
+        .logEvent(name: 'locale_changed', parameters: {'locale': locale});
   }
 
   Future<void> setDateFormatPattern(DateFormatPattern pattern) async {
@@ -145,10 +143,12 @@ class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(dateFormatPattern: pattern);
 
     // Track analytics
-    ref.read(analyticsServiceProvider).logEvent(
-      name: 'date_format_changed',
-      parameters: {'pattern': pattern.name},
-    );
+    ref
+        .read(analyticsServiceProvider)
+        .logEvent(
+          name: 'date_format_changed',
+          parameters: {'pattern': pattern.name},
+        );
   }
 }
 

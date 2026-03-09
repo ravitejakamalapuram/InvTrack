@@ -129,10 +129,10 @@ class DocumentNotifier {
       fileType: DocumentMimeTypes.isImage(fileName) ? 'image' : 'pdf',
     );
 
-    LoggerService.info('Document added', metadata: {
-      'documentName': document.name,
-      'investmentId': investmentId,
-    });
+    LoggerService.info(
+      'Document added',
+      metadata: {'documentName': document.name, 'investmentId': investmentId},
+    );
 
     return document;
   }
@@ -171,7 +171,10 @@ class DocumentNotifier {
 
     await _repository.updateDocument(updated);
 
-    LoggerService.info('Document updated', metadata: {'documentName': updated.name});
+    LoggerService.info(
+      'Document updated',
+      metadata: {'documentName': updated.name},
+    );
   }
 
   /// Delete a document and its file
@@ -187,7 +190,10 @@ class DocumentNotifier {
     // Delete from Firestore
     await _repository.deleteDocument(documentId);
 
-    LoggerService.info('Document deleted', metadata: {'documentName': document.name});
+    LoggerService.info(
+      'Document deleted',
+      metadata: {'documentName': document.name},
+    );
   }
 
   /// Delete all documents for an investment
@@ -198,9 +204,10 @@ class DocumentNotifier {
     // Delete from Firestore
     await _repository.deleteDocumentsByInvestment(investmentId);
 
-    LoggerService.info('All documents deleted for investment', metadata: {
-      'investmentId': investmentId,
-    });
+    LoggerService.info(
+      'All documents deleted for investment',
+      metadata: {'investmentId': investmentId},
+    );
   }
 
   /// Check if a document file exists locally

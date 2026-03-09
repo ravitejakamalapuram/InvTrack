@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -10,6 +11,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
+import 'package:inv_tracker/core/widgets/currency_selector.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
@@ -45,6 +47,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   List<String> _linkedInvestmentIds = [];
   List<InvestmentType> _linkedTypes = [];
   bool _isLoading = false;
+  late String _selectedCurrency; // Multi-currency support (Rule 21.2)
 
   @override
   void initState() {
@@ -64,6 +67,8 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     _selectedColor = goal?.color ?? GoalColors.defaultColor;
     _linkedInvestmentIds = goal?.linkedInvestmentIds ?? [];
     _linkedTypes = goal?.linkedTypes ?? [];
+    _selectedCurrency =
+        goal?.currency ?? 'USD'; // Default to USD if not editing
   }
 
   @override
@@ -128,6 +133,8 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 linkedTypes: _linkedTypes,
                 icon: _selectedIcon,
                 colorValue: _selectedColor.toARGB32(),
+                currency:
+                    _selectedCurrency, // Multi-currency support (Rule 21.2)
               ),
             );
       } else {
@@ -144,6 +151,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
               linkedTypes: _linkedTypes,
               icon: _selectedIcon,
               colorValue: _selectedColor.toARGB32(),
+              currency: _selectedCurrency, // Multi-currency support (Rule 21.2)
             );
       }
 
@@ -237,6 +245,21 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 if (double.tryParse(v) == null) return 'Invalid amount';
                 return null;
               },
+            ),
+            SizedBox(height: AppSpacing.md),
+
+            // Currency Selector
+            CurrencySelector(
+              selectedCurrency: _selectedCurrency,
+              onCurrencySelected: (code) {
+                setState(() => _selectedCurrency = code);
+                // Track currency selection
+                ref
+                    .read(analyticsServiceProvider)
+                    .logCurrencySelected(currency: code, context: 'goal');
+              },
+              label: 'Goal Currency',
+              subtitle: 'Currency for this goal',
             ),
             SizedBox(height: AppSpacing.md),
 

@@ -114,10 +114,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.importInvestments),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.importInvestments), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),

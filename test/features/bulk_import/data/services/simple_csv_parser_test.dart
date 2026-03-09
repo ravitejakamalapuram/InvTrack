@@ -39,10 +39,7 @@ void main() {
         final result = SimpleCsvParser.parseString(csv);
 
         expect(result.hasErrors, true);
-        expect(
-          result.errors.first,
-          contains('Missing required columns'),
-        );
+        expect(result.errors.first, contains('Missing required columns'));
       });
 
       test('handles column header variations', () {
@@ -296,6 +293,7 @@ bad-date,Bad,invest,1000
           investmentName: 'Test',
           type: CashFlowType.invest,
           amount: 1000,
+          currency: 'USD', // Multi-currency support (Rule 21.4)
         );
 
         expect(row.isValid, true);
@@ -320,6 +318,7 @@ bad-date,Bad,invest,1000
           investmentName: 'Test',
           type: CashFlowType.invest,
           amount: 1000,
+          currency: 'USD', // Multi-currency support (Rule 21.4)
         );
         final invalidRow = ParsedCashFlowRow.withError(
           rowNumber: 2,
@@ -357,6 +356,282 @@ bad-date,Bad,invest,1000
         );
 
         expect(result.hasErrors, false);
+      });
+    });
+
+    // ============ MULTI-CURRENCY TESTS (Rule 21.4) ============
+    group('Multi-Currency Support (Rule 21.4)', () {
+      group('6-Column Format (with Currency)', () {
+        test('parses CSV with Currency column', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-15,US Stocks,INVEST,1000,USD,Initial investment
+2024-02-01,Indian FD,INVEST,100000,INR,Fixed deposit
+2024-03-01,European Bonds,INVEST,800,EUR,Government bonds''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.totalRows, 3);
+          expect(result.validRows, 3);
+          expect(result.hasErrors, false);
+
+          // Verify currencies are preserved
+          expect(result.rows[0].currency, 'USD');
+          expect(result.rows[1].currency, 'INR');
+          expect(result.rows[2].currency, 'EUR');
+        });
+
+        test('preserves original currency from CSV', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Singapore Investment,INVEST,5000,SGD,Singapore Dollar''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          expect(result.rows.first.currency, 'SGD');
+        });
+
+        test('handles empty currency field', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test,INVEST,1000,,No currency specified''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          // Empty currency defaults to USD (backward compatibility)
+          expect(result.rows.first.currency, 'USD');
+        });
+
+        test('trims whitespace from currency codes', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test,INVEST,1000,  USD  ,Whitespace around currency''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          expect(result.rows.first.currency, 'USD');
+        });
+
+        test('uppercases currency codes', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test,INVEST,1000,usd,Lowercase currency''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          // Currency codes are normalized to uppercase
+          expect(result.rows.first.currency, 'USD');
+        });
+      });
+
+      group('5-Column Format (Backward Compatibility)', () {
+        test('defaults to USD when Currency column is missing', () {
+          const csv = '''Date,Investment Name,Type,Amount,Notes
+2024-01-15,Test Investment,INVEST,1000,No currency column''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          // Should default to USD for backward compatibility
+          expect(result.rows.first.currency, 'USD');
+        });
+
+        test('handles old 5-column format without errors', () {
+          const csv = '''Date,Investment Name,Type,Amount,Notes
+2024-01-01,Investment 1,INVEST,1000,Note 1
+2024-01-02,Investment 2,INCOME,50,Note 2
+2024-01-03,Investment 3,RETURN,500,Note 3''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 3);
+          expect(result.hasErrors, false);
+
+          // All should default to USD
+          for (final row in result.rows) {
+            expect(row.currency, 'USD');
+          }
+        });
+      });
+
+      group('Data Integrity (Rule 21.1)', () {
+        test('does not convert amounts based on currency', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test 1,INVEST,1000,USD,
+2024-01-02,Test 2,INVEST,1000,INR,
+2024-01-03,Test 3,INVEST,1000,EUR,''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 3);
+
+          // Amounts should remain unchanged (no conversion)
+          expect(result.rows[0].amount, 1000.0);
+          expect(result.rows[1].amount, 1000.0);
+          expect(result.rows[2].amount, 1000.0);
+
+          // Currencies should be preserved
+          expect(result.rows[0].currency, 'USD');
+          expect(result.rows[1].currency, 'INR');
+          expect(result.rows[2].currency, 'EUR');
+        });
+
+        test('preserves original data on import', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,US Tech Stocks,INVEST,1000.00,USD,Initial investment
+2024-01-15,US Tech Stocks,INCOME,50.00,USD,Q1 dividend
+2024-02-01,Indian FD,INVEST,100000.00,INR,Fixed deposit 1 year
+2024-03-01,European Bonds,INVEST,800.00,EUR,Government bonds''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 4);
+
+          // Verify first investment
+          expect(result.rows[0].investmentName, 'US Tech Stocks');
+          expect(result.rows[0].type, CashFlowType.invest);
+          expect(result.rows[0].amount, 1000.0);
+          expect(result.rows[0].currency, 'USD');
+
+          // Verify dividend
+          expect(result.rows[1].type, CashFlowType.income);
+          expect(result.rows[1].amount, 50.0);
+          expect(result.rows[1].currency, 'USD');
+
+          // Verify Indian FD
+          expect(result.rows[2].investmentName, 'Indian FD');
+          expect(result.rows[2].amount, 100000.0);
+          expect(result.rows[2].currency, 'INR');
+
+          // Verify European bonds
+          expect(result.rows[3].currency, 'EUR');
+        });
+      });
+
+      group('Real-World Scenarios', () {
+        test('handles export-import round trip without data loss', () {
+          // Simulating data exported from app with multi-currency support
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,US Tech Stocks,INVEST,1000.00,USD,Initial investment
+2024-01-15,US Tech Stocks,INCOME,50.00,USD,Q1 dividend
+2024-02-01,Indian FD,INVEST,100000.00,INR,Fixed deposit 1 year
+2024-02-15,Indian FD,INCOME,2000.00,INR,Monthly interest
+2024-03-01,European Bonds,INVEST,800.00,EUR,Government bonds
+2024-03-15,European Bonds,INCOME,20.00,EUR,Quarterly interest''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 6);
+          expect(result.hasErrors, false);
+
+          // Verify all data preserved
+          final currencies = result.rows.map((r) => r.currency).toSet();
+          expect(currencies, containsAll(['USD', 'INR', 'EUR']));
+
+          // Verify amounts not modified
+          expect(result.rows[0].amount, 1000.0);
+          expect(result.rows[2].amount, 100000.0);
+          expect(result.rows[4].amount, 800.0);
+        });
+
+        test('handles mixed 5-column and 6-column formats gracefully', () {
+          // User manually adds Currency column to old CSV
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Old Investment,INVEST,1000,USD,Migrated from old format
+2024-01-02,New Investment,INVEST,2000,EUR,New format''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 2);
+          expect(result.rows[0].currency, 'USD');
+          expect(result.rows[1].currency, 'EUR');
+        });
+
+        test('handles CSV with special characters in notes', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test,INVEST,1000,USD,"Note with, comma"
+2024-01-02,Test,INCOME,50,USD,"Note with ""quotes"""''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 2);
+          expect(result.rows[0].currency, 'USD');
+          expect(result.rows[1].currency, 'USD');
+        });
+
+        test('handles all supported currencies', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,USD Investment,INVEST,1000,USD,US Dollar
+2024-01-02,EUR Investment,INVEST,1000,EUR,Euro
+2024-01-03,GBP Investment,INVEST,1000,GBP,British Pound
+2024-01-04,INR Investment,INVEST,1000,INR,Indian Rupee
+2024-01-05,JPY Investment,INVEST,1000,JPY,Japanese Yen
+2024-01-06,AUD Investment,INVEST,1000,AUD,Australian Dollar
+2024-01-07,CAD Investment,INVEST,1000,CAD,Canadian Dollar
+2024-01-08,CHF Investment,INVEST,1000,CHF,Swiss Franc
+2024-01-09,CNY Investment,INVEST,1000,CNY,Chinese Yuan
+2024-01-10,SGD Investment,INVEST,1000,SGD,Singapore Dollar''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 10);
+          expect(result.hasErrors, false);
+
+          final currencies = result.rows.map((r) => r.currency).toList();
+          expect(
+            currencies,
+            containsAll([
+              'USD',
+              'EUR',
+              'GBP',
+              'INR',
+              'JPY',
+              'AUD',
+              'CAD',
+              'CHF',
+              'CNY',
+              'SGD',
+            ]),
+          );
+        });
+      });
+
+      group('Edge Cases', () {
+        test('handles CSV with extra columns after Currency', () {
+          const csv =
+              '''Date,Investment Name,Type,Amount,Currency,Notes,Extra Column
+2024-01-01,Test,INVEST,1000,USD,Note,Extra Data''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          expect(result.rows.first.currency, 'USD');
+        });
+
+        test('handles inconsistent column count', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test 1,INVEST,1000,USD,Note 1
+2024-01-02,Test 2,INVEST,2000,Note 2 missing currency''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          // First row should parse correctly
+          expect(result.rows.any((r) => r.investmentName == 'Test 1'), true);
+          final test1 = result.rows.firstWhere(
+            (r) => r.investmentName == 'Test 1',
+          );
+          expect(test1.currency, 'USD');
+        });
+
+        test('handles currency with numbers', () {
+          const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test,INVEST,1000,USD123,Invalid but preserved''';
+
+          final result = SimpleCsvParser.parseString(csv);
+
+          expect(result.validRows, 1);
+          // Parser doesn't validate currency codes, just preserves them
+          expect(result.rows.first.currency, 'USD123');
+        });
       });
     });
   });

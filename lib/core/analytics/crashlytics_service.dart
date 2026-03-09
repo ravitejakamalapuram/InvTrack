@@ -91,10 +91,7 @@ class CrashlyticsService {
   /// Log a message to Crashlytics (appears in crash reports)
   Future<void> log(String message) async {
     await _crashlytics.log(message);
-    LoggerService.debug(
-      'Crashlytics log',
-      metadata: {'message': message},
-    );
+    LoggerService.debug('Crashlytics log', metadata: {'message': message});
   }
 
   /// Force a crash for testing (only use in debug/testing!)

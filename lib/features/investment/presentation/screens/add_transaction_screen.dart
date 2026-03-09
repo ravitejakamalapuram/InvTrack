@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
@@ -12,6 +13,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
+import 'package:inv_tracker/core/widgets/currency_selector.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
@@ -44,6 +46,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   DateTime _selectedDate = DateTime.now();
   CashFlowType _selectedType = CashFlowType.invest;
   bool _isLoading = false;
+  late String _selectedCurrency;
 
   @override
   void initState() {
@@ -56,9 +59,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _notesController.text = cf.notes ?? '';
       _selectedDate = cf.date;
       _selectedType = cf.type;
-    } else if (widget.initialType != null) {
-      // Use initial type if provided (for quick actions)
-      _selectedType = widget.initialType!;
+      _selectedCurrency = cf.currency;
+    } else {
+      // Default to investment's currency for new cash flows
+      // We'll fetch this from the investment in the build method
+      _selectedCurrency = ref.read(currencyCodeProvider);
+
+      if (widget.initialType != null) {
+        // Use initial type if provided (for quick actions)
+        _selectedType = widget.initialType!;
+      }
     }
 
     initScreenAnimation();
@@ -122,6 +132,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               amount: amount,
               notes: notes,
               createdAt: widget.cashFlowToEdit!.createdAt,
+              currency: _selectedCurrency,
             );
       } else {
         // Add new cash flow
@@ -133,6 +144,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               date: _selectedDate,
               amount: amount,
               notes: notes,
+              currency: _selectedCurrency,
             );
       }
 
@@ -211,9 +223,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                 onSelected: (type) => setState(() => _selectedType = type),
                 colorBuilder: (type) {
                   if (type.isOutflow) {
-                    return isDark
-                        ? AppColors.errorDark
-                        : AppColors.errorLight;
+                    return isDark ? AppColors.errorDark : AppColors.errorLight;
                   }
                   return isDark
                       ? AppColors.successDark
@@ -339,6 +349,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
               SizedBox(height: AppSpacing.sectionSpacing),
 
+              // Currency Selector
+              CurrencySelector(
+                selectedCurrency: _selectedCurrency,
+                onCurrencySelected: (code) {
+                  setState(() => _selectedCurrency = code);
+                  // Track currency selection
+                  ref
+                      .read(analyticsServiceProvider)
+                      .logCurrencySelected(currency: code, context: 'cashflow');
+                },
+                label: 'Cash Flow Currency',
+                subtitle: 'Currency for this transaction',
+              ),
+
+              SizedBox(height: AppSpacing.sectionSpacing),
+
               // Amount Preview
               GlassCard(
                 padding: AppSpacing.cardPaddingLarge,
@@ -369,11 +395,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                             );
                             final color = _selectedType.isOutflow
                                 ? (isDark
-                                    ? AppColors.errorDark
-                                    : AppColors.errorLight)
+                                      ? AppColors.errorDark
+                                      : AppColors.errorLight)
                                 : (isDark
-                                    ? AppColors.successDark
-                                    : AppColors.successLight);
+                                      ? AppColors.successDark
+                                      : AppColors.successLight);
 
                             return Text(
                               '$prefix$formattedAmount',
@@ -434,5 +460,4 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       color: color,
     );
   }
-
 }

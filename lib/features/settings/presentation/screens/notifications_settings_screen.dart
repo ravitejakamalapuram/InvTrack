@@ -24,7 +24,9 @@ class NotificationsSettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.notificationsSectionTitle, style: AppTypography.h3)),
+      appBar: AppBar(
+        title: Text(l10n.notificationsSectionTitle, style: AppTypography.h3),
+      ),
       body: ListView(
         children: [
           SizedBox(height: AppSpacing.sm),

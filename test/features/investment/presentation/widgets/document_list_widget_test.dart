@@ -45,9 +45,9 @@ void main() {
   }) {
     return ProviderScope(
       overrides: [
-        documentsByInvestmentProvider('inv-1').overrideWith(
-          (ref) => Stream.value(documents),
-        ),
+        documentsByInvestmentProvider(
+          'inv-1',
+        ).overrideWith((ref) => Stream.value(documents)),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -64,8 +64,9 @@ void main() {
 
   group('DocumentListWidget', () {
     group('Empty State', () {
-      testWidgets('should display empty state when no documents',
-          (tester) async {
+      testWidgets('should display empty state when no documents', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildTestWidget(documents: []));
         await tester.pumpAndSettle();
 
@@ -125,8 +126,9 @@ void main() {
     });
 
     group('Document Navigation', () {
-      testWidgets('should navigate to viewer when document is tapped',
-          (tester) async {
+      testWidgets('should navigate to viewer when document is tapped', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildTestWidget(documents: testDocuments));
         await tester.pumpAndSettle();
 

@@ -25,7 +25,10 @@ void main() {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Primary Colors', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Primary Colors',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 _ColorRow([
                   _ColorSwatch('Primary', AppColors.primaryLight),
@@ -33,7 +36,10 @@ void main() {
                   _ColorSwatch('Success', AppColors.successLight),
                 ]),
                 const SizedBox(height: 16),
-                const Text('Status Colors', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Status Colors',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 _ColorRow([
                   _ColorSwatch('Warning', AppColors.warningLight),
@@ -41,7 +47,10 @@ void main() {
                   _ColorSwatch('Neutral', AppColors.neutral500Light),
                 ]),
                 const SizedBox(height: 16),
-                const Text('Graph Colors', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Graph Colors',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -119,11 +128,20 @@ void main() {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ElevatedButton(onPressed: () {}, child: const Text('Elevated Button')),
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text('Elevated Button'),
+                ),
                 const SizedBox(height: 12),
-                FilledButton(onPressed: () {}, child: const Text('Filled Button')),
+                FilledButton(
+                  onPressed: () {},
+                  child: const Text('Filled Button'),
+                ),
                 const SizedBox(height: 12),
-                OutlinedButton(onPressed: () {}, child: const Text('Outlined Button')),
+                OutlinedButton(
+                  onPressed: () {},
+                  child: const Text('Outlined Button'),
+                ),
                 const SizedBox(height: 12),
                 TextButton(onPressed: () {}, child: const Text('Text Button')),
                 const SizedBox(height: 12),

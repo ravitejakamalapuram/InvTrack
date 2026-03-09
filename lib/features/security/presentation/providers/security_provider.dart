@@ -135,7 +135,9 @@ class SecurityNotifier extends Notifier<SecurityState>
           _isAutoLockSuspended = false;
           _suspendedAt = null;
         } else {
-          LoggerService.debug('Auto-lock suspended for picker operation, skipping');
+          LoggerService.debug(
+            'Auto-lock suspended for picker operation, skipping',
+          );
           return;
         }
       } else {
@@ -159,10 +161,13 @@ class SecurityNotifier extends Notifier<SecurityState>
       final autoLockSeconds = _service.autoLockDurationSeconds;
 
       if (duration.inSeconds >= autoLockSeconds) {
-        LoggerService.info('Auto-locking app', metadata: {
-          'durationSeconds': duration.inSeconds,
-          'thresholdSeconds': autoLockSeconds,
-        });
+        LoggerService.info(
+          'Auto-locking app',
+          metadata: {
+            'durationSeconds': duration.inSeconds,
+            'thresholdSeconds': autoLockSeconds,
+          },
+        );
         lockApp();
       }
     }

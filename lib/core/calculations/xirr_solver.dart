@@ -165,7 +165,8 @@ class XirrSolver {
     final flowMap = <double, double>{};
     for (int i = 0; i < dates.length; i++) {
       // Optimization: Calculate days difference using milliseconds instead of Duration for better performance
-      final t = ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
+      final t =
+          ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
       final existing = flowMap[t];
       if (existing == null) {
         flowMap[t] = amounts[i];
@@ -508,7 +509,11 @@ class XirrSolver {
   /// //     = -10000 + 476.73 + 10000 = 476.73
   /// // (Positive NPV means actual return > 10%)
   /// ```
-  static double _f(double x, List<double> yearsFromStart, List<double> amounts) {
+  static double _f(
+    double x,
+    List<double> yearsFromStart,
+    List<double> amounts,
+  ) {
     if (x <= -1.0) return double.infinity;
 
     final base = 1 + x;

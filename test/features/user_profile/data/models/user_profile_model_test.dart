@@ -103,9 +103,7 @@ void main() {
       });
 
       test('handles missing optional fields with defaults', () {
-        final doc = {
-          'userId': 'test_user',
-        };
+        final doc = {'userId': 'test_user'};
 
         final entity = UserProfileModel.fromFirestore(doc, 'test_user');
 
@@ -149,10 +147,7 @@ void main() {
       });
 
       test('handles invalid date format with default', () {
-        final doc = {
-          'userId': 'test_user',
-          'dateFormatPattern': 'invalid',
-        };
+        final doc = {'userId': 'test_user', 'dateFormatPattern': 'invalid'};
 
         final entity = UserProfileModel.fromFirestore(doc, 'test_user');
 
@@ -160,22 +155,14 @@ void main() {
       });
 
       test('handles missing timestamps with current time', () {
-        final doc = {
-          'userId': 'test_user',
-        };
+        final doc = {'userId': 'test_user'};
 
         final entity = UserProfileModel.fromFirestore(doc, 'test_user');
 
         // Should be close to current time
         final now = DateTime.now();
-        expect(
-          entity.createdAt.difference(now).inSeconds.abs(),
-          lessThan(5),
-        );
-        expect(
-          entity.updatedAt.difference(now).inSeconds.abs(),
-          lessThan(5),
-        );
+        expect(entity.createdAt.difference(now).inSeconds.abs(), lessThan(5));
+        expect(entity.updatedAt.difference(now).inSeconds.abs(), lessThan(5));
       });
     });
 
@@ -196,7 +183,7 @@ void main() {
         final doc = UserProfileModel.toFirestore(original);
         // Simulate Firestore by replacing FieldValue.serverTimestamp()
         doc['updatedAt'] = testTimestamp;
-        
+
         final restored = UserProfileModel.fromFirestore(doc, 'test_user');
 
         expect(restored.userId, original.userId);
@@ -210,4 +197,3 @@ void main() {
     });
   });
 }
-

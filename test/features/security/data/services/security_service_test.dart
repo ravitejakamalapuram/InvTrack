@@ -159,18 +159,20 @@ void main() {
   });
 
   group('SecurityService - Rate Limiting', () {
-    test('verifyPin increments failed attempts on incorrect PIN (SecureStorage)',
-        () async {
-      await service.setPin('1234');
+    test(
+      'verifyPin increments failed attempts on incorrect PIN (SecureStorage)',
+      () async {
+        await service.setPin('1234');
 
-      await service.verifyPin('5678'); // 1st attempt
-      await service.verifyPin('5678'); // 2nd attempt
+        await service.verifyPin('5678'); // 1st attempt
+        await service.verifyPin('5678'); // 2nd attempt
 
-      final failedAttempts = fakeSecureStorage.storage['pin_failed_attempts'];
-      expect(failedAttempts, equals('2'));
-      // Ensure legacy prefs are not used/populated
-      expect(prefs.containsKey('pin_failed_attempts'), isFalse);
-    });
+        final failedAttempts = fakeSecureStorage.storage['pin_failed_attempts'];
+        expect(failedAttempts, equals('2'));
+        // Ensure legacy prefs are not used/populated
+        expect(prefs.containsKey('pin_failed_attempts'), isFalse);
+      },
+    );
 
     test('verifyPin resets failed attempts on correct PIN', () async {
       await service.setPin('1234');
@@ -182,8 +184,10 @@ void main() {
 
       await service.verifyPin('1234'); // Correct PIN
 
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
-          isFalse);
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+        isFalse,
+      );
     });
 
     test('verifyPin locks out after max attempts', () async {
@@ -199,8 +203,10 @@ void main() {
       await service.verifyPin('5678');
 
       expect(await service.getLockoutRemainingSeconds(), isNotNull);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
-          isTrue);
+      expect(
+        fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+        isTrue,
+      );
 
       // Even correct PIN should fail during lockout
       final result = await service.verifyPin('1234');
@@ -247,41 +253,51 @@ void main() {
   });
 
   group('SecurityService - Storage Migration', () {
-    test('Migrates failed attempts from SharedPreferences to SecureStorage',
-        () async {
-      await service.setPin('1234');
-      // Setup legacy state
-      await prefs.setInt('pin_failed_attempts', 3);
-      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
-          isFalse);
+    test(
+      'Migrates failed attempts from SharedPreferences to SecureStorage',
+      () async {
+        await service.setPin('1234');
+        // Setup legacy state
+        await prefs.setInt('pin_failed_attempts', 3);
+        expect(
+          fakeSecureStorage.storage.containsKey('pin_failed_attempts'),
+          isFalse,
+        );
 
-      // Calling verifyPin should read the legacy value, increment it, and store in SecureStorage
-      await service.verifyPin('5678');
+        // Calling verifyPin should read the legacy value, increment it, and store in SecureStorage
+        await service.verifyPin('5678');
 
-      // Should be 3 + 1 = 4
-      expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('4'));
-      // Legacy should be removed
-      expect(prefs.containsKey('pin_failed_attempts'), isFalse);
-    });
+        // Should be 3 + 1 = 4
+        expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('4'));
+        // Legacy should be removed
+        expect(prefs.containsKey('pin_failed_attempts'), isFalse);
+      },
+    );
 
-    test('Migrates lockout timestamp from SharedPreferences to SecureStorage',
-        () async {
-      // Setup legacy state (locked out)
-      final lockoutTime = DateTime.now().millisecondsSinceEpoch;
-      await prefs.setInt('pin_lockout_timestamp', lockoutTime);
-      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
-          isFalse);
+    test(
+      'Migrates lockout timestamp from SharedPreferences to SecureStorage',
+      () async {
+        // Setup legacy state (locked out)
+        final lockoutTime = DateTime.now().millisecondsSinceEpoch;
+        await prefs.setInt('pin_lockout_timestamp', lockoutTime);
+        expect(
+          fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'),
+          isFalse,
+        );
 
-      // Check lockout status
-      final remaining = await service.getLockoutRemainingSeconds();
-      expect(remaining, isNotNull);
+        // Check lockout status
+        final remaining = await service.getLockoutRemainingSeconds();
+        expect(remaining, isNotNull);
 
-      // Should have migrated to SecureStorage
-      expect(fakeSecureStorage.storage['pin_lockout_timestamp'],
-          equals(lockoutTime.toString()));
-      // Legacy should be removed
-      expect(prefs.containsKey('pin_lockout_timestamp'), isFalse);
-    });
+        // Should have migrated to SecureStorage
+        expect(
+          fakeSecureStorage.storage['pin_lockout_timestamp'],
+          equals(lockoutTime.toString()),
+        );
+        // Legacy should be removed
+        expect(prefs.containsKey('pin_lockout_timestamp'), isFalse);
+      },
+    );
   });
 
   group('SecurityService - Biometrics', () {
@@ -450,7 +466,7 @@ void main() {
       // Should throw exception instead of allowing access or retry
       expect(
         () => service.verifyPin('5678'),
-        throwsA(isA<PlatformException>())
+        throwsA(isA<PlatformException>()),
       );
     });
   });

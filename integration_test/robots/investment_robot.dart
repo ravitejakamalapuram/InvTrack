@@ -18,12 +18,18 @@ class InvestmentRobot extends BaseRobot {
 
   /// Verify an investment is displayed in the list
   void verifyInvestmentDisplayed(String name) {
-    verifyTextDisplayed(name, reason: 'Investment "$name" should be in the list');
+    verifyTextDisplayed(
+      name,
+      reason: 'Investment "$name" should be in the list',
+    );
   }
 
   /// Verify an investment is not displayed
   void verifyInvestmentNotDisplayed(String name) {
-    verifyTextNotDisplayed(name, reason: 'Investment "$name" should not be in the list');
+    verifyTextNotDisplayed(
+      name,
+      reason: 'Investment "$name" should not be in the list',
+    );
   }
 
   /// Tap on an investment in the list
@@ -184,10 +190,7 @@ class InvestmentRobot extends BaseRobot {
 
   /// Scroll to bottom of detail screen
   Future<void> scrollToBottom() async {
-    await scrollUntilVisible(
-      find.byType(GlassCard).last,
-      delta: 200,
-    );
+    await scrollUntilVisible(find.byType(GlassCard).last, delta: 200);
   }
 
   // ============ FORM VALIDATION ============

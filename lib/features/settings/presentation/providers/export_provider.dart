@@ -13,9 +13,10 @@ final exportServiceProvider = Provider<ExportService>((ref) {
 
 /// State for CSV export operation
 /// Uses .autoDispose to prevent memory leaks when screen is disposed
-final exportStateProvider = NotifierProvider.autoDispose<ExportNotifier, AsyncValue<void>>(
-  ExportNotifier.new,
-);
+final exportStateProvider =
+    NotifierProvider.autoDispose<ExportNotifier, AsyncValue<void>>(
+      ExportNotifier.new,
+    );
 
 class ExportNotifier extends Notifier<AsyncValue<void>> {
   @override

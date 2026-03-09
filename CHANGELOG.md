@@ -4,6 +4,24 @@
 
 ### 🐛 Bug Fixes
 
+- Use PAT for checkout on self-hosted runners
+- Configure git to use SSH for checkout
+- Use SSH for self-hosted runner checkout
+
+### 🔧 Miscellaneous
+
+- Use self-hosted runners for all workflows
+
+## [3.48.0] - 2026-03-09
+
+### ✨ Features
+
+- Complete multi-currency stats display (Rule 21.3 compliance) (#243)
+
+## [3.47.5] - 2026-03-08
+
+### 🐛 Bug Fixes
+
 - Restore .jules directory
 
 ## [3.47.2] - 2026-03-07

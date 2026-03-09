@@ -76,12 +76,18 @@ abstract class BaseRobot {
 
   /// Verify text is displayed
   void verifyTextDisplayed(String text, {String? reason}) {
-    verifyExists(find.text(text), reason: reason ?? 'Text "$text" should be displayed');
+    verifyExists(
+      find.text(text),
+      reason: reason ?? 'Text "$text" should be displayed',
+    );
   }
 
   /// Verify text is not displayed
   void verifyTextNotDisplayed(String text, {String? reason}) {
-    verifyNotExists(find.text(text), reason: reason ?? 'Text "$text" should not be displayed');
+    verifyNotExists(
+      find.text(text),
+      reason: reason ?? 'Text "$text" should not be displayed',
+    );
   }
 
   /// Take a screenshot (for visual regression)

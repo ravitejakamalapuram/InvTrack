@@ -221,8 +221,9 @@ class _AppTextFieldState extends State<AppTextField> {
             prefixIcon: widget.prefixIcon != null
                 ? Padding(
                     padding: EdgeInsets.only(
-                      bottom:
-                          widget.maxLines > 1 ? (widget.maxLines - 1) * 20.0 : 0,
+                      bottom: widget.maxLines > 1
+                          ? (widget.maxLines - 1) * 20.0
+                          : 0,
                     ),
                     child: Icon(
                       widget.prefixIcon,
@@ -235,8 +236,9 @@ class _AppTextFieldState extends State<AppTextField> {
             suffixIcon: showClearButton
                 ? Padding(
                     padding: EdgeInsets.only(
-                      bottom:
-                          widget.maxLines > 1 ? (widget.maxLines - 1) * 20.0 : 0,
+                      bottom: widget.maxLines > 1
+                          ? (widget.maxLines - 1) * 20.0
+                          : 0,
                     ),
                     child: IconButton(
                       icon: Icon(

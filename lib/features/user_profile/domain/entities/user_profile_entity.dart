@@ -50,9 +50,12 @@ class UserProfileEntity {
   }) {
     final now = DateTime.now();
     final currency = LocaleDetectionService.getCurrencyForCountry(countryCode);
-    final locale = LocaleDetectionService.getLocaleStringForCountry(countryCode);
-    final dateFormat =
-        LocaleDetectionService.getDateFormatForCountry(countryCode);
+    final locale = LocaleDetectionService.getLocaleStringForCountry(
+      countryCode,
+    );
+    final dateFormat = LocaleDetectionService.getDateFormatForCountry(
+      countryCode,
+    );
 
     return UserProfileEntity(
       userId: userId,
@@ -123,4 +126,3 @@ class UserProfileEntity {
         'isFirstLogin: $isFirstLogin)';
   }
 }
-

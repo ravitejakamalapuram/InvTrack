@@ -68,92 +68,92 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Active filter chip close button should be accessible',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: getOverrides(),
-          child: const MaterialApp(home: InvestmentListScreen()),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('Active filter chip close button should be accessible', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: getOverrides(),
+        child: const MaterialApp(home: InvestmentListScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // Open filter sheet
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
-      await tester.pumpAndSettle();
+    // Open filter sheet
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.pumpAndSettle();
 
-      // Select a filter type (e.g., first one found in the sheet)
-      final listTileFinder = find.byType(ListTile).first;
-      await tester.tap(listTileFinder);
-      await tester.pumpAndSettle();
+    // Select a filter type (e.g., first one found in the sheet)
+    final listTileFinder = find.byType(ListTile).first;
+    await tester.tap(listTileFinder);
+    await tester.pumpAndSettle();
 
-      // Verify filter chip is shown
-      expect(find.byType(Icon), findsWidgets);
+    // Verify filter chip is shown
+    expect(find.byType(Icon), findsWidgets);
 
-      // Look for the Close button semantics
-      final clearFilterSemantics = find.bySemanticsLabel(RegExp(r'Clear .* filter'));
+    // Look for the Close button semantics
+    final clearFilterSemantics = find.bySemanticsLabel(
+      RegExp(r'Clear .* filter'),
+    );
 
-      expect(
-        clearFilterSemantics,
-        findsOneWidget,
-        reason: 'Filter chip close button should have a semantic label'
-      );
+    expect(
+      clearFilterSemantics,
+      findsOneWidget,
+      reason: 'Filter chip close button should have a semantic label',
+    );
 
-      // Also verify it's a button
-      final semantics = tester.getSemantics(clearFilterSemantics);
-      expect(
-        semantics.getSemanticsData().flagsCollection.isButton,
-        isTrue,
-        reason: 'Filter chip close button should be identified as a button',
-      );
-    },
-  );
+    // Also verify it's a button
+    final semantics = tester.getSemantics(clearFilterSemantics);
+    expect(
+      semantics.getSemanticsData().flagsCollection.isButton,
+      isTrue,
+      reason: 'Filter chip close button should be identified as a button',
+    );
+  });
 
-  testWidgets(
-    'Filter list items should have selected state semantics',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: getOverrides(),
-          child: const MaterialApp(home: InvestmentListScreen()),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('Filter list items should have selected state semantics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: getOverrides(),
+        child: const MaterialApp(home: InvestmentListScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // Open filter sheet
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
-      await tester.pumpAndSettle();
+    // Open filter sheet
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.pumpAndSettle();
 
-      // Find the first list tile
-      final firstTileFinder = find.byType(ListTile).first;
+    // Find the first list tile
+    final firstTileFinder = find.byType(ListTile).first;
 
-      // Verify it is NOT selected initially
-      final initialSemantics = tester.getSemantics(firstTileFinder);
-      expect(
-        initialSemantics.getSemanticsData().flagsCollection.isSelected,
-        isNot(equals(Tristate.isTrue)),
-        reason: 'Item should not be selected initially',
-      );
+    // Verify it is NOT selected initially
+    final initialSemantics = tester.getSemantics(firstTileFinder);
+    expect(
+      initialSemantics.getSemanticsData().flagsCollection.isSelected,
+      isNot(equals(Tristate.isTrue)),
+      reason: 'Item should not be selected initially',
+    );
 
-      // Tap it to select
-      await tester.tap(firstTileFinder);
-      await tester.pumpAndSettle();
+    // Tap it to select
+    await tester.tap(firstTileFinder);
+    await tester.pumpAndSettle();
 
-      // Re-open filter sheet
-      await tester.tap(find.byIcon(Icons.filter_list_rounded));
-      await tester.pumpAndSettle();
+    // Re-open filter sheet
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.pumpAndSettle();
 
-      // Find the same tile again
-      final selectedTileFinder = find.byType(ListTile).first;
+    // Find the same tile again
+    final selectedTileFinder = find.byType(ListTile).first;
 
-      // Verify it IS selected now
-      final selectedSemantics = tester.getSemantics(selectedTileFinder);
-      expect(
-        selectedSemantics.getSemanticsData().flagsCollection.isSelected,
-        equals(Tristate.isTrue),
-        reason: 'Item should have isSelected=true in semantics when selected',
-      );
-    },
-  );
+    // Verify it IS selected now
+    final selectedSemantics = tester.getSemantics(selectedTileFinder);
+    expect(
+      selectedSemantics.getSemanticsData().flagsCollection.isSelected,
+      equals(Tristate.isTrue),
+      reason: 'Item should have isSelected=true in semantics when selected',
+    );
+  });
 }

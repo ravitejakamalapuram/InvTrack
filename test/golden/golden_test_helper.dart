@@ -83,11 +83,7 @@ extension GoldenTestExtensions on WidgetTester {
     Size size = GoldenTestConfig.defaultSize,
   }) async {
     await pumpWidget(
-      goldenThemeWrapper(
-        child: widget,
-        isDark: isDark,
-        size: size,
-      ),
+      goldenThemeWrapper(child: widget, isDark: isDark, size: size),
     );
     // Wait for any animations to settle
     await pump(const Duration(milliseconds: 100));
@@ -110,11 +106,7 @@ void goldenTestGroup(
   group(description, () {
     testWidgets('light theme', (tester) async {
       await tester.setGoldenSize(size);
-      await tester.pumpGoldenWidget(
-        widget,
-        isDark: false,
-        size: size,
-      );
+      await tester.pumpGoldenWidget(widget, isDark: false, size: size);
       await expectLater(
         find.byType(widget.runtimeType),
         matchesGoldenFile('goldens/${goldenFilePrefix}_light.png'),
@@ -123,11 +115,7 @@ void goldenTestGroup(
 
     testWidgets('dark theme', (tester) async {
       await tester.setGoldenSize(size);
-      await tester.pumpGoldenWidget(
-        widget,
-        isDark: true,
-        size: size,
-      );
+      await tester.pumpGoldenWidget(widget, isDark: true, size: size);
       await expectLater(
         find.byType(widget.runtimeType),
         matchesGoldenFile('goldens/${goldenFilePrefix}_dark.png'),

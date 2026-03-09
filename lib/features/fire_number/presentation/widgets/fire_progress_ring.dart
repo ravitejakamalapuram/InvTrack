@@ -33,7 +33,9 @@ class FireProgressRing extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.neutral700Dark : AppColors.neutral200Light;
+    final bgColor = isDark
+        ? AppColors.neutral700Dark
+        : AppColors.neutral200Light;
     final progressColor = status.color;
     final locale = ref.watch(currencyLocaleProvider);
 
@@ -71,11 +73,7 @@ class FireProgressRing extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Fire icon
-              Icon(
-                Icons.local_fire_department,
-                size: 32,
-                color: progressColor,
-              ),
+              Icon(Icons.local_fire_department, size: 32, color: progressColor),
               SizedBox(height: AppSpacing.xxs),
               // Percentage
               Text(
@@ -88,7 +86,11 @@ class FireProgressRing extends ConsumerWidget {
               SizedBox(height: AppSpacing.xxs),
               // Current value - privacy aware
               MaskedAmountText(
-                text: formatCompactCurrency(currentValue, symbol: currencySymbol, locale: locale),
+                text: formatCompactCurrency(
+                  currentValue,
+                  symbol: currencySymbol,
+                  locale: locale,
+                ),
                 style: AppTypography.bodyMedium.copyWith(
                   color: progressColor,
                   fontWeight: FontWeight.w600,
@@ -96,9 +98,12 @@ class FireProgressRing extends ConsumerWidget {
               ),
               // Target - privacy aware
               MaskedAmountText(
-                text: 'of ${formatCompactCurrency(fireNumber, symbol: currencySymbol, locale: locale)}',
+                text:
+                    'of ${formatCompactCurrency(fireNumber, symbol: currencySymbol, locale: locale)}',
                 style: AppTypography.small.copyWith(
-                  color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
               ),
             ],

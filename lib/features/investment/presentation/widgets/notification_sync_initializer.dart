@@ -123,9 +123,14 @@ class _NotificationSyncInitializerState
             await notificationService.setUserSignupDate(DateTime.now());
             // Schedule the activation notification sequence
             await notificationService.scheduleActivationSequence();
-            LoggerService.info('New user detected - activation sequence scheduled');
+            LoggerService.info(
+              'New user detected - activation sequence scheduled',
+            );
           } catch (e) {
-            LoggerService.warn('Error scheduling activation sequence', error: e);
+            LoggerService.warn(
+              'Error scheduling activation sequence',
+              error: e,
+            );
           }
         });
       }

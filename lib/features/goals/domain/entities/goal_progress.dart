@@ -172,11 +172,7 @@ class GoalProgress {
   /// without the currency symbol prefix (symbol is added separately in getProgressMessage)
   String _formatAmount(double amount, String locale) {
     // Use locale-aware formatter but strip the symbol since we add it separately
-    final formatted = formatCompactCurrency(
-      amount,
-      symbol: '',
-      locale: locale,
-    );
+    final formatted = formatCompactCurrency(amount, symbol: '', locale: locale);
     return formatted;
   }
 

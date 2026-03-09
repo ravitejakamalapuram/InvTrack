@@ -132,11 +132,6 @@ class SecurityUtils {
   }
 
   static List<int> _intToBytes(int i) {
-    return [
-      (i >> 24) & 0xff,
-      (i >> 16) & 0xff,
-      (i >> 8) & 0xff,
-      i & 0xff,
-    ];
+    return [(i >> 24) & 0xff, (i >> 16) & 0xff, (i >> 8) & 0xff, i & 0xff];
   }
 }

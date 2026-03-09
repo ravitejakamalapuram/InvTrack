@@ -342,6 +342,46 @@ class FakeAnalyticsService implements AnalyticsService {
     );
   }
 
+  // ============ Multi-Currency Events ============
+
+  @override
+  Future<void> logCurrencySelected({
+    required String currency,
+    required String context,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.currencySelected,
+      parameters: {'currency': currency, 'context': context},
+    );
+  }
+
+  @override
+  Future<void> logCurrencyConversionFailed({
+    required String fromCurrency,
+    required String toCurrency,
+    required String errorType,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.currencyConversionFailed,
+      parameters: {
+        'from_currency': fromCurrency,
+        'to_currency': toCurrency,
+        'error_type': errorType,
+      },
+    );
+  }
+
+  @override
+  Future<void> logExchangeRateCacheHit({
+    required String cacheType,
+    required String rateType,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.exchangeRateCacheHit,
+      parameters: {'cache_type': cacheType, 'rate_type': rateType},
+    );
+  }
+
   @override
   FirebaseAnalyticsObserver? getObserver() {
     // Return null for fake implementation - no Firebase in tests

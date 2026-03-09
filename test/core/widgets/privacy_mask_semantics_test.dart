@@ -20,21 +20,21 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(home: Scaffold(body: child)),
       ),
     );
   }
 
   group('PrivacyMask Security', () {
-    testWidgets('should hide child semantics when privacy mode is on',
-        (tester) async {
+    testWidgets('should hide child semantics when privacy mode is on', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const PrivacyMask(
-            child: Text('Secret Amount', semanticsLabel: 'Secret')),
+          child: Text('Secret Amount', semanticsLabel: 'Secret'),
+        ),
         privacyModeEnabled: true,
       );
       await tester.pumpAndSettle();
@@ -48,7 +48,9 @@ void main() {
   });
 
   group('MaskedAmountText Security', () {
-    testWidgets('should announce "Hidden amount" instead of bullets', (tester) async {
+    testWidgets('should announce "Hidden amount" instead of bullets', (
+      tester,
+    ) async {
       await pumpWithPrivacyMode(
         tester,
         const MaskedAmountText(text: '\$1,234.56'),

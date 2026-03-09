@@ -47,7 +47,10 @@ class ZipImportResult {
   bool get isSuccess => !hasErrors;
 
   int get totalImported =>
-      investmentsImported + cashflowsImported + goalsImported + documentsImported;
+      investmentsImported +
+      cashflowsImported +
+      goalsImported +
+      documentsImported;
 }
 
 /// Service for importing user data from a ZIP file
@@ -68,12 +71,12 @@ class DataImportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     required PerformanceService performanceService,
-  })  : _investmentRepository = investmentRepository,
-        _goalRepository = goalRepository,
-        _documentRepository = documentRepository,
-        _documentStorageService = documentStorageService,
-        _fireSettingsRepository = fireSettingsRepository,
-        _performanceService = performanceService;
+  }) : _investmentRepository = investmentRepository,
+       _goalRepository = goalRepository,
+       _documentRepository = documentRepository,
+       _documentStorageService = documentStorageService,
+       _fireSettingsRepository = fireSettingsRepository,
+       _performanceService = performanceService;
 
   /// Import data from a ZIP file
   Future<ZipImportResult> importFromZip(
@@ -83,12 +86,8 @@ class DataImportService {
     return _performanceService.trackOperation(
       'data_import',
       () => _importFromZipInternal(zipBytes, strategy),
-      metrics: {
-        'zip_size_kb': (zipBytes.length / 1024).round(),
-      },
-      attributes: {
-        'strategy': strategy.name,
-      },
+      metrics: {'zip_size_kb': (zipBytes.length / 1024).round()},
+      attributes: {'strategy': strategy.name},
     );
   }
 
@@ -97,7 +96,10 @@ class DataImportService {
     Uint8List zipBytes,
     ImportStrategy strategy,
   ) async {
-    LoggerService.info('Starting ZIP import', metadata: {'strategy': strategy.name});
+    LoggerService.info(
+      'Starting ZIP import',
+      metadata: {'strategy': strategy.name},
+    );
 
     final errors = <String>[];
     final warnings = <String>[];
@@ -223,7 +225,8 @@ class DataImportService {
 
           if (investmentName != null && investmentName.isNotEmpty) {
             // Use the name-to-ID mapping we built during import
-            newInvestmentId = investmentNameToIdMap[investmentName.toLowerCase()];
+            newInvestmentId =
+                investmentNameToIdMap[investmentName.toLowerCase()];
           }
 
           // Fallback: try using the original investmentId (for replace mode
@@ -257,38 +260,49 @@ class DataImportService {
       final fireSettingsFile = archive.findFile('fire_settings.json');
       if (fireSettingsFile != null) {
         try {
-          final fireSettingsJson = jsonDecode(
-            utf8.decode(fireSettingsFile.content as List<int>),
-          ) as Map<String, dynamic>;
+          final fireSettingsJson =
+              jsonDecode(utf8.decode(fireSettingsFile.content as List<int>))
+                  as Map<String, dynamic>;
 
           final fireSettings = FireSettingsEntity(
             id: fireSettingsJson['id'] as String? ?? _uuid.v4(),
-            monthlyExpenses: (fireSettingsJson['monthlyExpenses'] as num).toDouble(),
+            monthlyExpenses: (fireSettingsJson['monthlyExpenses'] as num)
+                .toDouble(),
             safeWithdrawalRate:
-                (fireSettingsJson['safeWithdrawalRate'] as num?)?.toDouble() ?? 4.0,
+                (fireSettingsJson['safeWithdrawalRate'] as num?)?.toDouble() ??
+                4.0,
             currentAge: fireSettingsJson['currentAge'] as int,
             targetFireAge: fireSettingsJson['targetFireAge'] as int,
             lifeExpectancy: (fireSettingsJson['lifeExpectancy'] as int?) ?? 85,
             inflationRate:
                 (fireSettingsJson['inflationRate'] as num?)?.toDouble() ?? 6.0,
             preRetirementReturn:
-                (fireSettingsJson['preRetirementReturn'] as num?)?.toDouble() ?? 12.0,
+                (fireSettingsJson['preRetirementReturn'] as num?)?.toDouble() ??
+                12.0,
             postRetirementReturn:
-                (fireSettingsJson['postRetirementReturn'] as num?)?.toDouble() ?? 8.0,
+                (fireSettingsJson['postRetirementReturn'] as num?)
+                    ?.toDouble() ??
+                8.0,
             healthcareBuffer:
-                (fireSettingsJson['healthcareBuffer'] as num?)?.toDouble() ?? 20.0,
+                (fireSettingsJson['healthcareBuffer'] as num?)?.toDouble() ??
+                20.0,
             emergencyMonths:
                 (fireSettingsJson['emergencyMonths'] as num?)?.toDouble() ?? 6,
             fireType: FireType.fromString(
               fireSettingsJson['fireType'] as String? ?? 'regular',
             ),
             monthlyPassiveIncome:
-                (fireSettingsJson['monthlyPassiveIncome'] as num?)?.toDouble() ?? 0,
+                (fireSettingsJson['monthlyPassiveIncome'] as num?)
+                    ?.toDouble() ??
+                0,
             expectedPension:
                 (fireSettingsJson['expectedPension'] as num?)?.toDouble() ?? 0,
-            isSetupComplete: fireSettingsJson['isSetupComplete'] as bool? ?? true,
-            createdAt: DateTime.tryParse(
-                    fireSettingsJson['createdAt'] as String? ?? '') ??
+            isSetupComplete:
+                fireSettingsJson['isSetupComplete'] as bool? ?? true,
+            createdAt:
+                DateTime.tryParse(
+                  fireSettingsJson['createdAt'] as String? ?? '',
+                ) ??
                 DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -302,13 +316,16 @@ class DataImportService {
       }
     }
 
-    LoggerService.info('Import complete', metadata: {
-      'investments': investmentsImported,
-      'cashflows': cashflowsImported,
-      'goals': goalsImported,
-      'documents': documentsImported,
-      'fireSettings': fireSettingsImported,
-    });
+    LoggerService.info(
+      'Import complete',
+      metadata: {
+        'investments': investmentsImported,
+        'cashflows': cashflowsImported,
+        'goals': goalsImported,
+        'documents': documentsImported,
+        'fireSettings': fireSettingsImported,
+      },
+    );
 
     return ZipImportResult(
       investmentsImported: investmentsImported,
@@ -332,8 +349,9 @@ class DataImportService {
   Future<void> _deleteAllExistingData() async {
     // Delete all investments (cascades to cashflows)
     final investments = await _investmentRepository.getAllInvestments();
-    final archivedInvestments =
-        await _investmentRepository.watchArchivedInvestments().first;
+    final archivedInvestments = await _investmentRepository
+        .watchArchivedInvestments()
+        .first;
 
     for (final inv in investments) {
       await _investmentRepository.deleteInvestment(inv.id);
@@ -382,7 +400,9 @@ class DataImportService {
     Set<String> existingInvestmentNames = {};
     if (strategy == ImportStrategy.merge) {
       final existing = await _investmentRepository.getAllInvestments();
-      existingInvestmentNames = existing.map((e) => e.name.toLowerCase()).toSet();
+      existingInvestmentNames = existing
+          .map((e) => e.name.toLowerCase())
+          .toSet();
     }
 
     final now = DateTime.now();
@@ -408,7 +428,8 @@ class DataImportService {
       // investment should have the same type/status)
       final firstRow = rows.first;
       final investmentType = firstRow.investmentType ?? InvestmentType.other;
-      final investmentStatus = firstRow.investmentStatus ?? InvestmentStatus.open;
+      final investmentStatus =
+          firstRow.investmentStatus ?? InvestmentStatus.open;
 
       investments.add(
         InvestmentEntity(
@@ -435,6 +456,7 @@ class DataImportService {
             date: row.date,
             notes: row.notes,
             createdAt: now,
+            currency: row.currency, // Multi-currency support (Rule 21.4)
           ),
         );
       }
@@ -506,9 +528,7 @@ class DataImportService {
         if (id != null) {
           linkedInvestmentIds.add(id);
         } else {
-          warnings.add(
-            'Goal "${row.name}": could not find investment "$name"',
-          );
+          warnings.add('Goal "${row.name}": could not find investment "$name"');
         }
       }
 
@@ -521,11 +541,14 @@ class DataImportService {
         targetDate: row.targetDate,
         trackingMode: GoalTrackingMode.fromString(row.trackingMode),
         linkedInvestmentIds: linkedInvestmentIds,
-        linkedTypes:
-            row.linkedTypes.map((t) => InvestmentType.values.firstWhere(
-                  (e) => e.name == t,
-                  orElse: () => InvestmentType.other,
-                )).toList(),
+        linkedTypes: row.linkedTypes
+            .map(
+              (t) => InvestmentType.values.firstWhere(
+                (e) => e.name == t,
+                orElse: () => InvestmentType.other,
+              ),
+            )
+            .toList(),
         icon: row.icon,
         colorValue: row.colorValue,
         isArchived: isArchived,
@@ -579,9 +602,11 @@ class DataImportService {
       mimeType: docMeta['mimeType'] as String? ?? 'application/octet-stream',
       localPath: localPath,
       fileSize: bytes.length,
-      createdAt: DateTime.tryParse(docMeta['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(docMeta['createdAt'] as String? ?? '') ??
           DateTime.now(),
-      updatedAt: DateTime.tryParse(docMeta['updatedAt'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(docMeta['updatedAt'] as String? ?? '') ??
           DateTime.now(),
     );
 

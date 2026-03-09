@@ -68,8 +68,8 @@ final sampleDataServiceProvider = Provider<SampleDataService>((ref) {
 /// Provider for sample data mode state and actions
 final sampleDataModeProvider =
     NotifierProvider<SampleDataModeNotifier, SampleDataState>(
-  SampleDataModeNotifier.new,
-);
+      SampleDataModeNotifier.new,
+    );
 
 /// Notifier for managing sample data mode
 class SampleDataModeNotifier extends Notifier<SampleDataState> {
@@ -116,19 +116,28 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
       );
 
       // Track analytics
-      ref.read(analyticsServiceProvider).logSampleDataActivated(
-        investmentCount: result.investmentIds.length,
-        goalCount: result.goalIds.length,
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logSampleDataActivated(
+            investmentCount: result.investmentIds.length,
+            goalCount: result.goalIds.length,
+          );
 
-      LoggerService.info('Sample data activated', metadata: {
-        'investmentCount': result.investmentIds.length,
-        'goalCount': result.goalIds.length,
-      });
+      LoggerService.info(
+        'Sample data activated',
+        metadata: {
+          'investmentCount': result.investmentIds.length,
+          'goalCount': result.goalIds.length,
+        },
+      );
 
       return true;
     } catch (e, st) {
-      LoggerService.error('Sample data activation failed', error: e, stackTrace: st);
+      LoggerService.error(
+        'Sample data activation failed',
+        error: e,
+        stackTrace: st,
+      );
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
@@ -141,10 +150,12 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
     await prefs.remove(_investmentIdsKey);
     await prefs.remove(_goalIdsKey);
 
-    ref.read(analyticsServiceProvider).logSampleDataKept(
-      investmentCount: state.sampleInvestmentIds.length,
-      goalCount: state.sampleGoalIds.length,
-    );
+    ref
+        .read(analyticsServiceProvider)
+        .logSampleDataKept(
+          investmentCount: state.sampleInvestmentIds.length,
+          goalCount: state.sampleGoalIds.length,
+        );
 
     state = const SampleDataState(isActive: false);
 
@@ -170,10 +181,12 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
       await prefs.remove(_investmentIdsKey);
       await prefs.remove(_goalIdsKey);
 
-      ref.read(analyticsServiceProvider).logSampleDataCleared(
-        investmentCount: state.sampleInvestmentIds.length,
-        goalCount: state.sampleGoalIds.length,
-      );
+      ref
+          .read(analyticsServiceProvider)
+          .logSampleDataCleared(
+            investmentCount: state.sampleInvestmentIds.length,
+            goalCount: state.sampleGoalIds.length,
+          );
 
       state = const SampleDataState(isActive: false);
 
@@ -184,4 +197,3 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
     }
   }
 }
-

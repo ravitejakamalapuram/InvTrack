@@ -56,7 +56,9 @@ class UserProfileCard extends ConsumerWidget {
                                 gradient: LinearGradient(
                                   colors: [
                                     AppColors.primaryLight,
-                                    AppColors.primaryLight.withValues(alpha: 0.7),
+                                    AppColors.primaryLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ],
                                 ),
                               ),

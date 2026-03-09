@@ -147,7 +147,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
           Text(
             'This may take a moment for large files',
             style: AppTypography.caption.copyWith(
-              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: 0.5,
+              ),
             ),
           ),
         ],
@@ -364,13 +366,15 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
             final file = File(platformFile.path!);
             final bytes = await file.readAsBytes();
             final detectedType = _detectDocumentType(platformFile.name);
-            files.add(_SelectedFile(
-              bytes: bytes,
-              fileName: platformFile.name,
-              suggestedName: _suggestName(platformFile.name),
-              autoDetectedType: detectedType,
-              selectedType: detectedType, // Initially same as auto-detected
-            ));
+            files.add(
+              _SelectedFile(
+                bytes: bytes,
+                fileName: platformFile.name,
+                suggestedName: _suggestName(platformFile.name),
+                autoDetectedType: detectedType,
+                selectedType: detectedType, // Initially same as auto-detected
+              ),
+            );
           }
         }
 
@@ -457,7 +461,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               return Container(
                 padding: EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.05,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -471,7 +477,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                               width: 48,
                               height: 48,
                               fit: BoxFit.cover,
-                              semanticLabel: 'Document preview: ${file.fileName}',
+                              semanticLabel:
+                                  'Document preview: ${file.fileName}',
                             )
                           : Container(
                               width: 48,
@@ -493,7 +500,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                           Text(
                             file.suggestedName,
                             style: AppTypography.body.copyWith(
-                              color: isDark ? Colors.white : AppColors.neutral900Light,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light,
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
@@ -510,13 +519,19 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                                 child: GestureDetector(
                                   onTap: _isLoading
                                       ? null
-                                      : () => _showTypePickerForFile(index, isDark),
+                                      : () => _showTypePickerForFile(
+                                          index,
+                                          isDark,
+                                        ),
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: file.selectedType.color
-                                          .withValues(alpha: 0.15),
+                                      color: file.selectedType.color.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
                                         color: file.selectedType.color
@@ -549,7 +564,8 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                               Text(
                                 _formatFileSize(file.bytes.length),
                                 style: AppTypography.caption.copyWith(
-                                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                                  color: (isDark ? Colors.white : Colors.black)
+                                      .withValues(alpha: 0.5),
                                 ),
                               ),
                             ],
@@ -605,8 +621,11 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
               SizedBox(height: AppSpacing.xs),
               LinearProgressIndicator(
                 value: _totalToUpload > 0 ? _uploadedCount / _totalToUpload : 0,
-                backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
+                backgroundColor: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryLight,
+                ),
                 borderRadius: BorderRadius.circular(4),
               ),
             ],
@@ -694,7 +713,9 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
             Text(
               file.suggestedName,
               style: AppTypography.caption.copyWith(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                color: (isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.5,
+                ),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -724,50 +745,59 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                   child: GestureDetector(
                     onTap: onTap,
                     child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? type.color.withValues(alpha: 0.15)
-                          : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected
-                            ? type.color
-                            : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
-                        width: isSelected ? 2 : 1,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          type.icon,
-                          size: 18,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? type.color.withValues(alpha: 0.15)
+                            : (isDark ? Colors.white : Colors.black).withValues(
+                                alpha: 0.05,
+                              ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: isSelected
                               ? type.color
-                              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.6),
+                              : (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.1),
+                          width: isSelected ? 2 : 1,
                         ),
-                        SizedBox(width: AppSpacing.xs),
-                        Text(
-                          type.displayName,
-                          style: AppTypography.body.copyWith(
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            type.icon,
+                            size: 18,
                             color: isSelected
                                 ? type.color
-                                : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.8),
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                : (isDark ? Colors.white : Colors.black)
+                                      .withValues(alpha: 0.6),
                           ),
-                        ),
-                      ],
-                    ),
+                          SizedBox(width: AppSpacing.xs),
+                          Text(
+                            type.displayName,
+                            style: AppTypography.body.copyWith(
+                              color: isSelected
+                                  ? type.color
+                                  : (isDark ? Colors.white : Colors.black)
+                                        .withValues(alpha: 0.8),
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               }).toList(),
             ),
-            SizedBox(height: AppSpacing.lg + MediaQuery.of(context).padding.bottom),
+            SizedBox(
+              height: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+            ),
           ],
         ),
       ),
@@ -786,11 +816,14 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     try {
       int successCount = 0;
       for (final file in _multipleFiles) {
-        await ref.read(documentNotifierProvider).addDocument(
+        await ref
+            .read(documentNotifierProvider)
+            .addDocument(
               investmentId: widget.investmentId,
               name: file.suggestedName,
               fileName: file.fileName,
-              type: file.selectedType, // Use user-selected type (or auto-detected)
+              type: file
+                  .selectedType, // Use user-selected type (or auto-detected)
               bytes: file.bytes,
             );
         successCount++;
@@ -954,7 +987,9 @@ class _SourceButton extends StatelessWidget {
             Text(
               subtitle!,
               style: AppTypography.caption.copyWith(
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.5),
+                color: (isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.5,
+                ),
               ),
               textAlign: TextAlign.center,
             ),

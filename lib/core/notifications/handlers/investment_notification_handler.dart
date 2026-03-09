@@ -31,8 +31,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     required this.ensurePermissionsForShow,
     required this.scheduleWeeklySummary,
     required this.scheduleMonthlySummary,
-  })  : _plugin = plugin,
-        _prefs = prefs;
+  }) : _plugin = plugin,
+       _prefs = prefs;
 
   @override
   SharedPreferences get prefs => _prefs;
@@ -71,11 +71,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         );
       }
     } else {
-      nextIncomeDate = _addMonthsSafely(
-        now,
-        monthsBetweenPayments,
-        hour: 9,
-      );
+      nextIncomeDate = _addMonthsSafely(now, monthsBetweenPayments, hour: 9);
     }
 
     final androidDetails = AndroidNotificationDetails(
@@ -178,7 +174,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       threadIdentifier: NotificationGroups.maturityReminders,
     );
 
-    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     // Schedule 7-day reminder
     if (sevenDaysBefore.isAfter(now)) {

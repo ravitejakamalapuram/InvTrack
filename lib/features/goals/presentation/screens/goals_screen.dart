@@ -70,7 +70,10 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     );
 
     // Get filtered goals for selection controls
-    final filteredGoals = _getFilteredGoals(activeGoalsAsync, archivedGoalsAsync);
+    final filteredGoals = _getFilteredGoals(
+      activeGoalsAsync,
+      archivedGoalsAsync,
+    );
 
     return Scaffold(
       backgroundColor: isDark
@@ -120,7 +123,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           ),
         ],
       ),
-      floatingActionButton: isSelectionMode ? null : _buildFab(activeGoalsAsync),
+      floatingActionButton: isSelectionMode
+          ? null
+          : _buildFab(activeGoalsAsync),
       bottomNavigationBar: isSelectionMode
           ? GoalsListActionBar(isArchived: _filter == GoalsFilter.archived)
           : null,
@@ -241,13 +246,15 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                     },
                   ),
                   archiveConfig: ArchiveActionConfig(
-                    confirmTitle:
-                        isArchived ? 'Unarchive Goal?' : 'Archive Goal?',
+                    confirmTitle: isArchived
+                        ? 'Unarchive Goal?'
+                        : 'Archive Goal?',
                     confirmMessage: isArchived
                         ? '"${goal.name}" will be restored to your active goals.'
                         : '"${goal.name}" will be hidden from your active goals.',
-                    successMessage:
-                        isArchived ? 'Goal restored' : 'Goal archived',
+                    successMessage: isArchived
+                        ? 'Goal restored'
+                        : 'Goal archived',
                     isArchived: isArchived,
                     onArchive: () {
                       if (isArchived) {
@@ -309,86 +316,97 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
 
           return Padding(
             padding: EdgeInsets.only(right: AppSpacing.sm),
-            child: GestureDetector(
+            child: Semantics(
+              button: true,
+              selected: isSelected,
+              label: '$label, $count items',
+              excludeSemantics: true,
               onTap: () {
                 HapticFeedback.selectionClick();
                 setState(() => _filter = filter);
               },
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  final bgColor = Color.lerp(
-                    (isDark ? Colors.white : Colors.black)
-                        .withValues(alpha: 0.05),
-                    AppColors.primaryLight,
-                    value,
-                  )!;
-                  final textColor = Color.lerp(
-                    isDark ? Colors.white70 : AppColors.neutral700Light,
-                    Colors.white,
-                    value,
-                  )!;
-                  final fontWeight = value > 0.5
-                      ? FontWeight.w600
-                      : FontWeight.w500;
-                  final badgeBgColor = Color.lerp(
-                    (isDark ? Colors.white : AppColors.primaryLight)
-                        .withValues(alpha: 0.15),
-                    Colors.white.withValues(alpha: 0.2),
-                    value,
-                  )!;
-                  final badgeTextColor = Color.lerp(
-                    isDark ? Colors.white70 : AppColors.primaryLight,
-                    Colors.white,
-                    value,
-                  )!;
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _filter = filter);
+                },
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    final bgColor = Color.lerp(
+                      (isDark ? Colors.white : Colors.black).withValues(
+                        alpha: 0.05,
+                      ),
+                      AppColors.primaryLight,
+                      value,
+                    )!;
+                    final textColor = Color.lerp(
+                      isDark ? Colors.white70 : AppColors.neutral700Light,
+                      Colors.white,
+                      value,
+                    )!;
+                    final fontWeight = value > 0.5
+                        ? FontWeight.w600
+                        : FontWeight.w500;
+                    final badgeBgColor = Color.lerp(
+                      (isDark ? Colors.white : AppColors.primaryLight)
+                          .withValues(alpha: 0.15),
+                      Colors.white.withValues(alpha: 0.2),
+                      value,
+                    )!;
+                    final badgeTextColor = Color.lerp(
+                      isDark ? Colors.white70 : AppColors.primaryLight,
+                      Colors.white,
+                      value,
+                    )!;
 
-                  return Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          label,
-                          style: AppTypography.small.copyWith(
-                            color: textColor,
-                            fontWeight: fontWeight,
+                    return Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            label,
+                            style: AppTypography.small.copyWith(
+                              color: textColor,
+                              fontWeight: fontWeight,
+                            ),
                           ),
-                        ),
-                        if (count > 0) ...[
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: badgeBgColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '$count',
-                              style: AppTypography.small.copyWith(
-                                fontSize: 10,
-                                color: badgeTextColor,
-                                fontWeight: FontWeight.w600,
+                          if (count > 0) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: badgeBgColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$count',
+                                style: AppTypography.small.copyWith(
+                                  fontSize: 10,
+                                  color: badgeTextColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                  );
-                },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -545,5 +563,4 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
       orElse: () => null,
     );
   }
-
 }

@@ -15,13 +15,14 @@ void main() {
         expect(CsvTemplateService.headers, contains('Notes'));
       });
 
-      test('contains optional columns for investment metadata', () {
+      test('contains optional columns for multi-currency and metadata', () {
+        expect(CsvTemplateService.headers, contains('Currency'));
         expect(CsvTemplateService.headers, contains('Investment Type'));
         expect(CsvTemplateService.headers, contains('Investment Status'));
       });
 
-      test('has exactly 7 headers', () {
-        expect(CsvTemplateService.headers.length, 7);
+      test('has exactly 8 headers (includes Currency column)', () {
+        expect(CsvTemplateService.headers.length, 8);
       });
     });
 
@@ -47,6 +48,16 @@ void main() {
       test('includes multiple investments', () {
         final names = CsvTemplateService.sampleRows.map((r) => r[1]).toSet();
         expect(names.length, greaterThan(2));
+      });
+
+      test('includes multiple currencies (multi-currency support)', () {
+        final currencies = CsvTemplateService.sampleRows
+            .map((r) => r[4])
+            .toSet();
+        expect(currencies, contains('USD'));
+        expect(currencies, contains('INR'));
+        expect(currencies, contains('EUR'));
+        expect(currencies.length, greaterThanOrEqualTo(3));
       });
     });
 
@@ -120,7 +131,10 @@ void main() {
         // Check first row matches expected
         final firstRow = result.rows.first;
         expect(firstRow.investmentName, CsvTemplateService.sampleRows[0][1]);
-        expect(firstRow.amount, double.parse(CsvTemplateService.sampleRows[0][3]));
+        expect(
+          firstRow.amount,
+          double.parse(CsvTemplateService.sampleRows[0][3]),
+        );
       });
     });
 
@@ -150,6 +164,17 @@ void main() {
         expect(desc, contains('p2p'));
         expect(desc, contains('open'));
         expect(desc, contains('closed'));
+      });
+
+      test('documents currency column with ISO 4217 codes', () {
+        const desc = CsvTemplateService.typeDescription;
+
+        expect(desc, contains('Currency'));
+        expect(desc, contains('ISO 4217'));
+        expect(desc, contains('USD'));
+        expect(desc, contains('INR'));
+        expect(desc, contains('EUR'));
+        expect(desc, contains('base currency'));
       });
     });
   });

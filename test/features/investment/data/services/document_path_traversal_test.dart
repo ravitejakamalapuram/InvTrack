@@ -45,15 +45,13 @@ void main() {
 
     // Mock path_provider channel
     const channel = MethodChannel('plugins.flutter.io/path_provider');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getApplicationDocumentsDirectory') {
-          return mockAppDocPath;
-        }
-        return null;
-      },
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          if (methodCall.method == 'getApplicationDocumentsDirectory') {
+            return mockAppDocPath;
+          }
+          return null;
+        });
 
     service = DocumentStorageService(userId: 'test_user');
   });
@@ -73,7 +71,11 @@ void main() {
     final bytes = await service.readDocument(sensitiveFile.path);
 
     // Should be null because it's outside the allowed directory
-    expect(bytes, isNull, reason: 'Should prevent reading sensitive file outside allowed directory');
+    expect(
+      bytes,
+      isNull,
+      reason: 'Should prevent reading sensitive file outside allowed directory',
+    );
   });
 
   test('readDocument ALLOWS reading valid file', () async {

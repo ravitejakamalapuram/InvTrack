@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -6,10 +7,13 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:flutter/semantics.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 
 /// A card widget displaying a single cash flow transaction.
 /// Supports swipe-to-edit (right) and swipe-to-delete (left) gestures.
-class CashFlowCardWidget extends StatelessWidget {
+/// Shows exchange rate information when currency differs from base currency.
+class CashFlowCardWidget extends ConsumerWidget {
   final CashFlowEntity cashFlow;
   final bool isDark;
   final NumberFormat currencyFormat;
@@ -30,7 +34,7 @@ class CashFlowCardWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isOutflow = cashFlow.type.isOutflow;
     final color = isOutflow ? AppColors.errorLight : AppColors.successLight;
 
@@ -88,14 +92,16 @@ class CashFlowCardWidget extends StatelessWidget {
               // Only called for delete action
               onDeleted();
             },
-            child: _buildCardContent(color, isOutflow),
+            child: _buildCardContent(color, isOutflow, ref),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCardContent(Color color, bool isOutflow) {
+  Widget _buildCardContent(Color color, bool isOutflow, WidgetRef ref) {
+    final baseCurrency = ref.watch(currencyCodeProvider);
+
     return Material(
       color: isDark ? AppColors.cardDark : AppColors.cardLight,
       borderRadius: BorderRadius.circular(16),
@@ -120,7 +126,7 @@ class CashFlowCardWidget extends StatelessWidget {
               _buildIcon(color, isOutflow),
               const SizedBox(width: 14),
               // Details
-              Expanded(child: _buildDetails(color)),
+              Expanded(child: _buildDetails(color, baseCurrency, ref)),
               // Amount
               _buildAmount(color, isOutflow),
             ],
@@ -145,7 +151,9 @@ class CashFlowCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildDetails(Color color) {
+  Widget _buildDetails(Color color, String baseCurrency, WidgetRef ref) {
+    final showExchangeRate = cashFlow.currency != baseCurrency;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -172,6 +180,11 @@ class CashFlowCardWidget extends StatelessWidget {
                 : AppColors.neutral500Light,
           ),
         ),
+        // Show exchange rate info if currency differs from base
+        if (showExchangeRate) ...[
+          const SizedBox(height: 2),
+          _buildExchangeRateInfo(ref, baseCurrency),
+        ],
         if (cashFlow.notes != null && cashFlow.notes!.isNotEmpty) ...[
           const SizedBox(height: 2),
           Text(
@@ -187,6 +200,52 @@ class CashFlowCardWidget extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildExchangeRateInfo(WidgetRef ref, String baseCurrency) {
+    final conversionService = ref.watch(currencyConversionServiceProvider);
+
+    return FutureBuilder<double>(
+      future: conversionService.getRate(
+        from: cashFlow.currency,
+        to: baseCurrency,
+        date: cashFlow.date,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final rate = snapshot.data!;
+        final convertedAmount = cashFlow.amount * rate;
+
+        return Row(
+          children: [
+            Icon(
+              Icons.currency_exchange_rounded,
+              size: 11,
+              color: isDark
+                  ? AppColors.neutral500Dark
+                  : AppColors.neutral400Light,
+            ),
+            const SizedBox(width: 3),
+            Expanded(
+              child: Text(
+                '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}',
+                style: AppTypography.small.copyWith(
+                  color: isDark
+                      ? AppColors.neutral500Dark
+                      : AppColors.neutral400Light,
+                  fontSize: 10,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
