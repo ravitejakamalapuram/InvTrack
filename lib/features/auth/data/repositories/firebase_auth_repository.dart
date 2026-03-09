@@ -114,7 +114,6 @@ class FirebaseAuthRepository implements AuthRepository {
       case GoogleSignInExceptionCode.userMismatch:
         return 'There was an issue with your account. Please sign out and try again.';
       case GoogleSignInExceptionCode.unknownError:
-      default:
         return 'An unexpected error occurred during Google Sign-In: ${exception.description ?? "Unknown error"}. Please try again.';
     }
   }

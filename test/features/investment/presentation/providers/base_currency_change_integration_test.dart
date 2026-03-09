@@ -189,7 +189,7 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
     return amount;
   }
 
-  @override
+  // Helper method for testing (not part of interface)
   Future<double?> getExchangeRate({required String from, required String to, DateTime? date}) async {
     if (from == to) return 1.0;
     if (from == 'EUR' && to == 'USD') return 1.1;
@@ -197,7 +197,7 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
     return null;
   }
 
-  @override
+  // Helper method for testing (not part of interface)
   Future<void> clearCache() async {}
 
   @override

@@ -105,7 +105,7 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
     return amount; // Default: no conversion
   }
 
-  @override
+  // Helper method for testing (not part of interface)
   Future<double?> getExchangeRate({
     required String from,
     required String to,
@@ -117,7 +117,7 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
     return null;
   }
 
-  @override
+  // Helper method for testing (not part of interface)
   Future<void> clearCache() async {}
 
   @override
