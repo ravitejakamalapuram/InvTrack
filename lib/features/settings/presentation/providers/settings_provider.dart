@@ -96,23 +96,22 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
     state = state.copyWith(currency: currency, locale: locale);
 
-    // CRITICAL FIX #1: Invalidate currency formatting providers
-    // These providers cache NumberFormat instances with old symbol/locale
-    // Without invalidation, UI shows old currency symbol (e.g., $ instead of €)
-    ref.invalidate(currencyCodeProvider);
-    ref.invalidate(currencySymbolProvider);
-    ref.invalidate(currencyLocaleProvider);
-    ref.invalidate(currencyFormatProvider);
-    ref.invalidate(currencyFormatPreciseProvider);
-    ref.invalidate(currencyFormatCompactProvider);
-
-    // CRITICAL FIX #2: Invalidate all multi-currency providers to force recalculation
-    // This ensures stats are recalculated with the new base currency
-    // Bug: Without this, UI shows stale data in old currency after currency change
-    ref.invalidate(multiCurrencyGlobalStatsProvider);
-    ref.invalidate(multiCurrencyOpenStatsProvider);
-    ref.invalidate(multiCurrencyClosedStatsProvider);
-    ref.invalidate(multiCurrencyPortfolioValueProvider);
+    // CRITICAL FIX: Currency providers auto-update via dependency chain
+    //
+    // Dependency chain:
+    // settingsProvider (this) → currencyCodeProvider → all currency/stats providers
+    //
+    // When we update state.currency above, currencyCodeProvider automatically rebuilds
+    // because it watches settingsProvider. Then all providers that watch currencyCodeProvider
+    // (currencySymbolProvider, currencyLocaleProvider, multiCurrencyGlobalStatsProvider, etc.)
+    // automatically rebuild as well.
+    //
+    // IMPORTANT: Do NOT invalidate providers that watch currencyCodeProvider!
+    // Invalidating them would create a circular dependency:
+    //   settingsProvider → invalidate → multiCurrencyGlobalStatsProvider
+    //   multiCurrencyGlobalStatsProvider → watch → currencyCodeProvider → watch → settingsProvider
+    //
+    // The automatic rebuild via the dependency chain is sufficient and correct.
 
     // CRITICAL FIX #3: Invalidate currency conversion service to clear cached rates
     // This ensures exchange rates are refetched for the new currency pair
