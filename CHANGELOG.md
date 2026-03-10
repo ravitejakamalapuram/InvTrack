@@ -4,6 +4,17 @@
 
 ### 🐛 Bug Fixes
 
+- Resolve all l10n undefined errors (26 → 8 errors)
+
+### 📚 Documentation
+
+- CI/CD status report - multi-currency fix complete
+- Update audit report with complete multi-currency fix
+
+## [3.48.8] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Complete multi-currency fix - invalidate currency format providers
 
 ## [3.48.7] - 2026-03-10
