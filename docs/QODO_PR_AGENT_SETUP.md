@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: PR Agent Review
-        uses: Codium-ai/pr-agent@main
+        uses: Codium-ai/pr-agent@v0.24
         env:
           # Use DeepSeek (free) or Groq (free)
           OPENAI_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

@@ -151,7 +151,7 @@ To adjust CodeRabbit's behavior, edit `.coderabbit.yaml`:
 
 ```yaml
 reviews:
-  profile: "chill"  # Options: "chill", "assertive", "strict"
+  profile: "chill"  # Options: "chill", "assertive"
   auto_review:
     enabled: true
     drafts: false  # Don't review draft PRs

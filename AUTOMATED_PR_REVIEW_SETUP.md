@@ -81,12 +81,13 @@ class TestWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // ❌ Architecture violation: API in widget
     final data = FirebaseFirestore.instance.collection('test').get();
-    
+
     // ❌ Localization violation: hardcoded string
     return Text('Hello World');
   }
 }
 EOF
+```
 
 # 3. Commit and push
 git add lib/test_coderabbit.dart
@@ -132,9 +133,8 @@ git checkout main
 Edit `.coderabbit.yaml`:
 ```yaml
 reviews:
-  profile: "chill"      # Less strict
+  profile: "chill"      # Less strict (default)
   # profile: "assertive" # More strict
-  # profile: "strict"    # Very strict
 ```
 
 ---

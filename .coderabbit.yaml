@@ -1,5 +1,7 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: "en-US"
 early_access: false
+
 reviews:
   profile: "chill"
   request_changes_workflow: false
@@ -10,86 +12,80 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+
+  path_instructions:
+    - path: "lib/features/**/presentation/widgets/**"
+      instructions: |
+        No FirebaseFirestore, http, or dio imports allowed.
+        No business logic - delegate to providers/repositories.
+        Must use PrivacyProtectionWrapper for financial data.
+        All strings must use AppLocalizations (l10n).
+
+    - path: "lib/features/**/domain/**"
+      instructions: |
+        No Navigator, GoRouter, or context.go allowed.
+        No UI imports (Flutter widgets, Material, Cupertino).
+        Pure business logic only.
+
+    - path: "lib/features/**/presentation/providers/**"
+      instructions: |
+        Use ref.watch in build methods, ref.read in callbacks.
+        Handle all AsyncValue states (data, loading, error).
+        Use .autoDispose for screen-specific providers.
+
+    - path: "**/*_test.dart"
+      instructions: |
+        Use test() for test descriptions.
+        Use Dart test matchers like expect(actual, equals(expected)), expect(actual, isTrue), expect(value, isA<Type>()).
+        Mock only side-effects (API, timers, logging) using packages like mockito or fake implementations, not pure functions.
+        Place test files in the test/ directory at project root.
+
+    - path: "lib/l10n/**"
+      instructions: |
+        All ARB keys must be unique (no duplicates).
+        Include @keyName metadata with description.
+        Use proper placeholder syntax: {variableName}.
+
+    - path: "**/*.dart"
+      instructions: |
+        Review against InvTrack Enterprise Rules (.augment/rules/invtrack_rules.md).
+        This is a Flutter/Dart project using Riverpod for state management.
+        Clean Architecture: UI → State → Domain → Data (strict boundaries).
+        All code must pass flutter analyze with zero errors/warnings.
+        Check clean architecture boundaries: No API calls in widgets, no navigation in domain layer.
+        Verify Riverpod best practices: ref.watch in build, ref.read in callbacks only.
+        Check error handling: All AsyncValue states must be handled (data, loading, error).
+        Verify localization: All user-facing strings must be in ARB files (lib/l10n/).
+        Check privacy: Financial data must use PrivacyProtectionWrapper.
+        Verify currency: All amounts must use formatCompactCurrency() with locale parameter.
+        Check multi-currency compliance: Original data never changed when base currency changes.
+        Verify accessibility: Images must have semantic labels, touch targets ≥44dp.
+        Check security: No hardcoded secrets, no print statements in production code.
+        Verify testing: Bug fixes must include regression tests.
+        Check data lifecycle: New storage must be included in deleteUserData().
+        Verify file size limits: Screens ≤500 lines, widgets ≤300 lines.
+        Check for ref.read in build methods (should use ref.watch).
+        Verify const constructors are used where possible.
+        Check for proper disposal of controllers and subscriptions.
+        Verify ListView.builder is used for long lists (not Column).
+
   tools:
     shellcheck:
       enabled: true
     markdownlint:
       enabled: true
 
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: auto
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - ".augment/rules/invtrack_rules.md"
+
 chat:
   auto_reply: true
-
-# InvTrack Enterprise Rules Enforcement
-knowledge_base:
-  - "Follow InvTrack Enterprise Rules in .augment/rules/invtrack_rules.md"
-  - "This is a Flutter/Dart project using Riverpod for state management"
-  - "Clean Architecture: UI → State → Domain → Data (strict boundaries)"
-  - "All code must pass flutter analyze with zero errors/warnings"
-
-# Custom instructions for CodeRabbit
-instructions:
-  - "Review against InvTrack Enterprise Rules (.augment/rules/invtrack_rules.md)"
-  - "Check clean architecture boundaries: No API calls in widgets, no navigation in domain layer"
-  - "Verify Riverpod best practices: ref.watch in build, ref.read in callbacks only"
-  - "Check error handling: All AsyncValue states must be handled (data, loading, error)"
-  - "Verify localization: All user-facing strings must be in ARB files (lib/l10n/)"
-  - "Check privacy: Financial data must use PrivacyProtectionWrapper"
-  - "Verify currency: All amounts must use formatCompactCurrency() with locale parameter"
-  - "Check multi-currency compliance: Original data never changed when base currency changes"
-  - "Verify accessibility: Images must have semantic labels, touch targets ≥44dp"
-  - "Check security: No hardcoded secrets, no print statements in production code"
-  - "Verify testing: Bug fixes must include regression tests"
-  - "Check data lifecycle: New storage must be included in deleteUserData()"
-  - "Verify file size limits: Screens ≤500 lines, widgets ≤300 lines"
-  - "Check for ref.read in build methods (should use ref.watch)"
-  - "Verify const constructors are used where possible"
-  - "Check for proper disposal of controllers and subscriptions"
-  - "Verify ListView.builder is used for long lists (not Column)"
-
-# Path-specific rules
-path_instructions:
-  - path: "lib/features/**/presentation/widgets/**"
-    instructions:
-      - "No FirebaseFirestore, http, or dio imports allowed"
-      - "No business logic - delegate to providers/repositories"
-      - "Must use PrivacyProtectionWrapper for financial data"
-      - "All strings must use AppLocalizations (l10n)"
-      
-  - path: "lib/features/**/domain/**"
-    instructions:
-      - "No Navigator, GoRouter, or context.go allowed"
-      - "No UI imports (Flutter widgets, Material, Cupertino)"
-      - "Pure business logic only"
-      
-  - path: "lib/features/**/presentation/providers/**"
-    instructions:
-      - "Use ref.watch in build methods, ref.read in callbacks"
-      - "Handle all AsyncValue states (data, loading, error)"
-      - "Use .autoDispose for screen-specific providers"
-      
-  - path: "**/*_test.dart"
-    instructions:
-      - "Use it() not test() for test descriptions"
-      - "Use toStrictEqual for objects/arrays, toBe for primitives"
-      - "Mock only side-effects (API, timers, logging), not pure functions"
-      - "Test files must be in __tests__ folder at same level as tested file"
-      
-  - path: "lib/l10n/**"
-    instructions:
-      - "All ARB keys must be unique (no duplicates)"
-      - "Include @keyName metadata with description"
-      - "Use proper placeholder syntax: {variableName}"
-
-# Review focus areas
-review_focus:
-  - "Architecture violations (API in widgets, navigation in domain)"
-  - "Riverpod anti-patterns (ref.read in build, missing AsyncValue states)"
-  - "Localization issues (hardcoded strings, missing ARB entries)"
-  - "Privacy violations (financial data without PrivacyProtectionWrapper)"
-  - "Currency issues (missing locale parameter, hardcoded notation)"
-  - "Security issues (hardcoded secrets, print statements)"
-  - "Accessibility issues (missing semantic labels, small touch targets)"
-  - "Testing gaps (bug fixes without tests, missing test coverage)"
-  - "Performance issues (missing const, undisposed controllers, Column instead of ListView.builder)"
-  - "Code quality (file size limits, cyclomatic complexity)"
 
