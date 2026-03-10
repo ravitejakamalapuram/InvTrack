@@ -24,6 +24,7 @@ import 'package:inv_tracker/features/investment/domain/models/investment_form_co
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/template_selector.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Combined screen for adding and editing investments.
 /// Pass [investmentToEdit] to edit an existing investment, or leave null to add a new one.
@@ -789,6 +790,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }
 
   Widget _buildStartDatePicker(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

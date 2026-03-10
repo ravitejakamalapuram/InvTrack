@@ -17,6 +17,7 @@ import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_icon_picker.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/investment_selector_sheet.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -183,6 +184,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return AppBar(
       backgroundColor: isDark
           ? AppColors.backgroundDark
@@ -397,6 +399,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   }
 
   Widget _buildDateSelector(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       onTap: () => _selectTargetDate(context, isDark),
       padding: EdgeInsets.all(AppSpacing.md),

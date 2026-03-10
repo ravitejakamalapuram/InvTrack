@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
 /// FIRE setup wizard screen
@@ -118,6 +119,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -196,6 +198,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
   }
 
   Widget _buildStep1AgeSetup(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(

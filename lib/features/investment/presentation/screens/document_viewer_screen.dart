@@ -38,6 +38,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final document = widget.document;
 
@@ -284,6 +285,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 
     // Handle different result types
     if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
       switch (result.type) {
         case ResultType.done:
           // Successfully opened - no action needed
@@ -352,6 +354,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       );
     } catch (e) {
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.failedToShareDocument(e.toString())),

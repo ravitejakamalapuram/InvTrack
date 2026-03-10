@@ -133,6 +133,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   List<Widget> _buildAppBarActions(bool isDark, bool isSelectionMode) {
+    final l10n = AppLocalizations.of(context);
     return [
       // Selection mode toggle
       IconButton(
