@@ -98,16 +98,6 @@
       }
     }
   },
-
-  "notes": "Notes",
-  "@notes": {
-    "description": "Label for notes section"
-  },
-
-  "noNotes": "No notes added",
-  "@noNotes": {
-    "description": "Placeholder text when no notes are available"
-  },
   
   "signIn": "Sign In",
   "@signIn": {
