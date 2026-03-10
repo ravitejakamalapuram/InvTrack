@@ -127,23 +127,34 @@ class GoalProgressCalculator {
 
   /// Calculate average monthly income (for income goals)
   static double _calculateMonthlyIncome(List<CashFlowEntity> cashFlows) {
-    final incomeCashFlows = cashFlows
-        .where((cf) => cf.type == CashFlowType.income)
-        .toList();
+    if (cashFlows.isEmpty) return 0;
 
-    if (incomeCashFlows.isEmpty) return 0;
+    // Optimization: Single pass to compute total income, min date, and max date
+    // avoids allocating a new list, sorting, and closure overhead.
+    double totalIncome = 0;
+    int minDateMs = -1;
+    int maxDateMs = -1;
 
-    // Get the date range
-    incomeCashFlows.sort((a, b) => a.date.compareTo(b.date));
-    final firstDate = incomeCashFlows.first.date;
-    final lastDate = incomeCashFlows.last.date;
+    for (final cf in cashFlows) {
+      if (cf.type == CashFlowType.income) {
+        totalIncome += cf.amount;
+        final ms = cf.date.millisecondsSinceEpoch;
+        if (minDateMs == -1 || ms < minDateMs) {
+          minDateMs = ms;
+        }
+        if (maxDateMs == -1 || ms > maxDateMs) {
+          maxDateMs = ms;
+        }
+      }
+    }
 
-    // Calculate months between first and last income
-    final monthsDiff = (lastDate.difference(firstDate).inDays / 30.0).ceil();
+    if (minDateMs == -1) return 0;
+
+    // Optimization: Calculate date difference using milliseconds division
+    // to avoid creating Duration objects
+    final daysDiff = (maxDateMs - minDateMs) ~/ 86400000;
+    final monthsDiff = (daysDiff / 30.0).ceil();
     final months = monthsDiff < 1 ? 1 : monthsDiff;
-
-    // Total income
-    final totalIncome = incomeCashFlows.fold(0.0, (sum, cf) => sum + cf.amount);
 
     return totalIncome / months;
   }
@@ -152,25 +163,31 @@ class GoalProgressCalculator {
   static double _calculateMonthlyVelocity(List<CashFlowEntity> cashFlows) {
     if (cashFlows.isEmpty) return 0;
 
-    // Sort by date
-    final sorted = List<CashFlowEntity>.from(cashFlows)
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    final firstDate = sorted.first.date;
-    final now = DateTime.now();
-
-    // Calculate months since first cash flow
-    final monthsDiff = (now.difference(firstDate).inDays / 30.0).ceil();
-    final months = monthsDiff < 1 ? 1 : monthsDiff;
-
-    // Calculate net positive flow (returns + income)
+    // Optimization: Single pass to compute net positive flow and min date
+    // avoids allocating a new list, sorting, and closure overhead.
     double netPositive = 0;
+    int minDateMs = -1;
+
     for (final cf in cashFlows) {
       if (cf.type == CashFlowType.returnFlow ||
           cf.type == CashFlowType.income) {
         netPositive += cf.amount;
       }
+      final ms = cf.date.millisecondsSinceEpoch;
+      if (minDateMs == -1 || ms < minDateMs) {
+        minDateMs = ms;
+      }
     }
+
+    if (minDateMs == -1) return 0;
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    // Optimization: Calculate date difference using milliseconds division
+    // to avoid creating Duration objects
+    final daysDiff = (nowMs - minDateMs) ~/ 86400000;
+    final monthsDiff = (daysDiff / 30.0).ceil();
+    final months = monthsDiff < 1 ? 1 : monthsDiff;
 
     return netPositive / months;
   }
@@ -205,14 +222,21 @@ class GoalProgressCalculator {
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
     final linkedIds = linkedInvestments.map((i) => i.id).toSet();
 
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
+    // Optimization: Single pass to find max date without allocating a new list or sorting
+    int maxDateMs = -1;
+    DateTime? maxDate;
 
-    if (linkedCashFlows.isEmpty) return null;
+    for (final cf in allCashFlows) {
+      if (linkedIds.contains(cf.investmentId)) {
+        final ms = cf.date.millisecondsSinceEpoch;
+        if (maxDateMs == -1 || ms > maxDateMs) {
+          maxDateMs = ms;
+          maxDate = cf.date;
+        }
+      }
+    }
 
-    linkedCashFlows.sort((a, b) => b.date.compareTo(a.date));
-    return linkedCashFlows.first.date;
+    return maxDate;
   }
 
   /// Calculate progress for a goal with multi-currency support
@@ -424,28 +448,32 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
       }
 
       final totalGoals = progressList.length;
-      final achievedGoals = progressList
-          .where((p) => p.status == GoalStatus.achieved)
-          .length;
-      final onTrackGoals = progressList
-          .where(
-            (p) =>
-                p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead,
-          )
-          .length;
-      final behindGoals = progressList
-          .where((p) => p.status == GoalStatus.behind)
-          .length;
+
+      // Optimization: Calculate all summary stats and collect active goals in a single pass
+      int achievedGoals = 0;
+      int onTrackGoals = 0;
+      int behindGoals = 0;
+      double totalProgress = 0.0;
+      final activeGoalsList = <GoalProgress>[];
+
+      for (final p in progressList) {
+        if (p.status == GoalStatus.achieved) {
+          achievedGoals++;
+        } else {
+          activeGoalsList.add(p);
+          if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
+            onTrackGoals++;
+          } else if (p.status == GoalStatus.behind) {
+            behindGoals++;
+          }
+        }
+        totalProgress += p.progressPercent;
+      }
 
       // Average progress across all goals
-      final avgProgress =
-          progressList.fold(0.0, (sum, p) => sum + p.progressPercent) /
-          totalGoals;
+      final avgProgress = totalProgress / totalGoals;
 
       // Get all active goals (not achieved) sorted by progress (highest first)
-      final activeGoalsList = progressList
-          .where((p) => p.status != GoalStatus.achieved)
-          .toList();
       activeGoalsList.sort(
         (a, b) => b.progressPercent.compareTo(a.progressPercent),
       );
@@ -629,27 +657,32 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
 
   // Calculate summary statistics
   final totalGoals = progressList.length;
-  final achievedGoals = progressList
-      .where((p) => p.status == GoalStatus.achieved)
-      .length;
-  final onTrackGoals = progressList
-      .where((p) => p.status == GoalStatus.onTrack)
-      .length;
-  final behindGoals = progressList
-      .where((p) => p.status == GoalStatus.behind)
-      .length;
+
+  // Optimization: Calculate all summary stats and collect active goals in a single pass
+  int achievedGoals = 0;
+  int onTrackGoals = 0;
+  int behindGoals = 0;
+  double totalProgress = 0.0;
+  final activeGoalsList = <GoalProgress>[];
+
+  for (final p in progressList) {
+    if (p.status == GoalStatus.achieved) {
+      achievedGoals++;
+    } else {
+      activeGoalsList.add(p);
+      if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
+        onTrackGoals++;
+      } else if (p.status == GoalStatus.behind) {
+        behindGoals++;
+      }
+    }
+    totalProgress += p.progressPercent;
+  }
 
   // Calculate average progress
-  final totalProgress = progressList.fold<double>(
-    0,
-    (sum, p) => sum + p.progressPercent,
-  );
   final avgProgress = totalProgress / totalGoals;
 
   // Get all active goals (not achieved) sorted by progress (highest first)
-  final activeGoalsList = progressList
-      .where((p) => p.status != GoalStatus.achieved)
-      .toList();
   activeGoalsList.sort(
     (a, b) => b.progressPercent.compareTo(a.progressPercent),
   );
