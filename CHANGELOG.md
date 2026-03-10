@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Enterprise rules compliance - Multi-currency, localization, and data lifecycle (#255)
+
+## [3.48.1] - 2026-03-09
+
+### 🐛 Bug Fixes
+
 - Use PAT for checkout on self-hosted runners
 - Configure git to use SSH for checkout
 - Use SSH for self-hosted runner checkout

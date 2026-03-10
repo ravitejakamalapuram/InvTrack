@@ -1,0 +1,4 @@
+🐛 Bug Fixes & Improvements
+• Use PAT for checkout on self-hosted runners
+• Configure git to use SSH for checkout
+• Use SSH for self-hosted runner checkout
