@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
 /// FIRE setup wizard screen
@@ -118,6 +119,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -152,10 +154,10 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildStep1AgeSetup(isDark),
-                  _buildStep2Expenses(isDark),
-                  _buildStep3FireType(isDark),
-                  _buildStep4Advanced(isDark),
+                  _buildStep1AgeSetup(isDark, l10n),
+                  _buildStep2Expenses(isDark, l10n),
+                  _buildStep3FireType(isDark, l10n),
+                  _buildStep4Advanced(isDark, l10n),
                 ],
               ),
             ),
@@ -195,7 +197,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep1AgeSetup(bool isDark) {
+  Widget _buildStep1AgeSetup(bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(
@@ -337,7 +339,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep2Expenses(bool isDark) {
+  Widget _buildStep2Expenses(bool isDark, AppLocalizations l10n) {
     final currencySymbol = ref.watch(currencySymbolProvider);
 
     return SingleChildScrollView(
@@ -380,7 +382,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep3FireType(bool isDark) {
+  Widget _buildStep3FireType(bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(
@@ -471,7 +473,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep4Advanced(bool isDark) {
+  Widget _buildStep4Advanced(bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(

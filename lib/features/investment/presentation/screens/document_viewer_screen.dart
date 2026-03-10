@@ -38,6 +38,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final document = widget.document;
 

@@ -18,6 +18,7 @@ import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_icon_picker.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/investment_selector_sheet.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
@@ -171,18 +172,19 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
-      appBar: _buildAppBar(isDark),
-      body: _buildBody(isDark),
+      appBar: _buildAppBar(isDark, l10n),
+      body: _buildBody(isDark, l10n),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isDark) {
+  PreferredSizeWidget _buildAppBar(bool isDark, AppLocalizations l10n) {
     return AppBar(
       backgroundColor: isDark
           ? AppColors.backgroundDark
@@ -201,7 +203,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     );
   }
 
-  Widget _buildBody(bool isDark) {
+  Widget _buildBody(bool isDark, AppLocalizations l10n) {
     final currencySymbol = ref.watch(currencySymbolProvider);
 
     return Form(

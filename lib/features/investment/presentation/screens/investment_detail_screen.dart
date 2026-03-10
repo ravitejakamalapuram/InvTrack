@@ -56,6 +56,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isArchived = widget.investment.isArchived;
     // Use the appropriate providers based on whether investment is archived
     final cashFlowsAsync = isArchived

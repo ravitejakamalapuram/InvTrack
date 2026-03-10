@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/investment/presentation/widgets/investment_
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_filter_tabs.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_search_field.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_selection_controls.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_states.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/sort_options_sheet.dart';
@@ -92,6 +93,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // PERFORMANCE: Use ref.select to rebuild only when specific fields change
