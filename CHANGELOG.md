@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Update notification test expectations to match formatted currency output
+
+## [3.48.13] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Remove unused imports from settings_provider.dart
 
 ## [3.48.12] - 2026-03-10
