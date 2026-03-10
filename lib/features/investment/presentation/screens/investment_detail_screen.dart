@@ -86,7 +86,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         slivers: [
           // Hero App Bar with pinned navigation
           SliverAppBar(
-            expandedHeight: widget.investment.notes?.isNotEmpty == true ? 200 : 160,
+            expandedHeight: widget.investment.notes?.isNotEmpty ?? false ? 200 : 160,
             pinned: true,
             backgroundColor: primaryColor,
             surfaceTintColor: Colors.transparent,
@@ -105,6 +105,15 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 ),
               ),
               onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              widget.investment.name,
+              style: AppTypography.body.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             actions: [
               IconButton(
@@ -229,36 +238,40 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                           ],
                         ),
                         // Notes section - only show if notes exist
-                        if (widget.investment.notes?.isNotEmpty == true) ...[
+                        if (widget.investment.notes?.isNotEmpty ?? false) ...[
                           const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.edit_note_rounded,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    widget.investment.notes!,
-                                    style: AppTypography.caption.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.95),
-                                      fontSize: 13,
-                                      height: 1.4,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                          Semantics(
+                            label: 'Notes: ${widget.investment.notes!}',
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.edit_note_rounded,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    size: 16,
+                                    semanticLabel: 'Notes',
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      widget.investment.notes!,
+                                      style: AppTypography.caption.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.95),
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
