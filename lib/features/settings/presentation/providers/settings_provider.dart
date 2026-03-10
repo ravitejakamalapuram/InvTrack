@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -95,7 +96,17 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
     state = state.copyWith(currency: currency, locale: locale);
 
-    // CRITICAL FIX: Invalidate all multi-currency providers to force recalculation
+    // CRITICAL FIX #1: Invalidate currency formatting providers
+    // These providers cache NumberFormat instances with old symbol/locale
+    // Without invalidation, UI shows old currency symbol (e.g., $ instead of €)
+    ref.invalidate(currencyCodeProvider);
+    ref.invalidate(currencySymbolProvider);
+    ref.invalidate(currencyLocaleProvider);
+    ref.invalidate(currencyFormatProvider);
+    ref.invalidate(currencyFormatPreciseProvider);
+    ref.invalidate(currencyFormatCompactProvider);
+
+    // CRITICAL FIX #2: Invalidate all multi-currency providers to force recalculation
     // This ensures stats are recalculated with the new base currency
     // Bug: Without this, UI shows stale data in old currency after currency change
     ref.invalidate(multiCurrencyGlobalStatsProvider);
@@ -103,7 +114,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
     ref.invalidate(multiCurrencyClosedStatsProvider);
     ref.invalidate(multiCurrencyPortfolioValueProvider);
 
-    // Also invalidate currency conversion service to clear cached rates
+    // CRITICAL FIX #3: Invalidate currency conversion service to clear cached rates
+    // This ensures exchange rates are refetched for the new currency pair
     ref.invalidate(currencyConversionServiceProvider);
 
     // Track analytics
