@@ -1,102 +1,430 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# ============================================================================
+# CodeRabbit Configuration for InvTrack
+# Complete configuration utilizing all CodeRabbit capabilities
+# ============================================================================
+
 language: "en-US"
 early_access: false
 
+# ============================================================================
+# REVIEWS CONFIGURATION
+# ============================================================================
 reviews:
-  profile: "chill"
+  # Review profile: "chill" (less strict) or "assertive" (more strict)
+  profile: "assertive"
+
+  # Workflow settings
   request_changes_workflow: false
   high_level_summary: true
+  high_level_summary_in_walkthrough: false
   poem: false
   review_status: true
   collapse_walkthrough: false
+
+  # Auto-review settings
   auto_review:
     enabled: true
-    drafts: false
+    drafts: false  # Don't review draft PRs
 
+  # ============================================================================
+  # PATH-SPECIFIC REVIEW INSTRUCTIONS
+  # ============================================================================
   path_instructions:
-    - path: "lib/features/**/presentation/widgets/**"
+    # ------------------------------------------------------------------------
+    # PRESENTATION LAYER - WIDGETS
+    # ------------------------------------------------------------------------
+    - path: "lib/features/**/presentation/widgets/**/*.dart"
       instructions: |
-        No FirebaseFirestore, http, or dio imports allowed.
-        No business logic - delegate to providers/repositories.
-        Must use PrivacyProtectionWrapper for financial data.
-        All strings must use AppLocalizations (l10n).
+        **Architecture Rules:**
+        - ❌ NO FirebaseFirestore, http, or dio imports (violates clean architecture)
+        - ❌ NO business logic - delegate to providers/repositories
+        - ❌ NO Navigator, GoRouter, or context.go (navigation belongs in screens)
+        - ✅ Widgets should be pure UI components
 
-    - path: "lib/features/**/domain/**"
+        **Privacy & Localization:**
+        - ✅ ALL financial data MUST use PrivacyProtectionWrapper
+        - ✅ ALL user-facing strings MUST use AppLocalizations (l10n)
+        - ❌ NO hardcoded strings
+
+        **Performance:**
+        - ✅ Use const constructors where possible
+        - ✅ Use ref.select for specific fields (avoid watching entire provider)
+        - ✅ Dispose controllers in dispose() method
+
+        **Accessibility:**
+        - ✅ Images MUST have semantic labels
+        - ✅ Touch targets MUST be ≥44dp
+        - ✅ Use Semantics widgets for screen readers
+
+    # ------------------------------------------------------------------------
+    # PRESENTATION LAYER - SCREENS
+    # ------------------------------------------------------------------------
+    - path: "lib/features/**/presentation/screens/**/*.dart"
       instructions: |
-        No Navigator, GoRouter, or context.go allowed.
-        No UI imports (Flutter widgets, Material, Cupertino).
-        Pure business logic only.
+        **Architecture Rules:**
+        - ❌ NO direct API calls (use repositories through providers)
+        - ❌ NO business logic (delegate to domain layer)
+        - ✅ Screens coordinate UI and navigation only
 
-    - path: "lib/features/**/presentation/providers/**"
+        **File Size:**
+        - ⚠️ Screens SHOULD be ≤500 lines
+        - ⚠️ If >500 lines, suggest extracting widgets
+
+        **State Management:**
+        - ✅ Use ref.watch in build methods (reactive)
+        - ✅ Use ref.read in callbacks (one-time)
+        - ✅ Use ref.listen for side effects
+        - ❌ NEVER ref.read in build methods
+
+        **Error Handling:**
+        - ✅ ALL AsyncValue states MUST be handled (data, loading, error)
+        - ✅ Error messages MUST be user-friendly (no raw exceptions)
+        - ✅ Network errors MUST show "No internet" message
+
+        **Localization:**
+        - ✅ ALL strings in ARB files
+        - ✅ Dates formatted with DateFormat (locale-aware)
+        - ✅ Numbers formatted with NumberFormat (locale-aware)
+        - ✅ Currency formatted with formatCompactCurrency(locale: locale)
+
+    # ------------------------------------------------------------------------
+    # PRESENTATION LAYER - PROVIDERS
+    # ------------------------------------------------------------------------
+    - path: "lib/features/**/presentation/providers/**/*.dart"
       instructions: |
-        Use ref.watch in build methods, ref.read in callbacks.
-        Handle all AsyncValue states (data, loading, error).
-        Use .autoDispose for screen-specific providers.
+        **Riverpod Best Practices:**
+        - ✅ Use .autoDispose for screen-specific providers
+        - ✅ Use .family for parameterized providers
+        - ✅ Use FutureProvider for async fetch
+        - ✅ Use StreamProvider for real-time data
 
+        **Error Handling:**
+        - ✅ Handle ALL AsyncValue states (data, loading, error)
+        - ❌ NEVER use handleError() in StreamProviders (let errors propagate to UI)
+        - ✅ Use ErrorHandler.handle() for user-facing operations
+
+        **State Management:**
+        - ✅ Use ref.watch for reactive dependencies
+        - ✅ Use ref.read for one-time reads in callbacks
+        - ✅ Use ref.listen for side effects
+        - ❌ NEVER ref.read in build methods
+
+    # ------------------------------------------------------------------------
+    # DOMAIN LAYER
+    # ------------------------------------------------------------------------
+    - path: "lib/features/**/domain/**/*.dart"
+      instructions: |
+        **Architecture Rules:**
+        - ❌ NO Navigator, GoRouter, or context.go (navigation is presentation concern)
+        - ❌ NO UI imports (Flutter widgets, Material, Cupertino)
+        - ❌ NO provider access (domain is framework-agnostic)
+        - ✅ Pure business logic only
+        - ✅ Accept dependencies as method parameters
+
+        **Multi-Currency:**
+        - ✅ Domain entities MUST accept locale as method parameter
+        - ✅ Use formatCompactCurrency() with locale parameter
+        - ❌ NO direct provider access for locale
+
+    # ------------------------------------------------------------------------
+    # DATA LAYER - REPOSITORIES
+    # ------------------------------------------------------------------------
+    - path: "lib/features/**/data/repositories/**/*.dart"
+      instructions: |
+        **Architecture Rules:**
+        - ✅ Implement repository interfaces from domain layer
+        - ✅ Handle data source errors and map to domain exceptions
+        - ✅ Use offline-first pattern with Firestore
+
+        **Error Handling:**
+        - ✅ Map Firebase exceptions to AppException types
+        - ✅ Use timeout for write operations (5 seconds)
+        - ✅ Let Firestore handle offline caching
+
+        **Data Lifecycle:**
+        - ✅ New collections MUST be added to deleteUserData()
+        - ✅ Include in export/import services
+        - ✅ Add Firestore security rules
+
+    # ------------------------------------------------------------------------
+    # TESTS
+    # ------------------------------------------------------------------------
     - path: "**/*_test.dart"
       instructions: |
-        Use test() for test descriptions.
-        Use Dart test matchers like expect(actual, equals(expected)), expect(actual, isTrue), expect(value, isA<Type>()).
-        Mock only side-effects (API, timers, logging) using packages like mockito or fake implementations, not pure functions.
-        Place test files in the test/ directory at project root.
+        **Test Structure:**
+        - ✅ Use test() for test descriptions (Dart convention)
+        - ✅ Use group() to organize related tests
+        - ✅ Place test files in test/ directory at project root
 
-    - path: "lib/l10n/**"
+        **Assertions:**
+        - ✅ Use expect(actual, equals(expected)) for objects/arrays
+        - ✅ Use expect(actual, isTrue/isFalse) for booleans
+        - ✅ Use expect(value, isA<Type>()) for type checks
+        - ❌ NO JavaScript/Jest conventions (it(), toStrictEqual, toBe)
+
+        **Mocking:**
+        - ✅ Mock ONLY side-effects (API, timers, logging, DB)
+        - ❌ NEVER mock pure functions
+        - ✅ Use mockito or fake implementations
+        - ✅ Override providers in ProviderScope for widget tests
+
+        **Coverage:**
+        - ✅ ALL business logic MUST be tested
+        - ✅ Bug fixes MUST include regression tests
+        - ✅ Target ≥80% coverage for new code
+
+    # ------------------------------------------------------------------------
+    # LOCALIZATION FILES
+    # ------------------------------------------------------------------------
+    - path: "lib/l10n/**/*.arb"
       instructions: |
-        All ARB keys must be unique (no duplicates).
-        Include @keyName metadata with description.
-        Use proper placeholder syntax: {variableName}.
+        **ARB File Rules:**
+        - ✅ ALL keys MUST be unique (no duplicates)
+        - ✅ Include @keyName metadata with description
+        - ✅ Use proper placeholder syntax: {variableName}
+        - ✅ Define placeholder types in metadata
+        - ✅ Run flutter gen-l10n after changes
+        - ✅ Run flutter analyze to verify no errors
 
+    # ------------------------------------------------------------------------
+    # DOCUMENTATION
+    # ------------------------------------------------------------------------
+    - path: "docs/**/*.md"
+      instructions: |
+        **Documentation Quality:**
+        - ✅ Check for clarity, accuracy, and completeness
+        - ✅ Flag references to deprecated APIs or outdated behavior
+        - ✅ Verify code examples are correct and up-to-date
+        - ✅ Check for broken links
+        - ✅ Ensure consistent formatting (markdownlint)
+
+    # ------------------------------------------------------------------------
+    # CI/CD WORKFLOWS
+    # ------------------------------------------------------------------------
+    - path: ".github/workflows/**/*.yml"
+      instructions: |
+        **GitHub Actions Best Practices:**
+        - ✅ Pin actions to specific versions (not @main or @master)
+        - ✅ Use secrets for sensitive data
+        - ✅ Add timeout-minutes to prevent hanging jobs
+        - ✅ Use concurrency to cancel outdated runs
+        - ✅ Verify permissions are minimal (principle of least privilege)
+
+    # ------------------------------------------------------------------------
+    # ALL DART FILES - GENERAL RULES
+    # ------------------------------------------------------------------------
     - path: "**/*.dart"
       instructions: |
-        Review against InvTrack Enterprise Rules (.augment/rules/invtrack_rules.md).
-        This is a Flutter/Dart project using Riverpod for state management.
-        Clean Architecture: UI → State → Domain → Data (strict boundaries).
-        All code must pass flutter analyze with zero errors/warnings.
-        Check clean architecture boundaries: No API calls in widgets, no navigation in domain layer.
-        Verify Riverpod best practices: ref.watch in build, ref.read in callbacks only.
-        Check error handling: All AsyncValue states must be handled (data, loading, error).
-        Verify localization: All user-facing strings must be in ARB files (lib/l10n/).
-        Check privacy: Financial data must use PrivacyProtectionWrapper.
-        Verify currency: All amounts must use formatCompactCurrency() with locale parameter.
-        Check multi-currency compliance: Original data never changed when base currency changes.
-        Verify accessibility: Images must have semantic labels, touch targets ≥44dp.
-        Check security: No hardcoded secrets, no print statements in production code.
-        Verify testing: Bug fixes must include regression tests.
-        Check data lifecycle: New storage must be included in deleteUserData().
-        Verify file size limits: Screens ≤500 lines, widgets ≤300 lines.
-        Check for ref.read in build methods (should use ref.watch).
-        Verify const constructors are used where possible.
-        Check for proper disposal of controllers and subscriptions.
-        Verify ListView.builder is used for long lists (not Column).
+        **InvTrack Enterprise Rules:**
+        Review against .augment/rules/invtrack_rules.md for complete compliance.
 
+        **Architecture:**
+        - ✅ Clean Architecture: UI → State → Domain → Data (strict boundaries)
+        - ❌ NO API calls in widgets
+        - ❌ NO navigation in domain layer
+        - ❌ NO business logic in UI
+
+        **Code Quality:**
+        - ✅ MUST pass flutter analyze with zero errors/warnings
+        - ✅ Cyclomatic complexity <15 per 100 lines
+        - ✅ File size: screens ≤500 lines, widgets ≤300 lines
+        - ✅ Use const constructors where possible
+        - ✅ Dispose controllers and subscriptions
+        - ✅ Use ListView.builder for long lists (not Column)
+
+        **Riverpod:**
+        - ✅ ref.watch in build methods (reactive)
+        - ✅ ref.read in callbacks (one-time)
+        - ✅ ref.listen for side effects
+        - ❌ NEVER ref.read in build methods
+        - ✅ Handle ALL AsyncValue states (data, loading, error)
+
+        **Localization:**
+        - ✅ ALL user-facing strings in ARB files (lib/l10n/)
+        - ❌ NO hardcoded strings
+        - ✅ Dates: DateFormat (locale-aware)
+        - ✅ Numbers: NumberFormat (locale-aware)
+        - ✅ Currency: formatCompactCurrency(locale: locale)
+
+        **Privacy:**
+        - ✅ Financial data MUST use PrivacyProtectionWrapper
+        - ❌ NO sensitive data in logs/analytics
+        - ✅ Use ranges for analytics (not exact amounts)
+
+        **Multi-Currency:**
+        - ✅ ALL amounts use formatCompactCurrency() with locale parameter
+        - ❌ NO direct calls to formatCompactIndian() (deprecated)
+        - ✅ Original data NEVER changed when base currency changes
+        - ✅ Store original currency with all monetary amounts
+
+        **Accessibility:**
+        - ✅ Images MUST have semantic labels
+        - ✅ Touch targets ≥44dp
+        - ✅ Color contrast 4.5:1 minimum
+        - ✅ Screen reader compatible
+
+        **Security:**
+        - ❌ NO hardcoded secrets/API keys
+        - ❌ NO print statements in production code
+        - ✅ Validate ALL user inputs
+        - ✅ Sanitize before Firestore writes
+
+        **Testing:**
+        - ✅ Bug fixes MUST include regression tests
+        - ✅ Business logic MUST be tested
+        - ✅ Target ≥80% coverage for new code
+
+        **Data Lifecycle:**
+        - ✅ New storage MUST be in deleteUserData()
+        - ✅ Include in export/import services
+        - ✅ Add Firestore security rules
+
+  # ============================================================================
+  # PATH FILTERS (Files to exclude from review)
+  # ============================================================================
+  path_filters:
+    # Generated code
+    - "!**/*.g.dart"
+    - "!**/*.freezed.dart"
+    - "!**/generated/**"
+    - "!**/__generated__/**"
+
+    # Build artifacts
+    - "!**/build/**"
+    - "!**/.dart_tool/**"
+
+    # Dependencies
+    - "!**/pubspec.lock"
+
+    # IDE files
+    - "!**/.idea/**"
+    - "!**/.vscode/**"
+    - "!**/.DS_Store"
+
+    # Assets (images, fonts)
+    - "!**/assets/**/*.png"
+    - "!**/assets/**/*.jpg"
+    - "!**/assets/**/*.jpeg"
+    - "!**/assets/**/*.svg"
+    - "!**/assets/**/*.ttf"
+    - "!**/assets/**/*.otf"
+
+  # ============================================================================
+  # TOOLS CONFIGURATION
+  # ============================================================================
   tools:
+    # Shell script linting
     shellcheck:
       enabled: true
+
+    # Markdown linting
     markdownlint:
       enabled: true
 
+    # YAML linting
+    yamllint:
+      enabled: true
+
+    # GitHub Actions linting
+    actionlint:
+      enabled: true
+
+  # ============================================================================
+  # FINISHING TOUCHES
+  # ============================================================================
+  finishing_touches:
+    # Generate docstrings for public APIs
+    docstrings:
+      enabled: true
+
+    # Generate unit tests
+    unit_tests:
+      enabled: true
+
+    # Custom recipes for common tasks
+    custom:
+      - name: "localization_check"
+        instructions: |
+          Check for hardcoded strings and suggest ARB file entries.
+          Verify all ARB keys are unique.
+          Ensure proper placeholder syntax.
+
+      - name: "privacy_check"
+        instructions: |
+          Verify all financial data uses PrivacyProtectionWrapper.
+          Check for sensitive data in logs or analytics.
+          Ensure analytics use ranges, not exact amounts.
+
+      - name: "multi_currency_check"
+        instructions: |
+          Verify all currency amounts use formatCompactCurrency() with locale.
+          Check that original currency is stored with monetary amounts.
+          Ensure no direct calls to formatCompactIndian().
+
+      - name: "accessibility_check"
+        instructions: |
+          Verify images have semantic labels.
+          Check touch targets are ≥44dp.
+          Ensure color contrast is 4.5:1 minimum.
+
+      - name: "architecture_check"
+        instructions: |
+          Verify clean architecture boundaries.
+          Check for API calls in widgets.
+          Check for navigation in domain layer.
+          Verify business logic is in domain layer.
+
+# ============================================================================
+# KNOWLEDGE BASE CONFIGURATION
+# ============================================================================
 knowledge_base:
+  # Enable knowledge base features
   opt_out: false
+
+  # Web search for additional context
   web_search:
     enabled: true
+
+  # Learning from codebase patterns
   learnings:
-    scope: auto
+    scope: auto  # Learn from entire codebase
+
+  # Code guidelines from documentation
   code_guidelines:
     enabled: true
     filePatterns:
+      # Core rules and standards
       - ".augment/rules/invtrack_rules.md"
+
+      # Technical specifications
       - "docs/InvTracker_TechSpec.md"
       - "docs/InvTracker_PRD.md"
+
+      # Localization guides
       - "docs/LOCALIZATION.md"
       - "docs/LOCALIZATION_QUICKSTART.md"
       - "docs/CURRENCY_LOCALIZATION_GUIDE.md"
+
+      # Multi-currency implementation
       - "docs/MULTI_CURRENCY_IMPLEMENTATION.md"
       - "docs/MULTI_CURRENCY_PR_CHECKLIST.md"
+
+      # Accessibility
       - "docs/ACCESSIBILITY.md"
+
+      # Feature plans
       - "docs/FIRE_NUMBER_FEATURE_PLAN.md"
       - "docs/GOALS_FEATURE_PLAN.md"
+
+      # Project overview
       - "README.md"
 
+# ============================================================================
+# CHAT CONFIGURATION
+# ============================================================================
 chat:
+  # Auto-reply to questions
   auto_reply: true
 
