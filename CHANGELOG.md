@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- **localization**: Add missing ARB strings and fix hardcoded strings (partial)
+
+## [3.48.3] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Remove unused imports from export providers
 
 ## [3.48.2] - 2026-03-10
