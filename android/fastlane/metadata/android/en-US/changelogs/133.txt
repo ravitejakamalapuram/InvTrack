@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Add localization support to accessibility test files

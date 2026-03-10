@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Remove circular dependency in currency provider invalidation
+
+## [3.48.11] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Add localization support to accessibility test files
 
 ## [3.48.10] - 2026-03-10
