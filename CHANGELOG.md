@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🔧 Miscellaneous
+
+- Remove unused Update Firestore Version Info workflow
+
+## [3.49.0] - 2026-03-10
+
 ### ✨ Features
 
 - Add comprehensive CodeRabbit automated PR review system
