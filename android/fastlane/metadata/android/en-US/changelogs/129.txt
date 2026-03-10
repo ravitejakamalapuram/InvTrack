@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Invalidate multi-currency providers on base currency change

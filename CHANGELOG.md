@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Complete multi-currency fix - invalidate currency format providers
+
+## [3.48.7] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Invalidate multi-currency providers on base currency change
 
 ## [3.48.6] - 2026-03-10
