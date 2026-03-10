@@ -85,6 +85,17 @@ knowledge_base:
     enabled: true
     filePatterns:
       - ".augment/rules/invtrack_rules.md"
+      - "docs/InvTracker_TechSpec.md"
+      - "docs/InvTracker_PRD.md"
+      - "docs/LOCALIZATION.md"
+      - "docs/LOCALIZATION_QUICKSTART.md"
+      - "docs/CURRENCY_LOCALIZATION_GUIDE.md"
+      - "docs/MULTI_CURRENCY_IMPLEMENTATION.md"
+      - "docs/MULTI_CURRENCY_PR_CHECKLIST.md"
+      - "docs/ACCESSIBILITY.md"
+      - "docs/FIRE_NUMBER_FEATURE_PLAN.md"
+      - "docs/GOALS_FEATURE_PLAN.md"
+      - "README.md"
 
 chat:
   auto_reply: true
