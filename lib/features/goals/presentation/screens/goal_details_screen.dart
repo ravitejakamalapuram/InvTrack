@@ -171,14 +171,14 @@ class GoalDetailsScreen extends ConsumerWidget {
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
       leading: IconButton(
-        tooltip: 'Back',
+        tooltip: l10n.tooltipBack,
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () => context.safePop(),
       ),
       actions: [
         IconButton(
           icon: const Icon(Icons.edit_rounded),
-          tooltip: 'Edit Goal',
+          tooltip: l10n.tooltipEditGoal,
           onPressed: () => _navigateToEdit(context, goal),
         ),
         PopupMenuButton<String>(
@@ -194,7 +194,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                         : Icons.archive_rounded,
                   ),
                   SizedBox(width: AppSpacing.sm),
-                  Text(goal.isArchived ? 'Unarchive' : 'Archive'),
+                  Text(goal.isArchived ? l10n.unarchive : l10n.archive),
                 ],
               ),
             ),

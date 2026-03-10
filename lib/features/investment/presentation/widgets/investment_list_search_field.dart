@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Search field shown in the app bar when searching
 class InvestmentListSearchField extends ConsumerStatefulWidget {
@@ -81,6 +82,7 @@ class _InvestmentListSearchFieldState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Row(
@@ -113,7 +115,7 @@ class _InvestmentListSearchFieldState
                 height: 1.2,
               ),
               decoration: InputDecoration(
-                hintText: 'Search...',
+                hintText: l10n.hintSearch,
                 hintStyle: AppTypography.body.copyWith(
                   color: isDark
                       ? AppColors.neutral500Dark
@@ -136,7 +138,7 @@ class _InvestmentListSearchFieldState
                               : AppColors.neutral400Light,
                           size: 20,
                         ),
-                        tooltip: 'Clear text',
+                        tooltip: l10n.tooltipClearText,
                         onPressed: _clearText,
                       )
                     : null,

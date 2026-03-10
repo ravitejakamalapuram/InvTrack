@@ -669,9 +669,9 @@ class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
           TextField(
             controller: _controller,
             autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'DELETE',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: l10n.hintDeleteConfirmation,
+              border: const OutlineInputBorder(),
             ),
             onChanged: (value) {
               setState(() => _isValid = value == 'DELETE');

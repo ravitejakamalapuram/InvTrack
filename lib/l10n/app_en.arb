@@ -1404,6 +1404,196 @@
         "type": "String"
       }
     }
+  },
+
+  "tooltipBack": "Back",
+  "@tooltipBack": {
+    "description": "Tooltip for back button"
+  },
+
+  "tooltipClose": "Close",
+  "@tooltipClose": {
+    "description": "Tooltip for close button"
+  },
+
+  "tooltipGoBack": "Go back",
+  "@tooltipGoBack": {
+    "description": "Tooltip for go back button"
+  },
+
+  "tooltipCloseSetup": "Close setup",
+  "@tooltipCloseSetup": {
+    "description": "Tooltip for close setup button"
+  },
+
+  "tooltipFireSettings": "FIRE Settings",
+  "@tooltipFireSettings": {
+    "description": "Tooltip for FIRE settings button"
+  },
+
+  "tooltipDecreaseAge": "Decrease age",
+  "@tooltipDecreaseAge": {
+    "description": "Tooltip for decrease age button"
+  },
+
+  "tooltipIncreaseAge": "Increase age",
+  "@tooltipIncreaseAge": {
+    "description": "Tooltip for increase age button"
+  },
+
+  "tooltipDecreaseTargetAge": "Decrease target age",
+  "@tooltipDecreaseTargetAge": {
+    "description": "Tooltip for decrease target age button"
+  },
+
+  "tooltipIncreaseTargetAge": "Increase target age",
+  "@tooltipIncreaseTargetAge": {
+    "description": "Tooltip for increase target age button"
+  },
+
+  "tooltipClearTargetDate": "Clear target date",
+  "@tooltipClearTargetDate": {
+    "description": "Tooltip for clear target date button"
+  },
+
+  "tooltipEditGoal": "Edit Goal",
+  "@tooltipEditGoal": {
+    "description": "Tooltip for edit goal button"
+  },
+
+  "tooltipExitSelection": "Exit selection",
+  "@tooltipExitSelection": {
+    "description": "Tooltip for exit selection mode button"
+  },
+
+  "tooltipSelectGoals": "Select goals",
+  "@tooltipSelectGoals": {
+    "description": "Tooltip for select goals button"
+  },
+
+  "tooltipAddGoal": "Add Goal",
+  "@tooltipAddGoal": {
+    "description": "Tooltip for add goal button"
+  },
+
+  "tooltipMoreOptions": "More options",
+  "@tooltipMoreOptions": {
+    "description": "Tooltip for more options button"
+  },
+
+  "tooltipShareDocument": "Share document",
+  "@tooltipShareDocument": {
+    "description": "Tooltip for share document button"
+  },
+
+  "tooltipToggleInformation": "Toggle information",
+  "@tooltipToggleInformation": {
+    "description": "Tooltip for toggle information button"
+  },
+
+  "tooltipSearchInvestments": "Search investments",
+  "@tooltipSearchInvestments": {
+    "description": "Tooltip for search investments button"
+  },
+
+  "tooltipClearText": "Clear text",
+  "@tooltipClearText": {
+    "description": "Tooltip for clear text button"
+  },
+
+  "tooltipClearStartDate": "Clear start date",
+  "@tooltipClearStartDate": {
+    "description": "Tooltip for clear start date button"
+  },
+
+  "hintSearch": "Search...",
+  "@hintSearch": {
+    "description": "Hint text for search field"
+  },
+
+  "hintDeleteConfirmation": "DELETE",
+  "@hintDeleteConfirmation": {
+    "description": "Hint text for delete confirmation field"
+  },
+
+  "hintWhenDidYouInvest": "When did you invest?",
+  "@hintWhenDidYouInvest": {
+    "description": "Hint text for investment start date"
+  },
+
+  "archive": "Archive",
+  "@archive": {
+    "description": "Archive action label"
+  },
+
+  "unarchive": "Unarchive",
+  "@unarchive": {
+    "description": "Unarchive action label"
+  },
+
+  "saving": "Saving...",
+  "@saving": {
+    "description": "Saving progress indicator"
+  },
+
+  "saveMultipleFiles": "Save {count} Files",
+  "@saveMultipleFiles": {
+    "description": "Save multiple files button text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "appLockEnabled": "App Lock enabled",
+  "@appLockEnabled": {
+    "description": "App lock enabled confirmation message"
+  },
+
+  "couldNotOpenUpdateLink": "Could not open update link. Please try again.",
+  "@couldNotOpenUpdateLink": {
+    "description": "Error message when update link cannot be opened"
+  },
+
+  "fileNotFoundError": "File not found.",
+  "@fileNotFoundError": {
+    "description": "Error message when file is not found"
+  },
+
+  "permissionDenied": "Permission denied to open this file.",
+  "@permissionDenied": {
+    "description": "Error message when permission is denied"
+  },
+
+  "errorOpeningFile": "Error opening file: {message}",
+  "@errorOpeningFile": {
+    "description": "Error message when opening file fails",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+
+  "failedToShareDocument": "Failed to share document: {error}",
+  "@failedToShareDocument": {
+    "description": "Error message when sharing document fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "investmentsMerged": "Investments merged into \"{name}\"",
+  "@investmentsMerged": {
+    "description": "Success message when investments are merged",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
 
