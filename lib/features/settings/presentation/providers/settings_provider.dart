@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsState {
@@ -92,6 +94,17 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setString('locale', locale);
 
     state = state.copyWith(currency: currency, locale: locale);
+
+    // CRITICAL FIX: Invalidate all multi-currency providers to force recalculation
+    // This ensures stats are recalculated with the new base currency
+    // Bug: Without this, UI shows stale data in old currency after currency change
+    ref.invalidate(multiCurrencyGlobalStatsProvider);
+    ref.invalidate(multiCurrencyOpenStatsProvider);
+    ref.invalidate(multiCurrencyClosedStatsProvider);
+    ref.invalidate(multiCurrencyPortfolioValueProvider);
+
+    // Also invalidate currency conversion service to clear cached rates
+    ref.invalidate(currencyConversionServiceProvider);
 
     // Track analytics
     ref
