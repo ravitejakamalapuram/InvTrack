@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Add localization support to accessibility test files
+
+## [3.48.10] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Complete all l10n errors and code quality improvements (26 errors → 0)
 
 ### 📚 Documentation
