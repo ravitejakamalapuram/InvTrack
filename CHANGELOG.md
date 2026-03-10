@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Remove unused imports from settings_provider.dart
+
+## [3.48.12] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Remove circular dependency in currency provider invalidation
 
 ## [3.48.11] - 2026-03-10
