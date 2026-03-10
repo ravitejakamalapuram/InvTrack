@@ -132,12 +132,12 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: _previousStep,
-                tooltip: 'Go back',
+                tooltip: l10n.tooltipGoBack,
               )
             : IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => context.safePop(),
-                tooltip: 'Close setup',
+                tooltip: l10n.tooltipCloseSetup,
               ),
       ),
       body: Form(
@@ -241,7 +241,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                           ? () => setState(() => _currentAge--)
                           : null,
                       icon: const Icon(Icons.remove_circle_outline),
-                      tooltip: 'Decrease age',
+                      tooltip: l10n.tooltipDecreaseAge,
                     ),
                     Text(
                       '$_currentAge',
@@ -256,7 +256,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                           ? () => setState(() => _currentAge++)
                           : null,
                       icon: const Icon(Icons.add_circle_outline),
-                      tooltip: 'Increase age',
+                      tooltip: l10n.tooltipIncreaseAge,
                     ),
                   ],
                 ),
@@ -293,7 +293,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                           ? () => setState(() => _targetFireAge--)
                           : null,
                       icon: const Icon(Icons.remove_circle_outline),
-                      tooltip: 'Decrease target age',
+                      tooltip: l10n.tooltipDecreaseTargetAge,
                     ),
                     Text(
                       '$_targetFireAge',
@@ -308,7 +308,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                           ? () => setState(() => _targetFireAge++)
                           : null,
                       icon: const Icon(Icons.add_circle_outline),
-                      tooltip: 'Increase target age',
+                      tooltip: l10n.tooltipIncreaseTargetAge,
                     ),
                   ],
                 ),

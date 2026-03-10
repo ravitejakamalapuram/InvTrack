@@ -307,7 +307,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
         onPressed: () => _showTypeFilterOptions(isDark),
       ),
       IconButton(
-        tooltip: 'Search investments',
+        tooltip: l10n.tooltipSearchInvestments,
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(

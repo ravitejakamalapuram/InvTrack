@@ -840,7 +840,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     child: Text(
                       _startDate != null
                           ? AppDateUtils.formatLong(_startDate!)
-                          : 'When did you invest?',
+                          : l10n.hintWhenDidYouInvest,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w500,
                         color: _startDate != null
@@ -862,7 +862,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                             : AppColors.neutral400Light,
                         size: 20,
                       ),
-                      tooltip: 'Clear start date',
+                      tooltip: l10n.tooltipClearStartDate,
                       onPressed: () => setState(() => _startDate = null),
                     )
                   else

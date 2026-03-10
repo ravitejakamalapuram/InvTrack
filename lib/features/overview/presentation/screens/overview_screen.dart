@@ -513,7 +513,7 @@ class OverviewScreen extends ConsumerWidget {
           child: QuickStatCard(
             icon: Icons.trending_up,
             label: 'MOIC',
-            value: '${stats.moic.toStringAsFixed(2)}x',
+            value: '${NumberFormat('#,##0.00').format(stats.moic)}x',
             color: AppColors.successLight,
             subtitle: stats.durationFormatted != null
                 ? 'over ${stats.durationFormatted}'

@@ -161,8 +161,8 @@ class UpdateDialog extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open update link. Please try again.'),
+          SnackBar(
+            content: Text(l10n.couldNotOpenUpdateLink),
           ),
         );
       }

@@ -33,7 +33,7 @@ class FireSettingsScreen extends ConsumerWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.safePop(),
-          tooltip: 'Back',
+          tooltip: l10n.tooltipBack,
         ),
       ),
       body: settingsAsync.when(

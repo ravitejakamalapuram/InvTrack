@@ -48,7 +48,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          tooltip: 'Close',
+          tooltip: l10n.tooltipClose,
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -61,7 +61,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Share document',
+            tooltip: l10n.tooltipShareDocument,
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -73,7 +73,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
             onPressed: () => _shareDocument(context),
           ),
           IconButton(
-            tooltip: 'Toggle information',
+            tooltip: l10n.tooltipToggleInformation,
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -299,16 +299,16 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           break;
         case ResultType.fileNotFound:
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('File not found.'),
+            SnackBar(
+              content: Text(l10n.fileNotFoundError),
               backgroundColor: Colors.red,
             ),
           );
           break;
         case ResultType.permissionDenied:
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Permission denied to open this file.'),
+            SnackBar(
+              content: Text(l10n.permissionDenied),
               backgroundColor: Colors.orange,
             ),
           );
@@ -316,7 +316,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         case ResultType.error:
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error opening file: ${result.message}'),
+              content: Text(l10n.errorOpeningFile(result.message ?? '')),
               backgroundColor: Colors.red,
             ),
           );
@@ -354,7 +354,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to share document: ${e.toString()}'),
+            content: Text(l10n.failedToShareDocument(e.toString())),
             backgroundColor: Colors.red,
           ),
         );

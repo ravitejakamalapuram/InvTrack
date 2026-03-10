@@ -286,7 +286,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               if (mounted) {
                 context.safePop(); // Close screen
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('App Lock enabled')),
+                  SnackBar(content: Text(l10n.appLockEnabled)),
                 );
               }
             }

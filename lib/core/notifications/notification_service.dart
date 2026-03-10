@@ -103,6 +103,7 @@ library;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/handlers/alert_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/handlers/goal_notification_handler.dart';
@@ -604,7 +605,13 @@ class NotificationService with NotificationPreferencesMixin {
       'JPY': '¥',
     };
     final symbol = symbols[currency] ?? currency;
-    return '$symbol${amount.toStringAsFixed(2)}';
+
+    // Use NumberFormat for locale-aware formatting
+    final formatter = NumberFormat.currency(
+      symbol: symbol,
+      decimalDigits: 2,
+    );
+    return formatter.format(amount);
   }
 
   /// Show a test notification (for developer testing)

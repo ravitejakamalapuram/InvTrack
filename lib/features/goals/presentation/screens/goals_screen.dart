@@ -158,14 +158,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           HapticFeedback.selectionClick();
           ref.read(goalsListStateProvider.notifier).toggleSelectionMode();
         },
-        tooltip: isSelectionMode ? 'Exit selection' : 'Select goals',
+        tooltip: isSelectionMode ? l10n.tooltipExitSelection : l10n.tooltipSelectGoals,
       ),
       // Add button (only when not in selection mode)
       if (!isSelectionMode)
         IconButton(
           icon: const Icon(Icons.add_rounded),
           onPressed: () => context.push('/goals/create'),
-          tooltip: 'Add Goal',
+          tooltip: l10n.tooltipAddGoal,
         ),
       SizedBox(width: AppSpacing.sm),
     ];

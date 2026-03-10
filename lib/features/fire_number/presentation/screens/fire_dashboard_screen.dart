@@ -42,13 +42,13 @@ class FireDashboardScreen extends ConsumerWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.safePop(),
-          tooltip: 'Back',
+          tooltip: l10n.tooltipBack,
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/fire/settings'),
-            tooltip: 'FIRE Settings',
+            tooltip: l10n.tooltipFireSettings,
           ),
         ],
       ),

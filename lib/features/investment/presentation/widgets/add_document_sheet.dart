@@ -666,10 +666,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                             ),
                           ),
                           SizedBox(width: 8),
-                          Text('Saving...'),
+                          Text(l10n.saving),
                         ],
                       )
-                    : Text('Save ${_multipleFiles.length} Files'),
+                    : Text(l10n.saveMultipleFiles(_multipleFiles.length)),
               ),
             ),
           ],
