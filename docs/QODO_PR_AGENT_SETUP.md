@@ -4,11 +4,18 @@
 
 Use Qodo PR-Agent if:
 - ✅ You exceed CodeRabbit's 75 PR/month limit
-- ✅ You want unlimited free reviews
+- ✅ You want unlimited reviews (self-hosted with local models)
 - ✅ You want a self-hosted solution
 - ✅ You want to use free AI models (DeepSeek, Groq, Ollama)
 
-**Cost:** FREE (unlimited)
+**Cost:** FREE (unlimited for self-hosted with local models like Ollama)
+
+**Note:** "Unlimited" applies to self-hosted deployments using local models. Third-party AI providers (DeepSeek, Groq, OpenAI) have their own rate limits and usage caps:
+- **DeepSeek:** Free tier with 10M tokens/day limit
+- **Groq:** Free tier with 14,400 requests/day limit
+- **OpenAI:** Paid service with usage-based pricing
+
+For truly unlimited reviews, use self-hosted Ollama (runs locally, no API limits).
 
 ---
 
@@ -161,7 +168,7 @@ env:
 
 ### **Example:**
 
-```
+```text
 /review --focus security,performance
 ```
 

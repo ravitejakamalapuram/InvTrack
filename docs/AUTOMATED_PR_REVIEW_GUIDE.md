@@ -49,7 +49,7 @@ InvTrack uses **CodeRabbit** for automated AI-powered PR reviews. CodeRabbit aut
 
 7. **Testing**
    - Bug fixes include regression tests
-   - Proper test structure (it() not test())
+   - Proper test structure (use test() not it() - Dart convention)
    - Correct mocking patterns
 
 8. **Code Quality**
@@ -85,7 +85,7 @@ InvTrack uses **CodeRabbit** for automated AI-powered PR reviews. CodeRabbit aut
 ### **Ask Questions:**
 You can chat with CodeRabbit directly in PR comments:
 
-```
+```text
 @coderabbit Why is this flagged as a violation?
 @coderabbit How should I fix this architecture issue?
 @coderabbit Is this the correct way to handle AsyncValue?
@@ -94,14 +94,14 @@ You can chat with CodeRabbit directly in PR comments:
 ### **Request Re-review:**
 After making changes:
 
-```
+```text
 @coderabbit review
 ```
 
 ### **Ignore Specific Comments:**
 If you disagree with a suggestion:
 
-```
+```text
 @coderabbit ignore
 ```
 
@@ -135,7 +135,7 @@ Found `FirebaseFirestore` import in widget layer.
 
 ### **Current Configuration:** `.coderabbit.yaml`
 
-The configuration enforces all InvTrack Enterprise Rules:
+The configuration reviews and reports on all InvTrack Enterprise Rules:
 - Architecture boundaries
 - Riverpod patterns
 - Localization requirements
@@ -145,6 +145,10 @@ The configuration enforces all InvTrack Enterprise Rules:
 - Testing requirements
 - Code quality standards
 
+**Note:** CodeRabbit provides advisory feedback by default. To enforce rules and block merges on violations, enable:
+- `reviews.request_changes_workflow: true` - Request changes on issues
+- `reviews.pre_merge_checks` - Define blocking conditions
+
 ### **Customizing Reviews:**
 
 To adjust CodeRabbit's behavior, edit `.coderabbit.yaml`:
@@ -152,6 +156,7 @@ To adjust CodeRabbit's behavior, edit `.coderabbit.yaml`:
 ```yaml
 reviews:
   profile: "chill"  # Options: "chill", "assertive"
+  request_changes_workflow: false  # Set to true to block merges
   auto_review:
     enabled: true
     drafts: false  # Don't review draft PRs
