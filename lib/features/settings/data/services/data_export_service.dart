@@ -30,7 +30,6 @@ class DataExportService {
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
   final PerformanceService _performanceService;
-  final String _baseCurrency;
 
   DataExportService({
     required InvestmentRepository investmentRepository,
@@ -39,14 +38,12 @@ class DataExportService {
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
     required PerformanceService performanceService,
-    required String baseCurrency,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
-       _performanceService = performanceService,
-       _baseCurrency = baseCurrency;
+       _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
   /// Returns the path to the exported ZIP file

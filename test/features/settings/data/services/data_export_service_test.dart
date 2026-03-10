@@ -67,7 +67,6 @@ void main() {
       documentRepository: documentRepository,
       documentStorageService: documentStorageService,
       performanceService: performanceService,
-      baseCurrency: 'INR',
     );
 
     // Default mock behavior

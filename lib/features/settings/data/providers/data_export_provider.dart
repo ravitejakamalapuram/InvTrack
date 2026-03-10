@@ -22,7 +22,6 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
   final documentStorageService = ref.watch(documentStorageServiceProvider);
   final fireSettingsRepository = ref.watch(fireSettingsRepositoryProvider);
   final performanceService = ref.watch(performanceServiceProvider);
-  final settings = ref.watch(settingsProvider);
 
   return DataExportService(
     investmentRepository: investmentRepository,
@@ -31,7 +30,6 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
     documentStorageService: documentStorageService,
     fireSettingsRepository: fireSettingsRepository,
     performanceService: performanceService,
-    baseCurrency: settings.currency,
   );
 });
 

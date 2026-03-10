@@ -4,10 +4,8 @@ import 'package:inv_tracker/features/settings/data/services/export_service.dart'
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 final exportServiceProvider = Provider<ExportService>((ref) {
-  final settings = ref.watch(settingsProvider);
   return ExportService(
     ref.watch(investmentRepositoryProvider),
-    settings.currency,
   );
 });
 

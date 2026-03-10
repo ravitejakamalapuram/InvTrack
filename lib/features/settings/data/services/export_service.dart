@@ -8,9 +8,8 @@ import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   final InvestmentRepository _investmentRepository;
-  final String _baseCurrency;
 
-  ExportService(this._investmentRepository, this._baseCurrency);
+  ExportService(this._investmentRepository);
 
   /// Converts CashFlowType to the format expected by import template
   String _typeToExportString(CashFlowType type) {
