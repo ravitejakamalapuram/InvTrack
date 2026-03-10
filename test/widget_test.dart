@@ -13,6 +13,7 @@ import 'package:inv_tracker/features/app_update/presentation/providers/version_c
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mock_analytics_service.dart';
@@ -98,6 +99,10 @@ void main() {
           versionCheckProvider.overrideWith(() {
             return _FakeVersionCheckNotifier();
           }),
+          // Override currency conversion service to avoid Firestore dependency
+          currencyConversionServiceProvider.overrideWithValue(
+            _FakeCurrencyConversionService(),
+          ),
         ],
         child: const InvTrackerApp(),
       ),
@@ -148,6 +153,42 @@ class _FakeVersionCheckNotifier extends VersionCheckNotifier {
 
   @override
   Future<void> dismissUpdate() async {
+    // Do nothing in tests
+  }
+}
+
+/// Fake CurrencyConversionService for testing that doesn't require Firestore
+class _FakeCurrencyConversionService extends Fake implements CurrencyConversionService {
+  @override
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    return amount; // Return same amount for testing
+  }
+
+  @override
+  Future<Map<String, double>> batchConvert({
+    required Map<String, double> amounts,
+    required String to,
+  }) async {
+    return amounts;
+  }
+
+  @override
+  Future<void> preloadRates(Set<String> currencies, String baseCurrency) async {
+    // Do nothing in tests
+  }
+
+  @override
+  Future<void> refreshLiveCache(String baseCurrency) async {
+    // Do nothing in tests
+  }
+
+  @override
+  Future<void> refreshLiveCacheIfStale() async {
     // Do nothing in tests
   }
 }
