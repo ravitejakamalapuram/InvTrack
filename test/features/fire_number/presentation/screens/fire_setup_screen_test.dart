@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 // Mock the Notifier by extending it
 class MockFireSettingsNotifier extends FireSettingsNotifier {
@@ -26,7 +27,11 @@ void main() {
             MockFireSettingsNotifier.new,
           ),
         ],
-        child: const MaterialApp(home: FireSetupScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: FireSetupScreen(),
+        ),
       ),
     );
 
