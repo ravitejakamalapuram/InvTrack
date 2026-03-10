@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- **code-quality**: Fix all lint warnings and errors
+
+## [3.48.5] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - **localization**: Complete localization compliance (Rule 16.1)
 
 ## [3.48.4] - 2026-03-10

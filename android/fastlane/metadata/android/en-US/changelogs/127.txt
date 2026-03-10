@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Complete localization compliance (Rule 16.1)
