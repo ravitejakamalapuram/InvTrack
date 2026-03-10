@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Invalidate multi-currency providers on base currency change
+
+## [3.48.6] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - **code-quality**: Fix all lint warnings and errors
 
 ## [3.48.5] - 2026-03-10
