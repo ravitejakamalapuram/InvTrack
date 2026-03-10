@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Resolve all l10n undefined errors (26 → 8 errors)
