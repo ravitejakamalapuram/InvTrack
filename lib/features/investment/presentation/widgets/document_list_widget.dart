@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/document_viewer_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/edit_document_sheet.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Widget displaying documents for an investment with add/delete capabilities
 class DocumentListWidget extends ConsumerWidget {
@@ -29,6 +30,7 @@ class DocumentListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     final documentsAsync = ref.watch(
       documentsByInvestmentProvider(investmentId),
     );
@@ -48,6 +50,7 @@ class DocumentListWidget extends ConsumerWidget {
             document: documents[index],
             isDark: isDark,
             isReadOnly: isReadOnly,
+            l10n: l10n,
           ),
         );
       },
@@ -112,11 +115,13 @@ class _DocumentCard extends ConsumerWidget {
   final DocumentEntity document;
   final bool isDark;
   final bool isReadOnly;
+  final AppLocalizations l10n;
 
   const _DocumentCard({
     required this.document,
     required this.isDark,
     required this.isReadOnly,
+    required this.l10n,
   });
 
   @override
@@ -143,9 +148,7 @@ class _DocumentCard extends ConsumerWidget {
                     Text(
                       document.name,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.neutral900Light,
+                        color: isDark ? Colors.white : AppColors.neutral900Light,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -197,9 +200,7 @@ class _DocumentCard extends ConsumerWidget {
               if (!isReadOnly)
                 Icon(
                   Icons.swipe_rounded,
-                  color: (isDark ? Colors.white : Colors.black).withValues(
-                    alpha: 0.2,
-                  ),
+                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
                   size: 18,
                 ),
             ],
@@ -226,18 +227,12 @@ class _DocumentCard extends ConsumerWidget {
         ),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 24),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.edit_rounded, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'Edit',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            const Icon(Icons.edit_rounded, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(l10n.edit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -250,18 +245,12 @@ class _DocumentCard extends ConsumerWidget {
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Delete',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(width: 8),
-            Icon(Icons.delete_rounded, color: Colors.white),
+            Text(l10n.delete, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            const Icon(Icons.delete_rounded, color: Colors.white),
           ],
         ),
       ),
@@ -281,11 +270,13 @@ class _DocumentCard extends ConsumerWidget {
         try {
           await ref.read(documentNotifierProvider).deleteDocument(document.id);
           if (context.mounted) {
-            AppFeedback.showSuccess(context, 'Document deleted');
+            final l10n = AppLocalizations.of(context)!;
+            AppFeedback.showSuccess(context, l10n.documentDeleted);
           }
         } catch (e) {
           if (context.mounted) {
-            AppFeedback.showError(context, 'Failed to delete document');
+            final l10n = AppLocalizations.of(context)!;
+            AppFeedback.showError(context, l10n.failedToDeleteDocument);
           }
         }
       },
@@ -295,12 +286,12 @@ class _DocumentCard extends ConsumerWidget {
 
   /// Confirm delete via swipe - uses AppFeedback for consistency
   Future<bool> _confirmDeleteSwipe(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      title: 'Delete Document?',
-      message:
-          'Are you sure you want to delete "${document.name}"? This cannot be undone.',
-      confirmText: 'Delete',
+      title: l10n.deleteDocument,
+      message: l10n.deleteDocumentMessage(document.name),
+      confirmText: l10n.delete,
     );
     return confirmed;
   }

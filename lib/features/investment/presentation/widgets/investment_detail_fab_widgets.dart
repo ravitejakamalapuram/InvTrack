@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Transaction FAB for adding new transactions.
 class TransactionFab extends StatelessWidget {
@@ -73,6 +74,7 @@ class DocumentFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         gradient: AppColors.heroGradient,
@@ -95,7 +97,7 @@ class DocumentFab extends StatelessWidget {
         elevation: 0,
         icon: const Icon(Icons.upload_file_rounded, color: Colors.white),
         label: Text(
-          'Add Document',
+          l10n.addDocument,
           style: AppTypography.button.copyWith(color: Colors.white),
         ),
       ),

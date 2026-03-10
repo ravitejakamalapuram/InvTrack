@@ -7,7 +7,6 @@ import 'package:share_plus/share_plus.dart';
 class CsvTemplateService {
   /// CSV headers for the template
   /// Note: Currency, Investment Type and Investment Status are optional columns
-  /// Currency defaults to user's base currency if not specified
   static const List<String> headers = [
     'Date',
     'Investment Name',
@@ -21,9 +20,8 @@ class CsvTemplateService {
 
   /// Sample data rows covering all scenarios
   /// Includes optional Currency, Investment Type and Investment Status columns
-  /// Demonstrates multi-currency support (USD, INR, EUR)
   static const List<List<String>> sampleRows = [
-    // Investment examples with type and status
+    // Investment examples with type and status (INR)
     [
       '2024-01-15',
       'Bhive Investment',
@@ -54,7 +52,7 @@ class CsvTemplateService {
       'p2p',
       'open',
     ],
-    // Another investment
+    // Another investment (INR)
     [
       '2024-01-20',
       'P2P Lending - LenDenClub',
@@ -85,47 +83,79 @@ class CsvTemplateService {
       'p2p',
       'open',
     ],
-    // Third investment with fees (USD example)
+    // Third investment with fees (INR)
     [
       '2024-02-01',
-      'US Tech Stocks',
+      'Gold Bonds',
       'INVEST',
-      '1000',
-      'USD',
-      'Initial investment',
-      'stocks',
+      '200000',
+      'INR',
+      'Sovereign Gold Bonds',
+      'bonds',
       'open',
     ],
     [
       '2024-08-01',
-      'US Tech Stocks',
+      'Gold Bonds',
       'INCOME',
-      '25',
-      'USD',
-      'Dividend payout',
-      'stocks',
+      '2500',
+      'INR',
+      'Interest payout',
+      'bonds',
       'open',
     ],
-    // Investment with exit (closed status, EUR example)
+    // Investment with exit (closed status, INR)
     [
       '2023-06-01',
-      'European Bonds',
+      'Fixed Deposit - HDFC',
       'INVEST',
-      '800',
-      'EUR',
-      'Government bonds',
-      'bonds',
+      '100000',
+      'INR',
+      'FD for 1 year',
+      'fixedDeposit',
       'closed',
     ],
     [
       '2024-06-01',
-      'European Bonds',
+      'Fixed Deposit - HDFC',
       'RETURN',
-      '850',
-      'EUR',
+      '107000',
+      'INR',
       'Maturity amount',
       'fixedDeposit',
       'closed',
+    ],
+    // Multi-currency example (USD)
+    [
+      '2024-01-10',
+      'US Stocks - Apple',
+      'INVEST',
+      '5000',
+      'USD',
+      'Tech stock investment',
+      'stocks',
+      'open',
+    ],
+    [
+      '2024-03-10',
+      'US Stocks - Apple',
+      'INCOME',
+      '50',
+      'USD',
+      'Dividend',
+      'stocks',
+      'open',
+    ],
+    // Multi-currency example (EUR)
+    [
+      '2024-02-01',
+      'European Bonds',
+      'INVEST',
+      '3000',
+      'EUR',
+      'EU government bonds',
+      'bonds',
+      'open',
     ],
   ];
 
@@ -137,9 +167,8 @@ class CsvTemplateService {
 # RETURN  - Money withdrawn or returned from investment (inflow)
 # FEE     - Fees paid (outflow)
 #
-# Currency Column Values (optional):
-# ISO 4217 currency codes: USD, INR, EUR, GBP, JPY, etc.
-# If not specified, defaults to your base currency setting
+# Currency Column Values (optional, defaults to base currency):
+# Use ISO 4217 currency codes: INR, USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR
 #
 # Investment Type Column Values (optional):
 # p2p, fixedDeposit, bonds, mutualFund, stocks, realEstate, gold, crypto, other

@@ -25,9 +25,7 @@ class FireSettingsScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       appBar: AppBar(
         title: Text(l10n.fireSettings, style: AppTypography.h2),
         backgroundColor: Colors.transparent,
@@ -127,71 +125,39 @@ class FireSettingsScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Basic Settings
-          Text(
-            l10n.basicSettings,
-            style: AppTypography.h3.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
+          Text(l10n.basicSettings, style: AppTypography.h3.copyWith(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           GlassCard(
             child: Column(
               children: [
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: Icons.calendar_today,
                   title: 'Current Age',
                   value: '${settings.currentAge} years',
-                  onTap: () => _showAgeEditor(
-                    context,
-                    ref,
-                    settings,
-                    isCurrentAge: true,
-                  ),
+                  onTap: () => _showAgeEditor(context, ref, settings, isCurrentAge: true),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                Divider(color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: Icons.flag_outlined,
                   title: 'Target FIRE Age',
                   value: '${settings.targetFireAge} years',
-                  onTap: () => _showAgeEditor(
-                    context,
-                    ref,
-                    settings,
-                    isCurrentAge: false,
-                  ),
+                  onTap: () => _showAgeEditor(context, ref, settings, isCurrentAge: false),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                Divider(color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: Icons.payments_outlined,
                   title: 'Monthly Expenses',
-                  value:
-                      '$currencySymbol${settings.monthlyExpenses.toStringAsFixed(0)}',
+                  value: '$currencySymbol${settings.monthlyExpenses.toStringAsFixed(0)}',
                   onTap: () => _showExpensesEditor(context, ref, settings),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                Divider(color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: settings.fireType.icon,
                   title: 'FIRE Type',
                   value: settings.fireType.displayName,
@@ -203,76 +169,51 @@ class FireSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg),
 
           // Advanced Settings
-          Text(
-            l10n.advancedSettings,
-            style: AppTypography.h3.copyWith(
-              color: isDark
-                  ? AppColors.textPrimaryDark
-                  : AppColors.textPrimaryLight,
-            ),
-          ),
+          Text(l10n.advancedSettings, style: AppTypography.h3.copyWith(
+            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           GlassCard(
             child: Column(
               children: [
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: Icons.percent,
                   title: 'Safe Withdrawal Rate',
                   value: '${settings.safeWithdrawalRate}%',
                   onTap: () => _showSliderEditor(
-                    context,
-                    ref,
-                    settings,
+                    context, ref, settings,
                     title: 'Safe Withdrawal Rate',
                     currentValue: settings.safeWithdrawalRate,
-                    min: 2.5,
-                    max: 5.0,
+                    min: 2.5, max: 5.0,
                     onSave: (v) => settings.copyWith(safeWithdrawalRate: v),
                   ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                Divider(color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: Icons.trending_up,
                   title: 'Inflation Rate',
                   value: '${settings.inflationRate}%',
                   onTap: () => _showSliderEditor(
-                    context,
-                    ref,
-                    settings,
+                    context, ref, settings,
                     title: 'Inflation Rate',
                     currentValue: settings.inflationRate,
-                    min: 4.0,
-                    max: 10.0,
+                    min: 4.0, max: 10.0,
                     onSave: (v) => settings.copyWith(inflationRate: v),
                   ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                Divider(color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light),
                 _buildSettingTile(
-                  context,
-                  isDark,
+                  context, isDark,
                   icon: Icons.show_chart,
                   title: 'Pre-retirement Return',
                   value: '${settings.preRetirementReturn}%',
                   onTap: () => _showSliderEditor(
-                    context,
-                    ref,
-                    settings,
+                    context, ref, settings,
                     title: 'Pre-retirement Return',
                     currentValue: settings.preRetirementReturn,
-                    min: 8.0,
-                    max: 15.0,
+                    min: 8.0, max: 15.0,
                     onSave: (v) => settings.copyWith(preRetirementReturn: v),
                   ),
                 ),
@@ -282,25 +223,16 @@ class FireSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.lg),
 
           // Danger Zone
-          Text(
-            l10n.dangerZone,
-            style: AppTypography.h3.copyWith(
-              color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
-            ),
-          ),
+          Text(l10n.dangerZone, style: AppTypography.h3.copyWith(
+            color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
+          )),
           SizedBox(height: AppSpacing.sm),
           GlassCard(
             child: ListTile(
-              leading: Icon(
-                Icons.delete_forever,
+              leading: Icon(Icons.delete_forever, color: isDark ? AppColors.dangerDark : AppColors.dangerLight),
+              title: Text(l10n.resetFireSettings, style: AppTypography.bodyMedium.copyWith(
                 color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
-              ),
-              title: Text(
-                l10n.resetFireSettings,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark ? AppColors.dangerDark : AppColors.dangerLight,
-                ),
-              ),
+              )),
               subtitle: Text(l10n.startOverWithNewSettings),
               onTap: () => _confirmReset(context, ref),
             ),
@@ -320,53 +252,28 @@ class FireSettingsScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
-      ),
-      title: Text(
-        title,
-        style: AppTypography.bodyMedium.copyWith(
-          color: isDark
-              ? AppColors.textPrimaryDark
-              : AppColors.textPrimaryLight,
-        ),
-      ),
+      leading: Icon(icon, color: isDark ? AppColors.primaryDark : AppColors.primaryLight),
+      title: Text(title, style: AppTypography.bodyMedium.copyWith(
+        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      )),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
-          ),
+          Text(value, style: AppTypography.body.copyWith(
+            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+          )),
           SizedBox(width: AppSpacing.xs),
-          Icon(
-            Icons.chevron_right,
-            color: isDark
-                ? AppColors.neutral500Dark
-                : AppColors.neutral400Light,
-          ),
+          Icon(Icons.chevron_right, color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light),
         ],
       ),
       onTap: onTap,
     );
   }
 
-  void _showAgeEditor(
-    BuildContext context,
-    WidgetRef ref,
-    FireSettingsEntity settings, {
-    required bool isCurrentAge,
-  }) {
+  void _showAgeEditor(BuildContext context, WidgetRef ref, FireSettingsEntity settings, {required bool isCurrentAge}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = isCurrentAge ? 'Current Age' : 'Target FIRE Age';
-    final currentValue = isCurrentAge
-        ? settings.currentAge
-        : settings.targetFireAge;
+    final currentValue = isCurrentAge ? settings.currentAge : settings.targetFireAge;
     final minAge = isCurrentAge ? 18 : settings.currentAge + 5;
     final maxAge = isCurrentAge ? 80 : 80;
 
@@ -383,36 +290,22 @@ class FireSettingsScreen extends ConsumerWidget {
         builder: (context, setState) {
           final l10n = AppLocalizations.of(context);
           return Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-            ),
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+                MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: AppTypography.h3.copyWith(
-                    color: isDark
-                        ? AppColors.textPrimaryDark
-                        : AppColors.textPrimaryLight,
-                  ),
-                ),
+                Text(title, style: AppTypography.h3.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                )),
                 SizedBox(height: AppSpacing.lg),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '$selectedAge years',
-                      style: AppTypography.h1.copyWith(
-                        color: isDark
-                            ? AppColors.primaryDark
-                            : AppColors.primaryLight,
-                      ),
-                    ),
+                    Text(l10n.yearsFormat(selectedAge), style: AppTypography.h1.copyWith(
+                      color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                    )),
                   ],
                 ),
                 Slider(
@@ -432,9 +325,7 @@ class FireSettingsScreen extends ConsumerWidget {
                       final updated = isCurrentAge
                           ? settings.copyWith(currentAge: selectedAge)
                           : settings.copyWith(targetFireAge: selectedAge);
-                      await ref
-                          .read(fireSettingsNotifierProvider.notifier)
-                          .saveSettings(updated);
+                      await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
                     },
                     child: Text(l10n.save),
                   ),
@@ -447,17 +338,11 @@ class FireSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showExpensesEditor(
-    BuildContext context,
-    WidgetRef ref,
-    FireSettingsEntity settings,
-  ) {
+  void _showExpensesEditor(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.read(currencySymbolProvider);
-    final controller = TextEditingController(
-      text: settings.monthlyExpenses.toStringAsFixed(0),
-    );
+    final controller = TextEditingController(text: settings.monthlyExpenses.toStringAsFixed(0));
 
     showModalBottomSheet(
       context: context,
@@ -467,24 +352,15 @@ class FireSettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.lg,
-          MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-        ),
+        padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+            MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.monthlyExpenses,
-              style: AppTypography.h3.copyWith(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-              ),
-            ),
+            Text(l10n.monthlyExpenses, style: AppTypography.h3.copyWith(
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            )),
             SizedBox(height: AppSpacing.lg),
             TextField(
               controller: controller,
@@ -502,13 +378,9 @@ class FireSettingsScreen extends ConsumerWidget {
               child: FilledButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
-                  final value =
-                      double.tryParse(controller.text) ??
-                      settings.monthlyExpenses;
+                  final value = double.tryParse(controller.text) ?? settings.monthlyExpenses;
                   final updated = settings.copyWith(monthlyExpenses: value);
-                  await ref
-                      .read(fireSettingsNotifierProvider.notifier)
-                      .saveSettings(updated);
+                  await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
                 },
                 child: Text(l10n.save),
               ),
@@ -519,11 +391,7 @@ class FireSettingsScreen extends ConsumerWidget {
     ).whenComplete(() => controller.dispose());
   }
 
-  void _showFireTypeSelector(
-    BuildContext context,
-    WidgetRef ref,
-    FireSettingsEntity settings,
-  ) {
+  void _showFireTypeSelector(BuildContext context, WidgetRef ref, FireSettingsEntity settings) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -539,41 +407,23 @@ class FireSettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.selectFireType,
-              style: AppTypography.h3.copyWith(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-              ),
-            ),
+            Text(l10n.selectFireType, style: AppTypography.h3.copyWith(
+              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            )),
             SizedBox(height: AppSpacing.md),
-            ...FireType.values.map(
-              (type) => ListTile(
-                leading: Icon(
-                  type.icon,
-                  color: isDark
-                      ? AppColors.primaryDark
-                      : AppColors.primaryLight,
-                ),
-                title: Text(type.displayName),
-                subtitle: Text(type.description, style: AppTypography.small),
-                selected: settings.fireType == type,
-                selectedTileColor:
-                    (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                        .withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final updated = settings.copyWith(fireType: type);
-                  await ref
-                      .read(fireSettingsNotifierProvider.notifier)
-                      .saveSettings(updated);
-                },
-              ),
-            ),
+            ...FireType.values.map((type) => ListTile(
+              leading: Icon(type.icon, color: isDark ? AppColors.primaryDark : AppColors.primaryLight),
+              title: Text(type.displayName),
+              subtitle: Text(type.description, style: AppTypography.small),
+              selected: settings.fireType == type,
+              selectedTileColor: (isDark ? AppColors.primaryDark : AppColors.primaryLight).withValues(alpha: 0.1),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final updated = settings.copyWith(fireType: type);
+                await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
+              },
+            )),
           ],
         ),
       ),
@@ -604,36 +454,22 @@ class FireSettingsScreen extends ConsumerWidget {
         builder: (context, setState) {
           final l10n = AppLocalizations.of(context);
           return Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-            ),
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg,
+                MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: AppTypography.h3.copyWith(
-                    color: isDark
-                        ? AppColors.textPrimaryDark
-                        : AppColors.textPrimaryLight,
-                  ),
-                ),
+                Text(title, style: AppTypography.h3.copyWith(
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                )),
                 SizedBox(height: AppSpacing.lg),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '${selectedValue.toStringAsFixed(1)}%',
-                      style: AppTypography.h1.copyWith(
-                        color: isDark
-                            ? AppColors.primaryDark
-                            : AppColors.primaryLight,
-                      ),
-                    ),
+                    Text(l10n.percentageFormat(selectedValue.toStringAsFixed(1)), style: AppTypography.h1.copyWith(
+                      color: isDark ? AppColors.primaryDark : AppColors.primaryLight,
+                    )),
                   ],
                 ),
                 Slider(
@@ -651,9 +487,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     onPressed: () async {
                       Navigator.pop(ctx);
                       final updated = onSave(selectedValue);
-                      await ref
-                          .read(fireSettingsNotifierProvider.notifier)
-                          .saveSettings(updated);
+                      await ref.read(fireSettingsNotifierProvider.notifier).saveSettings(updated);
                     },
                     child: Text(l10n.save),
                   ),
@@ -682,17 +516,12 @@ class FireSettingsScreen extends ConsumerWidget {
             TextButton(
               onPressed: () async {
                 Navigator.pop(ctx);
-                await ref
-                    .read(fireSettingsNotifierProvider.notifier)
-                    .resetSettings();
+                await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
                 if (context.mounted) {
                   context.go('/fire');
                 }
               },
-              child: Text(
-                l10n.reset,
-                style: TextStyle(color: AppColors.dangerLight),
-              ),
+              child: Text(l10n.reset, style: TextStyle(color: AppColors.dangerLight)),
             ),
           ],
         );

@@ -96,16 +96,13 @@ class DataExportService {
       allDocuments.addAll(docs);
     }
 
-    LoggerService.info(
-      'Data export: fetched all data',
-      metadata: {
-        'activeCashFlows': activeCashFlows.length,
-        'archivedCashFlows': archivedCashFlows.length,
-        'goals': goals.length,
-        'archivedGoals': archivedGoals.length,
-        'documents': allDocuments.length,
-      },
-    );
+    LoggerService.info('Data export: fetched all data', metadata: {
+      'activeCashFlows': activeCashFlows.length,
+      'archivedCashFlows': archivedCashFlows.length,
+      'goals': goals.length,
+      'archivedGoals': archivedGoals.length,
+      'documents': allDocuments.length,
+    });
 
     // 2. Generate CSV files
     final cashflowsCsv = _generateCashFlowsCsv(activeCashFlows);
@@ -198,13 +195,10 @@ class DataExportService {
     final file = File(filePath);
     await file.writeAsBytes(zipData);
 
-    LoggerService.info(
-      'Export saved',
-      metadata: {
-        'filePath': filePath,
-        'fileSizeKB': (zipData.length / 1024).toStringAsFixed(1),
-      },
-    );
+    LoggerService.info('Export saved', metadata: {
+      'filePath': filePath,
+      'fileSizeKB': (zipData.length / 1024).toStringAsFixed(1),
+    });
 
     return filePath;
   }
@@ -229,7 +223,7 @@ class DataExportService {
   String _generateCashFlowsCsv(List<_CashFlowWithInvestment> items) {
     final rows = <List<dynamic>>[];
 
-    // Header row - extended format with investment metadata (Rule 21.4: Multi-Currency)
+    // Header row - extended format with investment metadata and currency
     rows.add([
       'Date',
       'Investment Name',
@@ -251,7 +245,7 @@ class DataExportService {
         CsvUtils.sanitizeField(item.investment.name),
         _typeToExportString(item.cashFlow.type),
         item.cashFlow.amount,
-        item.cashFlow.currency, // Multi-currency support (Rule 21.4)
+        item.cashFlow.currency, // Preserve original currency (Rule 21.2)
         CsvUtils.sanitizeField(item.cashFlow.notes ?? ''),
         item.investment.type.name,
         item.investment.status.name,

@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/features/settings/data/services/export_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 final exportServiceProvider = Provider<ExportService>((ref) {
-  return ExportService(ref.watch(investmentRepositoryProvider));
+  return ExportService(
+    ref.watch(investmentRepositoryProvider),
+  );
 });
 
 /// State for CSV export operation

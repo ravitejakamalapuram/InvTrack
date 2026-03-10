@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/widgets/selection_list_action_bar.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_list_state_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Bottom action bar shown during selection mode
 class GoalsListActionBar extends ConsumerWidget {
@@ -48,11 +49,12 @@ class GoalsListActionBar extends ConsumerWidget {
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return SelectionListActionBar(
       selectedCount: listState.selectedIds.length,
       actions: [
         SelectionActionConfig(
-          label: 'Delete',
+          label: l10n.delete,
           icon: Icons.delete_rounded,
           color: AppColors.errorLight,
           minSelection: 1,
@@ -68,13 +70,14 @@ class GoalsListActionBar extends ConsumerWidget {
   ) async {
     final listState = ref.read(goalsListStateProvider);
     final selectedCount = listState.selectedIds.length;
+    final l10n = AppLocalizations.of(context)!;
+    final plural = selectedCount > 1 ? 's' : '';
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
-      title: 'Delete $selectedCount Goal${selectedCount > 1 ? 's' : ''}?',
-      message:
-          'This action cannot be undone. The selected goal${selectedCount > 1 ? 's' : ''} will be permanently deleted.',
-      confirmText: 'Delete',
+      title: l10n.deleteGoalsCount(selectedCount, plural),
+      message: l10n.deleteGoalsMessage(plural),
+      confirmText: l10n.delete,
     );
 
     if (confirmed && context.mounted) {

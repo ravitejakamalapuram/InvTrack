@@ -163,6 +163,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalEntity goal,
     bool isDark,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return SliverAppBar(
       expandedHeight: 140,
       pinned: true,
@@ -197,13 +198,13 @@ class GoalDetailsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_rounded, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
+                  const Icon(Icons.delete_rounded, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Text(l10n.delete, style: const TextStyle(color: Colors.red)),
                 ],
               ),
             ),
