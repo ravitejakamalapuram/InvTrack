@@ -887,8 +887,8 @@ void main() {
       final notification = fakePlugin.shownNotifications.first;
       expect(notification.title, contains('25%'));
       expect(notification.body, contains('Retirement Fund'));
-      expect(notification.body, contains('₹25000'));
-      expect(notification.body, contains('₹100000'));
+      expect(notification.body, contains('₹25,000.00'));
+      expect(notification.body, contains('₹100,000.00'));
     });
 
     test('should show goal milestone notification at 50%', () async {
