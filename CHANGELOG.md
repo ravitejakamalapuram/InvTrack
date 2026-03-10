@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Remove unused imports from export providers
+
+## [3.48.2] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - Enterprise rules compliance - Multi-currency, localization, and data lifecycle (#255)
 
 ## [3.48.1] - 2026-03-09

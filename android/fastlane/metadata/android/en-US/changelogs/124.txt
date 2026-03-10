@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Enterprise rules compliance - Multi-currency, localization, and data lifecycle (#255)
