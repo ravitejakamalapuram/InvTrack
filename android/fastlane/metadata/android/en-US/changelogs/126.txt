@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Add missing ARB strings and fix hardcoded strings (partial)

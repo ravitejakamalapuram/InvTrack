@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- **localization**: Complete localization compliance (Rule 16.1)
+
+## [3.48.4] - 2026-03-10
+
+### 🐛 Bug Fixes
+
 - **localization**: Add missing ARB strings and fix hardcoded strings (partial)
 
 ## [3.48.3] - 2026-03-10
