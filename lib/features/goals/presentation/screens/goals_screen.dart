@@ -55,7 +55,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Use separate providers for active and archived goals

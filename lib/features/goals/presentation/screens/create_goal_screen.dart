@@ -172,7 +172,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -282,7 +282,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
             ],
 
             // Target Date
-            _buildDateSelector(isDark),
+            _buildDateSelector(isDark, l10n),
             SizedBox(height: AppSpacing.md),
 
             // Tracking Mode
@@ -398,7 +398,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     );
   }
 
-  Widget _buildDateSelector(bool isDark) {
+  Widget _buildDateSelector(bool isDark, AppLocalizations l10n) {
     return GlassCard(
       onTap: () => _selectTargetDate(context, isDark),
       padding: EdgeInsets.all(AppSpacing.md),

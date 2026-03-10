@@ -93,7 +93,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // PERFORMANCE: Use ref.select to rebuild only when specific fields change
@@ -149,7 +149,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                         fontSize: 22,
                       ),
                     ),
-              actions: isSearching ? null : _buildAppBarActions(isDark),
+              actions: isSearching ? null : _buildAppBarActions(isDark, l10n),
             ),
 
             // Filter Tabs or Selection Controls
@@ -225,7 +225,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(bool isDark) {
+  List<Widget> _buildAppBarActions(bool isDark, AppLocalizations l10n) {
     // PERFORMANCE: Use ref.select for specific fields to avoid rebuilding entire app bar
     final isSelectionMode = ref.watch(
       investmentListStateProvider.select((s) => s.isSelectionMode),

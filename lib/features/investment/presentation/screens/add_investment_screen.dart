@@ -364,7 +364,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -509,7 +509,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       SizedBox(height: AppSpacing.sectionSpacing),
 
                       // Dynamic fields based on investment type
-                      ..._buildDynamicFields(isDark),
+                      ..._buildDynamicFields(isDark, l10n),
 
                       // Live Projection Card (shows maturity estimate)
                       _buildProjectionCard(isDark),
@@ -549,13 +549,13 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
   }
 
   /// Builds dynamic form fields based on the selected investment type
-  List<Widget> _buildDynamicFields(bool isDark) {
+  List<Widget> _buildDynamicFields(bool isDark, AppLocalizations l10n) {
     final config = InvestmentFormConfig.forType(_selectedType);
     final fields = <Widget>[];
 
     // Start Date
     if (config.showStartDate) {
-      fields.add(_buildStartDatePicker(isDark));
+      fields.add(_buildStartDatePicker(isDark, l10n));
       fields.add(SizedBox(height: AppSpacing.formFieldSpacing));
     }
 
@@ -790,7 +790,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
     );
   }
 
-  Widget _buildStartDatePicker(bool isDark) {
+  Widget _buildStartDatePicker(bool isDark, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -38,7 +38,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final document = widget.document;
 
@@ -264,13 +264,13 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   Future<void> _openInExternalViewer(BuildContext context) async {
     HapticFeedback.selectionClick();
 
+    final l10n = AppLocalizations.of(context);
     final filePath = widget.document.localPath;
     final file = File(filePath);
 
     // Check if file exists before trying to open
     if (!await file.exists()) {
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.fileNotFound),
@@ -329,13 +329,13 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   Future<void> _shareDocument(BuildContext context) async {
     HapticFeedback.selectionClick();
 
+    final l10n = AppLocalizations.of(context);
     final filePath = widget.document.localPath;
     final file = File(filePath);
 
     // Check if file exists before trying to share
     if (!await file.exists()) {
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.fileNotFound),
