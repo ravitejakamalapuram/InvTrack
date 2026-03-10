@@ -5,7 +5,6 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 /// Provider for DataExportService
 final dataExportServiceProvider = Provider<DataExportService?>((ref) {
