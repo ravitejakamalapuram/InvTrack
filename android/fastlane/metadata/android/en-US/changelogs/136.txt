@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Update notification test expectations to match formatted currency output

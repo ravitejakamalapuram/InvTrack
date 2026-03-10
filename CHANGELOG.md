@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add comprehensive CodeRabbit automated PR review system
+
+### 📚 Documentation
+
+- Add complete fix summary - all issues resolved
+
+## [3.48.14] - 2026-03-10
+
 ### 🐛 Bug Fixes
 
 - Update notification test expectations to match formatted currency output
