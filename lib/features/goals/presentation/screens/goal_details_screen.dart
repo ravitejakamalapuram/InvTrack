@@ -163,7 +163,7 @@ class GoalDetailsScreen extends ConsumerWidget {
     GoalEntity goal,
     bool isDark,
   ) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return SliverAppBar(
       expandedHeight: 140,
       pinned: true,

@@ -269,7 +269,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     // Check if file exists before trying to open
     if (!await file.exists()) {
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.fileNotFound),
@@ -316,7 +316,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         case ResultType.error:
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.errorOpeningFile(result.message ?? '')),
+              content: Text(l10n.errorOpeningFile(result.message)),
               backgroundColor: Colors.red,
             ),
           );
@@ -334,7 +334,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     // Check if file exists before trying to share
     if (!await file.exists()) {
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.fileNotFound),

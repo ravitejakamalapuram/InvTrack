@@ -503,7 +503,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     BuildContext context,
     bool isDark,
   ) async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: l10n.deleteTransaction,
@@ -520,7 +520,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     // Capture navigator and messenger upfront before any async operations
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,

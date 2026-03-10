@@ -73,7 +73,7 @@ class InvestmentListActionBar extends ConsumerWidget {
   ) async {
     final listState = ref.read(investmentListStateProvider);
     final selectedCount = listState.selectedIds.length;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final plural = selectedCount > 1 ? 's' : '';
 
     final confirmed = await AppFeedback.showConfirmDialog(

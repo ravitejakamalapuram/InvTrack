@@ -330,7 +330,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
       }
     } catch (e) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         AppFeedback.showError(context, l10n.couldNotAccessCamera);
       }
     } finally {
@@ -405,7 +405,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isReadingFiles = false);
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         AppFeedback.showError(context, l10n.couldNotAccessFiles);
       }
     } finally {
@@ -834,7 +834,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        final l10n = AppLocalizations.of(context)!;
+        final l10n = AppLocalizations.of(context);
         AppFeedback.showSuccess(context, l10n.documentsAdded(successCount));
       }
     } catch (e) {

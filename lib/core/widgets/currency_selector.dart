@@ -171,11 +171,11 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? (isDark
-                                            ? AppColors.primaryDark.withOpacity(
-                                                0.2,
+                                            ? AppColors.primaryDark.withValues(
+                                                alpha: 0.2,
                                               )
                                             : AppColors.primaryLight
-                                                  .withOpacity(0.2))
+                                                  .withValues(alpha: 0.2))
                                       : (isDark
                                             ? AppColors.neutral800Dark
                                             : AppColors.neutral100Light),
@@ -289,8 +289,8 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.primaryDark.withOpacity(0.2)
-                      : AppColors.primaryLight.withOpacity(0.2),
+                      ? AppColors.primaryDark.withValues(alpha: 0.2)
+                      : AppColors.primaryLight.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(

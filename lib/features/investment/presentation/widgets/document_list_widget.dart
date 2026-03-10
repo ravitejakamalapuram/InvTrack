@@ -30,7 +30,7 @@ class DocumentListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final documentsAsync = ref.watch(
       documentsByInvestmentProvider(investmentId),
     );
@@ -270,12 +270,12 @@ class _DocumentCard extends ConsumerWidget {
         try {
           await ref.read(documentNotifierProvider).deleteDocument(document.id);
           if (context.mounted) {
-            final l10n = AppLocalizations.of(context)!;
+            final l10n = AppLocalizations.of(context);
             AppFeedback.showSuccess(context, l10n.documentDeleted);
           }
         } catch (e) {
           if (context.mounted) {
-            final l10n = AppLocalizations.of(context)!;
+            final l10n = AppLocalizations.of(context);
             AppFeedback.showError(context, l10n.failedToDeleteDocument);
           }
         }
@@ -286,7 +286,7 @@ class _DocumentCard extends ConsumerWidget {
 
   /// Confirm delete via swipe - uses AppFeedback for consistency
   Future<bool> _confirmDeleteSwipe(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final confirmed = await AppFeedback.showConfirmDialog(
       context: context,
       title: l10n.deleteDocument,

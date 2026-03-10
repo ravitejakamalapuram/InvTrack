@@ -284,6 +284,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               }
 
               if (mounted) {
+                final l10n = AppLocalizations.of(context);
                 context.safePop(); // Close screen
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(l10n.appLockEnabled)),

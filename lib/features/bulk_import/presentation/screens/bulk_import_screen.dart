@@ -25,7 +25,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
   Future<void> _downloadTemplate() async {
     HapticFeedback.mediumImpact();
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     try {
       await CsvTemplateService.downloadTemplate();
       if (mounted) {

@@ -49,7 +49,7 @@ class GoalsListActionBar extends ConsumerWidget {
       );
     }
 
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return SelectionListActionBar(
       selectedCount: listState.selectedIds.length,
       actions: [
@@ -70,7 +70,7 @@ class GoalsListActionBar extends ConsumerWidget {
   ) async {
     final listState = ref.read(goalsListStateProvider);
     final selectedCount = listState.selectedIds.length;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final plural = selectedCount > 1 ? 's' : '';
 
     final confirmed = await AppFeedback.showConfirmDialog(
