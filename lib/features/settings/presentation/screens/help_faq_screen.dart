@@ -89,6 +89,23 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
+          _buildSection(l10n.advancedFeatures, [
+            _buildFaqItem(
+              l10n.howToEnableDebugMode,
+              l10n.howToEnableDebugModeAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatIsDebugModeFor,
+              l10n.whatIsDebugModeForAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howToDisableDebugMode,
+              l10n.howToDisableDebugModeAnswer,
+              isDark,
+            ),
+          ]),
           SizedBox(height: AppSpacing.xl),
           Center(
             child: Text(

@@ -148,7 +148,7 @@ class DebugSettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No sample data to clear'),
+            content: Text(l10n.noSampleDataToClear),
             backgroundColor: AppColors.neutral500Light,
           ),
         );
