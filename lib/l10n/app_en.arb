@@ -664,6 +664,41 @@
     "description": "Help contact message"
   },
 
+  "advancedFeatures": "Advanced Features",
+  "@advancedFeatures": {
+    "description": "Advanced features section title in Help & FAQ"
+  },
+
+  "howToEnableDebugMode": "How do I enable debug mode?",
+  "@howToEnableDebugMode": {
+    "description": "FAQ question about enabling debug mode"
+  },
+
+  "howToEnableDebugModeAnswer": "Tap the version number on the About screen 7 times within 3 seconds. This will reveal developer tools in Settings.",
+  "@howToEnableDebugModeAnswer": {
+    "description": "FAQ answer about enabling debug mode"
+  },
+
+  "whatIsDebugModeFor": "What is debug mode for?",
+  "@whatIsDebugModeFor": {
+    "description": "FAQ question about debug mode purpose"
+  },
+
+  "whatIsDebugModeForAnswer": "Debug mode provides advanced tools for developers and power users, including sample data management and app diagnostics. It is useful for testing features and troubleshooting issues.",
+  "@whatIsDebugModeForAnswer": {
+    "description": "FAQ answer about debug mode purpose"
+  },
+
+  "howToDisableDebugMode": "How do I disable debug mode?",
+  "@howToDisableDebugMode": {
+    "description": "FAQ question about disabling debug mode"
+  },
+
+  "howToDisableDebugModeAnswer": "Tap the version number 7 times again, or toggle it off in Debug Settings under the Developer section in Settings.",
+  "@howToDisableDebugModeAnswer": {
+    "description": "FAQ answer about disabling debug mode"
+  },
+
   "invTrack": "InvTrack",
   "@invTrack": {
     "description": "App name"
@@ -717,14 +752,54 @@
     "description": "Support email address"
   },
 
+  "supportEmailSubject": "InvTrack Support Request (v{version})",
+  "@supportEmailSubject": {
+    "description": "Subject line for support email",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
+  "supportEmailBody": "Please describe your issue or question:\n\n",
+  "@supportEmailBody": {
+    "description": "Body text for support email"
+  },
+
+  "emailCopiedMessage": "Email copied to clipboard: {email}",
+  "@emailCopiedMessage": {
+    "description": "Message shown when email is copied to clipboard",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button label"
+  },
+
+  "errorLoadingAppInfo": "Unable to load app information",
+  "@errorLoadingAppInfo": {
+    "description": "Error message when app info fails to load"
+  },
+
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button label"
+  },
+
+  "debugModeActivationFailed": "Failed to toggle debug mode",
+  "@debugModeActivationFailed": {
+    "description": "Error message when debug mode toggle fails"
+  },
+
   "madeWithLove": "Made with ❤️ for smart investors",
   "@madeWithLove": {
     "description": "Footer message"
-  },
-
-  "dataAndAccount": "Data & Account",
-  "@dataAndAccount": {
-    "description": "Data management screen title"
   },
 
   "exportFailed": "Export failed: {error}",
@@ -745,11 +820,6 @@
   "importStrategy": "Import Strategy",
   "@importStrategy": {
     "description": "Import strategy dialog title"
-  },
-
-  "cancel": "Cancel",
-  "@cancel": {
-    "description": "Cancel button label"
   },
 
   "replaceAllData": "Replace All Data?",
@@ -897,11 +967,6 @@
     "description": "Set up FIRE button label"
   },
 
-  "retry": "Retry",
-  "@retry": {
-    "description": "Retry button label"
-  },
-
   "basicSettings": "Basic Settings",
   "@basicSettings": {
     "description": "Basic settings section title"
@@ -935,11 +1000,6 @@
         "type": "int"
       }
     }
-  },
-
-  "save": "Save",
-  "@save": {
-    "description": "Save button label"
   },
 
   "monthlyExpenses": "Monthly Expenses",
@@ -1037,24 +1097,9 @@
     "description": "Button text to get started with a feature"
   },
 
-  "retry": "Retry",
-  "@retry": {
-    "description": "Button text to retry an action"
-  },
-
   "openInPdfViewer": "Open in PDF Viewer",
   "@openInPdfViewer": {
     "description": "Button text to open document in external PDF viewer"
-  },
-
-  "cancel": "Cancel",
-  "@cancel": {
-    "description": "Button text to cancel an action"
-  },
-
-  "save": "Save",
-  "@save": {
-    "description": "Button text to save changes"
   },
 
   "changeFile": "Change File",
@@ -1097,11 +1142,6 @@
     "description": "Dialog title for goal deletion confirmation"
   },
 
-  "delete": "Delete",
-  "@delete": {
-    "description": "Button text to delete an item"
-  },
-
   "viewActiveGoals": "View active goals",
   "@viewActiveGoals": {
     "description": "Button text to view active goals"
@@ -1133,11 +1173,6 @@
         "type": "int"
       }
     }
-  },
-
-  "done": "Done",
-  "@done": {
-    "description": "Button text to complete an action"
   },
 
   "updateNow": "Update Now",
@@ -1283,11 +1318,6 @@
   "invalidUpdateLink": "Invalid update link format.",
   "@invalidUpdateLink": {
     "description": "Error message for invalid update URL"
-  },
-
-  "couldNotOpenUpdateLink": "Could not open update link",
-  "@couldNotOpenUpdateLink": {
-    "description": "Error message when update link cannot be opened"
   },
 
   "yearsFormat": "{age} years",
@@ -1556,19 +1586,9 @@
     "description": "App lock enabled confirmation message"
   },
 
-  "couldNotOpenUpdateLink": "Could not open update link. Please try again.",
-  "@couldNotOpenUpdateLink": {
-    "description": "Error message when update link cannot be opened"
-  },
-
   "fileNotFoundError": "File not found.",
   "@fileNotFoundError": {
     "description": "Error message when file is not found"
-  },
-
-  "permissionDenied": "Permission denied to open this file.",
-  "@permissionDenied": {
-    "description": "Error message when permission is denied"
   },
 
   "errorOpeningFile": "Error opening file: {message}",
@@ -1599,6 +1619,131 @@
         "type": "String"
       }
     }
+  },
+
+  "debugMode": "Debug Mode",
+  "@debugMode": {
+    "description": "Debug mode label"
+  },
+
+  "debugSettings": "Debug Settings",
+  "@debugSettings": {
+    "description": "Debug settings screen title"
+  },
+
+  "advancedToolsAndDiagnostics": "Advanced tools & diagnostics",
+  "@advancedToolsAndDiagnostics": {
+    "description": "Debug settings subtitle"
+  },
+
+  "enableDebugMode": "Enable Debug Mode",
+  "@enableDebugMode": {
+    "description": "Toggle to enable debug mode"
+  },
+
+  "debugModeEnabled": "🛠️ Debug mode enabled",
+  "@debugModeEnabled": {
+    "description": "Toast message when debug mode is enabled"
+  },
+
+  "debugModeDisabled": "Debug mode disabled",
+  "@debugModeDisabled": {
+    "description": "Toast message when debug mode is disabled"
+  },
+
+  "debugModeDescription": "Show developer tools and diagnostics",
+  "@debugModeDescription": {
+    "description": "Description of what debug mode does"
+  },
+
+  "appInfo": "App Info",
+  "@appInfo": {
+    "description": "App information section"
+  },
+
+  "diagnostics": "Diagnostics",
+  "@diagnostics": {
+    "description": "Diagnostics section title"
+  },
+
+  "developer": "Developer",
+  "@developer": {
+    "description": "Developer section title"
+  },
+
+  "sampleData": "Sample Data",
+  "@sampleData": {
+    "description": "Sample data section title"
+  },
+
+  "confirmClearSampleData": "Are you sure you want to delete all sample data?",
+  "@confirmClearSampleData": {
+    "description": "Confirmation dialog for clearing sample data"
+  },
+
+  "sampleDataCleared": "Sample data cleared successfully",
+  "@sampleDataCleared": {
+    "description": "Success message after clearing sample data"
+  },
+
+  "tapVersionToEnable": "Tap version 7 times to enable debug mode",
+  "@tapVersionToEnable": {
+    "description": "Hint for enabling debug mode"
+  },
+
+  "appVersion": "App Version",
+  "@appVersion": {
+    "description": "App version label"
+  },
+
+  "buildNumber": "Build Number",
+  "@buildNumber": {
+    "description": "Build number label"
+  },
+
+  "platform": "Platform",
+  "@platform": {
+    "description": "Platform label (iOS/Android)"
+  },
+
+  "deviceInfo": "Device Info",
+  "@deviceInfo": {
+    "description": "Device information label"
+  },
+
+  "addSampleInvestments": "Add sample investments",
+  "@addSampleInvestments": {
+    "description": "Subtitle for seed demo data button"
+  },
+
+  "deleteSampleInvestments": "Delete all sample investments and goals",
+  "@deleteSampleInvestments": {
+    "description": "Subtitle for clear sample data button"
+  },
+
+  "viewAppInformation": "View app version and device details",
+  "@viewAppInformation": {
+    "description": "Subtitle for app info button"
+  },
+
+  "sampleDataSeeded": "Sample data added successfully",
+  "@sampleDataSeeded": {
+    "description": "Success message after seeding sample data"
+  },
+
+  "errorOccurred": "An error occurred",
+  "@errorOccurred": {
+    "description": "Generic error message"
+  },
+
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
+  },
+
+  "noSampleDataToClear": "No sample data to clear",
+  "@noSampleDataToClear": {
+    "description": "Message when there is no sample data to delete"
   }
 }
 

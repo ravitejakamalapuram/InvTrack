@@ -1,9 +1,14 @@
 /// About screen with app info, legal documents, and support.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
+import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -14,132 +19,267 @@ import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// App version info - matches pubspec.yaml version: 3.5.1+19
-const String _appVersion = '3.50.0';
-const String _buildNumber = '138';
-
 /// Screen showing app information and legal documents.
-class AboutScreen extends ConsumerWidget {
+class AboutScreen extends ConsumerStatefulWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends ConsumerState<AboutScreen> {
+  int _tapCount = 0;
+  Timer? _resetTimer;
+
+  static const _requiredTaps = 7;
+  static const _tapWindow = Duration(seconds: 3);
+
+  @override
+  void dispose() {
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleVersionTap() async {
+    setState(() => _tapCount++);
+
+    // Haptic feedback
+    HapticFeedback.lightImpact();
+
+    // Reset timer
+    _resetTimer?.cancel();
+    _resetTimer = Timer(_tapWindow, () {
+      if (mounted) {
+        setState(() => _tapCount = 0);
+      }
+    });
+
+    // Check if activated
+    if (_tapCount >= _requiredTaps) {
+      // Reset counter and cancel timer immediately to prevent double-trigger
+      setState(() => _tapCount = 0);
+      _resetTimer?.cancel();
+
+      // Activate debug mode with proper error handling
+      await _activateDebugMode();
+    }
+  }
+
+  Future<void> _activateDebugMode() async {
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(debugModeProvider.notifier);
+    final wasEnabled = ref.read(debugModeProvider);
+
+    try {
+      await notifier.toggle();
+
+      // Success haptic
+      HapticFeedback.mediumImpact();
+
+      // Show success toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              wasEnabled ? l10n.debugModeDisabled : l10n.debugModeEnabled,
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: wasEnabled ? null : AppColors.successLight,
+          ),
+        );
+      }
+    } catch (e, st) {
+      // Handle error with centralized error handler
+      if (!mounted) return;
+
+      ErrorHandler.handle(
+        e,
+        st,
+        context: context,
+        showFeedback: true,
+      );
+
+      // Failure haptic
+      HapticFeedback.heavyImpact();
+
+      // Show failure toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.debugModeActivationFailed),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppColors.errorLight,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final packageInfoAsync = ref.watch(packageInfoProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about, style: AppTypography.h3)),
-      body: ListView(
-        children: [
-          SizedBox(height: AppSpacing.md),
+      body: packageInfoAsync.when(
+        data: (packageInfo) => ListView(
+          children: [
+            SizedBox(height: AppSpacing.md),
 
-          // App logo and name
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primaryLight,
-                        AppColors.primaryLight.withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            // App logo and name
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primaryLight,
+                          AppColors.primaryLight.withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    child: Icon(Icons.trending_up, size: 40, color: Colors.white),
                   ),
-                  child: Icon(Icons.trending_up, size: 40, color: Colors.white),
-                ),
-                SizedBox(height: AppSpacing.md),
-                Text(
-                  l10n.invTrack,
-                  style: AppTypography.h2.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                    fontWeight: FontWeight.bold,
+                  SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.invTrack,
+                    style: AppTypography.h2.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.xxs),
+                  Semantics(
+                    label: '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
+                    button: true,
+                    onTap: _handleVersionTap,
+                    child: GestureDetector(
+                      onTap: _handleVersionTap,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        child: Center(
+                          child: Text(
+                            l10n.version(packageInfo.version, packageInfo.buildNumber),
+                            style: AppTypography.small.copyWith(
+                              color: isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: AppSpacing.xl),
+
+            // Legal section
+            SettingsSection(
+              title: l10n.legal,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.privacy_tip,
+                  iconColor: Colors.purple,
+                  title: l10n.privacyPolicy,
+                  onTap: () => _openLegalScreen(
+                    context,
+                    l10n.privacyPolicy,
+                    _privacyPolicy,
                   ),
                 ),
-                SizedBox(height: AppSpacing.xxs),
-                Text(
-                  l10n.version(_appVersion, _buildNumber),
-                  style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
+                SettingsNavTile(
+                  icon: Icons.description,
+                  iconColor: Colors.purple,
+                  title: l10n.termsOfService,
+                  onTap: () => _openLegalScreen(
+                    context,
+                    l10n.termsOfService,
+                    _termsOfService,
                   ),
                 ),
               ],
             ),
-          ),
 
-          SizedBox(height: AppSpacing.xl),
-
-          // Legal section
-          SettingsSection(
-            title: l10n.legal,
-            children: [
-              SettingsNavTile(
-                icon: Icons.privacy_tip,
-                iconColor: Colors.purple,
-                title: l10n.privacyPolicy,
-                onTap: () => _openLegalScreen(
-                  context,
-                  l10n.privacyPolicy,
-                  _privacyPolicy,
+            // Support section
+            SettingsSection(
+              title: l10n.support,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.help_outline,
+                  iconColor: Colors.blue,
+                  title: l10n.helpAndFaq,
+                  onTap: () => _openHelpPage(context),
                 ),
-              ),
-              SettingsNavTile(
-                icon: Icons.description,
-                iconColor: Colors.purple,
-                title: l10n.termsOfService,
-                onTap: () => _openLegalScreen(
-                  context,
-                  l10n.termsOfService,
-                  _termsOfService,
+                SettingsNavTile(
+                  icon: Icons.email_outlined,
+                  iconColor: Colors.teal,
+                  title: l10n.contactSupport,
+                  subtitle: l10n.supportEmail,
+                  onTap: () => _openSupportEmail(context, packageInfo.version),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          // Support section
-          SettingsSection(
-            title: l10n.support,
-            children: [
-              SettingsNavTile(
-                icon: Icons.help_outline,
-                iconColor: Colors.blue,
-                title: l10n.helpAndFaq,
-                onTap: () => _openHelpPage(context),
-              ),
-              SettingsNavTile(
-                icon: Icons.email_outlined,
-                iconColor: Colors.teal,
-                title: l10n.contactSupport,
-                subtitle: l10n.supportEmail,
-                onTap: () => _openSupportEmail(context),
-              ),
-            ],
-          ),
-
-          // Made with love
-          Padding(
-            padding: EdgeInsets.all(AppSpacing.xl),
-            child: Center(
-              child: Text(
-                l10n.madeWithLove,
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral500Dark
-                      : AppColors.neutral400Light,
+            // Made with love
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: Text(
+                  l10n.madeWithLove,
+                  style: AppTypography.small.copyWith(
+                    color: isDark
+                        ? AppColors.neutral500Dark
+                        : AppColors.neutral400Light,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          SizedBox(height: AppSpacing.xl),
-        ],
+            SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.errorLight,
+                ),
+                SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.errorLoadingAppInfo,
+                  style: AppTypography.h3,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.lg),
+                ElevatedButton.icon(
+                  onPressed: () => ref.refresh(packageInfoProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -160,14 +300,15 @@ class AboutScreen extends ConsumerWidget {
   }
 
   /// Opens the email client for support
-  Future<void> _openSupportEmail(BuildContext context) async {
-    const supportEmail = 'invtrack_support@googlegroups.com';
+  Future<void> _openSupportEmail(BuildContext context, String appVersion) async {
+    final l10n = AppLocalizations.of(context);
+    final supportEmail = l10n.supportEmail;
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
       query: _encodeQueryParameters({
-        'subject': 'InvTrack Support Request (v$_appVersion)',
-        'body': 'Please describe your issue or question:\n\n',
+        'subject': l10n.supportEmailSubject(appVersion),
+        'body': l10n.supportEmailBody,
       }),
     );
 
@@ -181,7 +322,7 @@ class AboutScreen extends ConsumerWidget {
         await _copyToClipboardWithFeedback(
           context,
           supportEmail,
-          'Email copied to clipboard: $supportEmail',
+          l10n.emailCopiedMessage(supportEmail),
         );
       }
     } catch (e) {
@@ -190,7 +331,7 @@ class AboutScreen extends ConsumerWidget {
       await _copyToClipboardWithFeedback(
         context,
         supportEmail,
-        'Email copied to clipboard: $supportEmail',
+        l10n.emailCopiedMessage(supportEmail),
       );
     }
   }
@@ -201,12 +342,13 @@ class AboutScreen extends ConsumerWidget {
     String text,
     String message,
   ) async {
+    final l10n = AppLocalizations.of(context);
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(label: 'OK', onPressed: () {}),
+          action: SnackBarAction(label: l10n.ok, onPressed: () {}),
         ),
       );
     }
