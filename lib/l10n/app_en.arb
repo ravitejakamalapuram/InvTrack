@@ -782,6 +782,21 @@
     "description": "OK button label"
   },
 
+  "errorLoadingAppInfo": "Unable to load app information",
+  "@errorLoadingAppInfo": {
+    "description": "Error message when app info fails to load"
+  },
+
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button label"
+  },
+
+  "debugModeActivationFailed": "Failed to toggle debug mode",
+  "@debugModeActivationFailed": {
+    "description": "Error message when debug mode toggle fails"
+  },
+
   "madeWithLove": "Made with ❤️ for smart investors",
   "@madeWithLove": {
     "description": "Footer message"

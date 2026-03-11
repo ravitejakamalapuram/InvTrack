@@ -6,7 +6,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -15,13 +17,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-/// Provider for PackageInfo (app version, build number, etc.)
-final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
-  return await PackageInfo.fromPlatform();
-});
 
 /// Screen showing app information and legal documents.
 class AboutScreen extends ConsumerStatefulWidget {
@@ -44,7 +40,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     super.dispose();
   }
 
-  void _handleVersionTap() {
+  Future<void> _handleVersionTap() async {
     setState(() => _tapCount++);
 
     // Haptic feedback
@@ -64,9 +60,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       setState(() => _tapCount = 0);
       _resetTimer?.cancel();
 
-      // Fire async activation (no await needed - fire-and-forget is safe here
-      // because we've already reset the counter and cancelled the timer)
-      _activateDebugMode();
+      // Activate debug mode with proper error handling
+      await _activateDebugMode();
     }
   }
 
@@ -75,22 +70,48 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     final notifier = ref.read(debugModeProvider.notifier);
     final wasEnabled = ref.read(debugModeProvider);
 
-    await notifier.toggle();
+    try {
+      await notifier.toggle();
 
-    // Success haptic
-    HapticFeedback.mediumImpact();
+      // Success haptic
+      HapticFeedback.mediumImpact();
 
-    // Show toast
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            wasEnabled ? l10n.debugModeDisabled : l10n.debugModeEnabled,
+      // Show success toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              wasEnabled ? l10n.debugModeDisabled : l10n.debugModeEnabled,
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: wasEnabled ? null : AppColors.successLight,
           ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: wasEnabled ? null : AppColors.successLight,
-        ),
+        );
+      }
+    } catch (e, st) {
+      // Handle error with centralized error handler
+      if (!mounted) return;
+
+      ErrorHandler.handle(
+        e,
+        st,
+        context: context,
+        showFeedback: true,
       );
+
+      // Failure haptic
+      HapticFeedback.heavyImpact();
+
+      // Show failure toast
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.debugModeActivationFailed),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppColors.errorLight,
+          ),
+        );
+      }
     }
   }
 
@@ -138,15 +159,24 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   SizedBox(height: AppSpacing.xxs),
                   Semantics(
                     label: '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
-                    button: false,
+                    button: true,
+                    onTap: _handleVersionTap,
                     child: GestureDetector(
                       onTap: _handleVersionTap,
-                      child: Text(
-                        l10n.version(packageInfo.version, packageInfo.buildNumber),
-                        style: AppTypography.small.copyWith(
-                          color: isDark
-                              ? AppColors.neutral400Dark
-                              : AppColors.neutral500Light,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        child: Center(
+                          child: Text(
+                            l10n.version(packageInfo.version, packageInfo.buildNumber),
+                            style: AppTypography.small.copyWith(
+                              color: isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -224,7 +254,31 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error loading app info: $error'),
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.errorLight,
+                ),
+                SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.errorLoadingAppInfo,
+                  style: AppTypography.h3,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.lg),
+                ElevatedButton.icon(
+                  onPressed: () => ref.refresh(packageInfoProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
