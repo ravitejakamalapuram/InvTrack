@@ -155,20 +155,44 @@ class CashFlowHiveModel extends HiveObject {
 
 class LocalDocumentStorageService {
   final Directory _baseDir;
-  
+
   Future<String> saveDocument(
     String guestUserId,
     String investmentId,
     String fileName,
     Uint8List bytes,
   ) async {
+    // ✅ FIXED: Sanitize fileName to prevent path traversal attacks
+    final sanitizedFileName = _sanitizeFileName(fileName);
+    if (sanitizedFileName.isEmpty) {
+      throw ArgumentError('Invalid file name: $fileName');
+    }
+
     final dir = Directory('${_baseDir.path}/guest_$guestUserId/documents/$investmentId');
     await dir.create(recursive: true);
-    
-    final file = File('${dir.path}/$fileName');
+
+    final file = File('${dir.path}/$sanitizedFileName');
     await file.writeAsBytes(bytes);
-    
+
     return file.path;
+  }
+
+  /// Sanitize file name to prevent path traversal and invalid characters
+  String _sanitizeFileName(String fileName) {
+    // Get basename to remove any path separators
+    final basename = path.basename(fileName);
+
+    // Remove or replace disallowed characters: slashes, nulls, "..", control chars
+    final sanitized = basename
+        .replaceAll(RegExp(r'[/\\]'), '_')  // Replace slashes
+        .replaceAll(RegExp(r'\.\.'), '_')   // Replace ".."
+        .replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');  // Remove control chars
+
+    // Enforce max length (255 chars is typical filesystem limit)
+    final maxLength = 255;
+    return sanitized.length > maxLength
+        ? sanitized.substring(0, maxLength)
+        : sanitized;
   }
   
   Future<Uint8List?> readDocument(String localPath) async {
@@ -265,15 +289,20 @@ class HiveInvestmentRepository implements InvestmentRepository {
   
   @override
   Stream<List<InvestmentEntity>> watchAllInvestments() {
-    // ✅ FIXED: Use listenable() instead of watch() to emit initial value
-    // watch() only fires on changes, not on subscription
-    // listenable() emits current state immediately, then updates
-    return _investmentsBox.listenable().map((_) {
-      return _investmentsBox.values
-          .map((model) => _toEntity(model))
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    });
+    // ✅ FIXED: Combine initial value + watch stream to emit immediately and on changes
+    // box.watch() returns Stream<BoxEvent> but doesn't emit initial state
+    // Solution: Start with current values, then merge with watch stream
+    return Stream.value(_getCurrentInvestments())
+        .followedBy(
+          _investmentsBox.watch().map((_) => _getCurrentInvestments()),
+        );
+  }
+
+  List<InvestmentEntity> _getCurrentInvestments() {
+    return _investmentsBox.values
+        .map((model) => _toEntity(model))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
   
   @override
@@ -369,17 +398,29 @@ class HiveInvestmentRepository implements InvestmentRepository {
 ```dart
 // lib/core/di/repository_module.dart
 
+// ✅ FIXED: Handle AsyncValue states properly to avoid crashes
 final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
   final authState = ref.watch(authStateProvider);
-  final user = authState.value;
-  
-  if (user == null || user.isGuest) {
-    // Guest mode: Use Hive
-    return ref.watch(hiveInvestmentRepositoryProvider);
-  } else {
-    // Signed-in mode: Use Firestore
-    return ref.watch(firestoreInvestmentRepositoryProvider);
-  }
+
+  return authState.when(
+    data: (user) {
+      if (user == null || user.isGuest) {
+        // Guest mode: Use Hive
+        return ref.watch(hiveInvestmentRepositoryProvider);
+      } else {
+        // Signed-in mode: Use Firestore
+        return ref.watch(firestoreInvestmentRepositoryProvider);
+      }
+    },
+    loading: () {
+      // Default to guest mode while loading auth state
+      return ref.watch(hiveInvestmentRepositoryProvider);
+    },
+    error: (_, __) {
+      // Fallback to guest mode on auth error
+      return ref.watch(hiveInvestmentRepositoryProvider);
+    },
+  );
 });
 
 final hiveInvestmentRepositoryProvider = Provider<HiveInvestmentRepository>((ref) {
@@ -396,11 +437,22 @@ final hiveInvestmentRepositoryProvider = Provider<HiveInvestmentRepository>((ref
   );
 });
 
+// ✅ FIXED: Only access userId when we have authenticated user data
 final firestoreInvestmentRepositoryProvider = Provider<FirestoreInvestmentRepository>((ref) {
   final firestore = ref.watch(firestoreProvider);
   final authState = ref.watch(authStateProvider);
-  final userId = authState.value!.id;
-  
+
+  // This provider should only be called when user is authenticated
+  // If called during loading/error, throw descriptive error
+  final userId = authState.maybeWhen(
+    data: (user) => user?.id,
+    orElse: () => null,
+  );
+
+  if (userId == null) {
+    throw StateError('FirestoreInvestmentRepository requires authenticated user');
+  }
+
   return FirestoreInvestmentRepository(
     firestore: firestore,
     userId: userId,
@@ -715,11 +767,23 @@ class GuestDataMigrationService {
     required List<DocumentEntity> guestDocuments,
     required String signedInUserId,
   }) async {
-    // ✅ FIXED: Upload guest data FIRST, then delete cloud data
-    // This prevents data loss if upload fails mid-process
+    // ⚠️ LIMITATION: This is a simplified implementation for documentation
+    // ✅ PRODUCTION SOLUTION: Use Cloud Function for atomic server-side swap
+    //
+    // Recommended production approach:
+    // 1. Upload guest data to staging namespace: users/{userId}/staging_*
+    // 2. Call Cloud Function that performs atomic swap:
+    //    - Firestore transaction/batch write
+    //    - Delete all live investments/cashflows/goals/documents
+    //    - Move staging_* data to live namespace
+    //    - All-or-nothing operation
+    // 3. Cleanup staging namespace after successful swap
+    //
+    // This ensures no partial state if operation fails mid-process
 
-    // Step 1: Upload guest data to temporary staging path
-    LoggerService.info('Uploading guest data to staging...');
+    // Simplified implementation (for MVP/documentation):
+    // Step 1: Upload guest data to live namespace
+    LoggerService.info('Uploading guest data...');
     await _mergeData(
       guestInvestments: guestInvestments,
       guestCashFlows: guestCashFlows,
@@ -740,16 +804,23 @@ class GuestDataMigrationService {
       throw Exception('Guest data upload verification failed - aborting replace');
     }
 
-    // Step 3: Only now delete old cloud data (guest data is safely uploaded)
+    // Step 3: Delete old cloud data (non-atomic - see limitation note above)
     LoggerService.info('Deleting old cloud data...');
-    // Note: In a real implementation, this would use a Firestore transaction
-    // or Cloud Function to ensure atomicity
     final existingInvestments = await _firestoreRepo.getAllInvestments();
     for (final inv in existingInvestments) {
       // Skip newly uploaded guest investments
       final isGuestInvestment = guestInvestments.any((g) => g.id == inv.id);
       if (!isGuestInvestment) {
         await _firestoreRepo.deleteInvestment(inv.id);
+      }
+    }
+
+    // Also delete old cash flows and documents (not just investments/goals)
+    final existingCashFlows = await _firestoreRepo.getAllCashFlows();
+    for (final cf in existingCashFlows) {
+      final isGuestCashFlow = guestCashFlows.any((g) => g.id == cf.id);
+      if (!isGuestCashFlow) {
+        await _firestoreRepo.deleteCashFlow(cf.id);
       }
     }
 

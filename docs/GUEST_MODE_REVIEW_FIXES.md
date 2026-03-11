@@ -2,11 +2,12 @@
 
 ## Summary
 
-This document tracks all fixes applied based on the comprehensive CodeRabbit review of PR #261.
+This document tracks all fixes applied based on CodeRabbit reviews of PR #261.
 
-**Review Date**: March 11, 2026  
-**Total Issues**: 25 (10 Critical, 6 Major, 5 Minor, 4 Trivial)  
-**Status**: ✅ All critical and major issues resolved
+**Review Date**: March 11, 2026
+**First Review**: 25 issues (10 Critical, 6 Major, 5 Minor, 4 Trivial)
+**Second Review**: 24 additional issues (5 Critical, 10 Major, 7 Minor, 2 Trivial)
+**Status**: ⚠️ In Progress - Critical issues from second review being addressed
 
 ---
 
@@ -265,17 +266,64 @@ try {
 
 ---
 
-## Next Steps
+## Next Steps (First Review)
 
-1. ✅ All critical issues resolved - **ready for implementation**
-2. Commit and push fixes to PR #261
-3. Request re-review from CodeRabbit
-4. Address any remaining feedback
-5. Merge PR and begin Phase 1 implementation
+1. ✅ All critical issues resolved
+2. ✅ Committed and pushed fixes to PR #261
+3. ✅ CodeRabbit performed second review
+4. ⚠️ Addressing second review feedback (in progress)
 
 ---
 
-**Review Status**: ✅ **APPROVED FOR IMPLEMENTATION**
+## 🔄 Second Review Fixes (In Progress)
 
-All blocking issues have been resolved. The documentation is now comprehensive, architecturally sound, and compliant with all InvTrack Enterprise Rules.
+### Critical Issues from Second Review (5)
+
+#### 26. ✅ RESOLVED: Stream vs ValueListenable Conflict
+**File**: `GUEST_MODE_TECHNICAL_SPEC.md` line 277
+**Issue**: Previous fix used `listenable()` but it returns `ValueListenable`, not `Stream`
+**Solution**: Use `Stream.value()` + `followedBy(box.watch())` pattern
+```dart
+Stream<List<InvestmentEntity>> watchAllInvestments() {
+  return Stream.value(_getCurrentInvestments())
+      .followedBy(_investmentsBox.watch().map((_) => _getCurrentInvestments()));
+}
+```
+
+#### 27. ✅ RESOLVED: Path Traversal Vulnerability
+**File**: `GUEST_MODE_TECHNICAL_SPEC.md` line 169
+**Issue**: `fileName` not sanitized before filesystem write
+**Fix**: Added `_sanitizeFileName()` method with `path.basename()` and character filtering
+
+#### 28. ✅ RESOLVED: Unsafe `.value` Access
+**File**: `GUEST_MODE_TECHNICAL_SPEC.md` line 408
+**Issue**: `authState.value` reintroduces loading/error crash
+**Fix**: Use `.when()` to handle all AsyncValue states properly
+
+#### 29. ✅ RESOLVED: "Replace" Description Reversed
+**File**: `GUEST_MODE_IMPLEMENTATION_PLAN.md` line 233
+**Issue**: Said "Replace: Keep cloud, discard guest" - opposite of correct
+**Fix**: Changed to "Replace: Keep guest data, discard cloud"
+
+#### 30. ✅ DOCUMENTED: "Replace" Strategy Not Atomic
+**File**: `GUEST_MODE_TECHNICAL_SPEC.md` line 764
+**Issue**: Non-atomic operation can leave mixed state
+**Fix**: Added limitation note + recommended Cloud Function approach for production
+
+### Major Issues from Second Review (10)
+
+#### 31-40. ⏳ TODO: Remaining major issues
+- Migration strategy parameter usage
+- Exchange rate plan alignment
+- Auto-dispose box closure
+- GDPR consent clarification
+- Markdown formatting
+- Contrast requirements
+- And others...
+
+---
+
+**Review Status**: ⚠️ **IN PROGRESS**
+
+Critical issues from second review are being addressed systematically. See `docs/GUEST_MODE_NEW_ISSUES.md` for complete list.
 

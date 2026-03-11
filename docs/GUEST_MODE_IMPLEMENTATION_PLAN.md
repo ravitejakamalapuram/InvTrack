@@ -226,9 +226,9 @@ class GuestDataMigrationService {
 
 ### Case 1: Guest has data, signs in to existing account
 - **Solution**: Prompt to merge or replace
-- **Options**: 
+- **Options**:
   - Merge: Combine guest + cloud data
-  - Replace: Keep cloud data, discard guest
+  - Replace: Keep guest data, discard cloud (replace cloud with local)
   - Keep Local: Stay in guest mode
 
 ### Case 2: Migration fails mid-process
