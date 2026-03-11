@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/providers/package_info_provider.dart';
@@ -48,10 +49,26 @@ class DebugSettingsScreen extends ConsumerWidget {
                 subtitle: l10n.debugModeDescription,
                 value: isDebugEnabled,
                 onChanged: (value) async {
-                  await ref.read(debugModeProvider.notifier).setEnabled(value);
-                  if (!value && context.mounted) {
-                    // If debug mode is disabled, pop back to settings
-                    Navigator.of(context).pop();
+                  try {
+                    await ref.read(debugModeProvider.notifier).setEnabled(value);
+
+                    // Only pop if write succeeded and debug mode was disabled
+                    if (!value && context.mounted) {
+                      // If debug mode is disabled, pop back to settings
+                      Navigator.of(context).pop();
+                    }
+                  } catch (e, st) {
+                    // Handle error with centralized error handler
+                    if (!context.mounted) return;
+
+                    ErrorHandler.handle(
+                      e,
+                      st,
+                      context: context,
+                      showFeedback: true,
+                    );
+
+                    // Don't pop the screen when an error occurs
                   }
                 },
               ),
