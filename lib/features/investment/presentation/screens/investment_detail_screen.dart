@@ -76,6 +76,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
+    // Calculate appropriate foreground color based on background luminance
+    // to ensure WCAG 4.5:1 contrast ratio (Rule 7.2)
+    final isLightBackground = primaryColor.computeLuminance() > 0.5;
+    final foregroundColor = isLightBackground
+        ? Colors.black.withValues(alpha: 0.87)  // Dark text on light background
+        : Colors.white.withValues(alpha: 0.95);  // Light text on dark background
+    final scrimColor = isLightBackground
+        ? Colors.black.withValues(alpha: 0.08)  // Light scrim on light background
+        : Colors.white.withValues(alpha: 0.15);  // Dark scrim on dark background
+
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDark
@@ -245,7 +255,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
+                                color: scrimColor,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -253,7 +263,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                 children: [
                                   Icon(
                                     Icons.edit_note_rounded,
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: foregroundColor,
                                     size: 16,
                                     semanticLabel: l10n.notesLabel,
                                   ),
@@ -262,7 +272,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                     child: Text(
                                       widget.investment.notes!,
                                       style: AppTypography.caption.copyWith(
-                                        color: Colors.white.withValues(alpha: 0.95),
+                                        color: foregroundColor,
                                         fontSize: 13,
                                         height: 1.4,
                                       ),
