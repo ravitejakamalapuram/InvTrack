@@ -802,11 +802,6 @@
     "description": "Footer message"
   },
 
-  "dataAndAccount": "Data & Account",
-  "@dataAndAccount": {
-    "description": "Data management screen title"
-  },
-
   "exportFailed": "Export failed: {error}",
   "@exportFailed": {
     "description": "Export failure message",
@@ -825,11 +820,6 @@
   "importStrategy": "Import Strategy",
   "@importStrategy": {
     "description": "Import strategy dialog title"
-  },
-
-  "cancel": "Cancel",
-  "@cancel": {
-    "description": "Cancel button label"
   },
 
   "replaceAllData": "Replace All Data?",
@@ -977,11 +967,6 @@
     "description": "Set up FIRE button label"
   },
 
-  "retry": "Retry",
-  "@retry": {
-    "description": "Retry button label"
-  },
-
   "basicSettings": "Basic Settings",
   "@basicSettings": {
     "description": "Basic settings section title"
@@ -1015,11 +1000,6 @@
         "type": "int"
       }
     }
-  },
-
-  "save": "Save",
-  "@save": {
-    "description": "Save button label"
   },
 
   "monthlyExpenses": "Monthly Expenses",
@@ -1117,24 +1097,9 @@
     "description": "Button text to get started with a feature"
   },
 
-  "retry": "Retry",
-  "@retry": {
-    "description": "Button text to retry an action"
-  },
-
   "openInPdfViewer": "Open in PDF Viewer",
   "@openInPdfViewer": {
     "description": "Button text to open document in external PDF viewer"
-  },
-
-  "cancel": "Cancel",
-  "@cancel": {
-    "description": "Button text to cancel an action"
-  },
-
-  "save": "Save",
-  "@save": {
-    "description": "Button text to save changes"
   },
 
   "changeFile": "Change File",
@@ -1177,11 +1142,6 @@
     "description": "Dialog title for goal deletion confirmation"
   },
 
-  "delete": "Delete",
-  "@delete": {
-    "description": "Button text to delete an item"
-  },
-
   "viewActiveGoals": "View active goals",
   "@viewActiveGoals": {
     "description": "Button text to view active goals"
@@ -1213,11 +1173,6 @@
         "type": "int"
       }
     }
-  },
-
-  "done": "Done",
-  "@done": {
-    "description": "Button text to complete an action"
   },
 
   "updateNow": "Update Now",
@@ -1363,11 +1318,6 @@
   "invalidUpdateLink": "Invalid update link format.",
   "@invalidUpdateLink": {
     "description": "Error message for invalid update URL"
-  },
-
-  "couldNotOpenUpdateLink": "Could not open update link",
-  "@couldNotOpenUpdateLink": {
-    "description": "Error message when update link cannot be opened"
   },
 
   "yearsFormat": "{age} years",
@@ -1636,19 +1586,9 @@
     "description": "App lock enabled confirmation message"
   },
 
-  "couldNotOpenUpdateLink": "Could not open update link. Please try again.",
-  "@couldNotOpenUpdateLink": {
-    "description": "Error message when update link cannot be opened"
-  },
-
   "fileNotFoundError": "File not found.",
   "@fileNotFoundError": {
     "description": "Error message when file is not found"
-  },
-
-  "permissionDenied": "Permission denied to open this file.",
-  "@permissionDenied": {
-    "description": "Error message when permission is denied"
   },
 
   "errorOpeningFile": "Error opening file: {message}",
