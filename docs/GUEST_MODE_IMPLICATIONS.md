@@ -128,12 +128,16 @@ User starts app → Guest mode → Local data created
 
 ### 4.1 Storage Performance
 
+⚠️ **Note: Performance numbers are estimated/target values pending validation by storage-level benchmarks**
+
 | Operation | Guest Mode (Hive) | Signed-In Mode (Firestore) |
 |-----------|-------------------|----------------------------|
 | **Read** | <10ms (local) | 50-200ms (cache) / 200-500ms (network) |
 | **Write** | <10ms (local) | 50-200ms (cache) / 200-500ms (network) |
 | **Query** | <20ms (local) | 100-300ms (cache) / 300-800ms (network) |
 | **Bulk Import** | <100ms (local) | 1-5s (network) |
+
+These values will be validated with dedicated low-level benchmarks in `integration_test/performance/` during Phase 5 (Testing & Polish).
 
 ### 4.2 App Size Impact
 

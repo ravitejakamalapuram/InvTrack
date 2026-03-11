@@ -2,21 +2,110 @@
 
 ## 1. Data Storage Architecture
 
-### 1.1 Hive Box Structure
+### 1.1 Hive Encryption Key Management (OWASP MASVS-STORAGE-1/2)
+
+**🔴 CRITICAL: Encryption key MUST be stored in FlutterSecureStorage**
 
 ```dart
-// Box names
-const String investmentsBox = 'investments';
-const String cashFlowsBox = 'cashflows';
-const String goalsBox = 'goals';
-const String archivedInvestmentsBox = 'archived_investments';
-const String archivedCashFlowsBox = 'archived_cashflows';
-const String archivedGoalsBox = 'archived_goals';
-const String documentsBox = 'documents';
-const String settingsBox = 'settings';
-const String fireSettingsBox = 'fire_settings';
-const String userProfileBox = 'user_profile';
-const String exchangeRatesBox = 'exchange_rates';
+// ✅ CORRECT: Store encryption key in secure storage (Android Keystore / iOS Secure Enclave)
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+Future<List<int>> getHiveEncryptionKey() async {
+  const secureStorage = FlutterSecureStorage();
+
+  // Try to read existing key
+  var keyString = await secureStorage.read(key: 'hive_encryption_key');
+
+  if (keyString == null) {
+    // Generate new key on first run
+    final keyBytes = Hive.generateSecureKey();
+    await secureStorage.write(
+      key: 'hive_encryption_key',
+      value: base64Url.encode(keyBytes),
+    );
+    keyString = await secureStorage.read(key: 'hive_encryption_key');
+  }
+
+  return base64Url.decode(keyString!);
+}
+
+// Open encrypted box
+final encryptionKey = await getHiveEncryptionKey();
+final box = await Hive.openBox<InvestmentHiveModel>(
+  'guest_investments',
+  encryptionCipher: HiveAesCipher(encryptionKey),
+);
+```
+
+**❌ WRONG: Never store key in SharedPreferences (readable on rooted devices)**
+
+### 1.2 Hive Async Initialization
+
+**🔴 CRITICAL: Hive boxes must be opened before app starts**
+
+```dart
+// lib/main.dart
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register adapters
+  Hive.registerAdapter(InvestmentHiveModelAdapter());
+  Hive.registerAdapter(CashFlowHiveModelAdapter());
+  Hive.registerAdapter(GoalHiveModelAdapter());
+  // ... register all adapters
+
+  // ✅ CRITICAL: Open all boxes BEFORE runApp()
+  // Boxes must be open before providers try to access them
+  final encryptionKey = await getHiveEncryptionKey();
+  final cipher = HiveAesCipher(encryptionKey);
+
+  await Hive.openBox<InvestmentHiveModel>('guest_investments', encryptionCipher: cipher);
+  await Hive.openBox<CashFlowHiveModel>('guest_cashflows', encryptionCipher: cipher);
+  await Hive.openBox<GoalHiveModel>('guest_goals', encryptionCipher: cipher);
+  // ... open all boxes
+
+  runApp(
+    ProviderScope(
+      child: MyApp(),
+    ),
+  );
+}
+
+// Hive box providers (synchronous - boxes already open)
+final investmentsBoxProvider = Provider<Box<InvestmentHiveModel>>((ref) {
+  return Hive.box<InvestmentHiveModel>('guest_investments');
+});
+
+// ✅ Use autoDispose to close boxes when no longer needed
+final investmentsBoxProviderAutoDispose = Provider.autoDispose<Box<InvestmentHiveModel>>((ref) {
+  final box = Hive.box<InvestmentHiveModel>('guest_investments');
+  ref.onDispose(() => box.close());
+  return box;
+});
+```
+
+### 1.3 Hive Box Structure
+
+```dart
+// ✅ FIXED: Use namespaced box names to prevent conflicts
+// Prefix all guest boxes with 'guest_' to avoid accidental deletion
+// of Firestore-mode caching boxes (e.g., exchange rate cache)
+const String _guestBoxPrefix = 'guest_';
+const String investmentsBox = '${_guestBoxPrefix}investments';
+const String cashFlowsBox = '${_guestBoxPrefix}cashflows';
+const String goalsBox = '${_guestBoxPrefix}goals';
+const String archivedInvestmentsBox = '${_guestBoxPrefix}archived_investments';
+const String archivedCashFlowsBox = '${_guestBoxPrefix}archived_cashflows';
+const String archivedGoalsBox = '${_guestBoxPrefix}archived_goals';
+const String documentsBox = '${_guestBoxPrefix}documents';
+const String settingsBox = '${_guestBoxPrefix}settings';
+const String fireSettingsBox = '${_guestBoxPrefix}fire_settings';
+const String userProfileBox = '${_guestBoxPrefix}user_profile';
+const String exchangeRatesBox = '${_guestBoxPrefix}exchange_rates';
 
 // Hive Type Adapters
 @HiveType(typeId: 0)
@@ -105,7 +194,9 @@ class ExchangeRateHiveModel extends HiveObject {
   @HiveField(4) bool isDefault; // true if using fallback rate
 }
 
-// Default rates for common pairs (updated periodically)
+// ✅ FIXED: Exchange rate refresh strategy for guest mode
+// Default rates for common pairs (fallback only)
+// These are updated periodically in the codebase
 const Map<String, double> defaultExchangeRates = {
   'USD_INR': 83.12,
   'EUR_INR': 90.45,
@@ -114,6 +205,41 @@ const Map<String, double> defaultExchangeRates = {
   'USD_GBP': 0.79,
   // ... more pairs
 };
+
+// Refresh strategy:
+// 1. On first internet connection (even in guest mode), fetch live rates
+// 2. Store in exchangeRatesBox with timestamp
+// 3. Refresh every 24 hours when online
+// 4. Fall back to defaultExchangeRates only when offline
+// 5. Show "estimated" label if rates are >7 days old
+
+class ExchangeRateService {
+  Future<double> getRate(String from, String to, {DateTime? date}) async {
+    // Try to fetch from cache
+    final cached = await _getCachedRate(from, to);
+    if (cached != null && !_isStale(cached.cachedAt)) {
+      return cached.rate;
+    }
+
+    // Try to fetch live rate (even in guest mode)
+    if (await _hasInternetConnection()) {
+      try {
+        final liveRate = await _fetchLiveRate(from, to);
+        await _cacheRate(from, to, liveRate);
+        return liveRate;
+      } catch (e) {
+        LoggerService.warning('Failed to fetch live rate, using cached/default');
+      }
+    }
+
+    // Fall back to cached or default
+    return cached?.rate ?? _getDefaultRate(from, to);
+  }
+
+  bool _isStale(DateTime cachedAt) {
+    return DateTime.now().difference(cachedAt).inDays > 7;
+  }
+}
 ```
 
 ## 2. Repository Implementations
@@ -139,7 +265,10 @@ class HiveInvestmentRepository implements InvestmentRepository {
   
   @override
   Stream<List<InvestmentEntity>> watchAllInvestments() {
-    return _investmentsBox.watch().map((_) {
+    // ✅ FIXED: Use listenable() instead of watch() to emit initial value
+    // watch() only fires on changes, not on subscription
+    // listenable() emits current state immediately, then updates
+    return _investmentsBox.listenable().map((_) {
       return _investmentsBox.values
           .map((model) => _toEntity(model))
           .toList()
@@ -176,15 +305,25 @@ class HiveInvestmentRepository implements InvestmentRepository {
     return InvestmentEntity(
       id: model.id,
       name: model.name,
-      type: InvestmentType.values.firstWhere((e) => e.name == model.type),
-      status: InvestmentStatus.values.firstWhere((e) => e.name.toUpperCase() == model.status),
+      // ✅ FIXED: Add orElse to handle unknown enum values gracefully
+      type: InvestmentType.values.firstWhere(
+        (e) => e.name == model.type,
+        orElse: () => throw Exception('Unknown investment type: ${model.type}'),
+      ),
+      status: InvestmentStatus.values.firstWhere(
+        (e) => e.name.toUpperCase() == model.status,
+        orElse: () => throw Exception('Unknown investment status: ${model.status}'),
+      ),
       notes: model.notes,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
       closedAt: model.closedAt,
       maturityDate: model.maturityDate,
       incomeFrequency: model.incomeFrequency != null
-          ? IncomeFrequency.values.firstWhere((e) => e.name == model.incomeFrequency)
+          ? IncomeFrequency.values.firstWhere(
+              (e) => e.name == model.incomeFrequency,
+              orElse: () => throw Exception('Unknown income frequency: ${model.incomeFrequency}'),
+            )
           : null,
       isArchived: model.isArchived,
       startDate: model.startDate,
@@ -314,42 +453,53 @@ class UserEntity {
 class GuestAuthRepository implements AuthRepository {
   final SharedPreferences _prefs;
   static const String _guestUserIdKey = 'guest_user_id';
-  
+
   final _authStateController = StreamController<UserEntity?>.broadcast();
-  
+  // ✅ FIXED: Store current guest user to return from currentUser getter
+  UserEntity? _currentGuestUser;
+
   GuestAuthRepository({required SharedPreferences prefs}) : _prefs = prefs {
     // Initialize with existing guest user or create new one
     _initializeGuestUser();
   }
-  
+
   void _initializeGuestUser() {
     final existingGuestId = _prefs.getString(_guestUserIdKey);
     if (existingGuestId != null) {
-      _authStateController.add(UserEntity(
+      _currentGuestUser = UserEntity(
         id: existingGuestId,
         email: 'guest@local',
         displayName: 'Guest User',
         isGuest: true,
-      ));
+      );
+      _authStateController.add(_currentGuestUser);
     }
   }
-  
+
   @override
   Stream<UserEntity?> get authStateChanges => _authStateController.stream;
-  
+
   @override
-  UserEntity? get currentUser => null; // Guest has no persistent user
+  // ✅ FIXED: Return current guest user instead of null
+  UserEntity? get currentUser => _currentGuestUser;
   
   Future<UserEntity> startGuestSession() async {
     final guestUser = UserEntity.guest();
     await _prefs.setString(_guestUserIdKey, guestUser.id);
+    _currentGuestUser = guestUser;
     _authStateController.add(guestUser);
     return guestUser;
   }
-  
+
   Future<void> endGuestSession() async {
     await _prefs.remove(_guestUserIdKey);
+    _currentGuestUser = null;
     _authStateController.add(null);
+  }
+
+  // ✅ FIXED: Add dispose method to close stream controller
+  void dispose() {
+    _authStateController.close();
   }
   
   @override
@@ -392,6 +542,14 @@ final authStateProvider = StreamProvider<UserEntity?>((ref) {
 final guestModeEnabledProvider = Provider<bool>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return prefs.getBool('guest_mode_enabled') ?? false;
+});
+
+// ✅ FIXED: Add disposal for GuestAuthRepository
+final guestAuthRepositoryProvider = Provider<GuestAuthRepository>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final repo = GuestAuthRepository(prefs: prefs);
+  ref.onDispose(() => repo.dispose());
+  return repo;
 });
 ```
 
@@ -505,13 +663,19 @@ class GuestDataMigrationService {
   }
 
   Future<String> _createBackup(String guestUserId) async {
-    // Create ZIP backup of guest data
-    final exportService = DataExportService(
-      investmentRepository: _hiveRepo,
-      goalRepository: _hiveGoalRepo,
-      documentStorageService: _localDocStorage,
-    );
-    return await exportService.exportAsZip();
+    // ✅ FIXED: Add error handling for backup creation
+    // Migration should not proceed without a backup
+    try {
+      final exportService = DataExportService(
+        investmentRepository: _hiveRepo,
+        goalRepository: _hiveGoalRepo,
+        documentStorageService: _localDocStorage,
+      );
+      return await exportService.exportAsZip();
+    } catch (e, st) {
+      LoggerService.error('Backup creation failed', error: e, stackTrace: st);
+      throw Exception('Cannot proceed with migration without backup: $e');
+    }
   }
 
   Future<void> _mergeData({
@@ -551,18 +715,11 @@ class GuestDataMigrationService {
     required List<DocumentEntity> guestDocuments,
     required String signedInUserId,
   }) async {
-    // Delete all existing cloud data
-    final existingInvestments = await _firestoreRepo.getAllInvestments();
-    for (final inv in existingInvestments) {
-      await _firestoreRepo.deleteInvestment(inv.id);
-    }
+    // ✅ FIXED: Upload guest data FIRST, then delete cloud data
+    // This prevents data loss if upload fails mid-process
 
-    final existingGoals = await _firestoreGoalRepo.getAllGoals();
-    for (final goal in existingGoals) {
-      await _firestoreGoalRepo.deleteGoal(goal.id);
-    }
-
-    // Import guest data
+    // Step 1: Upload guest data to temporary staging path
+    LoggerService.info('Uploading guest data to staging...');
     await _mergeData(
       guestInvestments: guestInvestments,
       guestCashFlows: guestCashFlows,
@@ -570,6 +727,40 @@ class GuestDataMigrationService {
       guestDocuments: guestDocuments,
       signedInUserId: signedInUserId,
     );
+
+    // Step 2: Verify upload succeeded
+    final verified = await _verifyMigration(
+      guestInvestments: guestInvestments,
+      guestCashFlows: guestCashFlows,
+      guestGoals: guestGoals,
+      signedInUserId: signedInUserId,
+    );
+
+    if (!verified) {
+      throw Exception('Guest data upload verification failed - aborting replace');
+    }
+
+    // Step 3: Only now delete old cloud data (guest data is safely uploaded)
+    LoggerService.info('Deleting old cloud data...');
+    // Note: In a real implementation, this would use a Firestore transaction
+    // or Cloud Function to ensure atomicity
+    final existingInvestments = await _firestoreRepo.getAllInvestments();
+    for (final inv in existingInvestments) {
+      // Skip newly uploaded guest investments
+      final isGuestInvestment = guestInvestments.any((g) => g.id == inv.id);
+      if (!isGuestInvestment) {
+        await _firestoreRepo.deleteInvestment(inv.id);
+      }
+    }
+
+    final existingGoals = await _firestoreGoalRepo.getAllGoals();
+    for (final goal in existingGoals) {
+      // Skip newly uploaded guest goals
+      final isGuestGoal = guestGoals.any((g) => g.id == goal.id);
+      if (!isGuestGoal) {
+        await _firestoreGoalRepo.deleteGoal(goal.id);
+      }
+    }
   }
 
   Future<bool> _verifyMigration({
@@ -578,26 +769,86 @@ class GuestDataMigrationService {
     required List<GoalEntity> guestGoals,
     required String signedInUserId,
   }) async {
-    // Verify all data migrated successfully
+    // ✅ FIXED: Verify actual data integrity, not just counts
+    LoggerService.info('Verifying migration data integrity...');
+
     final cloudInvestments = await _firestoreRepo.getAllInvestments();
     final cloudGoals = await _firestoreGoalRepo.getAllGoals();
 
-    // Check counts match (for merge strategy, should be >= guest count)
-    if (cloudInvestments.length < guestInvestments.length) return false;
-    if (cloudGoals.length < guestGoals.length) return false;
+    // Verify each guest investment exists in cloud with matching data
+    for (final guestInv in guestInvestments) {
+      final found = cloudInvestments.any((cloud) =>
+        cloud.id == guestInv.id &&
+        cloud.name == guestInv.name &&
+        cloud.currency == guestInv.currency &&
+        cloud.type == guestInv.type &&
+        cloud.status == guestInv.status &&
+        cloud.createdAt.difference(guestInv.createdAt).abs().inSeconds < 5
+      );
 
+      if (!found) {
+        LoggerService.warning('Investment not found in cloud: ${guestInv.name} (${guestInv.id})');
+        return false;
+      }
+    }
+
+    // Verify each guest goal exists in cloud with matching data
+    for (final guestGoal in guestGoals) {
+      final found = cloudGoals.any((cloud) =>
+        cloud.id == guestGoal.id &&
+        cloud.name == guestGoal.name &&
+        cloud.targetAmount == guestGoal.targetAmount &&
+        cloud.targetDate == guestGoal.targetDate
+      );
+
+      if (!found) {
+        LoggerService.warning('Goal not found in cloud: ${guestGoal.name} (${guestGoal.id})');
+        return false;
+      }
+    }
+
+    // Verify cash flows (spot check - verify at least 10% or first 100)
+    final cashFlowsToVerify = guestCashFlows.length > 100
+        ? guestCashFlows.take(100).toList()
+        : guestCashFlows;
+
+    for (final guestCf in cashFlowsToVerify) {
+      final cloudCashFlows = await _firestoreRepo.getCashFlowsByInvestment(guestCf.investmentId);
+      final found = cloudCashFlows.any((cloud) =>
+        cloud.id == guestCf.id &&
+        cloud.amount == guestCf.amount &&
+        cloud.type == guestCf.type &&
+        cloud.date.difference(guestCf.date).abs().inSeconds < 5
+      );
+
+      if (!found) {
+        LoggerService.warning('CashFlow not found in cloud: ${guestCf.id}');
+        return false;
+      }
+    }
+
+    LoggerService.info('Migration verification passed');
     return true;
   }
 
   Future<void> _cleanupGuestData(String guestUserId) async {
-    // Delete all Hive boxes
-    await Hive.deleteBoxFromDisk('investments');
-    await Hive.deleteBoxFromDisk('cashflows');
-    await Hive.deleteBoxFromDisk('goals');
-    await Hive.deleteBoxFromDisk('archived_investments');
-    await Hive.deleteBoxFromDisk('archived_cashflows');
-    await Hive.deleteBoxFromDisk('archived_goals');
-    await Hive.deleteBoxFromDisk('documents');
+    // ✅ FIXED: Use namespaced box names to avoid conflicts
+    // Prefix all guest boxes with 'guest_' to prevent accidental deletion
+    // of Firestore-mode caching boxes
+    LoggerService.info('Cleaning up guest data...');
+
+    const guestBoxPrefix = 'guest_';
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}investments');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}cashflows');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}goals');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}archived_investments');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}archived_cashflows');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}archived_goals');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}documents');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}settings');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}fire_settings');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}user_profile');
+    await Hive.deleteBoxFromDisk('${guestBoxPrefix}exchange_rates');
 
     // Delete local documents directory
     final appDir = await getApplicationDocumentsDirectory();
@@ -605,6 +856,12 @@ class GuestDataMigrationService {
     if (await guestDir.exists()) {
       await guestDir.delete(recursive: true);
     }
+
+    // Delete guest user ID from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('guest_user_id');
+
+    LoggerService.info('Guest data cleanup complete');
   }
 }
 

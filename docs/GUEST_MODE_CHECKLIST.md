@@ -5,13 +5,17 @@
 ### Dependencies
 - [ ] Add `hive: ^2.2.3` to `pubspec.yaml`
 - [ ] Add `hive_flutter: ^1.1.0` to `pubspec.yaml`
-- [ ] Add `path_provider: ^2.1.1` to `pubspec.yaml` (if not already present)
+- [ ] Add `path_provider: ^2.1.5` to `pubspec.yaml` (if not already present) ✅ FIXED: Updated to latest version
+- [ ] Add `flutter_secure_storage: ^9.0.0` to `pubspec.yaml` (for encryption key storage) 🔴 CRITICAL
 - [ ] Run `flutter pub get`
 
 ### Hive Setup
-- [ ] Initialize Hive in `main.dart` before `runApp()`
+- [ ] 🔴 CRITICAL: Create `getHiveEncryptionKey()` function using FlutterSecureStorage (OWASP MASVS-STORAGE-1/2)
+- [ ] 🔴 CRITICAL: Initialize Hive in `main.dart` BEFORE `runApp()` - boxes must be open before providers access them
+- [ ] 🔴 CRITICAL: Open all Hive boxes with encryption in `main.dart` using `await Hive.openBox<T>(name, encryptionCipher: cipher)`
 - [ ] Create `lib/core/di/hive_module.dart` for Hive providers
 - [ ] Register Hive adapters for all entities
+- [ ] ✅ FIXED: Use namespaced box names with 'guest_' prefix to prevent conflicts
 
 ### Hive Type Adapters
 - [ ] Create `lib/features/investment/data/models/investment_hive_model.dart`

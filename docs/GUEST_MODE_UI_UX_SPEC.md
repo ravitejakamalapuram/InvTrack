@@ -17,7 +17,12 @@
 ```
 
 ### 1.2 New Sign-In Screen with Guest Mode
-```
+
+ℹ️ **Note: Play Store Only (Android)**
+
+This app targets Google Play Store only. Apple Sign-In is not required.
+
+```text
 ┌─────────────────────────────────────┐
 │                                     │
 │         InvTracker Logo             │
@@ -357,30 +362,98 @@ Step 3: Migration prompt appears
 - Migration button: "Migrate data to cloud"
 
 ### 7.3 Color Contrast
-- Guest mode indicator: Orange/amber color (warning)
+- Guest mode indicator: Orange/amber color (warning) - MUST verify 4.5:1 contrast ratio against app bar background
 - Signed-in indicator: Green color (success)
 - Migration progress: Blue color (info)
+
+### 7.4 Testing Requirements
+
+🔴 **CRITICAL: Manual accessibility testing required before release**
+
+- [ ] Test all guest mode flows with **TalkBack (Android)** enabled
+- [ ] Test all guest mode flows with **VoiceOver (iOS)** enabled
+- [ ] Verify sign-in flow is fully navigable with screen readers
+- [ ] Verify migration flow provides clear audio feedback at each step
+- [ ] Test critical flows:
+  - Sign In screen
+  - Add Investment
+  - Investment List
+  - Overview Screen
+  - Settings Screen
+  - Migration Flow (all 3 screens)
+- [ ] Verify touch target sizes: minimum 44x44dp for all interactive elements
+- [ ] Test with large text sizes (accessibility settings)
+- [ ] Test with reduced motion enabled
 
 ## 8. Localization Strings
 
 ### 8.1 New ARB Entries Required
+
+✅ **FIXED: Complete ARB structure with metadata**
+
 ```json
 {
+  "@@locale": "en",
   "guestMode": "Guest Mode",
+  "@guestMode": {
+    "description": "Label for guest mode indicator"
+  },
   "continueAsGuest": "Continue as Guest",
+  "@continueAsGuest": {
+    "description": "Button text to start using app without signing in"
+  },
   "signInToBackup": "Sign in to backup",
+  "@signInToBackup": {
+    "description": "Prompt to sign in for cloud backup"
+  },
   "guestModeInfo": "Guest mode: Data stays on this device only",
+  "@guestModeInfo": {
+    "description": "Information about guest mode data storage"
+  },
   "migrateYourData": "Migrate Your Data?",
+  "@migrateYourData": {
+    "description": "Title for migration prompt dialog"
+  },
   "mergeWithCloud": "Merge with Cloud Data",
+  "@mergeWithCloud": {
+    "description": "Option to merge guest data with existing cloud data"
+  },
   "replaceCloudData": "Replace Cloud Data",
+  "@replaceCloudData": {
+    "description": "Option to replace cloud data with guest data"
+  },
   "keepSeparate": "Keep Separate",
+  "@keepSeparate": {
+    "description": "Option to export guest data and start fresh with cloud"
+  },
   "migrationInProgress": "Migrating Your Data...",
+  "@migrationInProgress": {
+    "description": "Title shown during data migration process"
+  },
   "migrationComplete": "Migration Complete!",
+  "@migrationComplete": {
+    "description": "Title shown when migration succeeds"
+  },
   "migrationFailed": "Migration Failed",
+  "@migrationFailed": {
+    "description": "Title shown when migration fails"
+  },
   "backupYourData": "Backup Your Data",
+  "@backupYourData": {
+    "description": "Prompt to backup data to cloud"
+  },
   "dataStoredLocally": "Data stored locally",
+  "@dataStoredLocally": {
+    "description": "Information that data is stored on device only"
+  },
   "willBeLostIfDeleted": "Will be lost if app deleted",
-  "exchangeRateCached": "Exchange rate cached, may not be current"
+  "@willBeLostIfDeleted": {
+    "description": "Warning that local data will be lost on app uninstall"
+  },
+  "exchangeRateCached": "Exchange rate cached, may not be current",
+  "@exchangeRateCached": {
+    "description": "Warning that exchange rates in guest mode may be outdated"
+  }
 }
 ```
 

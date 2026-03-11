@@ -74,15 +74,23 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   // Cloud storage using Firestore
 }
 
+// ✅ FIXED: Handle AsyncValue states properly
 // Provider selects implementation (NEW)
 final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
-  final user = ref.watch(authStateProvider).value;
-  
-  if (user == null || user.isGuest) {
-    return ref.watch(hiveInvestmentRepositoryProvider);
-  } else {
-    return ref.watch(firestoreInvestmentRepositoryProvider);
-  }
+  final authState = ref.watch(authStateProvider);
+
+  // Handle loading/error states - default to guest mode
+  return authState.when(
+    data: (user) {
+      if (user == null || user.isGuest) {
+        return ref.watch(hiveInvestmentRepositoryProvider);
+      } else {
+        return ref.watch(firestoreInvestmentRepositoryProvider);
+      }
+    },
+    loading: () => ref.watch(hiveInvestmentRepositoryProvider),
+    error: (_, __) => ref.watch(hiveInvestmentRepositoryProvider),
+  );
 });
 ```
 

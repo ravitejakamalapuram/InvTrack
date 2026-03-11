@@ -56,16 +56,23 @@ class HiveInvestmentRepository implements InvestmentRepository {
   // Local storage (new)
 }
 
+// ✅ FIXED: Handle AsyncValue states properly
 // Provider selects implementation based on auth state
 final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
   final authState = ref.watch(authStateProvider);
-  final isGuest = authState.value == null;
-  
-  if (isGuest) {
-    return ref.watch(hiveInvestmentRepositoryProvider);
-  } else {
-    return ref.watch(firestoreInvestmentRepositoryProvider);
-  }
+
+  // Handle loading/error states - default to guest mode
+  return authState.when(
+    data: (user) {
+      if (user == null || user.isGuest) {
+        return ref.watch(hiveInvestmentRepositoryProvider);
+      } else {
+        return ref.watch(firestoreInvestmentRepositoryProvider);
+      }
+    },
+    loading: () => ref.watch(hiveInvestmentRepositoryProvider),
+    error: (_, __) => ref.watch(hiveInvestmentRepositoryProvider),
+  );
 });
 ```
 
@@ -118,6 +125,7 @@ class GuestDataMigrationService {
   Future<MigrationResult> migrateToCloud({
     required String guestUserId,
     required String signedInUserId,
+    required MigrationStrategy strategy, // ✅ FIXED: Add required parameter
   }) async {
     // 1. Export guest data
     final guestData = await _exportGuestData(guestUserId);
