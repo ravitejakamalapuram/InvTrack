@@ -60,9 +60,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     // Check if activated
     if (_tapCount >= _requiredTaps) {
-      // Reset counter immediately to prevent double-trigger
+      // Reset counter and cancel timer immediately to prevent double-trigger
       setState(() => _tapCount = 0);
       _resetTimer?.cancel();
+
+      // Fire async activation (no await needed - fire-and-forget is safe here
+      // because we've already reset the counter and cancelled the timer)
       _activateDebugMode();
     }
   }
