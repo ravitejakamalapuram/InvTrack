@@ -4,7 +4,6 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -22,7 +21,6 @@ import 'package:inv_tracker/features/settings/data/providers/data_export_provide
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
@@ -47,7 +45,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final exportState = ref.watch(exportStateProvider);
     final zipExportState = ref.watch(zipExportStateProvider);
     final zipImportState = ref.watch(zipImportStateProvider);
-    final seedState = ref.watch(seedDataStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -124,28 +121,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               ),
             ],
           ),
-
-          // Developer options (debug only)
-          if (kDebugMode)
-            SettingsSection(
-              title: 'Developer',
-              children: [
-                SettingsNavTile(
-                  icon: Icons.dataset,
-                  iconColor: Colors.teal,
-                  title: 'Seed Demo Data',
-                  subtitle: 'Add sample investments',
-                  trailing: seedState.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : null,
-                  onTap: () => _handleSeedData(context, ref),
-                ),
-              ],
-            ),
 
           // Danger zone
           SettingsSection(
@@ -393,43 +368,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           SnackBar(
             content: Text(l10n.importFailed(e.toString())),
             backgroundColor: AppColors.errorLight,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleSeedData(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final l10n = AppLocalizations.of(context);
-        return AlertDialog(
-          title: Text(l10n.seedDemoData),
-          content: Text(l10n.seedDemoDataMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(l10n.seedData),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true) {
-      final result = await ref.read(seedDataStateProvider.notifier).seedData();
-      if (context.mounted && result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Seeded ${result.investments} investments & ${result.goals} goals',
-            ),
-            backgroundColor: Colors.green,
           ),
         );
       }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -15,6 +16,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/features/settings/presentation/screens/about_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/data_management_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/debug_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/notifications_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/security_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -36,6 +38,7 @@ class SettingsScreen extends ConsumerWidget {
     final isBiometricEnabled = ref.watch(
       securityProvider.select((s) => s.isBiometricEnabled),
     );
+    final isDebugEnabled = ref.watch(debugModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
@@ -125,6 +128,21 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+
+          // Developer (only visible when debug mode is enabled)
+          if (isDebugEnabled)
+            SettingsSection(
+              title: l10n.developer,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.bug_report,
+                  iconColor: Colors.orange,
+                  title: l10n.debugSettings,
+                  subtitle: l10n.advancedToolsAndDiagnostics,
+                  onTap: () => _navigateTo(context, const DebugSettingsScreen()),
+                ),
+              ],
+            ),
 
           // Sign Out
           SettingsSection(

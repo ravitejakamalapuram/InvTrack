@@ -1599,6 +1599,136 @@
         "type": "String"
       }
     }
+  },
+
+  "debugMode": "Debug Mode",
+  "@debugMode": {
+    "description": "Debug mode label"
+  },
+
+  "debugSettings": "Debug Settings",
+  "@debugSettings": {
+    "description": "Debug settings screen title"
+  },
+
+  "advancedToolsAndDiagnostics": "Advanced tools & diagnostics",
+  "@advancedToolsAndDiagnostics": {
+    "description": "Debug settings subtitle"
+  },
+
+  "enableDebugMode": "Enable Debug Mode",
+  "@enableDebugMode": {
+    "description": "Toggle to enable debug mode"
+  },
+
+  "debugModeEnabled": "🛠️ Debug mode enabled",
+  "@debugModeEnabled": {
+    "description": "Toast message when debug mode is enabled"
+  },
+
+  "debugModeDisabled": "Debug mode disabled",
+  "@debugModeDisabled": {
+    "description": "Toast message when debug mode is disabled"
+  },
+
+  "debugModeDescription": "Show developer tools and diagnostics",
+  "@debugModeDescription": {
+    "description": "Description of what debug mode does"
+  },
+
+  "seedDemoData": "Seed Demo Data",
+  "@seedDemoData": {
+    "description": "Button to seed sample data"
+  },
+
+  "clearSampleData": "Clear Sample Data",
+  "@clearSampleData": {
+    "description": "Button to clear sample data"
+  },
+
+  "appInfo": "App Info",
+  "@appInfo": {
+    "description": "App information section"
+  },
+
+  "diagnostics": "Diagnostics",
+  "@diagnostics": {
+    "description": "Diagnostics section title"
+  },
+
+  "developer": "Developer",
+  "@developer": {
+    "description": "Developer section title"
+  },
+
+  "sampleData": "Sample Data",
+  "@sampleData": {
+    "description": "Sample data section title"
+  },
+
+  "confirmClearSampleData": "Are you sure you want to delete all sample data?",
+  "@confirmClearSampleData": {
+    "description": "Confirmation dialog for clearing sample data"
+  },
+
+  "sampleDataCleared": "Sample data cleared successfully",
+  "@sampleDataCleared": {
+    "description": "Success message after clearing sample data"
+  },
+
+  "tapVersionToEnable": "Tap version 7 times to enable debug mode",
+  "@tapVersionToEnable": {
+    "description": "Hint for enabling debug mode"
+  },
+
+  "appVersion": "App Version",
+  "@appVersion": {
+    "description": "App version label"
+  },
+
+  "buildNumber": "Build Number",
+  "@buildNumber": {
+    "description": "Build number label"
+  },
+
+  "platform": "Platform",
+  "@platform": {
+    "description": "Platform label (iOS/Android)"
+  },
+
+  "deviceInfo": "Device Info",
+  "@deviceInfo": {
+    "description": "Device information label"
+  },
+
+  "addSampleInvestments": "Add sample investments",
+  "@addSampleInvestments": {
+    "description": "Subtitle for seed demo data button"
+  },
+
+  "deleteSampleInvestments": "Delete all sample investments and goals",
+  "@deleteSampleInvestments": {
+    "description": "Subtitle for clear sample data button"
+  },
+
+  "viewAppInformation": "View app version and device details",
+  "@viewAppInformation": {
+    "description": "Subtitle for app info button"
+  },
+
+  "sampleDataSeeded": "Sample data added successfully",
+  "@sampleDataSeeded": {
+    "description": "Success message after seeding sample data"
+  },
+
+  "errorOccurred": "An error occurred",
+  "@errorOccurred": {
+    "description": "Generic error message"
+  },
+
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
   }
 }
 

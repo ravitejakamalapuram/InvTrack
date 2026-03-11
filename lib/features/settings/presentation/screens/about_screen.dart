@@ -1,9 +1,12 @@
 /// About screen with app info, legal documents, and support.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -19,11 +22,75 @@ const String _appVersion = '3.50.0';
 const String _buildNumber = '138';
 
 /// Screen showing app information and legal documents.
-class AboutScreen extends ConsumerWidget {
+class AboutScreen extends ConsumerStatefulWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends ConsumerState<AboutScreen> {
+  int _tapCount = 0;
+  Timer? _resetTimer;
+
+  static const _requiredTaps = 7;
+  static const _tapWindow = Duration(seconds: 3);
+
+  @override
+  void dispose() {
+    _resetTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handleVersionTap() {
+    setState(() => _tapCount++);
+
+    // Haptic feedback
+    HapticFeedback.lightImpact();
+
+    // Reset timer
+    _resetTimer?.cancel();
+    _resetTimer = Timer(_tapWindow, () {
+      if (mounted) {
+        setState(() => _tapCount = 0);
+      }
+    });
+
+    // Check if activated
+    if (_tapCount >= _requiredTaps) {
+      _activateDebugMode();
+    }
+  }
+
+  Future<void> _activateDebugMode() async {
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(debugModeProvider.notifier);
+    final wasEnabled = ref.read(debugModeProvider);
+
+    await notifier.toggle();
+
+    // Success haptic
+    HapticFeedback.mediumImpact();
+
+    // Show toast
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasEnabled ? l10n.debugModeDisabled : l10n.debugModeEnabled,
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: wasEnabled ? null : AppColors.successLight,
+        ),
+      );
+    }
+
+    // Reset counter
+    setState(() => _tapCount = 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
 
@@ -62,12 +129,15 @@ class AboutScreen extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(height: AppSpacing.xxs),
-                Text(
-                  l10n.version(_appVersion, _buildNumber),
-                  style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
+                GestureDetector(
+                  onTap: _handleVersionTap,
+                  child: Text(
+                    l10n.version(_appVersion, _buildNumber),
+                    style: AppTypography.small.copyWith(
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
+                    ),
                   ),
                 ),
               ],
