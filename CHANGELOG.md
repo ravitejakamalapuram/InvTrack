@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Display investment notes in detail screen header (#258)
+
+## [3.49.1] - 2026-03-10
+
 ### 🔧 Miscellaneous
 
 - Remove unused Update Firestore Version Info workflow
