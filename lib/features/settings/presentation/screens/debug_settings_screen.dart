@@ -16,10 +16,10 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/about_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 /// Debug settings screen with developer tools.
 class DebugSettingsScreen extends ConsumerWidget {
@@ -211,33 +211,45 @@ class DebugSettingsScreen extends ConsumerWidget {
   }
 
   /// Show app info dialog
-  Future<void> _showAppInfo(BuildContext context) async {
+  void _showAppInfo(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final packageInfo = await PackageInfo.fromPlatform();
 
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(l10n.appInfo),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildInfoRow(l10n.appVersion, packageInfo.version),
-              _buildInfoRow(l10n.buildNumber, packageInfo.buildNumber),
-              _buildInfoRow(l10n.platform, Theme.of(context).platform.name),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.close),
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, child) {
+          final packageInfoAsync = ref.watch(packageInfoProvider);
+
+          return AlertDialog(
+            title: Text(l10n.appInfo),
+            content: packageInfoAsync.when(
+              data: (packageInfo) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoRow(l10n.appVersion, packageInfo.version),
+                  _buildInfoRow(l10n.buildNumber, packageInfo.buildNumber),
+                  _buildInfoRow(l10n.platform, Theme.of(context).platform.name),
+                ],
+              ),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (error, stack) => Text('Error: $error'),
             ),
-          ],
-        ),
-      );
-    }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l10n.close),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildInfoRow(String label, String value) {

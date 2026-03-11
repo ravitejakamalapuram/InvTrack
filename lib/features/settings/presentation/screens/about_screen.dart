@@ -15,11 +15,13 @@ import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// App version info - matches pubspec.yaml version: 3.5.1+19
-const String _appVersion = '3.50.0';
-const String _buildNumber = '138';
+/// Provider for PackageInfo (app version, build number, etc.)
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
+  return await PackageInfo.fromPlatform();
+});
 
 /// Screen showing app information and legal documents.
 class AboutScreen extends ConsumerStatefulWidget {
@@ -93,127 +95,134 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
+    final packageInfoAsync = ref.watch(packageInfoProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about, style: AppTypography.h3)),
-      body: ListView(
-        children: [
-          SizedBox(height: AppSpacing.md),
+      body: packageInfoAsync.when(
+        data: (packageInfo) => ListView(
+          children: [
+            SizedBox(height: AppSpacing.md),
 
-          // App logo and name
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primaryLight,
-                        AppColors.primaryLight.withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            // App logo and name
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primaryLight,
+                          AppColors.primaryLight.withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    child: Icon(Icons.trending_up, size: 40, color: Colors.white),
                   ),
-                  child: Icon(Icons.trending_up, size: 40, color: Colors.white),
-                ),
-                SizedBox(height: AppSpacing.md),
-                Text(
-                  l10n.invTrack,
-                  style: AppTypography.h2.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                    fontWeight: FontWeight.bold,
+                  SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.invTrack,
+                    style: AppTypography.h2.copyWith(
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: AppSpacing.xxs),
-                Semantics(
-                  label: '${l10n.version(_appVersion, _buildNumber)}. ${l10n.tapVersionToEnable}',
-                  button: false,
-                  child: GestureDetector(
-                    onTap: _handleVersionTap,
-                    child: Text(
-                      l10n.version(_appVersion, _buildNumber),
-                      style: AppTypography.small.copyWith(
-                        color: isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral500Light,
+                  SizedBox(height: AppSpacing.xxs),
+                  Semantics(
+                    label: '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
+                    button: false,
+                    child: GestureDetector(
+                      onTap: _handleVersionTap,
+                      child: Text(
+                        l10n.version(packageInfo.version, packageInfo.buildNumber),
+                        style: AppTypography.small.copyWith(
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral500Light,
+                        ),
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: AppSpacing.xl),
+
+            // Legal section
+            SettingsSection(
+              title: l10n.legal,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.privacy_tip,
+                  iconColor: Colors.purple,
+                  title: l10n.privacyPolicy,
+                  onTap: () => _openLegalScreen(
+                    context,
+                    l10n.privacyPolicy,
+                    _privacyPolicy,
+                  ),
+                ),
+                SettingsNavTile(
+                  icon: Icons.description,
+                  iconColor: Colors.purple,
+                  title: l10n.termsOfService,
+                  onTap: () => _openLegalScreen(
+                    context,
+                    l10n.termsOfService,
+                    _termsOfService,
                   ),
                 ),
               ],
             ),
-          ),
 
-          SizedBox(height: AppSpacing.xl),
-
-          // Legal section
-          SettingsSection(
-            title: l10n.legal,
-            children: [
-              SettingsNavTile(
-                icon: Icons.privacy_tip,
-                iconColor: Colors.purple,
-                title: l10n.privacyPolicy,
-                onTap: () => _openLegalScreen(
-                  context,
-                  l10n.privacyPolicy,
-                  _privacyPolicy,
+            // Support section
+            SettingsSection(
+              title: l10n.support,
+              children: [
+                SettingsNavTile(
+                  icon: Icons.help_outline,
+                  iconColor: Colors.blue,
+                  title: l10n.helpAndFaq,
+                  onTap: () => _openHelpPage(context),
                 ),
-              ),
-              SettingsNavTile(
-                icon: Icons.description,
-                iconColor: Colors.purple,
-                title: l10n.termsOfService,
-                onTap: () => _openLegalScreen(
-                  context,
-                  l10n.termsOfService,
-                  _termsOfService,
+                SettingsNavTile(
+                  icon: Icons.email_outlined,
+                  iconColor: Colors.teal,
+                  title: l10n.contactSupport,
+                  subtitle: l10n.supportEmail,
+                  onTap: () => _openSupportEmail(context, packageInfo.version),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          // Support section
-          SettingsSection(
-            title: l10n.support,
-            children: [
-              SettingsNavTile(
-                icon: Icons.help_outline,
-                iconColor: Colors.blue,
-                title: l10n.helpAndFaq,
-                onTap: () => _openHelpPage(context),
-              ),
-              SettingsNavTile(
-                icon: Icons.email_outlined,
-                iconColor: Colors.teal,
-                title: l10n.contactSupport,
-                subtitle: l10n.supportEmail,
-                onTap: () => _openSupportEmail(context),
-              ),
-            ],
-          ),
-
-          // Made with love
-          Padding(
-            padding: EdgeInsets.all(AppSpacing.xl),
-            child: Center(
-              child: Text(
-                l10n.madeWithLove,
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral500Dark
-                      : AppColors.neutral400Light,
+            // Made with love
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: Text(
+                  l10n.madeWithLove,
+                  style: AppTypography.small.copyWith(
+                    color: isDark
+                        ? AppColors.neutral500Dark
+                        : AppColors.neutral400Light,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          SizedBox(height: AppSpacing.xl),
-        ],
+            SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text('Error loading app info: $error'),
+        ),
       ),
     );
   }
@@ -234,13 +243,13 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   /// Opens the email client for support
-  Future<void> _openSupportEmail(BuildContext context) async {
+  Future<void> _openSupportEmail(BuildContext context, String appVersion) async {
     const supportEmail = 'invtrack_support@googlegroups.com';
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
       query: _encodeQueryParameters({
-        'subject': 'InvTrack Support Request (v$_appVersion)',
+        'subject': 'InvTrack Support Request (v$appVersion)',
         'body': 'Please describe your issue or question:\n\n',
       }),
     );
