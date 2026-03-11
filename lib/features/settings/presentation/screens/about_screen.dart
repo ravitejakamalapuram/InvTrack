@@ -247,13 +247,14 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
   /// Opens the email client for support
   Future<void> _openSupportEmail(BuildContext context, String appVersion) async {
-    const supportEmail = 'invtrack_support@googlegroups.com';
+    final l10n = AppLocalizations.of(context);
+    final supportEmail = l10n.supportEmail;
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
       query: _encodeQueryParameters({
-        'subject': 'InvTrack Support Request (v$appVersion)',
-        'body': 'Please describe your issue or question:\n\n',
+        'subject': l10n.supportEmailSubject(appVersion),
+        'body': l10n.supportEmailBody,
       }),
     );
 
@@ -267,7 +268,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         await _copyToClipboardWithFeedback(
           context,
           supportEmail,
-          'Email copied to clipboard: $supportEmail',
+          l10n.emailCopiedMessage(supportEmail),
         );
       }
     } catch (e) {
@@ -276,7 +277,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       await _copyToClipboardWithFeedback(
         context,
         supportEmail,
-        'Email copied to clipboard: $supportEmail',
+        l10n.emailCopiedMessage(supportEmail),
       );
     }
   }
@@ -287,12 +288,13 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     String text,
     String message,
   ) async {
+    final l10n = AppLocalizations.of(context);
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(label: 'OK', onPressed: () {}),
+          action: SnackBarAction(label: l10n.ok, onPressed: () {}),
         ),
       );
     }

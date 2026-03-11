@@ -752,6 +752,36 @@
     "description": "Support email address"
   },
 
+  "supportEmailSubject": "InvTrack Support Request (v{version})",
+  "@supportEmailSubject": {
+    "description": "Subject line for support email",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
+  "supportEmailBody": "Please describe your issue or question:\n\n",
+  "@supportEmailBody": {
+    "description": "Body text for support email"
+  },
+
+  "emailCopiedMessage": "Email copied to clipboard: {email}",
+  "@emailCopiedMessage": {
+    "description": "Message shown when email is copied to clipboard",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button label"
+  },
+
   "madeWithLove": "Made with ❤️ for smart investors",
   "@madeWithLove": {
     "description": "Footer message"
