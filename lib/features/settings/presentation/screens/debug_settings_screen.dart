@@ -214,8 +214,25 @@ class DebugSettingsScreen extends ConsumerWidget {
             ),
           );
         }
-      } catch (e) {
+      } catch (e, st) {
+        // Log error for diagnostics
+        LoggerService.error(
+          'Error clearing sample data',
+          error: e,
+          stackTrace: st,
+          metadata: {'screen': 'DebugSettings'},
+        );
+
+        // Handle error with centralized error handler
         if (context.mounted) {
+          ErrorHandler.handle(
+            e,
+            st,
+            context: context,
+            showFeedback: true,
+          );
+
+          // Show user-facing error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.errorOccurred),
