@@ -76,6 +76,16 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
+    // Calculate appropriate foreground color based on background luminance
+    // to ensure WCAG 4.5:1 contrast ratio (Rule 7.2)
+    final isLightBackground = primaryColor.computeLuminance() > 0.5;
+    final foregroundColor = isLightBackground
+        ? Colors.black.withValues(alpha: 0.87)  // Dark text on light background
+        : Colors.white.withValues(alpha: 0.95);  // Light text on dark background
+    final scrimColor = isLightBackground
+        ? Colors.black.withValues(alpha: 0.08)  // Light scrim on light background
+        : Colors.white.withValues(alpha: 0.15);  // Dark scrim on dark background
+
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDark
@@ -86,7 +96,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         slivers: [
           // Hero App Bar with pinned navigation
           SliverAppBar(
-            expandedHeight: 160,
+            expandedHeight: widget.investment.notes?.isNotEmpty ?? false ? 200 : 160,
             pinned: true,
             backgroundColor: primaryColor,
             surfaceTintColor: Colors.transparent,
@@ -237,6 +247,44 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                             ),
                           ],
                         ),
+                        // Notes section - only show if notes exist
+                        if (widget.investment.notes?.isNotEmpty ?? false) ...[
+                          const SizedBox(height: 12),
+                          Semantics(
+                            label: '${l10n.notesLabel}: ${widget.investment.notes!}',
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: scrimColor,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.edit_note_rounded,
+                                    color: foregroundColor,
+                                    size: 16,
+                                    semanticLabel: l10n.notesLabel,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      widget.investment.notes!,
+                                      style: AppTypography.caption.copyWith(
+                                        color: foregroundColor,
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
