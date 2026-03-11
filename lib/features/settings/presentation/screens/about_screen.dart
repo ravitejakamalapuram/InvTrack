@@ -58,6 +58,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     // Check if activated
     if (_tapCount >= _requiredTaps) {
+      // Reset counter immediately to prevent double-trigger
+      setState(() => _tapCount = 0);
+      _resetTimer?.cancel();
       _activateDebugMode();
     }
   }
@@ -84,9 +87,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         ),
       );
     }
-
-    // Reset counter
-    setState(() => _tapCount = 0);
   }
 
   @override
@@ -129,14 +129,18 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   ),
                 ),
                 SizedBox(height: AppSpacing.xxs),
-                GestureDetector(
-                  onTap: _handleVersionTap,
-                  child: Text(
-                    l10n.version(_appVersion, _buildNumber),
-                    style: AppTypography.small.copyWith(
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral500Light,
+                Semantics(
+                  label: '${l10n.version(_appVersion, _buildNumber)}. ${l10n.tapVersionToEnable}',
+                  button: false,
+                  child: GestureDetector(
+                    onTap: _handleVersionTap,
+                    child: Text(
+                      l10n.version(_appVersion, _buildNumber),
+                      style: AppTypography.small.copyWith(
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
+                      ),
                     ),
                   ),
                 ),

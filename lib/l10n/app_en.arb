@@ -1671,16 +1671,6 @@
     "description": "Description of what debug mode does"
   },
 
-  "seedDemoData": "Seed Demo Data",
-  "@seedDemoData": {
-    "description": "Button to seed sample data"
-  },
-
-  "clearSampleData": "Clear Sample Data",
-  "@clearSampleData": {
-    "description": "Button to clear sample data"
-  },
-
   "appInfo": "App Info",
   "@appInfo": {
     "description": "App information section"

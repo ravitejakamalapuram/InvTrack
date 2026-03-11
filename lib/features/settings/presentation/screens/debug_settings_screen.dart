@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -125,7 +126,15 @@ class DebugSettingsScreen extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
+      // Log error for diagnostics
+      LoggerService.error(
+        'Error seeding sample data',
+        error: e,
+        stackTrace: st,
+        metadata: {'screen': 'DebugSettings'},
+      );
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
