@@ -98,6 +98,11 @@
       }
     }
   },
+
+  "notesLabel": "Notes",
+  "@notesLabel": {
+    "description": "Semantic label for investment notes icon and screen reader announcement"
+  },
   
   "signIn": "Sign In",
   "@signIn": {

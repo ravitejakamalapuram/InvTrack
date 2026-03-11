@@ -241,7 +241,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                         if (widget.investment.notes?.isNotEmpty ?? false) ...[
                           const SizedBox(height: 12),
                           Semantics(
-                            label: 'Notes: ${widget.investment.notes!}',
+                            label: '${l10n.notesLabel}: ${widget.investment.notes!}',
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
@@ -255,7 +255,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                                     Icons.edit_note_rounded,
                                     color: Colors.white.withValues(alpha: 0.9),
                                     size: 16,
-                                    semanticLabel: 'Notes',
+                                    semanticLabel: l10n.notesLabel,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
