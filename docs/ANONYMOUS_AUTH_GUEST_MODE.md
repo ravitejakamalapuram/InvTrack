@@ -9,7 +9,8 @@ Allow users to use InvTrack without signing in by leveraging **Firebase Anonymou
 ## Architecture
 
 ### Single Storage Layer
-```
+
+```text
 User opens app
     ↓
 Firebase Anonymous Sign-In (automatic)
@@ -27,11 +28,12 @@ Try to link accounts → Success: Data stays at same UID
 ```
 
 ### Key Benefits
+
 - ✅ **Simple**: Only 1 storage layer (Firestore)
 - ✅ **Secure**: Firebase Auth + Firestore security rules work normally
 - ✅ **No migration service**: Account linking handles most cases
 - ✅ **Offline works**: Firestore offline persistence
-- ✅ **85% less code**: ~300 lines vs ~2000 lines (Hive approach)
+- ✅ **85% less code**: ~400 lines vs ~2000 lines (Hive approach)
 
 ---
 
@@ -42,7 +44,7 @@ Try to link accounts → Success: Data stays at same UID
 | Data lost on uninstall | ✅ Accepted | Same as current app behavior |
 | Account linking fails (Google account exists) | ✅ Accepted | ZIP backup + manual import |
 | Orphaned anonymous users | ✅ Accepted | Cloud Function cleanup (30 days) |
-| Firebase costs (~$0.0055/user) | ✅ Accepted | Minimal cost, scales with usage |
+| Firebase costs (≈$0.0055/user as of Mar 2026) | ✅ Accepted | Minimal per-user cost — [verify current pricing](https://firebase.google.com/pricing) |
 | First launch needs internet | ✅ Accepted | Same as current app |
 
 ---
@@ -132,17 +134,20 @@ Try to link accounts → Success: Data stays at same UID
 ## Code Changes Summary
 
 ### No Changes Needed
+
 - ✅ Repository implementations (already use Firestore)
 - ✅ Domain entities (no changes)
 - ✅ UI screens (work with any authenticated user)
 - ✅ Offline persistence (already enabled)
 
 ### Minimal Changes
+
 - ⚠️ Onboarding screen (add "Continue as Guest" button)
 - ⚠️ Settings screen (show guest mode indicator)
 - ⚠️ Google sign-in flow (add account linking logic)
 
 ### New Files (3 total)
+
 1. `google_sign_in_handler.dart` (~200 lines)
 2. `backup_merge_dialog.dart` (~100 lines)
 3. `cleanupAnonymousUsers.ts` (~100 lines)
@@ -154,6 +159,7 @@ Try to link accounts → Success: Data stays at same UID
 ## Security
 
 ### Firestore Security Rules (No Changes)
+
 ```javascript
 // Same rules work for anonymous and signed-in users
 match /users/{userId}/investments/{investmentId} {
@@ -164,6 +170,7 @@ match /users/{userId}/investments/{investmentId} {
 ```
 
 ### Anonymous User Cleanup
+
 ```javascript
 // Cloud Function runs daily
 // Deletes anonymous users inactive for 30+ days
