@@ -80,11 +80,13 @@ final investmentsBoxProvider = Provider<Box<InvestmentHiveModel>>((ref) {
   return Hive.box<InvestmentHiveModel>('guest_investments');
 });
 
-// ✅ Use autoDispose to close boxes when no longer needed
+// ✅ FIXED: Don't close globally opened boxes from autoDispose providers
+// Boxes are opened once in main() and reused app-wide
+// Closing from a disposable provider would invalidate the box for other repositories
 final investmentsBoxProviderAutoDispose = Provider.autoDispose<Box<InvestmentHiveModel>>((ref) {
-  final box = Hive.box<InvestmentHiveModel>('guest_investments');
-  ref.onDispose(() => box.close());
-  return box;
+  // Simply return the already-opened box without closing it
+  // Box lifecycle is managed at app scope (opened in main(), closed on app exit)
+  return Hive.box<InvestmentHiveModel>('guest_investments');
 });
 ```
 

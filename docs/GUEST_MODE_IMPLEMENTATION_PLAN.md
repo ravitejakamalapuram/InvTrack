@@ -127,21 +127,39 @@ class GuestDataMigrationService {
     required String signedInUserId,
     required MigrationStrategy strategy, // ✅ FIXED: Add required parameter
   }) async {
-    // 1. Export guest data
+    // 1. Export guest data for backup
     final guestData = await _exportGuestData(guestUserId);
-    
-    // 2. Import to Firestore
-    await _importToFirestore(signedInUserId, guestData);
-    
+
+    // 2. Import to Firestore based on strategy
+    // ✅ FIXED: Branch on strategy parameter
+    if (strategy == MigrationStrategy.merge) {
+      // Merge: Combine guest + cloud data
+      await _mergeData(signedInUserId, guestData);
+    } else if (strategy == MigrationStrategy.replace) {
+      // Replace: Keep guest data, discard cloud
+      await _replaceData(signedInUserId, guestData);
+    }
+
     // 3. Verify migration
     final verified = await _verifyMigration(guestData, signedInUserId);
-    
+
     // 4. Cleanup local data
     if (verified) {
       await _cleanupGuestData(guestUserId);
     }
-    
+
     return MigrationResult(success: verified);
+  }
+
+  Future<void> _mergeData(String userId, GuestData data) async {
+    // Append guest data to existing cloud data
+    await _importToFirestore(userId, data);
+  }
+
+  Future<void> _replaceData(String userId, GuestData data) async {
+    // Delete existing cloud data, then import guest data
+    await _deleteAllCloudData(userId);
+    await _importToFirestore(userId, data);
   }
 }
 ```
@@ -199,7 +217,7 @@ class GuestDataMigrationService {
 - **FIRE Calculator**: Pure calculations
 
 ### ⚠️ Requires Adaptation
-- **Multi-Currency**: Exchange rates need caching (no API in guest mode)
+- **Multi-Currency**: ✅ UPDATED - Fetch live rates on first internet connection (even in guest mode), cache locally in Hive, refresh every 24 hours when online, fall back to cached rates when offline, show "estimated" label if rates are >7 days old
 - **Documents**: Store in app documents directory (not cloud storage)
 - **User Profile**: Store locally (no Firestore sync)
 

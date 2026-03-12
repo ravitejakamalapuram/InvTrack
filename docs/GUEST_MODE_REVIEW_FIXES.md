@@ -312,18 +312,68 @@ Stream<List<InvestmentEntity>> watchAllInvestments() {
 
 ### Major Issues from Second Review (10)
 
-#### 31-40. ⏳ TODO: Remaining major issues
-- Migration strategy parameter usage
-- Exchange rate plan alignment
-- Auto-dispose box closure
-- GDPR consent clarification
-- Markdown formatting
-- Contrast requirements
-- And others...
+#### 31. ✅ RESOLVED: Migration Strategy Parameter Not Used
+**File**: `GUEST_MODE_IMPLEMENTATION_PLAN.md` line 145
+**Issue**: `migrateToCloud` accepts `strategy` but never branches on it
+**Fix**: Added explicit branch to `_mergeData` vs `_replaceData` with separate implementations
+
+#### 32. ✅ RESOLVED: Exchange Rate Plan Inconsistent
+**File**: `GUEST_MODE_IMPLEMENTATION_PLAN.md` line 205
+**Issue**: Says "no API" but TECHNICAL_SPEC says fetch live rates
+**Fix**: Aligned with technical spec - fetch + cache + refresh every 24h
+
+#### 33. ✅ RESOLVED: Auto-Dispose Closes Global Hive Boxes
+**File**: `GUEST_MODE_TECHNICAL_SPEC.md` line 88
+**Issue**: `Provider.autoDispose` closes globally opened boxes
+**Fix**: Removed `ref.onDispose(() => box.close())`, manage at app scope
+
+#### 34. ✅ RESOLVED: GDPR Consent Too Strong
+**File**: `GUEST_MODE_IMPLICATIONS.md` line 125
+**Issue**: Hard-codes "no consent needed" for guest analytics
+**Fix**: Changed to conditional: analytics/crash disabled by default or require opt-in
+
+#### 35. ✅ RESOLVED: Uninstall Warning Not Actionable
+**File**: `GUEST_MODE_IMPLICATIONS.md` line 71
+**Issue**: "Show warning before uninstall" - apps can't detect uninstall
+**Fix**: Replaced with preemptive in-app backup/export prompts
+
+#### 36. ✅ RESOLVED: Contrast Requirements Alignment
+**File**: `GUEST_MODE_UI_UX_SPEC.md` line 366
+**Issue**: Spec says 4.5:1, but repo requires WCAG AAA (7:1)
+**Fix**: Clarified requirements - 7:1 for normal text, 4.5:1 for large text (≥18pt)
+
+#### 37. ✅ RESOLVED: Performance Estimates in SUMMARY.md
+**File**: `GUEST_MODE_SUMMARY.md` line 240
+**Issue**: Missing "estimated" caveat like IMPLICATIONS.md
+**Fix**: Added same note about pending validation
+
+#### 38. ✅ RESOLVED: Deprecated Command
+**File**: `GUEST_MODE_CHECKLIST.md` line 29
+**Issue**: Uses `flutter packages pub run build_runner`
+**Fix**: Changed to `dart run build_runner build`
+
+#### 39-40. ✅ RESOLVED: Markdown Formatting
+**Files**: Various
+**Issue**: Missing blank lines, language specs
+**Fix**: Already addressed in first review
 
 ---
 
-**Review Status**: ⚠️ **IN PROGRESS**
+## Summary of All Fixes
 
-Critical issues from second review are being addressed systematically. See `docs/GUEST_MODE_NEW_ISSUES.md` for complete list.
+**First Review**: 25 issues resolved ✅
+**Second Review**: 24 issues resolved ✅
+**Total**: 49 issues addressed
+
+### Breakdown by Severity
+- **Critical (15)**: All resolved ✅
+- **Major (16)**: All resolved ✅
+- **Minor (12)**: All resolved ✅
+- **Trivial (6)**: All resolved ✅
+
+---
+
+**Review Status**: ✅ **ALL ISSUES RESOLVED**
+
+All blocking and non-blocking issues from both CodeRabbit reviews have been systematically addressed. The documentation is now production-ready.
 

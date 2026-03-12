@@ -67,8 +67,12 @@ User starts app → Guest mode → Local data created
 
 #### Scenario 1: Guest uninstalls app
 - **Result**: All local data deleted (no backup)
-- **Mitigation**: Show warning before uninstall (if possible)
-- **Best Practice**: Encourage export before uninstall
+- **Mitigation**: Provide preemptive in-app reminders (periodic backup/export prompts and explicit export buttons while app is installed)
+- **Best Practice**:
+  - Show "Export your data" prompt after significant data entry
+  - Add prominent "Backup Data" button in settings
+  - Remind users periodically (e.g., monthly) to export data
+  - Note: Apps cannot reliably detect or block uninstall on Android/iOS
 
 #### Scenario 2: Guest signs in and migrates
 - **Result**: Data moved to cloud, local data deleted
@@ -122,7 +126,9 @@ User starts app → Guest mode → Local data created
 | **Right to Access** | ✅ Export feature | ✅ Export feature |
 | **Right to Erasure** | ✅ Uninstall app | ✅ Delete account |
 | **Data Portability** | ✅ CSV/ZIP export | ✅ CSV/ZIP export |
-| **Consent** | ✅ No consent needed | ✅ Google Sign-In consent |
+| **Consent** | ⚠️ Conditional - Analytics/crash reporting disabled by default or require explicit opt-in. Any pseudonymous identifiers must be documented and removable on request. | ✅ Google Sign-In consent |
+
+**Note on Guest Analytics**: Even anonymous analytics and crash reporting that generate device-level identifiers require explicit consent or must be disabled by default in guest mode to comply with GDPR.
 
 ## 4. Performance Implications
 
@@ -225,10 +231,16 @@ Onboarding → [Continue as Guest] → Home (Guest Mode)
 
 | Event | Guest Mode | Signed-In Mode |
 |-------|-----------|----------------|
-| **User ID** | Anonymous guest ID | Firebase UID |
-| **Session Tracking** | Local session ID | Firebase session |
-| **Feature Usage** | ✅ Tracked | ✅ Tracked |
-| **Crash Reports** | ✅ Anonymous | ✅ With user context |
+| **User ID** | ⚠️ Anonymous guest ID (requires opt-in or disabled by default) | Firebase UID |
+| **Session Tracking** | ⚠️ Local session ID (requires opt-in or disabled by default) | Firebase session |
+| **Feature Usage** | ⚠️ Tracked only with explicit consent | ✅ Tracked |
+| **Crash Reports** | ⚠️ Anonymous (requires opt-in or disabled by default) | ✅ With user context |
+
+**GDPR Compliance Note**: All analytics and crash reporting in guest mode must either:
+1. Be disabled by default and require explicit opt-in, OR
+2. Use only strictly necessary technical data with no device-level identifiers
+
+Any pseudonymous identifiers (device IDs, session IDs) must be documented and removable on user request.
 
 ### 6.2 Migration Analytics
 

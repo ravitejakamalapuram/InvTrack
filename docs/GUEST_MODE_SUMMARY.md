@@ -232,6 +232,10 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
 ## Performance Impact
 
 ### Storage Performance
+⚠️ **Note: Performance numbers are estimated/target values pending validation**
+
+These values will be validated with dedicated low-level benchmarks in `integration_test/performance/` during Phase 5 (Testing & Polish).
+
 | Operation | Guest Mode | Signed-In Mode |
 |-----------|-----------|----------------|
 | Read | <10ms | 50-500ms |

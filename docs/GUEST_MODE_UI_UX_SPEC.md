@@ -362,9 +362,20 @@ Step 3: Migration prompt appears
 - Migration button: "Migrate data to cloud"
 
 ### 7.3 Color Contrast
-- Guest mode indicator: Orange/amber color (warning) - MUST verify 4.5:1 contrast ratio against app bar background
-- Signed-in indicator: Green color (success)
-- Migration progress: Blue color (info)
+
+**WCAG AAA Requirements** (per InvTrack accessibility guidelines):
+- **Normal text (<18pt)**: 7:1 contrast ratio minimum
+- **Large text (≥18pt or ≥14pt bold)**: 4.5:1 contrast ratio minimum
+
+**Guest Mode Indicators**:
+- Guest mode indicator: Orange/amber color (warning)
+  - If normal text size: MUST achieve 7:1 contrast ratio against app bar background
+  - If large text (≥18pt or ≥14pt bold): MUST achieve 4.5:1 contrast ratio
+  - **Recommendation**: Use large text (18pt) to allow 4.5:1 threshold
+- Signed-in indicator: Green color (success) - same contrast requirements apply
+- Migration progress: Blue color (info) - same contrast requirements apply
+
+**Verification**: Use contrast checker tool to verify all color combinations before implementation.
 
 ### 7.4 Testing Requirements
 

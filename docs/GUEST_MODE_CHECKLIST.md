@@ -26,7 +26,7 @@
 - [ ] Create `lib/features/fire_number/data/models/fire_settings_hive_model.dart`
 - [ ] Create `lib/features/user_profile/data/models/user_profile_hive_model.dart`
 - [ ] Create `lib/core/services/exchange_rate_hive_model.dart`
-- [ ] Run `flutter packages pub run build_runner build` to generate adapters
+- [ ] Run `dart run build_runner build` to generate adapters (updated command)
 
 ### Hive Repositories
 - [ ] Create `lib/features/investment/data/repositories/hive_investment_repository.dart`
