@@ -1751,9 +1751,9 @@
     "description": "Button text to continue using the app without signing in"
   },
 
-  "guestModeNotice": "Your data will be stored locally on this device only. You can sign in later to backup to cloud.",
+  "guestModeNotice": "Your data will be synced to cloud when online. You can sign in later to access from other devices.",
   "@guestModeNotice": {
-    "description": "Notice shown when user enters guest mode explaining local-only storage"
+    "description": "Notice shown when user enters guest mode explaining cloud sync"
   },
 
   "guestModeIndicator": "Guest Mode",
@@ -1771,7 +1771,7 @@
     "description": "Option to delete all local guest data"
   },
 
-  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your local data.",
+  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your cloud data.",
   "@deleteGuestDataConfirm": {
     "description": "Confirmation message before deleting guest data"
   },

@@ -57,8 +57,8 @@ Try to link accounts → Success: Data stays at same UID
 1. Enable Firebase Anonymous Authentication in Firebase Console
 2. Add `isAnonymous` flag to `UserEntity` domain model
 3. Update onboarding screen with "Continue as Guest" button
-4. Show GDPR notice at guest entry (data stored locally, can be deleted anytime)
-5. Auto sign-in anonymously on first launch
+4. Show GDPR notice at guest entry (data synced to cloud, can be deleted anytime)
+5. Sign in anonymously ONLY when user taps "Continue as Guest" (opt-in, not automatic)
 6. Add anonymous user indicator in Settings
 7. Add in-app data deletion option for guest users
 
@@ -77,17 +77,17 @@ Try to link accounts → Success: Data stays at same UID
 ```json
 {
   "continueAsGuest": "Continue as Guest",
-  "guestModeNotice": "Your data will be stored locally on this device only. You can sign in later to backup to cloud.",
+  "guestModeNotice": "Your data will be synced to cloud when online. You can sign in later to access from other devices.",
   "guestModeIndicator": "Guest Mode",
   "signInToBackup": "Sign In to Backup",
   "deleteGuestData": "Delete Guest Data",
-  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your local data.",
+  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your cloud data.",
   "guestDataDeleted": "Guest data deleted successfully"
 }
 ```
 
 **GDPR Compliance** (🚨 Must-fix before Phase 1 ships):
-- Show notice at guest entry: "Your investment data will be stored locally. You can delete it anytime from Settings."
+- Show notice at guest entry: "Your investment data will be synced to cloud. You can delete it anytime from Settings."
 - Provide in-app deletion: Settings → Data Management → Delete Guest Data
 - No analytics tracking for guest users without explicit consent
 
@@ -204,21 +204,27 @@ export const cleanupOldAnonymousUsers = functions.pubsub
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 30);
 
-    const listUsersResult = await admin.auth().listUsers();
+    // Paginate through all users (max 1000 per call)
+    let pageToken: string | undefined;
+    do {
+      const listUsersResult = await admin.auth().listUsers(1000, pageToken);
 
-    for (const user of listUsersResult.users) {
-      if (user.providerData.length === 0) { // Anonymous user
-        const lastSignIn = new Date(user.metadata.lastSignInTime);
+      for (const user of listUsersResult.users) {
+        if (user.providerData.length === 0) { // Anonymous user
+          const lastSignIn = new Date(user.metadata.lastSignInTime);
 
-        if (lastSignIn < cutoffDate) {
-          // 1. Delete Firestore data
-          await deleteUserData(user.uid);
+          if (lastSignIn < cutoffDate) {
+            // 1. Delete Firestore data
+            await deleteUserData(user.uid);
 
-          // 2. Delete Firebase Auth user (CRITICAL - prevents orphaned auth records)
-          await admin.auth().deleteUser(user.uid);
+            // 2. Delete Firebase Auth user (CRITICAL - prevents orphaned auth records)
+            await admin.auth().deleteUser(user.uid);
+          }
         }
       }
-    }
+
+      pageToken = listUsersResult.pageToken;
+    } while (pageToken);
   });
 ```
 
