@@ -74,6 +74,7 @@ Try to link accounts → Success: Data stays at same UID
 - `guest_mode_data_deleted` - When user deletes guest data from Settings
 
 **Localization Strings** (add to `lib/l10n/app_en.arb`):
+
 ```json
 {
   "continueAsGuest": "Continue as Guest",
@@ -134,6 +135,7 @@ Try to link accounts → Success: Data stays at same UID
 - `lib/core/di/repository_module.dart` (invalidate providers on UID change)
 
 **ZIP Backup Format** (OWASP MASVS compliance):
+
 ```json
 {
   "version": "1.0",
@@ -147,6 +149,7 @@ Try to link accounts → Success: Data stays at same UID
   }
 }
 ```
+
 - Encrypted with AES-256-GCM using device-generated key
 - Stored in protected internal directory (not external storage)
 - Deleted after successful import
@@ -195,6 +198,7 @@ Try to link accounts → Success: Data stays at same UID
 - `functions/src/cleanupAnonymousUsers.ts`
 
 **Cloud Function Implementation**:
+
 ```typescript
 // Must delete BOTH Firestore data AND Firebase Auth user
 export const cleanupOldAnonymousUsers = functions.pubsub
@@ -263,24 +267,25 @@ export const cleanupOldAnonymousUsers = functions.pubsub
 
 ### No Changes Needed
 
-- ✅ Repository implementations (already use Firestore)
-- ✅ Domain entities (no changes)
-- ✅ UI screens (work with any authenticated user)
 - ✅ Offline persistence (already enabled)
 
 ### Minimal Changes
 
+- ⚠️ Domain entities (`UserEntity.isAnonymous`)
+- ⚠️ Auth repository (`signInAnonymously()` and `linkAnonymousToGoogle()`)
 - ⚠️ Onboarding screen (add "Continue as Guest" button)
+- ⚠️ Sign-in screen (support anonymous flow)
 - ⚠️ Settings screen (show guest mode indicator)
 - ⚠️ Google sign-in flow (add account linking logic)
 
-### New Files (3 total)
+### New Files (4 total)
 
-1. `google_sign_in_handler.dart` (~200 lines)
-2. `backup_merge_dialog.dart` (~100 lines)
-3. `cleanupAnonymousUsers.ts` (~100 lines)
+1. `link_account_usecase.dart` (~100 lines)
+2. `google_sign_in_handler.dart` (~200 lines)
+3. `backup_merge_dialog.dart` (~100 lines)
+4. `cleanupAnonymousUsers.ts` (~100 lines)
 
-**Total new code: ~400 lines**
+**Total new code: ~500 lines**
 
 ---
 
