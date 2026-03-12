@@ -172,6 +172,113 @@ Stream<List<InvestmentEntity>> watchAllInvestments() {
 - Verify stream emissions (initial + updates)
 - Test error handling
 
+---
+
+## Phase 2: Authentication (Week 2)
+
+### Day 1-2: Guest User Entity & Repository
+
+**Tasks**:
+1. Add `isGuest` field to `UserEntity`
+2. Create `UserEntity.guest()` factory
+3. Implement `GuestAuthRepository`
+4. Add guest session management (SharedPreferences)
+5. Implement `dispose()` to prevent memory leaks
+
+**Deliverables**:
+- [ ] UserEntity updated
+- [ ] GuestAuthRepository implemented
+- [ ] Session persistence working
+- [ ] Memory leaks prevented
+
+**Testing**:
+- Test guest user creation
+- Test session persistence across app restarts
+- Verify no memory leaks (dispose called)
+
+---
+
+### Day 3-4: Repository Provider Selection
+
+**Tasks**:
+1. Update repository providers to use `.when()` for AsyncValue
+2. Implement conditional selection (guest vs signed-in)
+3. Add proper error handling for all states
+4. Remove auto-dispose box closure
+
+**Key Implementation**:
+```dart
+final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
+  final authState = ref.watch(authStateProvider);
+  
+  return authState.when(
+    data: (user) => (user == null || user.isGuest)
+        ? ref.watch(hiveInvestmentRepositoryProvider)
+        : ref.watch(firestoreInvestmentRepositoryProvider),
+    loading: () => ref.watch(hiveInvestmentRepositoryProvider),
+    error: (_, __) => ref.watch(hiveInvestmentRepositoryProvider),
+  );
+});
+```
+
+**Deliverables**:
+- [ ] All repository providers updated
+- [ ] AsyncValue handling correct
+- [ ] No crashes on loading/error states
+
+**Testing**:
+- Test auth state transitions
+- Verify correct repository selected
+- Test loading and error states
+
+---
+
+### Day 5: Router Changes
+
+**Tasks**:
+1. Update router to allow guest mode
+2. Add "Continue as Guest" option to sign-in screen
+3. Implement guest session start/end
+4. Update navigation guards
+
+**Deliverables**:
+- [ ] Router updated
+- [ ] Sign-in screen updated
+- [ ] Guest flow working
+
+**Testing**:
+- Test guest mode entry
+- Test navigation to all screens
+- Verify auth guards work correctly
+
+---
+
+## Phase 3: Data Migration (Week 3)
+
+### Day 1-3: Migration Service
+
+**Tasks**:
+1. Implement `GuestDataMigrationService`
+2. Add backup creation (ZIP export)
+3. Implement merge strategy
+4. Implement replace strategy (with limitation notes)
+5. Add verification logic
+6. Implement cleanup
+
+**Deliverables**:
+- [ ] Migration service complete
+- [ ] Both strategies implemented
+- [ ] Verification working
+- [ ] Cleanup safe
+
+**Testing**:
+- Test merge strategy with sample data
+- Test replace strategy
+- Verify backup creation
+- Test cleanup (no data loss)
+
+---
+
 ### Day 4-5: Migration UI
 
 **Tasks**:
@@ -455,109 +562,3 @@ If critical issues found:
 
 **Last Updated**: March 12, 2026
 **Status**: Ready for Phase 1 Implementation
-## Phase 2: Authentication (Week 2)
-
-### Day 1-2: Guest User Entity & Repository
-
-**Tasks**:
-1. Add `isGuest` field to `UserEntity`
-2. Create `UserEntity.guest()` factory
-3. Implement `GuestAuthRepository`
-4. Add guest session management (SharedPreferences)
-5. Implement `dispose()` to prevent memory leaks
-
-**Deliverables**:
-- [ ] UserEntity updated
-- [ ] GuestAuthRepository implemented
-- [ ] Session persistence working
-- [ ] Memory leaks prevented
-
-**Testing**:
-- Test guest user creation
-- Test session persistence across app restarts
-- Verify no memory leaks (dispose called)
-
----
-
-### Day 3-4: Repository Provider Selection
-
-**Tasks**:
-1. Update repository providers to use `.when()` for AsyncValue
-2. Implement conditional selection (guest vs signed-in)
-3. Add proper error handling for all states
-4. Remove auto-dispose box closure
-
-**Key Implementation**:
-```dart
-final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
-  final authState = ref.watch(authStateProvider);
-  
-  return authState.when(
-    data: (user) => (user == null || user.isGuest)
-        ? ref.watch(hiveInvestmentRepositoryProvider)
-        : ref.watch(firestoreInvestmentRepositoryProvider),
-    loading: () => ref.watch(hiveInvestmentRepositoryProvider),
-    error: (_, __) => ref.watch(hiveInvestmentRepositoryProvider),
-  );
-});
-```
-
-**Deliverables**:
-- [ ] All repository providers updated
-- [ ] AsyncValue handling correct
-- [ ] No crashes on loading/error states
-
-**Testing**:
-- Test auth state transitions
-- Verify correct repository selected
-- Test loading and error states
-
----
-
-### Day 5: Router Changes
-
-**Tasks**:
-1. Update router to allow guest mode
-2. Add "Continue as Guest" option to sign-in screen
-3. Implement guest session start/end
-4. Update navigation guards
-
-**Deliverables**:
-- [ ] Router updated
-- [ ] Sign-in screen updated
-- [ ] Guest flow working
-
-**Testing**:
-- Test guest mode entry
-- Test navigation to all screens
-- Verify auth guards work correctly
-
----
-
-## Phase 3: Data Migration (Week 3)
-
-### Day 1-3: Migration Service
-
-**Tasks**:
-1. Implement `GuestDataMigrationService`
-2. Add backup creation (ZIP export)
-3. Implement merge strategy
-4. Implement replace strategy (with limitation notes)
-5. Add verification logic
-6. Implement cleanup
-
-**Deliverables**:
-- [ ] Migration service complete
-- [ ] Both strategies implemented
-- [ ] Verification working
-- [ ] Cleanup safe
-
-**Testing**:
-- Test merge strategy with sample data
-- Test replace strategy
-- Verify backup creation
-- Test cleanup (no data loss)
-
----
-
-
