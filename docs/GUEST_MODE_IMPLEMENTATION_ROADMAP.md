@@ -55,13 +55,40 @@ Before starting Phase 1, ensure:
      final encryptionKey = await getHiveEncryptionKey();
      final cipher = HiveAesCipher(encryptionKey);
      
-     // Open all boxes with encryption
+     // Open all 8 boxes with encryption
      await Hive.openBox<InvestmentHiveModel>(
        'guest_investments',
        encryptionCipher: cipher,
      );
-     // ... open other boxes
-     
+     await Hive.openBox<CashFlowHiveModel>(
+       'guest_cashflows',
+       encryptionCipher: cipher,
+     );
+     await Hive.openBox<GoalHiveModel>(
+       'guest_goals',
+       encryptionCipher: cipher,
+     );
+     await Hive.openBox<InvestmentHiveModel>(
+       'guest_archived_investments',
+       encryptionCipher: cipher,
+     );
+     await Hive.openBox<CashFlowHiveModel>(
+       'guest_archived_cashflows',
+       encryptionCipher: cipher,
+     );
+     await Hive.openBox<GoalHiveModel>(
+       'guest_archived_goals',
+       encryptionCipher: cipher,
+     );
+     await Hive.openBox<DocumentHiveModel>(
+       'guest_documents',
+       encryptionCipher: cipher,
+     );
+     await Hive.openBox<ExchangeRateHiveModel>(
+       'guest_exchange_rates',
+       encryptionCipher: cipher,
+     );
+
      runApp(ProviderScope(child: MyApp()));
    }
    ```
