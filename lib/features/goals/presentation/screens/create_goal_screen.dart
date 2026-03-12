@@ -197,7 +197,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
       ),
       leading: IconButton(
         tooltip: l10n.tooltipClose,
-        icon: const Icon(Icons.close),
+        icon: const Icon(Icons.close_rounded),
         onPressed: () => context.safePop(),
       ),
     );

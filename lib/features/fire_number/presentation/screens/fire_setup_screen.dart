@@ -132,12 +132,12 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
         elevation: 0,
         leading: _currentStep > 0
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: _previousStep,
                 tooltip: l10n.tooltipGoBack,
               )
             : IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close_rounded),
                 onPressed: () => context.safePop(),
                 tooltip: l10n.tooltipCloseSetup,
               ),

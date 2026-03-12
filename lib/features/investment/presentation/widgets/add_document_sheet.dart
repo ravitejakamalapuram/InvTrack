@@ -576,7 +576,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                     // Remove button
                     if (!_isLoading)
                       IconButton(
-                        icon: Icon(Icons.close, size: 20),
+                        icon: Icon(Icons.close_rounded, size: 20),
                         tooltip: 'Remove file',
                         onPressed: () {
                           setState(() {

@@ -40,7 +40,7 @@ class FireDashboardScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.safePop(),
           tooltip: l10n.tooltipBack,
         ),
