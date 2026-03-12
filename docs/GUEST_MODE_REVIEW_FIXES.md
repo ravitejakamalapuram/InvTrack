@@ -4,10 +4,12 @@
 
 This document tracks all fixes applied based on CodeRabbit reviews of PR #261.
 
-**Review Date**: March 11, 2026
+**Review Date**: March 11-12, 2026
 **First Review**: 25 issues (10 Critical, 6 Major, 5 Minor, 4 Trivial)
-**Second Review**: 24 additional issues (5 Critical, 10 Major, 7 Minor, 2 Trivial)
-**Status**: ⚠️ In Progress - Critical issues from second review being addressed
+**Second Review**: 24 issues (5 Critical, 10 Major, 7 Minor, 2 Trivial)
+**Third Review**: 6 issues (1 Critical, 5 Major)
+**Total**: 55 issues
+**Status**: ✅ All issues resolved
 
 ---
 
@@ -363,17 +365,85 @@ Stream<List<InvestmentEntity>> watchAllInvestments() {
 
 **First Review**: 25 issues resolved ✅
 **Second Review**: 24 issues resolved ✅
-**Total**: 49 issues addressed
+**Third Review**: 6 issues resolved ✅
+**Total**: 55 issues addressed
 
 ### Breakdown by Severity
-- **Critical (15)**: All resolved ✅
-- **Major (16)**: All resolved ✅
+- **Critical (16)**: All resolved ✅
+- **Major (21)**: All resolved ✅
 - **Minor (12)**: All resolved ✅
 - **Trivial (6)**: All resolved ✅
 
 ---
 
-**Review Status**: ✅ **ALL ISSUES RESOLVED**
+## 🔄 Third Review Fixes (Latest)
 
-All blocking and non-blocking issues from both CodeRabbit reviews have been systematically addressed. The documentation is now production-ready.
+### Critical Issues from Third Review (1)
+
+#### 41. ✅ RESOLVED: Replace Flow Data Loss
+**File**: `GUEST_MODE_IMPLEMENTATION_PLAN.md` line 159
+**Issue**: `_replaceData` deletes cloud data before upload completes - data loss window
+**Fix**: Upload replacement data FIRST, verify, then delete superseded cloud data
+```dart
+// Upload → Verify → Delete (safe order)
+await _importToFirestore(userId, data);
+final verified = await _verifyReplacement(userId, data);
+if (!verified) throw Exception('Upload failed');
+await _deleteSupersededCloudData(userId, data); // Only after verification
+```
+
+### Major Issues from Third Review (5)
+
+#### 42. ✅ RESOLVED: Guest UUID Persistence
+**File**: `GUEST_MODE_IMPLEMENTATION_PLAN.md` line 87
+**Issue**: `UserEntity.guest()` generates new UUID on each call - not stable
+**Fix**: Atomic generate-once-persist-immediately pattern in `GuestAuthRepository`
+```dart
+Future<String> getOrCreateGuestId() async {
+  final existingId = _prefs.getString('guest_user_id');
+  if (existingId != null) return existingId; // Reuse stable ID
+
+  final newGuestId = 'guest_${const Uuid().v4()}';
+  final success = await _prefs.setString('guest_user_id', newGuestId);
+  if (!success) throw Exception('Failed to persist guest ID');
+
+  return newGuestId;
+}
+```
+
+#### 43. ✅ RESOLVED: Guest Analytics Consent
+**File**: `GUEST_MODE_IMPLICATIONS.md` line 26
+**Issue**: Analytics enabled by default for guest mode - GDPR violation
+**Fix**: Added explicit opt-in consent dialog shown BEFORE starting guest session
+- Dialog shown once on first guest session
+- Default: analytics disabled
+- Gate all analytics calls behind `guest_analytics_consent` flag
+
+#### 44. ✅ RESOLVED: Exchange Rate Alignment
+**File**: `GUEST_MODE_IMPLICATIONS.md` line 32
+**Issue**: Table says "cached rates" but spec says "fetch + cache + refresh"
+**Fix**: Updated table to match technical spec - fetch live rates on first connection, cache, refresh every 24h
+
+#### 45. ✅ RESOLVED: Post-Migration Sign-Out State
+**File**: `GUEST_MODE_IMPLICATIONS.md` line 76
+**Issue**: Undefined behavior after sign-out post-migration
+**Fix**: Defined explicit behavior:
+- Cloud data remains intact (not deleted)
+- User returns to sign-in screen (NOT guest mode)
+- Guest mode no longer available (data already migrated)
+- Must sign in again to access data
+
+#### 46. ✅ RESOLVED: Uninstall Prompt Replacement
+**File**: `GUEST_MODE_UI_UX_SPEC.md` line 25
+**Issue**: "Show warning before uninstall" - impossible on Android/iOS
+**Fix**: Replaced with scheduled in-app backup reminders:
+- After 5+ investments created
+- Every 30 days if no export
+- Prominent "Backup Data" button in settings
+
+---
+
+**Review Status**: ✅ **ALL 55 ISSUES RESOLVED**
+
+All blocking and non-blocking issues from three CodeRabbit reviews have been systematically addressed. The documentation is now production-ready.
 
