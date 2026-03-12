@@ -23,16 +23,15 @@
 | **ZIP Import** | ✅ | ✅ | Imports to local/cloud storage |
 | **Notifications** | ✅ | ✅ | Local scheduling |
 | **FIRE Calculator** | ✅ | ✅ | Pure calculation |
-| **Analytics** | ✅ | ✅ | Anonymous tracking (no PII) |
+| **Analytics** | ⚠️ Disabled by default, requires explicit opt-in | ✅ Enabled | ✅ FIXED: Guest analytics gated behind consent dialog |
 
 ### ⚠️ Requires Adaptation
 
 | Feature | Guest Mode | Signed-In Mode | Required Changes |
 |---------|-----------|----------------|------------------|
-| **Multi-Currency** | ⚠️ Cached rates | ✅ Live rates | Cache default exchange rates locally |
+| **Multi-Currency** | ✅ Fetch + cache + refresh | ✅ Fetch + cache + refresh | ✅ UPDATED: Fetch live rates on first internet connection (even in guest mode), cache in Hive, refresh every 24h when online, fall back to cached rates when offline, show "estimated" label if >7 days old |
 | **Documents** | ⚠️ Local files | ✅ Cloud storage | Store in app documents directory |
 | **User Profile** | ⚠️ Local only | ✅ Firestore sync | Store in Hive instead of Firestore |
-| **Exchange Rates** | ⚠️ Default rates | ✅ API rates | Use fallback rates, show "estimated" label |
 
 ### ❌ Disabled in Guest Mode
 
@@ -78,6 +77,13 @@ User starts app → Guest mode → Local data created
 - **Result**: Data moved to cloud, local data deleted
 - **Backup**: ZIP backup created before migration
 - **Rollback**: Can restore from backup if migration fails
+- **Post-Migration Sign-Out Behavior**: ✅ DEFINED
+  - If user signs out AFTER successful migration:
+    - Cloud data remains intact (not deleted)
+    - User returns to sign-in screen (NOT guest mode)
+    - Guest mode is no longer available (data already migrated)
+    - User must sign in again to access their data
+  - Rationale: Prevents data confusion (guest data already merged/replaced in cloud)
 
 #### Scenario 3: Guest signs in but chooses not to migrate
 - **Result**: Guest data stays local, cloud data separate

@@ -92,17 +92,38 @@ class UserEntity {
   final String? displayName;
   final String? photoUrl;
   final bool isGuest; // NEW
-  
-  // Factory for guest user
-  factory UserEntity.guest() {
+
+  // ✅ FIXED: Guest ID must be loaded from persistent storage, not generated here
+  // The factory is only for creating the entity with an already-persisted ID
+  factory UserEntity.guestWithId(String persistedGuestId) {
     return UserEntity(
-      id: 'guest_${Uuid().v4()}',
+      id: persistedGuestId,
       email: 'guest@local',
       displayName: 'Guest User',
       photoUrl: null,
       isGuest: true,
     );
   }
+}
+
+// Guest ID persistence (in GuestAuthRepository)
+// ✅ ATOMIC: Generate UUID once, persist immediately, reuse on restart
+Future<String> getOrCreateGuestId() async {
+  final existingId = _prefs.getString('guest_user_id');
+  if (existingId != null) return existingId; // Reuse stable ID
+
+  final newGuestId = 'guest_${const Uuid().v4()}';
+  final success = await _prefs.setString('guest_user_id', newGuestId);
+  if (!success) throw Exception('Failed to persist guest ID');
+
+  return newGuestId;
+}
+
+Future<UserEntity> startGuestSession() async {
+  final guestId = await getOrCreateGuestId(); // Always use persisted ID
+  final guestUser = UserEntity.guestWithId(guestId);
+  _authStateController.add(guestUser);
+  return guestUser;
 }
 ```
 
@@ -157,9 +178,42 @@ class GuestDataMigrationService {
   }
 
   Future<void> _replaceData(String userId, GuestData data) async {
-    // Delete existing cloud data, then import guest data
-    await _deleteAllCloudData(userId);
+    // ✅ FIXED: Upload replacement data FIRST, verify, then delete old data
+    // This prevents data loss if upload fails
+
+    // Step 1: Upload guest data to cloud (appends to existing)
     await _importToFirestore(userId, data);
+
+    // Step 2: Verify uploaded replacement
+    final verified = await _verifyReplacement(userId, data);
+    if (!verified) {
+      throw Exception('Replacement upload verification failed - aborting');
+    }
+
+    // Step 3: Only after verification, delete superseded cloud data
+    // (Keep newly uploaded guest data, remove old cloud-only data)
+    await _deleteSupersededCloudData(userId, data);
+  }
+
+  Future<bool> _verifyReplacement(String userId, GuestData data) async {
+    // Verify all guest items exist in cloud
+    final cloudInvestments = await _firestoreRepo.getAllInvestments();
+    for (final guestInv in data.investments) {
+      final found = cloudInvestments.any((cloud) => cloud.id == guestInv.id);
+      if (!found) return false;
+    }
+    return true;
+  }
+
+  Future<void> _deleteSupersededCloudData(String userId, GuestData data) async {
+    // Delete cloud items that are NOT in guest data
+    final cloudInvestments = await _firestoreRepo.getAllInvestments();
+    for (final cloudInv in cloudInvestments) {
+      final isGuestItem = data.investments.any((g) => g.id == cloudInv.id);
+      if (!isGuestItem) {
+        await _firestoreRepo.deleteInvestment(cloudInv.id);
+      }
+    }
   }
 }
 ```

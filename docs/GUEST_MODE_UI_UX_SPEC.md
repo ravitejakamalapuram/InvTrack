@@ -22,6 +22,103 @@
 
 This app targets Google Play Store only. Apple Sign-In is not required.
 
+### 1.3 Guest Data Backup Reminders
+
+✅ **Data Loss Prevention: Scheduled In-App Prompts**
+
+Since apps cannot detect uninstall, show periodic backup reminders to guest users:
+
+**Trigger Conditions**:
+1. **After significant data entry**: Show prompt after user creates 5+ investments
+2. **Monthly reminder**: Show prompt every 30 days if user hasn't exported data
+3. **Settings access**: Prominent "Backup Data" button always visible
+
+**Reminder Dialog**:
+```text
+┌─────────────────────────────────────┐
+│                                     │
+│   📦 Backup Your Data               │
+│                                     │
+│   You have 12 investments tracked.  │
+│   Export your data to keep it safe. │
+│                                     │
+│   Guest data is stored locally and  │
+│   will be lost if you uninstall.    │
+│                                     │
+│   [Remind Later]    [Export Now]    │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Implementation**:
+```dart
+class GuestBackupReminderService {
+  static const _lastReminderKey = 'guest_last_backup_reminder';
+  static const _reminderIntervalDays = 30;
+
+  Future<bool> shouldShowReminder() async {
+    final isGuest = await _authService.isGuestMode();
+    if (!isGuest) return false;
+
+    final lastReminder = _prefs.getString(_lastReminderKey);
+    if (lastReminder == null) return true; // First time
+
+    final lastDate = DateTime.parse(lastReminder);
+    final daysSince = DateTime.now().difference(lastDate).inDays;
+
+    return daysSince >= _reminderIntervalDays;
+  }
+
+  Future<void> markReminderShown() async {
+    await _prefs.setString(_lastReminderKey, DateTime.now().toIso8601String());
+  }
+}
+```
+
+### 1.4 Guest Analytics Consent Dialog
+
+✅ **GDPR Compliance: Explicit Opt-In Required**
+
+When user selects "Continue as Guest", show consent dialog BEFORE starting guest session:
+
+```text
+┌─────────────────────────────────────┐
+│                                     │
+│   Help Us Improve InvTrack         │
+│                                     │
+│   Would you like to share           │
+│   anonymous usage data to help      │
+│   us improve the app?               │
+│                                     │
+│   • No personal information         │
+│   • No financial data               │
+│   • Only feature usage stats        │
+│   • Can be disabled anytime         │
+│                                     │
+│   [No Thanks]    [Allow Analytics]  │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Implementation**:
+- Show dialog ONCE on first guest session
+- Store choice in SharedPreferences: `guest_analytics_consent`
+- Default: `false` (analytics disabled)
+- If user selects "Allow Analytics": set to `true`
+- If user selects "No Thanks": set to `false`
+- Gate all analytics calls behind this flag:
+  ```dart
+  Future<void> logEvent(String event, Map<String, dynamic> params) async {
+    final isGuest = await _authService.isGuestMode();
+    if (isGuest) {
+      final consent = _prefs.getBool('guest_analytics_consent') ?? false;
+      if (!consent) return; // Skip analytics for guest without consent
+    }
+    // Proceed with analytics
+    await _analytics.logEvent(name: event, parameters: params);
+  }
+  ```
+
 ```text
 ┌─────────────────────────────────────┐
 │                                     │
