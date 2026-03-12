@@ -395,22 +395,25 @@ Step 3: Migration prompt appears
 └─────────────────────────────────────┘
 ```
 
-### 5.2 Export Prompt (Before Uninstall)
+### 5.2 Export Prompt (Periodic Reminder)
+
+**Note**: Apps cannot reliably detect uninstall. This prompt is shown periodically during normal usage (after significant data entry or monthly).
+
 ```
 ┌─────────────────────────────────────┐
-│ Export Your Data?               [×] │
+│ Backup Your Data?               [×] │
 ├─────────────────────────────────────┤
 │                                     │
 │ ⚠️ You're in guest mode.            │
 │                                     │
-│ If you uninstall the app, your      │
-│ data will be lost forever.          │
+│ Your data is stored locally only.   │
+│ Keep it safe by backing up.         │
 │                                     │
 │ We recommend:                       │
 │ • Sign in to backup to cloud        │
 │ • Export data to a file             │
 │                                     │
-│ [Sign In] [Export Data] [Cancel]    │
+│ [Sign In] [Export Data] [Later]     │
 │                                     │
 └─────────────────────────────────────┘
 ```

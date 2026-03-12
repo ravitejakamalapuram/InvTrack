@@ -154,7 +154,7 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
 
 ### Phase 4: UI/UX (Week 4)
 - [ ] Add guest mode indicators throughout app
-- [ ] Create upgrade prompts (periodic, before uninstall)
+- [ ] Create periodic backup/export reminders (after data entry, monthly)
 - [ ] Update settings screen for guest mode
 - [ ] Add migration flow screens
 - [ ] Update Help & FAQ with guest mode info
@@ -344,7 +344,7 @@ These values will be validated with dedicated low-level benchmarks in `integrati
 ## Questions & Answers
 
 ### Q: What happens if user uninstalls app in guest mode?
-**A**: All local data is deleted. We show a warning and encourage export before uninstall.
+**A**: All local data is deleted. We show periodic backup reminders during normal app usage to encourage export or sign-in.
 
 ### Q: Can guest users access multi-currency features?
 **A**: Yes, but with cached exchange rates. We show "estimated" label and encourage sign-in for live rates.

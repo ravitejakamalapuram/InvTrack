@@ -526,12 +526,17 @@ class GuestAuthRepository implements AuthRepository {
         displayName: 'Guest User',
         isGuest: true,
       );
-      _authStateController.add(_currentGuestUser);
+      // Don't add to broadcast stream here - will be emitted on first listen
     }
   }
 
   @override
-  Stream<UserEntity?> get authStateChanges => _authStateController.stream;
+  // ✅ FIXED: Emit current state immediately to new subscribers
+  // Broadcast streams don't replay, so we emit the current value first
+  Stream<UserEntity?> get authStateChanges async* {
+    yield _currentGuestUser; // Emit current state immediately
+    yield* _authStateController.stream; // Then emit future changes
+  }
 
   @override
   // ✅ FIXED: Return current guest user instead of null
@@ -930,9 +935,11 @@ class GuestDataMigrationService {
       await guestDir.delete(recursive: true);
     }
 
-    // Delete guest user ID from SharedPreferences
+    // Delete guest user ID and guest mode flag from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('guest_user_id');
+    // ✅ FIXED: Disable guest mode after successful migration
+    await prefs.remove('guest_mode_enabled');
 
     LoggerService.info('Guest data cleanup complete');
   }
