@@ -213,12 +213,37 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  Future<UserEntity?> signInAnonymously() async {
+    try {
+      LoggerService.info('Starting Anonymous Sign-In');
+
+      final userCredential = await _firebaseAuth.signInAnonymously();
+
+      LoggerService.info(
+        'Anonymous Sign-In successful',
+        metadata: {'userId': userCredential.user?.uid},
+      );
+      return userCredential.user != null
+          ? _mapFirebaseUserToEntity(userCredential.user!)
+          : null;
+    } catch (e, stackTrace) {
+      LoggerService.error(
+        'Anonymous Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   UserEntity _mapFirebaseUserToEntity(User firebaseUser) {
     return UserEntity(
       id: firebaseUser.uid,
       email: firebaseUser.email ?? '',
       displayName: firebaseUser.displayName,
       photoUrl: firebaseUser.photoURL,
+      isAnonymous: firebaseUser.isAnonymous,
     );
   }
 }

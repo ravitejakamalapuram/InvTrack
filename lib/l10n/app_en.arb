@@ -1744,6 +1744,41 @@
   "noSampleDataToClear": "No sample data to clear",
   "@noSampleDataToClear": {
     "description": "Message when there is no sample data to delete"
+  },
+
+  "continueAsGuest": "Continue as Guest",
+  "@continueAsGuest": {
+    "description": "Button text to continue using the app without signing in"
+  },
+
+  "guestModeNotice": "Your data will be stored locally on this device only. You can sign in later to backup to cloud.",
+  "@guestModeNotice": {
+    "description": "Notice shown when user enters guest mode explaining local-only storage"
+  },
+
+  "guestModeIndicator": "Guest Mode",
+  "@guestModeIndicator": {
+    "description": "Indicator shown in settings when user is in guest mode"
+  },
+
+  "signInToBackup": "Sign In to Backup",
+  "@signInToBackup": {
+    "description": "Call-to-action for guest users to sign in and backup their data"
+  },
+
+  "deleteGuestData": "Delete Guest Data",
+  "@deleteGuestData": {
+    "description": "Option to delete all local guest data"
+  },
+
+  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your local data.",
+  "@deleteGuestDataConfirm": {
+    "description": "Confirmation message before deleting guest data"
+  },
+
+  "guestDataDeleted": "Guest data deleted successfully",
+  "@guestDataDeleted": {
+    "description": "Success message after guest data is deleted"
   }
 }
 
