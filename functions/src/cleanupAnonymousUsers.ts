@@ -31,9 +31,12 @@ export const cleanupOldAnonymousUsers = functions.pubsub
         for (const user of listUsersResult.users) {
           // Check if user is anonymous (no provider data)
           if (user.providerData.length === 0) {
-            const lastSignIn = new Date(user.metadata.lastSignInTime);
+            // Use lastSignInTime if available, otherwise use creationTime
+            const lastActivity = user.metadata.lastSignInTime
+              ? new Date(user.metadata.lastSignInTime)
+              : new Date(user.metadata.creationTime);
 
-            if (lastSignIn < cutoffDate) {
+            if (lastActivity < cutoffDate) {
               try {
                 // 1. Delete Firestore data
                 await deleteUserData(user.uid);
@@ -44,7 +47,7 @@ export const cleanupOldAnonymousUsers = functions.pubsub
                 deletedCount++;
                 functions.logger.info('Deleted anonymous user', {
                   uid: user.uid,
-                  lastSignIn: lastSignIn.toISOString(),
+                  lastActivity: lastActivity.toISOString(),
                 });
               } catch (error) {
                 errorCount++;

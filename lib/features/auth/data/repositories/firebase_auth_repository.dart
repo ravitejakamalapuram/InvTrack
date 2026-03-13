@@ -228,16 +228,6 @@ class FirebaseAuthRepository implements AuthRepository {
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
-    } on FirebaseAuthException catch (e, stackTrace) {
-      LoggerService.error(
-        'Anonymous Sign-In failed',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      throw AuthException.signInFailed(
-        cause: e,
-        stackTrace: stackTrace,
-      );
     } catch (e, stackTrace) {
       LoggerService.error(
         'Anonymous Sign-In failed',
