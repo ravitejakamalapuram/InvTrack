@@ -215,9 +215,16 @@ export const cleanupOldAnonymousUsers = functions.pubsub
 
       for (const user of listUsersResult.users) {
         if (user.providerData.length === 0) { // Anonymous user
-          const lastSignIn = new Date(user.metadata.lastSignInTime);
+          // Use fallback chain: lastRefreshTime > lastSignInTime > creationTime
+          const lastActivityIso =
+            user.metadata.lastRefreshTime ??
+            user.metadata.lastSignInTime ??
+            user.metadata.creationTime;
+          if (!lastActivityIso) continue;
+          const lastActivity = new Date(lastActivityIso);
+          if (Number.isNaN(lastActivity.getTime())) continue;
 
-          if (lastSignIn < cutoffDate) {
+          if (lastActivity < cutoffDate) {
             // 1. Delete Firestore data
             await deleteUserData(user.uid);
 

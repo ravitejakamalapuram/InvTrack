@@ -31,10 +31,14 @@ export const cleanupOldAnonymousUsers = functions.pubsub
         for (const user of listUsersResult.users) {
           // Check if user is anonymous (no provider data)
           if (user.providerData.length === 0) {
-            // Use lastSignInTime if available, otherwise use creationTime
-            const lastActivity = user.metadata.lastSignInTime
-              ? new Date(user.metadata.lastSignInTime)
-              : new Date(user.metadata.creationTime);
+            // Use fallback chain: lastRefreshTime > lastSignInTime > creationTime
+            const lastActivityIso =
+              user.metadata.lastRefreshTime ??
+              user.metadata.lastSignInTime ??
+              user.metadata.creationTime;
+            if (!lastActivityIso) continue;
+            const lastActivity = new Date(lastActivityIso);
+            if (Number.isNaN(lastActivity.getTime())) continue;
 
             if (lastActivity < cutoffDate) {
               try {
