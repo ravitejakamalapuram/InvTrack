@@ -3,10 +3,12 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Displays user profile info at top of settings.
 class UserProfileCard extends ConsumerWidget {
@@ -16,12 +18,14 @@ class UserProfileCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return authState.when(
       data: (user) {
         if (user == null) return const SizedBox.shrink();
 
-        final displayName = user.displayName ?? 'User';
+        final isAnonymous = user.isAnonymous;
+        final displayName = user.displayName ?? (isAnonymous ? 'Guest' : 'User');
         final email = user.email;
         final photoUrl = user.photoUrl;
 
@@ -111,14 +115,72 @@ class UserProfileCard extends ConsumerWidget {
                       ),
                     ),
                     SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      email,
-                      style: AppTypography.small.copyWith(
-                        color: isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral500Light,
+                    if (isAnonymous)
+                      // Guest mode indicator
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          l10n.guestModeIndicator,
+                          style: AppTypography.tiny.copyWith(
+                            color: isDark
+                                ? Colors.amber.shade200
+                                : Colors.amber.shade900,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        email,
+                        style: AppTypography.small.copyWith(
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral500Light,
+                        ),
                       ),
-                    ),
+                    if (isAnonymous) ...[
+                      SizedBox(height: AppSpacing.sm),
+                      // Sign In to Link Account button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.go('/auth/signin'),
+                          icon: Icon(
+                            Icons.link,
+                            size: 16,
+                            color: AppColors.primaryLight,
+                          ),
+                          label: Text(
+                            l10n.signInToBackup,
+                            style: AppTypography.small.copyWith(
+                              color: AppColors.primaryLight,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xs,
+                            ),
+                            side: BorderSide(
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
