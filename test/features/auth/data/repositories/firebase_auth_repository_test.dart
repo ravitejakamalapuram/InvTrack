@@ -83,6 +83,7 @@ void main() {
         when(() => mockUser.email).thenReturn(testEmail);
         when(() => mockUser.displayName).thenReturn('Test User');
         when(() => mockUser.photoURL).thenReturn(null);
+        when(() => mockUser.isAnonymous).thenReturn(false);
 
         // Act
         final result = await repository.signInWithGoogle();
@@ -330,6 +331,7 @@ void main() {
       when(() => mockUser.email).thenReturn(testEmail);
       when(() => mockUser.displayName).thenReturn('Test User');
       when(() => mockUser.photoURL).thenReturn(null);
+      when(() => mockUser.isAnonymous).thenReturn(false);
 
       // Act
       final result = repository.currentUser;
@@ -349,6 +351,88 @@ void main() {
 
       // Assert
       expect(result, isNull);
+    });
+  });
+
+  group('FirebaseAuthRepository - Anonymous Sign-In Tests', () {
+    test('signInAnonymously succeeds and returns UserEntity with isAnonymous=true', () async {
+      // Arrange
+      const testUid = 'anonymous-uid-12345';
+
+      // Mock FirebaseAuth.signInAnonymously
+      when(
+        () => mockFirebaseAuth.signInAnonymously(),
+      ).thenAnswer((_) async => mockUserCredential);
+
+      // Mock UserCredential and User
+      when(() => mockUserCredential.user).thenReturn(mockUser);
+      when(() => mockUser.uid).thenReturn(testUid);
+      when(() => mockUser.email).thenReturn('');
+      when(() => mockUser.displayName).thenReturn(null);
+      when(() => mockUser.photoURL).thenReturn(null);
+      when(() => mockUser.isAnonymous).thenReturn(true);
+
+      // Act
+      final result = await repository.signInAnonymously();
+
+      // Assert
+      expect(result, isNotNull);
+      expect(result!.id, testUid);
+      expect(result.isAnonymous, isTrue);
+      expect(result.email, '');
+
+      // Verify signInAnonymously was called
+      verify(() => mockFirebaseAuth.signInAnonymously()).called(1);
+    });
+
+    test('signInAnonymously returns null when user is null', () async {
+      // Arrange
+      when(
+        () => mockFirebaseAuth.signInAnonymously(),
+      ).thenAnswer((_) async => mockUserCredential);
+
+      when(() => mockUserCredential.user).thenReturn(null);
+
+      // Act
+      final result = await repository.signInAnonymously();
+
+      // Assert
+      expect(result, isNull);
+    });
+
+    test('signInAnonymously throws AuthException.signInFailed on FirebaseAuthException', () async {
+      // Arrange
+      final firebaseException = FirebaseAuthException(
+        code: 'network-request-failed',
+        message: 'Network error',
+      );
+
+      when(
+        () => mockFirebaseAuth.signInAnonymously(),
+      ).thenThrow(firebaseException);
+
+      // Act & Assert
+      expect(
+        () => repository.signInAnonymously(),
+        throwsA(isA<Exception>()),
+      );
+
+      verify(() => mockFirebaseAuth.signInAnonymously()).called(1);
+    });
+
+    test('signInAnonymously throws AuthException.signInFailed on generic exception', () async {
+      // Arrange
+      when(
+        () => mockFirebaseAuth.signInAnonymously(),
+      ).thenThrow(Exception('Generic error'));
+
+      // Act & Assert
+      expect(
+        () => repository.signInAnonymously(),
+        throwsA(isA<Exception>()),
+      );
+
+      verify(() => mockFirebaseAuth.signInAnonymously()).called(1);
     });
   });
 }
