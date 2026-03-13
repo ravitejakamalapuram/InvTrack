@@ -78,18 +78,18 @@ Try to link accounts → Success: Data stays at same UID
 ```json
 {
   "continueAsGuest": "Continue as Guest",
-  "guestModeNotice": "Your data will be synced to cloud when online. You can sign in later to access from other devices.",
-  "guestModeIndicator": "Guest Mode",
-  "signInToBackup": "Sign In to Backup",
+  "guestModeNotice": "Your data will be stored in the cloud under an anonymous account. Sign in later to link this data to your Google account.",
+  "guestModeIndicator": "Guest Mode (Anonymous Account)",
+  "signInToBackup": "Sign In to Link Account",
   "deleteGuestData": "Delete Guest Data",
-  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your cloud data.",
-  "guestDataDeleted": "Guest data deleted successfully"
+  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your data from cloud and local storage, and remove your anonymous account.",
+  "guestDataDeleted": "Guest data and anonymous account deleted successfully"
 }
 ```
 
 **GDPR Compliance** (🚨 Must-fix before Phase 1 ships):
-- Show notice at guest entry: "Your investment data will be synced to cloud. You can delete it anytime from Settings."
-- Provide in-app deletion: Settings → Data Management → Delete Guest Data
+- Show notice at guest entry: "Your data will be stored in the cloud under an anonymous account. You can delete it anytime from Settings."
+- Provide in-app deletion: Settings → Data Management → Delete Guest Data (deletes Firestore data AND Firebase Auth anonymous account)
 - No analytics tracking for guest users without explicit consent
 
 **Accessibility Checklist** (WCAG compliance):

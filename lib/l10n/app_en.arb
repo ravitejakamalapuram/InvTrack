@@ -1751,34 +1751,34 @@
     "description": "Button text to continue using the app without signing in"
   },
 
-  "guestModeNotice": "Your data will be synced to cloud when online. You can sign in later to access from other devices.",
+  "guestModeNotice": "Your data will be stored in the cloud under an anonymous account. Sign in later to link this data to your Google account.",
   "@guestModeNotice": {
-    "description": "Notice shown when user enters guest mode explaining cloud sync"
+    "description": "Notice shown when user enters guest mode explaining anonymous cloud storage"
   },
 
-  "guestModeIndicator": "Guest Mode",
+  "guestModeIndicator": "Guest Mode (Anonymous Account)",
   "@guestModeIndicator": {
-    "description": "Indicator shown in settings when user is in guest mode"
+    "description": "Indicator shown in settings when user is in guest mode with anonymous account"
   },
 
-  "signInToBackup": "Sign In to Backup",
+  "signInToBackup": "Sign In to Link Account",
   "@signInToBackup": {
-    "description": "Call-to-action for guest users to sign in and backup their data"
+    "description": "Call-to-action for guest users to sign in and link their anonymous data to a permanent account"
   },
 
   "deleteGuestData": "Delete Guest Data",
   "@deleteGuestData": {
-    "description": "Option to delete all local guest data"
+    "description": "Option to delete all guest data from cloud and local storage"
   },
 
-  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your cloud data.",
+  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your data from cloud and local storage, and remove your anonymous account.",
   "@deleteGuestDataConfirm": {
-    "description": "Confirmation message before deleting guest data"
+    "description": "Confirmation message before deleting guest data explaining cloud and account deletion"
   },
 
-  "guestDataDeleted": "Guest data deleted successfully",
+  "guestDataDeleted": "Guest data and anonymous account deleted successfully",
   "@guestDataDeleted": {
-    "description": "Success message after guest data is deleted"
+    "description": "Success message after guest data and anonymous account are deleted"
   }
 }
 

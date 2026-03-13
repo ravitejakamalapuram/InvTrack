@@ -36,6 +36,6 @@ class UserEntity {
 
   @override
   String toString() {
-    return 'UserEntity(id: $id, email: $email, displayName: $displayName, photoUrl: $photoUrl, isAnonymous: $isAnonymous)';
+    return 'UserEntity(isAnonymous: $isAnonymous, hasEmail: ${email.isNotEmpty}, hasDisplayName: ${displayName != null})';
   }
 }

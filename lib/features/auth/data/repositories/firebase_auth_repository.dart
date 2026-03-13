@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
@@ -222,18 +223,31 @@ class FirebaseAuthRepository implements AuthRepository {
 
       LoggerService.info(
         'Anonymous Sign-In successful',
-        metadata: {'userId': userCredential.user?.uid},
+        metadata: {'anonymous': true},
       );
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
+    } on FirebaseAuthException catch (e, stackTrace) {
+      LoggerService.error(
+        'Anonymous Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      throw AuthException.signInFailed(
+        cause: e,
+        stackTrace: stackTrace,
+      );
     } catch (e, stackTrace) {
       LoggerService.error(
         'Anonymous Sign-In failed',
         error: e,
         stackTrace: stackTrace,
       );
-      rethrow;
+      throw AuthException.signInFailed(
+        cause: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
