@@ -13,7 +13,9 @@ Allow users to use InvTrack without signing in by leveraging **Firebase Anonymou
 ```text
 User opens app
     ↓
-Firebase Anonymous Sign-In (automatic)
+User taps "Continue as Guest" and accepts notice
+    ↓
+Firebase Anonymous Sign-In (opt-in)
     ↓
 User gets Firebase UID (e.g., "aBcD1234xyz")
     ↓
