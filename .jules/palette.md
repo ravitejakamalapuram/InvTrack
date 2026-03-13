@@ -21,3 +21,7 @@
 ## 2024-05-18 - Added Semantics wrapper to custom Filter Tabs in Goals
 **Learning:** Found custom filter tabs (`GestureDetector` wrapped `TweenAnimationBuilder`) in `lib/features/goals/presentation/screens/goals_screen.dart` lack native accessibility features in Flutter. Screen readers may fail to announce their role (button), selection state, and a clear label containing both the text ("Active") and the item count.
 **Action:** When building custom interactive components (like tabs or buttons) using generic containers and `GestureDetector`s, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label`, specify `selected` state if applicable, and often use `excludeSemantics: true` to prevent the screen reader from redundantly parsing the complex child tree.
+
+## 2024-05-18 - Unaccessible pickers in GoalIconPicker
+**Learning:** Found custom color and icon pickers built with `GestureDetector` in `lib/features/goals/presentation/widgets/goal_icon_picker.dart` lacked `Semantics` wrapper and keyboard focus support. A screen reader user navigating the modal wouldn't know they are interactable options, which option is selected, or what the option represents.
+**Action:** When building custom interactive pickers using generic containers and `GestureDetector`s, ALWAYS wrap the gesture detector with a `Semantics` widget. Set `button: true`, provide a clear `label` (e.g., "$icon icon" or color name), specify the `selected` state, and use `excludeSemantics: true` to prevent screen reader redundancy.
