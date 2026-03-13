@@ -1779,6 +1779,41 @@
   "guestDataDeleted": "Guest data and anonymous account deleted successfully",
   "@guestDataDeleted": {
     "description": "Success message after guest data and anonymous account are deleted"
+  },
+
+  "guestModeSection": "Guest Mode",
+  "@guestModeSection": {
+    "description": "Guest mode section title in Help & FAQ"
+  },
+
+  "whatIsGuestMode": "What is Guest Mode?",
+  "@whatIsGuestMode": {
+    "description": "FAQ question about guest mode"
+  },
+
+  "whatIsGuestModeAnswer": "Guest Mode lets you use InvTrack without signing in. Your data is stored in the cloud under an anonymous account, so you can access it across devices. You can sign in later to link this data to your Google account.",
+  "@whatIsGuestModeAnswer": {
+    "description": "FAQ answer about guest mode"
+  },
+
+  "howToLinkGuestAccount": "How do I link my guest account to Google?",
+  "@howToLinkGuestAccount": {
+    "description": "FAQ question about linking guest account"
+  },
+
+  "howToLinkGuestAccountAnswer": "Tap the ''Sign In to Link Account'' button in Settings. If your Google account already exists, we''ll create a backup of your guest data first, then you can import it after signing in.",
+  "@howToLinkGuestAccountAnswer": {
+    "description": "FAQ answer about linking guest account"
+  },
+
+  "whatHappensToGuestData": "What happens to my guest data when I sign in?",
+  "@whatHappensToGuestData": {
+    "description": "FAQ question about guest data after sign-in"
+  },
+
+  "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is automatically linked to it. If your Google account already exists, we create a ZIP backup of your guest data, which you can import to merge with your existing data.",
+  "@whatHappensToGuestDataAnswer": {
+    "description": "FAQ answer about guest data after sign-in"
   }
 }
 
