@@ -39,13 +39,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     // PERFORMANCE: Use ref.select to rebuild only when specific fields change
     final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
-    final currency = ref.watch(settingsProvider.select((s) => s.currency));
     final hasPin = ref.watch(securityProvider.select((s) => s.hasPin));
     final isBiometricEnabled = ref.watch(
       securityProvider.select((s) => s.isBiometricEnabled),
     );
     final isDebugEnabled = ref.watch(debugModeProvider);
-    final currencySwitchStatus = ref.watch(currencySwitchProvider);
 
     // Listen for currency switch completion
     ref.listen<CurrencySwitchStatus>(
@@ -115,39 +113,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () =>
                     _navigateTo(context, const AppearanceSettingsScreen()),
               ),
-              SettingsValueTile(
-                icon: Icons.currency_exchange_rounded,
-                iconColor: AppColors.successLight,
-                title: l10n.currency,
-                value: currencySwitchStatus.isFetchingRates
-                    ? '${l10n.loading}...'
-                    : currency,
-                trailing: currencySwitchStatus.isFetchingRates
-                    ? Semantics(
-                        label: currencySwitchStatus.fetchedRates != null &&
-                                currencySwitchStatus.totalRates != null
-                            ? l10n.loadingProgress(
-                                currencySwitchStatus.fetchedRates!,
-                                currencySwitchStatus.totalRates!,
-                              )
-                            : l10n.loading,
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.primaryLight,
-                            ),
-                            value: currencySwitchStatus.progress,
-                          ),
-                        ),
-                      )
-                    : null,
-                onTap: currencySwitchStatus.isFetchingRates
-                    ? null
-                    : () => _showCurrencyPicker(context, ref),
-              ),
+              // Extract to separate widget to avoid full-screen rebuilds
+              const _CurrencyTile(),
             ],
           ),
 
@@ -260,102 +227,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
   }
 
-  void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final settings = ref.read(settingsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Get all supported currencies with localized names
-    final supportedCurrencies = {
-      'USD': l10n.currencyUSD,
-      'EUR': l10n.currencyEUR,
-      'GBP': l10n.currencyGBP,
-      'INR': l10n.currencyINR,
-      'JPY': l10n.currencyJPY,
-      'CAD': l10n.currencyCAD,
-      'AUD': l10n.currencyAUD,
-      'CHF': l10n.currencyCHF,
-      'CNY': l10n.currencyCNY,
-      'SGD': l10n.currencySGD,
-      'HKD': l10n.currencyHKD,
-      'BRL': l10n.currencyBRL,
-      'MXN': l10n.currencyMXN,
-      'ZAR': l10n.currencyZAR,
-    };
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Handle bar
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.neutral600Dark
-                      : AppColors.neutral300Light,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: Text(l10n.selectCurrency, style: AppTypography.h4),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  children: supportedCurrencies.entries.map((entry) {
-                    final code = entry.key;
-                    final name = entry.value;
-                    final isSelected = settings.currency == code;
-
-                    return ListTile(
-                      title: Text(
-                        name,
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: AppColors.primaryLight,
-                            )
-                          : null,
-                      onTap: () {
-                        // Close the bottom sheet
-                        Navigator.pop(context);
-                        // Trigger currency switch with rate pre-fetching
-                        ref
-                            .read(currencySwitchProvider.notifier)
-                            .switchCurrency(code);
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Currency picker moved to _CurrencyTile widget to avoid full-screen rebuilds
 
   void _handleSignOut(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -380,6 +252,124 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(l10n.signOut),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Currency tile widget - extracted to avoid full-screen rebuilds
+/// Only this widget rebuilds when currency switch status changes
+class _CurrencyTile extends ConsumerWidget {
+  const _CurrencyTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final currency = ref.watch(settingsProvider.select((s) => s.currency));
+    final currencySwitchStatus = ref.watch(currencySwitchProvider);
+
+    return SettingsValueTile(
+      icon: Icons.currency_exchange_rounded,
+      iconColor: AppColors.successLight,
+      title: l10n.currency,
+      value: currencySwitchStatus.isFetchingRates
+          ? '${l10n.loading}...'
+          : currency,
+      trailing: currencySwitchStatus.isFetchingRates
+          ? Semantics(
+              label: currencySwitchStatus.fetchedRates != null &&
+                      currencySwitchStatus.totalRates != null
+                  ? l10n.loadingProgress(
+                      currencySwitchStatus.fetchedRates!,
+                      currencySwitchStatus.totalRates!,
+                    )
+                  : l10n.loading,
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primaryLight,
+                  ),
+                  value: currencySwitchStatus.progress,
+                ),
+              ),
+            )
+          : null,
+      onTap: currencySwitchStatus.isFetchingRates
+          ? null
+          : () => _showCurrencyPicker(context, ref),
+    );
+  }
+
+  void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final settings = ref.read(settingsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Get all supported currencies with localized names
+    final supportedCurrencies = {
+      'USD': l10n.currencyUSD,
+      'EUR': l10n.currencyEUR,
+      'GBP': l10n.currencyGBP,
+      'INR': l10n.currencyINR,
+      'JPY': l10n.currencyJPY,
+      'CAD': l10n.currencyCAD,
+      'AUD': l10n.currencyAUD,
+      'CHF': l10n.currencyCHF,
+      'CNY': l10n.currencyCNY,
+      'SGD': l10n.currencySGD,
+      'HKD': l10n.currencyHKD,
+      'BRL': l10n.currencyBRL,
+      'MXN': l10n.currencyMXN,
+      'ZAR': l10n.currencyZAR,
+    };
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.selectCurrency,
+              style: AppTypography.h3,
+            ),
+            SizedBox(height: AppSpacing.md),
+            ...supportedCurrencies.entries.map(
+              (entry) {
+                final code = entry.key;
+                final name = entry.value;
+                final isSelected = settings.currency == code;
+
+                return ListTile(
+                  leading: Icon(
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: isSelected
+                        ? AppColors.primaryLight
+                        : (isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light),
+                  ),
+                  title: Text(name),
+                  onTap: () {
+                    // Close the bottom sheet
+                    Navigator.pop(context);
+                    // Trigger currency switch with rate pre-fetching
+                    ref
+                        .read(currencySwitchProvider.notifier)
+                        .switchCurrency(code);
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
