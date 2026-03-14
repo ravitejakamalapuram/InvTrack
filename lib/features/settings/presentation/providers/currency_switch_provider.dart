@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/logging/logger_service.dart';
 import '../../../../core/services/currency_conversion_service.dart';
 import '../../../../core/utils/currency_utils.dart';
@@ -58,7 +59,7 @@ class CurrencySwitchStatus {
         fetchedRates = null;
 
   const CurrencySwitchStatus.failed({
-    required String errorMessage,
+    String? errorMessage,
     required String targetCurrency,
   })  : state = CurrencySwitchState.failed,
         errorMessage = errorMessage,
@@ -76,6 +77,28 @@ class CurrencySwitchStatus {
       return null;
     }
     return fetchedRates! / totalRates!;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is CurrencySwitchStatus &&
+        other.state == state &&
+        other.errorMessage == errorMessage &&
+        other.targetCurrency == targetCurrency &&
+        other.totalRates == totalRates &&
+        other.fetchedRates == fetchedRates;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      state,
+      errorMessage,
+      targetCurrency,
+      totalRates,
+      fetchedRates,
+    );
   }
 }
 
@@ -103,6 +126,16 @@ class CurrencySwitch extends _$CurrencySwitch {
     }
 
     try {
+      // Analytics: Track currency switch attempt
+      final analytics = ref.read(analyticsServiceProvider);
+      await analytics.logEvent(
+        name: 'currency_switch_started',
+        parameters: {
+          'from_currency': currentCurrency,
+          'to_currency': newCurrency,
+        },
+      );
+
       // Step 1: Set loading state
       state = CurrencySwitchStatus.fetchingRates(
         targetCurrency: newCurrency,
@@ -112,10 +145,10 @@ class CurrencySwitch extends _$CurrencySwitch {
 
       // Step 2: Get all cashflows to determine required currency pairs
       final cashFlowsAsync = ref.read(validCashFlowsProvider);
-      final cashFlows = await cashFlowsAsync.when(
-        data: (data) async => data,
-        loading: () async => <CashFlowEntity>[],
-        error: (e, st) async => <CashFlowEntity>[],
+      final cashFlows = cashFlowsAsync.when(
+        data: (data) => data,
+        loading: () => <CashFlowEntity>[],
+        error: (e, st) => <CashFlowEntity>[],
       );
 
       // Step 3: Collect unique currency pairs that need conversion
@@ -162,6 +195,16 @@ class CurrencySwitch extends _$CurrencySwitch {
       // Step 6: Set success state
       state = CurrencySwitchStatus.success(targetCurrency: newCurrency);
 
+      // Analytics: Track successful currency switch
+      await analytics.logEvent(
+        name: 'currency_switch_completed',
+        parameters: {
+          'from_currency': currentCurrency,
+          'to_currency': newCurrency,
+          'rates_fetched': totalRates,
+        },
+      );
+
       LoggerService.info(
         'Currency switched successfully',
         metadata: {
@@ -172,9 +215,21 @@ class CurrencySwitch extends _$CurrencySwitch {
       );
     } catch (e, st) {
       // Step 7: Set failed state (keep old currency)
+      // Use null for errorMessage - UI will show localized l10n.currencySwitchFailed
       state = CurrencySwitchStatus.failed(
-        errorMessage: e.toString(),
+        errorMessage: null,
         targetCurrency: newCurrency,
+      );
+
+      // Analytics: Track currency switch failure
+      final analytics = ref.read(analyticsServiceProvider);
+      await analytics.logEvent(
+        name: 'currency_switch_failed',
+        parameters: {
+          'from_currency': currentCurrency,
+          'to_currency': newCurrency,
+          'error_type': e.runtimeType.toString(),
+        },
       );
 
       LoggerService.error(

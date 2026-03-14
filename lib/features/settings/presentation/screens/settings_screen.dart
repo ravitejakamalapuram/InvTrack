@@ -25,11 +25,16 @@ import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile
 import 'package:inv_tracker/features/settings/presentation/widgets/user_profile_card.dart';
 
 /// Main settings hub screen with navigation to sub-sections.
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     // PERFORMANCE: Use ref.select to rebuild only when specific fields change
@@ -56,9 +61,11 @@ class SettingsScreen extends ConsumerWidget {
               duration: const Duration(seconds: 2),
             ),
           );
-          // Reset state after showing success
+          // Reset state after showing success (guard with mounted check)
           Future.delayed(const Duration(seconds: 2), () {
-            ref.read(currencySwitchProvider.notifier).reset();
+            if (mounted) {
+              ref.read(currencySwitchProvider.notifier).reset();
+            }
           });
         } else if (next.isFailed) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -79,6 +86,12 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           );
+          // Reset state after showing error (guard with mounted check)
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              ref.read(currencySwitchProvider.notifier).reset();
+            }
+          });
         }
       },
     );
@@ -110,15 +123,18 @@ class SettingsScreen extends ConsumerWidget {
                     ? '${l10n.loading}...'
                     : currency,
                 trailing: currencySwitchStatus.isFetchingRates
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primaryLight,
+                    ? Semantics(
+                        label: l10n.loading,
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primaryLight,
+                            ),
+                            value: currencySwitchStatus.progress,
                           ),
-                          value: currencySwitchStatus.progress,
                         ),
                       )
                     : null,
