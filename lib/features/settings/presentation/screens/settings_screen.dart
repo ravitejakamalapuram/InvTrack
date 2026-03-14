@@ -124,7 +124,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     : currency,
                 trailing: currencySwitchStatus.isFetchingRates
                     ? Semantics(
-                        label: l10n.loading,
+                        label: currencySwitchStatus.fetchedRates != null &&
+                                currencySwitchStatus.totalRates != null
+                            ? l10n.loadingProgress(
+                                currencySwitchStatus.fetchedRates!,
+                                currencySwitchStatus.totalRates!,
+                              )
+                            : l10n.loading,
                         child: SizedBox(
                           width: 20,
                           height: 20,

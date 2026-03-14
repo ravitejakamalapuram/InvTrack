@@ -1844,6 +1844,19 @@
         "type": "String"
       }
     }
+  },
+
+  "loadingProgress": "Loading: {fetched} of {total}",
+  "@loadingProgress": {
+    "description": "Loading progress indicator with counts",
+    "placeholders": {
+      "fetched": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }
 
