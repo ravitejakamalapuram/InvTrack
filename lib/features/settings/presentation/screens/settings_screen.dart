@@ -45,55 +45,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
     final isDebugEnabled = ref.watch(debugModeProvider);
 
-    // Listen for currency switch completion
-    ref.listen<CurrencySwitchStatus>(
-      currencySwitchProvider,
-      (previous, next) {
-        if (next.isSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.currencySwitchedSuccessfully(next.targetCurrency!),
-              ),
-              backgroundColor: AppColors.successLight,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          // Reset state after showing success (guard with mounted check)
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              ref.read(currencySwitchProvider.notifier).reset();
-            }
-          });
-        } else if (next.isFailed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.currencySwitchFailed(next.targetCurrency!),
-              ),
-              backgroundColor: AppColors.errorLight,
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: l10n.retry,
-                textColor: Colors.white,
-                onPressed: () {
-                  ref
-                      .read(currencySwitchProvider.notifier)
-                      .switchCurrency(next.targetCurrency!);
-                },
-              ),
-            ),
-          );
-          // Reset state after showing error (guard with mounted check)
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              ref.read(currencySwitchProvider.notifier).reset();
-            }
-          });
-        }
-      },
-    );
-
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
       body: ListView(
@@ -259,16 +210,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 /// Currency tile widget - extracted to avoid full-screen rebuilds
 /// Only this widget rebuilds when currency switch status changes
-class _CurrencyTile extends ConsumerWidget {
+class _CurrencyTile extends ConsumerStatefulWidget {
   const _CurrencyTile();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CurrencyTile> createState() => _CurrencyTileState();
+}
+
+class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final currency = ref.watch(settingsProvider.select((s) => s.currency));
     final currencySwitchStatus = ref.watch(currencySwitchProvider);
 
-    return SettingsValueTile(
+    // Listen for currency switch completion (moved from SettingsScreen)
+    ref.listen<CurrencySwitchStatus>(
+      currencySwitchProvider,
+      (previous, next) {
+        if (next.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.currencySwitchedSuccessfully(next.targetCurrency!),
+              ),
+              backgroundColor: AppColors.successLight,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          // Reset state after showing success (guard with mounted check)
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              ref.read(currencySwitchProvider.notifier).reset();
+            }
+          });
+        } else if (next.isFailed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.currencySwitchFailed(next.targetCurrency!),
+              ),
+              backgroundColor: AppColors.errorLight,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: l10n.retry,
+                textColor: Colors.white,
+                onPressed: () {
+                  ref
+                      .read(currencySwitchProvider.notifier)
+                      .switchCurrency(next.targetCurrency!);
+                },
+              ),
+            ),
+          );
+          // Reset state after showing error (guard with mounted check)
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) {
+              ref.read(currencySwitchProvider.notifier).reset();
+            }
+          });
+        }
+      },
+    );
+
+    final tile = SettingsValueTile(
       icon: Icons.currency_exchange_rounded,
       iconColor: AppColors.successLight,
       title: l10n.currency,
@@ -301,6 +306,18 @@ class _CurrencyTile extends ConsumerWidget {
           ? null
           : () => _showCurrencyPicker(context, ref),
     );
+
+    // Wrap in Semantics when disabled to announce disabled state to screen readers
+    if (currencySwitchStatus.isFetchingRates) {
+      return Semantics(
+        button: true,
+        enabled: false,
+        label: '${l10n.currency}, ${l10n.loading}',
+        child: tile,
+      );
+    }
+
+    return tile;
   }
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
