@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- Anonymous Auth Guest Mode (Simplified) (#263)
+
 ## [3.50.0] - 2026-03-11
 
 ### ✨ Features
