@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -17,6 +18,14 @@ import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mock_analytics_service.dart';
 import 'mocks/mock_notification_service.dart';
+
+class _MockCurrencyConversionService extends Mock implements CurrencyConversionService {
+  @override
+  Future<void> refreshLiveCacheIfStale() async {}
+
+  @override
+  Future<void> preloadRates(Set<String> currencies, String baseCurrency) async {}
+}
 
 class FakeFlutterSecureStorage extends FlutterSecureStorage {
   final Map<String, String> _storage = {};
@@ -98,6 +107,9 @@ void main() {
           versionCheckProvider.overrideWith(() {
             return _FakeVersionCheckNotifier();
           }),
+          currencyConversionServiceProvider.overrideWithValue(
+            _MockCurrencyConversionService(),
+          ),
         ],
         child: const InvTrackerApp(),
       ),
