@@ -1857,6 +1857,76 @@
         "type": "int"
       }
     }
+  },
+
+  "currencyUSD": "US Dollar ($)",
+  "@currencyUSD": {
+    "description": "US Dollar currency name with symbol"
+  },
+
+  "currencyEUR": "Euro (€)",
+  "@currencyEUR": {
+    "description": "Euro currency name with symbol"
+  },
+
+  "currencyGBP": "British Pound (£)",
+  "@currencyGBP": {
+    "description": "British Pound currency name with symbol"
+  },
+
+  "currencyINR": "Indian Rupee (₹)",
+  "@currencyINR": {
+    "description": "Indian Rupee currency name with symbol"
+  },
+
+  "currencyJPY": "Japanese Yen (¥)",
+  "@currencyJPY": {
+    "description": "Japanese Yen currency name with symbol"
+  },
+
+  "currencyCAD": "Canadian Dollar (C$)",
+  "@currencyCAD": {
+    "description": "Canadian Dollar currency name with symbol"
+  },
+
+  "currencyAUD": "Australian Dollar (A$)",
+  "@currencyAUD": {
+    "description": "Australian Dollar currency name with symbol"
+  },
+
+  "currencyCHF": "Swiss Franc (CHF)",
+  "@currencyCHF": {
+    "description": "Swiss Franc currency name with symbol"
+  },
+
+  "currencyCNY": "Chinese Yuan (¥)",
+  "@currencyCNY": {
+    "description": "Chinese Yuan currency name with symbol"
+  },
+
+  "currencySGD": "Singapore Dollar (S$)",
+  "@currencySGD": {
+    "description": "Singapore Dollar currency name with symbol"
+  },
+
+  "currencyHKD": "Hong Kong Dollar (HK$)",
+  "@currencyHKD": {
+    "description": "Hong Kong Dollar currency name with symbol"
+  },
+
+  "currencyBRL": "Brazilian Real (R$)",
+  "@currencyBRL": {
+    "description": "Brazilian Real currency name with symbol"
+  },
+
+  "currencyMXN": "Mexican Peso (MX$)",
+  "@currencyMXN": {
+    "description": "Mexican Peso currency name with symbol"
+  },
+
+  "currencyZAR": "South African Rand (R)",
+  "@currencyZAR": {
+    "description": "South African Rand currency name with symbol"
   }
 }
 

@@ -265,22 +265,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settings = ref.read(settingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Get all supported currencies from LocaleDetectionService
+    // Get all supported currencies with localized names
     final supportedCurrencies = {
-      'USD': 'US Dollar (\$)',
-      'EUR': 'Euro (€)',
-      'GBP': 'British Pound (£)',
-      'INR': 'Indian Rupee (₹)',
-      'JPY': 'Japanese Yen (¥)',
-      'CAD': 'Canadian Dollar (C\$)',
-      'AUD': 'Australian Dollar (A\$)',
-      'CHF': 'Swiss Franc (CHF)',
-      'CNY': 'Chinese Yuan (¥)',
-      'SGD': 'Singapore Dollar (S\$)',
-      'HKD': 'Hong Kong Dollar (HK\$)',
-      'BRL': 'Brazilian Real (R\$)',
-      'MXN': 'Mexican Peso (MX\$)',
-      'ZAR': 'South African Rand (R)',
+      'USD': l10n.currencyUSD,
+      'EUR': l10n.currencyEUR,
+      'GBP': l10n.currencyGBP,
+      'INR': l10n.currencyINR,
+      'JPY': l10n.currencyJPY,
+      'CAD': l10n.currencyCAD,
+      'AUD': l10n.currencyAUD,
+      'CHF': l10n.currencyCHF,
+      'CNY': l10n.currencyCNY,
+      'SGD': l10n.currencySGD,
+      'HKD': l10n.currencyHKD,
+      'BRL': l10n.currencyBRL,
+      'MXN': l10n.currencyMXN,
+      'ZAR': l10n.currencyZAR,
     };
 
     showModalBottomSheet(
