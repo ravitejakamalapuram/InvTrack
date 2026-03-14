@@ -55,49 +55,55 @@ class UserProfileCard extends ConsumerWidget {
                           semanticLabel: 'Profile photo of $displayName',
                           errorBuilder: (context, error, stackTrace) {
                             // Fallback to initials avatar on network error
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primaryLight,
-                                    AppColors.primaryLight.withValues(
-                                      alpha: 0.7,
-                                    ),
-                                  ],
+                            return Semantics(
+                              label: 'Profile avatar for $displayName',
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primaryLight,
+                                      AppColors.primaryLight.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _getInitials(displayName),
-                                  style: AppTypography.h3.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
+                                child: Center(
+                                  child: Text(
+                                    _getInitials(displayName),
+                                    style: AppTypography.h3.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
                             );
                           },
                         )
-                      : Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primaryLight,
-                                AppColors.primaryLight.withValues(alpha: 0.7),
-                              ],
+                      : Semantics(
+                          label: 'Profile avatar for $displayName',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primaryLight,
+                                  AppColors.primaryLight.withValues(alpha: 0.7),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              _getInitials(displayName),
-                              style: AppTypography.h3.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                            child: Center(
+                              child: Text(
+                                _getInitials(displayName),
+                                style: AppTypography.h3.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                ),
+                      ),
               ),
               SizedBox(width: AppSpacing.md),
               // User info
@@ -168,6 +174,7 @@ class UserProfileCard extends ConsumerWidget {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 44), // WCAG 44dp minimum
                             padding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.sm,
                               vertical: AppSpacing.xs,

@@ -199,8 +199,10 @@ class FirebaseAuthRepository implements AuthRepository {
     LoggerService.info('Deleting user account', metadata: {'userId': user.uid});
 
     try {
-      // Sign out from Google first
-      await _googleSignIn.signOut();
+      // Only sign out from Google for non-anonymous users
+      if (!user.isAnonymous) {
+        await _googleSignIn.signOut();
+      }
 
       // Delete the Firebase Auth account
       await user.delete();

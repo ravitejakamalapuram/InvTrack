@@ -1751,9 +1751,9 @@
     "description": "Button text to continue using the app without signing in"
   },
 
-  "guestModeNotice": "Your data will be stored in the cloud under an anonymous account. Sign in later to link this data to your Google account.",
+  "guestModeNotice": "Your data is saved to the cloud as a guest. Sign in to secure it across devices — uninstalling the app may cause data loss.",
   "@guestModeNotice": {
-    "description": "Notice shown when user enters guest mode explaining anonymous cloud storage"
+    "description": "Notice shown when user enters guest mode explaining anonymous cloud storage and uninstall data-loss risk (GDPR Article 13)"
   },
 
   "guestModeIndicator": "Guest Mode (Anonymous Account)",
@@ -1779,6 +1779,11 @@
   "guestDataDeleted": "Guest data and anonymous account deleted successfully",
   "@guestDataDeleted": {
     "description": "Success message after guest data and anonymous account are deleted"
+  },
+
+  "guestDataDeletionFailed": "Failed to delete guest data. Please try again.",
+  "@guestDataDeletionFailed": {
+    "description": "Error message when guest data deletion fails"
   },
 
   "guestModeSection": "Guest Mode",

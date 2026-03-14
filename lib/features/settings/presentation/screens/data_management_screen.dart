@@ -459,7 +459,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to delete guest data: ${e.toString()}'),
+            content: Text(l10n.guestDataDeletionFailed),
             backgroundColor: AppColors.errorLight,
           ),
         );
