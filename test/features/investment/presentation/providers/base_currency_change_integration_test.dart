@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';

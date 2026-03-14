@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,6 +93,27 @@ class SettingsNotifier extends Notifier<SettingsState> {
     await prefs.setString('locale', locale);
 
     state = state.copyWith(currency: currency, locale: locale);
+
+    // CRITICAL FIX: Currency providers auto-update via dependency chain
+    //
+    // Dependency chain:
+    // settingsProvider (this) → currencyCodeProvider → all currency/stats providers
+    //
+    // When we update state.currency above, currencyCodeProvider automatically rebuilds
+    // because it watches settingsProvider. Then all providers that watch currencyCodeProvider
+    // (currencySymbolProvider, currencyLocaleProvider, multiCurrencyGlobalStatsProvider, etc.)
+    // automatically rebuild as well.
+    //
+    // IMPORTANT: Do NOT invalidate providers that watch currencyCodeProvider!
+    // Invalidating them would create a circular dependency:
+    //   settingsProvider → invalidate → multiCurrencyGlobalStatsProvider
+    //   multiCurrencyGlobalStatsProvider → watch → currencyCodeProvider → watch → settingsProvider
+    //
+    // The automatic rebuild via the dependency chain is sufficient and correct.
+
+    // CRITICAL FIX #3: Invalidate currency conversion service to clear cached rates
+    // This ensures exchange rates are refetched for the new currency pair
+    ref.invalidate(currencyConversionServiceProvider);
 
     // Track analytics
     ref

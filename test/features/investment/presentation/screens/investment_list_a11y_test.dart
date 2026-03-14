@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   // Override providers to ensure clean state
@@ -22,7 +23,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: getOverrides(),
-          child: const MaterialApp(home: InvestmentListScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: InvestmentListScreen(),
+          ),
         ),
       );
 
@@ -74,7 +79,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: getOverrides(),
-        child: const MaterialApp(home: InvestmentListScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: InvestmentListScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -117,7 +126,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: getOverrides(),
-        child: const MaterialApp(home: InvestmentListScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: InvestmentListScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();

@@ -1,12 +1,12 @@
-1. **Add tooltips to `IconButton`s missing them.**
-   - In `lib/features/fire_number/presentation/screens/fire_setup_screen.dart`, tooltips are missing on multiple `IconButton`s. However, wait, let me check the previous grep.
-   - Wait, `fire_setup_screen.dart` has:
-     ```
-     icon: const Icon(Icons.arrow_back),
-     onPressed: _previousStep,
-     tooltip: 'Go back',
-     ```
-     My regex script was slightly off or I didn't interpret it right.
-   - Ah, `find_no_tooltip.dart` found:
-     - `fire_setup_screen.dart` (Wait, it DOES have tooltip in the code, my `find_no_tooltip.dart` captured only the first line maybe. `IconButton(\n      icon: ...\n   )`).
-     - Let me check manually using grep.
+1. **Add `Semantics` wrapper to `_TemplateCard` in `lib/features/investment/presentation/widgets/template_selector.dart`**:
+   - Wrap the `GestureDetector` in a `Semantics` widget.
+   - Set `button: true` to indicate it is an interactive element.
+   - Set `selected: isSelected` to communicate its state.
+   - Provide a clear `label: template.name` to ensure screen readers announce it properly.
+   - Use `excludeSemantics: true` inside the `Semantics` widget to prevent screen readers from redundantly reading the complex internal structure (emoji, name, rate).
+2. **Document learning**:
+   - Add an entry to `.jules/palette.md` noting that custom horizontal scrolling selectors with custom interactive cards should be wrapped in `Semantics(button: true)` with appropriate selection state and clear labels.
+3. **Pre-commit checks**:
+   - Ensure the code formatting, analysis, and tests pass.
+4. **Submit**:
+   - Push the branch with a clear commit message.

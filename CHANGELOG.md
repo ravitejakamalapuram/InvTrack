@@ -2,6 +2,97 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Simplify currency switch with rate pre-fetching (#267)
+
+## [3.52.0] - 2026-03-14
+
+### ✨ Features
+
+- Anonymous Auth Guest Mode (Simplified) (#263)
+
+## [3.50.0] - 2026-03-11
+
+### ✨ Features
+
+- Display investment notes in detail screen header (#258)
+
+## [3.49.1] - 2026-03-10
+
+### 🔧 Miscellaneous
+
+- Remove unused Update Firestore Version Info workflow
+
+## [3.49.0] - 2026-03-10
+
+### ✨ Features
+
+- Add comprehensive CodeRabbit automated PR review system
+
+### 📚 Documentation
+
+- Add complete fix summary - all issues resolved
+
+## [3.48.14] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Update notification test expectations to match formatted currency output
+
+## [3.48.13] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Remove unused imports from settings_provider.dart
+
+## [3.48.12] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Remove circular dependency in currency provider invalidation
+
+## [3.48.11] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Add localization support to accessibility test files
+
+## [3.48.10] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Complete all l10n errors and code quality improvements (26 errors → 0)
+
+### 📚 Documentation
+
+- L10n fix summary (26 → 8 errors, 69% complete)
+
+## [3.48.9] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Resolve all l10n undefined errors (26 → 8 errors)
+
+### 📚 Documentation
+
+- CI/CD status report - multi-currency fix complete
+- Update audit report with complete multi-currency fix
+
+## [3.48.8] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Complete multi-currency fix - invalidate currency format providers
+
+## [3.48.7] - 2026-03-10
+
+### 🐛 Bug Fixes
+
+- Invalidate multi-currency providers on base currency change
+
+## [3.48.6] - 2026-03-10
+
 ### 🐛 Bug Fixes
 
 - **code-quality**: Fix all lint warnings and errors

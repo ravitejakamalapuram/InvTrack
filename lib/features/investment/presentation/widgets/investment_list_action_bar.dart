@@ -98,6 +98,7 @@ class InvestmentListActionBar extends ConsumerWidget {
   }
 
   Future<void> _showMergeDialog(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final listState = ref.read(investmentListStateProvider);
     final allInvestments = ref.read(allInvestmentsProvider).value ?? [];
     final toMerge = allInvestments

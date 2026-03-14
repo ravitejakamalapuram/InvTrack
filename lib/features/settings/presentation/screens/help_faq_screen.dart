@@ -21,6 +21,23 @@ class HelpFaqScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.all(AppSpacing.md),
         children: [
+          _buildSection(l10n.guestModeSection, [
+            _buildFaqItem(
+              l10n.whatIsGuestMode,
+              l10n.whatIsGuestModeAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howToLinkGuestAccount,
+              l10n.howToLinkGuestAccountAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatHappensToGuestData,
+              l10n.whatHappensToGuestDataAnswer,
+              isDark,
+            ),
+          ]),
           _buildSection(l10n.gettingStarted, [
             _buildFaqItem(
               l10n.howToAddFirstInvestment,
@@ -86,6 +103,23 @@ class HelpFaqScreen extends StatelessWidget {
             _buildFaqItem(
               l10n.howDoesCurrencyFormattingWork,
               l10n.howDoesCurrencyFormattingWorkAnswer,
+              isDark,
+            ),
+          ]),
+          _buildSection(l10n.advancedFeatures, [
+            _buildFaqItem(
+              l10n.howToEnableDebugMode,
+              l10n.howToEnableDebugModeAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatIsDebugModeFor,
+              l10n.whatIsDebugModeForAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howToDisableDebugMode,
+              l10n.howToDisableDebugModeAnswer,
               isDark,
             ),
           ]),

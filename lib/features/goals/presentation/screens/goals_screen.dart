@@ -55,6 +55,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Use separate providers for active and archived goals
@@ -97,7 +98,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                 fontSize: 22,
               ),
             ),
-            actions: _buildAppBarActions(isDark, isSelectionMode),
+            actions: _buildAppBarActions(isDark, isSelectionMode, l10n),
           ),
 
           // Filter Tabs or Selection Controls
@@ -120,6 +121,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             archivedGoalsAsync: archivedGoalsAsync,
             isSelectionMode: isSelectionMode,
             selectedIds: selectedIds,
+            l10n: l10n,
           ),
         ],
       ),
@@ -132,8 +134,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(bool isDark, bool isSelectionMode) {
-    final l10n = AppLocalizations.of(context);
+  List<Widget> _buildAppBarActions(bool isDark, bool isSelectionMode, AppLocalizations l10n) {
     return [
       // Selection mode toggle
       IconButton(
@@ -191,6 +192,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     required AsyncValue<List<GoalEntity>> archivedGoalsAsync,
     required bool isSelectionMode,
     required Set<String> selectedIds,
+    required AppLocalizations l10n,
   }) {
     // Select the appropriate data source based on filter
     final AsyncValue<List<GoalEntity>> goalsAsync;

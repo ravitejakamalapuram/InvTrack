@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Complete multi-currency fix - invalidate currency format providers

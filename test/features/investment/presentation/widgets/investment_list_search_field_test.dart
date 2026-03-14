@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_search_field.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('InvestmentListSearchField has accessible buttons', (
@@ -9,7 +10,11 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: InvestmentListSearchField())),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: InvestmentListSearchField()),
+        ),
       ),
     );
 
@@ -23,7 +28,11 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: InvestmentListSearchField())),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: InvestmentListSearchField()),
+        ),
       ),
     );
 

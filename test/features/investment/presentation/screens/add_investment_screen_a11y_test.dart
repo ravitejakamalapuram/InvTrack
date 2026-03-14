@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 // Mock Notifier that does nothing
 class MockInvestmentNotifier extends InvestmentNotifier {
@@ -25,7 +26,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: overrides,
-        child: const MaterialApp(home: AddInvestmentScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AddInvestmentScreen(),
+        ),
       ),
     );
 

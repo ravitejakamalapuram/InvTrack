@@ -154,10 +154,10 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildStep1AgeSetup(isDark),
-                  _buildStep2Expenses(isDark),
-                  _buildStep3FireType(isDark),
-                  _buildStep4Advanced(isDark),
+                  _buildStep1AgeSetup(isDark, l10n),
+                  _buildStep2Expenses(isDark, l10n),
+                  _buildStep3FireType(isDark, l10n),
+                  _buildStep4Advanced(isDark, l10n),
                 ],
               ),
             ),
@@ -197,8 +197,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep1AgeSetup(bool isDark) {
-    final l10n = AppLocalizations.of(context);
+  Widget _buildStep1AgeSetup(bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(
@@ -340,7 +339,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep2Expenses(bool isDark) {
+  Widget _buildStep2Expenses(bool isDark, AppLocalizations l10n) {
     final currencySymbol = ref.watch(currencySymbolProvider);
 
     return SingleChildScrollView(
@@ -383,7 +382,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep3FireType(bool isDark) {
+  Widget _buildStep3FireType(bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(
@@ -474,7 +473,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
     );
   }
 
-  Widget _buildStep4Advanced(bool isDark) {
+  Widget _buildStep4Advanced(bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: AppSpacing.paddingLg,
       child: Column(

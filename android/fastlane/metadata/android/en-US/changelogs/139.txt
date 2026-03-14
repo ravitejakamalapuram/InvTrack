@@ -1,0 +1,2 @@
+🆕 What's New
+• Display investment notes in detail screen header (#258)

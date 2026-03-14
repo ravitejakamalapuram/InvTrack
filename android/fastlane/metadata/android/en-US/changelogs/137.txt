@@ -1,0 +1,2 @@
+🆕 What's New
+• Add comprehensive CodeRabbit automated PR review system

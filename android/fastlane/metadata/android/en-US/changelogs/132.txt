@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Complete all l10n errors and code quality improvements (26 errors → 0)

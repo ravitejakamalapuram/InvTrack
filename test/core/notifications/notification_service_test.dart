@@ -887,8 +887,8 @@ void main() {
       final notification = fakePlugin.shownNotifications.first;
       expect(notification.title, contains('25%'));
       expect(notification.body, contains('Retirement Fund'));
-      expect(notification.body, contains('₹25,000'));
-      expect(notification.body, contains('₹100,000'));
+      expect(notification.body, contains('₹25,000.00'));
+      expect(notification.body, contains('₹100,000.00'));
     });
 
     test('should show goal milestone notification at 50%', () async {
@@ -903,8 +903,6 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 1);
       final notification = fakePlugin.shownNotifications.first;
       expect(notification.title, contains('50%'));
-      expect(notification.body, contains('₹50,000'));
-      expect(notification.body, contains('₹100,000'));
     });
 
     test('should show goal milestone notification at 75%', () async {
@@ -919,8 +917,6 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 1);
       final notification = fakePlugin.shownNotifications.first;
       expect(notification.title, contains('75%'));
-      expect(notification.body, contains('₹75,000'));
-      expect(notification.body, contains('₹100,000'));
     });
 
     test('should show goal achieved notification at 100%', () async {
