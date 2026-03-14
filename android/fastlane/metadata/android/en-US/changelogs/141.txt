@@ -1,0 +1,2 @@
+🆕 What's New
+• Anonymous Auth Guest Mode (Simplified) (#263)
