@@ -16,7 +16,9 @@ reviews:
   profile: "assertive"
 
   # Workflow settings
-  request_changes_workflow: false
+  # Set to true to produce a single comprehensive review instead of incremental comments
+  # This ensures all issues are collected and posted together in one review
+  request_changes_workflow: true
   high_level_summary: true
   high_level_summary_in_walkthrough: false
   poem: false
@@ -27,23 +29,6 @@ reviews:
   auto_review:
     enabled: true
     drafts: false  # Don't review draft PRs
-
-  # ============================================================================
-  # SINGLE COMPREHENSIVE REVIEW CONFIGURATION
-  # ============================================================================
-  # Configure CodeRabbit to provide ONE exhaustive review per PR push
-  # instead of multiple incremental comments
-  # ============================================================================
-
-  # Wait for all files to be analyzed before posting review
-  incremental: false
-
-  # Batch all comments into a single review submission
-  batch_comments: true
-
-  # Maximum time to wait for all files to be analyzed (in seconds)
-  # This ensures CodeRabbit waits to collect all issues before posting
-  review_delay: 30
 
   # ============================================================================
   # PATH-SPECIFIC REVIEW INSTRUCTIONS
