@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/about_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/appearance_settings_screen.dart';
@@ -39,6 +40,48 @@ class SettingsScreen extends ConsumerWidget {
       securityProvider.select((s) => s.isBiometricEnabled),
     );
     final isDebugEnabled = ref.watch(debugModeProvider);
+    final currencySwitchStatus = ref.watch(currencySwitchProvider);
+
+    // Listen for currency switch completion
+    ref.listen<CurrencySwitchStatus>(
+      currencySwitchProvider,
+      (previous, next) {
+        if (next.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.currencySwitchedSuccessfully(next.targetCurrency!),
+              ),
+              backgroundColor: AppColors.successLight,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          // Reset state after showing success
+          Future.delayed(const Duration(seconds: 2), () {
+            ref.read(currencySwitchProvider.notifier).reset();
+          });
+        } else if (next.isFailed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n.currencySwitchFailed(next.targetCurrency!),
+              ),
+              backgroundColor: AppColors.errorLight,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: l10n.retry,
+                textColor: Colors.white,
+                onPressed: () {
+                  ref
+                      .read(currencySwitchProvider.notifier)
+                      .switchCurrency(next.targetCurrency!);
+                },
+              ),
+            ),
+          );
+        }
+      },
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings, style: AppTypography.h3)),
@@ -63,8 +106,25 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.currency_exchange_rounded,
                 iconColor: AppColors.successLight,
                 title: l10n.currency,
-                value: currency,
-                onTap: () => _showCurrencyPicker(context, ref),
+                value: currencySwitchStatus.isFetchingRates
+                    ? '${l10n.loading}...'
+                    : currency,
+                trailing: currencySwitchStatus.isFetchingRates
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primaryLight,
+                          ),
+                          value: currencySwitchStatus.progress,
+                        ),
+                      )
+                    : null,
+                onTap: currencySwitchStatus.isFetchingRates
+                    ? null
+                    : () => _showCurrencyPicker(context, ref),
               ),
             ],
           ),
@@ -181,7 +241,6 @@ class SettingsScreen extends ConsumerWidget {
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final settings = ref.read(settingsProvider);
-    final notifier = ref.read(settingsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Get all supported currencies from LocaleDetectionService
@@ -258,8 +317,12 @@ class SettingsScreen extends ConsumerWidget {
                             )
                           : null,
                       onTap: () {
-                        notifier.setCurrency(code);
+                        // Close the bottom sheet
                         Navigator.pop(context);
+                        // Trigger currency switch with rate pre-fetching
+                        ref
+                            .read(currencySwitchProvider.notifier)
+                            .switchCurrency(code);
                       },
                     );
                   }).toList(),

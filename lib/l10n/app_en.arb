@@ -1819,6 +1819,31 @@
   "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is automatically linked to it. If your Google account already exists, we create a ZIP backup of your guest data, which you can import to merge with your existing data.",
   "@whatHappensToGuestDataAnswer": {
     "description": "FAQ answer about guest data after sign-in"
+  },
+
+  "loading": "Loading",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+
+  "currencySwitchedSuccessfully": "Currency switched to {currency}",
+  "@currencySwitchedSuccessfully": {
+    "description": "Success message when currency is switched",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "currencySwitchFailed": "Failed to switch to {currency}. Please try again.",
+  "@currencySwitchFailed": {
+    "description": "Error message when currency switch fails",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
   }
 }
 
