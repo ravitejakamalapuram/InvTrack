@@ -1819,6 +1819,114 @@
   "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is automatically linked to it. If your Google account already exists, we create a ZIP backup of your guest data, which you can import to merge with your existing data.",
   "@whatHappensToGuestDataAnswer": {
     "description": "FAQ answer about guest data after sign-in"
+  },
+
+  "loading": "Loading",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+
+  "currencySwitchedSuccessfully": "Currency switched to {currency}",
+  "@currencySwitchedSuccessfully": {
+    "description": "Success message when currency is switched",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "currencySwitchFailed": "Failed to switch to {currency}. Please try again.",
+  "@currencySwitchFailed": {
+    "description": "Error message when currency switch fails",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "loadingProgress": "Loading: {fetched} of {total}",
+  "@loadingProgress": {
+    "description": "Loading progress indicator with counts",
+    "placeholders": {
+      "fetched": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+
+  "currencyUSD": "US Dollar ($)",
+  "@currencyUSD": {
+    "description": "US Dollar currency name with symbol"
+  },
+
+  "currencyEUR": "Euro (€)",
+  "@currencyEUR": {
+    "description": "Euro currency name with symbol"
+  },
+
+  "currencyGBP": "British Pound (£)",
+  "@currencyGBP": {
+    "description": "British Pound currency name with symbol"
+  },
+
+  "currencyINR": "Indian Rupee (₹)",
+  "@currencyINR": {
+    "description": "Indian Rupee currency name with symbol"
+  },
+
+  "currencyJPY": "Japanese Yen (¥)",
+  "@currencyJPY": {
+    "description": "Japanese Yen currency name with symbol"
+  },
+
+  "currencyCAD": "Canadian Dollar (C$)",
+  "@currencyCAD": {
+    "description": "Canadian Dollar currency name with symbol"
+  },
+
+  "currencyAUD": "Australian Dollar (A$)",
+  "@currencyAUD": {
+    "description": "Australian Dollar currency name with symbol"
+  },
+
+  "currencyCHF": "Swiss Franc (CHF)",
+  "@currencyCHF": {
+    "description": "Swiss Franc currency name with symbol"
+  },
+
+  "currencyCNY": "Chinese Yuan (¥)",
+  "@currencyCNY": {
+    "description": "Chinese Yuan currency name with symbol"
+  },
+
+  "currencySGD": "Singapore Dollar (S$)",
+  "@currencySGD": {
+    "description": "Singapore Dollar currency name with symbol"
+  },
+
+  "currencyHKD": "Hong Kong Dollar (HK$)",
+  "@currencyHKD": {
+    "description": "Hong Kong Dollar currency name with symbol"
+  },
+
+  "currencyBRL": "Brazilian Real (R$)",
+  "@currencyBRL": {
+    "description": "Brazilian Real currency name with symbol"
+  },
+
+  "currencyMXN": "Mexican Peso (MX$)",
+  "@currencyMXN": {
+    "description": "Mexican Peso currency name with symbol"
+  },
+
+  "currencyZAR": "South African Rand (R)",
+  "@currencyZAR": {
+    "description": "South African Rand currency name with symbol"
   }
 }
 
