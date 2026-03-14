@@ -1744,6 +1744,189 @@
   "noSampleDataToClear": "No sample data to clear",
   "@noSampleDataToClear": {
     "description": "Message when there is no sample data to delete"
+  },
+
+  "continueAsGuest": "Continue as Guest",
+  "@continueAsGuest": {
+    "description": "Button text to continue using the app without signing in"
+  },
+
+  "guestModeNotice": "Your data is saved to the cloud as a guest. Sign in to secure it across devices — uninstalling the app may cause data loss.",
+  "@guestModeNotice": {
+    "description": "Notice shown when user enters guest mode explaining anonymous cloud storage and uninstall data-loss risk (GDPR Article 13)"
+  },
+
+  "guestModeIndicator": "Guest Mode (Anonymous Account)",
+  "@guestModeIndicator": {
+    "description": "Indicator shown in settings when user is in guest mode with anonymous account"
+  },
+
+  "signInToBackup": "Sign In to Link Account",
+  "@signInToBackup": {
+    "description": "Call-to-action for guest users to sign in and link their anonymous data to a permanent account"
+  },
+
+  "deleteGuestData": "Delete Guest Data",
+  "@deleteGuestData": {
+    "description": "Option to delete all guest data from cloud and local storage"
+  },
+
+  "deleteGuestDataConfirm": "Are you sure? This will permanently delete all your data from cloud and local storage, and remove your anonymous account.",
+  "@deleteGuestDataConfirm": {
+    "description": "Confirmation message before deleting guest data explaining cloud and account deletion"
+  },
+
+  "guestDataDeleted": "Guest data and anonymous account deleted successfully",
+  "@guestDataDeleted": {
+    "description": "Success message after guest data and anonymous account are deleted"
+  },
+
+  "guestDataDeletionFailed": "Failed to delete guest data. Please try again.",
+  "@guestDataDeletionFailed": {
+    "description": "Error message when guest data deletion fails"
+  },
+
+  "guestModeSection": "Guest Mode",
+  "@guestModeSection": {
+    "description": "Guest mode section title in Help & FAQ"
+  },
+
+  "whatIsGuestMode": "What is Guest Mode?",
+  "@whatIsGuestMode": {
+    "description": "FAQ question about guest mode"
+  },
+
+  "whatIsGuestModeAnswer": "Guest Mode lets you use InvTrack without signing in. Your data is stored in the cloud under an anonymous account, so you can access it across devices. You can sign in later to link this data to your Google account.",
+  "@whatIsGuestModeAnswer": {
+    "description": "FAQ answer about guest mode"
+  },
+
+  "howToLinkGuestAccount": "How do I link my guest account to Google?",
+  "@howToLinkGuestAccount": {
+    "description": "FAQ question about linking guest account"
+  },
+
+  "howToLinkGuestAccountAnswer": "Tap the ''Sign In to Link Account'' button in Settings. If your Google account already exists, we''ll create a backup of your guest data first, then you can import it after signing in.",
+  "@howToLinkGuestAccountAnswer": {
+    "description": "FAQ answer about linking guest account"
+  },
+
+  "whatHappensToGuestData": "What happens to my guest data when I sign in?",
+  "@whatHappensToGuestData": {
+    "description": "FAQ question about guest data after sign-in"
+  },
+
+  "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is automatically linked to it. If your Google account already exists, we create a ZIP backup of your guest data, which you can import to merge with your existing data.",
+  "@whatHappensToGuestDataAnswer": {
+    "description": "FAQ answer about guest data after sign-in"
+  },
+
+  "loading": "Loading",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+
+  "currencySwitchedSuccessfully": "Currency switched to {currency}",
+  "@currencySwitchedSuccessfully": {
+    "description": "Success message when currency is switched",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "currencySwitchFailed": "Failed to switch to {currency}. Please try again.",
+  "@currencySwitchFailed": {
+    "description": "Error message when currency switch fails",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "loadingProgress": "Loading: {fetched} of {total}",
+  "@loadingProgress": {
+    "description": "Loading progress indicator with counts",
+    "placeholders": {
+      "fetched": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+
+  "currencyUSD": "US Dollar ($)",
+  "@currencyUSD": {
+    "description": "US Dollar currency name with symbol"
+  },
+
+  "currencyEUR": "Euro (€)",
+  "@currencyEUR": {
+    "description": "Euro currency name with symbol"
+  },
+
+  "currencyGBP": "British Pound (£)",
+  "@currencyGBP": {
+    "description": "British Pound currency name with symbol"
+  },
+
+  "currencyINR": "Indian Rupee (₹)",
+  "@currencyINR": {
+    "description": "Indian Rupee currency name with symbol"
+  },
+
+  "currencyJPY": "Japanese Yen (¥)",
+  "@currencyJPY": {
+    "description": "Japanese Yen currency name with symbol"
+  },
+
+  "currencyCAD": "Canadian Dollar (C$)",
+  "@currencyCAD": {
+    "description": "Canadian Dollar currency name with symbol"
+  },
+
+  "currencyAUD": "Australian Dollar (A$)",
+  "@currencyAUD": {
+    "description": "Australian Dollar currency name with symbol"
+  },
+
+  "currencyCHF": "Swiss Franc (CHF)",
+  "@currencyCHF": {
+    "description": "Swiss Franc currency name with symbol"
+  },
+
+  "currencyCNY": "Chinese Yuan (¥)",
+  "@currencyCNY": {
+    "description": "Chinese Yuan currency name with symbol"
+  },
+
+  "currencySGD": "Singapore Dollar (S$)",
+  "@currencySGD": {
+    "description": "Singapore Dollar currency name with symbol"
+  },
+
+  "currencyHKD": "Hong Kong Dollar (HK$)",
+  "@currencyHKD": {
+    "description": "Hong Kong Dollar currency name with symbol"
+  },
+
+  "currencyBRL": "Brazilian Real (R$)",
+  "@currencyBRL": {
+    "description": "Brazilian Real currency name with symbol"
+  },
+
+  "currencyMXN": "Mexican Peso (MX$)",
+  "@currencyMXN": {
+    "description": "Mexican Peso currency name with symbol"
+  },
+
+  "currencyZAR": "South African Rand (R)",
+  "@currencyZAR": {
+    "description": "South African Rand currency name with symbol"
   }
 }
 

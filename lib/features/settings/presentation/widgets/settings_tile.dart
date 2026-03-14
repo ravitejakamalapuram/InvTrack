@@ -136,6 +136,7 @@ class SettingsValueTile extends StatelessWidget {
   final String title;
   final String value;
   final VoidCallback? onTap;
+  final Widget? trailing;
 
   const SettingsValueTile({
     super.key,
@@ -144,6 +145,7 @@ class SettingsValueTile extends StatelessWidget {
     required this.title,
     required this.value,
     this.onTap,
+    this.trailing,
   });
 
   @override
@@ -167,28 +169,29 @@ class SettingsValueTile extends StatelessWidget {
           color: isDark ? Colors.white : AppColors.neutral900Light,
         ),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: AppTypography.bodyMedium.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
+      trailing: trailing ??
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
+                ),
+              ),
+              if (onTap != null) ...[
+                SizedBox(width: AppSpacing.xs),
+                Icon(
+                  Icons.chevron_right,
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral400Light,
+                ),
+              ],
+            ],
           ),
-          if (onTap != null) ...[
-            SizedBox(width: AppSpacing.xs),
-            Icon(
-              Icons.chevron_right,
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral400Light,
-            ),
-          ],
-        ],
-      ),
       onTap: onTap,
     );
   }

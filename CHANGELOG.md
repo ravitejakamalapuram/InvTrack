@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- Simplify currency switch with rate pre-fetching (#267)
+
+## [3.52.0] - 2026-03-14
+
+### ✨ Features
+
+- Anonymous Auth Guest Mode (Simplified) (#263)
+
 ## [3.50.0] - 2026-03-11
 
 ### ✨ Features

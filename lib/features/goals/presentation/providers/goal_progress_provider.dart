@@ -127,23 +127,36 @@ class GoalProgressCalculator {
 
   /// Calculate average monthly income (for income goals)
   static double _calculateMonthlyIncome(List<CashFlowEntity> cashFlows) {
-    final incomeCashFlows = cashFlows
-        .where((cf) => cf.type == CashFlowType.income)
-        .toList();
+    if (cashFlows.isEmpty) return 0;
 
-    if (incomeCashFlows.isEmpty) return 0;
+    double totalIncome = 0.0;
+    int minDateMs = -1;
+    int maxDateMs = -1;
+    bool hasIncome = false;
 
-    // Get the date range
-    incomeCashFlows.sort((a, b) => a.date.compareTo(b.date));
-    final firstDate = incomeCashFlows.first.date;
-    final lastDate = incomeCashFlows.last.date;
+    // Optimization: Single pass loop replacing .where, .toList, .sort, and .fold
+    for (final cf in cashFlows) {
+      if (cf.type == CashFlowType.income) {
+        totalIncome += cf.amount;
+        final cfDateMs = cf.date.millisecondsSinceEpoch;
 
-    // Calculate months between first and last income
-    final monthsDiff = (lastDate.difference(firstDate).inDays / 30.0).ceil();
+        if (!hasIncome) {
+          minDateMs = cfDateMs;
+          maxDateMs = cfDateMs;
+          hasIncome = true;
+        } else {
+          if (cfDateMs < minDateMs) minDateMs = cfDateMs;
+          if (cfDateMs > maxDateMs) maxDateMs = cfDateMs;
+        }
+      }
+    }
+
+    if (!hasIncome) return 0;
+
+    // Optimization: Calculate date diff using ms integer division
+    final daysDiff = (maxDateMs - minDateMs) ~/ 86400000;
+    final monthsDiff = (daysDiff / 30.0).ceil();
     final months = monthsDiff < 1 ? 1 : monthsDiff;
-
-    // Total income
-    final totalIncome = incomeCashFlows.fold(0.0, (sum, cf) => sum + cf.amount);
 
     return totalIncome / months;
   }
@@ -152,25 +165,34 @@ class GoalProgressCalculator {
   static double _calculateMonthlyVelocity(List<CashFlowEntity> cashFlows) {
     if (cashFlows.isEmpty) return 0;
 
-    // Sort by date
-    final sorted = List<CashFlowEntity>.from(cashFlows)
-      ..sort((a, b) => a.date.compareTo(b.date));
+    int minDateMs = -1;
+    bool hasDate = false;
+    double netPositive = 0.0;
 
-    final firstDate = sorted.first.date;
-    final now = DateTime.now();
-
-    // Calculate months since first cash flow
-    final monthsDiff = (now.difference(firstDate).inDays / 30.0).ceil();
-    final months = monthsDiff < 1 ? 1 : monthsDiff;
-
-    // Calculate net positive flow (returns + income)
-    double netPositive = 0;
+    // Optimization: Find minimum date and calculate net positive flow in a single pass
     for (final cf in cashFlows) {
+      final cfDateMs = cf.date.millisecondsSinceEpoch;
+      if (!hasDate) {
+        minDateMs = cfDateMs;
+        hasDate = true;
+      } else if (cfDateMs < minDateMs) {
+        minDateMs = cfDateMs;
+      }
+
       if (cf.type == CashFlowType.returnFlow ||
           cf.type == CashFlowType.income) {
         netPositive += cf.amount;
       }
     }
+
+    if (!hasDate) return 0;
+
+    // Calculate months since first cash flow
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    // Optimization: Calculate date diff using ms integer division
+    final daysDiff = (nowMs - minDateMs) ~/ 86400000;
+    final monthsDiff = (daysDiff / 30.0).ceil();
+    final months = monthsDiff < 1 ? 1 : monthsDiff;
 
     return netPositive / months;
   }
@@ -203,16 +225,21 @@ class GoalProgressCalculator {
     required List<CashFlowEntity> allCashFlows,
   }) {
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
+    if (linkedInvestments.isEmpty) return null;
+
     final linkedIds = linkedInvestments.map((i) => i.id).toSet();
+    DateTime? maxDate;
 
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
+    // Optimization: Find max date in a single pass without allocating new lists or sorting
+    for (final cf in allCashFlows) {
+      if (linkedIds.contains(cf.investmentId)) {
+        if (maxDate == null || cf.date.isAfter(maxDate)) {
+          maxDate = cf.date;
+        }
+      }
+    }
 
-    if (linkedCashFlows.isEmpty) return null;
-
-    linkedCashFlows.sort((a, b) => b.date.compareTo(a.date));
-    return linkedCashFlows.first.date;
+    return maxDate;
   }
 
   /// Calculate progress for a goal with multi-currency support
@@ -438,9 +465,11 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           .length;
 
       // Average progress across all goals
-      final avgProgress =
-          progressList.fold(0.0, (sum, p) => sum + p.progressPercent) /
-          totalGoals;
+      double totalProgressSum = 0.0;
+      for (final p in progressList) {
+        totalProgressSum += p.progressPercent;
+      }
+      final avgProgress = totalProgressSum / totalGoals;
 
       // Get all active goals (not achieved) sorted by progress (highest first)
       final activeGoalsList = progressList
@@ -640,10 +669,10 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
       .length;
 
   // Calculate average progress
-  final totalProgress = progressList.fold<double>(
-    0,
-    (sum, p) => sum + p.progressPercent,
-  );
+  double totalProgress = 0.0;
+  for (final p in progressList) {
+    totalProgress += p.progressPercent;
+  }
   final avgProgress = totalProgress / totalGoals;
 
   // Get all active goals (not achieved) sorted by progress (highest first)

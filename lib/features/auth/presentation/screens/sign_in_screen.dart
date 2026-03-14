@@ -135,6 +135,44 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     }
   }
 
+  Future<void> _signInAnonymously() async {
+    setState(() => _isLoading = true);
+    try {
+      LoggerService.info('Starting Anonymous Sign-In');
+
+      final user = await ref.read(authRepositoryProvider).signInAnonymously();
+      LoggerService.info(
+        'Anonymous sign-in result',
+        metadata: {'success': user != null},
+      );
+
+      // Check if widget is still mounted after sign-in completes
+      if (!mounted) return;
+
+      if (user != null) {
+        // Track guest mode started in Analytics
+        final analytics = ref.read(analyticsServiceProvider);
+        await analytics.logEvent(
+          name: 'guest_mode_started',
+          parameters: {'method': 'anonymous'},
+        );
+      }
+      // Firestore sync happens automatically via listeners - no manual sync needed
+    } catch (e, st) {
+      if (!mounted) return;
+
+      // Use centralized error handler for proper error mapping and user feedback
+      ErrorHandler.handle(
+        e,
+        st,
+        context: context,
+        showFeedback: true,
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -286,6 +324,45 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                       children: [
                         // Google Sign In Button
                         _buildGoogleButton(isDark),
+                        SizedBox(height: AppSpacing.lg),
+
+                        // OR Divider
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.2)
+                                    : AppColors.neutral300Light,
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                              ),
+                              child: Text(
+                                'OR',
+                                style: AppTypography.small.copyWith(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.5)
+                                      : AppColors.neutral500Light,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.2)
+                                    : AppColors.neutral300Light,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: AppSpacing.lg),
+
+                        // Continue as Guest Button
+                        _buildGuestButton(isDark),
                         SizedBox(height: AppSpacing.xl),
 
                         // Terms text
@@ -427,6 +504,53 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                         ),
                       ],
                     ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestButton(bool isDark) {
+    final l10n = AppLocalizations.of(context);
+    return Semantics(
+      button: true,
+      enabled: !_isLoading,
+      label: l10n.continueAsGuest,
+      hint: l10n.guestModeNotice,
+      excludeSemantics: true,
+      onTap: _isLoading ? null : _signInAnonymously,
+      child: Container(
+        width: double.infinity,
+        height: AppSizes.buttonHeightXl,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : AppColors.neutral100Light,
+          borderRadius: AppSizes.borderRadiusLg,
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.2)
+                : AppColors.neutral300Light,
+            width: 1.5,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _isLoading ? null : _signInAnonymously,
+            borderRadius: AppSizes.borderRadiusLg,
+            child: Center(
+              child: Text(
+                l10n.continueAsGuest,
+                style: AppTypography.buttonLarge.copyWith(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : AppColors.neutral700Light,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
             ),
           ),
         ),
