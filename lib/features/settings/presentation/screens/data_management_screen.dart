@@ -46,6 +46,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final zipExportState = ref.watch(zipExportStateProvider);
     final zipImportState = ref.watch(zipImportStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = ref.watch(authStateProvider);
+    final isAnonymous = authState.value?.isAnonymous ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.dataAndAccount, style: AppTypography.h3)),
@@ -126,6 +128,27 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           SettingsSection(
             title: 'Danger Zone',
             children: [
+              if (isAnonymous)
+                SettingsNavTile(
+                  icon: Icons.person_remove_outlined,
+                  iconColor: AppColors.warningLight,
+                  title: l10n.deleteGuestData,
+                  subtitle: _isDeleting
+                      ? 'Deleting...'
+                      : 'Delete all data and anonymous account',
+                  trailing: _isDeleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : null,
+                  onTap: () {
+                    if (!_isDeleting) {
+                      _handleDeleteGuestData(context);
+                    }
+                  },
+                ),
               SettingsNavTile(
                 icon: Icons.delete_forever,
                 iconColor: AppColors.errorLight,
@@ -371,6 +394,78 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _handleDeleteGuestData(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // First confirmation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteGuestData),
+        content: Text(l10n.deleteGuestDataConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.warningLight,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.deleteGuestData),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Proceed with deletion
+    setState(() => _isDeleting = true);
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+
+      // Delete all Firestore data first
+      await _deleteAllUserData();
+
+      // Delete Firebase Auth anonymous user
+      await authRepo.deleteAccount();
+
+      // Track analytics event
+      final analytics = ref.read(analyticsServiceProvider);
+      await analytics.logEvent(
+        name: 'guest_mode_data_deleted',
+        parameters: {'method': 'manual'},
+      );
+
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.guestDataDeleted),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // User is now signed out, router will redirect to sign-in
+    } catch (e, st) {
+      LoggerService.error('Guest data deletion failed', error: e, stackTrace: st);
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.guestDataDeletionFailed),
+            backgroundColor: AppColors.errorLight,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
@@ -198,8 +199,10 @@ class FirebaseAuthRepository implements AuthRepository {
     LoggerService.info('Deleting user account', metadata: {'userId': user.uid});
 
     try {
-      // Sign out from Google first
-      await _googleSignIn.signOut();
+      // Only sign out from Google for non-anonymous users
+      if (!user.isAnonymous) {
+        await _googleSignIn.signOut();
+      }
 
       // Delete the Firebase Auth account
       await user.delete();
@@ -213,12 +216,40 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  Future<UserEntity?> signInAnonymously() async {
+    try {
+      LoggerService.info('Starting Anonymous Sign-In');
+
+      final userCredential = await _firebaseAuth.signInAnonymously();
+
+      LoggerService.info(
+        'Anonymous Sign-In successful',
+        metadata: {'anonymous': true},
+      );
+      return userCredential.user != null
+          ? _mapFirebaseUserToEntity(userCredential.user!)
+          : null;
+    } catch (e, stackTrace) {
+      LoggerService.error(
+        'Anonymous Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      throw AuthException.signInFailed(
+        cause: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   UserEntity _mapFirebaseUserToEntity(User firebaseUser) {
     return UserEntity(
       id: firebaseUser.uid,
       email: firebaseUser.email ?? '',
       displayName: firebaseUser.displayName,
       photoUrl: firebaseUser.photoURL,
+      isAnonymous: firebaseUser.isAnonymous,
     );
   }
 }
