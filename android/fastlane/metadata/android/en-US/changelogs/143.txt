@@ -1,0 +1,3 @@
+🐛 Bug Fixes & Improvements
+• Update deployment workflow to use production track instead of alpha
+• Enable encryptedSharedPreferences for FlutterSecureStorage on Android (#264)

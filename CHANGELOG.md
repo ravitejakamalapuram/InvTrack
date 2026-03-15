@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ♻️ Refactoring
+
+- Simplify cicd workflows with coderabbit
+
+## [3.53.1] - 2026-03-15
+
 ### 🐛 Bug Fixes
 
 - Update deployment workflow to use production track instead of alpha
