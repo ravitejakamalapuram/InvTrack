@@ -7,6 +7,7 @@ import 'package:inv_tracker/app/app.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
@@ -98,6 +99,10 @@ void main() {
           versionCheckProvider.overrideWith(() {
             return _FakeVersionCheckNotifier();
           }),
+          // Override currency conversion service to avoid Firestore dependency
+          currencyConversionServiceProvider.overrideWith((ref) {
+            return _FakeCurrencyConversionService();
+          }),
         ],
         child: const InvTrackerApp(),
       ),
@@ -149,5 +154,30 @@ class _FakeVersionCheckNotifier extends VersionCheckNotifier {
   @override
   Future<void> dismissUpdate() async {
     // Do nothing in tests
+  }
+}
+
+/// Fake CurrencyConversionService that doesn't access Firestore
+class _FakeCurrencyConversionService extends Fake
+    implements CurrencyConversionService {
+  @override
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    // Simple 1:1 conversion for tests
+    return amount;
+  }
+
+  @override
+  Future<void> initializeCache() async {
+    // Do nothing - avoid Firestore access
+  }
+
+  @override
+  Future<void> refreshLiveCacheIfStale() async {
+    // Do nothing - avoid Firestore access
   }
 }
