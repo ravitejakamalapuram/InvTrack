@@ -7,6 +7,7 @@ import 'package:inv_tracker/app/app.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
@@ -98,6 +99,10 @@ void main() {
           versionCheckProvider.overrideWith(() {
             return _FakeVersionCheckNotifier();
           }),
+          // Override currency conversion service to avoid Firestore dependency
+          currencyConversionServiceProvider.overrideWith((ref) {
+            return _MockCurrencyConversionService();
+          }),
         ],
         child: const InvTrackerApp(),
       ),
@@ -151,3 +156,7 @@ class _FakeVersionCheckNotifier extends VersionCheckNotifier {
     // Do nothing in tests
   }
 }
+
+/// Mock CurrencyConversionService that doesn't access Firestore
+class _MockCurrencyConversionService extends Mock
+    implements CurrencyConversionService {}

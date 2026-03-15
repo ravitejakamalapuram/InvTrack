@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 
 /// Log levels for structured logging
 enum LogLevel {
@@ -126,17 +127,26 @@ class LoggerService {
     }
 
     // In production: send warnings and errors to Crashlytics
+    // BUT: Skip transient errors (shouldReport = false) to avoid spam
     if (!kDebugMode && (level == LogLevel.warn || level == LogLevel.error)) {
-      final reason = metadata != null
-          ? '$message | Metadata: ${metadata.entries.map((e) => '${e.key}=${e.value}').join(', ')}'
-          : message;
+      // Check if error is an AppException with shouldReport = false
+      bool shouldReport = true;
+      if (error is AppException) {
+        shouldReport = error.shouldReport;
+      }
 
-      CrashlyticsService().recordError(
-        error ?? Exception(message),
-        stackTrace,
-        reason: reason,
-        fatal: level == LogLevel.error,
-      );
+      if (shouldReport) {
+        final reason = metadata != null
+            ? '$message | Metadata: ${metadata.entries.map((e) => '${e.key}=${e.value}').join(', ')}'
+            : message;
+
+        CrashlyticsService().recordError(
+          error ?? Exception(message),
+          stackTrace,
+          reason: reason,
+          fatal: level == LogLevel.error,
+        );
+      }
     }
   }
 }

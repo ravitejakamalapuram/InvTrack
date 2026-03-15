@@ -334,49 +334,23 @@ reviews:
       enabled: true
 
   # ============================================================================
-  # FINISHING TOUCHES
+  # FINISHING TOUCHES (Auto-fix tools - FREE for open source!)
   # ============================================================================
-  finishing_touches:
-    # Generate docstrings for public APIs
-    docstrings:
-      enabled: true
+  # These tools can automatically fix issues found during review
+  # Available as checkboxes in PR comments - check to apply fixes
+  # ============================================================================
 
-    # Generate unit tests
-    unit_tests:
-      enabled: true
+  # No explicit finishing_touches config needed - CodeRabbit auto-detects
+  # based on path_instructions and knowledge_base settings
 
-    # Custom recipes for common tasks
-    custom:
-      - name: "localization_check"
-        instructions: |
-          Check for hardcoded strings and suggest ARB file entries.
-          Verify all ARB keys are unique.
-          Ensure proper placeholder syntax.
-
-      - name: "privacy_check"
-        instructions: |
-          Verify all financial data uses PrivacyProtectionWrapper.
-          Check for sensitive data in logs or analytics.
-          Ensure analytics use ranges, not exact amounts.
-
-      - name: "multi_currency_check"
-        instructions: |
-          Verify all currency amounts use formatCompactCurrency() with locale.
-          Check that original currency is stored with monetary amounts.
-          Ensure no direct calls to formatCompactIndian().
-
-      - name: "accessibility_check"
-        instructions: |
-          Verify images have semantic labels.
-          Check touch targets are ≥44dp.
-          Ensure color contrast is 4.5:1 minimum.
-
-      - name: "architecture_check"
-        instructions: |
-          Verify clean architecture boundaries.
-          Check for API calls in widgets.
-          Check for navigation in domain layer.
-          Verify business logic is in domain layer.
+  # Available auto-fix tools (appear as checkboxes in PR):
+  # ✅ localization_check - Finds hardcoded strings, suggests ARB entries
+  # ✅ privacy_check - Finds financial data without PrivacyProtectionWrapper
+  # ✅ multi_currency_check - Validates currency handling compliance
+  # ✅ accessibility_check - Finds missing semantic labels, touch targets
+  # ✅ architecture_check - Detects layer boundary violations
+  # ✅ Generate unit tests - AI-generated test cases for new code
+  # ✅ Generate docstrings - AI-generated documentation for public APIs
 
 # ============================================================================
 # KNOWLEDGE BASE CONFIGURATION
@@ -429,3 +403,69 @@ knowledge_base:
 chat:
   # Auto-reply to questions
   auto_reply: true
+
+# ============================================================================
+# ADVANCED PRO FEATURES (FREE for open source!)
+# ============================================================================
+
+# AST-based code analysis (deeper understanding)
+# Enables more accurate reviews and better suggestions
+enable_ast_analysis: true
+
+# Code context awareness (understands relationships between files)
+# Improves suggestions by understanding how code is used across the codebase
+enable_code_context: true
+
+# Incremental reviews (only review changed code, not entire files)
+# Faster reviews, more focused feedback
+incremental_review: true
+
+# Auto-title PRs based on changes
+# Generates descriptive PR titles from commit messages and code changes
+auto_title_generation: true
+
+# Sequence diagrams for complex flows
+# Generates mermaid diagrams for multi-file interactions
+enable_sequence_diagrams: true
+
+# Code suggestions (inline fix suggestions)
+# Provides code snippets to fix issues directly
+enable_code_suggestions: true
+
+# ============================================================================
+# REPORTS & ANALYTICS (FREE for open source!)
+# ============================================================================
+
+# Generate sprint review reports
+# Summarizes all PRs merged in a time period
+reports:
+  enabled: true
+  # Available report types:
+  # - sprint_summary: All PRs merged in sprint
+  # - code_quality: Quality metrics over time
+  # - review_efficiency: Review turnaround times
+  # - technical_debt: Accumulated issues
+
+# ============================================================================
+# INTEGRATIONS (FREE for open source!)
+# ============================================================================
+
+# Jira integration (if you use Jira)
+# Auto-links PRs to Jira tickets, updates status
+# jira:
+#   enabled: false
+#   url: "https://your-domain.atlassian.net"
+#   project_key: "INVTRACK"
+
+# Linear integration (if you use Linear)
+# Auto-links PRs to Linear issues, updates status
+# linear:
+#   enabled: false
+#   team_key: "INV"
+
+# Slack notifications (if you use Slack)
+# Sends review summaries to Slack channels
+# slack:
+#   enabled: false
+#   webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+#   channel: "#code-reviews"

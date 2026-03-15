@@ -230,6 +230,35 @@ class FirebaseAuthRepository implements AuthRepository {
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
+    } on FirebaseAuthException catch (e, stackTrace) {
+      LoggerService.error(
+        'Anonymous Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      // Handle admin-restricted-operation error
+      if (e.code == 'admin-restricted-operation') {
+        throw AuthException(
+          userMessage:
+              'Guest mode is currently disabled. Please sign in with Google.',
+          technicalMessage:
+              'Anonymous authentication is disabled in Firebase Console',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: true, // Report this - it's a configuration issue
+        );
+      }
+
+      // Determine if error should be reported based on error code
+      // Transient errors (network, rate limiting) should not spam Crashlytics
+      final shouldReport = !_isTransientAuthError(e.code);
+
+      throw AuthException.signInFailed(
+        cause: e,
+        stackTrace: stackTrace,
+        shouldReport: shouldReport,
+      );
     } catch (e, stackTrace) {
       LoggerService.error(
         'Anonymous Sign-In failed',
@@ -251,5 +280,17 @@ class FirebaseAuthRepository implements AuthRepository {
       photoUrl: firebaseUser.photoURL,
       isAnonymous: firebaseUser.isAnonymous,
     );
+  }
+
+  /// Check if a FirebaseAuthException error code represents a transient error
+  /// that should not be reported to Crashlytics
+  bool _isTransientAuthError(String code) {
+    const transientCodes = {
+      'network-request-failed', // Network connectivity issue
+      'too-many-requests', // Rate limiting
+      'timeout', // Request timeout
+      'unavailable', // Service temporarily unavailable
+    };
+    return transientCodes.contains(code);
   }
 }

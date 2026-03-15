@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -430,7 +431,10 @@ class CurrencyConversionService {
   /// [date] - Optional date for historical rates (null for live rates)
   ///
   /// Returns exchange rate
-  /// Throws [CurrencyConversionException] if rate limit hit or both APIs fail
+  ///
+  /// Throws:
+  /// - [NetworkException] if rate limit exceeded or both APIs fail (shouldReport: false)
+  /// - [CurrencyConversionException] for other conversion errors (shouldReport: true)
   Future<double> _fetchFromApiWithFallback({
     required String from,
     required String to,
@@ -443,8 +447,11 @@ class CurrencyConversionService {
         toCurrency: to,
         errorType: 'rate_limit_hit',
       );
-      throw CurrencyConversionException(
-        'Rate limit exceeded. Please wait a moment and try again.',
+      // Rate limiting is expected behavior, not an error to report
+      throw NetworkException(
+        userMessage: 'Too many requests. Please wait a moment and try again.',
+        technicalMessage: 'Currency API rate limit exceeded',
+        shouldReport: false,
       );
     }
 
@@ -508,16 +515,22 @@ class CurrencyConversionService {
           'Fallback API returned ${response.statusCode}',
         );
       } catch (fallbackError) {
-        // Both APIs failed
+        // Both APIs failed - this is a transient network issue, not an app bug
         _analytics?.logCurrencyConversionFailed(
           fromCurrency: from,
           toCurrency: to,
           errorType: 'both_apis_failed',
         );
 
-        throw CurrencyConversionException(
-          'Both primary and fallback APIs failed',
-          fallbackError,
+        // Throw NetworkException instead of CurrencyConversionException
+        // This will be caught by ErrorHandler and marked as shouldReport = false
+        throw NetworkException(
+          userMessage:
+              'Unable to fetch exchange rates. Please check your internet connection.',
+          technicalMessage:
+              'Both currency APIs failed: primary=$primaryError, fallback=$fallbackError',
+          cause: fallbackError,
+          shouldReport: false, // Don't spam Crashlytics with network issues
         );
       }
     }
