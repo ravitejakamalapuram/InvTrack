@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_filter_tabs.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('InvestmentListFilterTabs keyboard navigation test', (
@@ -21,6 +23,13 @@ void main() {
           )),
         ],
         child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: InvestmentListFilterTabs()),
         ),
       ),
