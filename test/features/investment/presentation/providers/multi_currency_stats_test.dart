@@ -120,6 +120,41 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
     return amount; // Default: no conversion
   }
 
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async {
+    final results = <String, double>{};
+    for (final entry in requests.entries) {
+      final converted = await convert(
+        amount: entry.value.amount,
+        from: entry.value.from,
+        to: to,
+        date: entry.value.date,
+      );
+      results[entry.key] = converted;
+    }
+    return results;
+  }
+
+  @override
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) async {
+    return null; // No cached rates in mock
+  }
+
+  @override
+  ConversionMetrics get metrics => ConversionMetrics();
+
+  @override
+  void resetCircuitBreaker() {}
+
+  @override
+  void resetMetrics() {}
+
   // Helper method for testing (not part of interface)
   Future<double?> getExchangeRate({
     required String from,

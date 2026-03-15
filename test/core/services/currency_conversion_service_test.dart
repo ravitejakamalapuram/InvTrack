@@ -255,35 +255,9 @@ void main() {
     });
   });
 
-  group('CurrencyConversionService - Rate Limiting', () {
-    test('rate limiter allows up to 10 requests per minute', () {
-      final rateLimiter = RateLimiter();
-
-      // Should allow 10 requests
-      for (var i = 0; i < 10; i++) {
-        expect(rateLimiter.consumeToken(), true);
-      }
-
-      // 11th request should be denied
-      expect(rateLimiter.consumeToken(), false);
-    });
-
-    test('rate limiter refills tokens over time', () async {
-      final rateLimiter = RateLimiter();
-
-      // Consume all tokens
-      for (var i = 0; i < 10; i++) {
-        rateLimiter.consumeToken();
-      }
-
-      expect(rateLimiter.availableTokens, 0);
-
-      // Wait for refill (6 seconds = 1 token)
-      await Future.delayed(const Duration(seconds: 7));
-
-      expect(rateLimiter.availableTokens, greaterThan(0));
-    });
-  });
+  // REMOVED: Rate limiter tests (rate limiter was removed)
+  // Frankfurter API has NO rate limits (confirmed in official docs)
+  // ExchangeRate-API (fallback) is rate limited, but rarely used
 
   group('CurrencyConversionService - Batch Conversion', () {
     test('converts multiple amounts efficiently', () async {

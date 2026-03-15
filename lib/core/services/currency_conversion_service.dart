@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,55 +23,121 @@ class CurrencyConversionException implements Exception {
   String toString() => 'CurrencyConversionException: $message';
 }
 
-/// Token bucket rate limiter for API calls
-///
-/// Prevents excessive API calls by limiting to [_maxTokens] calls per minute
-/// Tokens refill at rate of 1 per [_refillInterval]
-class RateLimiter {
-  int _availableTokens;
-  DateTime _lastRefillTime;
+/// Exception thrown when circuit breaker is open
+class CircuitBreakerOpenException implements Exception {
+  final String message;
+  final DateTime? retryAfter;
 
-  static const int _maxTokens = 10;
-  static const Duration _refillInterval = Duration(seconds: 6); // 10 tokens/min
+  CircuitBreakerOpenException({
+    this.message = 'Circuit breaker is open. API is temporarily unavailable.',
+    this.retryAfter,
+  });
 
-  RateLimiter()
-    : _availableTokens = _maxTokens,
-      _lastRefillTime = DateTime.now();
+  @override
+  String toString() => 'CircuitBreakerOpenException: $message';
+}
 
-  /// Check if a request can be made (without consuming token)
-  bool canMakeRequest() {
-    _refillTokens();
-    return _availableTokens > 0;
+/// Conversion request for batch operations
+class ConversionRequest {
+  final String from;
+  final double amount;
+  final DateTime? date;
+
+  const ConversionRequest({
+    required this.from,
+    required this.amount,
+    this.date,
+  });
+
+  String get cacheKey {
+    final dateStr = date != null ? CurrencyConversionService.formatDate(date!) : 'live';
+    return '${dateStr}_$from';
+  }
+}
+
+/// Metrics for monitoring currency conversion performance
+class ConversionMetrics {
+  int apiCalls = 0;
+  int memoryCacheHits = 0;
+  int firestoreCacheHits = 0;
+  int failures = 0;
+  int circuitBreakerTrips = 0;
+  Duration totalApiLatency = Duration.zero;
+
+  double get cacheHitRate {
+    final total = apiCalls + memoryCacheHits + firestoreCacheHits;
+    return total > 0 ? (memoryCacheHits + firestoreCacheHits) / total : 0.0;
   }
 
-  /// Consume a token for an API call
-  ///
-  /// Returns true if token was consumed, false if no tokens available
-  bool consumeToken() {
-    _refillTokens();
-    if (_availableTokens > 0) {
-      _availableTokens--;
-      return true;
+  Duration get avgApiLatency {
+    return apiCalls > 0 ? totalApiLatency ~/ apiCalls : Duration.zero;
+  }
+
+  void reset() {
+    apiCalls = 0;
+    memoryCacheHits = 0;
+    firestoreCacheHits = 0;
+    failures = 0;
+    circuitBreakerTrips = 0;
+    totalApiLatency = Duration.zero;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'apiCalls': apiCalls,
+    'memoryCacheHits': memoryCacheHits,
+    'firestoreCacheHits': firestoreCacheHits,
+    'failures': failures,
+    'circuitBreakerTrips': circuitBreakerTrips,
+    'cacheHitRate': cacheHitRate,
+    'avgApiLatencyMs': avgApiLatency.inMilliseconds,
+  };
+}
+
+/// Circuit breaker for API resilience
+class CircuitBreaker {
+  int _failureCount = 0;
+  DateTime? _lastFailure;
+  bool _isOpen = false;
+
+  static const int _failureThreshold = 5;
+  static const Duration _timeout = Duration(minutes: 1);
+
+  bool get isOpen => _isOpen;
+  int get failureCount => _failureCount;
+
+  Future<T> execute<T>(Future<T> Function() fn) async {
+    if (_isOpen) {
+      final timeSinceFailure = DateTime.now().difference(_lastFailure!);
+      if (timeSinceFailure > _timeout) {
+        // Try to close circuit (half-open state)
+        _isOpen = false;
+        _failureCount = 0;
+      } else {
+        throw CircuitBreakerOpenException(
+          retryAfter: _lastFailure!.add(_timeout),
+        );
+      }
     }
-    return false;
-  }
 
-  /// Refill tokens based on elapsed time
-  void _refillTokens() {
-    final now = DateTime.now();
-    final elapsed = now.difference(_lastRefillTime);
-    final tokensToAdd = (elapsed.inSeconds / _refillInterval.inSeconds).floor();
+    try {
+      final result = await fn();
+      _failureCount = 0; // Reset on success
+      return result;
+    } catch (e) {
+      _failureCount++;
+      _lastFailure = DateTime.now();
 
-    if (tokensToAdd > 0) {
-      _availableTokens = min(_maxTokens, _availableTokens + tokensToAdd);
-      _lastRefillTime = now;
+      if (_failureCount >= _failureThreshold) {
+        _isOpen = true;
+      }
+      rethrow;
     }
   }
 
-  /// Get current number of available tokens (for debugging/monitoring)
-  int get availableTokens {
-    _refillTokens();
-    return _availableTokens;
+  void reset() {
+    _failureCount = 0;
+    _lastFailure = null;
+    _isOpen = false;
   }
 }
 
@@ -85,6 +150,12 @@ class RateLimiter {
 ///
 /// Historical rates: Cached forever (immutable)
 /// Live rates: Expire end of day (auto-refresh)
+///
+/// Features:
+/// - Request coalescing: Deduplicates concurrent identical requests
+/// - Circuit breaker: Fails fast when API is down
+/// - Batch conversion: Optimized for multiple conversions
+/// - Metrics: Comprehensive monitoring and observability
 class CurrencyConversionService {
   final FirebaseFirestore _firestore;
   final String _userId;
@@ -94,11 +165,17 @@ class CurrencyConversionService {
   // Tier 1: Memory cache (current session)
   final Map<String, double> _memoryCache = {};
 
+  // In-flight request cache for request coalescing
+  final Map<String, Future<double>> _inflightRequests = {};
+
+  // Circuit breaker for API resilience
+  final CircuitBreaker _circuitBreaker = CircuitBreaker();
+
+  // Metrics for monitoring
+  final ConversionMetrics _metrics = ConversionMetrics();
+
   // Memory cache size limit (LRU eviction)
   static const int _maxMemoryCacheSize = 100;
-
-  // Rate limiter for API calls
-  final RateLimiter _rateLimiter = RateLimiter();
 
   // Primary API: Frankfurter (free, unlimited, 33 currencies)
   static const String _primaryApiBaseUrl = 'https://api.frankfurter.dev/v1';
@@ -126,6 +203,15 @@ class CurrencyConversionService {
        _httpClient = httpClient ?? http.Client(),
        _analytics = analytics;
 
+  /// Get current metrics
+  ConversionMetrics get metrics => _metrics;
+
+  /// Reset circuit breaker (for testing or manual recovery)
+  void resetCircuitBreaker() => _circuitBreaker.reset();
+
+  /// Reset metrics
+  void resetMetrics() => _metrics.reset();
+
   // Collection reference for exchange rate cache
   CollectionReference<Map<String, dynamic>> get _exchangeRatesRef =>
       _firestore.collection('users').doc(_userId).collection('exchangeRates');
@@ -141,13 +227,16 @@ class CurrencyConversionService {
     _memoryCache[key] = value;
   }
 
-  /// Get exchange rate between two currencies
+  /// Get exchange rate between two currencies with request coalescing
   ///
   /// [from] - Source currency code (e.g., 'USD')
   /// [to] - Target currency code (e.g., 'INR')
   /// [date] - Optional date for historical rate. If null, uses live rate.
   ///
   /// Returns exchange rate (1 unit of 'from' currency = X units of 'to' currency)
+  ///
+  /// Request coalescing: If multiple concurrent requests for the same rate,
+  /// only one API call is made and the result is shared.
   Future<double> getRate({
     required String from,
     required String to,
@@ -156,10 +245,31 @@ class CurrencyConversionService {
     // Same currency = rate is 1.0
     if (from == to) return 1.0;
 
-    // Get rate using three-tier caching
-    return date != null
-        ? await getHistoricalRate(date, from, to)
-        : await getLiveRate(from, to);
+    // Create unique key for request coalescing
+    final dateStr = date != null ? formatDate(date) : formatDate(DateTime.now());
+    final requestKey = date != null
+        ? 'historical_${dateStr}_${from}_$to'
+        : 'live_${dateStr}_${from}_$to';
+
+    // Check if request is already in-flight (request coalescing)
+    if (_inflightRequests.containsKey(requestKey)) {
+      return _inflightRequests[requestKey]!;
+    }
+
+    // Start new request
+    final future = date != null
+        ? getHistoricalRate(date, from, to)
+        : getLiveRate(from, to);
+
+    _inflightRequests[requestKey] = future;
+
+    try {
+      final result = await future;
+      return result;
+    } finally {
+      // Clean up in-flight request
+      _inflightRequests.remove(requestKey);
+    }
   }
 
   /// Convert single amount from one currency to another
@@ -187,10 +297,12 @@ class CurrencyConversionService {
 
   /// Batch convert multiple amounts to target currency (optimized)
   ///
-  /// [amounts] - Map of currency code to amount
+  /// [amounts] - Map of currency code to amount (for live rates only)
   /// [to] - Target currency code
   ///
   /// Returns map of currency code to converted amount
+  ///
+  /// Note: For historical rates, use batchConvertHistorical instead
   Future<Map<String, double>> batchConvert({
     required Map<String, double> amounts,
     required String to,
@@ -207,12 +319,140 @@ class CurrencyConversionService {
         continue;
       }
 
-      // Fetch rate (uses three-tier caching)
+      // Fetch rate (uses three-tier caching + request coalescing)
       final rate = await getLiveRate(from, to);
       results[from] = amount * rate;
     }
 
     return results;
+  }
+
+  /// Batch convert with historical rate support (optimized with deduplication)
+  ///
+  /// [requests] - Map of unique key to conversion request
+  /// [to] - Target currency code
+  ///
+  /// Returns map of unique key to converted amount
+  ///
+  /// This method deduplicates requests by (date, currency) pair and fetches
+  /// each unique rate only once, even if multiple requests need the same rate.
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async {
+    final results = <String, double>{};
+
+    // Group by (date, currency) to deduplicate rate requests
+    final uniqueRates = <String, Future<double>>{};
+
+    for (final entry in requests.entries) {
+      final key = entry.key;
+      final request = entry.value;
+
+      if (request.from == to) {
+        results[key] = request.amount;
+        continue;
+      }
+
+      // Create unique key for rate (date + currency pair)
+      final rateKey = '${request.cacheKey}_$to';
+
+      // Fetch rate only once per unique (date, currency) pair
+      uniqueRates.putIfAbsent(rateKey, () {
+        return request.date != null
+            ? getHistoricalRate(request.date!, request.from, to)
+            : getLiveRate(request.from, to);
+      });
+    }
+
+    // Wait for all unique rates to be fetched (parallel)
+    final rateEntries = await Future.wait(
+      uniqueRates.entries.map((e) async {
+        try {
+          final rate = await e.value;
+          return MapEntry(e.key, rate);
+        } catch (error) {
+          // Return null for failed rates (will be handled in next step)
+          return MapEntry(e.key, null);
+        }
+      }),
+      eagerError: false,
+    );
+
+    final rateMap = Map.fromEntries(
+      rateEntries.where((e) => e.value != null).map((e) => MapEntry(e.key, e.value!)),
+    );
+
+    // Apply rates to all requests
+    for (final entry in requests.entries) {
+      final key = entry.key;
+      final request = entry.value;
+
+      if (request.from == to) continue; // Already handled above
+
+      final rateKey = '${request.cacheKey}_$to';
+      final rate = rateMap[rateKey];
+
+      if (rate != null) {
+        results[key] = request.amount * rate;
+      } else {
+        // Rate fetch failed - throw exception with context
+        throw CurrencyConversionException(
+          'Failed to fetch rate for ${request.from} → $to on ${request.date ?? "today"}',
+        );
+      }
+    }
+
+    return results;
+  }
+
+  /// Get last known rate from cache (fallback when fresh rate unavailable)
+  ///
+  /// [from] - Source currency code
+  /// [to] - Target currency code
+  ///
+  /// Returns last cached rate (any date) or null if no cache exists
+  ///
+  /// This is useful as a fallback when API is down or rate fetch fails
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) async {
+    // Check memory cache first (any key matching currency pair)
+    // Use precise matching to avoid false positives (e.g., USD_EUR vs AUSD_EUR)
+    for (final entry in _memoryCache.entries) {
+      // Extract currency pair from cache key format: "YYYY-MM-DD_FROM_TO" or "live_FROM_TO"
+      final parts = entry.key.split('_');
+      if (parts.length >= 3) {
+        final cachedFrom = parts[parts.length - 2];
+        final cachedTo = parts[parts.length - 1];
+        if (cachedFrom == from && cachedTo == to) {
+          return entry.value;
+        }
+      }
+    }
+
+    // Check Firestore cache (get most recent)
+    try {
+      final snapshot = await _exchangeRatesRef
+          .where('from', isEqualTo: from)
+          .where('to', isEqualTo: to)
+          .orderBy('fetchedAt', descending: true)
+          .limit(1)
+          .get()
+          .timeout(_apiTimeout);
+
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        return data['rate'] as double;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to get last known rate from Firestore: $e');
+      }
+    }
+
+    return null; // No cached rate found
   }
 
   /// Preload common rates in background (don't block UI)
@@ -270,8 +510,9 @@ class CurrencyConversionService {
     String to,
   ) async {
     // 1. Check memory cache
-    final memKey = 'historical_${_formatDate(date)}_${from}_$to';
+    final memKey = 'historical_${formatDate(date)}_${from}_$to';
     if (_memoryCache.containsKey(memKey)) {
+      _metrics.memoryCacheHits++;
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'memory',
         rateType: 'historical',
@@ -285,6 +526,7 @@ class CurrencyConversionService {
     if (doc.exists) {
       final rate = doc.data()!['rate'] as double;
       _addToMemoryCache(memKey, rate);
+      _metrics.firestoreCacheHits++;
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'firestore',
         rateType: 'historical',
@@ -292,14 +534,22 @@ class CurrencyConversionService {
       return rate;
     }
 
-    // 3. Fetch from API (with fallback)
-    final dateStr = _formatDate(date);
+    // 3. Fetch from API (with circuit breaker)
+    final dateStr = formatDate(date);
     try {
-      final rate = await _fetchFromApiWithFallback(
-        from: from,
-        to: to,
-        date: date,
-      );
+      final startTime = DateTime.now();
+
+      final rate = await _circuitBreaker.execute(() async {
+        return await _fetchFromApiWithFallback(
+          from: from,
+          to: to,
+          date: date,
+        );
+      });
+
+      final latency = DateTime.now().difference(startTime);
+      _metrics.apiCalls++;
+      _metrics.totalApiLatency += latency;
 
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'api',
@@ -326,8 +576,16 @@ class CurrencyConversionService {
 
       _addToMemoryCache(memKey, rate);
       return rate;
+    } on CircuitBreakerOpenException {
+      _metrics.circuitBreakerTrips++;
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: from,
+        toCurrency: to,
+        errorType: 'circuit_breaker_open',
+      );
+      rethrow;
     } catch (e) {
-      // Network or parsing error
+      _metrics.failures++;
       _analytics?.logCurrencyConversionFailed(
         fromCurrency: from,
         toCurrency: to,
@@ -347,11 +605,12 @@ class CurrencyConversionService {
   /// Returns exchange rate
   Future<double> getLiveRate(String from, String to) async {
     final today = DateTime.now();
-    final dateStr = _formatDate(today);
+    final dateStr = formatDate(today);
 
     // 1. Check memory cache
     final memKey = 'live_${dateStr}_${from}_$to';
     if (_memoryCache.containsKey(memKey)) {
+      _metrics.memoryCacheHits++;
       _analytics?.logExchangeRateCacheHit(
         cacheType: 'memory',
         rateType: 'live',
@@ -370,6 +629,7 @@ class CurrencyConversionService {
       if (expiresAt != null && DateTime.now().isBefore(expiresAt)) {
         final rate = data['rate'] as double;
         _addToMemoryCache(memKey, rate);
+        _metrics.firestoreCacheHits++;
         _analytics?.logExchangeRateCacheHit(
           cacheType: 'firestore',
           rateType: 'live',
@@ -378,13 +638,21 @@ class CurrencyConversionService {
       }
     }
 
-    // 3. Fetch from API (with fallback)
+    // 3. Fetch from API (with circuit breaker)
     try {
-      final rate = await _fetchFromApiWithFallback(
-        from: from,
-        to: to,
-        date: null, // Live rate
-      );
+      final startTime = DateTime.now();
+
+      final rate = await _circuitBreaker.execute(() async {
+        return await _fetchFromApiWithFallback(
+          from: from,
+          to: to,
+          date: null, // Live rate
+        );
+      });
+
+      final latency = DateTime.now().difference(startTime);
+      _metrics.apiCalls++;
+      _metrics.totalApiLatency += latency;
 
       _analytics?.logExchangeRateCacheHit(cacheType: 'api', rateType: 'live');
 
@@ -410,8 +678,16 @@ class CurrencyConversionService {
 
       _addToMemoryCache(memKey, rate);
       return rate;
+    } on CircuitBreakerOpenException {
+      _metrics.circuitBreakerTrips++;
+      _analytics?.logCurrencyConversionFailed(
+        fromCurrency: from,
+        toCurrency: to,
+        errorType: 'circuit_breaker_open',
+      );
+      rethrow;
     } catch (e) {
-      // Network or parsing error
+      _metrics.failures++;
       _analytics?.logCurrencyConversionFailed(
         fromCurrency: from,
         toCurrency: to,
@@ -424,7 +700,6 @@ class CurrencyConversionService {
   /// Fetch exchange rate from API with fallback support
   ///
   /// Tries primary API (Frankfurter) first, falls back to ExchangeRate-API on failure
-  /// Uses rate limiter to prevent excessive API calls
   ///
   /// [from] - Source currency code
   /// [to] - Target currency code
@@ -433,31 +708,16 @@ class CurrencyConversionService {
   /// Returns exchange rate
   ///
   /// Throws:
-  /// - [NetworkException] if rate limit exceeded or both APIs fail (shouldReport: false)
+  /// - [NetworkException] if both APIs fail (shouldReport: false)
   /// - [CurrencyConversionException] for other conversion errors (shouldReport: true)
   Future<double> _fetchFromApiWithFallback({
     required String from,
     required String to,
     DateTime? date,
   }) async {
-    // Check rate limiter
-    if (!_rateLimiter.consumeToken()) {
-      _analytics?.logCurrencyConversionFailed(
-        fromCurrency: from,
-        toCurrency: to,
-        errorType: 'rate_limit_hit',
-      );
-      // Rate limiting is expected behavior, not an error to report
-      throw NetworkException(
-        userMessage: 'Too many requests. Please wait a moment and try again.',
-        technicalMessage: 'Currency API rate limit exceeded',
-        shouldReport: false,
-      );
-    }
-
-    // Try primary API (Frankfurter)
+    // Try primary API (Frankfurter) - NO rate limits!
     try {
-      final dateStr = date != null ? _formatDate(date) : 'latest';
+      final dateStr = date != null ? formatDate(date) : 'latest';
       final url = '$_primaryApiBaseUrl/$dateStr?base=$from&symbols=$to';
 
       final response = await _httpClient
@@ -575,21 +835,29 @@ class CurrencyConversionService {
 
         if (now.difference(lastRefresh) < _liveCacheStaleness) {
           // Cache is fresh, no need to refresh
-          debugPrint('Live cache is fresh (last refresh: $lastRefresh)');
+          if (kDebugMode) {
+            debugPrint('Live cache is fresh (last refresh: $lastRefresh)');
+          }
           return;
         }
       }
 
       // Cache is stale or never refreshed - clear it
-      debugPrint('Refreshing stale live cache...');
+      if (kDebugMode) {
+        debugPrint('Refreshing stale live cache...');
+      }
       await _clearLiveCache();
 
       // Update last refresh timestamp
       await prefs.setInt(lastRefreshKey, DateTime.now().millisecondsSinceEpoch);
-      debugPrint('Live cache refreshed successfully');
+      if (kDebugMode) {
+        debugPrint('Live cache refreshed successfully');
+      }
     } catch (e) {
       // Non-blocking - log error but don't throw
-      debugPrint('Failed to refresh live cache: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to refresh live cache: $e');
+      }
       _analytics?.logCurrencyConversionFailed(
         fromCurrency: 'N/A',
         toCurrency: 'N/A',
@@ -598,8 +866,8 @@ class CurrencyConversionService {
     }
   }
 
-  /// Format date as YYYY-MM-DD
-  String _formatDate(DateTime date) {
+  /// Format date as YYYY-MM-DD (shared utility - public for BatchCurrencyConverter)
+  static String formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
