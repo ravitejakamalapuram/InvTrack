@@ -30,6 +30,143 @@ class GoalsScreen extends ConsumerStatefulWidget {
   ConsumerState<GoalsScreen> createState() => _GoalsScreenState();
 }
 
+class _FilterTab extends StatefulWidget {
+  final GoalsFilter filter;
+  final bool isSelected;
+  final String label;
+  final int count;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _FilterTab({
+    required this.filter,
+    required this.isSelected,
+    required this.label,
+    required this.count,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  State<_FilterTab> createState() => _FilterTabState();
+}
+
+class _FilterTabState extends State<_FilterTab> {
+  bool _isFocused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isFocused = hasFocus;
+        });
+      },
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.space)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        button: true,
+        selected: widget.isSelected,
+        label: '${widget.label}, ${widget.count} items',
+        excludeSemantics: true,
+        onTap: widget.onTap,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: widget.isSelected ? 1.0 : 0.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              final bgColor = Color.lerp(
+                (widget.isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.05,
+                ),
+                AppColors.primaryLight,
+                value,
+              )!;
+              final textColor = Color.lerp(
+                widget.isDark ? Colors.white70 : AppColors.neutral700Light,
+                Colors.white,
+                value,
+              )!;
+              final fontWeight = value > 0.5
+                  ? FontWeight.w600
+                  : FontWeight.w500;
+              final badgeBgColor = Color.lerp(
+                (widget.isDark ? Colors.white : AppColors.primaryLight)
+                    .withValues(alpha: 0.15),
+                Colors.white.withValues(alpha: 0.2),
+                value,
+              )!;
+              final badgeTextColor = Color.lerp(
+                widget.isDark ? Colors.white70 : AppColors.primaryLight,
+                Colors.white,
+                value,
+              )!;
+
+              final borderColor = _isFocused
+                  ? (widget.isDark ? Colors.white : AppColors.neutral900Light)
+                  : Colors.transparent;
+
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                  border: Border.all(color: borderColor, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.label,
+                      style: AppTypography.small.copyWith(
+                        color: textColor,
+                        fontWeight: fontWeight,
+                      ),
+                    ),
+                    if (widget.count > 0) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeBgColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${widget.count}',
+                          style: AppTypography.small.copyWith(
+                            fontSize: 10,
+                            color: badgeTextColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GoalsScreenState extends ConsumerState<GoalsScreen>
     with SingleTickerProviderStateMixin {
   GoalsFilter _filter = GoalsFilter.active;
@@ -134,7 +271,11 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(bool isDark, bool isSelectionMode, AppLocalizations l10n) {
+  List<Widget> _buildAppBarActions(
+    bool isDark,
+    bool isSelectionMode,
+    AppLocalizations l10n,
+  ) {
     return [
       // Selection mode toggle
       IconButton(
@@ -160,7 +301,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           HapticFeedback.selectionClick();
           ref.read(goalsListStateProvider.notifier).toggleSelectionMode();
         },
-        tooltip: isSelectionMode ? l10n.tooltipExitSelection : l10n.tooltipSelectGoals,
+        tooltip: isSelectionMode
+            ? l10n.tooltipExitSelection
+            : l10n.tooltipSelectGoals,
       ),
       // Add button (only when not in selection mode)
       if (!isSelectionMode)
@@ -319,98 +462,16 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
 
           return Padding(
             padding: EdgeInsets.only(right: AppSpacing.sm),
-            child: Semantics(
-              button: true,
-              selected: isSelected,
-              label: '$label, $count items',
-              excludeSemantics: true,
+            child: _FilterTab(
+              filter: filter,
+              isSelected: isSelected,
+              label: label,
+              count: count,
+              isDark: isDark,
               onTap: () {
                 HapticFeedback.selectionClick();
                 setState(() => _filter = filter);
               },
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _filter = filter);
-                },
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) {
-                    final bgColor = Color.lerp(
-                      (isDark ? Colors.white : Colors.black).withValues(
-                        alpha: 0.05,
-                      ),
-                      AppColors.primaryLight,
-                      value,
-                    )!;
-                    final textColor = Color.lerp(
-                      isDark ? Colors.white70 : AppColors.neutral700Light,
-                      Colors.white,
-                      value,
-                    )!;
-                    final fontWeight = value > 0.5
-                        ? FontWeight.w600
-                        : FontWeight.w500;
-                    final badgeBgColor = Color.lerp(
-                      (isDark ? Colors.white : AppColors.primaryLight)
-                          .withValues(alpha: 0.15),
-                      Colors.white.withValues(alpha: 0.2),
-                      value,
-                    )!;
-                    final badgeTextColor = Color.lerp(
-                      isDark ? Colors.white70 : AppColors.primaryLight,
-                      Colors.white,
-                      value,
-                    )!;
-
-                    return Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            label,
-                            style: AppTypography.small.copyWith(
-                              color: textColor,
-                              fontWeight: fontWeight,
-                            ),
-                          ),
-                          if (count > 0) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: badgeBgColor,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$count',
-                                style: AppTypography.small.copyWith(
-                                  fontSize: 10,
-                                  color: badgeTextColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
             ),
           );
         }).toList(),

@@ -91,27 +91,27 @@ class _FilterChipState extends ConsumerState<_FilterChip> {
       ref.read(investmentListStateProvider.notifier).setFilter(widget.filter);
     }
 
-    return Semantics(
-      button: true,
-      selected: widget.isSelected,
-      label: '${widget.label}, ${widget.count} items',
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Focus(
-        onFocusChange: (hasFocus) {
-          setState(() {
-            _isFocused = hasFocus;
-          });
-        },
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent &&
-              (event.logicalKey == LogicalKeyboardKey.enter ||
-                  event.logicalKey == LogicalKeyboardKey.space)) {
-            onTap();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isFocused = hasFocus;
+        });
+      },
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.space)) {
+          onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        button: true,
+        selected: widget.isSelected,
+        label: '${widget.label}, ${widget.count} items',
+        excludeSemantics: true,
+        onTap: onTap,
         child: GestureDetector(
           onTap: onTap,
           child: TweenAnimationBuilder<double>(

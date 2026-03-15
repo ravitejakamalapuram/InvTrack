@@ -25,3 +25,7 @@
 ## 2024-06-05 - Added Semantics wrapper to custom horizontal scrolling cards
 **Learning:** Found that custom horizontal scrolling selectors with custom interactive cards (`GestureDetector` wrapped `AnimatedContainer`s in `TemplateSelector`) lacked proper native accessibility roles in Flutter. Screen readers might fail to announce their role as a button, their selection state (`selected: isSelected`), and may read out confusing internal visual structure (like emojis, names, rates) individually.
 **Action:** When building custom horizontal selection elements with custom cards, ALWAYS wrap the gesture detector with a `Semantics` widget. Set `button: true`, specify `selected: isSelected`, provide a concise and descriptive `label`, and set `excludeSemantics: true` so the screen reader only reads the top-level concise label.
+
+## 2026-03-15 - Focus placement relative to Semantics when using excludeSemantics
+**Learning:** In Flutter, when creating a custom interactive widget that hides its complex child semantics tree by using `Semantics(excludeSemantics: true)`, any `Focus` node placed *inside* that `Semantics` widget will also be hidden from the accessibility tree, making it unreachable via keyboard navigation.
+**Action:** Always wrap the `Semantics` widget *inside* the `Focus` widget, so that the keyboard focus node exists outside the excluded semantic boundary and can be properly focused.
