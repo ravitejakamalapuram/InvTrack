@@ -1,0 +1,138 @@
+# InvTrack CI/CD Workflows
+
+Simple, focused workflows with CodeRabbit handling detailed code reviews.
+
+## 📋 Workflows
+
+### 1. **PR Review** (`pr-review.yml`)
+**Trigger:** Pull requests (opened, updated, ready for review)
+
+**What it does:**
+- ✅ Runs `flutter analyze`
+- ✅ Runs `flutter test`
+- ✅ Checks for critical security issues (SSL, print statements)
+- ✅ Checks for architecture violations (API in widgets, navigation in domain)
+
+**CodeRabbit Integration:**
+- 🤖 CodeRabbit automatically reviews all PRs (configured in `.coderabbit.yaml`)
+- 📝 Provides detailed feedback on code quality, localization, accessibility, etc.
+- 🔍 Enforces InvTrack Enterprise Rules
+
+**Merge Requirements:**
+- All checks must pass
+- CodeRabbit review completed
+- Manual approval required
+
+---
+
+### 2. **CI** (`ci-tests.yml`)
+**Trigger:** Push to `main` or `develop`
+
+**What it does:**
+- ✅ Runs `flutter analyze`
+- ✅ Runs `flutter test`
+- ✅ Validates code quality on main branch
+
+**Purpose:** Ensures main branch stays healthy
+
+---
+
+### 3. **CD: Version & Changelog** (`cd-version.yml`)
+**Trigger:** Push to `main` (auto) or manual
+
+**What it does:**
+- 📦 Bumps version based on conventional commits
+- 📝 Generates changelog with `git-cliff`
+- 🏷️ Creates git tag
+- 🚀 Triggers deployment workflow
+
+**Version Bumping:**
+- `feat:` → Minor version (1.2.0 → 1.3.0)
+- `fix:` → Patch version (1.2.0 → 1.2.1)
+- `BREAKING CHANGE:` → Major version (1.2.0 → 2.0.0)
+
+---
+
+### 4. **CD: Deploy to Play Store** (`cd-deploy-android.yml`)
+**Trigger:** Version tag created or manual
+
+**What it does:**
+- 🏗️ Builds release AAB
+- 📱 Deploys to Google Play **production track**
+- 🔥 Sets pending flag in Firestore
+- 📊 Creates GitHub release
+
+**Deployment Flow:**
+1. Build signed AAB
+2. Upload to Play Store production
+3. Set `pendingRelease: true` in Firestore
+4. Wait for Google approval (monitored by next workflow)
+
+---
+
+### 5. **Auto-Check Play Store Approval** (`check-playstore-approval.yml`)
+**Trigger:** Hourly cron (9am-6pm UTC) or manual
+
+**What it does:**
+- 🔍 Checks if pending release is approved on Play Store
+- ✅ Updates Firestore when approved
+- 📅 Sets `releaseDate` with 2-hour rollout delay
+- 🔔 Notifies via Slack (optional)
+
+**How it works:**
+1. Checks Firestore for `pendingRelease: true`
+2. Queries Play Store API for production track status
+3. When status = `completed`, updates Firestore:
+   - `latestVersion` and `latestBuildNumber`
+   - `releaseDate` (2 hours from approval)
+   - `pendingRelease: false`
+4. App shows update dialog after `releaseDate` passes
+
+---
+
+## 🎯 Design Philosophy
+
+### **Simple & Focused**
+- Each workflow has one clear purpose
+- No duplicate checks across workflows
+- Easy to understand and maintain
+
+### **CodeRabbit Does the Heavy Lifting**
+- Detailed code review (localization, accessibility, architecture)
+- Enforces InvTrack Enterprise Rules
+- Provides actionable feedback
+
+### **CI/CD Does the Essentials**
+- Critical checks only (analyze, test, security, architecture)
+- Automated version bumping and deployment
+- End-to-end automation from commit to Play Store
+
+---
+
+## 🔧 Local Development
+
+**Before pushing:**
+```bash
+# Run the same checks as CI
+flutter analyze --no-fatal-infos
+flutter test --exclude-tags=golden
+```
+
+**Check for issues:**
+```bash
+# Security
+grep -rn "badCertificateCallback\|allowInsecure" lib/
+
+# Architecture
+grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/
+grep -rn "Navigator\|GoRouter" lib/features/*/domain/
+```
+
+---
+
+## 📚 Related Files
+
+- **CodeRabbit Config:** `.coderabbit.yaml`
+- **Enterprise Rules:** `.augment/rules/invtrack_rules.md`
+- **Changelog Config:** `cliff.toml`
+

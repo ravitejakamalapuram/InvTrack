@@ -1,0 +1,72 @@
+name: "PR Review"
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Simple PR checks - CodeRabbit handles detailed review
+  pr-checks:
+    name: PR Checks
+    runs-on: self-hosted
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: true
+
+      - name: Flutter Setup
+        run: |
+          flutter --version
+          flutter clean
+          flutter pub get
+          flutter gen-l10n
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: flutter test --exclude-tags=golden
+
+      - name: Security Check
+        run: |
+          # Critical security checks only
+          if grep -rn "badCertificateCallback\|allowInsecure" lib/ 2>/dev/null; then
+            echo "::error::Found disabled SSL verification"
+            exit 1
+          fi
+          if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
+            echo "::error::Found print statements in production code"
+            exit 1
+          fi
+
+      - name: Architecture Check
+        run: |
+          # Critical architecture violations only
+          if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
+            echo "::error::Found API calls in widgets"
+            exit 1
+          fi
+          if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
+            echo "::error::Found navigation in domain layer"
+            exit 1
+          fi
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ All checks passed!"
+          echo "📝 CodeRabbit will provide detailed code review"
+          echo "🔍 Review the CodeRabbit comments for improvements"
+
