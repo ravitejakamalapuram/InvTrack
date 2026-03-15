@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -354,9 +355,11 @@ void main() {
         httpClient: mockHttpClient,
       );
 
+      // After our Crashlytics fix, API failures throw NetworkException (non-reporting)
+      // instead of CurrencyConversionException
       expect(
         () => service.getLiveRate('INVALID', 'USD'),
-        throwsA(isA<CurrencyConversionException>()),
+        throwsA(isA<NetworkException>()),
       );
     });
 
