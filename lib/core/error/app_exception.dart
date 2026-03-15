@@ -104,12 +104,17 @@ class AuthException extends AppException {
     );
   }
 
-  factory AuthException.signInFailed({Object? cause, StackTrace? stackTrace}) {
+  factory AuthException.signInFailed({
+    Object? cause,
+    StackTrace? stackTrace,
+    bool? shouldReport,
+  }) {
     return AuthException(
       userMessage: 'Sign in failed. Please try again.',
-      technicalMessage: 'Google sign in failed: $cause',
+      technicalMessage: 'Sign in failed: $cause',
       cause: cause,
       stackTrace: stackTrace,
+      shouldReport: shouldReport ?? true, // Default to reporting
     );
   }
 

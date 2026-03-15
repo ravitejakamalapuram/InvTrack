@@ -431,7 +431,10 @@ class CurrencyConversionService {
   /// [date] - Optional date for historical rates (null for live rates)
   ///
   /// Returns exchange rate
-  /// Throws [CurrencyConversionException] if rate limit hit or both APIs fail
+  ///
+  /// Throws:
+  /// - [NetworkException] if rate limit exceeded or both APIs fail (shouldReport: false)
+  /// - [CurrencyConversionException] for other conversion errors (shouldReport: true)
   Future<double> _fetchFromApiWithFallback({
     required String from,
     required String to,
