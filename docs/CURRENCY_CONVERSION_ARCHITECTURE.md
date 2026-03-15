@@ -204,9 +204,9 @@ class CircuitBreaker {
 
 ## Batch Conversion with Deduplication
 
-**Problem:** 100 cash flows with 50 unique (date, currency) pairs = 100 API calls
+**Problem:** 100 cash flows with 50 unique (date, currency) pairs = 50 API calls needed (but without deduplication, would make 100 calls)
 
-**Solution:** Deduplicate and batch
+**Solution:** Deduplicate and batch to minimize API calls
 
 **Example:**
 ```

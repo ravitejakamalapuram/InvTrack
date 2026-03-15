@@ -77,39 +77,46 @@ class RateLimiter {
 
 ---
 
-### 2. Parallel Fetching in Multi-Currency Providers ✅
-**File:** `lib/features/investment/presentation/providers/multi_currency_providers.dart`
+### 2. Batch Conversion with Deduplication ✅
+**File:** `lib/core/utils/batch_currency_converter.dart`
 
-**Before (Sequential):**
+**Before (Per-Item Conversion):**
 ```dart
+// 100 cash flows = 100 API calls (even if many share same date+currency)
 for (final cf in cashFlows) {
   final convertedAmount = await conversionService.convert(...);
   convertedCashFlows.add(cf.copyWith(amount: convertedAmount));
 }
 ```
 
-**After (Parallel with Error Handling):**
+**After (Batch with Deduplication):**
 ```dart
-final conversionFutures = cashFlows.map((cf) async {
-  try {
-    final convertedAmount = await conversionService.convert(...);
-    return cf.copyWith(amount: convertedAmount);
-  } catch (e) {
-    debugPrint('Failed to convert ${cf.currency}: $e');
-    return cf; // Fallback: keep original currency and amount
-  }
-}).toList();
+// Use BatchCurrencyConverter for automatic deduplication
+final batchConverter = BatchCurrencyConverter(conversionService);
 
-final convertedCashFlows = await Future.wait(
-  conversionFutures,
-  eagerError: false, // Don't fail fast - wait for all futures
+final convertedCashFlows = await batchConverter.batchConvert(
+  cashFlows: cashFlows,
+  baseCurrency: userBaseCurrency,
+  fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
 );
 ```
 
+**How It Works:**
+1. **Groups cash flows by unique `(date, currency)` pairs**
+   - Example: 100 cash flows with 50 dates × 2 currencies = 100 unique pairs
+   - But if many share the same date+currency, only fetch rate once
+2. **Fetches exchange rates in a single batch call**
+   - One API call per unique `(date, currency)` pair
+   - Example: 10 USD transactions on 2024-01-01 = 1 API call (not 10)
+3. **Applies rates to all matching cash flows**
+   - Multiplies each cash flow amount by the fetched rate
+4. **Handles failures gracefully**
+   - Uses fallback strategy (last known rate, original currency, or skip)
+
 **Impact:**
-- All conversions happen concurrently instead of one-by-one
-- Individual failures don't break the entire operation (graceful degradation)
-- Uses `eagerError: false` to wait for all futures to complete
+- **Deduplication:** 100 cash flows → ~10-50 API calls (depending on unique pairs)
+- **Batch fetching:** All rates fetched in parallel
+- **Graceful fallback:** Individual failures don't break entire operation
 
 **Providers Optimized:**
 - `multiCurrencyInvestmentStats`
@@ -120,37 +127,41 @@ final convertedCashFlows = await Future.wait(
 
 ---
 
-### 3. Robust Error Handling ✅
+### 3. Robust Error Handling with Fallback Strategies ✅
 
-**Problem:** `Future.wait()` by default fails fast - if ANY single API call fails, the entire batch fails.
+**Problem:** API failures should not break the entire conversion operation.
 
-**Solution:** Implemented graceful degradation with individual error handling:
+**Solution:** Configurable fallback strategies in `BatchCurrencyConverter`:
 
 ```dart
-final conversionFutures = cashFlows.map((cf) async {
-  try {
-    final convertedAmount = await conversionService.convert(...);
-    return cf.copyWith(amount: convertedAmount);
-  } catch (e) {
-    // Individual failure doesn't break the entire operation
-    debugPrint('Failed to convert ${cf.currency}: $e');
-    return cf; // Fallback: keep original currency and amount
-  }
-}).toList();
+enum ConversionFallbackStrategy {
+  useOriginal,    // Keep original currency (may cause mixed currency calculations)
+  useLastKnown,   // Use last known cached rate (any date)
+  throwError,     // Fail the operation
+  skip,           // Skip failed conversions
+}
 
-await Future.wait(conversionFutures, eagerError: false);
+// Example usage
+final convertedCashFlows = await batchConverter.batchConvert(
+  cashFlows: cashFlows,
+  baseCurrency: 'USD',
+  fallbackStrategy: ConversionFallbackStrategy.useLastKnown, // Recommended
+);
 ```
 
 **Benefits:**
 - ✅ One failed API call doesn't break the entire stats calculation
 - ✅ Partial data is better than no data (graceful degradation)
 - ✅ User sees stats even if some conversions fail
-- ✅ Failed conversions are logged for debugging
+- ✅ Failed conversions use cached rates or skip gracefully
 
-**Fallback Strategy:**
-- If conversion fails, keep original currency and amount
-- Stats may be slightly inaccurate if mixed currencies, but app remains functional
-- User can retry later when network is stable
+**Fallback Strategy Comparison:**
+| Strategy | Use Case | Risk |
+|----------|----------|------|
+| `useLastKnown` | **Recommended** - Use cached rate from any date | Slightly stale rate |
+| `useOriginal` | Keep original currency | Mixed currency calculations |
+| `skip` | Omit failed conversions | Incomplete data |
+| `throwError` | Fail fast (testing/debugging) | User sees error |
 
 ---
 
@@ -163,14 +174,17 @@ await Future.wait(conversionFutures, eagerError: false);
 | First 10 calls | 10 | 1 second | ✅ Fast |
 | Next 90 calls | 90 | ~9 minutes | ❌ Rate limit errors |
 
-### After Optimization
+### After Optimization (with Deduplication)
 | Scenario | API Calls | Time | User Experience |
 |----------|-----------|------|-----------------|
-| 100 cash flows (50 dates, 2 currencies) | 100 | ~2-5 seconds | ✅ Fast, no errors |
-| All calls in parallel | 100 | Concurrent | ✅ Smooth loading |
+| 100 cash flows (10 unique date+currency pairs) | **10** | ~1-2 seconds | ✅ Fast, no errors |
+| 100 cash flows (50 unique date+currency pairs) | **50** | ~2-5 seconds | ✅ Fast, no errors |
+| All calls in parallel | 10-50 | Concurrent | ✅ Smooth loading |
 | Subsequent views | 0 | Instant | ✅ Cache hits |
 
-**Performance Gain:** **~120x faster** (10 minutes → 5 seconds)
+**Performance Gain:** **~120-300x faster** (10 minutes → 1-5 seconds)
+
+**Key Insight:** Deduplication reduces API calls from 100 → 10-50 depending on how many cash flows share the same `(date, currency)` pair.
 
 ---
 

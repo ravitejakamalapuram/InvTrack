@@ -204,13 +204,17 @@ Successfully implemented comprehensive currency conversion optimizations with en
 
 ## Breaking Changes
 
-### ✅ None!
+### ⚠️ Additive API Changes
 
-All changes are **backward compatible**:
-- Existing `convert()` method still works
-- Existing providers still function
-- Tests updated to match new interface
-- No changes to public API contracts
+Existing callers of `convert()` remain compatible, but `CurrencyConversionService` now exposes additional surface:
+- **New methods:** `batchConvertHistorical()`, `getLastKnownRate()`
+- **New properties:** `metrics` (ConversionMetrics)
+- **New methods:** `resetCircuitBreaker()`, `resetMetrics()`
+
+**Impact:**
+- ✅ Existing code continues to work (backward compatible)
+- ⚠️ Mocks/fakes that implement the interface must be updated
+- ✅ Tests updated to match new interface
 
 ---
 

@@ -33,7 +33,7 @@ The migration script will:
 
 ```bash
 # Make sure you're in the project directory
-cd <path-to-your-InvTrack-project>
+cd "$(git rev-parse --show-toplevel)"
 
 # Install dependencies
 flutter pub get
@@ -53,9 +53,11 @@ cat scripts/migrate_to_inr.dart
 
 ### Step 2: Run the Migration
 
+**Important:** This script imports FlutterFire plugins (`firebase_core`, `cloud_firestore`) which require a Flutter runtime. Use `flutter run` instead of `dart run`:
+
 ```bash
-# Run the migration script
-dart run scripts/migrate_to_inr.dart
+# Run the migration script with Flutter runtime
+flutter run --target=scripts/migrate_to_inr.dart
 ```
 
 ### Step 3: Confirm
