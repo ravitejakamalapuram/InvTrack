@@ -444,6 +444,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildFilterTabs(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     final counts = ref.watch(goalCountsProvider);
 
     return SingleChildScrollView(
@@ -452,8 +453,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         children: GoalsFilter.values.map((filter) {
           final isSelected = _filter == filter;
           final label = switch (filter) {
-            GoalsFilter.active => 'Active',
-            GoalsFilter.archived => 'Archived',
+            GoalsFilter.active => l10n.filterActive,
+            GoalsFilter.archived => l10n.filterArchived,
           };
           final count = switch (filter) {
             GoalsFilter.active => counts.active,

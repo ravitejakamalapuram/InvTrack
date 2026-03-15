@@ -1147,6 +1147,16 @@
     "description": "Button text to view active goals"
   },
 
+  "filterActive": "Active",
+  "@filterActive": {
+    "description": "Filter tab label for active goals"
+  },
+
+  "filterArchived": "Archived",
+  "@filterArchived": {
+    "description": "Filter tab label for archived goals"
+  },
+
   "createYourFirstGoal": "Create Your First Goal",
   "@createYourFirstGoal": {
     "description": "Button text to create first goal"
