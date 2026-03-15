@@ -30,6 +30,143 @@ class GoalsScreen extends ConsumerStatefulWidget {
   ConsumerState<GoalsScreen> createState() => _GoalsScreenState();
 }
 
+class _FilterTab extends StatefulWidget {
+  final GoalsFilter filter;
+  final bool isSelected;
+  final String label;
+  final int count;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _FilterTab({
+    required this.filter,
+    required this.isSelected,
+    required this.label,
+    required this.count,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  State<_FilterTab> createState() => _FilterTabState();
+}
+
+class _FilterTabState extends State<_FilterTab> {
+  bool _isFocused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isFocused = hasFocus;
+        });
+      },
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.space)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        button: true,
+        selected: widget.isSelected,
+        label: '${widget.label}, ${widget.count} items',
+        excludeSemantics: true,
+        onTap: widget.onTap,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: widget.isSelected ? 1.0 : 0.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              final bgColor = Color.lerp(
+                (widget.isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.05,
+                ),
+                AppColors.primaryLight,
+                value,
+              )!;
+              final textColor = Color.lerp(
+                widget.isDark ? Colors.white70 : AppColors.neutral700Light,
+                Colors.white,
+                value,
+              )!;
+              final fontWeight = value > 0.5
+                  ? FontWeight.w600
+                  : FontWeight.w500;
+              final badgeBgColor = Color.lerp(
+                (widget.isDark ? Colors.white : AppColors.primaryLight)
+                    .withValues(alpha: 0.15),
+                Colors.white.withValues(alpha: 0.2),
+                value,
+              )!;
+              final badgeTextColor = Color.lerp(
+                widget.isDark ? Colors.white70 : AppColors.primaryLight,
+                Colors.white,
+                value,
+              )!;
+
+              final borderColor = _isFocused
+                  ? (widget.isDark ? Colors.white : AppColors.neutral900Light)
+                  : Colors.transparent;
+
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                  border: Border.all(color: borderColor, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.label,
+                      style: AppTypography.small.copyWith(
+                        color: textColor,
+                        fontWeight: fontWeight,
+                      ),
+                    ),
+                    if (widget.count > 0) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeBgColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${widget.count}',
+                          style: AppTypography.small.copyWith(
+                            fontSize: 10,
+                            color: badgeTextColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GoalsScreenState extends ConsumerState<GoalsScreen>
     with SingleTickerProviderStateMixin {
   GoalsFilter _filter = GoalsFilter.active;
@@ -134,7 +271,11 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(bool isDark, bool isSelectionMode, AppLocalizations l10n) {
+  List<Widget> _buildAppBarActions(
+    bool isDark,
+    bool isSelectionMode,
+    AppLocalizations l10n,
+  ) {
     return [
       // Selection mode toggle
       IconButton(
@@ -160,7 +301,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
           HapticFeedback.selectionClick();
           ref.read(goalsListStateProvider.notifier).toggleSelectionMode();
         },
-        tooltip: isSelectionMode ? l10n.tooltipExitSelection : l10n.tooltipSelectGoals,
+        tooltip: isSelectionMode
+            ? l10n.tooltipExitSelection
+            : l10n.tooltipSelectGoals,
       ),
       // Add button (only when not in selection mode)
       if (!isSelectionMode)
@@ -232,10 +375,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                   itemKey: goal.id,
                   enabled: !isSelectionMode,
                   deleteConfig: DeleteActionConfig(
-                    confirmTitle: 'Delete Goal?',
-                    confirmMessage:
-                        'This will permanently delete "${goal.name}".',
-                    successMessage: 'Goal deleted',
+                    confirmTitle: l10n.deleteGoalQuestion,
+                    confirmMessage: l10n.deleteGoalMessage(goal.name),
+                    successMessage: l10n.goalDeleted,
                     onDelete: () {
                       if (isArchived) {
                         ref
@@ -250,14 +392,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                   ),
                   archiveConfig: ArchiveActionConfig(
                     confirmTitle: isArchived
-                        ? 'Unarchive Goal?'
-                        : 'Archive Goal?',
+                        ? l10n.unarchiveGoalQuestion
+                        : l10n.archiveGoalQuestion,
                     confirmMessage: isArchived
-                        ? '"${goal.name}" will be restored to your active goals.'
-                        : '"${goal.name}" will be hidden from your active goals.',
+                        ? l10n.unarchiveGoalMessage(goal.name)
+                        : l10n.archiveGoalMessage(goal.name),
                     successMessage: isArchived
-                        ? 'Goal restored'
-                        : 'Goal archived',
+                        ? l10n.goalRestored
+                        : l10n.goalArchived,
                     isArchived: isArchived,
                     onArchive: () {
                       if (isArchived) {
@@ -301,6 +443,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget _buildFilterTabs(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     final counts = ref.watch(goalCountsProvider);
 
     return SingleChildScrollView(
@@ -309,8 +452,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
         children: GoalsFilter.values.map((filter) {
           final isSelected = _filter == filter;
           final label = switch (filter) {
-            GoalsFilter.active => 'Active',
-            GoalsFilter.archived => 'Archived',
+            GoalsFilter.active => l10n.filterActive,
+            GoalsFilter.archived => l10n.filterArchived,
           };
           final count = switch (filter) {
             GoalsFilter.active => counts.active,
@@ -319,98 +462,16 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
 
           return Padding(
             padding: EdgeInsets.only(right: AppSpacing.sm),
-            child: Semantics(
-              button: true,
-              selected: isSelected,
-              label: '$label, $count items',
-              excludeSemantics: true,
+            child: _FilterTab(
+              filter: filter,
+              isSelected: isSelected,
+              label: label,
+              count: count,
+              isDark: isDark,
               onTap: () {
                 HapticFeedback.selectionClick();
                 setState(() => _filter = filter);
               },
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _filter = filter);
-                },
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) {
-                    final bgColor = Color.lerp(
-                      (isDark ? Colors.white : Colors.black).withValues(
-                        alpha: 0.05,
-                      ),
-                      AppColors.primaryLight,
-                      value,
-                    )!;
-                    final textColor = Color.lerp(
-                      isDark ? Colors.white70 : AppColors.neutral700Light,
-                      Colors.white,
-                      value,
-                    )!;
-                    final fontWeight = value > 0.5
-                        ? FontWeight.w600
-                        : FontWeight.w500;
-                    final badgeBgColor = Color.lerp(
-                      (isDark ? Colors.white : AppColors.primaryLight)
-                          .withValues(alpha: 0.15),
-                      Colors.white.withValues(alpha: 0.2),
-                      value,
-                    )!;
-                    final badgeTextColor = Color.lerp(
-                      isDark ? Colors.white70 : AppColors.primaryLight,
-                      Colors.white,
-                      value,
-                    )!;
-
-                    return Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            label,
-                            style: AppTypography.small.copyWith(
-                              color: textColor,
-                              fontWeight: fontWeight,
-                            ),
-                          ),
-                          if (count > 0) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: badgeBgColor,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$count',
-                                style: AppTypography.small.copyWith(
-                                  fontSize: 10,
-                                  color: badgeTextColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
             ),
           );
         }).toList(),
@@ -443,14 +504,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             ),
             SizedBox(height: AppSpacing.xl),
             Text(
-              'No Archived Goals',
+              l10n.noArchivedGoals,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Archived goals will appear here',
+              l10n.archivedGoalsAppearHere,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -491,14 +552,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             ),
             SizedBox(height: AppSpacing.lg),
             Text(
-              'Connection Error',
+              l10n.connectionError,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Failed to load goals. Please try again.',
+              l10n.failedToLoadGoals,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -518,6 +579,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget? _buildFab(AsyncValue<List<dynamic>> allGoalsAsync) {
+    final l10n = AppLocalizations.of(context);
+
     return allGoalsAsync.maybeWhen(
       data: (allGoals) {
         // Apply same filter as the list
@@ -556,7 +619,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               elevation: 0,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
               label: Text(
-                'Add Goal',
+                l10n.tooltipAddGoal,
                 style: AppTypography.button.copyWith(color: Colors.white),
               ),
             ),

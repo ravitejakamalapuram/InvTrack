@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Filter tabs for All, Open, Closed, and Archived investments
 class InvestmentListFilterTabs extends ConsumerWidget {
@@ -20,13 +21,14 @@ class InvestmentListFilterTabs extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final listState = ref.watch(investmentListStateProvider);
     final counts = ref.watch(investmentCountsProvider);
+    final l10n = AppLocalizations.of(context);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _FilterChip(
-            label: 'All',
+            label: l10n.filterAll,
             count: counts.all,
             filter: InvestmentFilter.all,
             isSelected: listState.filter == InvestmentFilter.all,
@@ -34,7 +36,7 @@ class InvestmentListFilterTabs extends ConsumerWidget {
           ),
           SizedBox(width: AppSpacing.xs),
           _FilterChip(
-            label: 'Open',
+            label: l10n.filterOpen,
             count: counts.open,
             filter: InvestmentFilter.open,
             isSelected: listState.filter == InvestmentFilter.open,
@@ -42,7 +44,7 @@ class InvestmentListFilterTabs extends ConsumerWidget {
           ),
           SizedBox(width: AppSpacing.xs),
           _FilterChip(
-            label: 'Closed',
+            label: l10n.filterClosed,
             count: counts.closed,
             filter: InvestmentFilter.closed,
             isSelected: listState.filter == InvestmentFilter.closed,
@@ -50,7 +52,7 @@ class InvestmentListFilterTabs extends ConsumerWidget {
           ),
           SizedBox(width: AppSpacing.xs),
           _FilterChip(
-            label: 'Archived',
+            label: l10n.filterArchived,
             count: counts.archived,
             filter: InvestmentFilter.archived,
             isSelected: listState.filter == InvestmentFilter.archived,
@@ -91,27 +93,27 @@ class _FilterChipState extends ConsumerState<_FilterChip> {
       ref.read(investmentListStateProvider.notifier).setFilter(widget.filter);
     }
 
-    return Semantics(
-      button: true,
-      selected: widget.isSelected,
-      label: '${widget.label}, ${widget.count} items',
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Focus(
-        onFocusChange: (hasFocus) {
-          setState(() {
-            _isFocused = hasFocus;
-          });
-        },
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent &&
-              (event.logicalKey == LogicalKeyboardKey.enter ||
-                  event.logicalKey == LogicalKeyboardKey.space)) {
-            onTap();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isFocused = hasFocus;
+        });
+      },
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.space)) {
+          onTap();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        button: true,
+        selected: widget.isSelected,
+        label: '${widget.label}, ${widget.count} items',
+        excludeSemantics: true,
+        onTap: onTap,
         child: GestureDetector(
           onTap: onTap,
           child: TweenAnimationBuilder<double>(

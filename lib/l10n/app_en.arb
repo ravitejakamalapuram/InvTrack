@@ -1142,9 +1142,109 @@
     "description": "Dialog title for goal deletion confirmation"
   },
 
+  "deleteGoalQuestion": "Delete Goal?",
+  "@deleteGoalQuestion": {
+    "description": "Delete goal confirmation dialog title"
+  },
+
+  "deleteGoalMessage": "This will permanently delete \"{goalName}\".",
+  "@deleteGoalMessage": {
+    "description": "Delete goal confirmation message",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalDeleted": "Goal deleted",
+  "@goalDeleted": {
+    "description": "Success message after deleting a goal"
+  },
+
+  "archiveGoalQuestion": "Archive Goal?",
+  "@archiveGoalQuestion": {
+    "description": "Archive goal confirmation dialog title"
+  },
+
+  "archiveGoalMessage": "\"{goalName}\" will be hidden from your active goals.",
+  "@archiveGoalMessage": {
+    "description": "Archive goal confirmation message",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalArchived": "Goal archived",
+  "@goalArchived": {
+    "description": "Success message after archiving a goal"
+  },
+
+  "unarchiveGoalQuestion": "Unarchive Goal?",
+  "@unarchiveGoalQuestion": {
+    "description": "Unarchive goal confirmation dialog title"
+  },
+
+  "unarchiveGoalMessage": "\"{goalName}\" will be restored to your active goals.",
+  "@unarchiveGoalMessage": {
+    "description": "Unarchive goal confirmation message",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalRestored": "Goal restored",
+  "@goalRestored": {
+    "description": "Success message after unarchiving a goal"
+  },
+
+  "noArchivedGoals": "No Archived Goals",
+  "@noArchivedGoals": {
+    "description": "Empty state title for archived goals"
+  },
+
+  "archivedGoalsAppearHere": "Archived goals will appear here",
+  "@archivedGoalsAppearHere": {
+    "description": "Empty state message for archived goals"
+  },
+
+  "failedToLoadGoals": "Failed to load goals. Please try again.",
+  "@failedToLoadGoals": {
+    "description": "Error message when goals fail to load"
+  },
+
   "viewActiveGoals": "View active goals",
   "@viewActiveGoals": {
     "description": "Button text to view active goals"
+  },
+
+  "filterActive": "Active",
+  "@filterActive": {
+    "description": "Filter tab label for active goals"
+  },
+
+  "filterArchived": "Archived",
+  "@filterArchived": {
+    "description": "Filter tab label for archived goals"
+  },
+
+  "filterAll": "All",
+  "@filterAll": {
+    "description": "Filter tab label for all investments"
+  },
+
+  "filterOpen": "Open",
+  "@filterOpen": {
+    "description": "Filter tab label for open investments"
+  },
+
+  "filterClosed": "Closed",
+  "@filterClosed": {
+    "description": "Filter tab label for closed investments"
   },
 
   "createYourFirstGoal": "Create Your First Goal",
