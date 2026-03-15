@@ -66,8 +66,7 @@ class BatchCurrencyConverter {
         date: cf.date,
       ));
 
-      // Track which cash flows need this conversion (by index for result mapping)
-      final indexKey = 'cf_$i';
+      // Track which cash flows need this conversion
       cashFlowsByKey.putIfAbsent(dedupeKey, () => []).add(cf);
     }
 
@@ -136,7 +135,9 @@ class BatchCurrencyConverter {
     required ConversionFallbackStrategy fallbackStrategy,
     required Object error,
   }) async {
-    debugPrint('Batch conversion failed: $error');
+    if (kDebugMode) {
+      debugPrint('Batch conversion failed: $error');
+    }
 
     switch (fallbackStrategy) {
       case ConversionFallbackStrategy.useOriginal:
@@ -161,7 +162,9 @@ class BatchCurrencyConverter {
     required String baseCurrency,
     required ConversionFallbackStrategy fallbackStrategy,
   }) async {
-    debugPrint('Individual conversion failed for ${cashFlow.currency} → $baseCurrency');
+    if (kDebugMode) {
+      debugPrint('Individual conversion failed for ${cashFlow.currency} → $baseCurrency');
+    }
 
     switch (fallbackStrategy) {
       case ConversionFallbackStrategy.useOriginal:
@@ -219,7 +222,9 @@ class BatchCurrencyConverter {
           result.add(cf); // Keep original if no cached rate
         }
       } catch (e) {
-        debugPrint('Failed to get last known rate: $e');
+        if (kDebugMode) {
+          debugPrint('Failed to get last known rate: $e');
+        }
         result.add(cf); // Keep original on error
       }
     }
@@ -229,7 +234,7 @@ class BatchCurrencyConverter {
 
   /// Format date as YYYY-MM-DD (delegates to shared utility)
   String _formatDate(DateTime date) {
-    return CurrencyConversionService._formatDate(date);
+    return CurrencyConversionService.formatDate(date);
   }
 }
 

@@ -50,7 +50,7 @@ class ConversionRequest {
   });
 
   String get cacheKey {
-    final dateStr = date != null ? CurrencyConversionService._formatDate(date!) : 'live';
+    final dateStr = date != null ? CurrencyConversionService.formatDate(date!) : 'live';
     return '${dateStr}_$from';
   }
 }
@@ -246,7 +246,7 @@ class CurrencyConversionService {
     if (from == to) return 1.0;
 
     // Create unique key for request coalescing
-    final dateStr = date != null ? _formatDate(date) : _formatDate(DateTime.now());
+    final dateStr = date != null ? formatDate(date) : formatDate(DateTime.now());
     final requestKey = date != null
         ? 'historical_${dateStr}_${from}_$to'
         : 'live_${dateStr}_${from}_$to';
@@ -419,9 +419,16 @@ class CurrencyConversionService {
     required String to,
   }) async {
     // Check memory cache first (any key matching currency pair)
+    // Use precise matching to avoid false positives (e.g., USD_EUR vs AUSD_EUR)
     for (final entry in _memoryCache.entries) {
-      if (entry.key.contains('${from}_$to')) {
-        return entry.value;
+      // Extract currency pair from cache key format: "YYYY-MM-DD_FROM_TO" or "live_FROM_TO"
+      final parts = entry.key.split('_');
+      if (parts.length >= 3) {
+        final cachedFrom = parts[parts.length - 2];
+        final cachedTo = parts[parts.length - 1];
+        if (cachedFrom == from && cachedTo == to) {
+          return entry.value;
+        }
       }
     }
 
@@ -440,7 +447,9 @@ class CurrencyConversionService {
         return data['rate'] as double;
       }
     } catch (e) {
-      debugPrint('Failed to get last known rate from Firestore: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to get last known rate from Firestore: $e');
+      }
     }
 
     return null; // No cached rate found
@@ -501,7 +510,7 @@ class CurrencyConversionService {
     String to,
   ) async {
     // 1. Check memory cache
-    final memKey = 'historical_${_formatDate(date)}_${from}_$to';
+    final memKey = 'historical_${formatDate(date)}_${from}_$to';
     if (_memoryCache.containsKey(memKey)) {
       _metrics.memoryCacheHits++;
       _analytics?.logExchangeRateCacheHit(
@@ -526,7 +535,7 @@ class CurrencyConversionService {
     }
 
     // 3. Fetch from API (with circuit breaker)
-    final dateStr = _formatDate(date);
+    final dateStr = formatDate(date);
     try {
       final startTime = DateTime.now();
 
@@ -596,7 +605,7 @@ class CurrencyConversionService {
   /// Returns exchange rate
   Future<double> getLiveRate(String from, String to) async {
     final today = DateTime.now();
-    final dateStr = _formatDate(today);
+    final dateStr = formatDate(today);
 
     // 1. Check memory cache
     final memKey = 'live_${dateStr}_${from}_$to';
@@ -708,7 +717,7 @@ class CurrencyConversionService {
   }) async {
     // Try primary API (Frankfurter) - NO rate limits!
     try {
-      final dateStr = date != null ? _formatDate(date) : 'latest';
+      final dateStr = date != null ? formatDate(date) : 'latest';
       final url = '$_primaryApiBaseUrl/$dateStr?base=$from&symbols=$to';
 
       final response = await _httpClient
@@ -826,21 +835,29 @@ class CurrencyConversionService {
 
         if (now.difference(lastRefresh) < _liveCacheStaleness) {
           // Cache is fresh, no need to refresh
-          debugPrint('Live cache is fresh (last refresh: $lastRefresh)');
+          if (kDebugMode) {
+            debugPrint('Live cache is fresh (last refresh: $lastRefresh)');
+          }
           return;
         }
       }
 
       // Cache is stale or never refreshed - clear it
-      debugPrint('Refreshing stale live cache...');
+      if (kDebugMode) {
+        debugPrint('Refreshing stale live cache...');
+      }
       await _clearLiveCache();
 
       // Update last refresh timestamp
       await prefs.setInt(lastRefreshKey, DateTime.now().millisecondsSinceEpoch);
-      debugPrint('Live cache refreshed successfully');
+      if (kDebugMode) {
+        debugPrint('Live cache refreshed successfully');
+      }
     } catch (e) {
       // Non-blocking - log error but don't throw
-      debugPrint('Failed to refresh live cache: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to refresh live cache: $e');
+      }
       _analytics?.logCurrencyConversionFailed(
         fromCurrency: 'N/A',
         toCurrency: 'N/A',
@@ -849,8 +866,8 @@ class CurrencyConversionService {
     }
   }
 
-  /// Format date as YYYY-MM-DD (shared utility)
-  static String _formatDate(DateTime date) {
+  /// Format date as YYYY-MM-DD (shared utility - public for BatchCurrencyConverter)
+  static String formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
