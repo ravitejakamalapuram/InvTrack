@@ -53,12 +53,36 @@ cat scripts/migrate_to_inr.dart
 
 ### Step 2: Run the Migration
 
-**Important:** This script imports FlutterFire plugins (`firebase_core`, `cloud_firestore`) which require a Flutter runtime. Use `flutter run` instead of `dart run`:
+**Important:** This script uses FlutterFire plugins (`firebase_core`, `cloud_firestore`) which require a Flutter runtime environment.
+
+#### Option A: Using Flutter Runtime (Recommended for One-Time Migration)
 
 ```bash
 # Run the migration script with Flutter runtime
 flutter run --target=scripts/migrate_to_inr.dart
 ```
+
+**Why Flutter runtime?**
+- FlutterFire plugins require Flutter's platform channels
+- Simple for one-time migrations (no additional setup)
+- Uses existing Firebase configuration from the app
+
+#### Option B: Server-Side Alternative (For Headless Environments)
+
+If you need to run this in a headless server environment without Flutter:
+
+1. **Use Firebase Admin SDK** (Node.js/Python/Go):
+   - Rewrite the script in your preferred server language
+   - Use Firebase Admin SDK for direct Firestore access
+   - Requires service account credentials (JSON key file)
+   - Example: `firebase-admin` (Node.js) or `firebase-admin-python`
+
+2. **Use Firestore REST API**:
+   - Rewrite using Dart's `http` package
+   - Authenticate with service account or OAuth2
+   - More complex but doesn't require Flutter runtime
+
+**For this one-time migration, Option A (Flutter runtime) is recommended for simplicity.**
 
 ### Step 3: Confirm
 

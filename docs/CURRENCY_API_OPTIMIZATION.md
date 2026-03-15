@@ -135,10 +135,10 @@ final convertedCashFlows = await batchConverter.batchConvert(
 
 ```dart
 enum ConversionFallbackStrategy {
-  useOriginal,    // Keep original currency (may cause mixed currency calculations)
-  useLastKnown,   // Use last known cached rate (any date)
-  throwError,     // Fail the operation
-  skip,           // Skip failed conversions
+  useOriginal,       // Keep original currency (may cause mixed currency calculations)
+  useLastKnown,      // Use last known cached rate (any date)
+  throwError,        // Fail the operation
+  skipTransaction,   // Skip failed conversions
 }
 
 // Example usage
@@ -160,7 +160,7 @@ final convertedCashFlows = await batchConverter.batchConvert(
 |----------|----------|------|
 | `useLastKnown` | **Recommended** - Use cached rate from any date | Slightly stale rate |
 | `useOriginal` | Keep original currency | Mixed currency calculations |
-| `skip` | Omit failed conversions | Incomplete data |
+| `skipTransaction` | Omit failed conversions | Incomplete data |
 | `throwError` | Fail fast (testing/debugging) | User sees error |
 
 ---
