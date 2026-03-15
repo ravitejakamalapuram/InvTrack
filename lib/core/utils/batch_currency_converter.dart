@@ -48,7 +48,6 @@ class BatchCurrencyConverter {
 
     // Build conversion requests map with deduplication
     final requests = <String, ConversionRequest>{};
-    final cashFlowsByKey = <String, List<CashFlowEntity>>{};
 
     for (var i = 0; i < cashFlows.length; i++) {
       final cf = cashFlows[i];
@@ -65,9 +64,6 @@ class BatchCurrencyConverter {
         amount: 1.0, // Use 1.0 to get the rate, apply to all amounts later
         date: cf.date,
       ));
-
-      // Track which cash flows need this conversion
-      cashFlowsByKey.putIfAbsent(dedupeKey, () => []).add(cf);
     }
 
     // If no conversions needed, return original list

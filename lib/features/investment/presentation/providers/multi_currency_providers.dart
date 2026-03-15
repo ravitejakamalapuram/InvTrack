@@ -32,25 +32,22 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
 
   if (cashFlows.isEmpty) return 0.0;
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  double total = 0.0;
+  // Filter outflows only
+  final outflows = cashFlows.where((cf) => cf.type.isOutflow).toList();
+  if (outflows.isEmpty) return 0.0;
 
-  // Convert each outflow to base currency
-  for (final cf in cashFlows) {
-    if (cf.type.isOutflow) {
-      final convertedAmount = await conversionService.convert(
-        amount: cf.amount,
-        from: cf.currency,
-        to: userBaseCurrency,
-        date: cf.date,
-      );
-      total += convertedAmount;
-    }
-  }
+  // Batch convert all outflows to base currency (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: outflows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
-  return total;
+  // Sum converted amounts
+  return convertedCashFlows.fold<double>(0.0, (sum, cf) => sum + cf.amount);
 }
 
 /// Provider for multi-currency returned amount calculation
@@ -70,25 +67,22 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
 
   if (cashFlows.isEmpty) return 0.0;
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  double total = 0.0;
+  // Filter inflows only
+  final inflows = cashFlows.where((cf) => cf.type.isInflow).toList();
+  if (inflows.isEmpty) return 0.0;
 
-  // Convert each inflow to base currency
-  for (final cf in cashFlows) {
-    if (cf.type.isInflow) {
-      final convertedAmount = await conversionService.convert(
-        amount: cf.amount,
-        from: cf.currency,
-        to: userBaseCurrency,
-        date: cf.date,
-      );
-      total += convertedAmount;
-    }
-  }
+  // Batch convert all inflows to base currency (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: inflows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
-  return total;
+  // Sum converted amounts
+  return convertedCashFlows.fold<double>(0.0, (sum, cf) => sum + cf.amount);
 }
 
 /// Provider for multi-currency XIRR calculation
@@ -109,25 +103,15 @@ Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
 
   if (cashFlows.isEmpty) return 0.0;
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  // Convert all cash flows to base currency
-  final convertedCashFlows = <CashFlowEntity>[];
-
-  for (final cf in cashFlows) {
-    final convertedAmount = await conversionService.convert(
-      amount: cf.amount,
-      from: cf.currency,
-      to: userBaseCurrency,
-      date: cf.date,
-    );
-
-    // Create new cash flow with converted amount
-    convertedCashFlows.add(
-      cf.copyWith(amount: convertedAmount, currency: userBaseCurrency),
-    );
-  }
+  // Batch convert all cash flows to base currency (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: cashFlows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
   // Calculate XIRR using converted cash flows
   return FinancialCalculator.calculateXirrFromCashFlows(convertedCashFlows);
