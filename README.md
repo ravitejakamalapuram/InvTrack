@@ -233,6 +233,17 @@ Contributions are welcome! Please follow these guidelines:
 8. Push to the branch (`git push origin feature/amazing-feature`)
 9. Open a Pull Request
 
+### 🤖 AI-Powered Code Review
+
+InvTrack uses **CodeRabbit AI** for automated code reviews (FREE for open source!):
+
+- ✅ **Auto-fix tools**: Localization, privacy, accessibility, architecture checks
+- ✅ **Generate unit tests**: AI-generated test cases for new code
+- ✅ **Smart suggestions**: Context-aware code improvements
+- ✅ **Knowledge base**: Learns from InvTrack's rules and documentation
+
+**See [CODERABBIT_FEATURES.md](docs/CODERABBIT_FEATURES.md) for full guide**
+
 ### Code Quality Standards
 - Zero analyzer errors/warnings
 - All tests passing (≥60% coverage)
