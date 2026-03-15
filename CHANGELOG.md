@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Update deployment workflow to use production track instead of alpha
+- **security**: Enable encryptedSharedPreferences for FlutterSecureStorage on Android (#264)
+
+## [3.53.0] - 2026-03-14
+
 ### ✨ Features
 
 - Simplify currency switch with rate pre-fetching (#267)
