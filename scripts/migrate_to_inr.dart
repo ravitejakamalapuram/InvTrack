@@ -4,9 +4,31 @@
 //
 // Usage: dart run scripts/migrate_to_inr.dart
 //
-// ⚠️  WARNING: This is a one-time migration script!
-// It will update ALL users' base currency to INR and set all cashflows/investments to INR.
-// Make sure you have a backup before running this!
+// ⚠️  CRITICAL DATA INTEGRITY WARNING ⚠️
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// This script PERMANENTLY CHANGES original currency values in the database!
+//
+// ⚠️  IRREVERSIBLE OPERATION:
+//    - Original currency data is NOT preserved
+//    - The app does NOT automatically revert these changes
+//    - This is a ONE-TIME normalization for India-focused defaults
+//
+// ⚠️  REQUIRED BEFORE RUNNING:
+//    - Create a FULL Firestore backup
+//    - Verify backup is complete and downloadable
+//    - Test restore procedure
+//
+// ⚠️  RATIONALE:
+//    This deviates from normal multi-currency behavior where original data
+//    is never changed. This is a special migration for setting India-specific
+//    defaults for all existing users.
+//
+// ⚠️  BACKUP INSTRUCTIONS:
+//    1. Go to Firebase Console → Firestore → Backups
+//    2. Create manual backup
+//    3. Wait for completion
+//    4. Download backup for local storage
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ignore_for_file: avoid_print, avoid_relative_lib_imports
 
@@ -78,23 +100,38 @@ Future<void> main() async {
       final cashflowsSnapshot = await cashflowsRef.get();
       
       if (cashflowsSnapshot.docs.isNotEmpty) {
-        final batch = firestore.batch();
+        var batch = firestore.batch();
         int batchCount = 0;
+        int totalUpdated = 0;
 
         for (final cashflowDoc in cashflowsSnapshot.docs) {
           final data = cashflowDoc.data();
-          
+
           // Only update if currency is not already INR
           if (data['currency'] != 'INR') {
             batch.update(cashflowDoc.reference, {'currency': 'INR'});
             batchCount++;
             cashflowsUpdated++;
+
+            // Commit batch when reaching Firestore limit (500 operations)
+            if (batchCount >= 500) {
+              await batch.commit();
+              totalUpdated += batchCount;
+              print('   ⏳ Committed $batchCount cashflows (total: $totalUpdated)...');
+              batch = firestore.batch();
+              batchCount = 0;
+            }
           }
         }
 
+        // Commit any remaining operations
         if (batchCount > 0) {
           await batch.commit();
-          print('   ✅ Updated $batchCount cashflows to INR');
+          totalUpdated += batchCount;
+        }
+
+        if (totalUpdated > 0) {
+          print('   ✅ Updated $totalUpdated cashflows to INR');
         } else {
           print('   ⏭️  All cashflows already in INR');
         }
@@ -109,23 +146,38 @@ Future<void> main() async {
       final investmentsSnapshot = await investmentsRef.get();
       
       if (investmentsSnapshot.docs.isNotEmpty) {
-        final batch = firestore.batch();
+        var batch = firestore.batch();
         int batchCount = 0;
+        int totalUpdated = 0;
 
         for (final investmentDoc in investmentsSnapshot.docs) {
           final data = investmentDoc.data();
-          
+
           // Only update if currency is not already INR
           if (data['currency'] != 'INR') {
             batch.update(investmentDoc.reference, {'currency': 'INR'});
             batchCount++;
             investmentsUpdated++;
+
+            // Commit batch when reaching Firestore limit (500 operations)
+            if (batchCount >= 500) {
+              await batch.commit();
+              totalUpdated += batchCount;
+              print('   ⏳ Committed $batchCount investments (total: $totalUpdated)...');
+              batch = firestore.batch();
+              batchCount = 0;
+            }
           }
         }
 
+        // Commit any remaining operations
         if (batchCount > 0) {
           await batch.commit();
-          print('   ✅ Updated $batchCount investments to INR');
+          totalUpdated += batchCount;
+        }
+
+        if (totalUpdated > 0) {
+          print('   ✅ Updated $totalUpdated investments to INR');
         } else {
           print('   ⏭️  All investments already in INR');
         }

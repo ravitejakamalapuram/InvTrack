@@ -33,7 +33,7 @@ The migration script will:
 
 ```bash
 # Make sure you're in the project directory
-cd /Users/rkamalapuram/git-personal/InvTrack
+cd <path-to-your-InvTrack-project>
 
 # Install dependencies
 flutter pub get

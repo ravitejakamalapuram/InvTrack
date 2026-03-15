@@ -264,9 +264,16 @@ class ConversionMetrics {
   int failures = 0;                    // Failed conversions
   int circuitBreakerTrips = 0;         // Circuit breaker opened
   Duration totalApiLatency = Duration.zero;  // Total API time
-  
-  double get cacheHitRate => (memoryCacheHits + firestoreCacheHits) / total;
-  Duration get avgApiLatency => totalApiLatency / apiCalls;
+
+  // Safe getters with zero-division guards
+  double get cacheHitRate {
+    final total = apiCalls + memoryCacheHits + firestoreCacheHits;
+    return total > 0 ? (memoryCacheHits + firestoreCacheHits) / total : 0.0;
+  }
+
+  Duration get avgApiLatency {
+    return apiCalls > 0 ? totalApiLatency ~/ apiCalls : Duration.zero;
+  }
 }
 ```
 

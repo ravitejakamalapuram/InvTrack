@@ -50,12 +50,8 @@ class ConversionRequest {
   });
 
   String get cacheKey {
-    final dateStr = date != null ? _formatDate(date!) : 'live';
+    final dateStr = date != null ? CurrencyConversionService._formatDate(date!) : 'live';
     return '${dateStr}_$from';
-  }
-
-  static String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
 
@@ -853,8 +849,8 @@ class CurrencyConversionService {
     }
   }
 
-  /// Format date as YYYY-MM-DD
-  String _formatDate(DateTime date) {
+  /// Format date as YYYY-MM-DD (shared utility)
+  static String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 

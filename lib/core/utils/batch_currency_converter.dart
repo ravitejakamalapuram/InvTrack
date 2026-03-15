@@ -56,18 +56,19 @@ class BatchCurrencyConverter {
       // Skip if already in base currency
       if (cf.currency == baseCurrency) continue;
 
-      // Create unique key for this cash flow
-      final key = 'cf_${i}_${_formatDate(cf.date)}_${cf.currency}';
+      // Create deduplication key based on (date, currency) only
+      final dedupeKey = '${_formatDate(cf.date)}_${cf.currency}';
 
-      // Create conversion request (deduplication happens in batchConvertHistorical)
-      requests[key] = ConversionRequest(
+      // Create conversion request (deduplicated by date+currency)
+      requests.putIfAbsent(dedupeKey, () => ConversionRequest(
         from: cf.currency,
-        amount: cf.amount,
+        amount: 1.0, // Use 1.0 to get the rate, apply to all amounts later
         date: cf.date,
-      );
+      ));
 
-      // Track which cash flows need this conversion
-      cashFlowsByKey.putIfAbsent(key, () => []).add(cf);
+      // Track which cash flows need this conversion (by index for result mapping)
+      final indexKey = 'cf_$i';
+      cashFlowsByKey.putIfAbsent(dedupeKey, () => []).add(cf);
     }
 
     // If no conversions needed, return original list
@@ -101,13 +102,14 @@ class BatchCurrencyConverter {
         continue;
       }
 
-      final key = 'cf_${i}_${_formatDate(cf.date)}_${cf.currency}';
-      final convertedAmount = convertedAmounts[key];
+      // Use deduplication key to get the rate
+      final dedupeKey = '${_formatDate(cf.date)}_${cf.currency}';
+      final rate = convertedAmounts[dedupeKey];
 
-      if (convertedAmount != null) {
-        // Successful conversion
+      if (rate != null) {
+        // Successful conversion - apply rate to this cash flow's amount
         result.add(cf.copyWith(
-          amount: convertedAmount,
+          amount: cf.amount * rate,
           currency: baseCurrency,
         ));
       } else {
@@ -225,9 +227,9 @@ class BatchCurrencyConverter {
     return result;
   }
 
-  /// Format date as YYYY-MM-DD
+  /// Format date as YYYY-MM-DD (delegates to shared utility)
   String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return CurrencyConversionService._formatDate(date);
   }
 }
 
