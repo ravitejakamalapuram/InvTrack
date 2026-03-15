@@ -88,7 +88,7 @@ If you need to run this in a headless server environment without Flutter:
 
 The script will ask for confirmation:
 
-```
+```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️  INR MIGRATION SCRIPT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -104,7 +104,7 @@ Type `yes` and press Enter to proceed.
 
 The script will show detailed progress:
 
-```
+```text
 🚀 Starting migration to INR...
 
 📋 Step 1: Fetching all users...
