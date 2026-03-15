@@ -1,11 +1,19 @@
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'multi_currency_providers.g.dart';
+
+/// Provider for batch currency converter
+@riverpod
+BatchCurrencyConverter batchCurrencyConverter(Ref ref) {
+  final conversionService = ref.watch(currencyConversionServiceProvider);
+  return BatchCurrencyConverter(conversionService);
+}
 
 /// Provider for multi-currency invested amount calculation
 ///
@@ -131,6 +139,8 @@ Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
 /// (total returned - total invested) for all investments,
 /// converted to user's base currency
 ///
+/// Uses optimized batch conversion with deduplication for performance.
+///
 /// **Returns:**
 /// - Total portfolio value in user's base currency
 @riverpod
@@ -141,46 +151,41 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
 
   if (investments.isEmpty) return 0.0;
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  double totalValue = 0.0;
-
-  // Calculate net cash flow for each investment and convert to base currency
+  // Collect all cash flows from all investments
+  final allCashFlows = <CashFlowEntity>[];
   for (final investment in investments) {
     final cashFlows = await ref.watch(
       cashFlowsByInvestmentProvider(investment.id).selectAsync((data) => data),
     );
-
-    if (cashFlows.isEmpty) continue;
-
-    // Calculate net cash flow (returned - invested) in base currency
-    double netInBaseCurrency = 0.0;
-
-    for (final cf in cashFlows) {
-      final convertedAmount = await conversionService.convert(
-        amount: cf.amount,
-        from: cf.currency,
-        to: userBaseCurrency,
-        date: cf.date,
-      );
-
-      // Add to net (inflows positive, outflows negative)
-      netInBaseCurrency += cf.type.isInflow
-          ? convertedAmount
-          : -convertedAmount;
-    }
-
-    totalValue += netInBaseCurrency;
+    allCashFlows.addAll(cashFlows);
   }
 
-  return totalValue;
+  if (allCashFlows.isEmpty) return 0.0;
+
+  // Batch convert with deduplication (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: allCashFlows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
+
+  // Sum net cash flow (inflows - outflows)
+  double total = 0.0;
+  for (final cf in convertedCashFlows) {
+    total += cf.type.isInflow ? cf.amount : -cf.amount;
+  }
+  return total;
 }
 
 /// Provider for multi-currency investment stats
 ///
 /// Calculates investment statistics with proper currency conversion.
 /// All cash flows are converted to user's base currency before aggregation.
+///
+/// Uses optimized batch conversion with deduplication for performance.
 ///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
@@ -192,7 +197,6 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
   Ref ref,
   String investmentId,
 ) async {
-  // Use future to wait for stream data
   final cashFlows = await ref.watch(
     cashFlowsByInvestmentProvider(investmentId).future,
   );
@@ -201,25 +205,15 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
     return InvestmentStats.empty();
   }
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  // Convert all cash flows to base currency
-  final convertedCashFlows = <CashFlowEntity>[];
-
-  for (final cf in cashFlows) {
-    final convertedAmount = await conversionService.convert(
-      amount: cf.amount,
-      from: cf.currency,
-      to: userBaseCurrency,
-      date: cf.date,
-    );
-
-    // Create new cash flow with converted amount
-    convertedCashFlows.add(
-      cf.copyWith(amount: convertedAmount, currency: userBaseCurrency),
-    );
-  }
+  // Batch convert with deduplication (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: cashFlows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
   // Use existing calculateStats with converted cash flows
   return calculateStats(convertedCashFlows);
@@ -229,6 +223,8 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
 ///
 /// Calculates global statistics across all investments with proper currency conversion.
 /// All cash flows are converted to user's base currency before aggregation.
+///
+/// Uses optimized batch conversion with deduplication for performance.
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
@@ -247,25 +243,15 @@ Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  // Convert all cash flows to base currency
-  final convertedCashFlows = <CashFlowEntity>[];
-
-  for (final cf in cashFlows) {
-    final convertedAmount = await conversionService.convert(
-      amount: cf.amount,
-      from: cf.currency,
-      to: userBaseCurrency,
-      date: cf.date,
-    );
-
-    // Create new cash flow with converted amount
-    convertedCashFlows.add(
-      cf.copyWith(amount: convertedAmount, currency: userBaseCurrency),
-    );
-  }
+  // Batch convert with deduplication (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: cashFlows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
   // Use existing calculateStats with converted cash flows
   return calculateStats(convertedCashFlows);
@@ -314,23 +300,15 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  // Convert all cash flows to base currency
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
-  final conversionService = ref.watch(currencyConversionServiceProvider);
 
-  final convertedCashFlows = <CashFlowEntity>[];
-  for (final cf in openCashFlows) {
-    final convertedAmount = await conversionService.convert(
-      amount: cf.amount,
-      from: cf.currency,
-      to: userBaseCurrency,
-      date: cf.date,
-    );
-
-    convertedCashFlows.add(
-      cf.copyWith(amount: convertedAmount, currency: userBaseCurrency),
-    );
-  }
+  // Batch convert with deduplication (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: openCashFlows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
   return calculateStats(convertedCashFlows);
 }
@@ -378,23 +356,15 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  // Convert all cash flows to base currency
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
-  final conversionService = ref.watch(currencyConversionServiceProvider);
 
-  final convertedCashFlows = <CashFlowEntity>[];
-  for (final cf in closedCashFlows) {
-    final convertedAmount = await conversionService.convert(
-      amount: cf.amount,
-      from: cf.currency,
-      to: userBaseCurrency,
-      date: cf.date,
-    );
-
-    convertedCashFlows.add(
-      cf.copyWith(amount: convertedAmount, currency: userBaseCurrency),
-    );
-  }
+  // Batch convert with deduplication (OPTIMIZED)
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: closedCashFlows,
+    baseCurrency: userBaseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
 
   return calculateStats(convertedCashFlows);
 }
