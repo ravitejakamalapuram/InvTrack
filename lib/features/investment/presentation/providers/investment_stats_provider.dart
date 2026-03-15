@@ -389,8 +389,10 @@ InvestmentStats calculateStats(
   // Single pass calculation for O(N) complexity
   double totalInvested = 0.0;
   double totalReturned = 0.0;
-  DateTime? firstDate;
-  DateTime? lastDate;
+
+  // Optimization: Use millisecondsSinceEpoch for faster date comparisons in loop
+  int? firstDateMs;
+  int? lastDateMs;
 
   // Pre-allocate lists for XIRR if needed
   final xirrDates = includeXirr ? <DateTime>[] : null;
@@ -398,11 +400,12 @@ InvestmentStats calculateStats(
 
   for (final cf in cashFlows) {
     // 1. Date range
-    if (firstDate == null || cf.date.isBefore(firstDate)) {
-      firstDate = cf.date;
+    final ms = cf.date.millisecondsSinceEpoch;
+    if (firstDateMs == null || ms < firstDateMs) {
+      firstDateMs = ms;
     }
-    if (lastDate == null || cf.date.isAfter(lastDate)) {
-      lastDate = cf.date;
+    if (lastDateMs == null || ms > lastDateMs) {
+      lastDateMs = ms;
     }
 
     // 2. Totals
@@ -418,6 +421,14 @@ InvestmentStats calculateStats(
       xirrAmounts!.add(cf.signedAmount);
     }
   }
+
+  // Convert milliseconds back to DateTime
+  final firstDate = firstDateMs != null
+      ? DateTime.fromMillisecondsSinceEpoch(firstDateMs)
+      : null;
+  final lastDate = lastDateMs != null
+      ? DateTime.fromMillisecondsSinceEpoch(lastDateMs)
+      : null;
 
   // Calculate derived stats (O(1))
   final netCashFlow = FinancialCalculator.calculateNetCashFlow(
