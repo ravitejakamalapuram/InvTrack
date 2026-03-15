@@ -230,6 +230,30 @@ class FirebaseAuthRepository implements AuthRepository {
       return userCredential.user != null
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
+    } on FirebaseAuthException catch (e, stackTrace) {
+      LoggerService.error(
+        'Anonymous Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      // Handle admin-restricted-operation error
+      if (e.code == 'admin-restricted-operation') {
+        throw AuthException(
+          userMessage:
+              'Guest mode is currently disabled. Please sign in with Google.',
+          technicalMessage:
+              'Anonymous authentication is disabled in Firebase Console',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: true, // Report this - it's a configuration issue
+        );
+      }
+
+      throw AuthException.signInFailed(
+        cause: e,
+        stackTrace: stackTrace,
+      );
     } catch (e, stackTrace) {
       LoggerService.error(
         'Anonymous Sign-In failed',
