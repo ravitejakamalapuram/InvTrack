@@ -405,49 +405,11 @@ chat:
   auto_reply: true
 
 # ============================================================================
-# ADVANCED PRO FEATURES (FREE for open source!)
-# ============================================================================
-
-# AST-based code analysis (deeper understanding)
-# Enables more accurate reviews and better suggestions
-enable_ast_analysis: true
-
-# Code context awareness (understands relationships between files)
-# Improves suggestions by understanding how code is used across the codebase
-enable_code_context: true
-
-# Incremental reviews (only review changed code, not entire files)
-# Faster reviews, more focused feedback
-incremental_review: true
-
-# Auto-title PRs based on changes
-# Generates descriptive PR titles from commit messages and code changes
-auto_title_generation: true
-
-# Sequence diagrams for complex flows
-# Generates mermaid diagrams for multi-file interactions
-enable_sequence_diagrams: true
-
-# Code suggestions (inline fix suggestions)
-# Provides code snippets to fix issues directly
-enable_code_suggestions: true
-
-# ============================================================================
-# REPORTS & ANALYTICS (FREE for open source!)
-# ============================================================================
-
-# Generate sprint review reports
-# Summarizes all PRs merged in a time period
-reports:
-  enabled: true
-  # Available report types:
-  # - sprint_summary: All PRs merged in sprint
-  # - code_quality: Quality metrics over time
-  # - review_efficiency: Review turnaround times
-  # - technical_debt: Accumulated issues
-
-# ============================================================================
 # INTEGRATIONS (FREE for open source!)
+# ============================================================================
+# Note: Advanced Pro features (AST analysis, code context, sequence diagrams,
+# auto-title generation, reports) are automatically enabled for open source
+# projects and don't need explicit configuration in the v2 schema.
 # ============================================================================
 
 # Jira integration (if you use Jira)
