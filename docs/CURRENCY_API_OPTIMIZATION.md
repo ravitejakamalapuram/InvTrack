@@ -37,13 +37,16 @@ Completely redesigned currency conversion system with enterprise-grade architect
 ## API Rate Limit Research
 
 ### Frankfurter API (Primary) ✅
-- **Official Documentation:** https://frankfurter.dev
+
+- **Official Documentation:** [frankfurter.dev](https://frankfurter.dev)
 - **Rate Limits:** **NONE** (confirmed in FAQ)
 - **Quote:** "Does the API have any call limits? There are no limits."
 - **Note:** Free, unlimited, open-source API
 
 ### ExchangeRate-API (Fallback) ⚠️
-- **Official Documentation:** https://www.exchangerate-api.com/docs/free
+
+- **Official Documentation:**
+  [exchangerate-api.com](https://www.exchangerate-api.com/docs/free)
 - **Rate Limits:** Yes, but not specified (free tier)
 - **Recommendation:** Request once every 24 hours (data updates daily)
 - **Acceptable:** Once per hour won't trigger rate limit
@@ -238,7 +241,9 @@ flutter test test/core/services/currency_conversion_service_test.dart
 
 ## References
 
-- Frankfurter API Docs: https://frankfurter.dev
-- ExchangeRate-API Docs: https://www.exchangerate-api.com/docs/free
-- Implementation PR: https://github.com/ravitejakamalapuram/InvTrack/pull/273
+- Frankfurter API Docs: [frankfurter.dev](https://frankfurter.dev)
+- ExchangeRate-API Docs:
+  [exchangerate-api.com/docs/free](https://www.exchangerate-api.com/docs/free)
+- Implementation PR:
+  [InvTrack#273](https://github.com/ravitejakamalapuram/InvTrack/pull/273)
 
