@@ -19,9 +19,16 @@ Simple, focused workflows with CodeRabbit handling detailed code reviews.
 - 🔍 Enforces InvTrack Enterprise Rules
 
 **Merge Requirements:**
-- All checks must pass
+- All checks must pass (PR Checks status)
 - CodeRabbit review completed
-- Manual approval required
+- Branch protection enforced (no direct pushes to main)
+
+**Branch Protection:**
+- ✅ Require pull requests before merging
+- ✅ Require "PR Checks" status to pass
+- ✅ Dismiss stale reviews on new commits
+- ✅ No force pushes or deletions
+- ⚠️ Admins can bypass (use carefully!)
 
 ---
 
