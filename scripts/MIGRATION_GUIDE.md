@@ -171,6 +171,7 @@ The script will show detailed progress:
 ### Fields Updated
 
 **User Profile:**
+
 ```json
 {
   "currencyCode": "INR",
@@ -180,6 +181,7 @@ The script will show detailed progress:
 ```
 
 **Cashflows & Investments:**
+
 ```json
 {
   "currency": "INR"
