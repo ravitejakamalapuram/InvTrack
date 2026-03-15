@@ -375,10 +375,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                   itemKey: goal.id,
                   enabled: !isSelectionMode,
                   deleteConfig: DeleteActionConfig(
-                    confirmTitle: 'Delete Goal?',
-                    confirmMessage:
-                        'This will permanently delete "${goal.name}".',
-                    successMessage: 'Goal deleted',
+                    confirmTitle: l10n.deleteGoalQuestion,
+                    confirmMessage: l10n.deleteGoalMessage(goal.name),
+                    successMessage: l10n.goalDeleted,
                     onDelete: () {
                       if (isArchived) {
                         ref
@@ -393,14 +392,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                   ),
                   archiveConfig: ArchiveActionConfig(
                     confirmTitle: isArchived
-                        ? 'Unarchive Goal?'
-                        : 'Archive Goal?',
+                        ? l10n.unarchiveGoalQuestion
+                        : l10n.archiveGoalQuestion,
                     confirmMessage: isArchived
-                        ? '"${goal.name}" will be restored to your active goals.'
-                        : '"${goal.name}" will be hidden from your active goals.',
+                        ? l10n.unarchiveGoalMessage(goal.name)
+                        : l10n.archiveGoalMessage(goal.name),
                     successMessage: isArchived
-                        ? 'Goal restored'
-                        : 'Goal archived',
+                        ? l10n.goalRestored
+                        : l10n.goalArchived,
                     isArchived: isArchived,
                     onArchive: () {
                       if (isArchived) {
@@ -505,14 +504,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             ),
             SizedBox(height: AppSpacing.xl),
             Text(
-              'No Archived Goals',
+              l10n.noArchivedGoals,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Archived goals will appear here',
+              l10n.archivedGoalsAppearHere,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -553,14 +552,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
             ),
             SizedBox(height: AppSpacing.lg),
             Text(
-              'Connection Error',
+              l10n.connectionError,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              'Failed to load goals. Please try again.',
+              l10n.failedToLoadGoals,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -580,6 +579,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
   }
 
   Widget? _buildFab(AsyncValue<List<dynamic>> allGoalsAsync) {
+    final l10n = AppLocalizations.of(context);
+
     return allGoalsAsync.maybeWhen(
       data: (allGoals) {
         // Apply same filter as the list
@@ -618,7 +619,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
               elevation: 0,
               icon: const Icon(Icons.add_rounded, color: Colors.white),
               label: Text(
-                'Add Goal',
+                l10n.tooltipAddGoal,
                 style: AppTypography.button.copyWith(color: Colors.white),
               ),
             ),
