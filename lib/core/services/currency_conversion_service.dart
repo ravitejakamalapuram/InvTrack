@@ -212,6 +212,41 @@ class CurrencyConversionService {
   /// Reset metrics
   void resetMetrics() => _metrics.reset();
 
+  /// Clear all cached exchange rates (memory + Firestore)
+  ///
+  /// This is a surgical cache clear that preserves:
+  /// - Circuit breaker state (prevents unnecessary API failures)
+  /// - Metrics (preserves performance tracking)
+  /// - In-flight requests (prevents duplicate API calls)
+  ///
+  /// Use this instead of provider invalidation when switching currencies
+  /// to avoid losing circuit breaker protection and performance metrics.
+  Future<void> clearCache() async {
+    // Clear memory cache
+    _memoryCache.clear();
+
+    // Clear Firestore cache (batch delete for efficiency)
+    try {
+      final snapshot = await _exchangeRatesRef.get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      if (kDebugMode) {
+        debugPrint('✅ Cleared ${snapshot.docs.length} cached exchange rates');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to clear Firestore cache: $e');
+      }
+      // Don't throw - cache clear is best-effort
+    }
+  }
+
   // Collection reference for exchange rate cache
   CollectionReference<Map<String, dynamic>> get _exchangeRatesRef =>
       _firestore.collection('users').doc(_userId).collection('exchangeRates');
