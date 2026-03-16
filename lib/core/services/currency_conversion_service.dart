@@ -230,14 +230,26 @@ class CurrencyConversionService {
       final snapshot = await _exchangeRatesRef.get();
       if (snapshot.docs.isEmpty) return;
 
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
+      // Firestore batch limit is 500 operations
+      const batchSize = 500;
+      final docs = snapshot.docs;
+      var totalDeleted = 0;
+
+      // Process in chunks of 500
+      for (var i = 0; i < docs.length; i += batchSize) {
+        final end = (i + batchSize < docs.length) ? i + batchSize : docs.length;
+        final chunk = docs.sublist(i, end);
+
+        final batch = _firestore.batch();
+        for (final doc in chunk) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        totalDeleted += chunk.length;
       }
-      await batch.commit();
 
       if (kDebugMode) {
-        debugPrint('✅ Cleared ${snapshot.docs.length} cached exchange rates');
+        debugPrint('✅ Cleared $totalDeleted cached exchange rates');
       }
     } catch (e) {
       if (kDebugMode) {

@@ -288,23 +288,27 @@ void main() {
 
         // Listen to state changes
         final states = <CurrencySwitchStatus>[];
-        container.listen(
+        final subscription = container.listen(
           currencySwitchProvider,
           (previous, next) => states.add(next),
           fireImmediately: true,
         );
 
-        // Trigger switch using immediate method
-        await notifier.switchCurrencyImmediate('INR');
+        try {
+          // Trigger switch using immediate method
+          await notifier.switchCurrencyImmediate('INR');
 
-        // Verify we got progress updates
-        final fetchingStates =
-            states.where((s) => s.isFetchingRates).toList();
-        expect(fetchingStates.isNotEmpty, true,
-            reason: 'Should have fetching states');
+          // Verify we got progress updates
+          final fetchingStates =
+              states.where((s) => s.isFetchingRates).toList();
+          expect(fetchingStates.isNotEmpty, true,
+              reason: 'Should have fetching states');
 
-        // Verify final success state
-        expect(states.last.isSuccess, true);
+          // Verify final success state
+          expect(states.last.isSuccess, true);
+        } finally {
+          subscription.close();
+        }
       });
     });
 
@@ -374,5 +378,3 @@ void main() {
     });
   });
 }
-
-
