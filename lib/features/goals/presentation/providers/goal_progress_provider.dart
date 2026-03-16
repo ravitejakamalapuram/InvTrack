@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
-import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 
 /// Calculate progress for a single goal
 class GoalProgressCalculator {
@@ -253,7 +254,7 @@ class GoalProgressCalculator {
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
     required List<CashFlowEntity> allCashFlows,
-    required CurrencyConversionService conversionService,
+    required BatchCurrencyConverter batchConverter,
     required String baseCurrency,
   }) async {
     // Filter investments based on tracking mode
@@ -266,19 +267,11 @@ class GoalProgressCalculator {
         .toList();
 
     // Convert all cash flows to base currency
-    final convertedCashFlows = <CashFlowEntity>[];
-    for (final cf in linkedCashFlows) {
-      final convertedAmount = await conversionService.convert(
-        amount: cf.amount,
-        from: cf.currency,
-        to: baseCurrency,
-        date: cf.date,
-      );
-
-      convertedCashFlows.add(
-        cf.copyWith(amount: convertedAmount, currency: baseCurrency),
-      );
-    }
+    final convertedCashFlows = await batchConverter.batchConvert(
+      cashFlows: linkedCashFlows,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+    );
 
     // Calculate current amount based on goal type
     double currentAmount;
@@ -567,14 +560,14 @@ final multiCurrencyGoalProgressProvider =
         error: (e, s) async => <CashFlowEntity>[],
       );
 
-      final conversionService = ref.watch(currencyConversionServiceProvider);
+      final batchConverter = ref.watch(batchCurrencyConverterProvider);
       final baseCurrency = ref.watch(currencyCodeProvider);
 
       return GoalProgressCalculator.calculateMultiCurrency(
         goal: goal,
         allInvestments: investments,
         allCashFlows: cashFlows,
-        conversionService: conversionService,
+        batchConverter: batchConverter,
         baseCurrency: baseCurrency,
       );
     });
@@ -612,7 +605,7 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
     error: (e, s) async => <CashFlowEntity>[],
   );
 
-  final conversionService = ref.watch(currencyConversionServiceProvider);
+  final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final baseCurrency = ref.watch(currencyCodeProvider);
 
   // Calculate progress for each goal with currency conversion
@@ -622,7 +615,7 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
       goal: goal,
       allInvestments: investments,
       allCashFlows: cashFlows,
-      conversionService: conversionService,
+      batchConverter: batchConverter,
       baseCurrency: baseCurrency,
     );
     progressList.add(progress);

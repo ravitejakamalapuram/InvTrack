@@ -17,3 +17,7 @@
 ## 2024-05-19 - Replace .where().fold() with O(N) map
 **Learning:** Chaining `.where().fold()` inside a loop (like iterating through investments and filtering all cash flows) results in `O(N * M)` complexity and creates unnecessary iterable allocations and closures.
 **Action:** Pre-calculate grouped totals in a single `O(N)` pass using a `Map`, then access them in `O(1)` during the secondary loop. This changes complexity to `O(N + M)` and significantly improves performance for list aggregations.
+
+## 2024-05-19 - Batch API Calls for Currency Conversion
+**Learning:** Making sequential `await conversionService.convert` calls in a loop (like `GoalProgressCalculator.calculateMultiCurrency` looping over cashflows) causes an N+1 performance bottleneck, taking significantly longer.
+**Action:** Replace `conversionService.convert` inside loops with `batchConverter.batchConvert()`. `batchConvert` handles deduplication of (date, currency) keys and parallel fetching of required conversions, resulting in a single asynchronous wait that is orders of magnitude faster.

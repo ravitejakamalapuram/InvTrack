@@ -174,8 +174,9 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                                             ? AppColors.primaryDark.withValues(
                                                 alpha: 0.2,
                                               )
-                                            : AppColors.primaryLight
-                                                  .withValues(alpha: 0.2))
+                                            : AppColors.primaryLight.withValues(
+                                                alpha: 0.2,
+                                              ))
                                       : (isDark
                                             ? AppColors.neutral800Dark
                                             : AppColors.neutral100Light),

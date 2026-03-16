@@ -22,10 +22,7 @@ class GoogleSignInHandler {
   final WidgetRef ref;
   final BuildContext context;
 
-  GoogleSignInHandler({
-    required this.ref,
-    required this.context,
-  });
+  GoogleSignInHandler({required this.ref, required this.context});
 
   /// Handles the Google Sign-In flow with account linking.
   ///
@@ -112,4 +109,3 @@ class GoogleSignInHandler {
     return false;
   }
 }
-

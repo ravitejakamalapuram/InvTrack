@@ -27,9 +27,7 @@ Future<bool?> showBackupMergeDialog(BuildContext context, WidgetRef ref) async {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'This Google account is already registered.',
-          ),
+          const Text('This Google account is already registered.'),
           const SizedBox(height: 16),
           const Text(
             'Your guest data will be backed up as a ZIP file. After signing in, you can import it to merge with existing data.',
@@ -60,9 +58,7 @@ Future<void> _handleBackupAndSignIn(BuildContext context, WidgetRef ref) async {
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => const Center(
-      child: CircularProgressIndicator(),
-    ),
+    builder: (context) => const Center(child: CircularProgressIndicator()),
   );
 
   try {
@@ -104,11 +100,7 @@ Future<void> _handleBackupAndSignIn(BuildContext context, WidgetRef ref) async {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 64,
-              ),
+              const Icon(Icons.check_circle, color: Colors.green, size: 64),
               const SizedBox(height: 16),
               const Text('Your guest data has been backed up.'),
               const SizedBox(height: 8),
@@ -154,4 +146,3 @@ Future<void> _handleBackupAndSignIn(BuildContext context, WidgetRef ref) async {
     }
   }
 }
-

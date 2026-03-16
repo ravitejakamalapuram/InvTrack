@@ -139,7 +139,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   iconColor: Colors.orange,
                   title: l10n.debugSettings,
                   subtitle: l10n.advancedToolsAndDiagnostics,
-                  onTap: () => _navigateTo(context, const DebugSettingsScreen()),
+                  onTap: () =>
+                      _navigateTo(context, const DebugSettingsScreen()),
                 ),
               ],
             ),
@@ -225,53 +226,48 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
     final currencySwitchStatus = ref.watch(currencySwitchProvider);
 
     // Listen for currency switch completion (moved from SettingsScreen)
-    ref.listen<CurrencySwitchStatus>(
-      currencySwitchProvider,
-      (previous, next) {
-        if (next.isSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.currencySwitchedSuccessfully(next.targetCurrency!),
-              ),
-              backgroundColor: AppColors.successLight,
-              duration: const Duration(seconds: 2),
+    ref.listen<CurrencySwitchStatus>(currencySwitchProvider, (previous, next) {
+      if (next.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.currencySwitchedSuccessfully(next.targetCurrency!),
             ),
-          );
-          // Reset state after showing success (guard with mounted check)
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              ref.read(currencySwitchProvider.notifier).reset();
-            }
-          });
-        } else if (next.isFailed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                l10n.currencySwitchFailed(next.targetCurrency!),
-              ),
-              backgroundColor: AppColors.errorLight,
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: l10n.retry,
-                textColor: Colors.white,
-                onPressed: () {
-                  ref
-                      .read(currencySwitchProvider.notifier)
-                      .switchCurrency(next.targetCurrency!);
-                },
-              ),
+            backgroundColor: AppColors.successLight,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        // Reset state after showing success (guard with mounted check)
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            ref.read(currencySwitchProvider.notifier).reset();
+          }
+        });
+      } else if (next.isFailed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.currencySwitchFailed(next.targetCurrency!)),
+            backgroundColor: AppColors.errorLight,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: l10n.retry,
+              textColor: Colors.white,
+              onPressed: () {
+                ref
+                    .read(currencySwitchProvider.notifier)
+                    .switchCurrency(next.targetCurrency!);
+              },
             ),
-          );
-          // Reset state after showing error (guard with mounted check)
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) {
-              ref.read(currencySwitchProvider.notifier).reset();
-            }
-          });
-        }
-      },
-    );
+          ),
+        );
+        // Reset state after showing error (guard with mounted check)
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            ref.read(currencySwitchProvider.notifier).reset();
+          }
+        });
+      }
+    });
 
     final tile = SettingsValueTile(
       icon: Icons.currency_exchange_rounded,
@@ -282,7 +278,8 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
           : currency,
       trailing: currencySwitchStatus.isFetchingRates
           ? Semantics(
-              label: currencySwitchStatus.fetchedRates != null &&
+              label:
+                  currencySwitchStatus.fetchedRates != null &&
                       currencySwitchStatus.totalRates != null
                   ? l10n.loadingProgress(
                       currencySwitchStatus.fetchedRates!,
@@ -351,40 +348,35 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.selectCurrency,
-              style: AppTypography.h3,
-            ),
+            Text(l10n.selectCurrency, style: AppTypography.h3),
             SizedBox(height: AppSpacing.md),
-            ...supportedCurrencies.entries.map(
-              (entry) {
-                final code = entry.key;
-                final name = entry.value;
-                final isSelected = settings.currency == code;
+            ...supportedCurrencies.entries.map((entry) {
+              final code = entry.key;
+              final name = entry.value;
+              final isSelected = settings.currency == code;
 
-                return ListTile(
-                  leading: Icon(
-                    isSelected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    color: isSelected
-                        ? AppColors.primaryLight
-                        : (isDark
+              return ListTile(
+                leading: Icon(
+                  isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: isSelected
+                      ? AppColors.primaryLight
+                      : (isDark
                             ? AppColors.neutral400Dark
                             : AppColors.neutral400Light),
-                  ),
-                  title: Text(name),
-                  onTap: () {
-                    // Close the bottom sheet
-                    Navigator.pop(context);
-                    // Trigger currency switch with rate pre-fetching
-                    ref
-                        .read(currencySwitchProvider.notifier)
-                        .switchCurrency(code);
-                  },
-                );
-              },
-            ),
+                ),
+                title: Text(name),
+                onTap: () {
+                  // Close the bottom sheet
+                  Navigator.pop(context);
+                  // Trigger currency switch with rate pre-fetching
+                  ref
+                      .read(currencySwitchProvider.notifier)
+                      .switchCurrency(code);
+                },
+              );
+            }),
           ],
         ),
       ),

@@ -11,12 +11,7 @@ import 'settings_provider.dart';
 part 'currency_switch_provider.g.dart';
 
 /// State for currency switch operation
-enum CurrencySwitchState {
-  idle,
-  fetchingRates,
-  success,
-  failed,
-}
+enum CurrencySwitchState { idle, fetchingRates, success, failed }
 
 /// Currency switch status
 class CurrencySwitchStatus {
@@ -35,37 +30,37 @@ class CurrencySwitchStatus {
   });
 
   const CurrencySwitchStatus.idle()
-      : state = CurrencySwitchState.idle,
-        errorMessage = null,
-        targetCurrency = null,
-        totalRates = null,
-        fetchedRates = null;
+    : state = CurrencySwitchState.idle,
+      errorMessage = null,
+      targetCurrency = null,
+      totalRates = null,
+      fetchedRates = null;
 
   const CurrencySwitchStatus.fetchingRates({
     required String targetCurrency,
     required int totalRates,
     required int fetchedRates,
-  })  : state = CurrencySwitchState.fetchingRates,
-        errorMessage = null,
-        targetCurrency = targetCurrency,
-        totalRates = totalRates,
-        fetchedRates = fetchedRates;
+  }) : state = CurrencySwitchState.fetchingRates,
+       errorMessage = null,
+       targetCurrency = targetCurrency,
+       totalRates = totalRates,
+       fetchedRates = fetchedRates;
 
   const CurrencySwitchStatus.success({required String targetCurrency})
-      : state = CurrencySwitchState.success,
-        errorMessage = null,
-        targetCurrency = targetCurrency,
-        totalRates = null,
-        fetchedRates = null;
+    : state = CurrencySwitchState.success,
+      errorMessage = null,
+      targetCurrency = targetCurrency,
+      totalRates = null,
+      fetchedRates = null;
 
   const CurrencySwitchStatus.failed({
     String? errorMessage,
     required String targetCurrency,
-  })  : state = CurrencySwitchState.failed,
-        errorMessage = errorMessage,
-        targetCurrency = targetCurrency,
-        totalRates = null,
-        fetchedRates = null;
+  }) : state = CurrencySwitchState.failed,
+       errorMessage = errorMessage,
+       targetCurrency = targetCurrency,
+       totalRates = null,
+       fetchedRates = null;
 
   bool get isIdle => state == CurrencySwitchState.idle;
   bool get isFetchingRates => state == CurrencySwitchState.fetchingRates;
@@ -184,10 +179,7 @@ class CurrencySwitch extends _$CurrencySwitch {
 
         LoggerService.info(
           'Currency switched successfully (no rates needed)',
-          metadata: {
-            'from': currentCurrency,
-            'to': newCurrency,
-          },
+          metadata: {'from': currentCurrency, 'to': newCurrency},
         );
         return;
       }
@@ -209,10 +201,7 @@ class CurrencySwitch extends _$CurrencySwitch {
 
       for (final fromCurrency in uniqueCurrencies) {
         // Fetch rate (this will cache it)
-        await conversionService.getRate(
-          from: fromCurrency,
-          to: newCurrency,
-        );
+        await conversionService.getRate(from: fromCurrency, to: newCurrency);
 
         fetchedCount++;
 
@@ -271,10 +260,7 @@ class CurrencySwitch extends _$CurrencySwitch {
         'Currency switch failed',
         error: e,
         stackTrace: st,
-        metadata: {
-          'from': currentCurrency,
-          'to': newCurrency,
-        },
+        metadata: {'from': currentCurrency, 'to': newCurrency},
       );
     }
   }
@@ -284,4 +270,3 @@ class CurrencySwitch extends _$CurrencySwitch {
     state = const CurrencySwitchStatus.idle();
   }
 }
-

@@ -33,9 +33,7 @@ class DebugSettingsScreen extends ConsumerWidget {
     final seedState = ref.watch(seedDataStateProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.debugSettings, style: AppTypography.h3),
-      ),
+      appBar: AppBar(title: Text(l10n.debugSettings, style: AppTypography.h3)),
       body: ListView(
         children: [
           // Debug Mode Toggle
@@ -50,7 +48,9 @@ class DebugSettingsScreen extends ConsumerWidget {
                 value: isDebugEnabled,
                 onChanged: (value) async {
                   try {
-                    await ref.read(debugModeProvider.notifier).setEnabled(value);
+                    await ref
+                        .read(debugModeProvider.notifier)
+                        .setEnabled(value);
 
                     // Only pop if write succeeded and debug mode was disabled
                     if (!value && context.mounted) {
@@ -164,7 +164,10 @@ class DebugSettingsScreen extends ConsumerWidget {
   }
 
   /// Handle clearing sample data
-  Future<void> _handleClearSampleData(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleClearSampleData(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final sampleDataState = ref.read(sampleDataModeProvider);
 
@@ -225,12 +228,7 @@ class DebugSettingsScreen extends ConsumerWidget {
 
         // Handle error with centralized error handler
         if (context.mounted) {
-          ErrorHandler.handle(
-            e,
-            st,
-            context: context,
-            showFeedback: true,
-          );
+          ErrorHandler.handle(e, st, context: context, showFeedback: true);
 
           // Show user-facing error message
           ScaffoldMessenger.of(context).showSnackBar(
@@ -293,10 +291,14 @@ class DebugSettingsScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: AppTypography.bodyMedium),
-          Text(value, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            value,
+            style: AppTypography.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-

@@ -265,10 +265,7 @@ class FirebaseAuthRepository implements AuthRepository {
         error: e,
         stackTrace: stackTrace,
       );
-      throw AuthException.signInFailed(
-        cause: e,
-        stackTrace: stackTrace,
-      );
+      throw AuthException.signInFailed(cause: e, stackTrace: stackTrace);
     }
   }
 

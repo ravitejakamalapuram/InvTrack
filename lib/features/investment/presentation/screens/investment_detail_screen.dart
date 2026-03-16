@@ -80,11 +80,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     // to ensure WCAG 4.5:1 contrast ratio (Rule 7.2)
     final isLightBackground = primaryColor.computeLuminance() > 0.5;
     final foregroundColor = isLightBackground
-        ? Colors.black.withValues(alpha: 0.87)  // Dark text on light background
-        : Colors.white.withValues(alpha: 0.95);  // Light text on dark background
+        ? Colors.black.withValues(alpha: 0.87) // Dark text on light background
+        : Colors.white.withValues(alpha: 0.95); // Light text on dark background
     final scrimColor = isLightBackground
-        ? Colors.black.withValues(alpha: 0.08)  // Light scrim on light background
-        : Colors.white.withValues(alpha: 0.15);  // Dark scrim on dark background
+        ? Colors.black.withValues(
+            alpha: 0.08,
+          ) // Light scrim on light background
+        : Colors.white.withValues(alpha: 0.15); // Dark scrim on dark background
 
     return Scaffold(
       backgroundColor: isDark
@@ -96,7 +98,9 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         slivers: [
           // Hero App Bar with pinned navigation
           SliverAppBar(
-            expandedHeight: widget.investment.notes?.isNotEmpty ?? false ? 200 : 160,
+            expandedHeight: widget.investment.notes?.isNotEmpty ?? false
+                ? 200
+                : 160,
             pinned: true,
             backgroundColor: primaryColor,
             surfaceTintColor: Colors.transparent,
@@ -251,7 +255,8 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                         if (widget.investment.notes?.isNotEmpty ?? false) ...[
                           const SizedBox(height: 12),
                           Semantics(
-                            label: '${l10n.notesLabel}: ${widget.investment.notes!}',
+                            label:
+                                '${l10n.notesLabel}: ${widget.investment.notes!}',
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(

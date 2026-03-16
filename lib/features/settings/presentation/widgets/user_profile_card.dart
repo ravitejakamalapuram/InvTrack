@@ -25,7 +25,8 @@ class UserProfileCard extends ConsumerWidget {
         if (user == null) return const SizedBox.shrink();
 
         final isAnonymous = user.isAnonymous;
-        final displayName = user.displayName ?? (isAnonymous ? 'Guest' : 'User');
+        final displayName =
+            user.displayName ?? (isAnonymous ? 'Guest' : 'User');
         final email = user.email;
         final photoUrl = user.photoUrl;
 
@@ -103,7 +104,7 @@ class UserProfileCard extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      ),
+                ),
               ),
               SizedBox(width: AppSpacing.md),
               // User info
@@ -174,7 +175,10 @@ class UserProfileCard extends ConsumerWidget {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 44), // WCAG 44dp minimum
+                            minimumSize: const Size(
+                              double.infinity,
+                              44,
+                            ), // WCAG 44dp minimum
                             padding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.sm,
                               vertical: AppSpacing.xs,
