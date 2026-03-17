@@ -31,14 +31,13 @@ class DocumentStorageService {
   /// Validates that the path is within the allowed documents directory
   Future<bool> _isSafePath(String path) async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final canonicalAppDir = path_lib.canonicalize(appDir.path);
+      final docsDir = await _documentsDirectory;
+      final canonicalDocsDir = path_lib.canonicalize(docsDir.path);
       final canonicalPath = path_lib.canonicalize(path);
 
-      // Allow access to anything within the application documents directory
-      // This includes the specific user's documents folder
-      return path_lib.isWithin(canonicalAppDir, canonicalPath) ||
-          canonicalPath == canonicalAppDir;
+      // Allow access only within the specific user's documents folder
+      return path_lib.isWithin(canonicalDocsDir, canonicalPath) ||
+          canonicalPath == canonicalDocsDir;
     } catch (e) {
       LoggerService.warn('Security: Failed to validate path safety', error: e);
       return false;
