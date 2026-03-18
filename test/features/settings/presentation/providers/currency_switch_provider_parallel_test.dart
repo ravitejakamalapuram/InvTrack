@@ -172,6 +172,10 @@ void main() {
         // Close subscription after operation completes
         subscription.close();
 
+        // CRITICAL: Verify cache was cleared during currency switch
+        // This ensures stale exchange rates don't persist across currency changes
+        verify(() => mockConversionService.clearCache()).called(1);
+
         // Verify all rates were fetched
         verify(() => mockConversionService.getRate(
               from: 'USD',

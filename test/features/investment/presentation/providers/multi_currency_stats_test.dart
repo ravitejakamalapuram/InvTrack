@@ -168,6 +168,7 @@ class _MockCurrencyConversionService implements CurrencyConversionService {
   }
 
   // Helper method for testing (not part of interface)
+  @override
   Future<void> clearCache() async {}
 
   @override
