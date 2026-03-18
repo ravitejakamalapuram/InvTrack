@@ -20,8 +20,8 @@ env:
 
 # Prevent concurrent deployments to avoid conflicts
 concurrency:
-  group: android-deploy-${{ github.ref }}
-  cancel-in-progress: false
+  group: android-deploy-${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
