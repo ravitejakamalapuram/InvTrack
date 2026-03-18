@@ -18,9 +18,15 @@ env:
   # App size threshold in bytes (20 MB)
   MAX_APP_SIZE: 20971520
 
+# Prevent concurrent deployments to avoid conflicts
+concurrency:
+  group: android-deploy-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    timeout-minutes: 60  # Prevent hanging deployments
 
     steps:
       - name: Checkout code
@@ -164,14 +170,14 @@ jobs:
           echo "What's New content:"
           cat whatsnew/whatsnew-en-US
 
-      - name: Deploy to Google Play (Production)
+      - name: Deploy to Google Play (Closed Testing)
         id: deploy
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           packageName: com.invtracker.inv_tracker
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: production
+          track: alpha
           status: completed
           releaseName: v${{ steps.version.outputs.version }}
           whatsNewDirectory: whatsnew
@@ -280,7 +286,7 @@ jobs:
           body: |
             ## Release v${{ steps.version.outputs.version }}
 
-            App has been deployed to Google Play production track.
+            App has been deployed to Google Play Closed Testing (alpha) track.
 
             ### 📦 App Size
             ${{ steps.app_size.outputs.size_mb }} MB

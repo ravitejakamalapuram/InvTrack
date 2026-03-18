@@ -111,9 +111,12 @@ class SettingsNotifier extends Notifier<SettingsState> {
     //
     // The automatic rebuild via the dependency chain is sufficient and correct.
 
-    // CRITICAL FIX #3: Invalidate currency conversion service to clear cached rates
-    // This ensures exchange rates are refetched for the new currency pair
-    ref.invalidate(currencyConversionServiceProvider);
+    // CRITICAL FIX #3: Clear cached exchange rates for new currency
+    // Use clearCache() instead of ref.invalidate() to preserve:
+    // - Circuit breaker state (prevents unnecessary API failures)
+    // - Performance metrics (preserves monitoring data)
+    // - In-flight requests (prevents duplicate API calls)
+    await ref.read(currencyConversionServiceProvider).clearCache();
 
     // Track analytics
     ref

@@ -128,11 +128,11 @@ Supports 40+ currencies with proper symbols and locale-aware formatting.
 // Get currency symbol
 final symbol = getCurrencySymbol('INR'); // Returns '₹'
 
-// Format currency
+// Format currency (full precision)
 final formatted = formatCurrency(100000, '₹', 'en_IN'); // Returns '₹1,00,000'
 
-// Compact Indian notation
-final compact = formatCompactIndian(1500000, symbol: '₹'); // Returns '₹1.5Cr'
+// Compact notation (locale-aware)
+final compact = formatCompactCurrency(1500000, symbol: '₹', locale: 'en_IN'); // Returns '₹1.5Cr'
 ```
 
 ## Usage
