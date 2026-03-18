@@ -20,7 +20,7 @@ env:
 
 # Prevent concurrent deployments to avoid conflicts
 concurrency:
-  group: android-deploy-${{ github.workflow }}-${{ github.ref_name }}
+  group: android-deploy-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -286,7 +286,7 @@ jobs:
           body: |
             ## Release v${{ steps.version.outputs.version }}
 
-            App has been deployed to Google Play production track.
+            App has been deployed to Google Play Closed Testing (alpha) track.
 
             ### 📦 App Size
             ${{ steps.app_size.outputs.size_mb }} MB
