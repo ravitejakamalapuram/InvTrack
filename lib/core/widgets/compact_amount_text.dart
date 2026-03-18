@@ -111,6 +111,7 @@ class CompactAmountText extends ConsumerWidget {
               ),
             ),
             IconButton(
+              tooltip: 'Copy exact amount',
               icon: const Icon(
                 Icons.copy_rounded,
                 color: Colors.white,
@@ -142,7 +143,6 @@ class CompactAmountText extends ConsumerWidget {
                   ),
                 );
               },
-              tooltip: 'Copy',
             ),
           ],
         ),
