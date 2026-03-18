@@ -47,7 +47,12 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
   );
 
   // Sum converted amounts
-  return convertedCashFlows.fold<double>(0.0, (sum, cf) => sum + cf.amount);
+  // Optimization: Replace .fold() with a standard loop to avoid closure overhead
+  double sum = 0.0;
+  for (final cf in convertedCashFlows) {
+    sum += cf.amount;
+  }
+  return sum;
 }
 
 /// Provider for multi-currency returned amount calculation
@@ -82,7 +87,12 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   );
 
   // Sum converted amounts
-  return convertedCashFlows.fold<double>(0.0, (sum, cf) => sum + cf.amount);
+  // Optimization: Replace .fold() with a standard loop to avoid closure overhead
+  double sum = 0.0;
+  for (final cf in convertedCashFlows) {
+    sum += cf.amount;
+  }
+  return sum;
 }
 
 /// Provider for multi-currency XIRR calculation
