@@ -852,12 +852,20 @@ class CurrencyConversionService {
           .get()
           .timeout(_writeTimeout);
 
-      // Batch delete
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
+      // Batch delete in chunks of 500 (Firestore limit)
+      const batchSize = 500;
+      for (var i = 0; i < snapshot.docs.length; i += batchSize) {
+        final batch = _firestore.batch();
+        final end = (i + batchSize < snapshot.docs.length)
+            ? i + batchSize
+            : snapshot.docs.length;
+
+        for (var j = i; j < end; j++) {
+          batch.delete(snapshot.docs[j].reference);
+        }
+
+        await batch.commit().timeout(_writeTimeout);
       }
-      await batch.commit().timeout(_writeTimeout);
     } on TimeoutException {
       // Offline - will sync when back online
     }
