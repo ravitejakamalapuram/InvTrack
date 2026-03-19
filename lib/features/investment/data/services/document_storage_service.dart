@@ -31,15 +31,18 @@ class DocumentStorageService {
   /// Validates that the path is within the allowed documents directory
   Future<bool> _isSafePath(String path) async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final canonicalAppDir = path_lib.canonicalize(appDir.path);
-      final canonicalPath = path_lib.canonicalize(path);
+      final docsDir = await _documentsDirectory;
+      // Resolve symlinks to prevent symlink-based path traversal attacks
+      final resolvedDocsDir = Directory(docsDir.path).resolveSymbolicLinksSync();
+      final resolvedPath = File(path).resolveSymbolicLinksSync();
 
-      // Allow access to anything within the application documents directory
-      // This includes the specific user's documents folder
-      return path_lib.isWithin(canonicalAppDir, canonicalPath) ||
-          canonicalPath == canonicalAppDir;
+      // Security: Only allow access to documents within this specific user's directory.
+      // Validating against the global app directory would allow cross-account local data access
+      // if multiple users log in on the same device and path traversal is attempted.
+      return path_lib.isWithin(resolvedDocsDir, resolvedPath) ||
+          resolvedPath == resolvedDocsDir;
     } catch (e) {
+      // Treat any IO exceptions (including symlink resolution failures) as unsafe
       LoggerService.warn('Security: Failed to validate path safety', error: e);
       return false;
     }
