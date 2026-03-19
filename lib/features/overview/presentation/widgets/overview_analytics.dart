@@ -33,12 +33,14 @@ class MonthlyCashFlowTrend extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        // Optimization: Replace list creation and .reduce() with faster math.max calls
-        // to avoid allocating a new list and invoking closures on every iteration.
-        final maxValue = data.fold<double>(
-          0,
-          (max, d) => math.max(max, math.max(d.inflows, d.outflows)),
-        );
+        // Optimization: Replace .fold() with standard loop to avoid closure overhead
+        double maxValue = 0.0;
+        for (final d in data) {
+          final maxVal = math.max(d.inflows, d.outflows);
+          if (maxVal > maxValue) {
+            maxValue = maxVal;
+          }
+        }
 
         return GlassCard(
           child: Column(
@@ -183,7 +185,11 @@ class TypeDistributionChart extends ConsumerWidget {
       data: (data) {
         if (data.isEmpty) return const SizedBox.shrink();
 
-        final total = data.fold<double>(0, (sum, d) => sum + d.totalInvested);
+        // Optimization: Replace .fold() with standard loop to avoid closure overhead
+        double total = 0.0;
+        for (final d in data) {
+          total += d.totalInvested;
+        }
         if (total == 0) return const SizedBox.shrink();
 
         final colors = [
