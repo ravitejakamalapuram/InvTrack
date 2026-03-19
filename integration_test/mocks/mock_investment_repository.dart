@@ -46,9 +46,8 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }) {
     if (investments != null) _investments.addAll(investments);
     if (cashFlows != null) _cashFlows.addAll(cashFlows);
-    if (archivedInvestments != null) {
+    if (archivedInvestments != null)
       _archivedInvestments.addAll(archivedInvestments);
-    }
     if (archivedCashFlows != null) _archivedCashFlows.addAll(archivedCashFlows);
   }
 

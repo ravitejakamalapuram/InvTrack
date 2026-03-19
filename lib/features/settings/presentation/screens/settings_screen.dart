@@ -258,7 +258,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
                 onPressed: () {
                   ref
                       .read(currencySwitchProvider.notifier)
-                      .switchCurrencyDebounced(next.targetCurrency!);
+                      .switchCurrency(next.targetCurrency!);
                 },
               ),
             ),
@@ -377,10 +377,10 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
                   onTap: () {
                     // Close the bottom sheet
                     Navigator.pop(context);
-                    // Trigger currency switch with debouncing (prevents race conditions)
+                    // Trigger currency switch with rate pre-fetching
                     ref
                         .read(currencySwitchProvider.notifier)
-                        .switchCurrencyDebounced(code);
+                        .switchCurrency(code);
                   },
                 );
               },

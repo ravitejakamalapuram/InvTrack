@@ -52,13 +52,13 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 // Get currency symbol
 final symbol = getCurrencySymbol('INR'); // '₹'
 
-// Format currency (full precision)
+// Format currency
 final formatted = formatCurrency(100000, '₹', 'en_IN'); // '₹1,00,000'
 
-// Compact notation (locale-aware)
-final compact = formatCompactCurrency(1500000, symbol: '₹', locale: 'en_IN'); // '₹1.5Cr'
+// Compact Indian notation
+final compact = formatCompactIndian(1500000, symbol: '₹'); // '₹1.5Cr'
 
-// Using providers (recommended)
+// Using providers
 final currencyFormat = ref.watch(currencyFormatProvider);
 final formatted = currencyFormat.format(100000); // Uses user's currency
 ```

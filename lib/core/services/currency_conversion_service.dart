@@ -212,53 +212,6 @@ class CurrencyConversionService {
   /// Reset metrics
   void resetMetrics() => _metrics.reset();
 
-  /// Clear all cached exchange rates (memory + Firestore)
-  ///
-  /// This is a surgical cache clear that preserves:
-  /// - Circuit breaker state (prevents unnecessary API failures)
-  /// - Metrics (preserves performance tracking)
-  /// - In-flight requests (prevents duplicate API calls)
-  ///
-  /// Use this instead of provider invalidation when switching currencies
-  /// to avoid losing circuit breaker protection and performance metrics.
-  Future<void> clearCache() async {
-    // Clear memory cache
-    _memoryCache.clear();
-
-    // Clear Firestore cache (batch delete for efficiency)
-    try {
-      final snapshot = await _exchangeRatesRef.get();
-      if (snapshot.docs.isEmpty) return;
-
-      // Firestore batch limit is 500 operations
-      const batchSize = 500;
-      final docs = snapshot.docs;
-      var totalDeleted = 0;
-
-      // Process in chunks of 500
-      for (var i = 0; i < docs.length; i += batchSize) {
-        final end = (i + batchSize < docs.length) ? i + batchSize : docs.length;
-        final chunk = docs.sublist(i, end);
-
-        final batch = _firestore.batch();
-        for (final doc in chunk) {
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-        totalDeleted += chunk.length;
-      }
-
-      if (kDebugMode) {
-        debugPrint('✅ Cleared $totalDeleted cached exchange rates');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Failed to clear Firestore cache: $e');
-      }
-      // Don't throw - cache clear is best-effort
-    }
-  }
-
   // Collection reference for exchange rate cache
   CollectionReference<Map<String, dynamic>> get _exchangeRatesRef =>
       _firestore.collection('users').doc(_userId).collection('exchangeRates');
@@ -852,20 +805,12 @@ class CurrencyConversionService {
           .get()
           .timeout(_writeTimeout);
 
-      // Batch delete in chunks of 500 (Firestore limit)
-      const batchSize = 500;
-      for (var i = 0; i < snapshot.docs.length; i += batchSize) {
-        final batch = _firestore.batch();
-        final end = (i + batchSize < snapshot.docs.length)
-            ? i + batchSize
-            : snapshot.docs.length;
-
-        for (var j = i; j < end; j++) {
-          batch.delete(snapshot.docs[j].reference);
-        }
-
-        await batch.commit().timeout(_writeTimeout);
+      // Batch delete
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
       }
+      await batch.commit().timeout(_writeTimeout);
     } on TimeoutException {
       // Offline - will sync when back online
     }
