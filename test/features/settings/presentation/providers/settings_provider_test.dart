@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../mocks/mock_analytics_service.dart';
-import '../../../../mocks/mock_currency_conversion_service.dart';
 
 void main() {
   group('SettingsState', () {
@@ -51,19 +49,16 @@ void main() {
     late ProviderContainer container;
     late SharedPreferences prefs;
     late FakeAnalyticsService fakeAnalytics;
-    late MockCurrencyConversionService mockCurrencyService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
       fakeAnalytics = FakeAnalyticsService();
-      mockCurrencyService = MockCurrencyConversionService();
 
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider.overrideWithValue(mockCurrencyService),
         ],
       );
     });
@@ -71,7 +66,6 @@ void main() {
     tearDown(() {
       container.dispose();
       fakeAnalytics.reset();
-      mockCurrencyService.reset();
     });
 
     test('initial state uses default values when no prefs exist', () {
@@ -92,7 +86,6 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(newPrefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider.overrideWithValue(mockCurrencyService),
         ],
       );
       addTearDown(newContainer.dispose);
@@ -198,7 +191,6 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(newPrefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider.overrideWithValue(mockCurrencyService),
         ],
       );
       addTearDown(newContainer.dispose);

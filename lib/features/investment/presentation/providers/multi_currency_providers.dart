@@ -46,13 +46,8 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  // Optimization: Replace .fold() with standard loop
   // Sum converted amounts
-  double total = 0.0;
-  for (final cf in convertedCashFlows) {
-    total += cf.amount;
-  }
-  return total;
+  return convertedCashFlows.fold<double>(0.0, (sum, cf) => sum + cf.amount);
 }
 
 /// Provider for multi-currency returned amount calculation
@@ -86,13 +81,8 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  // Optimization: Replace .fold() with standard loop
   // Sum converted amounts
-  double total = 0.0;
-  for (final cf in convertedCashFlows) {
-    total += cf.amount;
-  }
-  return total;
+  return convertedCashFlows.fold<double>(0.0, (sum, cf) => sum + cf.amount);
 }
 
 /// Provider for multi-currency XIRR calculation

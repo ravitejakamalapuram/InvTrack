@@ -1,14 +1,10 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/analytics/analytics_service.dart';
-import '../../../../core/error/app_exception.dart';
 import '../../../../core/logging/logger_service.dart';
-import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/services/currency_conversion_service.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../investment/domain/entities/transaction_entity.dart';
 import '../../../investment/presentation/providers/investment_providers.dart';
 import 'settings_provider.dart';
 
@@ -30,57 +26,58 @@ class CurrencySwitchStatus {
   final int? totalRates;
   final int? fetchedRates;
 
-  /// Cached progress value (pre-calculated to avoid repeated division on every frame)
-  final double? _cachedProgress;
-
   const CurrencySwitchStatus({
     required this.state,
     this.errorMessage,
     this.targetCurrency,
     this.totalRates,
     this.fetchedRates,
-  }) : _cachedProgress = null;
+  });
 
   const CurrencySwitchStatus.idle()
       : state = CurrencySwitchState.idle,
         errorMessage = null,
         targetCurrency = null,
         totalRates = null,
-        fetchedRates = null,
-        _cachedProgress = null;
+        fetchedRates = null;
 
-  CurrencySwitchStatus.fetchingRates({
-    required this.targetCurrency,
-    required int this.totalRates,
-    required int this.fetchedRates,
+  const CurrencySwitchStatus.fetchingRates({
+    required String targetCurrency,
+    required int totalRates,
+    required int fetchedRates,
   })  : state = CurrencySwitchState.fetchingRates,
         errorMessage = null,
-        // Pre-calculate progress to avoid repeated division on every frame
-        _cachedProgress = totalRates > 0 ? fetchedRates / totalRates : 0.0;
+        targetCurrency = targetCurrency,
+        totalRates = totalRates,
+        fetchedRates = fetchedRates;
 
-  const CurrencySwitchStatus.success({required this.targetCurrency})
+  const CurrencySwitchStatus.success({required String targetCurrency})
       : state = CurrencySwitchState.success,
         errorMessage = null,
+        targetCurrency = targetCurrency,
         totalRates = null,
-        fetchedRates = null,
-        _cachedProgress = null;
+        fetchedRates = null;
 
   const CurrencySwitchStatus.failed({
-    this.errorMessage,
-    required this.targetCurrency,
+    String? errorMessage,
+    required String targetCurrency,
   })  : state = CurrencySwitchState.failed,
+        errorMessage = errorMessage,
+        targetCurrency = targetCurrency,
         totalRates = null,
-        fetchedRates = null,
-        _cachedProgress = null;
+        fetchedRates = null;
 
   bool get isIdle => state == CurrencySwitchState.idle;
   bool get isFetchingRates => state == CurrencySwitchState.fetchingRates;
   bool get isSuccess => state == CurrencySwitchState.success;
   bool get isFailed => state == CurrencySwitchState.failed;
 
-  /// Get progress value (0.0 to 1.0)
-  /// Returns cached value to avoid repeated division on every frame during animation
-  double? get progress => _cachedProgress;
+  double? get progress {
+    if (totalRates == null || fetchedRates == null || totalRates == 0) {
+      return null;
+    }
+    return fetchedRates! / totalRates!;
+  }
 
   @override
   bool operator ==(Object other) {
@@ -108,64 +105,19 @@ class CurrencySwitchStatus {
 /// Provider for currency switch status
 @riverpod
 class CurrencySwitch extends _$CurrencySwitch {
-  Timer? _debounceTimer;
-  String? _pendingCurrency;
-
   @override
   CurrencySwitchStatus build() {
-    // Clean up timer on dispose
-    ref.onDispose(() {
-      _debounceTimer?.cancel();
-    });
-
     return const CurrencySwitchStatus.idle();
   }
 
-  /// Switch currency with debouncing (prevents race conditions from rapid selection)
+  /// Switch currency with pre-fetching of all required exchange rates
   ///
-  /// This is the public API that should be called from UI.
-  /// It debounces rapid currency changes to prevent race conditions.
-  void switchCurrencyDebounced(String newCurrency) {
-    // Cancel any pending switch
-    _debounceTimer?.cancel();
-
-    // Store pending currency
-    _pendingCurrency = newCurrency;
-
-    // Schedule switch after 300ms of inactivity
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      if (_pendingCurrency != null) {
-        _switchCurrencyImmediate(_pendingCurrency!);
-        _pendingCurrency = null;
-      }
-    });
-  }
-
-  /// Switch currency immediately (for testing)
-  ///
-  /// This method is exposed for testing purposes to avoid dealing with Timer delays.
-  /// In production code, use switchCurrencyDebounced() instead.
-  @visibleForTesting
-  Future<void> switchCurrencyImmediate(String newCurrency) async {
-    return _switchCurrencyImmediate(newCurrency);
-  }
-
-  /// Internal method: Switch currency with optimistic UI updates and parallel rate fetching
-  ///
-  /// OPTIMIZED Flow:
-  /// 1. **Optimistic Update**: Apply currency switch immediately (instant perceived speed)
-  /// 2. **Background Fetch**: Fetch all required exchange rates in parallel (5-10x faster)
-  /// 3. **Rollback on Failure**: Revert to old currency if rate fetching fails
-  /// 4. **Progress Updates**: Show granular progress as rates complete
-  ///
-  /// Benefits:
-  /// - Instant perceived speed (UI updates immediately)
-  /// - 5-10x faster actual execution (parallel fetching)
-  /// - Graceful failure handling (rollback on error)
-  /// - Real-time progress feedback (updates as each rate completes)
-  ///
-  /// Note: This is an internal method. Use switchCurrencyDebounced() from UI.
-  Future<void> _switchCurrencyImmediate(String newCurrency) async {
+  /// Flow:
+  /// 1. Show loading state (non-blocking)
+  /// 2. Fetch all required exchange rates for cashflows
+  /// 3. Only on success: Apply currency switch
+  /// 4. Show success/failure notification
+  Future<void> switchCurrency(String newCurrency) async {
     final currentCurrency = ref.read(currencyCodeProvider);
 
     // Same currency - no-op
@@ -174,30 +126,6 @@ class CurrencySwitch extends _$CurrencySwitch {
     }
 
     try {
-      // Step 0: Check connectivity before attempting switch
-      // This provides better error messages for offline users
-      final connectivityService = ref.read(connectivityServiceProvider);
-      final isConnected = await connectivityService.checkConnectivity();
-
-      if (!isConnected) {
-        // Set failed state with offline error
-        state = CurrencySwitchStatus.failed(
-          errorMessage: null, // UI will show localized offline message
-          targetCurrency: newCurrency,
-        );
-
-        LoggerService.warn(
-          'Currency switch aborted - no internet connection',
-          metadata: {
-            'from': currentCurrency,
-            'to': newCurrency,
-          },
-        );
-
-        // Throw NetworkException for consistent error handling
-        throw NetworkException.noConnection();
-      }
-
       // Analytics: Track currency switch attempt
       final analytics = ref.read(analyticsServiceProvider);
       await analytics.logEvent(
@@ -208,11 +136,7 @@ class CurrencySwitch extends _$CurrencySwitch {
         },
       );
 
-      // Step 1: OPTIMISTIC UPDATE - Apply currency switch immediately
-      // This provides instant perceived speed while rates fetch in background
-      await ref.read(settingsProvider.notifier).setCurrency(newCurrency);
-
-      // Step 1b: Set loading state (subtle indicator that rates are fetching)
+      // Step 1: Set loading state
       state = CurrencySwitchStatus.fetchingRates(
         targetCurrency: newCurrency,
         totalRates: 0,
@@ -245,7 +169,7 @@ class CurrencySwitch extends _$CurrencySwitch {
 
       // Short-circuit: no rates to fetch (all cashflows already in target currency)
       if (totalRates == 0) {
-        // Currency already set in optimistic update (line 202), no need to set again
+        await ref.read(settingsProvider.notifier).setCurrency(newCurrency);
         state = CurrencySwitchStatus.success(targetCurrency: newCurrency);
 
         // Analytics: Track successful currency switch (no rates needed)
@@ -275,43 +199,33 @@ class CurrencySwitch extends _$CurrencySwitch {
         fetchedRates: 0,
       );
 
-      // Step 4: Pre-fetch all required exchange rates (PARALLEL with progress updates)
-      //
-      // OPTIMIZATION: Use parallel fetching with Future.wait for 5-10x faster execution
-      // while maintaining granular progress updates. Each rate fetch updates progress
-      // as it completes, providing real-time feedback (e.g., "Loading: 2 of 5").
-      //
-      // Benefits:
-      // - 5-10x faster for users with multiple currencies (parallel API calls)
-      // - Still shows granular progress (updates as each rate completes)
-      // - Leverages request coalescing in CurrencyConversionService
-      // - Fails fast if any rate fetch fails (better error handling)
+      // Step 4: Pre-fetch all required exchange rates
+      // NOTE: Sequential fetching is intentional (not parallel with Future.wait)
+      // to provide granular progress updates to the UI. This allows users to see
+      // real-time progress (e.g., "Loading: 2 of 5") instead of jumping from 0% to 100%.
+      // For most users with <10 currencies, the performance difference is negligible.
       final conversionService = ref.read(currencyConversionServiceProvider);
       int fetchedCount = 0;
 
-      // Create all rate fetch futures (starts parallel execution)
-      final rateFutures = uniqueCurrencies.map((fromCurrency) async {
-        final rate = await conversionService.getRate(
+      for (final fromCurrency in uniqueCurrencies) {
+        // Fetch rate (this will cache it)
+        await conversionService.getRate(
           from: fromCurrency,
           to: newCurrency,
         );
 
-        // Update progress as each rate completes (real-time feedback)
         fetchedCount++;
+
+        // Update progress (provides real-time feedback to user)
         state = CurrencySwitchStatus.fetchingRates(
           targetCurrency: newCurrency,
           totalRates: totalRates,
           fetchedRates: fetchedCount,
         );
+      }
 
-        return rate;
-      }).toList();
-
-      // Wait for all rates to complete (parallel execution)
-      await Future.wait(rateFutures);
-
-      // Step 5: All rates fetched successfully - currency already applied (optimistic update)
-      // No need to call setCurrency again
+      // Step 5: All rates fetched successfully - apply currency switch
+      await ref.read(settingsProvider.notifier).setCurrency(newCurrency);
 
       // Step 6: Set success state
       state = CurrencySwitchStatus.success(targetCurrency: newCurrency);
@@ -335,11 +249,7 @@ class CurrencySwitch extends _$CurrencySwitch {
         },
       );
     } catch (e, st) {
-      // Step 7: ROLLBACK - Revert to old currency on failure
-      // This ensures UI consistency when rate fetching fails
-      await ref.read(settingsProvider.notifier).setCurrency(currentCurrency);
-
-      // Step 8: Set failed state
+      // Step 7: Set failed state (keep old currency)
       // Use null for errorMessage - UI will show localized l10n.currencySwitchFailed
       state = CurrencySwitchStatus.failed(
         errorMessage: null,
@@ -358,13 +268,12 @@ class CurrencySwitch extends _$CurrencySwitch {
       );
 
       LoggerService.error(
-        'Currency switch failed - rolled back to $currentCurrency',
+        'Currency switch failed',
         error: e,
         stackTrace: st,
         metadata: {
           'from': currentCurrency,
           'to': newCurrency,
-          'rolledBack': true,
         },
       );
     }
