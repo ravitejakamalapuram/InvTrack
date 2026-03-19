@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -352,6 +353,352 @@ void main() {
       // Assert
       expect(result, isNull);
     });
+  });
+
+  group('FirebaseAuthRepository - linkAnonymousToGoogle Tests', () {
+    test(
+      'linkAnonymousToGoogle succeeds: links credential, preserves UID',
+      () async {
+        // Arrange
+        const testUid = 'anon-uid-12345';
+        const testEmail = 'user@example.com';
+        const testIdToken = 'test-id-token-abc';
+
+        // Current user is anonymous
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn(testUid);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+
+        // Google sign-in returns account
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(() => mockGoogleSignInAccount.email).thenReturn(testEmail);
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn(testIdToken);
+
+        // linkWithCredential returns linked user (same UID)
+        when(
+          () => mockUser.linkWithCredential(any()),
+        ).thenAnswer((_) async => mockUserCredential);
+        when(() => mockUserCredential.user).thenReturn(mockUser);
+        when(() => mockUser.email).thenReturn(testEmail);
+        when(() => mockUser.displayName).thenReturn('Test User');
+        when(() => mockUser.photoURL).thenReturn(null);
+
+        // Act
+        final result = await repository.linkAnonymousToGoogle();
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.id, testUid); // UID preserved
+        expect(result.isAnonymous, isFalse);
+        expect(result.email, testEmail);
+
+        // Verify linkWithCredential was called (not signInWithCredential)
+        verify(() => mockUser.linkWithCredential(any())).called(1);
+        verifyNever(() => mockFirebaseAuth.signInWithCredential(any()));
+
+        // Verify authenticate and authentication were called
+        verify(() => mockGoogleSignIn.authenticate()).called(1);
+        verify(() => mockGoogleSignInAccount.authentication).called(1);
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException when no current user',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('No user is currently signed in'),
+            ),
+          ),
+        );
+
+        verifyNever(() => mockGoogleSignIn.authenticate());
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException when user is not anonymous',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(false);
+        when(() => mockUser.uid).thenReturn('google-uid-456');
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('already linked to Google'),
+            ),
+          ),
+        );
+
+        verifyNever(() => mockGoogleSignIn.authenticate());
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException for credential-already-in-use',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('anon-uid-123');
+
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(() => mockGoogleSignInAccount.email).thenReturn('g@g.com');
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn('token');
+        when(
+          () => mockUser.linkWithCredential(any()),
+        ).thenThrow(
+          FirebaseAuthException(code: 'credential-already-in-use'),
+        );
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('already registered'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException for provider-already-linked',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('anon-uid-123');
+
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(() => mockGoogleSignInAccount.email).thenReturn('g@g.com');
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn('token');
+        when(
+          () => mockUser.linkWithCredential(any()),
+        ).thenThrow(
+          FirebaseAuthException(code: 'provider-already-linked'),
+        );
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('already linked to Google'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException for invalid-credential',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('anon-uid-123');
+
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(() => mockGoogleSignInAccount.email).thenReturn('g@g.com');
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn('token');
+        when(
+          () => mockUser.linkWithCredential(any()),
+        ).thenThrow(
+          FirebaseAuthException(code: 'invalid-credential'),
+        );
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('Invalid Google credentials'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException.signInCancelled on user cancellation',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('anon-uid-123');
+
+        when(() => mockGoogleSignIn.authenticate()).thenThrow(
+          const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
+        );
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('cancelled'),
+            ),
+          ),
+        );
+
+        // No linkWithCredential should be called
+        verifyNever(() => mockUser.linkWithCredential(any()));
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle throws AuthException for other GoogleSignInException',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('anon-uid-123');
+
+        when(() => mockGoogleSignIn.authenticate()).thenThrow(
+          const GoogleSignInException(
+            code: GoogleSignInExceptionCode.interrupted,
+          ),
+        );
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(isA<AuthException>()),
+        );
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle cleans up Google Sign-In state on unexpected error',
+      () async {
+        // Arrange
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+        when(() => mockUser.uid).thenReturn('anon-uid-123');
+
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(() => mockGoogleSignInAccount.email).thenReturn('g@g.com');
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn('token');
+        // Throw a non-FirebaseAuthException, non-GoogleSignInException
+        when(
+          () => mockUser.linkWithCredential(any()),
+        ).thenThrow(Exception('Unexpected error'));
+
+        when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+
+        // Act & Assert
+        await expectLater(
+          repository.linkAnonymousToGoogle(),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.userMessage,
+              'userMessage',
+              contains('unexpected error'),
+            ),
+          ),
+        );
+
+        // Verify Google Sign-In cleanup was called
+        verify(() => mockGoogleSignIn.signOut()).called(1);
+      },
+    );
+
+    test(
+      'linkAnonymousToGoogle uses linkWithCredential, not signInWithCredential',
+      () async {
+        // Regression test: ensure we use linkWithCredential (preserve UID)
+        // and NOT signInWithCredential (would create new session)
+        const testUid = 'preserved-anon-uid';
+
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockUser.uid).thenReturn(testUid);
+        when(() => mockUser.isAnonymous).thenReturn(true);
+
+        when(
+          () => mockGoogleSignIn.authenticate(),
+        ).thenAnswer((_) async => mockGoogleSignInAccount);
+        when(() => mockGoogleSignInAccount.email).thenReturn('u@g.com');
+        when(
+          () => mockGoogleSignInAccount.authentication,
+        ).thenReturn(mockGoogleSignInAuthentication);
+        when(
+          () => mockGoogleSignInAuthentication.idToken,
+        ).thenReturn('id-token');
+
+        when(
+          () => mockUser.linkWithCredential(any()),
+        ).thenAnswer((_) async => mockUserCredential);
+        when(() => mockUserCredential.user).thenReturn(mockUser);
+        when(() => mockUser.email).thenReturn('u@g.com');
+        when(() => mockUser.displayName).thenReturn(null);
+        when(() => mockUser.photoURL).thenReturn(null);
+
+        await repository.linkAnonymousToGoogle();
+
+        // CRITICAL: must use linkWithCredential, not signInWithCredential
+        verify(() => mockUser.linkWithCredential(any())).called(1);
+        verifyNever(() => mockFirebaseAuth.signInWithCredential(any()));
+      },
+    );
   });
 
   group('FirebaseAuthRepository - Anonymous Sign-In Tests', () {
