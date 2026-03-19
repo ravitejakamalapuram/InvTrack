@@ -607,10 +607,7 @@ class NotificationService with NotificationPreferencesMixin {
     final symbol = symbols[currency] ?? currency;
 
     // Use NumberFormat for locale-aware formatting
-    final formatter = NumberFormat.currency(
-      symbol: symbol,
-      decimalDigits: 2,
-    );
+    final formatter = NumberFormat.currency(symbol: symbol, decimalDigits: 2);
     return formatter.format(amount);
   }
 

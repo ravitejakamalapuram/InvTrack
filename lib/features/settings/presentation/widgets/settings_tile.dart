@@ -169,7 +169,8 @@ class SettingsValueTile extends StatelessWidget {
           color: isDark ? Colors.white : AppColors.neutral900Light,
         ),
       ),
-      trailing: trailing ??
+      trailing:
+          trailing ??
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [

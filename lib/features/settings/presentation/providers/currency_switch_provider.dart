@@ -15,12 +15,7 @@ import 'settings_provider.dart';
 part 'currency_switch_provider.g.dart';
 
 /// State for currency switch operation
-enum CurrencySwitchState {
-  idle,
-  fetchingRates,
-  success,
-  failed,
-}
+enum CurrencySwitchState { idle, fetchingRates, success, failed }
 
 /// Currency switch status
 class CurrencySwitchStatus {
@@ -42,36 +37,36 @@ class CurrencySwitchStatus {
   }) : _cachedProgress = null;
 
   const CurrencySwitchStatus.idle()
-      : state = CurrencySwitchState.idle,
-        errorMessage = null,
-        targetCurrency = null,
-        totalRates = null,
-        fetchedRates = null,
-        _cachedProgress = null;
+    : state = CurrencySwitchState.idle,
+      errorMessage = null,
+      targetCurrency = null,
+      totalRates = null,
+      fetchedRates = null,
+      _cachedProgress = null;
 
   CurrencySwitchStatus.fetchingRates({
     required this.targetCurrency,
     required int this.totalRates,
     required int this.fetchedRates,
-  })  : state = CurrencySwitchState.fetchingRates,
-        errorMessage = null,
-        // Pre-calculate progress to avoid repeated division on every frame
-        _cachedProgress = totalRates > 0 ? fetchedRates / totalRates : 0.0;
+  }) : state = CurrencySwitchState.fetchingRates,
+       errorMessage = null,
+       // Pre-calculate progress to avoid repeated division on every frame
+       _cachedProgress = totalRates > 0 ? fetchedRates / totalRates : 0.0;
 
   const CurrencySwitchStatus.success({required this.targetCurrency})
-      : state = CurrencySwitchState.success,
-        errorMessage = null,
-        totalRates = null,
-        fetchedRates = null,
-        _cachedProgress = null;
+    : state = CurrencySwitchState.success,
+      errorMessage = null,
+      totalRates = null,
+      fetchedRates = null,
+      _cachedProgress = null;
 
   const CurrencySwitchStatus.failed({
     this.errorMessage,
     required this.targetCurrency,
-  })  : state = CurrencySwitchState.failed,
-        totalRates = null,
-        fetchedRates = null,
-        _cachedProgress = null;
+  }) : state = CurrencySwitchState.failed,
+       totalRates = null,
+       fetchedRates = null,
+       _cachedProgress = null;
 
   bool get isIdle => state == CurrencySwitchState.idle;
   bool get isFetchingRates => state == CurrencySwitchState.fetchingRates;
@@ -188,10 +183,7 @@ class CurrencySwitch extends _$CurrencySwitch {
 
         LoggerService.warn(
           'Currency switch aborted - no internet connection',
-          metadata: {
-            'from': currentCurrency,
-            'to': newCurrency,
-          },
+          metadata: {'from': currentCurrency, 'to': newCurrency},
         );
 
         // Throw NetworkException for consistent error handling
@@ -260,10 +252,7 @@ class CurrencySwitch extends _$CurrencySwitch {
 
         LoggerService.info(
           'Currency switched successfully (no rates needed)',
-          metadata: {
-            'from': currentCurrency,
-            'to': newCurrency,
-          },
+          metadata: {'from': currentCurrency, 'to': newCurrency},
         );
         return;
       }
@@ -375,4 +364,3 @@ class CurrencySwitch extends _$CurrencySwitch {
     state = const CurrencySwitchStatus.idle();
   }
 }
-

@@ -34,7 +34,9 @@ class LinkAccountUseCase {
       if (linkedUser != null && !linkedUser.isAnonymous) {
         return LinkAccountResult.success(linkedUser);
       } else {
-        return LinkAccountResult.failure('Linking failed: user is still anonymous');
+        return LinkAccountResult.failure(
+          'Linking failed: user is still anonymous',
+        );
       }
     } catch (e) {
       // Check if error is due to account already existing
@@ -82,4 +84,3 @@ class LinkAccountFailure extends LinkAccountResult {
   final String message;
   const LinkAccountFailure(this.message);
 }
-

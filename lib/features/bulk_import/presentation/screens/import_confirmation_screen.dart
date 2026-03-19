@@ -96,7 +96,8 @@ class _ImportConfirmationScreenState
               investmentId: investmentId,
               type: row.type,
               amount: row.amount,
-              currency: row.currency ?? 'USD', // Multi-currency support (Rule 21.4)
+              currency:
+                  row.currency ?? 'USD', // Multi-currency support (Rule 21.4)
               date: row.date,
               notes: row.notes,
               createdAt: now,

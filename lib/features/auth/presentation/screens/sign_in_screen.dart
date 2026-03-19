@@ -162,12 +162,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       if (!mounted) return;
 
       // Use centralized error handler for proper error mapping and user feedback
-      ErrorHandler.handle(
-        e,
-        st,
-        context: context,
-        showFeedback: true,
-      );
+      ErrorHandler.handle(e, st, context: context, showFeedback: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

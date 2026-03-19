@@ -52,7 +52,14 @@ class ExportService {
     final List<List<dynamic>> rows = [];
 
     // Header Row - matches CsvTemplateService.headers exactly
-    rows.add(['Date', 'Investment Name', 'Type', 'Amount', 'Currency', 'Notes']);
+    rows.add([
+      'Date',
+      'Investment Name',
+      'Type',
+      'Amount',
+      'Currency',
+      'Notes',
+    ]);
 
     // Data Rows
     for (final item in allCashFlows) {

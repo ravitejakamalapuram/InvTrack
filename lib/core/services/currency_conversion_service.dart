@@ -50,7 +50,9 @@ class ConversionRequest {
   });
 
   String get cacheKey {
-    final dateStr = date != null ? CurrencyConversionService.formatDate(date!) : 'live';
+    final dateStr = date != null
+        ? CurrencyConversionService.formatDate(date!)
+        : 'live';
     return '${dateStr}_$from';
   }
 }
@@ -293,7 +295,9 @@ class CurrencyConversionService {
     if (from == to) return 1.0;
 
     // Create unique key for request coalescing
-    final dateStr = date != null ? formatDate(date) : formatDate(DateTime.now());
+    final dateStr = date != null
+        ? formatDate(date)
+        : formatDate(DateTime.now());
     final requestKey = date != null
         ? 'historical_${dateStr}_${from}_$to'
         : 'live_${dateStr}_${from}_$to';
@@ -427,7 +431,9 @@ class CurrencyConversionService {
     );
 
     final rateMap = Map.fromEntries(
-      rateEntries.where((e) => e.value != null).map((e) => MapEntry(e.key, e.value!)),
+      rateEntries
+          .where((e) => e.value != null)
+          .map((e) => MapEntry(e.key, e.value!)),
     );
 
     // Apply rates to all requests
@@ -587,11 +593,7 @@ class CurrencyConversionService {
       final startTime = DateTime.now();
 
       final rate = await _circuitBreaker.execute(() async {
-        return await _fetchFromApiWithFallback(
-          from: from,
-          to: to,
-          date: date,
-        );
+        return await _fetchFromApiWithFallback(from: from, to: to, date: date);
       });
 
       final latency = DateTime.now().difference(startTime);

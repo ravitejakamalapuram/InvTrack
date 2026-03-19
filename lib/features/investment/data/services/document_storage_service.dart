@@ -33,7 +33,9 @@ class DocumentStorageService {
     try {
       final docsDir = await _documentsDirectory;
       // Resolve symlinks to prevent symlink-based path traversal attacks
-      final resolvedDocsDir = Directory(docsDir.path).resolveSymbolicLinksSync();
+      final resolvedDocsDir = Directory(
+        docsDir.path,
+      ).resolveSymbolicLinksSync();
       final resolvedPath = File(path).resolveSymbolicLinksSync();
 
       // Security: Only allow access to documents within this specific user's directory.

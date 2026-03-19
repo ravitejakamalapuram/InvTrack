@@ -28,9 +28,7 @@ class UpdateDialog extends ConsumerWidget {
     return PopScope(
       canPop: !forceUpdate,
       child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: AppSizes.borderRadiusLg,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppSizes.borderRadiusLg),
         title: Row(
           children: [
             Container(
@@ -127,7 +125,8 @@ class UpdateDialog extends ConsumerWidget {
   }
 
   Future<void> _launchUpdate(BuildContext context, String? url) async {
-    final updateUrl = url ??
+    final updateUrl =
+        url ??
         'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker';
 
     try {
@@ -138,11 +137,9 @@ class UpdateDialog extends ConsumerWidget {
       const allowedSchemes = ['https', 'http', 'market', 'itms-apps'];
       if (!allowedSchemes.contains(uri.scheme)) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.invalidUpdateLink),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.invalidUpdateLink)));
         return;
       }
 
@@ -151,23 +148,18 @@ class UpdateDialog extends ConsumerWidget {
       } else {
         if (context.mounted) {
           final l10n = AppLocalizations.of(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.couldNotOpenUpdateLink),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.couldNotOpenUpdateLink)));
         }
       }
     } catch (e) {
       if (context.mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.couldNotOpenUpdateLink),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.couldNotOpenUpdateLink)));
       }
     }
   }
 }
-

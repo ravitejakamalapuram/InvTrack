@@ -47,8 +47,9 @@ void main() {
       prefs = await SharedPreferences.getInstance();
 
       // Default mock behaviors
-      when(() => mockConnectivityService.checkConnectivity())
-          .thenAnswer((_) async => true);
+      when(
+        () => mockConnectivityService.checkConnectivity(),
+      ).thenAnswer((_) async => true);
       when(() => mockConversionService.clearCache()).thenAnswer((_) async {});
     });
 
@@ -125,11 +126,13 @@ void main() {
         final apiCallTimestamps = <DateTime>[];
 
         // Mock getRate to simulate parallel execution
-        when(() => mockConversionService.getRate(
-              from: any(named: 'from'),
-              to: any(named: 'to'),
-              date: any(named: 'date'),
-            )).thenAnswer((_) async {
+        when(
+          () => mockConversionService.getRate(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            date: any(named: 'date'),
+          ),
+        ).thenAnswer((_) async {
           apiCallTimestamps.add(DateTime.now());
           // Simulate network delay
           await Future.delayed(const Duration(milliseconds: 100));
@@ -141,18 +144,23 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-            currencyConversionServiceProvider
-                .overrideWithValue(mockConversionService),
-            connectivityServiceProvider
-                .overrideWithValue(mockConnectivityService),
-            allInvestmentsProvider
-                .overrideWith((ref) => Stream.value(investments)),
+            currencyConversionServiceProvider.overrideWithValue(
+              mockConversionService,
+            ),
+            connectivityServiceProvider.overrideWithValue(
+              mockConnectivityService,
+            ),
+            allInvestmentsProvider.overrideWith(
+              (ref) => Stream.value(investments),
+            ),
             // Mock cashflows stream with different currencies
-            allCashFlowsStreamProvider
-                .overrideWith((ref) => Stream.value(cashFlows)),
+            allCashFlowsStreamProvider.overrideWith(
+              (ref) => Stream.value(cashFlows),
+            ),
             // Override validCashFlowsProvider directly to ensure cashflows are available
-            validCashFlowsProvider
-                .overrideWith((ref) => AsyncValue.data(cashFlows)),
+            validCashFlowsProvider.overrideWith(
+              (ref) => AsyncValue.data(cashFlows),
+            ),
             // Mock authenticated state
             isAuthenticatedProvider.overrideWith((ref) => true),
           ],
@@ -177,23 +185,29 @@ void main() {
         verify(() => mockConversionService.clearCache()).called(1);
 
         // Verify all rates were fetched
-        verify(() => mockConversionService.getRate(
-              from: 'USD',
-              to: 'INR',
-              date: any(named: 'date'),
-            )).called(greaterThan(0));
+        verify(
+          () => mockConversionService.getRate(
+            from: 'USD',
+            to: 'INR',
+            date: any(named: 'date'),
+          ),
+        ).called(greaterThan(0));
 
-        verify(() => mockConversionService.getRate(
-              from: 'EUR',
-              to: 'INR',
-              date: any(named: 'date'),
-            )).called(greaterThan(0));
+        verify(
+          () => mockConversionService.getRate(
+            from: 'EUR',
+            to: 'INR',
+            date: any(named: 'date'),
+          ),
+        ).called(greaterThan(0));
 
-        verify(() => mockConversionService.getRate(
-              from: 'GBP',
-              to: 'INR',
-              date: any(named: 'date'),
-            )).called(greaterThan(0));
+        verify(
+          () => mockConversionService.getRate(
+            from: 'GBP',
+            to: 'INR',
+            date: any(named: 'date'),
+          ),
+        ).called(greaterThan(0));
 
         // Verify parallel execution (all calls within 50ms window)
         if (apiCallTimestamps.length >= 3) {
@@ -202,8 +216,11 @@ void main() {
           final timeDiff = lastCall.difference(firstCall).inMilliseconds;
 
           // All calls should start within 50ms (parallel execution)
-          expect(timeDiff, lessThan(50),
-              reason: 'Calls should be parallel, not sequential');
+          expect(
+            timeDiff,
+            lessThan(50),
+            reason: 'Calls should be parallel, not sequential',
+          );
         }
 
         // Verify success state
@@ -257,11 +274,13 @@ void main() {
         ];
 
         // Mock getRate with delay
-        when(() => mockConversionService.getRate(
-              from: any(named: 'from'),
-              to: any(named: 'to'),
-              date: any(named: 'date'),
-            )).thenAnswer((_) async {
+        when(
+          () => mockConversionService.getRate(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            date: any(named: 'date'),
+          ),
+        ).thenAnswer((_) async {
           await Future.delayed(const Duration(milliseconds: 100));
           return 1.2;
         });
@@ -271,18 +290,23 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-            currencyConversionServiceProvider
-                .overrideWithValue(mockConversionService),
-            connectivityServiceProvider
-                .overrideWithValue(mockConnectivityService),
-            allInvestmentsProvider
-                .overrideWith((ref) => Stream.value(investments)),
+            currencyConversionServiceProvider.overrideWithValue(
+              mockConversionService,
+            ),
+            connectivityServiceProvider.overrideWithValue(
+              mockConnectivityService,
+            ),
+            allInvestmentsProvider.overrideWith(
+              (ref) => Stream.value(investments),
+            ),
             // Mock cashflows stream with different currencies
-            allCashFlowsStreamProvider
-                .overrideWith((ref) => Stream.value(cashFlows)),
+            allCashFlowsStreamProvider.overrideWith(
+              (ref) => Stream.value(cashFlows),
+            ),
             // Override validCashFlowsProvider directly to ensure cashflows are available
-            validCashFlowsProvider
-                .overrideWith((ref) => AsyncValue.data(cashFlows)),
+            validCashFlowsProvider.overrideWith(
+              (ref) => AsyncValue.data(cashFlows),
+            ),
             // Mock authenticated state
             isAuthenticatedProvider.overrideWith((ref) => true),
           ],
@@ -303,10 +327,14 @@ void main() {
           await notifier.switchCurrencyImmediate('INR');
 
           // Verify we got progress updates
-          final fetchingStates =
-              states.where((s) => s.isFetchingRates).toList();
-          expect(fetchingStates.isNotEmpty, true,
-              reason: 'Should have fetching states');
+          final fetchingStates = states
+              .where((s) => s.isFetchingRates)
+              .toList();
+          expect(
+            fetchingStates.isNotEmpty,
+            true,
+            reason: 'Should have fetching states',
+          );
 
           // Verify final success state
           expect(states.last.isSuccess, true);
@@ -343,28 +371,35 @@ void main() {
         ];
 
         // Mock getRate to throw error
-        when(() => mockConversionService.getRate(
-              from: any(named: 'from'),
-              to: any(named: 'to'),
-              date: any(named: 'date'),
-            )).thenThrow(Exception('API error'));
+        when(
+          () => mockConversionService.getRate(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            date: any(named: 'date'),
+          ),
+        ).thenThrow(Exception('API error'));
 
         container = ProviderContainer(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-            currencyConversionServiceProvider
-                .overrideWithValue(mockConversionService),
-            connectivityServiceProvider
-                .overrideWithValue(mockConnectivityService),
-            allInvestmentsProvider
-                .overrideWith((ref) => Stream.value(investments)),
+            currencyConversionServiceProvider.overrideWithValue(
+              mockConversionService,
+            ),
+            connectivityServiceProvider.overrideWithValue(
+              mockConnectivityService,
+            ),
+            allInvestmentsProvider.overrideWith(
+              (ref) => Stream.value(investments),
+            ),
             // Mock cashflows stream
-            allCashFlowsStreamProvider
-                .overrideWith((ref) => Stream.value(cashFlows)),
+            allCashFlowsStreamProvider.overrideWith(
+              (ref) => Stream.value(cashFlows),
+            ),
             // Override validCashFlowsProvider directly to ensure cashflows are available
-            validCashFlowsProvider
-                .overrideWith((ref) => AsyncValue.data(cashFlows)),
+            validCashFlowsProvider.overrideWith(
+              (ref) => AsyncValue.data(cashFlows),
+            ),
             // Mock authenticated state
             isAuthenticatedProvider.overrideWith((ref) => true),
           ],

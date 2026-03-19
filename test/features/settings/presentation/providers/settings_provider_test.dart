@@ -63,7 +63,9 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider.overrideWithValue(mockCurrencyService),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockCurrencyService,
+          ),
         ],
       );
     });
@@ -92,7 +94,9 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(newPrefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider.overrideWithValue(mockCurrencyService),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockCurrencyService,
+          ),
         ],
       );
       addTearDown(newContainer.dispose);
@@ -198,7 +202,9 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(newPrefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider.overrideWithValue(mockCurrencyService),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockCurrencyService,
+          ),
         ],
       );
       addTearDown(newContainer.dispose);

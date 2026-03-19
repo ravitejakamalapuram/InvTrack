@@ -148,7 +148,9 @@ class _DocumentCard extends ConsumerWidget {
                     Text(
                       document.name,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: isDark ? Colors.white : AppColors.neutral900Light,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.neutral900Light,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -200,7 +202,9 @@ class _DocumentCard extends ConsumerWidget {
               if (!isReadOnly)
                 Icon(
                   Icons.swipe_rounded,
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.2),
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.2,
+                  ),
                   size: 18,
                 ),
             ],
@@ -232,7 +236,13 @@ class _DocumentCard extends ConsumerWidget {
           children: [
             const Icon(Icons.edit_rounded, color: Colors.white),
             const SizedBox(width: 8),
-            Text(l10n.edit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            Text(
+              l10n.edit,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -248,7 +258,13 @@ class _DocumentCard extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(l10n.delete, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            Text(
+              l10n.delete,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: 8),
             const Icon(Icons.delete_rounded, color: Colors.white),
           ],

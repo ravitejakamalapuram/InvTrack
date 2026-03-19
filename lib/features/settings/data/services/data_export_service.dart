@@ -96,13 +96,16 @@ class DataExportService {
       allDocuments.addAll(docs);
     }
 
-    LoggerService.info('Data export: fetched all data', metadata: {
-      'activeCashFlows': activeCashFlows.length,
-      'archivedCashFlows': archivedCashFlows.length,
-      'goals': goals.length,
-      'archivedGoals': archivedGoals.length,
-      'documents': allDocuments.length,
-    });
+    LoggerService.info(
+      'Data export: fetched all data',
+      metadata: {
+        'activeCashFlows': activeCashFlows.length,
+        'archivedCashFlows': archivedCashFlows.length,
+        'goals': goals.length,
+        'archivedGoals': archivedGoals.length,
+        'documents': allDocuments.length,
+      },
+    );
 
     // 2. Generate CSV files
     final cashflowsCsv = _generateCashFlowsCsv(activeCashFlows);
@@ -195,10 +198,13 @@ class DataExportService {
     final file = File(filePath);
     await file.writeAsBytes(zipData);
 
-    LoggerService.info('Export saved', metadata: {
-      'filePath': filePath,
-      'fileSizeKB': (zipData.length / 1024).toStringAsFixed(1),
-    });
+    LoggerService.info(
+      'Export saved',
+      metadata: {
+        'filePath': filePath,
+        'fileSizeKB': (zipData.length / 1024).toStringAsFixed(1),
+      },
+    );
 
     return filePath;
   }

@@ -56,4 +56,3 @@ class DebugModeNotifier extends Notifier<bool> {
     state = enabled;
   }
 }
-

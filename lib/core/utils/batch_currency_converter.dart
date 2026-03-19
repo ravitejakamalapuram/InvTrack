@@ -42,7 +42,8 @@ class BatchCurrencyConverter {
   Future<List<CashFlowEntity>> batchConvert({
     required List<CashFlowEntity> cashFlows,
     required String baseCurrency,
-    ConversionFallbackStrategy fallbackStrategy = ConversionFallbackStrategy.useLastKnown,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
   }) async {
     if (cashFlows.isEmpty) return [];
 
@@ -59,11 +60,14 @@ class BatchCurrencyConverter {
       final dedupeKey = '${_formatDate(cf.date)}_${cf.currency}';
 
       // Create conversion request (deduplicated by date+currency)
-      requests.putIfAbsent(dedupeKey, () => ConversionRequest(
-        from: cf.currency,
-        amount: 1.0, // Use 1.0 to get the rate, apply to all amounts later
-        date: cf.date,
-      ));
+      requests.putIfAbsent(
+        dedupeKey,
+        () => ConversionRequest(
+          from: cf.currency,
+          amount: 1.0, // Use 1.0 to get the rate, apply to all amounts later
+          date: cf.date,
+        ),
+      );
     }
 
     // If no conversions needed, return original list
@@ -103,10 +107,9 @@ class BatchCurrencyConverter {
 
       if (rate != null) {
         // Successful conversion - apply rate to this cash flow's amount
-        result.add(cf.copyWith(
-          amount: cf.amount * rate,
-          currency: baseCurrency,
-        ));
+        result.add(
+          cf.copyWith(amount: cf.amount * rate, currency: baseCurrency),
+        );
       } else {
         // Individual conversion failed - apply fallback strategy
         final fallbackCf = await _handleIndividualConversionFailure(
@@ -159,7 +162,9 @@ class BatchCurrencyConverter {
     required ConversionFallbackStrategy fallbackStrategy,
   }) async {
     if (kDebugMode) {
-      debugPrint('Individual conversion failed for ${cashFlow.currency} → $baseCurrency');
+      debugPrint(
+        'Individual conversion failed for ${cashFlow.currency} → $baseCurrency',
+      );
     }
 
     switch (fallbackStrategy) {
@@ -210,10 +215,12 @@ class BatchCurrencyConverter {
         );
 
         if (lastKnownRate != null) {
-          result.add(cf.copyWith(
-            amount: cf.amount * lastKnownRate,
-            currency: baseCurrency,
-          ));
+          result.add(
+            cf.copyWith(
+              amount: cf.amount * lastKnownRate,
+              currency: baseCurrency,
+            ),
+          );
         } else {
           result.add(cf); // Keep original if no cached rate
         }
@@ -233,4 +240,3 @@ class BatchCurrencyConverter {
     return CurrencyConversionService.formatDate(date);
   }
 }
-

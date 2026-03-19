@@ -42,14 +42,17 @@ void main() {
       prefs = await SharedPreferences.getInstance();
 
       // Default mock behaviors
-      when(() => mockConnectivityService.checkConnectivity())
-          .thenAnswer((_) async => true);
+      when(
+        () => mockConnectivityService.checkConnectivity(),
+      ).thenAnswer((_) async => true);
       when(() => mockConversionService.clearCache()).thenAnswer((_) async {});
-      when(() => mockConversionService.getRate(
-            from: any(named: 'from'),
-            to: any(named: 'to'),
-            date: any(named: 'date'),
-          )).thenAnswer((_) async => 1.2);
+      when(
+        () => mockConversionService.getRate(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          date: any(named: 'date'),
+        ),
+      ).thenAnswer((_) async => 1.2);
 
       // Create sample cashflows with USD currency (matching initial base currency)
       // This ensures short-circuit path when switching to USD, but requires fetching for other currencies
@@ -91,16 +94,21 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           analyticsServiceProvider.overrideWithValue(fakeAnalytics),
-          currencyConversionServiceProvider
-              .overrideWithValue(mockConversionService),
-          connectivityServiceProvider.overrideWithValue(mockConnectivityService),
+          currencyConversionServiceProvider.overrideWithValue(
+            mockConversionService,
+          ),
+          connectivityServiceProvider.overrideWithValue(
+            mockConnectivityService,
+          ),
           // Mock auth state (required for validCashFlowsProvider)
           isAuthenticatedProvider.overrideWith((ref) => true),
           // Mock investments and cashflows with different currencies
-          allInvestmentsProvider
-              .overrideWith((ref) => Stream.value(sampleInvestments)),
-          allCashFlowsStreamProvider
-              .overrideWith((ref) => Stream.value(sampleCashFlows)),
+          allInvestmentsProvider.overrideWith(
+            (ref) => Stream.value(sampleInvestments),
+          ),
+          allCashFlowsStreamProvider.overrideWith(
+            (ref) => Stream.value(sampleCashFlows),
+          ),
         ],
       );
     });
@@ -122,32 +130,36 @@ void main() {
     });
 
     group('Debouncing', () {
-      test('debounces rapid currency changes', () async {
-        final notifier = container.read(currencySwitchProvider.notifier);
+      test(
+        'debounces rapid currency changes',
+        () async {
+          final notifier = container.read(currencySwitchProvider.notifier);
 
-        // Trigger multiple rapid changes
-        notifier.switchCurrencyDebounced('EUR');
-        notifier.switchCurrencyDebounced('GBP');
-        notifier.switchCurrencyDebounced('JPY');
+          // Trigger multiple rapid changes
+          notifier.switchCurrencyDebounced('EUR');
+          notifier.switchCurrencyDebounced('GBP');
+          notifier.switchCurrencyDebounced('JPY');
 
-        // Wait for debounce timer (300ms) + async operations + extra buffer
-        await Future.delayed(const Duration(milliseconds: 800));
+          // Wait for debounce timer (300ms) + async operations + extra buffer
+          await Future.delayed(const Duration(milliseconds: 800));
 
-        // Only the last currency should be processed
-        final events = fakeAnalytics.loggedEvents
-            .where((e) => e.name == 'currency_switch_started')
-            .toList();
+          // Only the last currency should be processed
+          final events = fakeAnalytics.loggedEvents
+              .where((e) => e.name == 'currency_switch_started')
+              .toList();
 
-        // NOTE: This test is flaky due to Timer behavior in Dart tests.
-        // The debouncing logic works correctly in production (verified manually),
-        // but Timer callbacks don't fire reliably in test environment without fakeAsync.
-        // fakeAsync doesn't work well with Riverpod's async providers.
-        // If this test fails, it's a known limitation of the test framework, not the code.
-        expect(events.length, greaterThanOrEqualTo(0)); // Accept 0 or 1
-        if (events.isNotEmpty) {
-          expect(events.first.parameters?['to_currency'], 'JPY');
-        }
-      }, skip: 'Timer-based tests are flaky in Dart test environment');
+          // NOTE: This test is flaky due to Timer behavior in Dart tests.
+          // The debouncing logic works correctly in production (verified manually),
+          // but Timer callbacks don't fire reliably in test environment without fakeAsync.
+          // fakeAsync doesn't work well with Riverpod's async providers.
+          // If this test fails, it's a known limitation of the test framework, not the code.
+          expect(events.length, greaterThanOrEqualTo(0)); // Accept 0 or 1
+          if (events.isNotEmpty) {
+            expect(events.first.parameters?['to_currency'], 'JPY');
+          }
+        },
+        skip: 'Timer-based tests are flaky in Dart test environment',
+      );
 
       test('processes currency change after debounce delay', () async {
         final notifier = container.read(currencySwitchProvider.notifier);
@@ -164,8 +176,9 @@ void main() {
     group('Connectivity Check', () {
       test('fails immediately when offline', () async {
         // Mock offline state
-        when(() => mockConnectivityService.checkConnectivity())
-            .thenAnswer((_) async => false);
+        when(
+          () => mockConnectivityService.checkConnectivity(),
+        ).thenAnswer((_) async => false);
 
         final notifier = container.read(currencySwitchProvider.notifier);
 
@@ -178,16 +191,19 @@ void main() {
         expect(state.targetCurrency, 'EUR');
 
         // Verify no rate fetching attempted
-        verifyNever(() => mockConversionService.getRate(
-              from: any(named: 'from'),
-              to: any(named: 'to'),
-              date: any(named: 'date'),
-            ));
+        verifyNever(
+          () => mockConversionService.getRate(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            date: any(named: 'date'),
+          ),
+        );
       });
 
       test('proceeds when online', () async {
-        when(() => mockConnectivityService.checkConnectivity())
-            .thenAnswer((_) async => true);
+        when(
+          () => mockConnectivityService.checkConnectivity(),
+        ).thenAnswer((_) async => true);
 
         final notifier = container.read(currencySwitchProvider.notifier);
 

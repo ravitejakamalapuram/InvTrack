@@ -92,12 +92,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       // Handle error with centralized error handler
       if (!mounted) return;
 
-      ErrorHandler.handle(
-        e,
-        st,
-        context: context,
-        showFeedback: true,
-      );
+      ErrorHandler.handle(e, st, context: context, showFeedback: true);
 
       // Failure haptic
       HapticFeedback.heavyImpact();
@@ -146,7 +141,11 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(Icons.trending_up, size: 40, color: Colors.white),
+                    child: Icon(
+                      Icons.trending_up,
+                      size: 40,
+                      color: Colors.white,
+                    ),
                   ),
                   SizedBox(height: AppSpacing.md),
                   Text(
@@ -158,7 +157,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   ),
                   SizedBox(height: AppSpacing.xxs),
                   Semantics(
-                    label: '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
+                    label:
+                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
                     button: true,
                     onTap: _handleVersionTap,
                     child: GestureDetector(
@@ -170,7 +170,10 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            l10n.version(packageInfo.version, packageInfo.buildNumber),
+                            l10n.version(
+                              packageInfo.version,
+                              packageInfo.buildNumber,
+                            ),
                             style: AppTypography.small.copyWith(
                               color: isDark
                                   ? AppColors.neutral400Dark
@@ -300,7 +303,10 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   /// Opens the email client for support
-  Future<void> _openSupportEmail(BuildContext context, String appVersion) async {
+  Future<void> _openSupportEmail(
+    BuildContext context,
+    String appVersion,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final supportEmail = l10n.supportEmail;
     final uri = Uri(

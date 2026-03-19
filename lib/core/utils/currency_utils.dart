@@ -333,11 +333,7 @@ final currencyFormatPreciseProvider = Provider<NumberFormat>((ref) {
 final currencyFormatCompactProvider = Provider<NumberFormat>((ref) {
   final symbol = ref.watch(currencySymbolProvider);
   final locale = ref.watch(currencyLocaleProvider);
-  return _getCachedFormatter(
-    type: 'compact',
-    symbol: symbol,
-    locale: locale,
-  );
+  return _getCachedFormatter(type: 'compact', symbol: symbol, locale: locale);
 });
 
 /// Format a number as currency with proper locale formatting.

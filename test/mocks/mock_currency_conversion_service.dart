@@ -54,4 +54,3 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     return super.noSuchMethod(invocation);
   }
 }
-
