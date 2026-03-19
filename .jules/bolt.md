@@ -19,5 +19,6 @@
 **Action:** Pre-calculate grouped totals in a single `O(N)` pass using a `Map`, then access them in `O(1)` during the secondary loop. This changes complexity to `O(N + M)` and significantly improves performance for list aggregations.
 
 ## 2024-05-19 - Replace .fold() with standard loop
-**Learning:** Using `.fold()` in Dart incurs closure overhead for every iteration, which can be somewhat slow in tight loops or large collections.
+
+**Learning:** Using `.fold()` in Dart incurs closure overhead for every iteration, which can be slow in tight loops or large collections.
 **Action:** Replace `.fold()` with standard `for` loops in performance-critical sections to eliminate closure overhead and improve execution time.
