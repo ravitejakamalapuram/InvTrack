@@ -22,3 +22,7 @@
 
 **Learning:** Using `.fold()` in Dart incurs closure overhead for every iteration, which can be slow in tight loops or large collections.
 **Action:** Replace `.fold()` with standard `for` loops in performance-critical sections to eliminate closure overhead and improve execution time.
+
+## 2024-05-19 - Replace sequential Iterable filtering with single loop
+**Learning:** Chaining multiple `.where()` calls to extract metrics (e.g. counting statuses, creating filtered subsets) from the same list iterates the list multiple times and causes unnecessary intermediate list/iterable allocations.
+**Action:** Replace multiple `.where()` filters with a single `for` loop that computes all metrics (counts, sums, filtered lists) in one pass `O(N)` pass, saving N*M iteration overhead and reducing GC pressure.
