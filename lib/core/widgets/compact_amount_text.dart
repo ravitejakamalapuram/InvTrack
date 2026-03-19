@@ -111,7 +111,7 @@ class CompactAmountText extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Copy exact amount',
+              tooltip: l10n.copyExactAmount,
               icon: const Icon(
                 Icons.copy_rounded,
                 color: Colors.white,

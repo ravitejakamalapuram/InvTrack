@@ -1335,6 +1335,11 @@
     "description": "Accessibility hint for long-press to copy amount"
   },
 
+  "copyExactAmount": "Copy exact amount",
+  "@copyExactAmount": {
+    "description": "Tooltip for copy button to copy exact amount"
+  },
+
   "continueWithGoogle": "Continue with Google",
   "@continueWithGoogle": {
     "description": "Google Sign-In button text"
