@@ -3,10 +3,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -161,7 +161,14 @@ class UserProfileCard extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () => context.go('/auth/signin'),
+                          onPressed: () async {
+                            // Use GoogleSignInHandler for proper account linking
+                            final handler = GoogleSignInHandler(
+                              ref: ref,
+                              context: context,
+                            );
+                            await handler.handleSignIn();
+                          },
                           icon: Icon(
                             Icons.link,
                             size: 16,
