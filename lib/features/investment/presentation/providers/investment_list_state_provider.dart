@@ -337,14 +337,21 @@ final investmentCountsProvider =
       final activeInvestments = ref.watch(allInvestmentsProvider).value ?? [];
       final archivedInvestments =
           ref.watch(archivedInvestmentsProvider).value ?? [];
+
+      int openCount = 0;
+      int closedCount = 0;
+      for (final i in activeInvestments) {
+        if (i.status == InvestmentStatus.open) {
+          openCount++;
+        } else if (i.status == InvestmentStatus.closed) {
+          closedCount++;
+        }
+      }
+
       return (
         all: activeInvestments.length,
-        open: activeInvestments
-            .where((i) => i.status == InvestmentStatus.open)
-            .length,
-        closed: activeInvestments
-            .where((i) => i.status == InvestmentStatus.closed)
-            .length,
+        open: openCount,
+        closed: closedCount,
         archived: archivedInvestments.length,
       );
     });
