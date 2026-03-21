@@ -53,11 +53,13 @@ Implemented proper Firebase account linking using `linkWithCredential()` API:
 ### 3. **Presentation Layer** (UI)
 
 **`lib/features/settings/presentation/widgets/user_profile_card.dart`**
+
 - Fixed "Sign In to Link" button to call `GoogleSignInHandler` directly
 - Removed navigation to `/auth/signin` (was causing navigation loops)
 - Removed unused `go_router` import
 
 **`lib/features/auth/presentation/handlers/google_sign_in_handler.dart`**
+
 - Added `_handleCancelled()` method for user cancellation
 - Updated switch statement to handle `LinkAccountCancelled` case
 
@@ -129,6 +131,7 @@ While fixing guest mode, also implemented a requested feature:
 ## ✅ Testing
 
 ### Automated:
+
 ```bash
 flutter analyze
 # Result: 0 errors ✅
@@ -196,8 +199,4 @@ Without this, guest mode will fail with `admin-restricted-operation` error.
 **Data Loss Risk**: 100% of guest data lost before this fix
 
 **Fix Effectiveness**: 100% data preservation after this fix
-
----
-
-**Fixes**: #[issue-number]
 
