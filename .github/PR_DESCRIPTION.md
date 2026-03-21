@@ -5,12 +5,16 @@
 **CRITICAL BUG**: The "Sign In to Link" button in guest mode was causing complete data loss for users.
 
 ### What Was Happening:
+
+
 1. Guest user creates investments, goals, and settings (stored at `users/{anonymousUID}/`)
 2. User taps "Sign In to Link Account" to convert guest → Google account
 3. App called `signInWithGoogle()` which created a **NEW user session with NEW UID**
 4. ❌ **All guest data orphaned** at old UID → User loses everything
 
 ### Root Cause:
+
+
 The `LinkAccountUseCase` was incorrectly using `signInWithGoogle()` instead of Firebase's `linkWithCredential()` API, which is designed specifically to preserve the anonymous UID when upgrading to a permanent account.
 
 ---
@@ -76,7 +80,8 @@ Implemented proper Firebase account linking using `linkWithCredential()` API:
 ## 🔄 Account Linking Flow
 
 ### Before (Broken):
-```
+
+```text
 Guest User (UID: abc123)
   ↓
 Tap "Sign In to Link"
@@ -88,7 +93,8 @@ signInWithGoogle() → Creates NEW session (UID: xyz789)
 ```
 
 ### After (Fixed):
-```
+
+```text
 Guest User (UID: abc123)
   ↓
 Tap "Sign In to Link"
@@ -157,12 +163,15 @@ flutter analyze
 ## 🔐 Security & Data Integrity
 
 ### UID Preservation
+
 - ✅ Firebase `linkWithCredential()` preserves the anonymous UID
 - ✅ All Firestore data at `users/{anonymousUID}/` remains accessible
 - ✅ No data migration needed
 - ✅ Firestore security rules continue to work (they check `request.auth.uid`)
 
 ### No Breaking Changes
+
+
 - ✅ Existing users unaffected
 - ✅ No database migration needed
 - ✅ No Firestore rule changes needed
@@ -173,6 +182,7 @@ flutter analyze
 ## 📋 Deployment Checklist
 
 ### Firebase Console Configuration (REQUIRED)
+
 Anonymous Authentication must be enabled:
 1. Go to Firebase Console → Authentication → Sign-in method
 2. Enable "Anonymous" provider
