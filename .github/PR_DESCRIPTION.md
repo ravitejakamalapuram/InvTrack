@@ -6,14 +6,12 @@
 
 ### What Was Happening:
 
-
 1. Guest user creates investments, goals, and settings (stored at `users/{anonymousUID}/`)
 2. User taps "Sign In to Link Account" to convert guest → Google account
 3. App called `signInWithGoogle()` which created a **NEW user session with NEW UID**
 4. ❌ **All guest data orphaned** at old UID → User loses everything
 
 ### Root Cause:
-
 
 The `LinkAccountUseCase` was incorrectly using `signInWithGoogle()` instead of Firebase's `linkWithCredential()` API, which is designed specifically to preserve the anonymous UID when upgrading to a permanent account.
 
@@ -170,7 +168,6 @@ flutter analyze
 - ✅ Firestore security rules continue to work (they check `request.auth.uid`)
 
 ### No Breaking Changes
-
 
 - ✅ Existing users unaffected
 - ✅ No database migration needed
