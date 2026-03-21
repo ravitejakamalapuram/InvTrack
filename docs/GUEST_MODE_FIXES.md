@@ -3,6 +3,7 @@
 ## 🐛 Issues Fixed
 
 ### 1. **Critical: Account Linking Data Loss Bug**
+
 **Problem**: The "Sign In to Link" button was using `signInWithGoogle()` instead of Firebase's `linkWithCredential()` API, causing:
 - ❌ Anonymous user session replaced with new Google session
 - ❌ All guest data orphaned (different UID)
@@ -18,6 +19,7 @@
 ---
 
 ### 2. **Navigation Loop Bug**
+
 **Problem**: "Sign In to Link" button navigated to `/auth/signin`, which:
 - Triggered auth state listeners
 - Caused navigation loops
@@ -28,6 +30,7 @@
 ---
 
 ### 3. **Missing Error Handling**
+
 **Problem**: No handling for:
 - User cancels Google Sign-In
 - Google account already exists (credential-already-in-use)
@@ -85,7 +88,8 @@
 ## 🔄 Account Linking Flow (Fixed)
 
 ### **Before (Broken)**:
-```
+
+```text
 1. User taps "Sign In to Link"
 2. Navigate to /auth/signin
 3. Call signInWithGoogle()
@@ -95,7 +99,8 @@
 ```
 
 ### **After (Fixed)**:
-```
+
+```text
 1. User taps "Sign In to Link"
 2. Call GoogleSignInHandler.handleSignIn()
 3. Call LinkAccountUseCase.execute()

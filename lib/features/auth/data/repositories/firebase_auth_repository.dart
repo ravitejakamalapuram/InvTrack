@@ -298,7 +298,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
       // Get Google credentials
       final googleUser = await _googleSignIn.authenticate();
-      LoggerService.debug('Got Google user for linking: ${googleUser.email}');
+      LoggerService.debug('Got Google user for linking: ${googleUser.id}');
 
       // In google_sign_in v7, authentication is a synchronous property, not a Future
       final googleAuth = googleUser.authentication;
@@ -314,6 +314,14 @@ class FirebaseAuthRepository implements AuthRepository {
         'Account linking successful. UID preserved',
         metadata: {'userId': userCredential.user?.uid},
       );
+
+      if (userCredential.user == null) {
+        throw AuthException(
+          userMessage: 'Account linking failed. Please try again.',
+          technicalMessage: 'linkWithCredential returned null user',
+          shouldReport: true,
+        );
+      }
 
       return _mapFirebaseUserToEntity(userCredential.user!);
     } on FirebaseAuthException catch (e, stackTrace) {
@@ -333,6 +341,7 @@ class FirebaseAuthRepository implements AuthRepository {
           cause: e,
           stackTrace: stackTrace,
           shouldReport: false,
+          code: AuthExceptionCode.credentialAlreadyInUse,
         );
       } else if (e.code == 'provider-already-linked') {
         throw AuthException(
@@ -341,6 +350,7 @@ class FirebaseAuthRepository implements AuthRepository {
           cause: e,
           stackTrace: stackTrace,
           shouldReport: false,
+          code: AuthExceptionCode.providerAlreadyLinked,
         );
       } else if (e.code == 'invalid-credential') {
         throw AuthException(
@@ -349,6 +359,7 @@ class FirebaseAuthRepository implements AuthRepository {
           cause: e,
           stackTrace: stackTrace,
           shouldReport: true,
+          code: AuthExceptionCode.invalidCredential,
         );
       }
 

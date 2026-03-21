@@ -48,7 +48,7 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted) return;
 
-      final summaryAsync = ref.read(goalsSummaryProvider);
+      final summaryAsync = ref.read(multiCurrencyGoalsSummaryProvider);
       summaryAsync.whenData((summary) {
         if (summary.allCarouselGoals.isEmpty) return;
 

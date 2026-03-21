@@ -44,15 +44,15 @@ class LinkAccountUseCase {
         );
       }
     } on AuthException catch (e) {
-      // Handle specific auth exceptions
-      if (e.userMessage.contains('already registered') ||
-          e.userMessage.contains('already exists')) {
-        return LinkAccountResult.accountExists();
-      } else if (e.userMessage.contains('cancelled')) {
-        return LinkAccountResult.cancelled();
+      // Handle specific auth exceptions using error codes
+      switch (e.code) {
+        case AuthExceptionCode.credentialAlreadyInUse:
+          return LinkAccountResult.accountExists();
+        case AuthExceptionCode.cancelled:
+          return LinkAccountResult.cancelled();
+        default:
+          return LinkAccountResult.failure(e.userMessage);
       }
-
-      return LinkAccountResult.failure(e.userMessage);
     } catch (e) {
       return LinkAccountResult.failure(e.toString());
     }

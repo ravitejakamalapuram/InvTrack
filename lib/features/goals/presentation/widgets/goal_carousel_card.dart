@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Compact card for displaying a goal in horizontal carousel
 class GoalCarouselCard extends ConsumerWidget {
@@ -24,6 +25,7 @@ class GoalCarouselCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
@@ -110,7 +112,7 @@ class GoalCarouselCard extends ConsumerWidget {
                               ),
                               const SizedBox(width: 2),
                               Text(
-                                'Completed',
+                                l10n.goalCompleted,
                                 style: AppTypography.caption.copyWith(
                                   color: AppColors.successLight,
                                   fontWeight: FontWeight.w700,
