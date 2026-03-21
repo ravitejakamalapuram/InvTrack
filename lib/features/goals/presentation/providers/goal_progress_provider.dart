@@ -482,6 +482,15 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           ? activeGoalsList.first
           : null;
 
+      // Get achieved goals sorted by updated date (most recent first), limit to 5
+      final completedGoalsList = progressList
+          .where((p) => p.status == GoalStatus.achieved)
+          .toList();
+      completedGoalsList.sort(
+        (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
+      );
+      final recentCompletedGoals = completedGoalsList.take(5).toList();
+
       return AsyncValue.data(
         GoalsSummary(
           totalGoals: totalGoals,
@@ -491,6 +500,7 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           averageProgress: avgProgress,
           closestToCompletion: closestToCompletion,
           activeGoals: activeGoalsList, // Pass all active goals for carousel
+          completedGoals: recentCompletedGoals, // Pass recent completed goals
         ),
       );
     },
@@ -507,7 +517,8 @@ class GoalsSummary {
   final int behindGoals;
   final double averageProgress;
   final GoalProgress? closestToCompletion;
-  final List<GoalProgress> activeGoals; // All active goals for carousel
+  final List<GoalProgress> activeGoals; // Active (non-achieved) goals for carousel
+  final List<GoalProgress> completedGoals; // Achieved goals for carousel (max 5)
 
   const GoalsSummary({
     required this.totalGoals,
@@ -517,6 +528,7 @@ class GoalsSummary {
     required this.averageProgress,
     this.closestToCompletion,
     this.activeGoals = const [],
+    this.completedGoals = const [],
   });
 
   factory GoalsSummary.empty() => const GoalsSummary(
@@ -526,10 +538,14 @@ class GoalsSummary {
     behindGoals: 0,
     averageProgress: 0,
     activeGoals: [],
+    completedGoals: [],
   );
 
   bool get hasGoals => totalGoals > 0;
   bool get hasActiveGoals => totalGoals > achievedGoals;
+
+  /// All goals for carousel (active first, then completed)
+  List<GoalProgress> get allCarouselGoals => [...activeGoals, ...completedGoals];
 }
 
 /// Multi-currency provider for a single goal's progress
@@ -653,6 +669,7 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
       averageProgress: 0,
       closestToCompletion: null,
       activeGoals: [],
+      completedGoals: [],
     );
   }
 
@@ -686,6 +703,15 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
       ? activeGoalsList.first
       : null;
 
+  // Get achieved goals sorted by updated date (most recent first), limit to 5
+  final completedGoalsList = progressList
+      .where((p) => p.status == GoalStatus.achieved)
+      .toList();
+  completedGoalsList.sort(
+    (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
+  );
+  final recentCompletedGoals = completedGoalsList.take(5).toList();
+
   return GoalsSummary(
     totalGoals: totalGoals,
     achievedGoals: achievedGoals,
@@ -694,5 +720,6 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
     averageProgress: avgProgress,
     closestToCompletion: closestToCompletion,
     activeGoals: activeGoalsList, // Pass all active goals for carousel
+    completedGoals: recentCompletedGoals, // Pass recent completed goals
   );
 });

@@ -1275,6 +1275,11 @@
     }
   },
 
+  "goalCompleted": "Completed",
+  "@goalCompleted": {
+    "description": "Badge label for completed goals in carousel"
+  },
+
   "updateNow": "Update Now",
   "@updateNow": {
     "description": "Button text to update app now"

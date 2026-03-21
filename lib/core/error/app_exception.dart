@@ -71,6 +71,30 @@ class NetworkException extends AppException {
   }
 }
 
+/// Authentication exception codes for reliable error handling
+enum AuthExceptionCode {
+  /// User cancelled the sign-in flow
+  cancelled,
+
+  /// Sign-in failed for unknown reason
+  signInFailed,
+
+  /// User is not authenticated
+  notAuthenticated,
+
+  /// Google credential is already in use by another account
+  credentialAlreadyInUse,
+
+  /// Provider is already linked to this account
+  providerAlreadyLinked,
+
+  /// Invalid credential provided
+  invalidCredential,
+
+  /// Generic/unknown error
+  unknown,
+}
+
 /// Authentication-related errors
 class AuthException extends AppException {
   @override
@@ -88,12 +112,16 @@ class AuthException extends AppException {
   @override
   final bool shouldReport;
 
+  /// Error code for reliable error handling
+  final AuthExceptionCode code;
+
   AuthException({
     this.userMessage = 'Authentication failed. Please sign in again.',
     required this.technicalMessage,
     this.cause,
     this.stackTrace,
     this.shouldReport = true,
+    this.code = AuthExceptionCode.unknown,
   });
 
   factory AuthException.signInCancelled() {
@@ -101,6 +129,7 @@ class AuthException extends AppException {
       userMessage: 'Sign in was cancelled.',
       technicalMessage: 'User cancelled sign in flow',
       shouldReport: false,
+      code: AuthExceptionCode.cancelled,
     );
   }
 
@@ -115,6 +144,7 @@ class AuthException extends AppException {
       cause: cause,
       stackTrace: stackTrace,
       shouldReport: shouldReport ?? true, // Default to reporting
+      code: AuthExceptionCode.signInFailed,
     );
   }
 
@@ -123,6 +153,7 @@ class AuthException extends AppException {
       userMessage: 'Please sign in to continue.',
       technicalMessage: 'User not authenticated',
       shouldReport: false,
+      code: AuthExceptionCode.notAuthenticated,
     );
   }
 }

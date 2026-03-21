@@ -269,6 +269,148 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  Future<UserEntity?> linkAnonymousToGoogle() async {
+    try {
+      final currentUser = _firebaseAuth.currentUser;
+
+      // Verify user is anonymous
+      if (currentUser == null) {
+        throw AuthException(
+          userMessage: 'No user is currently signed in',
+          technicalMessage: 'Cannot link account: no current user',
+          shouldReport: false,
+        );
+      }
+
+      if (!currentUser.isAnonymous) {
+        throw AuthException(
+          userMessage: 'Account is already linked to Google',
+          technicalMessage: 'Current user is not anonymous',
+          shouldReport: false,
+        );
+      }
+
+      LoggerService.info(
+        'Starting account linking for anonymous user',
+        metadata: {'userId': currentUser.uid},
+      );
+
+      // Get Google credentials
+      final googleUser = await _googleSignIn.authenticate();
+      LoggerService.debug('Got Google user for linking: ${googleUser.id}');
+
+      // In google_sign_in v7, authentication is a synchronous property, not a Future
+      final googleAuth = googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      // Link the credential to the anonymous account
+      LoggerService.info('Linking Google credential to anonymous account');
+      final userCredential = await currentUser.linkWithCredential(credential);
+
+      LoggerService.info(
+        'Account linking successful. UID preserved',
+        metadata: {'userId': userCredential.user?.uid},
+      );
+
+      if (userCredential.user == null) {
+        throw AuthException(
+          userMessage: 'Account linking failed. Please try again.',
+          technicalMessage: 'linkWithCredential returned null user',
+          shouldReport: true,
+        );
+      }
+
+      return _mapFirebaseUserToEntity(userCredential.user!);
+    } on FirebaseAuthException catch (e, stackTrace) {
+      LoggerService.error(
+        'Account linking failed',
+        error: e,
+        stackTrace: stackTrace,
+        metadata: {'errorCode': e.code},
+      );
+
+      if (e.code == 'credential-already-in-use') {
+        // This Google account is already registered
+        throw AuthException(
+          userMessage:
+              'This Google account is already registered. Please use the backup & merge option.',
+          technicalMessage: 'credential-already-in-use during account linking',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: false,
+          code: AuthExceptionCode.credentialAlreadyInUse,
+        );
+      } else if (e.code == 'provider-already-linked') {
+        throw AuthException(
+          userMessage: 'Account is already linked to Google',
+          technicalMessage: 'Provider already linked',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: false,
+          code: AuthExceptionCode.providerAlreadyLinked,
+        );
+      } else if (e.code == 'invalid-credential') {
+        throw AuthException(
+          userMessage: 'Invalid Google credentials. Please try again.',
+          technicalMessage: 'Invalid credential for linking',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: true,
+          code: AuthExceptionCode.invalidCredential,
+        );
+      }
+
+      throw AuthException.signInFailed(
+        cause: e,
+        stackTrace: stackTrace,
+        shouldReport: !_isTransientAuthError(e.code),
+      );
+    } on GoogleSignInException catch (e, stackTrace) {
+      LoggerService.error(
+        'GoogleSignInException during account linking',
+        error: e,
+        stackTrace: stackTrace,
+        metadata: {
+          'code': e.code.name,
+          'description': e.description,
+        },
+      );
+
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled account linking');
+        throw AuthException.signInCancelled();
+      }
+
+      throw AuthException(
+        userMessage: _mapGoogleSignInException(e),
+        technicalMessage: 'Google Sign-In failed during linking',
+        cause: e,
+        stackTrace: stackTrace,
+        shouldReport: true,
+      );
+    } catch (e, stackTrace) {
+      LoggerService.error(
+        'Unexpected error during account linking',
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      // Clean up Google Sign-In state on error
+      await _googleSignIn.signOut();
+
+      throw AuthException(
+        userMessage: 'An unexpected error occurred during account linking',
+        technicalMessage: 'Unexpected error in linkAnonymousToGoogle',
+        cause: e,
+        stackTrace: stackTrace,
+        shouldReport: true,
+      );
+    }
+  }
+
   UserEntity _mapFirebaseUserToEntity(User firebaseUser) {
     return UserEntity(
       id: firebaseUser.uid,

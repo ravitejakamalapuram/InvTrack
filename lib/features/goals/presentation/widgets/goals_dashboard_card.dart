@@ -48,11 +48,11 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted) return;
 
-      final summaryAsync = ref.read(goalsSummaryProvider);
+      final summaryAsync = ref.read(multiCurrencyGoalsSummaryProvider);
       summaryAsync.whenData((summary) {
-        if (summary.activeGoals.isEmpty) return;
+        if (summary.allCarouselGoals.isEmpty) return;
 
-        final nextPage = (_currentPage + 1) % summary.activeGoals.length;
+        final nextPage = (_currentPage + 1) % summary.allCarouselGoals.length;
         _pageController.animateToPage(
           nextPage,
           duration: const Duration(milliseconds: 400),
@@ -180,17 +180,17 @@ class _GoalsDashboardCardState extends ConsumerState<GoalsDashboardCard> {
         ),
         SizedBox(height: AppSpacing.sm), // Reduced from md to sm
         // PageView carousel with peek and scale animation
-        if (summary.activeGoals.isNotEmpty)
+        if (summary.allCarouselGoals.isNotEmpty)
           SizedBox(
             height: 110, // Compact height
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: _onPageChanged,
-              itemCount: summary.activeGoals.length,
+              itemCount: summary.allCarouselGoals.length,
               padEnds: false, // Allow peek effect
               clipBehavior: Clip.none, // Don't clip peeked cards
               itemBuilder: (context, index) {
-                final progress = summary.activeGoals[index];
+                final progress = summary.allCarouselGoals[index];
                 return AnimatedBuilder(
                   animation: _pageController,
                   builder: (context, child) {

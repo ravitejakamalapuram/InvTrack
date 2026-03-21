@@ -3,19 +3,26 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Displays user profile info at top of settings.
-class UserProfileCard extends ConsumerWidget {
+class UserProfileCard extends ConsumerStatefulWidget {
   const UserProfileCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UserProfileCard> createState() => _UserProfileCardState();
+}
+
+class _UserProfileCardState extends ConsumerState<UserProfileCard> {
+  bool _isLinking = false;
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
@@ -161,14 +168,41 @@ class UserProfileCard extends ConsumerWidget {
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
-                          onPressed: () => context.go('/auth/signin'),
-                          icon: Icon(
-                            Icons.link,
-                            size: 16,
-                            color: AppColors.primaryLight,
-                          ),
+                          onPressed: _isLinking
+                              ? null
+                              : () async {
+                                  setState(() => _isLinking = true);
+                                  try {
+                                    // Use GoogleSignInHandler for proper account linking
+                                    final handler = GoogleSignInHandler(
+                                      ref: ref,
+                                      context: context,
+                                    );
+                                    await handler.handleSignIn();
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => _isLinking = false);
+                                    }
+                                  }
+                                },
+                          icon: _isLinking
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.primaryLight,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.link,
+                                  size: 16,
+                                  color: AppColors.primaryLight,
+                                ),
                           label: Text(
-                            l10n.signInToBackup,
+                            _isLinking ? l10n.loading : l10n.signInToBackup,
                             style: AppTypography.small.copyWith(
                               color: AppColors.primaryLight,
                               fontWeight: FontWeight.w600,

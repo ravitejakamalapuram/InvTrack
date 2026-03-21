@@ -1,12 +1,16 @@
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 
 /// Use case for linking an anonymous account to a Google account.
 ///
 /// This handles the business logic for account linking, including:
-/// - Attempting to link anonymous account to Google credential
+/// - Attempting to link anonymous account to Google credential using Firebase linkWithCredential
 /// - Handling linking failures (e.g., Google account already exists)
 /// - Returning appropriate results for UI to handle
+///
+/// IMPORTANT: This uses Firebase's linkWithCredential() API to preserve the anonymous UID
+/// and all associated Firestore data. It does NOT create a new user session.
 class LinkAccountUseCase {
   final AuthRepository _authRepository;
 
@@ -15,9 +19,10 @@ class LinkAccountUseCase {
   /// Attempts to link the current anonymous account to a Google account.
   ///
   /// Returns:
-  /// - [LinkAccountResult.success] if linking succeeded
+  /// - [LinkAccountResult.success] if linking succeeded (UID preserved)
   /// - [LinkAccountResult.accountExists] if Google account already exists
   /// - [LinkAccountResult.notAnonymous] if current user is not anonymous
+  /// - [LinkAccountResult.cancelled] if user cancelled Google Sign-In
   /// - [LinkAccountResult.failure] for other errors
   Future<LinkAccountResult> execute() async {
     final currentUser = _authRepository.currentUser;
@@ -28,8 +33,8 @@ class LinkAccountUseCase {
     }
 
     try {
-      // Attempt to sign in with Google and link
-      final linkedUser = await _authRepository.signInWithGoogle();
+      // Use Firebase linkWithCredential to preserve UID and data
+      final linkedUser = await _authRepository.linkAnonymousToGoogle();
 
       if (linkedUser != null && !linkedUser.isAnonymous) {
         return LinkAccountResult.success(linkedUser);
@@ -38,13 +43,17 @@ class LinkAccountUseCase {
           'Linking failed: user is still anonymous',
         );
       }
-    } catch (e) {
-      // Check if error is due to account already existing
-      if (e.toString().contains('credential-already-in-use') ||
-          e.toString().contains('account-exists-with-different-credential')) {
-        return LinkAccountResult.accountExists();
+    } on AuthException catch (e) {
+      // Handle specific auth exceptions using error codes
+      switch (e.code) {
+        case AuthExceptionCode.credentialAlreadyInUse:
+          return LinkAccountResult.accountExists();
+        case AuthExceptionCode.cancelled:
+          return LinkAccountResult.cancelled();
+        default:
+          return LinkAccountResult.failure(e.userMessage);
       }
-
+    } catch (e) {
       return LinkAccountResult.failure(e.toString());
     }
   }
@@ -63,6 +72,9 @@ sealed class LinkAccountResult {
   /// Current user is not anonymous, cannot link
   factory LinkAccountResult.notAnonymous() = LinkAccountNotAnonymous;
 
+  /// User cancelled Google Sign-In
+  factory LinkAccountResult.cancelled() = LinkAccountCancelled;
+
   /// Linking failed for other reasons
   factory LinkAccountResult.failure(String message) = LinkAccountFailure;
 }
@@ -78,6 +90,10 @@ class LinkAccountAccountExists extends LinkAccountResult {
 
 class LinkAccountNotAnonymous extends LinkAccountResult {
   const LinkAccountNotAnonymous();
+}
+
+class LinkAccountCancelled extends LinkAccountResult {
+  const LinkAccountCancelled();
 }
 
 class LinkAccountFailure extends LinkAccountResult {

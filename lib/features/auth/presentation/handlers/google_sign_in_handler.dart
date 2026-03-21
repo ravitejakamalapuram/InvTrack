@@ -38,6 +38,7 @@ class GoogleSignInHandler {
         LinkAccountSuccess() => _handleSuccess(result),
         LinkAccountAccountExists() => await _handleAccountExists(),
         LinkAccountNotAnonymous() => _handleNotAnonymous(),
+        LinkAccountCancelled() => _handleCancelled(),
         LinkAccountFailure() => _handleFailure(result),
       };
     } catch (e, st) {
@@ -92,6 +93,12 @@ class GoogleSignInHandler {
   bool _handleNotAnonymous() {
     LoggerService.debug('User is not anonymous, no linking needed');
     return true; // Already signed in
+  }
+
+  bool _handleCancelled() {
+    LoggerService.info('User cancelled Google Sign-In');
+    // No error message needed - user intentionally cancelled
+    return false;
   }
 
   bool _handleFailure(LinkAccountFailure result) {

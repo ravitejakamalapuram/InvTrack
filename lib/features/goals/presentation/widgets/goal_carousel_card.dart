@@ -11,7 +11,9 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Compact card for displaying a goal in horizontal carousel
 class GoalCarouselCard extends ConsumerWidget {
@@ -23,6 +25,7 @@ class GoalCarouselCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
@@ -70,7 +73,7 @@ class GoalCarouselCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Goal name and percentage in row
+                  // Goal name and percentage/completed badge in row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -89,28 +92,59 @@ class GoalCarouselCard extends ConsumerWidget {
                         ),
                       ),
                       SizedBox(width: AppSpacing.xs),
-                      PrivacyMask(
-                        useTextMask: true,
-                        maskedText: '••%',
-                        child: Container(
+                      // Show "Completed" badge for achieved goals, percentage for others
+                      if (progress.status == GoalStatus.achieved)
+                        Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.xs,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: goal.color.withValues(alpha: 0.12),
+                            color: AppColors.successLight.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text(
-                            '${progress.progressPercent.toStringAsFixed(0)}%',
-                            style: AppTypography.caption.copyWith(
-                              color: goal.color,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                '🎉',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                l10n.goalCompleted,
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.successLight,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        PrivacyMask(
+                          useTextMask: true,
+                          maskedText: '••%',
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: goal.color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${progress.progressPercent.toStringAsFixed(0)}%',
+                              style: AppTypography.caption.copyWith(
+                                color: goal.color,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   SizedBox(height: AppSpacing.xxs),

@@ -13,6 +13,15 @@ abstract class AuthRepository {
   /// Signs in anonymously (guest mode).
   Future<UserEntity?> signInAnonymously();
 
+  /// Links the current anonymous account to a Google account.
+  ///
+  /// This preserves the anonymous user's UID and data.
+  /// Throws [AuthException] if:
+  /// - User is not anonymous
+  /// - Google account already exists (credential-already-in-use)
+  /// - Linking fails for other reasons
+  Future<UserEntity?> linkAnonymousToGoogle();
+
   /// Signs out.
   Future<void> signOut();
 
