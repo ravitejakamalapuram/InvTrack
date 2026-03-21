@@ -22,3 +22,7 @@
 
 **Learning:** Using `.fold()` in Dart incurs closure overhead for every iteration, which can be slow in tight loops or large collections.
 **Action:** Replace `.fold()` with standard `for` loops in performance-critical sections to eliminate closure overhead and improve execution time.
+
+## 2024-05-19 - Replace multiple .where().length with single pass loop
+**Learning:** Calling `.where(...).length` multiple times to count items by different conditions on the same collection causes redundant iterations and unnecessary `Iterable` allocations.
+**Action:** When extracting multiple counts or metrics from the same collection, replace multiple sequential `.where().length` calls with a single `O(N)` `for` loop to compute all counts simultaneously.
