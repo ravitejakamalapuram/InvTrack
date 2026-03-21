@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+### Config
+
+- Fix CodeRabbit YAML schema warnings (#270)
+
+### ⚡ Performance
+
+- Optimize date comparisons in calculateStats
+
+### ✨ Features
+
+- Optimize currency switching with parallel rate fetching (#274)
+- Improve keyboard focus visibility and localization
+- Enterprise-grade currency conversion optimization (300x faster)
+
+### 🐛 Bug Fixes
+
+- Add Firestore rules for app_config collection to enable version checking
+- **cd**: Use PAT token to bypass branch protection for version bumps
+- Prevent transient errors from spamming crashlytics (#268)
+
+### 📚 Documentation
+
+- Remove redundant CodeRabbit documentation files (#269)
+- Document branch protection for main branch
+
+### 🔧 Miscellaneous
+
+- Skip version workflow for all chore commits [skip-release]
+- Format code with dart format
+
+## [3.53.2] - 2026-03-15
+
 ### ♻️ Refactoring
 
 - Simplify cicd workflows with coderabbit
