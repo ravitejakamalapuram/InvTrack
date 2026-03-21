@@ -5,6 +5,12 @@ service cloud.firestore {
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Allow anyone to read app config (e.g. version info), but no one can write
+    match /app_config/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }
 
