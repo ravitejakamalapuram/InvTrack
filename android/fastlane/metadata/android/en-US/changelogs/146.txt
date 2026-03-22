@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Add Node.js 24 support to all GitHub Actions workflows
