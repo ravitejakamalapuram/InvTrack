@@ -29,3 +29,8 @@
 ## 2026-03-15 - Focus placement relative to Semantics when using excludeSemantics
 **Learning:** In Flutter, when creating a custom interactive widget that hides its complex child semantics tree by using `Semantics(excludeSemantics: true)`, any `Focus` node placed *inside* that `Semantics` widget will also be hidden from the accessibility tree, making it unreachable via keyboard navigation.
 **Action:** Always wrap the `Semantics` widget *inside* the `Focus` widget, so that the keyboard focus node exists outside the excluded semantic boundary and can be properly focused.
+
+## 2026-03-22 - Added Semantics wrapper to color and icon pickers
+
+**Learning:** Custom interactive elements like color or icon pickers created using `GestureDetector` lack proper native accessibility roles in Flutter. Screen readers may fail to announce their role as a button, their selection state, and their label.
+**Action:** When building custom interactive components using generic containers and `GestureDetector`s, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label`, specify `selected` state if applicable, and often use `excludeSemantics: true` to prevent the screen reader from redundantly parsing the complex child tree.
