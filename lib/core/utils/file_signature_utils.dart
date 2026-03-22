@@ -25,12 +25,39 @@ class FileSignatureUtils {
         return _isWebp(bytes);
       case 'heic':
         return _isHeic(bytes);
+      case 'doc':
+      case 'xls':
+        return _isOldOffice(bytes);
+      case 'docx':
+      case 'xlsx':
+        return _isZipBasedOffice(bytes);
       default:
-        // For other types, we default to true as we don't have a signature check
-        // This includes doc, docx, xls, xlsx which are complex to check (zip based)
-        // or just not implemented yet.
-        return true;
+        // Fail-secure: If we don't have a signature check for an extension, reject it.
+        // This prevents extension spoofing for unsupported types.
+        return false;
     }
+  }
+
+  static bool _isOldOffice(Uint8List bytes) {
+    // DOC, XLS (OLE Compound File) - D0 CF 11 E0 A1 B1 1A E1
+    if (bytes.length < 8) return false;
+    return bytes[0] == 0xD0 &&
+        bytes[1] == 0xCF &&
+        bytes[2] == 0x11 &&
+        bytes[3] == 0xE0 &&
+        bytes[4] == 0xA1 &&
+        bytes[5] == 0xB1 &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0xE1;
+  }
+
+  static bool _isZipBasedOffice(Uint8List bytes) {
+    // DOCX, XLSX are zip files - PK.. (50 4B 03 04)
+    if (bytes.length < 4) return false;
+    return bytes[0] == 0x50 &&
+        bytes[1] == 0x4B &&
+        bytes[2] == 0x03 &&
+        bytes[3] == 0x04;
   }
 
   static bool _isPdf(Uint8List bytes) {
