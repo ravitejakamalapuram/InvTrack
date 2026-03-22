@@ -204,6 +204,11 @@ void main() {
       // Invalid signature
       final invalidBytes = Uint8List.fromList([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
       expect(FileSignatureUtils.validateFileSignature(invalidBytes, 'test.doc'), isFalse);
+
+      // Edge case: short byte array (less than 8 bytes required for OLE signature)
+      final shortBytes = Uint8List.fromList([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A]);
+      expect(FileSignatureUtils.validateFileSignature(shortBytes, 'test.doc'), isFalse);
+      expect(FileSignatureUtils.validateFileSignature(shortBytes, 'test.xls'), isFalse);
     });
 
     test('validates zip-based office documents', () {

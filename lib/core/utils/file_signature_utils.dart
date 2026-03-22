@@ -3,9 +3,9 @@ import 'dart:typed_data';
 class FileSignatureUtils {
   /// Validates that the file content (magic numbers) matches the expected extension.
   ///
-  /// Returns true if the signature is valid for the extension, or if the extension
-  /// is not one of the strictly checked types (to be safe/flexible).
-  /// Returns false if there is a clear mismatch.
+  /// Returns true if the signature is valid for the extension.
+  /// Returns false if there is a mismatch or if the extension is not supported
+  /// (fail-secure: unknown extensions are rejected).
   static bool validateFileSignature(Uint8List bytes, String fileName) {
     if (bytes.isEmpty) return false;
 
