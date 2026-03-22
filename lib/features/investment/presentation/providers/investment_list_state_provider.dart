@@ -150,40 +150,33 @@ final filteredInvestmentsProvider =
 
       return sourceAsync.when(
         data: (investments) {
-          var filtered = investments.toList();
+          // Optimization: Single pass loop for all filters replacing sequential .where().toList() calls
+          final filtered = <InvestmentEntity>[];
+          final hasSearch = listState.searchQuery.isNotEmpty;
+          final query = hasSearch ? listState.searchQuery.toLowerCase() : '';
 
-          // Apply status filter (only for active investments)
-          switch (listState.filter) {
-            case InvestmentFilter.all:
-              // All active investments (already filtered by stream)
-              break;
-            case InvestmentFilter.open:
-              filtered = filtered
-                  .where((inv) => inv.status == InvestmentStatus.open)
-                  .toList();
-            case InvestmentFilter.closed:
-              filtered = filtered
-                  .where((inv) => inv.status == InvestmentStatus.closed)
-                  .toList();
-            case InvestmentFilter.archived:
-              // All archived investments (already filtered by stream)
-              break;
-          }
+          for (final inv in investments) {
+            // Apply status filter (only for active investments)
+            if (listState.filter == InvestmentFilter.open && inv.status != InvestmentStatus.open) {
+              continue;
+            }
+            if (listState.filter == InvestmentFilter.closed && inv.status != InvestmentStatus.closed) {
+              continue;
+            }
 
-          // Apply type filter
-          if (listState.hasTypeFilter) {
-            filtered = filtered
-                .where((inv) => inv.type == listState.typeFilter)
-                .toList();
-          }
+            // Apply type filter
+            if (listState.hasTypeFilter && inv.type != listState.typeFilter) {
+              continue;
+            }
 
-          // Apply search filter
-          if (listState.searchQuery.isNotEmpty) {
-            final query = listState.searchQuery.toLowerCase();
-            filtered = filtered.where((inv) {
-              return inv.name.toLowerCase().contains(query) ||
-                  inv.type.displayName.toLowerCase().contains(query);
-            }).toList();
+            // Apply search filter
+            if (hasSearch &&
+                !inv.name.toLowerCase().contains(query) &&
+                !inv.type.displayName.toLowerCase().contains(query)) {
+              continue;
+            }
+
+            filtered.add(inv);
           }
 
           // Pre-compute stats for sorting using ref.watch to react to stats loading

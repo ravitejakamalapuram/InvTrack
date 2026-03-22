@@ -295,10 +295,13 @@ final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 
   return investmentsAsync.when(
     data: (investments) {
-      final closedIds = investments
-          .where((i) => i.status == InvestmentStatus.closed)
-          .map((i) => i.id)
-          .toSet();
+      // Optimization: Single pass loop replacing .where, .map, and .toSet
+      final closedIds = <String>{};
+      for (final i in investments) {
+        if (i.status == InvestmentStatus.closed) {
+          closedIds.add(i.id);
+        }
+      }
 
       if (closedIds.isEmpty) {
         return AsyncValue.data(InvestmentStats.empty());
@@ -306,9 +309,13 @@ final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 
       return cashFlowsAsync.when(
         data: (cashFlows) {
-          final closedCashFlows = cashFlows
-              .where((cf) => closedIds.contains(cf.investmentId))
-              .toList();
+          // Optimization: Replace .where().toList() with standard loop
+          final closedCashFlows = <CashFlowEntity>[];
+          for (final cf in cashFlows) {
+            if (closedIds.contains(cf.investmentId)) {
+              closedCashFlows.add(cf);
+            }
+          }
           if (closedCashFlows.isEmpty) {
             return AsyncValue.data(InvestmentStats.empty());
           }
@@ -343,10 +350,13 @@ final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 
   return investmentsAsync.when(
     data: (investments) {
-      final openIds = investments
-          .where((i) => i.status == InvestmentStatus.open)
-          .map((i) => i.id)
-          .toSet();
+      // Optimization: Single pass loop replacing .where, .map, and .toSet
+      final openIds = <String>{};
+      for (final i in investments) {
+        if (i.status == InvestmentStatus.open) {
+          openIds.add(i.id);
+        }
+      }
 
       if (openIds.isEmpty) {
         return AsyncValue.data(InvestmentStats.empty());
@@ -354,9 +364,13 @@ final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 
       return cashFlowsAsync.when(
         data: (cashFlows) {
-          final openCashFlows = cashFlows
-              .where((cf) => openIds.contains(cf.investmentId))
-              .toList();
+          // Optimization: Replace .where().toList() with standard loop
+          final openCashFlows = <CashFlowEntity>[];
+          for (final cf in cashFlows) {
+            if (openIds.contains(cf.investmentId)) {
+              openCashFlows.add(cf);
+            }
+          }
           if (openCashFlows.isEmpty) {
             return AsyncValue.data(InvestmentStats.empty());
           }
