@@ -118,54 +118,64 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                   children: GoalColors.available.map((color) {
                     final isSelected =
                         color.toARGB32() == _currentColor.toARGB32();
-                    return GestureDetector(
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: 'Select color',
+                      excludeSemantics: true,
                       onTap: () {
                         setState(() => _currentColor = color);
                         widget.onColorSelected(color);
                       },
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          final shadowOpacity = 0.5 * value;
-                          final borderWidth = 3.0 * value;
-                          return Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                              border: borderWidth > 0
-                                  ? Border.all(
-                                      color: Colors.white,
-                                      width: borderWidth,
-                                    )
-                                  : null,
-                              boxShadow: value > 0.01
-                                  ? [
-                                      BoxShadow(
-                                        color: color.withValues(
-                                          alpha: shadowOpacity,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => _currentColor = color);
+                          widget.onColorSelected(color);
+                        },
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            final shadowOpacity = 0.5 * value;
+                            final borderWidth = 3.0 * value;
+                            return Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: borderWidth > 0
+                                    ? Border.all(
+                                        color: Colors.white,
+                                        width: borderWidth,
+                                      )
+                                    : null,
+                                boxShadow: value > 0.01
+                                    ? [
+                                        BoxShadow(
+                                          color: color.withValues(
+                                            alpha: shadowOpacity,
+                                          ),
+                                          blurRadius: 8,
                                         ),
-                                        blurRadius: 8,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Center(
-                              child: AnimatedOpacity(
-                                opacity: value,
-                                duration: const Duration(milliseconds: 150),
-                                child: const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 20,
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: AnimatedOpacity(
+                                  opacity: value,
+                                  duration: const Duration(milliseconds: 150),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     );
                   }).toList(),
@@ -193,43 +203,53 @@ class _GoalIconPickerState extends State<GoalIconPicker> {
                   itemBuilder: (context, index) {
                     final icon = GoalIcons.available[index];
                     final isSelected = icon == _currentIcon;
-                    return GestureDetector(
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: 'Select icon $icon',
+                      excludeSemantics: true,
                       onTap: () {
                         setState(() => _currentIcon = icon);
                         widget.onIconSelected(icon);
                       },
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          final bgColor = Color.lerp(
-                            (isDark ? Colors.white : Colors.black).withValues(
-                              alpha: 0.05,
-                            ),
-                            _currentColor.withValues(alpha: 0.2),
-                            value,
-                          )!;
-                          final borderWidth = 2.0 * value;
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: bgColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: borderWidth > 0
-                                  ? Border.all(
-                                      color: _currentColor,
-                                      width: borderWidth,
-                                    )
-                                  : null,
-                            ),
-                            child: Center(
-                              child: Text(
-                                icon,
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ),
-                          );
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => _currentIcon = icon);
+                          widget.onIconSelected(icon);
                         },
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: isSelected ? 1.0 : 0.0),
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, child) {
+                            final bgColor = Color.lerp(
+                              (isDark ? Colors.white : Colors.black).withValues(
+                                alpha: 0.05,
+                              ),
+                              _currentColor.withValues(alpha: 0.2),
+                              value,
+                            )!;
+                            final borderWidth = 2.0 * value;
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: bgColor,
+                                borderRadius: BorderRadius.circular(12),
+                                border: borderWidth > 0
+                                    ? Border.all(
+                                        color: _currentColor,
+                                        width: borderWidth,
+                                      )
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  icon,
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     );
                   },
