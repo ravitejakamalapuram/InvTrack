@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- **ci**: Add Node.js 24 support to all GitHub Actions workflows
+
+## [3.54.0] - 2026-03-21
+
 ### Config
 
 - Fix CodeRabbit YAML schema warnings (#270)

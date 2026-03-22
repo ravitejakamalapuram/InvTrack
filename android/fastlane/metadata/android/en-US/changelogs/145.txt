@@ -1,0 +1,12 @@
+⚡ Performance Improvements
+• Optimize date comparisons in calculateStats
+
+🆕 What's New
+• Optimize currency switching with parallel rate fetching (#274)
+• Improve keyboard focus visibility and localization
+• Enterprise-grade currency conversion optimization (300x faster)
+
+🐛 Bug Fixes & Improvements
+• Add Firestore rules for app_config collection to enable version checking
+• Use PAT token to bypass branch protection for version bumps
+• Prevent transient errors from spamming crashlytics (#268)
