@@ -147,11 +147,22 @@ final validCashFlowsProvider = Provider<AsyncValue<List<CashFlowEntity>>>((
   return investmentsAsync.when(
     data: (investments) {
       // Only include cash flows from active (non-archived) investments
-      final activeIds = investments.map((i) => i.id).toSet();
+      // Optimization: Single pass loop replacing .map, .toSet
+      final activeIds = <String>{};
+      for (final i in investments) {
+        activeIds.add(i.id);
+      }
       return cashFlowsAsync.when(
-        data: (cashFlows) => AsyncValue.data(
-          cashFlows.where((cf) => activeIds.contains(cf.investmentId)).toList(),
-        ),
+        data: (cashFlows) {
+          // Optimization: Replace .where().toList() with standard loop
+          final validFlows = <CashFlowEntity>[];
+          for (final cf in cashFlows) {
+            if (activeIds.contains(cf.investmentId)) {
+              validFlows.add(cf);
+            }
+          }
+          return AsyncValue.data(validFlows);
+        },
         loading: () => const AsyncValue.loading(),
         error: (e, st) => AsyncValue.error(e, st),
       );
