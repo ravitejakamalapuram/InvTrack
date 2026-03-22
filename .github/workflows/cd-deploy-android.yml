@@ -17,6 +17,8 @@ permissions:
 env:
   # App size threshold in bytes (20 MB)
   MAX_APP_SIZE: 20971520
+  # Force GitHub Actions to use Node.js 24 (addresses deprecation warning)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # Prevent concurrent deployments to avoid conflicts
 concurrency:
