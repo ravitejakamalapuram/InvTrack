@@ -51,6 +51,10 @@ enum LogLevel {
 class LoggerService {
   LoggerService._();
 
+  /// Static instance of CrashlyticsService to avoid provider errors
+  /// This is initialized lazily and reused across all log calls
+  static CrashlyticsService? _crashlyticsService;
+
   /// Log a debug message (only in debug mode)
   static void debug(String message, {Map<String, dynamic>? metadata}) {
     _log(LogLevel.debug, message, metadata: metadata);
@@ -140,7 +144,9 @@ class LoggerService {
             ? '$message | Metadata: ${metadata.entries.map((e) => '${e.key}=${e.value}').join(', ')}'
             : message;
 
-        CrashlyticsService().recordError(
+        // Initialize Crashlytics service lazily to avoid provider errors
+        _crashlyticsService ??= CrashlyticsService();
+        _crashlyticsService!.recordError(
           error ?? Exception(message),
           stackTrace,
           reason: reason,

@@ -156,6 +156,8 @@ class DataExportService {
     );
 
     // Add documents to the archive
+    int documentsAdded = 0;
+    int documentsFailed = 0;
     for (final doc in allDocuments) {
       final bytes = await _documentStorageService.readDocument(doc.localPath);
       if (bytes != null) {
@@ -163,8 +165,31 @@ class DataExportService {
         final safeFileName = path.basename(doc.fileName);
         final docPath = 'documents/${doc.investmentId}/$safeFileName';
         archive.addFile(ArchiveFile(docPath, bytes.length, bytes));
+        documentsAdded++;
+      } else {
+        // Log warning when document can't be read
+        LoggerService.warn(
+          'Document not found or inaccessible during export',
+          metadata: {
+            'documentId': doc.id,
+            'documentName': doc.name,
+            'fileName': doc.fileName,
+            'localPath': doc.localPath,
+            'investmentId': doc.investmentId,
+          },
+        );
+        documentsFailed++;
       }
     }
+
+    LoggerService.info(
+      'Documents export summary',
+      metadata: {
+        'total': allDocuments.length,
+        'added': documentsAdded,
+        'failed': documentsFailed,
+      },
+    );
 
     // Add FIRE settings if available (Rule 18: Data Lifecycle)
     if (_fireSettingsRepository != null) {
