@@ -186,16 +186,41 @@ void main() {
       );
     });
 
-    test('defaults to true for unknown extensions', () {
+    test('defaults to false for unknown extensions (fail-secure)', () {
       final randomBytes = Uint8List.fromList([0x00, 0x01, 0x02, 0x03]);
       expect(
         FileSignatureUtils.validateFileSignature(randomBytes, 'file.unknown'),
-        isTrue,
+        isFalse,
       );
-      expect(
-        FileSignatureUtils.validateFileSignature(randomBytes, 'file.docx'),
-        isTrue,
-      );
+    });
+
+    test('validates old office documents', () {
+      // DOC signature: D0 CF 11 E0 A1 B1 1A E1
+      final docBytes = Uint8List.fromList([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0x00, 0x00]);
+
+      expect(FileSignatureUtils.validateFileSignature(docBytes, 'test.doc'), isTrue);
+      expect(FileSignatureUtils.validateFileSignature(docBytes, 'test.xls'), isTrue);
+
+      // Invalid signature
+      final invalidBytes = Uint8List.fromList([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+      expect(FileSignatureUtils.validateFileSignature(invalidBytes, 'test.doc'), isFalse);
+
+      // Edge case: short byte array (less than 8 bytes required for OLE signature)
+      final shortBytes = Uint8List.fromList([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A]);
+      expect(FileSignatureUtils.validateFileSignature(shortBytes, 'test.doc'), isFalse);
+      expect(FileSignatureUtils.validateFileSignature(shortBytes, 'test.xls'), isFalse);
+    });
+
+    test('validates zip-based office documents', () {
+      // DOCX signature: PK.. (50 4B 03 04)
+      final docxBytes = Uint8List.fromList([0x50, 0x4B, 0x03, 0x04, 0x00, 0x00]);
+
+      expect(FileSignatureUtils.validateFileSignature(docxBytes, 'test.docx'), isTrue);
+      expect(FileSignatureUtils.validateFileSignature(docxBytes, 'test.xlsx'), isTrue);
+
+      // Invalid signature
+      final invalidBytes = Uint8List.fromList([0x00, 0x00, 0x00, 0x00]);
+      expect(FileSignatureUtils.validateFileSignature(invalidBytes, 'test.docx'), isFalse);
     });
 
     test('is case insensitive for extensions', () {
