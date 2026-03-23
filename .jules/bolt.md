@@ -32,3 +32,8 @@
 
 **Learning:** When extracting multiple metrics (e.g., counting different statuses or summing different values) from the same collection, using multiple sequential `.where()` calls causes the application to iterate over the entire collection multiple times unnecessarily.
 **Action:** Replace sequential `.where()` aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
+
+## 2025-05-15 - Optimize Goal Summary Calculations with Single-Pass Loop
+
+**Learning:** Chaining multiple `.where()` calls on a list (e.g., `progressList.where((p) => p.status == GoalStatus.achieved).length`) to count subsets results in $O(M \times N)$ time complexity where M is the number of status checks and N is the size of the list. Similarly, sequential `.where().toList()` allocations perform unnecessary iterable instantiations.
+**Action:** When extracting multiple sets of metrics (e.g. counting status groups, summing totals, filtering active vs completed) from the same collection, use a single `O(N)` `for` loop to compute the variables and partition the items simultaneously. This eliminates redundant iterations and intermediate iterable allocations.
