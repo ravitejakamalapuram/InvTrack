@@ -198,6 +198,7 @@ class CompactPrivacyToggle extends ConsumerWidget {
         (isDark ? Colors.white.withValues(alpha: 0.8) : Colors.black87);
 
     return IconButton(
+      tooltip: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
       onPressed: () {
         HapticFeedback.lightImpact();
         ref.read(privacyModeProvider.notifier).toggle();
@@ -213,7 +214,6 @@ class CompactPrivacyToggle extends ConsumerWidget {
           color: effectiveColor,
         ),
       ),
-      tooltip: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
     );
   }
 }
