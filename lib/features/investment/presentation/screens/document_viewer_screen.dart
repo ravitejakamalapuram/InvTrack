@@ -50,7 +50,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         elevation: 0,
         leading: IconButton(
           tooltip: l10n.tooltipClose,
-          icon: Container(
+          icon: Ink(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.5),
@@ -63,7 +63,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         actions: [
           IconButton(
             tooltip: l10n.tooltipShareDocument,
-            icon: Container(
+            icon: Ink(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.5),
@@ -75,7 +75,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           ),
           IconButton(
             tooltip: l10n.tooltipToggleInformation,
-            icon: Container(
+            icon: Ink(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.5),

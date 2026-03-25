@@ -279,7 +279,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
     return [
       // Selection mode toggle
       IconButton(
-        icon: Container(
+        icon: Ink(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
             color: isSelectionMode

@@ -184,7 +184,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         elevation: 0,
         leading: IconButton(
           tooltip: 'Close',
-          icon: Container(
+          icon: Ink(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: (isDark ? Colors.white : Colors.black).withValues(
