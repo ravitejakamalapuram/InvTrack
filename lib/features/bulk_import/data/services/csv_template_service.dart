@@ -203,7 +203,7 @@ class CsvTemplateService {
   /// Saves template to a file and shares it
   static Future<void> downloadTemplate() async {
     final content = generateTemplateContent();
-    final directory = await getApplicationDocumentsDirectory();
+    final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/investment_import_template.csv');
     await file.writeAsString(content);
 
