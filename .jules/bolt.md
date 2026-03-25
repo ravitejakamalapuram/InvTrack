@@ -32,3 +32,8 @@
 
 **Learning:** When extracting multiple metrics (e.g., counting different statuses or summing different values) from the same collection, using multiple sequential `.where()` calls causes the application to iterate over the entire collection multiple times unnecessarily.
 **Action:** Replace sequential `.where()` aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
+
+## 2025-02-06 - [Performance Optimization in List Operations]
+
+**Learning:** Chaining multiple `.where().length` and `.where().toList()` on the same list causes excessive iterations, redundant calculations, and unnecessary heap allocations due to intermediate collections created by `toList()`.
+**Action:** Always replace multiple `.where()` calls filtering the same list with a single `for` loop pass. Combine all conditions and variable assignments into the loop. This minimizes execution time (O(N) instead of O(K*N)) and reduces memory overhead and GC pressure.

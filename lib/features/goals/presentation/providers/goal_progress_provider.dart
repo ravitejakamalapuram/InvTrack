@@ -450,31 +450,33 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
         return AsyncValue.data(GoalsSummary.empty());
       }
 
+      // Optimization: Single pass loop for aggregating goals summary metrics
       final totalGoals = progressList.length;
-      final achievedGoals = progressList
-          .where((p) => p.status == GoalStatus.achieved)
-          .length;
-      final onTrackGoals = progressList
-          .where(
-            (p) =>
-                p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead,
-          )
-          .length;
-      final behindGoals = progressList
-          .where((p) => p.status == GoalStatus.behind)
-          .length;
-
-      // Average progress across all goals
+      int achievedGoals = 0;
+      int onTrackGoals = 0;
+      int behindGoals = 0;
       double totalProgressSum = 0.0;
+      final activeGoalsList = <GoalProgress>[];
+      final completedGoalsList = <GoalProgress>[];
+
       for (final p in progressList) {
         totalProgressSum += p.progressPercent;
+
+        if (p.status == GoalStatus.achieved) {
+          achievedGoals++;
+          completedGoalsList.add(p);
+        } else {
+          activeGoalsList.add(p);
+          if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
+            onTrackGoals++;
+          } else if (p.status == GoalStatus.behind) {
+            behindGoals++;
+          }
+        }
       }
       final avgProgress = totalProgressSum / totalGoals;
 
       // Get all active goals (not achieved) sorted by progress (highest first)
-      final activeGoalsList = progressList
-          .where((p) => p.status != GoalStatus.achieved)
-          .toList();
       activeGoalsList.sort(
         (a, b) => b.progressPercent.compareTo(a.progressPercent),
       );
@@ -483,9 +485,6 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           : null;
 
       // Get achieved goals sorted by updated date (most recent first), limit to 5
-      final completedGoalsList = progressList
-          .where((p) => p.status == GoalStatus.achieved)
-          .toList();
       completedGoalsList.sort(
         (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
       );
@@ -517,8 +516,10 @@ class GoalsSummary {
   final int behindGoals;
   final double averageProgress;
   final GoalProgress? closestToCompletion;
-  final List<GoalProgress> activeGoals; // Active (non-achieved) goals for carousel
-  final List<GoalProgress> completedGoals; // Achieved goals for carousel (max 5)
+  final List<GoalProgress>
+  activeGoals; // Active (non-achieved) goals for carousel
+  final List<GoalProgress>
+  completedGoals; // Achieved goals for carousel (max 5)
 
   const GoalsSummary({
     required this.totalGoals,
@@ -545,7 +546,10 @@ class GoalsSummary {
   bool get hasActiveGoals => totalGoals > achievedGoals;
 
   /// All goals for carousel (active first, then completed)
-  List<GoalProgress> get allCarouselGoals => [...activeGoals, ...completedGoals];
+  List<GoalProgress> get allCarouselGoals => [
+    ...activeGoals,
+    ...completedGoals,
+  ];
 }
 
 /// Multi-currency provider for a single goal's progress
@@ -673,29 +677,33 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
     );
   }
 
-  // Calculate summary statistics
+  // Optimization: Single pass loop for aggregating multi-currency goals summary metrics
   final totalGoals = progressList.length;
-  final achievedGoals = progressList
-      .where((p) => p.status == GoalStatus.achieved)
-      .length;
-  final onTrackGoals = progressList
-      .where((p) => p.status == GoalStatus.onTrack)
-      .length;
-  final behindGoals = progressList
-      .where((p) => p.status == GoalStatus.behind)
-      .length;
-
-  // Calculate average progress
+  int achievedGoals = 0;
+  int onTrackGoals = 0;
+  int behindGoals = 0;
   double totalProgress = 0.0;
+  final activeGoalsList = <GoalProgress>[];
+  final completedGoalsList = <GoalProgress>[];
+
   for (final p in progressList) {
     totalProgress += p.progressPercent;
+
+    if (p.status == GoalStatus.achieved) {
+      achievedGoals++;
+      completedGoalsList.add(p);
+    } else {
+      activeGoalsList.add(p);
+      if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
+        onTrackGoals++;
+      } else if (p.status == GoalStatus.behind) {
+        behindGoals++;
+      }
+    }
   }
   final avgProgress = totalProgress / totalGoals;
 
   // Get all active goals (not achieved) sorted by progress (highest first)
-  final activeGoalsList = progressList
-      .where((p) => p.status != GoalStatus.achieved)
-      .toList();
   activeGoalsList.sort(
     (a, b) => b.progressPercent.compareTo(a.progressPercent),
   );
@@ -704,9 +712,6 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
       : null;
 
   // Get achieved goals sorted by updated date (most recent first), limit to 5
-  final completedGoalsList = progressList
-      .where((p) => p.status == GoalStatus.achieved)
-      .toList();
   completedGoalsList.sort(
     (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
   );

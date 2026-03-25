@@ -1,12 +1,11 @@
-1. **Add `Semantics` wrapper to `_TemplateCard` in `lib/features/investment/presentation/widgets/template_selector.dart`**:
-   - Wrap the `GestureDetector` in a `Semantics` widget.
-   - Set `button: true` to indicate it is an interactive element.
-   - Set `selected: isSelected` to communicate its state.
-   - Provide a clear `label: template.name` to ensure screen readers announce it properly.
-   - Use `excludeSemantics: true` inside the `Semantics` widget to prevent screen readers from redundantly reading the complex internal structure (emoji, name, rate).
-2. **Document learning**:
-   - Add an entry to `.jules/palette.md` noting that custom horizontal scrolling selectors with custom interactive cards should be wrapped in `Semantics(button: true)` with appropriate selection state and clear labels.
-3. **Pre-commit checks**:
-   - Ensure the code formatting, analysis, and tests pass.
-4. **Submit**:
-   - Push the branch with a clear commit message.
+1. **Optimize `investmentTypeDistributionProvider`:**
+   - In `lib/features/investment/presentation/providers/investment_analytics_provider.dart`, the `investmentTypeDistributionProvider` iterates through `allCashFlows` and pre-calculates the `totalInvested` amount per investment. Then, it maps over the `investments` and calculates the distribution per `InvestmentType`.
+   - The current implementation iterates through the map and lists and uses a map to aggregate values, which creates a bit of overhead. We can use a direct O(N) map and standard loops instead of multiple `containsKey` operations or additional lookups to accumulate values more efficiently in `TypeDistribution`. We will initialize an empty distribution map or array, loop through investments and cash flows, and aggregate values directly to prevent duplicate allocations and `where()` mappings. Wait, the current logic first calculates total invested per investment ID in a map, and then goes through active investments to group by type. Let's see if we can do this in a single pass. Actually, since we need to filter to only include active investments, and group by type, maybe we can map `InvestmentId` to `InvestmentType` directly from the `investments` list first, and then iterate through `allCashFlows` accumulating amounts directly for the `InvestmentType`. This way, we avoid looping over investments twice and creating intermediate objects.
+
+2. **Optimize `multiCurrencyGoalsSummaryProvider`:**
+   - In `lib/features/goals/presentation/providers/goal_progress_provider.dart`, `multiCurrencyGoalsSummaryProvider` has multiple `.where(...).length` or `.where(...).toList()` iterations over the same list (`progressList`) to calculate metrics like `achievedGoals`, `onTrackGoals`, `behindGoals`, and `activeGoalsList` / `completedGoalsList`.
+   - **Optimization:** Replace the sequential `.where` calls with a single `for` loop pass. Inside the loop, increment counters for `achievedGoals`, `onTrackGoals`, and `behindGoals`, accumulate `totalProgress`, and add items to either `activeGoalsList` or `completedGoalsList`.
+   - This directly aligns with the memory: "To optimize data aggregation over collections in Dart, avoid chaining Iterable methods like `.where().toList().sort().fold()` or `.where().map().toSet()`. Instead, use a single O(N) `for` loop to compute values or build collections simultaneously, which eliminates intermediate list allocations and sorting overhead."
+   - The exact same optimization should be applied to `goalsSummaryProvider` in the same file.
+
+3. **Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.**
