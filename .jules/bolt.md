@@ -32,3 +32,8 @@
 
 **Learning:** When extracting multiple metrics (e.g., counting different statuses or summing different values) from the same collection, using multiple sequential `.where()` calls causes the application to iterate over the entire collection multiple times unnecessarily.
 **Action:** Replace sequential `.where()` aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
+
+## 2026-03-26 - Single pass iteration over multiple .where() partitions
+
+**Learning:** When partitioning a list into multiple categories (e.g., separating items by status or counting them simultaneously), using sequential `.where().length` or `.where().toList()` operations creates unnecessary iterations and intermediate list allocations.
+**Action:** Replace multiple sequential `.where()` calls on the same collection with a single `O(N)` `for` loop. You can use standard `if/else` branches to simultaneously partition lists and sum/count values in a single pass.
