@@ -34,3 +34,7 @@
 
 **Learning:** Custom interactive elements like color or icon pickers created using `GestureDetector` lack proper native accessibility roles in Flutter. Screen readers may fail to announce their role as a button, their selection state, and their label.
 **Action:** When building custom interactive components using generic containers and `GestureDetector`s, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label`, specify `selected` state if applicable, and often use `excludeSemantics: true` to prevent the screen reader from redundantly parsing the complex child tree.
+
+## 2024-11-20 - Add Semantics to PremiumGate
+**Learning:** `GestureDetector` coupled with `AbsorbPointer` requires a `Semantics` wrapper for screen reader visibility.
+**Action:** Always wrap feature gates in `Semantics(button: true)` with a descriptive `label` and `excludeSemantics: true` to provide a clear actionable announcement for screen readers while hiding the underlying, inaccessible locked content.
