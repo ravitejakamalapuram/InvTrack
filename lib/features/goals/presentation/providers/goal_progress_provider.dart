@@ -471,8 +471,7 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
 
           if (p.status == GoalStatus.behind) {
             behindGoals++;
-          } else if (p.status == GoalStatus.onTrack ||
-              p.status == GoalStatus.ahead) {
+          } else if (p.status == GoalStatus.onTrack) {
             onTrackGoals++;
           }
         }
