@@ -134,111 +134,109 @@ final investmentListStateProvider =
 /// Provider for filtered and sorted investments
 /// Uses separate streams for active and archived investments for complete isolation.
 /// Uses .autoDispose since it's only used in investment_list_screen and its widgets
-final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<InvestmentEntity>>>((
-  ref,
-) {
-  final listState = ref.watch(investmentListStateProvider);
+final filteredInvestmentsProvider =
+    Provider.autoDispose<AsyncValue<List<InvestmentEntity>>>((ref) {
+      final listState = ref.watch(investmentListStateProvider);
 
-  // Use the appropriate stream based on filter
-  final AsyncValue<List<InvestmentEntity>> sourceAsync;
-  if (listState.filter == InvestmentFilter.archived) {
-    // For archived filter, use the archived investments stream
-    sourceAsync = ref.watch(archivedInvestmentsProvider);
-  } else {
-    // For all other filters, use the active investments stream
-    sourceAsync = ref.watch(allInvestmentsProvider);
-  }
-
-  return sourceAsync.when(
-    data: (investments) {
-      // Optimization: Single pass loop for all filters replacing sequential .where().toList() calls
-      final filtered = <InvestmentEntity>[];
-      final hasSearch = listState.searchQuery.isNotEmpty;
-      final query = hasSearch ? listState.searchQuery.toLowerCase() : '';
-
-      for (final inv in investments) {
-        // Apply status filter (only for active investments)
-        if (listState.filter == InvestmentFilter.open &&
-            inv.status != InvestmentStatus.open) {
-          continue;
-        }
-        if (listState.filter == InvestmentFilter.closed &&
-            inv.status != InvestmentStatus.closed) {
-          continue;
-        }
-
-        // Apply type filter
-        if (listState.hasTypeFilter && inv.type != listState.typeFilter) {
-          continue;
-        }
-
-        // Apply search filter
-        if (hasSearch &&
-            !inv.name.toLowerCase().contains(query) &&
-            !inv.type.displayName.toLowerCase().contains(query)) {
-          continue;
-        }
-
-        filtered.add(inv);
+      // Use the appropriate stream based on filter
+      final AsyncValue<List<InvestmentEntity>> sourceAsync;
+      if (listState.filter == InvestmentFilter.archived) {
+        // For archived filter, use the archived investments stream
+        sourceAsync = ref.watch(archivedInvestmentsProvider);
+      } else {
+        // For all other filters, use the active investments stream
+        sourceAsync = ref.watch(allInvestmentsProvider);
       }
 
-      // Pre-compute stats for sorting using ref.watch to react to stats loading
-      // This ensures the list re-sorts when stats become available
-      final statsCache = <String, InvestmentStats?>{};
+      return sourceAsync.when(
+        data: (investments) {
+          // Optimization: Single pass loop for all filters replacing sequential .where().toList() calls
+          final filtered = <InvestmentEntity>[];
+          final hasSearch = listState.searchQuery.isNotEmpty;
+          final query = hasSearch ? listState.searchQuery.toLowerCase() : '';
 
-      // Check if current sort criteria actually needs XIRR
-      final requiresXirr =
-          listState.sort == InvestmentSort.xirrAsc ||
-          listState.sort == InvestmentSort.xirrDesc;
+          for (final inv in investments) {
+            // Apply status filter (only for active investments)
+            if (listState.filter == InvestmentFilter.open && inv.status != InvestmentStatus.open) {
+              continue;
+            }
+            if (listState.filter == InvestmentFilter.closed && inv.status != InvestmentStatus.closed) {
+              continue;
+            }
 
-      // OPTIMIZATION: Get basic stats map directly for active investments
-      // This avoids N ref.watches inside the loop
-      final basicStatsMapAsync =
-          !requiresXirr && listState.filter != InvestmentFilter.archived
-          ? ref.watch(activeInvestmentBasicStatsMapProvider)
-          : null;
-      final basicStatsMap = basicStatsMapAsync?.value;
+            // Apply type filter
+            if (listState.hasTypeFilter && inv.type != listState.typeFilter) {
+              continue;
+            }
 
-      for (final inv in filtered) {
-        // PERFORMANCE OPTIMIZATION:
-        // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
-        // Also correctly handle archived vs active investments.
-        final AsyncValue<InvestmentStats> statsAsync;
+            // Apply search filter
+            if (hasSearch &&
+                !inv.name.toLowerCase().contains(query) &&
+                !inv.type.displayName.toLowerCase().contains(query)) {
+              continue;
+            }
 
-        if (inv.isArchived) {
-          statsAsync = requiresXirr
-              ? ref.watch(archivedInvestmentStatsProvider(inv.id))
-              : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
-          statsCache[inv.id] = statsAsync.value;
-        } else {
-          if (requiresXirr) {
-            statsAsync = ref.watch(investmentStatsProvider(inv.id));
-            statsCache[inv.id] = statsAsync.value;
-          } else {
-            // Use map lookup if available for O(1) access without creating listeners
-            if (basicStatsMap != null) {
-              final stats = basicStatsMap[inv.id] ?? InvestmentStats.empty();
-              statsCache[inv.id] = stats;
-            } else {
-              // Fallback (should rarely be reached for active investments)
-              statsAsync = ref.watch(investmentBasicStatsProvider(inv.id));
+            filtered.add(inv);
+          }
+
+          // Pre-compute stats for sorting using ref.watch to react to stats loading
+          // This ensures the list re-sorts when stats become available
+          final statsCache = <String, InvestmentStats?>{};
+
+          // Check if current sort criteria actually needs XIRR
+          final requiresXirr =
+              listState.sort == InvestmentSort.xirrAsc ||
+              listState.sort == InvestmentSort.xirrDesc;
+
+          // OPTIMIZATION: Get basic stats map directly for active investments
+          // This avoids N ref.watches inside the loop
+          final basicStatsMapAsync =
+              !requiresXirr && listState.filter != InvestmentFilter.archived
+              ? ref.watch(activeInvestmentBasicStatsMapProvider)
+              : null;
+          final basicStatsMap = basicStatsMapAsync?.value;
+
+          for (final inv in filtered) {
+            // PERFORMANCE OPTIMIZATION:
+            // Use basic stats provider (no XIRR) unless explicitly sorting by XIRR.
+            // Also correctly handle archived vs active investments.
+            final AsyncValue<InvestmentStats> statsAsync;
+
+            if (inv.isArchived) {
+              statsAsync = requiresXirr
+                  ? ref.watch(archivedInvestmentStatsProvider(inv.id))
+                  : ref.watch(archivedInvestmentBasicStatsProvider(inv.id));
               statsCache[inv.id] = statsAsync.value;
+            } else {
+              if (requiresXirr) {
+                statsAsync = ref.watch(investmentStatsProvider(inv.id));
+                statsCache[inv.id] = statsAsync.value;
+              } else {
+                // Use map lookup if available for O(1) access without creating listeners
+                if (basicStatsMap != null) {
+                  final stats =
+                      basicStatsMap[inv.id] ?? InvestmentStats.empty();
+                  statsCache[inv.id] = stats;
+                } else {
+                  // Fallback (should rarely be reached for active investments)
+                  statsAsync = ref.watch(investmentBasicStatsProvider(inv.id));
+                  statsCache[inv.id] = statsAsync.value;
+                }
+              }
             }
           }
-        }
-      }
 
-      // Apply sorting
-      filtered.sort(
-        (a, b) => _compareInvestments(a, b, listState.sort, statsCache),
+          // Apply sorting
+          filtered.sort(
+            (a, b) => _compareInvestments(a, b, listState.sort, statsCache),
+          );
+
+          return AsyncValue.data(filtered);
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
       );
-
-      return AsyncValue.data(filtered);
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
+    });
 
 /// Compare two investments for sorting
 int _compareInvestments(
@@ -332,23 +330,14 @@ final investmentCountsProvider =
       final activeInvestments = ref.watch(allInvestmentsProvider).value ?? [];
       final archivedInvestments =
           ref.watch(archivedInvestmentsProvider).value ?? [];
-
-      // Optimization: Calculate multiple status counts in a single pass
-      // instead of using multiple sequential .where() operations.
-      int openCount = 0;
-      int closedCount = 0;
-      for (final i in activeInvestments) {
-        if (i.status == InvestmentStatus.open) {
-          openCount++;
-        } else if (i.status == InvestmentStatus.closed) {
-          closedCount++;
-        }
-      }
-
       return (
         all: activeInvestments.length,
-        open: openCount,
-        closed: closedCount,
+        open: activeInvestments
+            .where((i) => i.status == InvestmentStatus.open)
+            .length,
+        closed: activeInvestments
+            .where((i) => i.status == InvestmentStatus.closed)
+            .length,
         archived: archivedInvestments.length,
       );
     });
