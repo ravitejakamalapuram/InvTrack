@@ -35,8 +35,14 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
+  // Optimization: Replace .where().toList() with standard loop
   // Filter outflows only
-  final outflows = cashFlows.where((cf) => cf.type.isOutflow).toList();
+  final outflows = <CashFlowEntity>[];
+  for (final cf in cashFlows) {
+    if (cf.type.isOutflow) {
+      outflows.add(cf);
+    }
+  }
   if (outflows.isEmpty) return 0.0;
 
   // Batch convert all outflows to base currency (OPTIMIZED)
@@ -75,8 +81,14 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
+  // Optimization: Replace .where().toList() with standard loop
   // Filter inflows only
-  final inflows = cashFlows.where((cf) => cf.type.isInflow).toList();
+  final inflows = <CashFlowEntity>[];
+  for (final cf in cashFlows) {
+    if (cf.type.isInflow) {
+      inflows.add(cf);
+    }
+  }
   if (inflows.isEmpty) return 0.0;
 
   // Batch convert all inflows to base currency (OPTIMIZED)

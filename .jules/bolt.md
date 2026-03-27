@@ -27,3 +27,8 @@
 
 **Learning:** Chaining multiple `.where().toList()` operations in Dart creates intermediate lists and iterates over the data multiple times, causing O(N*M) time complexity overhead.
 **Action:** Replace multiple sequential `.where().toList()` calls with a single `for` loop pass that applies all filter conditions using `continue` statements to skip non-matching elements. This results in an O(N) operation with only a single list allocation.
+
+## 2024-05-19 - Single Pass Multiple Metric Extraction
+
+**Learning:** When extracting multiple metrics (e.g., counting different statuses or summing different values) from the same collection, using multiple sequential `.where()` calls causes the application to iterate over the entire collection multiple times unnecessarily.
+**Action:** Replace sequential `.where()` aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
