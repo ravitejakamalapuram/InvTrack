@@ -398,56 +398,51 @@ class _QuickStartButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      hint: sublabel,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (onTap != null) {
-              HapticFeedback.lightImpact();
-              onTap!();
-            }
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Ink(
-            padding: EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 24),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (onTap != null) {
+            HapticFeedback.lightImpact();
+            onTap!();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
                 ),
-                SizedBox(height: AppSpacing.sm),
-                Text(
-                  label,
-                  style: AppTypography.label.copyWith(
-                    color: isDark ? Colors.white : AppColors.neutral900Light,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              SizedBox(height: AppSpacing.sm),
+              Text(
+                label,
+                style: AppTypography.label.copyWith(
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                  fontWeight: FontWeight.w600,
                 ),
-                SizedBox(height: 2),
-                Text(
-                  sublabel,
-                  style: AppTypography.small.copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
-                  ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                sublabel,
+                style: AppTypography.small.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral500Light,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
