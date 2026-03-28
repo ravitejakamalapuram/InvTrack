@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Refactor
+
+- Clean architecture - Move UI from domain to presentation layer
+
+## [3.54.6] - 2026-03-28
+
 ### Fix
 
 - App update check, notification permissions, and Crashlytics filtering
