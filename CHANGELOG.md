@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fix
+
+- App update check, notification permissions, and Crashlytics filtering
+
 ## [3.54.1] - 2026-03-22
 
 ### 🐛 Bug Fixes
