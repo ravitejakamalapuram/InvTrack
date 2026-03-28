@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.54.7] - 2026-03-28
 
 ### Refactor
 
