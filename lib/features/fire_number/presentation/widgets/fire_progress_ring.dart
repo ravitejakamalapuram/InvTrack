@@ -130,17 +130,24 @@ class _FireRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Edge case protection: Ensure size is valid
+    if (size.width <= 0 || size.height <= 0) return;
+    if (strokeWidth >= size.width) return; // Avoid negative radius
+
+    // Edge case protection: Ensure progress is finite
+    final safeProgress = progress.isFinite ? progress.clamp(0.0, 100.0) : 0.0;
+
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
     final startAngle = -math.pi / 2; // Start from top
-    final sweepAngle = 2 * math.pi * (progress / 100);
+    final sweepAngle = 2 * math.pi * (safeProgress / 100);
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    if (useGradient && progress > 0) {
+    if (useGradient && safeProgress > 0) {
       // Create gradient for progress
       final gradient = SweepGradient(
         startAngle: startAngle,
