@@ -5,11 +5,13 @@ import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -111,6 +113,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         // Set user identifier in Crashlytics for crash reports
         final crashlytics = ref.read(crashlyticsServiceProvider);
         await crashlytics.setUserIdentifier(user.id);
+
+        // Request notification permissions on first sign-in
+        if (!mounted) return;
+        await _requestNotificationPermissionsIfNeeded();
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {
@@ -156,6 +162,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
           name: 'guest_mode_started',
           parameters: {'method': 'anonymous'},
         );
+
+        // Request notification permissions on first sign-in
+        if (!mounted) return;
+        await _requestNotificationPermissionsIfNeeded();
       }
       // Firestore sync happens automatically via listeners - no manual sync needed
     } catch (e, st) {
@@ -165,6 +175,36 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Request notification permissions on first sign-in
+  /// Only requests once per user to avoid annoying repeated prompts
+  Future<void> _requestNotificationPermissionsIfNeeded() async {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final hasRequestedPermissions = prefs.getBool('notification_permissions_requested') ?? false;
+
+      // Only request permissions once per install
+      if (!hasRequestedPermissions) {
+        LoggerService.info('Requesting notification permissions on first sign-in');
+
+        final notificationService = ref.read(notificationServiceProvider);
+        final granted = await notificationService.requestPermissions();
+
+        LoggerService.info(
+          'Notification permissions request result',
+          metadata: {'granted': granted},
+        );
+
+        // Mark as requested to avoid repeated prompts
+        await prefs.setBool('notification_permissions_requested', true);
+      } else {
+        LoggerService.debug('Notification permissions already requested');
+      }
+    } catch (e) {
+      // Don't block sign-in flow if permission request fails
+      LoggerService.warn('Error requesting notification permissions', error: e);
     }
   }
 

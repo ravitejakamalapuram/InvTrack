@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Entity representing app version information from remote config
 class AppVersionEntity {
   final String latestVersion;
@@ -43,12 +45,17 @@ class AppVersionEntity {
   factory AppVersionEntity.fromMap(Map<String, dynamic> map) {
     DateTime? releaseDate;
     if (map['releaseDate'] != null) {
-      // Support both Timestamp and String formats
       final releaseDateValue = map['releaseDate'];
-      if (releaseDateValue is String) {
+
+      // Support Firestore Timestamp, String, and int formats
+      if (releaseDateValue is Timestamp) {
+        // Firestore Timestamp object (most common in production)
+        releaseDate = releaseDateValue.toDate();
+      } else if (releaseDateValue is String) {
+        // String ISO 8601 format
         releaseDate = DateTime.tryParse(releaseDateValue);
       } else if (releaseDateValue is int) {
-        // Firestore Timestamp in milliseconds
+        // Milliseconds since epoch
         releaseDate = DateTime.fromMillisecondsSinceEpoch(releaseDateValue);
       }
     }
