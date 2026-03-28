@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// Goal type - what kind of target the user is aiming for
@@ -26,28 +25,6 @@ enum GoalType {
         return 'Reach your target by a deadline';
       case GoalType.incomeTarget:
         return 'Generate monthly passive income';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case GoalType.targetAmount:
-        return Icons.savings_rounded;
-      case GoalType.targetDate:
-        return Icons.event_rounded;
-      case GoalType.incomeTarget:
-        return Icons.trending_up_rounded;
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case GoalType.targetAmount:
-        return const Color(0xFF3B82F6); // Blue
-      case GoalType.targetDate:
-        return const Color(0xFFF59E0B); // Amber
-      case GoalType.incomeTarget:
-        return const Color(0xFF10B981); // Emerald
     }
   }
 
@@ -120,40 +97,6 @@ enum GoalStatus {
         return 'Archived';
     }
   }
-
-  Color get color {
-    switch (this) {
-      case GoalStatus.notStarted:
-        return const Color(0xFF6B7280); // Gray
-      case GoalStatus.onTrack:
-        return const Color(0xFF3B82F6); // Blue
-      case GoalStatus.ahead:
-        return const Color(0xFF10B981); // Emerald
-      case GoalStatus.behind:
-        return const Color(0xFFF59E0B); // Amber
-      case GoalStatus.achieved:
-        return const Color(0xFF10B981); // Emerald
-      case GoalStatus.archived:
-        return const Color(0xFF6B7280); // Gray
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case GoalStatus.notStarted:
-        return Icons.hourglass_empty_rounded;
-      case GoalStatus.onTrack:
-        return Icons.trending_flat_rounded;
-      case GoalStatus.ahead:
-        return Icons.trending_up_rounded;
-      case GoalStatus.behind:
-        return Icons.trending_down_rounded;
-      case GoalStatus.achieved:
-        return Icons.check_circle_rounded;
-      case GoalStatus.archived:
-        return Icons.archive_rounded;
-    }
-  }
 }
 
 /// Default goal icons for selection
@@ -178,22 +121,6 @@ class GoalIcons {
   ];
 
   static String get defaultIcon => '🎯';
-}
-
-/// Default goal colors for selection
-class GoalColors {
-  static const List<Color> available = [
-    Color(0xFF3B82F6), // Blue
-    Color(0xFF10B981), // Emerald
-    Color(0xFFF59E0B), // Amber
-    Color(0xFFEC4899), // Pink
-    Color(0xFF8B5CF6), // Purple
-    Color(0xFF06B6D4), // Cyan
-    Color(0xFFF97316), // Orange
-    Color(0xFFEF4444), // Red
-  ];
-
-  static Color get defaultColor => available[0];
 }
 
 /// Goal Entity - represents a financial goal
@@ -231,8 +158,6 @@ class GoalEntity {
     required this.updatedAt,
     this.currency = 'USD', // Default for backward compatibility
   });
-
-  Color get color => Color(colorValue);
 
   /// Check if goal has a deadline
   bool get hasDeadline => targetDate != null;

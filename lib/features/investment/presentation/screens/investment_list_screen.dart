@@ -22,6 +22,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_selection_controls.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_states.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/sort_options_sheet.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 
 /// Main investment list screen with search, filter, sort, and multi-select capabilities.
 /// State is managed via [investmentListStateProvider] and [filteredInvestmentsProvider].

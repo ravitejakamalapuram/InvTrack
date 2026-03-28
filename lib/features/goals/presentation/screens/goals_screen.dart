@@ -229,7 +229,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
                 : AppColors.surfaceLight,
             titleSpacing: AppSpacing.md,
             title: Text(
-              'Goals',
+              l10n.goals,
               style: AppTypography.h2.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
                 fontSize: 22,

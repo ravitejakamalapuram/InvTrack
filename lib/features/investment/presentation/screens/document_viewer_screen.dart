@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
@@ -163,7 +164,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           TextButton.icon(
             onPressed: () => _shareDocument(context),
             icon: const Icon(Icons.share_rounded, color: Colors.white70),
-            label: Text('Share', style: TextStyle(color: Colors.white70)),
+            label: Text(l10n.share, style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),

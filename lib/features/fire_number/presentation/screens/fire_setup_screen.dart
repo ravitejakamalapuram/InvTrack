@@ -127,7 +127,7 @@ class _FireSetupScreenState extends ConsumerState<FireSetupScreen> {
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
       appBar: AppBar(
-        title: Text('FIRE Setup', style: AppTypography.h2),
+        title: Text(l10n.fireSetup, style: AppTypography.h2),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: _currentStep > 0

@@ -331,12 +331,13 @@ class _QuickStartSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Get Started',
+            l10n.getStarted,
             style: AppTypography.h4.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
             ),
@@ -350,8 +351,8 @@ class _QuickStartSection extends StatelessWidget {
               Expanded(
                 child: _QuickStartButton(
                   icon: Icons.add_rounded,
-                  label: 'Add Manually',
-                  sublabel: 'Step by step',
+                  label: l10n.addManually,
+                  sublabel: l10n.stepByStep,
                   color: primaryColor,
                   isDark: isDark,
                   onTap: onAddManual,
@@ -363,8 +364,8 @@ class _QuickStartSection extends StatelessWidget {
               Expanded(
                 child: _QuickStartButton(
                   icon: Icons.upload_file_rounded,
-                  label: 'Import CSV',
-                  sublabel: 'Bulk upload',
+                  label: l10n.importCsv,
+                  sublabel: l10n.bulkUpload,
                   color: AppColors.accentLight,
                   isDark: isDark,
                   onTap: onImportCsv,

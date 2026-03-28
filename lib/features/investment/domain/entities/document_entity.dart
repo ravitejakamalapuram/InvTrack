@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Document type categories for investment-related documents
 enum DocumentType {
   receipt,
@@ -23,40 +21,6 @@ enum DocumentType {
         return 'Image';
       case DocumentType.other:
         return 'Other';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case DocumentType.receipt:
-        return Icons.receipt_long_rounded;
-      case DocumentType.contract:
-        return Icons.description_rounded;
-      case DocumentType.statement:
-        return Icons.summarize_rounded;
-      case DocumentType.certificate:
-        return Icons.workspace_premium_rounded;
-      case DocumentType.image:
-        return Icons.image_rounded;
-      case DocumentType.other:
-        return Icons.attach_file_rounded;
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case DocumentType.receipt:
-        return const Color(0xFF10B981); // Emerald
-      case DocumentType.contract:
-        return const Color(0xFF3B82F6); // Blue
-      case DocumentType.statement:
-        return const Color(0xFFF59E0B); // Amber
-      case DocumentType.certificate:
-        return const Color(0xFF8B5CF6); // Purple
-      case DocumentType.image:
-        return const Color(0xFFEC4899); // Pink
-      case DocumentType.other:
-        return const Color(0xFF6B7280); // Gray
     }
   }
 

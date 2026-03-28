@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
 import 'mock_goal_repository.dart';
 
 void main() {

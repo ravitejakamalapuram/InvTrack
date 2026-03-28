@@ -17,6 +17,7 @@ import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_icon_picker.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/investment_selector_sheet.dart';
@@ -190,7 +191,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
       title: Text(
-        widget.isEditing ? 'Edit Goal' : 'Create Goal',
+        widget.isEditing ? l10n.editGoal : l10n.createGoal,
         style: AppTypography.h3.copyWith(
           color: isDark ? Colors.white : AppColors.neutral900Light,
         ),

@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Provider to track if onboarding has been completed
 final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
@@ -270,6 +271,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildNextButton(bool isDark) {
+    final l10n = AppLocalizations.of(context);
     final isLastPage = _currentPage == _pages.length - 1;
 
     return SizedBox(
@@ -288,7 +290,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isLastPage ? 'Get Started' : 'Next',
+              isLastPage ? l10n.getStarted : l10n.next,
               style: AppTypography.buttonLarge.copyWith(color: Colors.white),
             ),
             if (!isLastPage) ...[

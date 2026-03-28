@@ -155,7 +155,7 @@ class DebugSettingsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.errorOccurred),
+            content: Text(l10n.errorOccurred(e.toString())),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -233,7 +233,7 @@ class DebugSettingsScreen extends ConsumerWidget {
           // Show user-facing error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.errorOccurred),
+              content: Text(l10n.errorOccurred(e.toString())),
               backgroundColor: AppColors.errorLight,
             ),
           );
@@ -270,7 +270,7 @@ class DebugSettingsScreen extends ConsumerWidget {
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (error, stack) => Text('Error: $error'),
+              error: (error, stack) => Text(l10n.errorOccurred(error.toString())),
             ),
             actions: [
               TextButton(

@@ -154,7 +154,7 @@ class _ImportConfirmationScreenState
             color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
             child: Column(
               children: [
-                Text('Ready to Import', style: AppTypography.h3),
+                Text(l10n.readyToImport, style: AppTypography.h3),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '${grouped.length} investments • ${widget.parseResult.validRows} cash flows',

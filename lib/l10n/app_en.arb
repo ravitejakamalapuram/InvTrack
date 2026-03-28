@@ -2032,6 +2032,67 @@
   "currencyZAR": "South African Rand (R)",
   "@currencyZAR": {
     "description": "South African Rand currency name with symbol"
+  },
+
+  "readyToImport": "Ready to Import",
+  "@readyToImport": {
+    "description": "Header text for import confirmation screen"
+  },
+
+  "fireSetup": "FIRE Setup",
+  "@fireSetup": {
+    "description": "Title for FIRE setup screen"
+  },
+
+  "createGoal": "Create Goal",
+  "@createGoal": {
+    "description": "Title for create goal screen"
+  },
+
+  "share": "Share",
+  "@share": {
+    "description": "Button text to share a document or item"
+  },
+
+  "addManually": "Add Manually",
+  "@addManually": {
+    "description": "Button text to add investment manually"
+  },
+
+  "stepByStep": "Step by step",
+  "@stepByStep": {
+    "description": "Sublabel for add manually button"
+  },
+
+  "importCsv": "Import CSV",
+  "@importCsv": {
+    "description": "Button text to import CSV file"
+  },
+
+  "bulkUpload": "Bulk upload",
+  "@bulkUpload": {
+    "description": "Sublabel for import CSV button"
+  },
+
+  "next": "Next",
+  "@next": {
+    "description": "Button text to go to next step"
+  },
+
+  "sampleDataRemovalConfirmation": "This will remove all sample investments and goals. You can always try sample data again later.",
+  "@sampleDataRemovalConfirmation": {
+    "description": "Confirmation message when clearing sample data"
+  },
+
+  "errorOccurred": "Error: {error}",
+  "@errorOccurred": {
+    "description": "Generic error message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
   }
 }
 

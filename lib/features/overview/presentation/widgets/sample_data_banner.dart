@@ -144,10 +144,7 @@ class SampleDataBanner extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.clearSampleData),
-        content: const Text(
-          'This will remove all sample investments and goals. '
-          'You can always try sample data again later.',
-        ),
+        content: Text(l10n.sampleDataRemovalConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

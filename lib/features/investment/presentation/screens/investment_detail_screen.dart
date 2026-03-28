@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/investment/presentation/widgets/document_li
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_fab_widgets.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_segment_control.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class InvestmentDetailScreen extends ConsumerStatefulWidget {
