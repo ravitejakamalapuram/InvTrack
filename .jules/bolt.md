@@ -37,3 +37,6 @@
 
 **Learning:** Iterating through a list and making sequential `await` calls to a service method inside a loop creates an N+1 problem, which is extremely slow when dealing with network or complex cache operations (like currency conversion of cash flows).
 **Action:** Replace sequential asynchronous calls inside a loop with a single bulk operation like `BatchCurrencyConverter.batchConvert()`, which handles data deduplication and enables parallel asynchronous processing, significantly improving processing speeds.
+## 2025-01-20 - Pre-filter zero value cash flows before XIRR solver
+**Learning:** In the XIRR calculation, zero amount cash flows don't affect the final result but add unnecessary elements to the input arrays, increasing iteration cycles and calculation overhead inside the numerical solver (Newton-Raphson method).
+**Action:** When preparing inputs for mathematically intensive solvers like XIRR, iterate and pre-filter zero-value elements (`amount == 0.0`) using an early `continue` in the mapping loop. This simple `O(N)` filter reduces array sizes and avoids redundant iterations inside the $O(N \times M)$ solver loop.

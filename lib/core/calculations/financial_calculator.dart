@@ -90,10 +90,17 @@ class FinancialCalculator {
     final dates = <DateTime>[];
     final amounts = <double>[];
 
+    // Optimization: Skip zero amount cash flows before passing to XIRR solver
+    // Zero amounts don't affect XIRR and just waste calculation cycles
     for (final cf in cashFlows) {
+      final amount = cf.signedAmount;
+      if (amount == 0.0) continue;
+
       dates.add(cf.date);
-      amounts.add(cf.signedAmount);
+      amounts.add(amount);
     }
+
+    if (dates.isEmpty) return 0.0;
 
     return XirrSolver.calculateXirr(dates, amounts) ?? 0.0;
   }
