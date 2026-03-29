@@ -78,14 +78,14 @@ class _MergeInvestmentsDialogState extends State<MergeInvestmentsDialog> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _nameController,
-              label: 'New Investment Name',
-              hint: 'Enter name for merged investment',
+              label: l10n.newInvestmentName,
+              hint: l10n.enterNameForMergedInvestment,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
             Text(
-              'Investment Type',
+              l10n.investmentType,
               style: AppTypography.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
               ),

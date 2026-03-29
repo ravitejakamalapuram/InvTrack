@@ -2093,6 +2093,96 @@
         "example": "Network error"
       }
     }
+  },
+
+  "sampleDataMode": "Sample Data Mode",
+  "@sampleDataMode": {
+    "description": "Title for sample data mode banner"
+  },
+
+  "exploringWithSampleInvestments": "Exploring with sample investments",
+  "@exploringWithSampleInvestments": {
+    "description": "Subtitle for sample data mode banner"
+  },
+
+  "noResultsFound": "No Results Found",
+  "@noResultsFound": {
+    "description": "Empty state title when search returns no results"
+  },
+
+  "tryDifferentSearchTerm": "Try searching with a different term",
+  "@tryDifferentSearchTerm": {
+    "description": "Empty state message when search returns no results"
+  },
+
+  "noArchivedInvestments": "No Archived Investments",
+  "@noArchivedInvestments": {
+    "description": "Empty state title for archived investments"
+  },
+
+  "archivedInvestmentsAppearHere": "Investments you archive will appear here",
+  "@archivedInvestmentsAppearHere": {
+    "description": "Empty state message for archived investments"
+  },
+
+  "noMatchingInvestments": "No Matching Investments",
+  "@noMatchingInvestments": {
+    "description": "Empty state title when filter returns no results"
+  },
+
+  "tryDifferentFilter": "Try a different filter",
+  "@tryDifferentFilter": {
+    "description": "Empty state message when filter returns no results"
+  },
+
+  "noInvestmentsFound": "No investments found",
+  "@noInvestmentsFound": {
+    "description": "Empty state message when no investments exist"
+  },
+
+  "netPosition": "Net Position",
+  "@netPosition": {
+    "description": "Label for net position in investment details"
+  },
+
+  "bulkOpsNotAvailableForArchived": "Bulk operations are not available for archived goals.\nUse swipe actions to delete or unarchive individual items.",
+  "@bulkOpsNotAvailableForArchived": {
+    "description": "Message shown when trying to use bulk operations on archived goals"
+  },
+
+  "newInvestmentName": "New Investment Name",
+  "@newInvestmentName": {
+    "description": "Label for new investment name field in merge dialog"
+  },
+
+  "enterNameForMergedInvestment": "Enter name for merged investment",
+  "@enterNameForMergedInvestment": {
+    "description": "Hint for new investment name field in merge dialog"
+  },
+
+  "investmentType": "Investment Type",
+  "@investmentType": {
+    "description": "Label for investment type selection"
+  },
+
+  "updateRequired": "Update Required",
+  "@updateRequired": {
+    "description": "Title for force update dialog"
+  },
+
+  "updateAvailable": "Update Available",
+  "@updateAvailable": {
+    "description": "Title for optional update dialog"
+  },
+
+  "newVersionAvailableMessage": "A new version of InvTrack is available!",
+  "@newVersionAvailableMessage": {
+    "description": "Default message for update dialog"
+  },
+
+  "hiddenAmount": "Hidden amount",
+  "@hiddenAmount": {
+    "description": "Semantic label for privacy-masked amounts"
   }
 }
 

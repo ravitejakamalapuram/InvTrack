@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Stats section widget for investment detail screen.
 /// Displays net position, cash flow summary, XIRR/MOIC, and maturity info.
@@ -38,7 +39,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
     return Column(
       children: [
         // Net Position Hero Card
-        _buildNetPositionCard(isPositive),
+        _buildNetPositionCard(context, isPositive),
         const SizedBox(height: 10),
         // Cash Out and Cash In row
         _buildCashFlowSummaryCard(),
@@ -79,7 +80,8 @@ class InvestmentDetailStatsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildNetPositionCard(bool isPositive) {
+  Widget _buildNetPositionCard(BuildContext context, bool isPositive) {
+    final l10n = AppLocalizations.of(context);
     final netPositionStyle = AppTypography.h2.copyWith(
       color: isDark ? Colors.white : AppColors.neutral900Light,
       fontWeight: FontWeight.w700,
@@ -111,7 +113,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Net Position',
+                  l10n.netPosition,
                   style: AppTypography.small.copyWith(
                     color: isDark
                         ? AppColors.neutral400Dark

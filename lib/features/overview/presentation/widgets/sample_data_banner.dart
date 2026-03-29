@@ -65,7 +65,7 @@ class SampleDataBanner extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Sample Data Mode',
+                      l10n.sampleDataMode,
                       style: AppTypography.label.copyWith(
                         color: AppColors.accentLight,
                         fontWeight: FontWeight.w600,
@@ -73,7 +73,7 @@ class SampleDataBanner extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Exploring with sample investments',
+                      l10n.exploringWithSampleInvestments,
                       style: AppTypography.small.copyWith(
                         color: isDark
                             ? AppColors.neutral400Dark

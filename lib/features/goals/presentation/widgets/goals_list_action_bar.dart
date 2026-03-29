@@ -20,6 +20,7 @@ class GoalsListActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final listState = ref.watch(goalsListStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -38,8 +39,7 @@ class GoalsListActionBar extends ConsumerWidget {
         ),
         child: SafeArea(
           child: Text(
-            'Bulk operations are not available for archived goals.\n'
-            'Use swipe actions to delete or unarchive individual items.',
+            l10n.bulkOpsNotAvailableForArchived,
             textAlign: TextAlign.center,
             style: AppTypography.caption.copyWith(
               color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -49,7 +49,6 @@ class GoalsListActionBar extends ConsumerWidget {
       );
     }
 
-    final l10n = AppLocalizations.of(context);
     return SelectionListActionBar(
       selectedCount: listState.selectedIds.length,
       actions: [

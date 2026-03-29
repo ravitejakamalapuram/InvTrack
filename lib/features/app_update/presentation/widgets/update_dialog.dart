@@ -46,7 +46,7 @@ class UpdateDialog extends ConsumerWidget {
             SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                forceUpdate ? 'Update Required' : 'Update Available',
+                forceUpdate ? l10n.updateRequired : l10n.updateAvailable,
                 style: AppTypography.h3.copyWith(
                   color: isDark ? Colors.white : AppColors.neutral900Light,
                 ),
@@ -60,7 +60,7 @@ class UpdateDialog extends ConsumerWidget {
           children: [
             Text(
               versionInfo.updateMessage ??
-                  'A new version of InvTrack is available!',
+                  l10n.newVersionAvailableMessage,
               style: AppTypography.body.copyWith(
                 color: isDark
                     ? AppColors.neutral300Dark

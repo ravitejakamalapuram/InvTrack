@@ -113,6 +113,8 @@ class InvestmentNoResultsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // Determine appropriate icon, title, and message based on context
     final IconData icon;
     final String title;
@@ -120,16 +122,16 @@ class InvestmentNoResultsState extends StatelessWidget {
 
     if (isSearching) {
       icon = Icons.search_off_rounded;
-      title = 'No Results Found';
-      message = 'Try searching with a different term';
+      title = l10n.noResultsFound;
+      message = l10n.tryDifferentSearchTerm;
     } else if (isArchivedFilter) {
       icon = Icons.archive_outlined;
-      title = 'No Archived Investments';
-      message = 'Investments you archive will appear here';
+      title = l10n.noArchivedInvestments;
+      message = l10n.archivedInvestmentsAppearHere;
     } else {
       icon = Icons.filter_list_off_rounded;
-      title = 'No Matching Investments';
-      message = 'Try a different filter';
+      title = l10n.noMatchingInvestments;
+      message = l10n.tryDifferentFilter;
     }
 
     return Center(

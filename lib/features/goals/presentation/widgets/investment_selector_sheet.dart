@@ -132,10 +132,11 @@ class _InvestmentSelectorSheetState
 
     return investmentsAsync.when(
       data: (investments) {
+        final l10n = AppLocalizations.of(context);
         if (investments.isEmpty) {
           return Center(
             child: Text(
-              'No investments found',
+              l10n.noInvestmentsFound,
               style: AppTypography.bodyMedium.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
