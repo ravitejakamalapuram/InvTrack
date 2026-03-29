@@ -130,11 +130,16 @@ class FireCalculationService {
       currentValue: currentPortfolioValue,
     );
 
-    final achievedMilestones = milestones.where((m) => m.isAchieved).toList();
-    final nextMilestone = milestones.cast<FireMilestone?>().firstWhere(
-      (m) => !m!.isAchieved,
-      orElse: () => null,
-    );
+    // Optimization: Single pass loop for achieved and next milestone
+    final achievedMilestones = <FireMilestone>[];
+    FireMilestone? nextMilestone;
+    for (final m in milestones) {
+      if (m.isAchieved) {
+        achievedMilestones.add(m);
+      } else if (nextMilestone == null) {
+        nextMilestone = m;
+      }
+    }
 
     return FireCalculationResult(
       fireNumber: finalFireNumber,
