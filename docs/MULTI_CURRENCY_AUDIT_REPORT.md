@@ -16,6 +16,7 @@ An exhaustive audit of all derived calculations in InvTrack confirmed **Rule 21.
 ## Audit Scope
 
 ### Derived Calculations Audited
+
 1. ✅ **Goal Progress %** - FIXED (was buggy)
 2. ✅ **XIRR** - COMPLIANT (already correct)
 3. ✅ **Absolute Return %** - COMPLIANT (already correct)
@@ -38,6 +39,7 @@ An exhaustive audit of all derived calculations in InvTrack confirmed **Rule 21.
 - Actual: 25% in USD, 23.7% in EUR, 26.3% in INR ❌
 
 ### Root Cause
+
 `GoalProgressCalculator.calculateMultiCurrency` converted cash flows to base currency but **did not convert goal `targetAmount`**, causing ratio mismatch:
 - Numerator: Base currency (e.g., EUR 2,307.50)
 - Denominator: Original currency (e.g., USD $10,000)
@@ -65,6 +67,7 @@ final progressPercent = targetAmount > 0
 
 ---
 
+
 ## Test Coverage
 
 ### 1. Goal Progress Multi-Currency Test (TDD)
@@ -80,6 +83,7 @@ final progressPercent = targetAmount > 0
 **Results**:
 
 ```text
+
 USD: XIRR=25.71%, Return=25.0%, MOIC=1.25x
 EUR: XIRR=25.71%, Return=25.0%, MOIC=1.25x
 INR: XIRR=25.71%, Return=25.0%, MOIC=1.25x
@@ -92,6 +96,7 @@ INR: XIRR=25.71%, Return=25.0%, MOIC=1.25x
 ## Architecture Review
 
 ### Multi-Currency Pattern (Rule 21.3 Compliant)
+
 All providers follow this pattern:
 1. **Fetch** cash flows with original currencies
 2. **Convert** ALL cash flows to base currency using `BatchCurrencyConverter`
@@ -101,6 +106,7 @@ All providers follow this pattern:
 ### Providers Audited
 
 | Provider | File | Status | Notes |
+
 |----------|------|--------|-------|
 | `goalProgressListProvider` | `goal_progress_provider.dart` | ✅ FIXED | Converts target amount now |
 | `multiCurrencyXirr` | `multi_currency_providers.dart` | ✅ COMPLIANT | Line 139: Converts all CFs first |
@@ -119,9 +125,9 @@ All providers follow this pattern:
 
 ## Final Verdict
 
-✅ **All derived calculations are now Rule 21.3 compliant**  
-✅ **All 1170 tests pass**  
-✅ **Zero analyzer errors/warnings**  
+✅ **All derived calculations are now Rule 21.3 compliant**
+✅ **All tests passing** (verify via CI)
+✅ **Zero analyzer errors/warnings** (verify via CI)
 ✅ **Ready for PR review**
 
 ---

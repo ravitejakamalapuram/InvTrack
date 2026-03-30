@@ -237,7 +237,7 @@ class BatchCurrencyConverter {
 
   /// Convert a single amount from one currency to another
   ///
-  /// This is a convenience method that delegates to the underlying conversion service.
+  /// This is a convenience method that uses the same fallback strategy as [batchConvert].
   /// Use this for simple one-off conversions (e.g., converting goal target amounts).
   ///
   /// For converting multiple cash flows, prefer [batchConvert] for better performance.
@@ -246,13 +246,42 @@ class BatchCurrencyConverter {
     required String from,
     required String to,
     DateTime? date,
-  }) {
-    return _conversionService.convert(
-      amount: amount,
-      from: from,
-      to: to,
-      date: date,
-    );
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
+  }) async {
+    // Skip conversion if already in target currency
+    if (from == to) return amount;
+
+    try {
+      return await _conversionService.convert(
+        amount: amount,
+        from: from,
+        to: to,
+        date: date,
+      );
+    } catch (error) {
+      // Apply same fallback strategy as batchConvert
+      switch (fallbackStrategy) {
+        case ConversionFallbackStrategy.useOriginal:
+          return amount;
+
+        case ConversionFallbackStrategy.useLastKnown:
+          final rate = await _conversionService.getLastKnownRate(
+            from: from,
+            to: to,
+          );
+          if (rate != null) return amount * rate;
+          return amount; // Fall back to original if no cached rate
+
+        case ConversionFallbackStrategy.throwError:
+          throw CurrencyConversionException(
+            'Failed to convert $from → $to',
+          );
+
+        case ConversionFallbackStrategy.skipTransaction:
+          return 0.0; // Exclude from calculation
+      }
+    }
   }
 
   /// Format date as YYYY-MM-DD (delegates to shared utility)

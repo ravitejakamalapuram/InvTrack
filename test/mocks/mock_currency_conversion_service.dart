@@ -2,6 +2,16 @@ import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 
 /// Mock implementation of CurrencyConversionService for testing
 class MockCurrencyConversionService implements CurrencyConversionService {
+  /// Shared exchange rates (how many INR per 1 unit of currency)
+  /// Extracted to prevent drift between convert() and getLastKnownRate()
+  static const Map<String, double> _ratesInINR = {
+    'USD': 83.0,  // 1 USD = 83 INR
+    'EUR': 90.0,  // 1 EUR = 90 INR
+    'GBP': 105.0, // 1 GBP = 105 INR
+    'JPY': 0.56,  // 1 JPY = 0.56 INR
+    'INR': 1.0,   // 1 INR = 1 INR
+  };
+
   bool clearCacheCalled = false;
   int clearCacheCallCount = 0;
 
@@ -22,27 +32,18 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     // Simple mock conversion: 1 USD = 83 INR, 1 EUR = 90 INR, etc.
     if (from == to) return amount;
 
-    // Mock exchange rates (how many INR per 1 unit of currency)
-    const ratesInINR = {
-      'USD': 83.0,  // 1 USD = 83 INR
-      'EUR': 90.0,  // 1 EUR = 90 INR
-      'GBP': 105.0, // 1 GBP = 105 INR
-      'JPY': 0.56,  // 1 JPY = 0.56 INR
-      'INR': 1.0,   // 1 INR = 1 INR
-    };
-
-    // First convert 'from' currency to INR, then INR to 'to' currency
+    // Use shared exchange rates constant
     // Fail fast for unsupported currencies to catch test setup errors
-    final fromRate = ratesInINR[from];
-    final toRate = ratesInINR[to];
+    final fromRate = _ratesInINR[from];
+    final toRate = _ratesInINR[to];
 
     if (fromRate == null) {
       throw ArgumentError('Unsupported "from" currency: $from. '
-          'Supported: ${ratesInINR.keys.join(", ")}');
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
     if (toRate == null) {
       throw ArgumentError('Unsupported "to" currency: $to. '
-          'Supported: ${ratesInINR.keys.join(", ")}');
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
 
     // Example: 100 USD to EUR
@@ -78,26 +79,18 @@ class MockCurrencyConversionService implements CurrencyConversionService {
   }) async {
     if (from == to) return 1.0;
 
-    // Mock exchange rates (how many INR per 1 unit of currency)
-    const ratesInINR = {
-      'USD': 83.0,  // 1 USD = 83 INR
-      'EUR': 90.0,  // 1 EUR = 90 INR
-      'GBP': 105.0, // 1 GBP = 105 INR
-      'JPY': 0.56,  // 1 JPY = 0.56 INR
-      'INR': 1.0,   // 1 INR = 1 INR
-    };
-
+    // Use shared exchange rates constant
     // Fail fast for unsupported currencies
-    final fromRate = ratesInINR[from];
-    final toRate = ratesInINR[to];
+    final fromRate = _ratesInINR[from];
+    final toRate = _ratesInINR[to];
 
     if (fromRate == null) {
       throw ArgumentError('Unsupported "from" currency: $from. '
-          'Supported: ${ratesInINR.keys.join(", ")}');
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
     if (toRate == null) {
       throw ArgumentError('Unsupported "to" currency: $to. '
-          'Supported: ${ratesInINR.keys.join(", ")}');
+          'Supported: ${_ratesInINR.keys.join(", ")}');
     }
 
     // Return rate: how much 'to' currency per 1 unit of 'from' currency
