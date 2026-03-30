@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Remove duplicate ARB key 'errorOccurred' (Rule 16.2 violation)
+
 ## [3.54.12] - 2026-03-30
 
 ### 🐛 Bug Fixes
