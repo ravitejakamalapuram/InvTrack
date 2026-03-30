@@ -37,3 +37,7 @@
 
 **Learning:** Iterating through a list and making sequential `await` calls to a service method inside a loop creates an N+1 problem, which is extremely slow when dealing with network or complex cache operations (like currency conversion of cash flows).
 **Action:** Replace sequential asynchronous calls inside a loop with a single bulk operation like `BatchCurrencyConverter.batchConvert()`, which handles data deduplication and enables parallel asynchronous processing, significantly improving processing speeds.
+
+## 2024-05-20 - Single Pass Multiple Metric Extraction in Goal Progress Provider
+**Learning:** When extracting multiple metrics (e.g., counting achieved, on-track, behind goals, and separating active vs completed goals) from the same collection, using multiple sequential `.where()` and `.toList()` calls causes the application to iterate over the entire collection multiple times unnecessarily, generating intermediate lists and closures.
+**Action:** Replace sequential aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
