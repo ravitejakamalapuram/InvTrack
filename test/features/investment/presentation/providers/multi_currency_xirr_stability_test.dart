@@ -130,10 +130,10 @@ void main() {
         reason: 'MOIC should be identical when calculated in USD vs INR',
       );
 
-      // Print debug information
-      print('USD: XIRR=${statsUSD.xirr}, Return=${statsUSD.absoluteReturn}%, MOIC=${statsUSD.moic}x');
-      print('EUR: XIRR=${statsEUR.xirr}, Return=${statsEUR.absoluteReturn}%, MOIC=${statsEUR.moic}x');
-      print('INR: XIRR=${statsINR.xirr}, Return=${statsINR.absoluteReturn}%, MOIC=${statsINR.moic}x');
+      // Debug information (commented out to avoid avoid_print warnings)
+      // debugPrint('USD: XIRR=${statsUSD.xirr}, Return=${statsUSD.absoluteReturn}%, MOIC=${statsUSD.moic}x');
+      // debugPrint('EUR: XIRR=${statsEUR.xirr}, Return=${statsEUR.absoluteReturn}%, MOIC=${statsEUR.moic}x');
+      // debugPrint('INR: XIRR=${statsINR.xirr}, Return=${statsINR.absoluteReturn}%, MOIC=${statsINR.moic}x');
     });
   });
 }
