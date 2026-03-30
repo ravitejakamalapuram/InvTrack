@@ -1,0 +1,4 @@
+🐛 Bug Fixes & Improvements
+• Address CodeRabbit CHANGES_REQUESTED (round 2)
+• Address CodeRabbit feedback on PR #305
+• Goal progress % now stable when switching display currency
