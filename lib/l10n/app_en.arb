@@ -1841,11 +1841,6 @@
     "description": "Success message after seeding sample data"
   },
 
-  "errorOccurred": "An error occurred",
-  "@errorOccurred": {
-    "description": "Generic error message"
-  },
-
   "close": "Close",
   "@close": {
     "description": "Close button text"
