@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Address CodeRabbit CHANGES_REQUESTED (round 2)
+- Address CodeRabbit feedback on PR #305
+- Goal progress % now stable when switching display currency
+
+### 📚 Documentation
+
+- Add multi-currency audit report
+
+### 🧪 Testing
+
+- Add immutability assertions for Rule 21.3 compliance
+- Add multi-currency XIRR stability test (TDD)
+- Add TDD test for multi-currency goal progress bug
+
 ## [3.54.7] - 2026-03-28
 
 ### Refactor
