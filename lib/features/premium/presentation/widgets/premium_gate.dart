@@ -17,25 +17,30 @@ class PremiumGate extends ConsumerWidget {
       return child;
     }
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const PaywallScreen()));
-      },
-      child: AbsorbPointer(
-        child:
-            lockedChild ??
-            Stack(
-              children: [
-                Opacity(opacity: 0.3, child: child),
-                const Positioned.fill(
-                  child: Center(
-                    child: Icon(Icons.lock, size: 32, color: Colors.grey),
+    return Semantics(
+      button: true,
+      label: 'Unlock Premium feature',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const PaywallScreen()),
+          );
+        },
+        child: AbsorbPointer(
+          child:
+              lockedChild ??
+              Stack(
+                children: [
+                  Opacity(opacity: 0.3, child: child),
+                  const Positioned.fill(
+                    child: Center(
+                      child: Icon(Icons.lock, size: 32, color: Colors.grey),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+        ),
       ),
     );
   }
