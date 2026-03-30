@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Enforce Clean Architecture and Localization (Rules 1.1 and 16.3)
+
+## [3.54.16] - 2026-03-30
+
+### 🐛 Bug Fixes
+
 - Remove duplicate ARB key 'errorOccurred' (Rule 16.2 violation)
 
 ## [3.54.12] - 2026-03-30

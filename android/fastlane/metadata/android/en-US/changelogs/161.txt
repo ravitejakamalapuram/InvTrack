@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Remove duplicate ARB key 'errorOccurred' (Rule 16.2 violation)
