@@ -37,6 +37,47 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     return amount * (toRate / fromRate);
   }
 
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async {
+    final result = <String, double>{};
+    for (final entry in requests.entries) {
+      final request = entry.value;
+      final convertedAmount = await convert(
+        amount: request.amount,
+        from: request.from,
+        to: to,
+        date: request.date,
+      );
+      result[entry.key] = convertedAmount;
+    }
+    return result;
+  }
+
+  @override
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) async {
+    if (from == to) return 1.0;
+
+    // Mock exchange rates to INR
+    const rates = {
+      'USD': 83.0,
+      'EUR': 90.0,
+      'GBP': 105.0,
+      'JPY': 0.56,
+      'INR': 1.0,
+    };
+
+    final fromRate = rates[from] ?? 1.0;
+    final toRate = rates[to] ?? 1.0;
+
+    return toRate / fromRate;
+  }
+
   void reset() {
     clearCacheCalled = false;
     clearCacheCallCount = 0;
