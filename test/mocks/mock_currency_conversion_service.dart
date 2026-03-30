@@ -22,19 +22,24 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     // Simple mock conversion: 1 USD = 83 INR, 1 EUR = 90 INR, etc.
     if (from == to) return amount;
 
-    // Mock exchange rates to INR
-    const rates = {
-      'USD': 83.0,
-      'EUR': 90.0,
-      'GBP': 105.0,
-      'JPY': 0.56,
-      'INR': 1.0,
+    // Mock exchange rates (how many INR per 1 unit of currency)
+    const ratesInINR = {
+      'USD': 83.0,  // 1 USD = 83 INR
+      'EUR': 90.0,  // 1 EUR = 90 INR
+      'GBP': 105.0, // 1 GBP = 105 INR
+      'JPY': 0.56,  // 1 JPY = 0.56 INR
+      'INR': 1.0,   // 1 INR = 1 INR
     };
 
-    final fromRate = rates[from] ?? 1.0;
-    final toRate = rates[to] ?? 1.0;
+    // First convert 'from' currency to INR, then INR to 'to' currency
+    final fromRate = ratesInINR[from] ?? 1.0;
+    final toRate = ratesInINR[to] ?? 1.0;
 
-    return amount * (toRate / fromRate);
+    // Example: 100 USD to EUR
+    // Step 1: 100 USD * 83 = 8300 INR
+    // Step 2: 8300 INR / 90 = 92.22 EUR
+    final amountInINR = amount * fromRate;
+    return amountInINR / toRate;
   }
 
   @override
@@ -63,19 +68,21 @@ class MockCurrencyConversionService implements CurrencyConversionService {
   }) async {
     if (from == to) return 1.0;
 
-    // Mock exchange rates to INR
-    const rates = {
-      'USD': 83.0,
-      'EUR': 90.0,
-      'GBP': 105.0,
-      'JPY': 0.56,
-      'INR': 1.0,
+    // Mock exchange rates (how many INR per 1 unit of currency)
+    const ratesInINR = {
+      'USD': 83.0,  // 1 USD = 83 INR
+      'EUR': 90.0,  // 1 EUR = 90 INR
+      'GBP': 105.0, // 1 GBP = 105 INR
+      'JPY': 0.56,  // 1 JPY = 0.56 INR
+      'INR': 1.0,   // 1 INR = 1 INR
     };
 
-    final fromRate = rates[from] ?? 1.0;
-    final toRate = rates[to] ?? 1.0;
+    final fromRate = ratesInINR[from] ?? 1.0;
+    final toRate = ratesInINR[to] ?? 1.0;
 
-    return toRate / fromRate;
+    // Return rate: how much 'to' currency per 1 unit of 'from' currency
+    // Example: USD to EUR = (1 * 83) / 90 = 0.922
+    return fromRate / toRate;
   }
 
   void reset() {

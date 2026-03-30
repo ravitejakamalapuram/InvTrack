@@ -122,10 +122,10 @@ void main() {
 
       // Verify current amounts ARE different (correct currency conversion)
       // USD: \$2,500
-      // EUR: \$2,500 * (90/83) = €2,711 (USD to INR to EUR)
+      // EUR: \$2,500 * 83 / 90 = €2,305.56 (USD → INR → EUR)
       // INR: \$2,500 * 83 = ₹207,500
       expect(progressUSD.currentAmount, closeTo(2500, 1));
-      expect(progressEUR.currentAmount, closeTo(2711, 50)); // Allow tolerance for conversion
+      expect(progressEUR.currentAmount, closeTo(2305.56, 10)); // Allow tolerance for conversion
       expect(progressINR.currentAmount, closeTo(207500, 100));
     });
 

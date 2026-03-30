@@ -245,11 +245,12 @@ class GoalProgressCalculator {
 
   /// Calculate progress for a goal with multi-currency support
   ///
-  /// Converts all cash flows to the goal's target currency (or base currency)
-  /// before calculating progress. This ensures accurate progress tracking
-  /// when investments are in different currencies.
+  /// Converts all cash flows AND target amount to base currency before
+  /// calculating progress. This ensures accurate progress tracking when
+  /// investments are in different currencies.
   ///
   /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+  /// **Bug Fix:** Target amount must also be converted to ensure percentage stability
   static Future<GoalProgress> calculateMultiCurrency({
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
@@ -286,12 +287,20 @@ class GoalProgressCalculator {
       currentAmount = _calculateNetValue(convertedCashFlows);
     }
 
-    // Calculate target
-    final targetAmount = goal.isIncomeGoal
+    // Convert target amount to base currency (CRITICAL FIX for Rule 21.3)
+    // Both currentAmount and targetAmount MUST be in same currency for stable %
+    final targetAmountInGoalCurrency = goal.isIncomeGoal
         ? (goal.targetMonthlyIncome ?? goal.targetAmount)
         : goal.targetAmount;
 
+    final targetAmount = await batchConverter.convert(
+      amount: targetAmountInGoalCurrency,
+      from: goal.currency,
+      to: baseCurrency,
+    );
+
     // Calculate progress percentage
+    // Now both currentAmount and targetAmount are in baseCurrency
     final progressPercent = targetAmount > 0
         ? (currentAmount / targetAmount * 100).clamp(0.0, 100.0)
         : 0.0;

@@ -235,6 +235,26 @@ class BatchCurrencyConverter {
     return result;
   }
 
+  /// Convert a single amount from one currency to another
+  ///
+  /// This is a convenience method that delegates to the underlying conversion service.
+  /// Use this for simple one-off conversions (e.g., converting goal target amounts).
+  ///
+  /// For converting multiple cash flows, prefer [batchConvert] for better performance.
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) {
+    return _conversionService.convert(
+      amount: amount,
+      from: from,
+      to: to,
+      date: date,
+    );
+  }
+
   /// Format date as YYYY-MM-DD (delegates to shared utility)
   String _formatDate(DateTime date) {
     return CurrencyConversionService.formatDate(date);
