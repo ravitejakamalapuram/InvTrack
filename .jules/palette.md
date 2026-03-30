@@ -36,5 +36,6 @@
 **Action:** When building custom interactive components using generic containers and `GestureDetector`s, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label`, specify `selected` state if applicable, and often use `excludeSemantics: true` to prevent the screen reader from redundantly parsing the complex child tree.
 
 ## 2024-05-18 - Added Semantics wrapper to PremiumGate overlay
+
 **Learning:** Found that a `GestureDetector` coupled with an `AbsorbPointer` used to create a feature gate or paywall overlay (like `PremiumGate`) acts as a visual blocker but lacks proper native accessibility roles in Flutter. Screen readers may fail to announce their role as an actionable item (button) to unlock the feature, and importantly, they may still read out the inaccessible, visually obscured locked content underneath.
 **Action:** When building paywall overlays or feature gates using `GestureDetector` and `AbsorbPointer`, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label` (e.g., 'Unlock Premium feature'), and set `excludeSemantics: true`. This provides a single, actionable announcement for screen readers while effectively hiding the underlying, inaccessible locked content from the accessibility tree.

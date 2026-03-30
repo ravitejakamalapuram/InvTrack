@@ -1320,6 +1320,11 @@
     "description": "Button text to dismiss premium offer"
   },
 
+  "unlockPremiumFeature": "Unlock Premium feature",
+  "@unlockPremiumFeature": {
+    "description": "Accessibility label for premium gate overlay"
+  },
+
   "signInTagline": "Track investments. Grow wealth.",
   "@signInTagline": {
     "description": "Tagline on sign-in screen"
