@@ -1,9 +1,11 @@
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -14,7 +16,16 @@ void main() {
   testWidgets('OnboardingScreen loads and shows first page', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp(home: OnboardingScreen(onComplete: () {})),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: OnboardingScreen(onComplete: () {}),
+        ),
       ),
     );
 
@@ -26,7 +37,16 @@ void main() {
   ) async {
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp(home: OnboardingScreen(onComplete: () {})),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: OnboardingScreen(onComplete: () {}),
+        ),
       ),
     );
 

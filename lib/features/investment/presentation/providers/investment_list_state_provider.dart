@@ -212,7 +212,7 @@ final filteredInvestmentsProvider = Provider.autoDispose<AsyncValue<List<Investm
           statsCache[inv.id] = statsAsync.value;
         } else {
           if (requiresXirr) {
-            statsAsync = ref.watch(investmentStatsProvider(inv.id));
+            statsAsync = ref.watch(multiCurrencyInvestmentStatsProvider(inv.id));
             statsCache[inv.id] = statsAsync.value;
           } else {
             // Use map lookup if available for O(1) access without creating listeners

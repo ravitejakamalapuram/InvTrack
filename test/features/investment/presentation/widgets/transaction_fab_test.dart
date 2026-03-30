@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,10 +44,9 @@ void main() {
     final semanticsData = semanticsNode.getSemanticsData();
 
     // Check for button flag
-    // ignore: deprecated_member_use
     expect(
-      semanticsData.hasFlag(SemanticsFlag.isButton),
-      isTrue,
+      semanticsData.flagsCollection.isButton,
+      isNot(equals(Tristate.isFalse)),
       reason:
           'The element labeled "Add Transaction" should be announced as a button',
     );

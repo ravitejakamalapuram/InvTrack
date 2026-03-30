@@ -19,7 +19,7 @@ void main() {
       currency: 'USD',
       trackingMode: GoalTrackingMode.all,
       icon: 'savings',
-      colorValue: Colors.blue.value,
+      colorValue: (Colors.blue.a.toInt() << 24) | (Colors.blue.r.toInt() << 16) | (Colors.blue.g.toInt() << 8) | Colors.blue.b.toInt(),
       createdAt: DateTime(2024, 1, 1),
       updatedAt: DateTime(2024, 1, 1),
     );

@@ -11,9 +11,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 
 // Dependencies
 final flutterSecureStorageProvider = Provider(
-  (ref) => const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  ),
+  (ref) => const FlutterSecureStorage(),
 );
 final localAuthProvider = Provider((ref) => LocalAuthentication());
 // sharedPreferencesProvider is imported from settings_provider.dart

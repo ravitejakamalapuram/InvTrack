@@ -8,6 +8,9 @@ export 'investment_providers.dart';
 // Stats calculation providers
 export 'investment_stats_provider.dart';
 
+// Multi-currency stats providers
+export 'multi_currency_providers.dart';
+
 // Analytics and trend providers
 export 'investment_analytics_provider.dart';
 
