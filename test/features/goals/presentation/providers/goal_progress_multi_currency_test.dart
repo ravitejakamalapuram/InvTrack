@@ -127,6 +127,16 @@ void main() {
       expect(progressUSD.currentAmount, closeTo(2500, 1));
       expect(progressEUR.currentAmount, closeTo(2305.56, 10)); // Allow tolerance for conversion
       expect(progressINR.currentAmount, closeTo(207500, 100));
+
+      // Assert: Verify original data is UNCHANGED after conversions (immutability)
+      expect(goal.targetAmount, 10000, reason: 'Goal target should not be mutated');
+      expect(goal.currency, 'USD', reason: 'Goal currency should not be mutated');
+      expect(cashFlows.length, 2, reason: 'Cash flows list should not be modified');
+      expect(cashFlows[0].amount, 5000, reason: 'Cash flow 1 amount should not be mutated');
+      expect(cashFlows[0].currency, 'USD', reason: 'Cash flow 1 currency should not be mutated');
+      expect(cashFlows[1].amount, 2500, reason: 'Cash flow 2 amount should not be mutated');
+      expect(cashFlows[1].currency, 'USD', reason: 'Cash flow 2 currency should not be mutated');
+      expect(investment.currency, 'USD', reason: 'Investment currency should not be mutated');
     });
 
   });

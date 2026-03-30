@@ -28,6 +28,7 @@ An exhaustive audit of all derived calculations in InvTrack confirmed **Rule 21.
 ## Bug Report: Goal Progress %
 
 ### Problem
+
 **Goal progress % changed when switching display currency** (USD → EUR → INR).
 
 **Example:**
@@ -43,18 +44,21 @@ An exhaustive audit of all derived calculations in InvTrack confirmed **Rule 21.
 - **Result**: 2,307.50 / 10,000 = 23.075% ❌ (should be 25%)
 
 ### Fix Applied
+
 **File**: `lib/features/goals/presentation/providers/goal_progress_provider.dart`
 
 ```dart
-// ✅ AFTER (lines 59-66):
-final convertedTargetAmount = await conversionService.convert(
-  amount: goal.targetAmount,
-  from: 'USD', // Goals are stored in USD
+// ✅ AFTER (lines 296-305):
+final targetAmount = await batchConverter.convert(
+  amount: targetAmountInGoalCurrency,
+  from: goal.currency,  // Use goal's currency (not hardcoded)
   to: baseCurrency,
-  date: DateTime.now(),
+  // Note: No date parameter - uses latest rate for target conversion
 );
 
-final progressPercentage = (totalProgressContribution / convertedTargetAmount) * 100;
+final progressPercent = targetAmount > 0
+    ? (currentAmount / targetAmount * 100).clamp(0.0, 100.0)
+    : 0.0;
 ```
 
 **Commit**: `099fa7a` - "fix: Goal % now stable across currency changes (Rule 21.3)"
@@ -64,15 +68,18 @@ final progressPercentage = (totalProgressContribution / convertedTargetAmount) *
 ## Test Coverage
 
 ### 1. Goal Progress Multi-Currency Test (TDD)
+
 **File**: `test/features/goals/presentation/providers/goal_progress_multi_currency_test.dart`
 
 ✅ **Test passes**: Goal progress % is 25% in USD, EUR, and INR (within 0.01% tolerance)
 
 ### 2. XIRR Stability Test (TDD)
+
 **File**: `test/features/investment/presentation/providers/multi_currency_xirr_stability_test.dart`
 
 **Results**:
-```
+
+```text
 USD: XIRR=25.71%, Return=25.0%, MOIC=1.25x
 EUR: XIRR=25.71%, Return=25.0%, MOIC=1.25x
 INR: XIRR=25.71%, Return=25.0%, MOIC=1.25x

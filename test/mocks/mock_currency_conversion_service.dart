@@ -32,8 +32,18 @@ class MockCurrencyConversionService implements CurrencyConversionService {
     };
 
     // First convert 'from' currency to INR, then INR to 'to' currency
-    final fromRate = ratesInINR[from] ?? 1.0;
-    final toRate = ratesInINR[to] ?? 1.0;
+    // Fail fast for unsupported currencies to catch test setup errors
+    final fromRate = ratesInINR[from];
+    final toRate = ratesInINR[to];
+
+    if (fromRate == null) {
+      throw ArgumentError('Unsupported "from" currency: $from. '
+          'Supported: ${ratesInINR.keys.join(", ")}');
+    }
+    if (toRate == null) {
+      throw ArgumentError('Unsupported "to" currency: $to. '
+          'Supported: ${ratesInINR.keys.join(", ")}');
+    }
 
     // Example: 100 USD to EUR
     // Step 1: 100 USD * 83 = 8300 INR
@@ -77,8 +87,18 @@ class MockCurrencyConversionService implements CurrencyConversionService {
       'INR': 1.0,   // 1 INR = 1 INR
     };
 
-    final fromRate = ratesInINR[from] ?? 1.0;
-    final toRate = ratesInINR[to] ?? 1.0;
+    // Fail fast for unsupported currencies
+    final fromRate = ratesInINR[from];
+    final toRate = ratesInINR[to];
+
+    if (fromRate == null) {
+      throw ArgumentError('Unsupported "from" currency: $from. '
+          'Supported: ${ratesInINR.keys.join(", ")}');
+    }
+    if (toRate == null) {
+      throw ArgumentError('Unsupported "to" currency: $to. '
+          'Supported: ${ratesInINR.keys.join(", ")}');
+    }
 
     // Return rate: how much 'to' currency per 1 unit of 'from' currency
     // Example: USD to EUR = (1 * 83) / 90 = 0.922
