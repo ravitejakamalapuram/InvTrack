@@ -191,6 +191,122 @@ void main() {
         // Same-day transactions should return 0 or handle gracefully
         expect(xirr.isFinite, isTrue);
       });
+
+      test('should return 0 when all cash flows have zero amount', () {
+        final cashFlows = [
+          CashFlowEntity(
+            id: '1',
+            investmentId: '1',
+            date: DateTime(2023, 1, 1),
+            type: CashFlowType.invest,
+            amount: 0,
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '2',
+            investmentId: '1',
+            date: DateTime(2023, 6, 1),
+            type: CashFlowType.returnFlow,
+            amount: 0,
+            createdAt: DateTime.now(),
+          ),
+        ];
+        final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
+        expect(xirr, 0.0);
+      });
+
+      test('should filter zero-amount cash flows and calculate XIRR on non-zero flows', () {
+        final cashFlows = [
+          CashFlowEntity(
+            id: '1',
+            investmentId: '1',
+            date: DateTime(2023, 1, 1),
+            type: CashFlowType.invest,
+            amount: 100,
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '2',
+            investmentId: '1',
+            date: DateTime(2023, 3, 1),
+            type: CashFlowType.invest,
+            amount: 0, // Zero amount - should be filtered
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '3',
+            investmentId: '1',
+            date: DateTime(2023, 6, 1),
+            type: CashFlowType.income,
+            amount: 0, // Zero amount - should be filtered
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '4',
+            investmentId: '1',
+            date: DateTime(2024, 1, 1),
+            type: CashFlowType.returnFlow,
+            amount: 110,
+            createdAt: DateTime.now(),
+          ),
+        ];
+        final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
+
+        // Should match XIRR of just the non-zero flows
+        final nonZeroFlows = [
+          CashFlowEntity(
+            id: '1',
+            investmentId: '1',
+            date: DateTime(2023, 1, 1),
+            type: CashFlowType.invest,
+            amount: 100,
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '4',
+            investmentId: '1',
+            date: DateTime(2024, 1, 1),
+            type: CashFlowType.returnFlow,
+            amount: 110,
+            createdAt: DateTime.now(),
+          ),
+        ];
+        final expectedXirr = FinancialCalculator.calculateXirrFromCashFlows(nonZeroFlows);
+
+        expect(xirr, closeTo(expectedXirr, 0.0001));
+        expect(xirr.isFinite, isTrue);
+      });
+
+      test('should return 0 when filtering leaves only one non-zero cash flow', () {
+        final cashFlows = [
+          CashFlowEntity(
+            id: '1',
+            investmentId: '1',
+            date: DateTime(2023, 1, 1),
+            type: CashFlowType.invest,
+            amount: 100,
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '2',
+            investmentId: '1',
+            date: DateTime(2023, 3, 1),
+            type: CashFlowType.invest,
+            amount: 0, // Zero amount - should be filtered
+            createdAt: DateTime.now(),
+          ),
+          CashFlowEntity(
+            id: '3',
+            investmentId: '1',
+            date: DateTime(2023, 6, 1),
+            type: CashFlowType.returnFlow,
+            amount: 0, // Zero amount - should be filtered
+            createdAt: DateTime.now(),
+          ),
+        ];
+        final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
+        expect(xirr, 0.0); // Single non-zero cash flow has no return
+      });
     });
   });
 }
