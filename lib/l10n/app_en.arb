@@ -1385,6 +1385,11 @@
     "description": "Premium upgrade button text with price"
   },
 
+  "premiumFeatureLockedSemanticLabel": "Premium feature locked. Double tap to unlock.",
+  "@premiumFeatureLockedSemanticLabel": {
+    "description": "Semantic label for locked premium features to aid screen readers"
+  },
+
   "goalEmoji": "🎯",
   "@goalEmoji": {
     "description": "Emoji for goals empty state"
