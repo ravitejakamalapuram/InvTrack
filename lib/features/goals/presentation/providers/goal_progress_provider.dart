@@ -698,7 +698,7 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
       completedGoalsList.add(p);
     } else {
       activeGoalsList.add(p);
-      if (p.status == GoalStatus.onTrack) {
+      if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
         onTrackGoals++;
       } else if (p.status == GoalStatus.behind) {
         behindGoals++;
