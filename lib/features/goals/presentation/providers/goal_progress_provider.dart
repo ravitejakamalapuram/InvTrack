@@ -453,30 +453,33 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
       }
 
       final totalGoals = progressList.length;
-      final achievedGoals = progressList
-          .where((p) => p.status == GoalStatus.achieved)
-          .length;
-      final onTrackGoals = progressList
-          .where(
-            (p) =>
-                p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead,
-          )
-          .length;
-      final behindGoals = progressList
-          .where((p) => p.status == GoalStatus.behind)
-          .length;
-
-      // Average progress across all goals
+      int achievedGoals = 0;
+      int onTrackGoals = 0;
+      int behindGoals = 0;
       double totalProgressSum = 0.0;
+      final activeGoalsList = <GoalProgress>[];
+      final completedGoalsList = <GoalProgress>[];
+
+      // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
       for (final p in progressList) {
         totalProgressSum += p.progressPercent;
+
+        if (p.status == GoalStatus.achieved) {
+          achievedGoals++;
+          completedGoalsList.add(p);
+        } else {
+          activeGoalsList.add(p);
+          if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
+            onTrackGoals++;
+          } else if (p.status == GoalStatus.behind) {
+            behindGoals++;
+          }
+        }
       }
+
       final avgProgress = totalProgressSum / totalGoals;
 
-      // Get all active goals (not achieved) sorted by progress (highest first)
-      final activeGoalsList = progressList
-          .where((p) => p.status != GoalStatus.achieved)
-          .toList();
+      // Sort active goals by progress (highest first)
       activeGoalsList.sort(
         (a, b) => b.progressPercent.compareTo(a.progressPercent),
       );
@@ -484,10 +487,7 @@ final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
           ? activeGoalsList.first
           : null;
 
-      // Get achieved goals sorted by updated date (most recent first), limit to 5
-      final completedGoalsList = progressList
-          .where((p) => p.status == GoalStatus.achieved)
-          .toList();
+      // Sort achieved goals by updated date (most recent first), limit to 5
       completedGoalsList.sort(
         (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
       );
@@ -682,27 +682,33 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
 
   // Calculate summary statistics
   final totalGoals = progressList.length;
-  final achievedGoals = progressList
-      .where((p) => p.status == GoalStatus.achieved)
-      .length;
-  final onTrackGoals = progressList
-      .where((p) => p.status == GoalStatus.onTrack)
-      .length;
-  final behindGoals = progressList
-      .where((p) => p.status == GoalStatus.behind)
-      .length;
-
-  // Calculate average progress
+  int achievedGoals = 0;
+  int onTrackGoals = 0;
+  int behindGoals = 0;
   double totalProgress = 0.0;
+  final activeGoalsList = <GoalProgress>[];
+  final completedGoalsList = <GoalProgress>[];
+
+  // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
   for (final p in progressList) {
     totalProgress += p.progressPercent;
+
+    if (p.status == GoalStatus.achieved) {
+      achievedGoals++;
+      completedGoalsList.add(p);
+    } else {
+      activeGoalsList.add(p);
+      if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
+        onTrackGoals++;
+      } else if (p.status == GoalStatus.behind) {
+        behindGoals++;
+      }
+    }
   }
+
   final avgProgress = totalProgress / totalGoals;
 
-  // Get all active goals (not achieved) sorted by progress (highest first)
-  final activeGoalsList = progressList
-      .where((p) => p.status != GoalStatus.achieved)
-      .toList();
+  // Sort active goals by progress (highest first)
   activeGoalsList.sort(
     (a, b) => b.progressPercent.compareTo(a.progressPercent),
   );
@@ -710,10 +716,7 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
       ? activeGoalsList.first
       : null;
 
-  // Get achieved goals sorted by updated date (most recent first), limit to 5
-  final completedGoalsList = progressList
-      .where((p) => p.status == GoalStatus.achieved)
-      .toList();
+  // Sort achieved goals by updated date (most recent first), limit to 5
   completedGoalsList.sort(
     (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
   );
