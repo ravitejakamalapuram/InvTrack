@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
@@ -11,8 +10,8 @@ void main() {
         name: 'Test Template',
         description: 'A test template',
         type: InvestmentType.fixedDeposit,
-        icon: Icons.account_balance,
-        color: Colors.green,
+        iconCodePoint: 0xe84a, // Icons.account_balance_rounded
+        colorValue: 0xFF10B981, // Emerald
         emoji: '🏦',
       );
 
@@ -20,8 +19,8 @@ void main() {
       expect(template.name, 'Test Template');
       expect(template.description, 'A test template');
       expect(template.type, InvestmentType.fixedDeposit);
-      expect(template.icon, Icons.account_balance);
-      expect(template.color, Colors.green);
+      expect(template.iconCodePoint, 0xe84a);
+      expect(template.colorValue, 0xFF10B981);
       expect(template.emoji, '🏦');
     });
 
@@ -31,8 +30,8 @@ void main() {
         name: 'Test',
         description: 'Test',
         type: InvestmentType.stocks,
-        icon: Icons.trending_up,
-        color: Colors.blue,
+        iconCodePoint: 0xe8e5, // Icons.trending_up
+        colorValue: 0xFF2196F3, // Blue
         emoji: '📈',
       );
 

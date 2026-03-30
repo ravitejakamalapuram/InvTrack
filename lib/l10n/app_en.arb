@@ -2105,6 +2105,11 @@
     "description": "Subtitle for sample data mode banner"
   },
 
+  "sampleDataKeepConfirmation": "Sample investments will become your real data. You can edit or delete them anytime.",
+  "@sampleDataKeepConfirmation": {
+    "description": "Confirmation message when keeping sample data as real data"
+  },
+
   "noResultsFound": "No Results Found",
   "@noResultsFound": {
     "description": "Empty state title when search returns no results"

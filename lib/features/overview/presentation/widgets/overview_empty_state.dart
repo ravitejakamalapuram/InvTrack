@@ -8,6 +8,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_template_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Enhanced empty state shown when there are no investments.

@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/investment/domain/models/investment_template.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_template_ui.dart';
 
 /// A horizontal scrollable selector for investment templates.
 /// Displays template cards with emoji, name, and description.

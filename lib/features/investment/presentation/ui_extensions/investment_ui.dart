@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// UI-specific extensions for Investment domain entities.
 /// Keeps domain entities framework-agnostic by moving Color and IconData here.
@@ -191,6 +192,39 @@ extension DocumentTypeUI on DocumentType {
         return const Color(0xFFEC4899); // Pink
       case DocumentType.other:
         return const Color(0xFF6B7280); // Gray
+    }
+  }
+}
+
+
+/// Extension providing UI-specific properties for [CashFlowType].
+/// Moved from domain layer to maintain platform-agnostic domain (Rule 1.1).
+extension CashFlowTypeUI on CashFlowType {
+  /// Returns the color associated with this cash flow type
+  Color get color {
+    switch (this) {
+      case CashFlowType.invest:
+        return const Color(0xFF3B82F6); // Blue
+      case CashFlowType.returnFlow:
+        return const Color(0xFF10B981); // Emerald
+      case CashFlowType.income:
+        return const Color(0xFFF59E0B); // Amber
+      case CashFlowType.fee:
+        return const Color(0xFFEC4899); // Pink
+    }
+  }
+
+  /// Returns the icon data for this cash flow type
+  IconData get iconData {
+    switch (this) {
+      case CashFlowType.invest:
+        return Icons.arrow_upward_rounded;
+      case CashFlowType.returnFlow:
+        return Icons.arrow_downward_rounded;
+      case CashFlowType.income:
+        return Icons.payments_rounded;
+      case CashFlowType.fee:
+        return Icons.receipt_long_rounded;
     }
   }
 }

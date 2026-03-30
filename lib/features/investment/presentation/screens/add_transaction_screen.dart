@@ -18,6 +18,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;

@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// Pre-defined investment templates for quick-add functionality
 /// These templates pre-fill common investment patterns to reduce friction
+///
+/// Note: Icon and color are stored as identifiers (string/int) to keep domain layer
+/// platform-agnostic (Rule 1.1). UI extensions convert these to Flutter types.
 class InvestmentTemplate {
   /// Unique identifier for the template
   final String id;
@@ -37,11 +39,12 @@ class InvestmentTemplate {
   /// Default compounding frequency
   final CompoundingFrequency? defaultCompoundingFrequency;
 
-  /// Icon for the template
-  final IconData icon;
+  /// Icon identifier for the template (maps to Flutter IconData in UI layer)
+  /// Uses Material Icons codePoint values
+  final int iconCodePoint;
 
-  /// Color for the template
-  final Color color;
+  /// Color value for the template (ARGB format)
+  final int colorValue;
 
   /// Emoji for quick visual identification
   final String emoji;
@@ -58,13 +61,14 @@ class InvestmentTemplate {
     this.defaultPayoutMode,
     this.defaultRiskLevel,
     this.defaultCompoundingFrequency,
-    required this.icon,
-    required this.color,
+    required this.iconCodePoint,
+    required this.colorValue,
     required this.emoji,
   });
 }
 
 /// Pre-defined templates for common investment types
+/// Icon codepoints from Material Icons (account_balance_rounded: 0xe84a, handshake_rounded: 0xf4fc, etc.)
 class InvestmentTemplates {
   InvestmentTemplates._();
 
@@ -80,8 +84,8 @@ class InvestmentTemplates {
     defaultPayoutMode: InterestPayoutMode.cumulative,
     defaultRiskLevel: RiskLevel.low,
     defaultCompoundingFrequency: CompoundingFrequency.quarterly,
-    icon: Icons.account_balance_rounded,
-    color: Color(0xFF10B981),
+    iconCodePoint: 0xe84a, // Icons.account_balance_rounded
+    colorValue: 0xFF10B981, // Emerald
     emoji: '🏦',
   );
 
@@ -97,8 +101,8 @@ class InvestmentTemplates {
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.medium,
     defaultCompoundingFrequency: CompoundingFrequency.none,
-    icon: Icons.handshake_rounded,
-    color: Color(0xFF3B82F6),
+    iconCodePoint: 0xf4fc, // Icons.handshake_rounded
+    colorValue: 0xFF3B82F6, // Blue
     emoji: '🤝',
   );
 
@@ -114,8 +118,8 @@ class InvestmentTemplates {
     defaultPayoutMode: null,
     defaultRiskLevel: RiskLevel.medium,
     defaultCompoundingFrequency: null,
-    icon: Icons.pie_chart_rounded,
-    color: Color(0xFF3B82F6),
+    iconCodePoint: 0xe6c4, // Icons.pie_chart_rounded
+    colorValue: 0xFF3B82F6, // Blue
     emoji: '📊',
   );
 
@@ -131,8 +135,8 @@ class InvestmentTemplates {
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.low,
     defaultCompoundingFrequency: CompoundingFrequency.none,
-    icon: Icons.monetization_on_rounded,
-    color: Color(0xFFFFD700),
+    iconCodePoint: 0xe5d8, // Icons.monetization_on_rounded
+    colorValue: 0xFFFFD700, // Gold
     emoji: '🪙',
   );
 
@@ -148,8 +152,8 @@ class InvestmentTemplates {
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.medium,
     defaultCompoundingFrequency: CompoundingFrequency.none,
-    icon: Icons.description_rounded,
-    color: Color(0xFFF59E0B),
+    iconCodePoint: 0xe1af, // Icons.description_rounded
+    colorValue: 0xFFF59E0B, // Amber
     emoji: '📜',
   );
 
@@ -165,8 +169,8 @@ class InvestmentTemplates {
     defaultPayoutMode: InterestPayoutMode.atMaturity,
     defaultRiskLevel: RiskLevel.low,
     defaultCompoundingFrequency: CompoundingFrequency.quarterly,
-    icon: Icons.repeat_rounded,
-    color: Color(0xFF10B981),
+    iconCodePoint: 0xf456, // Icons.repeat_rounded
+    colorValue: 0xFF10B981, // Emerald
     emoji: '🔄',
   );
 
@@ -182,8 +186,8 @@ class InvestmentTemplates {
     defaultPayoutMode: InterestPayoutMode.periodic,
     defaultRiskLevel: RiskLevel.medium,
     defaultCompoundingFrequency: CompoundingFrequency.none,
-    icon: Icons.home_rounded,
-    color: Color(0xFFEC4899),
+    iconCodePoint: 0xe318, // Icons.home_rounded
+    colorValue: 0xFFEC4899, // Pink
     emoji: '🏠',
   );
 

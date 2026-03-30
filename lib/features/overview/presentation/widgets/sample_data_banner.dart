@@ -168,10 +168,7 @@ class SampleDataBanner extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.keepSampleData),
-        content: const Text(
-          'Sample investments will become your real data. '
-          'You can edit or delete them anytime.',
-        ),
+        content: Text(l10n.sampleDataKeepConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
