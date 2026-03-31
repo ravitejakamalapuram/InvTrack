@@ -42,33 +42,58 @@ This guide helps debug issues with the app version update notification system.
 
 ### **Step 1: Verify Firestore Document Exists**
 
-**Check:** Does `app_config/version_info` document exist in Firestore?
+**Check:** Does `app_config/version_info` document exist with complete schema?
 
 **How to check:**
-```
+
+```text
 https://console.firebase.google.com/project/invtracker-b19d1/firestore/data/app_config/version_info
 ```
 
 **If missing:**
+
 ```bash
 # Run initialization workflow:
 GitHub Actions → "Init: Firestore Version Info" → Run workflow
 # Fill in: initial_version=3.54.17, initial_build_number=161
 ```
 
-**Expected fields:**
-- `latestVersion` (string)
-- `latestBuildNumber` (number)
-- `minimumVersion` (string)
-- `minimumBuildNumber` (number)
-- `forceUpdate` (boolean)
-- `updateMessage` (string)
-- `whatsNew` (string)
-- `downloadUrl` (string)
-- `releaseDate` (string/Timestamp)
-- `pendingRelease` (boolean)
-- `pendingVersion` (string/null)
-- `pendingBuildNumber` (number/null)
+**⚠️ If exists but has placeholder values:**
+
+The document may have been auto-created by `cd-deploy-android.yml` with incomplete schema.
+
+**Signs of placeholder values:**
+
+- `latestVersion` = `'1.0.0'` (when actual version is higher)
+- `downloadUrl` is empty or missing
+- Missing fields: `updateMessage`, `whatsNew`, `releaseDate`, `lastApprovedAt`, `createdAt`, `updatedAt`
+
+**To fix:**
+
+```bash
+# Re-run initialization workflow with "Force overwrite" checked:
+GitHub Actions → "Init: Firestore Version Info" → Run workflow
+# Check "Force overwrite existing document" checkbox
+# Fill in: initial_version=<current_version>, initial_build_number=<current_build>
+```
+
+**Expected complete schema:**
+
+- `latestVersion` (string) - Current production version
+- `latestBuildNumber` (number) - Current production build
+- `minimumVersion` (string) - Minimum supported version
+- `minimumBuildNumber` (number) - Minimum supported build
+- `forceUpdate` (boolean) - Force update flag
+- `updateMessage` (string) - User-facing update message
+- `whatsNew` (string) - Release notes
+- `downloadUrl` (string) - Play Store URL
+- `releaseDate` (string/Timestamp) - Release timestamp
+- `lastApprovedAt` (string/Timestamp/null) - Last approval time
+- `createdAt` (string/Timestamp) - Document creation time
+- `updatedAt` (string/Timestamp) - Last update time
+- `pendingRelease` (boolean) - Pending release flag
+- `pendingVersion` (string/null) - Pending version
+- `pendingBuildNumber` (number/null) - Pending build
 
 ---
 

@@ -16,6 +16,10 @@ env:
 permissions:
   contents: read
 
+concurrency:
+  group: playstore-approval-check
+  cancel-in-progress: true
+
 jobs:
   check-approval:
     runs-on: self-hosted
@@ -137,9 +141,27 @@ jobs:
 
               const releases = trackResponse.data.releases || [];
 
+              // Check if pending release is stale (uploaded > 7 days ago)
+              const uploadedAt = new Date(versionData.uploadedAt);
+              const now = new Date();
+              const hoursSinceUpload = (now - uploadedAt) / (1000 * 60 * 60);
+              const isStale = hoursSinceUpload > 168; // 7 days
+
               if (releases.length === 0) {
                 console.log('⚠️  No releases found in production track');
                 console.log('');
+
+                // Clear stale pending releases
+                if (isStale) {
+                  console.log(`🧹 Pending release is stale (${Math.floor(hoursSinceUpload / 24)} days old)`);
+                  console.log('   Clearing stale pending flag...');
+                  await db.collection('app_config').doc('version_info').update({
+                    pendingRelease: false,
+                  });
+                  console.log('✅ Stale pending flag cleared');
+                  return;
+                }
+
                 console.log('ℹ️  This is expected when:');
                 console.log('   1. Release is still in alpha (not yet promoted)');
                 console.log('   2. Release promoted but pending Google review');

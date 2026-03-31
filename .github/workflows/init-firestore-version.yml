@@ -11,12 +11,21 @@ on:
         description: 'Initial build number (e.g., 161)'
         required: true
         type: string
+      force_overwrite:
+        description: 'Force overwrite existing document (use with caution)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: read
+
+concurrency:
+  group: firestore-version-info
+  cancel-in-progress: true
 
 jobs:
   initialize:
@@ -52,6 +61,7 @@ jobs:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           INITIAL_VERSION: ${{ inputs.initial_version }}
           INITIAL_BUILD: ${{ inputs.initial_build_number }}
+          FORCE_OVERWRITE: ${{ inputs.force_overwrite }}
         run: |
           node << 'EOF'
           const admin = require('firebase-admin');
@@ -65,23 +75,60 @@ jobs:
 
               const db = admin.firestore();
               const version = process.env.INITIAL_VERSION;
-              const buildNumber = parseInt(process.env.INITIAL_BUILD);
+              const buildNumber = Number.parseInt(process.env.INITIAL_BUILD, 10);
+
+              // Validate build number
+              if (!Number.isInteger(buildNumber) || buildNumber <= 0) {
+                console.error('❌ Invalid initial_build_number!');
+                console.error(`   Got: "${process.env.INITIAL_BUILD}"`);
+                console.error('   Expected: Positive integer (e.g., 161)');
+                process.exit(1);
+              }
+
+              const forceOverwrite = process.env.FORCE_OVERWRITE === 'true';
               const now = new Date().toISOString();
 
               console.log('🔧 Initializing Firestore version_info document...');
               console.log('   Version:', version);
               console.log('   Build Number:', buildNumber);
+              console.log('   Force Overwrite:', forceOverwrite);
 
               // Check if document already exists
               const existingDoc = await db.collection('app_config').doc('version_info').get();
-              
-              if (existingDoc.exists) {
+
+              if (existingDoc.exists && !forceOverwrite) {
                 console.log('⚠️  Document already exists!');
-                console.log('   Current data:', JSON.stringify(existingDoc.data(), null, 2));
+                const existingData = existingDoc.data();
+                console.log('   Current data:', JSON.stringify(existingData, null, 2));
                 console.log('');
-                console.log('❓ Do you want to overwrite it?');
-                console.log('   If yes, run this workflow again with force_overwrite=true');
-                return;
+
+                // Validate schema - check for missing required fields
+                const requiredFields = [
+                  'latestVersion', 'latestBuildNumber', 'minimumVersion', 'minimumBuildNumber',
+                  'forceUpdate', 'updateMessage', 'whatsNew', 'downloadUrl', 'releaseDate',
+                  'lastApprovedAt', 'createdAt', 'updatedAt'
+                ];
+                const missingFields = requiredFields.filter(field => !(field in existingData));
+
+                if (missingFields.length > 0) {
+                  console.log('❌ Document exists but has missing required fields!');
+                  console.log('   Missing fields:', missingFields.join(', '));
+                  console.log('');
+                  console.log('💡 This document was likely auto-created by cd-deploy-android.yml');
+                  console.log('   with placeholder values and needs proper initialization.');
+                  console.log('');
+                  console.log('🔧 To fix, re-run this workflow and check the "Force overwrite" checkbox');
+                  process.exit(1);
+                }
+
+                console.log('✅ Document schema is valid!');
+                console.log('❌ Cannot overwrite without force_overwrite=true');
+                console.log('💡 To overwrite, re-run this workflow and check the "Force overwrite" checkbox');
+                process.exit(1);
+              }
+
+              if (existingDoc.exists && forceOverwrite) {
+                console.log('⚠️  Document exists but force_overwrite=true - will overwrite!');
               }
 
               // Create initial document
@@ -153,8 +200,26 @@ jobs:
                 process.exit(1);
               }
 
+              // Validate schema
+              const data = doc.data();
+              const requiredFields = [
+                'latestVersion', 'latestBuildNumber', 'minimumVersion', 'minimumBuildNumber',
+                'forceUpdate', 'updateMessage', 'whatsNew', 'downloadUrl', 'releaseDate',
+                'lastApprovedAt', 'createdAt', 'updatedAt'
+              ];
+              const missingFields = requiredFields.filter(field => !(field in data));
+
+              if (missingFields.length > 0) {
+                console.error('❌ Document is missing required fields!');
+                console.error('   Missing:', missingFields.join(', '));
+                console.error('');
+                console.error('💡 The document may have been auto-created by cd-deploy-android.yml');
+                console.error('   with incomplete schema. Re-run initialization with force_overwrite=true.');
+                process.exit(1);
+              }
+
               console.log('✅ Verification successful!');
-              console.log('Document exists and is readable.');
+              console.log('Document exists with complete schema.');
 
             } catch (error) {
               console.error('❌ Verification failed:', error.message);
@@ -164,4 +229,3 @@ jobs:
 
           verify();
           EOF
-

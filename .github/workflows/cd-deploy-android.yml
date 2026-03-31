@@ -284,6 +284,7 @@ jobs:
                 pendingVersion: version,
                 pendingBuildNumber: buildNumber,
                 uploadedAt: uploadedAt,
+                updatedAt: uploadedAt,
               }, { merge: true });
 
               console.log('✅ Pending release flag set successfully!');
