@@ -501,6 +501,7 @@ class ParsedGoalRow {
   final List<String> linkedTypes;
   final String icon;
   final int colorValue;
+  final String currency; // Multi-currency support (Rule 21.2)
   final String? error;
 
   const ParsedGoalRow({
@@ -515,6 +516,7 @@ class ParsedGoalRow {
     required this.linkedTypes,
     required this.icon,
     required this.colorValue,
+    required this.currency,
     this.error,
   });
 
@@ -530,7 +532,8 @@ class ParsedGoalRow {
       linkedInvestmentNames = const [],
       linkedTypes = const [],
       icon = '🎯',
-      colorValue = 0xFF4CAF50;
+      colorValue = 0xFF4CAF50,
+      currency = 'USD'; // Default for error case
 }
 
 /// Result of parsing a Goals CSV file
@@ -734,6 +737,11 @@ class GoalsCsvParser {
         }
       }
 
+      // Currency (Rule 21.4 - backward compatibility)
+      final currency = columnMap.containsKey('currency')
+          ? _getValue(values, columnMap['currency']!)
+          : 'USD'; // Default for old exports without currency column
+
       return ParsedGoalRow(
         rowNumber: rowNum,
         name: name,
@@ -746,6 +754,7 @@ class GoalsCsvParser {
         linkedTypes: linkedTypes,
         icon: icon.isNotEmpty ? icon : '🎯',
         colorValue: colorValue,
+        currency: currency.isNotEmpty ? currency : 'USD',
       );
     } catch (e) {
       return ParsedGoalRow.withError(

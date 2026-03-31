@@ -552,6 +552,7 @@ class DataImportService {
             .toList(),
         icon: row.icon,
         colorValue: row.colorValue,
+        currency: row.currency, // Preserve original currency (Rule 21.2)
         isArchived: isArchived,
         createdAt: now,
         updatedAt: now,

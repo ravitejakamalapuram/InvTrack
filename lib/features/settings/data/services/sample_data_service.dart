@@ -258,6 +258,7 @@ class SampleDataService {
       linkedTypes: [InvestmentType.fixedDeposit],
       icon: '🛡️',
       colorValue: GoalColors.available[1].toARGB32(), // Emerald
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 365)),
       updatedAt: now,
     );

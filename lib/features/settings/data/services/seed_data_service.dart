@@ -560,6 +560,7 @@ class SeedDataService {
       linkedTypes: [InvestmentType.fixedDeposit],
       icon: '🛡️',
       colorValue: GoalColors.available[1].toARGB32(), // Emerald
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 365)),
       updatedAt: now,
     );
@@ -575,6 +576,7 @@ class SeedDataService {
       trackingMode: GoalTrackingMode.all,
       icon: '🎯',
       colorValue: GoalColors.available[0].toARGB32(), // Blue
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 730)),
       updatedAt: now,
     );
@@ -596,6 +598,7 @@ class SeedDataService {
       ],
       icon: '💰',
       colorValue: GoalColors.available[2].toARGB32(), // Amber
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 500)),
       updatedAt: now,
     );
@@ -613,6 +616,7 @@ class SeedDataService {
       linkedInvestmentIds: [niftyFund.id, bluechip.id],
       icon: '🏠',
       colorValue: GoalColors.available[4].toARGB32(), // Purple
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 200)),
       updatedAt: now,
     );
@@ -630,6 +634,7 @@ class SeedDataService {
       linkedTypes: [InvestmentType.mutualFunds],
       icon: '🎓',
       colorValue: GoalColors.available[5].toARGB32(), // Cyan
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 100)),
       updatedAt: now,
     );
@@ -651,6 +656,7 @@ class SeedDataService {
       linkedInvestmentIds: [], // No investments linked = 0%
       icon: '✈️',
       colorValue: GoalColors.available[3].toARGB32(), // Rose
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 7)),
       updatedAt: now,
     );
@@ -667,6 +673,7 @@ class SeedDataService {
       linkedTypes: [InvestmentType.p2pLending], // LenDenClub has ₹1.5L + income
       icon: '🚗',
       colorValue: GoalColors.available[6].toARGB32(), // Teal
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 200)),
       updatedAt: now,
     );
@@ -684,6 +691,7 @@ class SeedDataService {
       linkedTypes: [InvestmentType.crypto], // Has some crypto
       icon: '💻',
       colorValue: GoalColors.available[7].toARGB32(), // Orange
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 180)),
       updatedAt: now,
     );
@@ -703,6 +711,7 @@ class SeedDataService {
       ], // Only stocks, not much dividend yet
       icon: '📈',
       colorValue: GoalColors.available[0].toARGB32(), // Blue
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 60)),
       updatedAt: now,
     );
@@ -718,6 +727,7 @@ class SeedDataService {
       trackingMode: GoalTrackingMode.all, // Track everything
       icon: '💎',
       colorValue: GoalColors.available[1].toARGB32(), // Emerald
+      currency: 'INR', // Multi-currency support (Rule 21.2)
       createdAt: now.subtract(const Duration(days: 400)),
       updatedAt: now,
     );
