@@ -190,6 +190,7 @@ Firestore Console → app_config/version_info
 4. Version comparison failing
 
 **Debug:**
+
 ```dart
 // Add logging in version_check_provider.dart
 print('Current build: ${state.currentBuildNumber}');
