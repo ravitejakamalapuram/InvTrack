@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/sample_data_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -100,7 +101,9 @@ class SampleDataModeNotifier extends Notifier<SampleDataState> {
 
     try {
       final service = ref.read(sampleDataServiceProvider);
-      final result = await service.createSampleData();
+      // Get user's base currency for dynamic goal creation (Rule 21.6)
+      final baseCurrency = ref.read(currencyCodeProvider);
+      final result = await service.createSampleData(baseCurrency: baseCurrency);
 
       // Persist state
       final prefs = ref.read(sharedPreferencesProvider);

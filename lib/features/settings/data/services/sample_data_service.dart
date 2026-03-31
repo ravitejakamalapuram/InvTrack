@@ -25,7 +25,10 @@ class SampleDataService {
 
   /// Creates a focused sample portfolio demonstrating the "Aha moment".
   /// Returns IDs of created items for later cleanup.
-  Future<SampleDataResult> createSampleData() async {
+  ///
+  /// **Multi-Currency (Rule 21.6):** Uses user's base currency for goals
+  /// to ensure percentage calculations are accurate across currency switches.
+  Future<SampleDataResult> createSampleData({required String baseCurrency}) async {
     final now = DateTime.now();
     final investments = <InvestmentEntity>[];
     final cashFlows = <CashFlowEntity>[];
@@ -258,7 +261,7 @@ class SampleDataService {
       linkedTypes: [InvestmentType.fixedDeposit],
       icon: '🛡️',
       colorValue: GoalColors.available[1].toARGB32(), // Emerald
-      currency: 'INR', // Multi-currency support (Rule 21.2)
+      currency: baseCurrency, // Dynamic currency from user settings (Rule 21.6)
       createdAt: now.subtract(const Duration(days: 365)),
       updatedAt: now,
     );
