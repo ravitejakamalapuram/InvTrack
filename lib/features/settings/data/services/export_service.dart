@@ -31,13 +31,18 @@ class ExportService {
     final allCashFlows = <Map<String, dynamic>>[];
 
     // Collect all cash flows with investment info
-    for (final investment in investments) {
+    // Optimization: Use Future.wait to fetch cash flows for all investments in parallel
+    final allCashFlowsFutures = investments.map((investment) async {
       final cashFlows = await _investmentRepository.getCashFlowsByInvestment(
         investment.id,
       );
-      for (final cf in cashFlows) {
-        allCashFlows.add({'cashFlow': cf, 'investment': investment});
-      }
+      return cashFlows
+          .map((cf) => {'cashFlow': cf, 'investment': investment})
+          .toList();
+    });
+    final allCashFlowsLists = await Future.wait(allCashFlowsFutures);
+    for (final list in allCashFlowsLists) {
+      allCashFlows.addAll(list);
     }
 
     // Sort by date

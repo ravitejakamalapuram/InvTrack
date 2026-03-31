@@ -68,21 +68,27 @@ class DataExportService {
     final activeCashFlows = <_CashFlowWithInvestment>[];
     final archivedCashFlows = <_CashFlowWithInvestment>[];
 
-    for (final inv in investments) {
+    // Optimization: Use Future.wait to fetch cash flows for all active investments in parallel
+    final activeCashFlowsFutures = investments.map((inv) async {
       final cashFlows = await _investmentRepository.getCashFlowsByInvestment(
         inv.id,
       );
-      for (final cf in cashFlows) {
-        activeCashFlows.add(_CashFlowWithInvestment(cf, inv));
-      }
+      return cashFlows.map((cf) => _CashFlowWithInvestment(cf, inv)).toList();
+    });
+    final activeCashFlowsLists = await Future.wait(activeCashFlowsFutures);
+    for (final list in activeCashFlowsLists) {
+      activeCashFlows.addAll(list);
     }
 
-    for (final inv in archivedInvestments) {
+    // Optimization: Use Future.wait to fetch cash flows for all archived investments in parallel
+    final archivedCashFlowsFutures = archivedInvestments.map((inv) async {
       final cashFlows = await _investmentRepository
           .getArchivedCashFlowsByInvestment(inv.id);
-      for (final cf in cashFlows) {
-        archivedCashFlows.add(_CashFlowWithInvestment(cf, inv));
-      }
+      return cashFlows.map((cf) => _CashFlowWithInvestment(cf, inv)).toList();
+    });
+    final archivedCashFlowsLists = await Future.wait(archivedCashFlowsFutures);
+    for (final list in archivedCashFlowsLists) {
+      archivedCashFlows.addAll(list);
     }
 
     final goals = await _goalRepository.getAllGoals();
@@ -91,9 +97,14 @@ class DataExportService {
     // Get all documents from all investments
     final allInvestments = [...investments, ...archivedInvestments];
     final allDocuments = <DocumentEntity>[];
-    for (final inv in allInvestments) {
-      final docs = await _documentRepository.getDocumentsByInvestment(inv.id);
-      allDocuments.addAll(docs);
+
+    // Optimization: Use Future.wait to fetch documents for all investments in parallel
+    final allDocumentsFutures = allInvestments.map((inv) async {
+      return await _documentRepository.getDocumentsByInvestment(inv.id);
+    });
+    final allDocumentsLists = await Future.wait(allDocumentsFutures);
+    for (final list in allDocumentsLists) {
+      allDocuments.addAll(list);
     }
 
     LoggerService.info(

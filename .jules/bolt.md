@@ -42,3 +42,8 @@
 
 **Learning:** When extracting multiple metrics (e.g., counting achieved, on-track, behind goals, and separating active vs completed goals) from the same collection, using multiple sequential `.where()` and `.toList()` calls causes the application to iterate over the entire collection multiple times unnecessarily, generating intermediate lists and closures.
 **Action:** Replace sequential aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
+
+## 2024-05-20 - Fix N+1 Sequential Fetch Bottlenecks
+
+**Learning:** Using `await` inside a standard `for` loop to fetch related data for distinct entities (e.g., fetching cash flows for multiple investments sequentially) creates a severe N+1 latency bottleneck as network/database roundtrips accumulate linearly.
+**Action:** When fetching distinct related entities, map the iterations into asynchronous futures and use `Future.wait(entities.map((e) async { ... }))` to execute them in parallel, vastly improving data load and export times.
