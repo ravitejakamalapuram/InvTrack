@@ -1,0 +1,163 @@
+name: "Init: Firestore Version Info"
+
+on:
+  workflow_dispatch:
+    inputs:
+      initial_version:
+        description: 'Initial version (e.g., 3.54.17)'
+        required: true
+        type: string
+      initial_build_number:
+        description: 'Initial build number (e.g., 161)'
+        required: true
+        type: string
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  initialize:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Firebase Admin SDK
+        run: |
+          echo "📦 Setting up Firebase Admin SDK..."
+          SYSTEM_NODE_MODULES="/opt/homebrew/lib/node_modules"
+
+          if [ -d "$SYSTEM_NODE_MODULES/firebase-admin" ]; then
+            echo "✅ Using system globally installed firebase-admin"
+            echo "NODE_PATH=$SYSTEM_NODE_MODULES" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "❌ firebase-admin not found"
+          echo "Run: npm install -g firebase-admin"
+          exit 1
+
+      - name: Initialize Firestore Document
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          INITIAL_VERSION: ${{ inputs.initial_version }}
+          INITIAL_BUILD: ${{ inputs.initial_build_number }}
+        run: |
+          node << 'EOF'
+          const admin = require('firebase-admin');
+
+          async function initializeFirestore() {
+            try {
+              const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              });
+
+              const db = admin.firestore();
+              const version = process.env.INITIAL_VERSION;
+              const buildNumber = parseInt(process.env.INITIAL_BUILD);
+              const now = new Date().toISOString();
+
+              console.log('🔧 Initializing Firestore version_info document...');
+              console.log('   Version:', version);
+              console.log('   Build Number:', buildNumber);
+
+              // Check if document already exists
+              const existingDoc = await db.collection('app_config').doc('version_info').get();
+              
+              if (existingDoc.exists) {
+                console.log('⚠️  Document already exists!');
+                console.log('   Current data:', JSON.stringify(existingDoc.data(), null, 2));
+                console.log('');
+                console.log('❓ Do you want to overwrite it?');
+                console.log('   If yes, run this workflow again with force_overwrite=true');
+                return;
+              }
+
+              // Create initial document
+              const initialData = {
+                // Core version info (required by app)
+                latestVersion: version,
+                latestBuildNumber: buildNumber,
+                minimumVersion: version,
+                minimumBuildNumber: buildNumber,
+                forceUpdate: false,
+                updateMessage: 'New version available!',
+                whatsNew: '- Initial version',
+                downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+                releaseDate: now,
+                
+                // Automation fields (used by workflows)
+                pendingRelease: false,
+                pendingVersion: null,
+                pendingBuildNumber: null,
+                uploadedAt: null,
+                lastApprovedAt: now,
+                
+                // Metadata
+                createdAt: now,
+                updatedAt: now,
+              };
+
+              await db.collection('app_config').doc('version_info').set(initialData);
+
+              console.log('✅ Firestore document initialized successfully!');
+              console.log('');
+              console.log('📋 Document structure:');
+              console.log(JSON.stringify(initialData, null, 2));
+              console.log('');
+              console.log('🔗 View in Firebase Console:');
+              console.log('https://console.firebase.google.com/project/invtracker-b19d1/firestore/data/app_config/version_info');
+
+            } catch (error) {
+              console.error('❌ Error:', error.message);
+              if (error.stack) {
+                console.error(error.stack);
+              }
+              process.exit(1);
+            }
+          }
+
+          initializeFirestore();
+          EOF
+
+      - name: Verify Initialization
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+        run: |
+          node << 'EOF'
+          const admin = require('firebase-admin');
+
+          async function verify() {
+            try {
+              const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+              const app = admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              }, 'verify-app');
+
+              const db = app.firestore();
+              const doc = await db.collection('app_config').doc('version_info').get();
+
+              if (!doc.exists) {
+                console.error('❌ Document was not created!');
+                process.exit(1);
+              }
+
+              console.log('✅ Verification successful!');
+              console.log('Document exists and is readable.');
+
+            } catch (error) {
+              console.error('❌ Verification failed:', error.message);
+              process.exit(1);
+            }
+          }
+
+          verify();
+          EOF
+

@@ -65,15 +65,16 @@ Simple, focused workflows with CodeRabbit handling detailed code reviews.
 
 **What it does:**
 - 🏗️ Builds release AAB
-- 📱 Deploys to Google Play **production track**
+- 📱 Deploys to Google Play **alpha track (closed testing)**
 - 🔥 Sets pending flag in Firestore
 - 📊 Creates GitHub release
 
-**Deployment Flow:**
+**Deployment Flow (Alpha → Manual Promotion → Production):**
 1. Build signed AAB
-2. Upload to Play Store production
+2. Upload to Play Store **alpha track** (closed testing)
 3. Set `pendingRelease: true` in Firestore
-4. Wait for Google approval (monitored by next workflow)
+4. **Manual**: You promote from alpha → production in Play Console
+5. Approval checker monitors production track (see next workflow)
 
 ---
 
@@ -82,18 +83,20 @@ Simple, focused workflows with CodeRabbit handling detailed code reviews.
 
 **What it does:**
 - 🔍 Checks if pending release is approved on Play Store
-- ✅ Updates Firestore when approved
+- ✅ Updates Firestore when you manually promote to production
 - 📅 Sets `releaseDate` with 2-hour rollout delay
 - 🔔 Notifies via Slack (optional)
 
-**How it works:**
-1. Checks Firestore for `pendingRelease: true`
-2. Queries Play Store API for production track status
-3. When status = `completed`, updates Firestore:
-   - `latestVersion` and `latestBuildNumber`
-   - `releaseDate` (2 hours from approval)
-   - `pendingRelease: false`
+**How it works with manual promotion:**
+1. Checks Firestore for `pendingRelease: true` (set when deployed to alpha)
+2. Queries Play Store API for **production track** (where you manually promote)
+3. When pending version found in production with status = `completed`:
+   - Updates `latestVersion` and `latestBuildNumber`
+   - Sets `releaseDate` (2 hours from promotion)
+   - Clears `pendingRelease: false`
 4. App shows update dialog after `releaseDate` passes
+
+**Note:** Monitors PRODUCTION track to detect manual promotions from alpha (closed testing).
 
 ---
 
