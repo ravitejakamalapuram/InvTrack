@@ -10,7 +10,7 @@ This guide helps debug issues with the app version update notification system.
 
 ### **Deployment Strategy: Alpha → Manual Promotion → Production**
 
-```
+```text
 1. CI/CD Deploy to Alpha Track (Closed Testing)
    └─> cd-deploy-android.yml
        - Builds AAB
@@ -99,7 +99,8 @@ GitHub Actions → "Init: Firestore Version Info" → Run workflow
 3. Status should be "Available" or "In progress"
 
 **If not promoted:**
-```
+
+```text
 1. Go to Play Console
 2. Navigate to Release → Closed Testing (Alpha)
 3. Find the release
@@ -136,7 +137,8 @@ GitHub Actions → "Init: Firestore Version Info" → Run workflow
 **Check:** Was Firestore updated with new version?
 
 **How to check:**
-```
+
+```text
 Firestore Console → app_config/version_info
 - latestVersion should = your new version
 - latestBuildNumber should = your new build number
@@ -189,6 +191,7 @@ print('Has update: ${state.hasUpdate}');
 3. Version mismatch
 
 **Fix:**
+
 ```bash
 # 1. Check if release is in production
 Play Console → Production → Check version

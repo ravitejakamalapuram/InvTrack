@@ -15,9 +15,13 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+permissions:
+  contents: read
+
 jobs:
   initialize:
     runs-on: self-hosted
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code

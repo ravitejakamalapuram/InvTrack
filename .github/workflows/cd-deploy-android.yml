@@ -263,6 +263,14 @@ jobs:
                   minimumVersion: '1.0.0',
                   minimumBuildNumber: 1,
                   forceUpdate: false,
+                  // Additional fields to match init workflow schema
+                  updateMessage: '',
+                  whatsNew: '',
+                  downloadUrl: '',
+                  releaseDate: null,
+                  lastApprovedAt: null,
+                  createdAt: uploadedAt,
+                  updatedAt: uploadedAt,
                 });
 
                 console.log('✅ Temporary document created');
@@ -293,12 +301,28 @@ jobs:
               if (error.stack) {
                 console.error(error.stack);
               }
-              // Fail the workflow if document doesn't exist
-              if (error.message.includes('not initialized')) {
+
+              // Fail workflow for critical errors
+              const criticalErrors = [
+                'not initialized',
+                'permission denied',
+                'unauthenticated',
+                'network',
+                'quota exceeded'
+              ];
+
+              const isCritical = criticalErrors.some(err =>
+                error.message.toLowerCase().includes(err.toLowerCase())
+              );
+
+              if (isCritical) {
+                console.error('❌ Critical error - workflow must fail');
                 process.exit(1);
               }
-              // Don't fail for other errors
-              console.log('⚠️ Continuing anyway - you can manually trigger version update later.');
+
+              // Log warning for non-critical errors
+              console.log('⚠️ Non-critical error - continuing anyway');
+              console.log('💡 You can manually trigger version update later if needed');
             }
           }
 
