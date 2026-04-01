@@ -1,8 +1,8 @@
 # Multi-Currency Architectural Review - Rule 21 Compliance
 
-**Date:** 2024-01-XX  
-**Branch:** `fix/goals-multi-currency-percentage-bug`  
-**Reviewer:** Architect AI  
+**Date:** 2026-04-01
+**Branch:** `fix/goals-multi-currency-percentage-bug`
+**Reviewer:** Architect AI
 **Status:** ✅ **PASSED** - All architectural requirements met
 
 ---
@@ -91,6 +91,7 @@ All UI displays use multi-currency providers that convert to base currency:
 | Goals Widget | `calculateMultiCurrency()` | ✅ COMPLIANT |
 
 **Code Evidence:**
+
 ```dart
 // lib/features/overview/presentation/screens/overview_screen.dart
 final globalStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
@@ -161,6 +162,7 @@ Sample data services use dynamic `baseCurrency` parameter:
 - `lib/features/investment/data/services/sample_data_service.dart` (Line 79: `baseCurrency` param)
 
 **Code Evidence:**
+
 ```dart
 // Goals Sample Data
 Future<List<GoalEntity>> createSampleGoals({
@@ -197,6 +199,7 @@ All calculations (XIRR, CAGR, totals, percentages) use converted amounts:
 | Goal Progress | `calculateMultiCurrency()` | Async conversion per cash flow |
 
 **Code Evidence:**
+
 ```dart
 // lib/features/investment/presentation/providers/multi_currency_providers.dart
 
@@ -306,6 +309,7 @@ const collections = [
 - [x] **UI Defaults:** New entities default to user's base currency from `currencyCodeProvider`
 
 **Code Evidence:**
+
 ```dart
 // lib/features/goals/domain/entities/goal_entity.dart:167-179
 
@@ -363,6 +367,7 @@ static Future<double> calculateMultiCurrency(
 4. Clear upgrade path via validation and migration
 
 **Implementation:**
+
 ```dart
 currency: data['currency'] as String? ?? 'USD'
 ```
@@ -435,7 +440,7 @@ The InvTrack codebase is **fully compliant** with Rule 21 (Multi-Currency Compli
 ---
 
 **Document Version:** 1.0
-**Review Date:** 2024-01-XX
+**Review Date:** 2026-04-01
 **Next Review:** After major feature additions involving monetary amounts
 
 ### ✅ 6. Export - Currency Column Included
@@ -451,6 +456,7 @@ All CSV exports include currency column:
 | Simple CSV Export | ✅ Line 74 | `lib/features/settings/data/services/export_service.dart` |
 
 **Code Evidence:**
+
 ```dart
 // CashFlow CSV Export Header
 rows.add([
