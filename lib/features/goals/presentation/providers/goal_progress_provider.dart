@@ -21,9 +21,13 @@ class GoalProgressCalculator {
     final linkedIds = linkedInvestments.map((i) => i.id).toSet();
 
     // Filter cash flows for linked investments
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
+    // Optimization: Replace .where().toList() with a standard loop to avoid closure and intermediate list allocation overhead
+    final linkedCashFlows = <CashFlowEntity>[];
+    for (final cf in allCashFlows) {
+      if (linkedIds.contains(cf.investmentId)) {
+        linkedCashFlows.add(cf);
+      }
+    }
 
     // Calculate current amount based on goal type
     double currentAmount;
@@ -101,13 +105,23 @@ class GoalProgressCalculator {
       case GoalTrackingMode.all:
         return allInvestments;
       case GoalTrackingMode.byType:
-        return allInvestments
-            .where((i) => goal.linkedTypes.contains(i.type))
-            .toList();
+        // Optimization: Replace .where().toList() with a standard loop
+        final result = <InvestmentEntity>[];
+        for (final i in allInvestments) {
+          if (goal.linkedTypes.contains(i.type)) {
+            result.add(i);
+          }
+        }
+        return result;
       case GoalTrackingMode.selected:
-        return allInvestments
-            .where((i) => goal.linkedInvestmentIds.contains(i.id))
-            .toList();
+        // Optimization: Replace .where().toList() with a standard loop
+        final result = <InvestmentEntity>[];
+        for (final i in allInvestments) {
+          if (goal.linkedInvestmentIds.contains(i.id)) {
+            result.add(i);
+          }
+        }
+        return result;
     }
   }
 
@@ -263,9 +277,13 @@ class GoalProgressCalculator {
     final linkedIds = linkedInvestments.map((i) => i.id).toSet();
 
     // Filter cash flows for linked investments
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
+    // Optimization: Replace .where().toList() with a standard loop
+    final linkedCashFlows = <CashFlowEntity>[];
+    for (final cf in allCashFlows) {
+      if (linkedIds.contains(cf.investmentId)) {
+        linkedCashFlows.add(cf);
+      }
+    }
 
     // Convert all cash flows to base currency
     // Optimization: Use batch conversion to deduplicate rates and parallelize requests, avoiding N+1 bottleneck
