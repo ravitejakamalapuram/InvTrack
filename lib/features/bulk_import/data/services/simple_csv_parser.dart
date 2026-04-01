@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:any_date/any_date.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
@@ -780,19 +781,21 @@ class GoalsCsvParser {
 
   /// Validate currency code against supported ISO 4217 currencies.
   ///
-  /// Supported currencies (40+): USD, EUR, GBP, INR, JPY, CAD, AUD, CHF,
-  /// CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR, SEK, NOK, DKK, PLN, CZK, HUF,
-  /// RON, KRW, TWD, THB, MYR, IDR, PHP, VND, BDT, PKR, LKR, ILS, TRY, NZD,
-  /// ARS, CLP, COP, PEN, NGN, KES, EGP
+  /// Uses the single source of truth from [getValidCurrencyCodes] in
+  /// currency_utils.dart to avoid duplication and drift.
+  ///
+  /// ## Supported Currencies (40+)
+  ///
+  /// USD, EUR, GBP, INR, JPY, CAD, AUD, CHF, CNY, SGD, HKD, AED, SAR,
+  /// BRL, MXN, ZAR, SEK, NOK, DKK, PLN, CZK, HUF, RON, KRW, TWD, THB,
+  /// MYR, IDR, PHP, VND, BDT, PKR, LKR, ILS, TRY, NZD, ARS, CLP, COP,
+  /// PEN, NGN, KES, EGP
+  ///
+  /// ## Returns
+  ///
+  /// - **true**: Currency code is supported
+  /// - **false**: Currency code is not supported or invalid
   static bool _isValidCurrency(String currencyCode) {
-    const validCurrencies = {
-      'USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF',
-      'CNY', 'SGD', 'HKD', 'AED', 'SAR', 'BRL', 'MXN', 'ZAR',
-      'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'KRW',
-      'TWD', 'THB', 'MYR', 'IDR', 'PHP', 'VND', 'BDT', 'PKR',
-      'LKR', 'ILS', 'TRY', 'NZD', 'ARS', 'CLP', 'COP', 'PEN',
-      'NGN', 'KES', 'EGP',
-    };
-    return validCurrencies.contains(currencyCode);
+    return getValidCurrencyCodes().contains(currencyCode);
   }
 }
