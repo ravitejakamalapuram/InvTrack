@@ -230,8 +230,6 @@ class _CsvParserSession {
         map['currency'] = i;
       } else if (header.contains('note')) {
         map['notes'] = i;
-      } else if (header.contains('currency')) {
-        map['currency'] = i;
       }
     }
     return map;
@@ -638,6 +636,9 @@ class GoalsCsvParser {
         map['icon'] = i;
       } else if (header == 'color') {
         map['color'] = i;
+      } else if (header.contains('currency')) {
+        // Multi-currency support (Rule 21.4)
+        map['currency'] = i;
       }
     }
     return map;
@@ -737,10 +738,23 @@ class GoalsCsvParser {
         }
       }
 
-      // Currency (Rule 21.4 - backward compatibility)
-      final currency = columnMap.containsKey('currency')
-          ? _getValue(values, columnMap['currency']!)
+      // Currency (Rule 21.4 - backward compatibility with validation)
+      var currency = columnMap.containsKey('currency')
+          ? _getValue(values, columnMap['currency']!).trim().toUpperCase()
           : 'USD'; // Default for old exports without currency column
+
+      // Validate currency code (ISO 4217)
+      if (currency.isNotEmpty && !_isValidCurrency(currency)) {
+        return ParsedGoalRow.withError(
+          rowNumber: rowNum,
+          error: 'Invalid currency code: $currency',
+        );
+      }
+
+      // Use USD as fallback for empty currency
+      if (currency.isEmpty) {
+        currency = 'USD';
+      }
 
       return ParsedGoalRow(
         rowNumber: rowNum,
@@ -754,7 +768,7 @@ class GoalsCsvParser {
         linkedTypes: linkedTypes,
         icon: icon.isNotEmpty ? icon : '🎯',
         colorValue: colorValue,
-        currency: currency.isNotEmpty ? currency : 'USD',
+        currency: currency,
       );
     } catch (e) {
       return ParsedGoalRow.withError(
@@ -762,5 +776,23 @@ class GoalsCsvParser {
         error: 'Parse error: $e',
       );
     }
+  }
+
+  /// Validate currency code against supported ISO 4217 currencies.
+  ///
+  /// Supported currencies (40+): USD, EUR, GBP, INR, JPY, CAD, AUD, CHF,
+  /// CNY, SGD, HKD, AED, SAR, BRL, MXN, ZAR, SEK, NOK, DKK, PLN, CZK, HUF,
+  /// RON, KRW, TWD, THB, MYR, IDR, PHP, VND, BDT, PKR, LKR, ILS, TRY, NZD,
+  /// ARS, CLP, COP, PEN, NGN, KES, EGP
+  static bool _isValidCurrency(String currencyCode) {
+    const validCurrencies = {
+      'USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF',
+      'CNY', 'SGD', 'HKD', 'AED', 'SAR', 'BRL', 'MXN', 'ZAR',
+      'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'KRW',
+      'TWD', 'THB', 'MYR', 'IDR', 'PHP', 'VND', 'BDT', 'PKR',
+      'LKR', 'ILS', 'TRY', 'NZD', 'ARS', 'CLP', 'COP', 'PEN',
+      'NGN', 'KES', 'EGP',
+    };
+    return validCurrencies.contains(currencyCode);
   }
 }
