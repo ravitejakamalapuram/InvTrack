@@ -980,6 +980,13 @@ await batch.commit();
 - [ ] **Data Lifecycle:** Currency data cleaned up on delete
 - [ ] **Cache Cleanup:** Exchange rate cache deleted (if applicable)
 
+**⚠️ CRITICAL - Percentage/Ratio Calculations:**
+- [ ] **Percentage Invariance:** Progress percentages (current/target) MUST remain stable when switching display currencies
+- [ ] **Both Values Converted:** BOTH numerator and denominator must be converted to SAME currency before division
+- [ ] **No Mixed Currency Math:** Never calculate ratios/percentages from amounts in different currencies
+- [ ] **Seed/Sample Data:** Use dynamic `baseCurrency` parameter, never hardcode currencies
+- [ ] **UI Defaults:** New entities default to user's base currency from `currencyCodeProvider`
+
 ### 21.8 Common Violations
 
 **❌ REJECT these patterns:**
