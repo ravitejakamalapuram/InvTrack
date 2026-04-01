@@ -151,6 +151,110 @@ void main() {
           reason: 'Investment currency must not change after conversion');
     });
 
+    /// **REGRESSION TEST for Seed Data Bug (PR #XXX)**
+    ///
+    /// **Scenario:** Goal created WITHOUT explicit currency field (defaults to USD),
+    /// but cash flows are in INR. This simulates the exact bug found in seed data.
+    ///
+    /// **Bug:** When `currency` field is missing, goal defaults to 'USD', causing
+    /// massive inflation when target amount (e.g., ₹2.5L) is converted from USD→INR.
+    ///
+    /// **Expected:** Even with currency mismatch, percentage should be calculated
+    /// correctly after conversion. This test ensures seed data scenarios work.
+    test('REGRESSION: goal without currency field (defaults to USD) with INR cash flows shows correct %', () async {
+      // Arrange: Create goal WITHOUT currency field (simulates old seed data)
+      final goal = GoalEntity(
+        id: 'goal1',
+        name: '₹50K Monthly Income',
+        type: GoalType.incomeTarget,
+        targetAmount: 600000, // ₹6L annual (but will default to USD!)
+        targetMonthlyIncome: 50000, // ₹50K/month
+        trackingMode: GoalTrackingMode.byType,
+        linkedTypes: [InvestmentType.fixedDeposit],
+        icon: '💰',
+        colorValue: 0xFFFBBF24,
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
+        // ❌ NO CURRENCY FIELD - defaults to 'USD'
+      );
+
+      // Cash flows are in INR (realistic production scenario)
+      final investment = InvestmentEntity(
+        id: 'inv1',
+        name: 'HDFC FD',
+        type: InvestmentType.fixedDeposit,
+        status: InvestmentStatus.open,
+        currency: 'INR',
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
+      );
+
+      final cashFlows = [
+        CashFlowEntity(
+          id: 'cf1',
+          investmentId: 'inv1',
+          type: CashFlowType.invest,
+          amount: 500000, // ₹5L invested
+          currency: 'INR',
+          date: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024, 1, 1),
+        ),
+        // Quarterly income payments (₹9,063 × 4 = ₹36,252/year)
+        ...List.generate(4, (i) => CashFlowEntity(
+          id: 'cf-income-$i',
+          investmentId: 'inv1',
+          type: CashFlowType.income,
+          amount: 9063, // ₹9,063 quarterly
+          currency: 'INR',
+          date: DateTime(2024, 1 + i * 3, 1),
+          createdAt: DateTime(2024, 1 + i * 3, 1),
+        )),
+      ];
+
+      // Act: Calculate with base currency = INR (user's preference)
+      final progressINR = await GoalProgressCalculator.calculateMultiCurrency(
+        goal: goal,
+        allInvestments: [investment],
+        allCashFlows: cashFlows,
+        batchConverter: batchConverter,
+        baseCurrency: 'INR',
+      );
+
+      // Act: Calculate with base currency = USD (currency switch)
+      final progressUSD = await GoalProgressCalculator.calculateMultiCurrency(
+        goal: goal,
+        allInvestments: [investment],
+        allCashFlows: cashFlows,
+        batchConverter: batchConverter,
+        baseCurrency: 'USD',
+      );
+
+      // Assert: Monthly income is ₹36,252 / 12 months = ₹3,021/month
+      // Target: ₹50,000/month
+      // Expected progress: 3,021 / 50,000 = 6.04%
+      //
+      // With the bug: Goal defaults to USD, so target ₹50,000 → treated as $50,000
+      // Converted to INR: $50,000 × 83 = ₹41,50,000 (41.5L instead of 50K!)
+      // Wrong progress: 3,021 / 41,50,000 = 0.07% ❌
+      //
+      // After fix: Target amount converted correctly
+      expect(progressINR.progressPercent, greaterThan(5.0),
+          reason: 'Progress should be ~6% (₹3,021 / ₹50,000), not ~0.07%');
+      expect(progressINR.progressPercent, lessThan(10.0),
+          reason: 'Progress should be reasonable, not inflated');
+
+      // Most importantly: percentage MUST be stable across currency switches
+      expect((progressINR.progressPercent - progressUSD.progressPercent).abs(), lessThan(0.5),
+          reason: 'Percentage must remain stable when switching USD↔INR (Rule 21.3)');
+
+      // Verify the conversion happened correctly
+      // Goal defaults to USD, so target $50,000/month should convert to INR
+      // Expected: $50,000 × 83.12 = ₹4,156,000
+      // But calculation should handle this and give correct %
+      expect(goal.currency, equals('USD'),
+          reason: 'Goal without currency field should default to USD');
+    });
+
   });
 }
 
