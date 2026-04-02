@@ -96,16 +96,13 @@ class DataExportService {
 
     // Get all documents from all investments
     final allInvestments = [...investments, ...archivedInvestments];
-    final allDocuments = <DocumentEntity>[];
 
     // Optimization: Use Future.wait to fetch documents for all investments in parallel
-    final allDocumentsFutures = allInvestments.map((inv) async {
-      return await _documentRepository.getDocumentsByInvestment(inv.id);
+    final allDocumentsFutures = allInvestments.map((inv) {
+      return _documentRepository.getDocumentsByInvestment(inv.id);
     });
     final allDocumentsLists = await Future.wait(allDocumentsFutures);
-    for (final list in allDocumentsLists) {
-      allDocuments.addAll(list);
-    }
+    final allDocuments = allDocumentsLists.expand((list) => list).toList();
 
     LoggerService.info(
       'Data export: fetched all data',

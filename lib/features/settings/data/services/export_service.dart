@@ -28,7 +28,6 @@ class ExportService {
   Future<void> exportToCsv() async {
     // 1. Fetch Data
     final investments = await _investmentRepository.getAllInvestments();
-    final allCashFlows = <Map<String, dynamic>>[];
 
     // Collect all cash flows with investment info
     // Optimization: Use Future.wait to fetch cash flows for all investments in parallel
@@ -41,9 +40,7 @@ class ExportService {
           .toList();
     });
     final allCashFlowsLists = await Future.wait(allCashFlowsFutures);
-    for (final list in allCashFlowsLists) {
-      allCashFlows.addAll(list);
-    }
+    final allCashFlows = allCashFlowsLists.expand((list) => list).toList();
 
     // Sort by date
     allCashFlows.sort(
