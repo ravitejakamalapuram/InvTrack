@@ -439,6 +439,7 @@ currency: data['currency'] as String? ?? 'USD'
 - Data lifecycle cleanup verified
 
 ### 2. 🔄 Future Enhancements
+
 - **Exchange Rate Transparency:** Show exchange rates in UI when currencies differ
 - **Currency Picker:** Allow users to set default currency for new entities
 - **Multi-Currency Reports:** Enhanced reporting with currency breakdown
@@ -487,4 +488,3 @@ The InvTrack codebase is **fully compliant** with Rule 21 (Multi-Currency Compli
 **Document Version:** 1.0
 **Review Date:** 2026-04-01
 **Next Review:** After major feature additions involving monetary amounts
-
