@@ -357,6 +357,7 @@ Update `lib/features/settings/presentation/screens/help_faq_screen.dart` with:
 - [ ] No `Untitled-*` or temp files in commit
 
 **Violation Examples:**
+
 ```bash
 ❌ pr_body.md               # Temp file in root
 ❌ notes.md                 # Temp file in root
@@ -396,6 +397,7 @@ Update `lib/features/settings/presentation/screens/help_faq_screen.dart` with:
 - ❌ Pushing without running analyzers/tests
 
 **Example Workflow:**
+
 ```bash
 # 1. Read CodeRabbit comments on PR
 gh pr view <PR_NUMBER> --json reviews
