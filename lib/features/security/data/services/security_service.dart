@@ -28,65 +28,12 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  AndroidOptions _getAndroidOptions() =>
-      const AndroidOptions(encryptedSharedPreferences: true);
-
-  AndroidOptions _getLegacyAndroidOptions() => const AndroidOptions();
+  AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
-  Future<void> _migrateToEncryptedSharedPreferences() async {
-    // Only run migration once
-    final migrated = _prefs.getBool('migrated_to_encrypted_prefs') ?? false;
-    if (migrated) return;
-
-    try {
-      final keysToMigrate = [_pinKey, _failedAttemptsKey, _lockoutTimestampKey];
-      for (final key in keysToMigrate) {
-        // Check if value exists in legacy storage
-        final legacyValue = await _secureStorage.read(
-          key: key,
-          aOptions: _getLegacyAndroidOptions(),
-          iOptions: _getIOSOptions(),
-        );
-
-        if (legacyValue != null) {
-          // Check if it already exists in new storage
-          final newValue = await _secureStorage.read(
-            key: key,
-            aOptions: _getAndroidOptions(),
-            iOptions: _getIOSOptions(),
-          );
-
-          if (newValue == null) {
-            // Write to new storage
-            await _secureStorage.write(
-              key: key,
-              value: legacyValue,
-              aOptions: _getAndroidOptions(),
-              iOptions: _getIOSOptions(),
-            );
-            // Delete from legacy storage
-            await _secureStorage.delete(
-              key: key,
-              aOptions: _getLegacyAndroidOptions(),
-              iOptions: _getIOSOptions(),
-            );
-          }
-        }
-      }
-      await _prefs.setBool('migrated_to_encrypted_prefs', true);
-    } catch (e) {
-      LoggerService.warn(
-        'Failed to migrate to EncryptedSharedPreferences',
-        error: e,
-      );
-    }
-  }
-
   Future<bool> hasPin() async {
-    await _migrateToEncryptedSharedPreferences();
     final pin = await _secureStorage.read(
       key: _pinKey,
       aOptions: _getAndroidOptions(),
@@ -125,7 +72,6 @@ class SecurityService {
 
   /// Get failed attempts from secure storage (migrating from prefs if needed)
   Future<int> _getFailedAttempts() async {
-    await _migrateToEncryptedSharedPreferences();
     // Check Secure Storage first
     final stored = await _secureStorage.read(
       key: _failedAttemptsKey,
@@ -163,7 +109,6 @@ class SecurityService {
 
   /// Get lockout timestamp from secure storage (migrating from prefs if needed)
   Future<int?> _getLockoutTimestamp() async {
-    await _migrateToEncryptedSharedPreferences();
     // Check Secure Storage first
     final stored = await _secureStorage.read(
       key: _lockoutTimestampKey,
@@ -242,7 +187,6 @@ class SecurityService {
     _isVerifying = true;
 
     try {
-      await _migrateToEncryptedSharedPreferences();
       // Check lockout first
       final remainingLockout = await getLockoutRemainingSeconds();
       if (remainingLockout != null) {
