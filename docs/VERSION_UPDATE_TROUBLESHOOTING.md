@@ -79,6 +79,7 @@ GitHub Actions → "Init: Firestore Version Info" → Run workflow
 
 **Expected complete schema:**
 
+**Client-facing fields** (consumed by Flutter app via `AppVersionEntity.fromMap`):
 - `latestVersion` (string) - Current production version
 - `latestBuildNumber` (number) - Current production build
 - `minimumVersion` (string) - Minimum supported version
@@ -88,12 +89,17 @@ GitHub Actions → "Init: Firestore Version Info" → Run workflow
 - `whatsNew` (string) - Release notes
 - `downloadUrl` (string) - Play Store URL
 - `releaseDate` (string/Timestamp) - Release timestamp
-- `lastApprovedAt` (string/Timestamp/null) - Last approval time
-- `createdAt` (string/Timestamp) - Document creation time
-- `updatedAt` (string/Timestamp) - Last update time
+
+**Workflow metadata only** (NOT read by the app):
 - `pendingRelease` (boolean) - Pending release flag
 - `pendingVersion` (string/null) - Pending version
 - `pendingBuildNumber` (number/null) - Pending build
+- `uploadedAt` (string/Timestamp) - Upload timestamp
+- `lastApprovedAt` (string/Timestamp/null) - Last approval time
+- `createdAt` (string/Timestamp) - Document creation time
+- `updatedAt` (string/Timestamp) - Last update time
+
+**Note:** Changing workflow metadata fields does not affect app behavior. Only the client-facing fields above are read by `AppVersionEntity.fromMap` and impact what users see.
 
 ---
 
@@ -191,8 +197,10 @@ Firestore Console → app_config/version_info
 
 **Debug:**
 
+**REMOVE BEFORE COMMITTING - Debug only:**
+
 ```dart
-// Add logging in version_check_provider.dart
+// Add temporary logging in version_check_provider.dart (FOR DEBUGGING ONLY)
 print('Current build: ${state.currentBuildNumber}');
 print('Latest build: ${state.latestVersion?.latestBuildNumber}');
 print('Release date: ${state.latestVersion?.releaseDate}');
@@ -200,10 +208,14 @@ print('Is released: ${state.latestVersion?.isReleased()}');
 print('Has update: ${state.hasUpdate}');
 ```
 
+**WARNING: Remove all debug print statements before committing!**
+
 **Fix:**
 - Wait 2 hours after Firestore update
 - Force version check: Pull-to-refresh on home screen
 - Clear app data and reinstall
+
+**IMPORTANT: Always remove debug print() statements before committing your changes. Debug logging should use LoggerService.debug() instead.**
 
 ---
 
@@ -271,16 +283,18 @@ If automation fails completely:
 # 1. Go to Firebase Console
 https://console.firebase.google.com/project/invtracker-b19d1/firestore/data/app_config/version_info
 
-# 2. Manually edit fields:
-- latestVersion: "3.54.17"
-- latestBuildNumber: 161
-- releaseDate: (current time as Timestamp)
-- pendingRelease: false
+# 2. Manually edit fields (replace placeholder values with your actual version):
+- latestVersion: "<your_version_string>"     # Example: "3.54.17"
+- latestBuildNumber: <your_build_number>    # Example: 161
+- releaseDate: (set to current timestamp for immediate rollout)
+- pendingRelease: false  # Must be false for production rollout
 
 # 3. Save
 
 # 4. Users will see update within 24 hours
 ```
+
+**Note:** The version and build number shown above are placeholders. Use your actual production version (e.g., "3.54.17") and build number (e.g., 161). Set `releaseDate` to the current timestamp and ensure `pendingRelease` is `false` for the update to be visible to users.
 
 ---
 
@@ -308,4 +322,3 @@ Run this checklist to verify everything is working:
 - **GitHub Actions**: https://github.com/ravitejakamalapuram/InvTrack/actions
 - **Deployment Workflow**: https://github.com/ravitejakamalapuram/InvTrack/actions/workflows/cd-deploy-android.yml
 - **Approval Checker**: https://github.com/ravitejakamalapuram/InvTrack/actions/workflows/check-playstore-approval.yml
-
