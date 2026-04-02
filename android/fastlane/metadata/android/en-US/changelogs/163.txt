@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Correct multi-currency percentage calculation bug in Goals widget (#311)

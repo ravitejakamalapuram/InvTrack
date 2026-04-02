@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Critical version update system fixes (#309)
+
+## [3.54.18] - 2026-04-02
+
+### 🐛 Bug Fixes
+
 - **goals**: Correct multi-currency percentage calculation bug in Goals widget (#311)
 
 ## [3.54.17] - 2026-03-30
