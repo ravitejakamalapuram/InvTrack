@@ -20,7 +20,7 @@ void main() {
     group('Multi-Currency Portfolio', () {
       test('creates investments in multiple currencies', () async {
         // Act
-        final result = await sampleDataService.createSampleData();
+        final result = await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         expect(result.investmentIds.length, greaterThan(0));
@@ -37,7 +37,7 @@ void main() {
 
       test('creates cash flows with matching currencies', () async {
         // Act
-        await sampleDataService.createSampleData();
+        await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
@@ -62,7 +62,7 @@ void main() {
 
       test('includes INR investment (Indian Rupees)', () async {
         // Act
-        await sampleDataService.createSampleData();
+        await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
@@ -83,7 +83,7 @@ void main() {
 
       test('includes USD investment (US Dollars)', () async {
         // Act
-        await sampleDataService.createSampleData();
+        await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
@@ -104,7 +104,7 @@ void main() {
 
       test('includes EUR investment (Euros)', () async {
         // Act
-        await sampleDataService.createSampleData();
+        await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         final investments = await investmentRepository.getAllInvestments();
@@ -127,7 +127,7 @@ void main() {
     group('Data Integrity (Rule 21.1)', () {
       test('does not convert amounts based on currency', () async {
         // Act
-        await sampleDataService.createSampleData();
+        await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         final allCashFlows = await investmentRepository.getAllCashFlows();
@@ -142,7 +142,7 @@ void main() {
 
       test('preserves original currency for all cash flows', () async {
         // Act
-        await sampleDataService.createSampleData();
+        await sampleDataService.createSampleData(baseCurrency: 'USD');
 
         // Assert
         final allCashFlows = await investmentRepository.getAllCashFlows();
