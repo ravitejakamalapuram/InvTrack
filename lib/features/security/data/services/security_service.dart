@@ -28,7 +28,9 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  AndroidOptions _getAndroidOptions() => const AndroidOptions();
+  // Security: Explicitly enable encryptedSharedPreferences to ensure both keys and values are encrypted using Android's native EncryptedSharedPreferences.
+  AndroidOptions _getAndroidOptions() =>
+      const AndroidOptions(encryptedSharedPreferences: true);
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
