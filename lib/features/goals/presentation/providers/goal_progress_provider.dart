@@ -106,18 +106,22 @@ class GoalProgressCalculator {
         return allInvestments;
       case GoalTrackingMode.byType:
         // Optimization: Replace .where().toList() with a standard loop
+        // Convert to Set once to avoid O(n*m) contains checks
+        final linkedTypesSet = goal.linkedTypes.toSet();
         final result = <InvestmentEntity>[];
         for (final i in allInvestments) {
-          if (goal.linkedTypes.contains(i.type)) {
+          if (linkedTypesSet.contains(i.type)) {
             result.add(i);
           }
         }
         return result;
       case GoalTrackingMode.selected:
         // Optimization: Replace .where().toList() with a standard loop
+        // Convert to Set once to avoid O(n*m) contains checks
+        final linkedIdsSet = goal.linkedInvestmentIds.toSet();
         final result = <InvestmentEntity>[];
         for (final i in allInvestments) {
-          if (goal.linkedInvestmentIds.contains(i.id)) {
+          if (linkedIdsSet.contains(i.id)) {
             result.add(i);
           }
         }
