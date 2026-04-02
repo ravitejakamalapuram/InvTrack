@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- **goals**: Correct multi-currency percentage calculation bug in Goals widget (#311)
+
+## [3.54.17] - 2026-03-30
+
+### 🐛 Bug Fixes
+
 - Enforce Clean Architecture and Localization (Rules 1.1 and 16.3)
 
 ## [3.54.16] - 2026-03-30
