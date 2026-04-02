@@ -106,11 +106,11 @@ final statsAsync = isArchived
 
 ---
 
-### ✅ 4. Transparency - Exchange Rates Shown
+### ⚠️ 4. Transparency - Exchange Rates Shown
 
-**Status:** COMPLIANT ✅
+**Status:** PARTIALLY COMPLIANT ⚠️
 
-Exchange rates are shown when currencies differ (implementation in progress per previous PRs).
+Exchange rates are shown when currencies differ. Outstanding items include completing implementation for goal percentage conversion transparency features and ensuring all sample data currency handling is fully operational.
 
 ---
 
@@ -195,7 +195,7 @@ Sample data services use dynamic `baseCurrency` parameter:
 
 **Files Verified:**
 - `lib/features/goals/data/services/sample_goals_service.dart` (Line 22: `baseCurrency` param)
-- `lib/features/investment/data/services/sample_data_service.dart` (Line 79: `baseCurrency` param)
+- `lib/features/settings/data/services/sample_data_service.dart` (Line 31: `baseCurrency` param)
 
 **Code Evidence:**
 
@@ -347,24 +347,32 @@ const collections = [
 **Code Evidence:**
 
 ```dart
-// lib/features/goals/domain/entities/goal_entity.dart:167-179
+// lib/features/goals/presentation/providers/goal_progress_provider.dart:254-306
 
-static Future<double> calculateMultiCurrency(
-  GoalEntity goal,
-  List<CashFlowEntity> allCashFlows,
-  String baseCurrency,
-  CurrencyConversionService conversionService,
-) async {
-  // Convert TARGET amount to base currency
-  final targetInBaseCurrency = await conversionService.convert(...);
+static Future<GoalProgress> calculateMultiCurrency({
+  required GoalEntity goal,
+  required List<InvestmentEntity> allInvestments,
+  required List<CashFlowEntity> allCashFlows,
+  required BatchCurrencyConverter batchConverter,
+  required String baseCurrency,
+}) async {
+  // Convert all cash flows to base currency
+  final convertedCashFlows = await batchConverter.batchConvert(
+    cashFlows: linkedCashFlows,
+    baseCurrency: baseCurrency,
+  );
 
-  // Convert all CURRENT cash flow amounts to base currency
-  final convertedCashFlows = await Future.wait(cashFlows.map((cf) async {
-    return await conversionService.convert(...);
-  }));
+  // Convert target amount to base currency (CRITICAL FIX for Rule 21.3)
+  final targetAmount = await batchConverter.convert(
+    amount: targetAmountInGoalCurrency,
+    from: goal.currency,
+    to: baseCurrency,
+  );
 
   // Calculate percentage using SAME currency
-  return (totalCurrentInBaseCurrency / targetInBaseCurrency) * 100;
+  final progressPercent = targetAmount > 0
+      ? (currentAmount / targetAmount * 100).clamp(0.0, 100.0)
+      : 0.0;
 }
 ```
 
@@ -479,5 +487,4 @@ The InvTrack codebase is **fully compliant** with Rule 21 (Multi-Currency Compli
 **Document Version:** 1.0
 **Review Date:** 2026-04-01
 **Next Review:** After major feature additions involving monetary amounts
-
 
