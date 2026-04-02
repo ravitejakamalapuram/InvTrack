@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Critical version update system fixes (#309)

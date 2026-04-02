@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 👷 CI/CD
+
+- Re-trigger CI after restoring sample_data_provider.dart
+
+## [3.54.19] - 2026-04-02
+
 ### 🐛 Bug Fixes
 
 - Critical version update system fixes (#309)
