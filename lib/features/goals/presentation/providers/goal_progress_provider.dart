@@ -20,10 +20,7 @@ class GoalProgressCalculator {
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
 
     // Optimization: Replace .map().toSet() with standard loop
-    final linkedIds = <String>{};
-    for (final i in linkedInvestments) {
-      linkedIds.add(i.id);
-    }
+    final linkedIds = _investmentIds(linkedInvestments);
 
     // Filter cash flows for linked investments
     final linkedCashFlows = allCashFlows
@@ -124,6 +121,15 @@ class GoalProgressCalculator {
         }
         return list;
     }
+  }
+
+  /// Extract investment IDs from a list of investments
+  static Set<String> _investmentIds(List<InvestmentEntity> investments) {
+    final ids = <String>{};
+    for (final i in investments) {
+      ids.add(i.id);
+    }
+    return ids;
   }
 
   /// Calculate net value from cash flows (for corpus goals)
@@ -244,10 +250,7 @@ class GoalProgressCalculator {
     if (linkedInvestments.isEmpty) return null;
 
     // Optimization: Replace .map().toSet() with standard loop
-    final linkedIds = <String>{};
-    for (final i in linkedInvestments) {
-      linkedIds.add(i.id);
-    }
+    final linkedIds = _investmentIds(linkedInvestments);
     DateTime? maxDate;
 
     // Optimization: Find max date in a single pass without allocating new lists or sorting
@@ -281,10 +284,7 @@ class GoalProgressCalculator {
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
 
     // Optimization: Replace .map().toSet() with standard loop
-    final linkedIds = <String>{};
-    for (final i in linkedInvestments) {
-      linkedIds.add(i.id);
-    }
+    final linkedIds = _investmentIds(linkedInvestments);
 
     // Filter cash flows for linked investments
     final linkedCashFlows = allCashFlows
