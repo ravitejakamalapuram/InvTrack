@@ -288,7 +288,7 @@ class DataExportService {
 
   /// Generate CSV for goals
   /// Format: Name, Type, Target Amount, Target Monthly Income, Target Date,
-  ///         Tracking Mode, Linked Investment Names, Linked Types, Icon, Color
+  ///         Tracking Mode, Linked Investment Names, Linked Types, Icon, Color, Currency
   String _generateGoalsCsv(
     List<GoalEntity> goals,
     List<InvestmentEntity> allInvestments,
@@ -298,7 +298,7 @@ class DataExportService {
 
     final rows = <List<dynamic>>[];
 
-    // Header row - changed "Linked Investment IDs" to "Linked Investment Names"
+    // Header row - includes Currency column (Rule 21.4)
     rows.add([
       'Name',
       'Type',
@@ -310,6 +310,7 @@ class DataExportService {
       'Linked Types',
       'Icon',
       'Color',
+      'Currency',
     ]);
 
     // Data rows
@@ -331,6 +332,7 @@ class DataExportService {
         goal.linkedTypes.map((t) => t.name).join(';'),
         CsvUtils.sanitizeField(goal.icon),
         goal.colorValue,
+        goal.currency, // Preserve original currency (Rule 21.2)
       ]);
     }
 

@@ -340,6 +340,89 @@ Update `lib/features/settings/presentation/screens/help_faq_screen.dart` with:
 - ✅ Changes to currency handling or localization
 - ❌ Minor UI tweaks or bug fixes (unless they change user workflow)
 
+### 10.4 File Organization & Documentation Requirements
+
+**Markdown File Organization:**
+- ❌ **NO** `.md` files in repository root (except `README.md`)
+- ✅ All documentation MUST be in `docs/` folder
+- ❌ **NO** temporary `.md` files (e.g., `pr_body.md`, `temp.md`, `notes.md`)
+- ✅ Only create documentation files when **explicitly requested** by user
+- ✅ Delete temporary files immediately after use
+
+**Required Checks Before PR Submission:**
+- [ ] No `.md` files in root (except `README.md`)
+- [ ] All documentation in `docs/` folder
+- [ ] No temporary files committed
+- [ ] Run `git status` to verify clean working tree
+- [ ] No `Untitled-*` or temp files in commit
+
+**Violation Examples:**
+
+```bash
+❌ pr_body.md               # Temp file in root
+❌ notes.md                 # Temp file in root
+❌ REVIEW.md                # Should be in docs/
+❌ Untitled-1               # Temp file
+✅ docs/ARCHITECTURE.md     # Correct location
+✅ README.md                # Exception allowed
+```
+
+### 10.5 CodeRabbit Review Process
+
+**MANDATORY: Address ALL review comments exhaustively**
+
+**After pushing commits:**
+1. **Wait for CodeRabbit review** (auto-triggered on PR)
+2. **Read ALL review comments** completely
+3. **Fix ALL issues** from the beginning (don't miss any)
+4. **Verify fixes** against the actual code, not assumptions
+5. **Push fixes** and wait for re-review
+6. **Repeat** until zero unresolved comments
+
+**Exhaustive Fix Checklist:**
+- [ ] Read every CodeRabbit comment (don't skip any)
+- [ ] Verify issue exists in current code (not outdated comment)
+- [ ] Fix ALL instances of the issue (use global search)
+- [ ] Verify related code paths (export ↔ import, read ↔ write)
+- [ ] Run static analysis: `flutter analyze`
+- [ ] Run tests: `flutter test`
+- [ ] Commit with descriptive message referencing review
+- [ ] Push and verify CodeRabbit re-reviews
+
+**Common Mistakes to Avoid:**
+- ❌ Fixing only SOME instances of duplicated issue
+- ❌ Assuming code is correct without verification
+- ❌ Missing related code paths (e.g., fixing import but not export)
+- ❌ Ignoring "nitpick" comments (fix ALL comments)
+- ❌ Pushing without running analyzers/tests
+
+**Example Workflow:**
+
+```bash
+# 1. Read CodeRabbit comments on PR
+gh pr view <PR_NUMBER> --json reviews
+
+# 2. Fix ALL issues (verify with global search)
+rg "pattern" lib/  # Find ALL instances
+
+# 3. Verify changes
+flutter analyze
+flutter test
+
+# 4. Commit and push
+git add -A
+git commit -m "fix: Address CodeRabbit review comments - <specific issue>"
+git push
+
+# 5. Wait for re-review and repeat if needed
+```
+
+**Zero Tolerance Policy:**
+- **ALL** CodeRabbit comments MUST be addressed
+- **NO** unresolved comments allowed in merged PRs
+- **NO** "will fix later" or "not important" exceptions
+- **EXHAUSTIVE** fixes required (find ALL instances, not just one)
+
 ---
 
 ## 11. DEPENDENCIES
@@ -979,6 +1062,13 @@ await batch.commit();
 - [ ] **Calculations:** Uses converted amounts (XIRR, CAGR, totals)
 - [ ] **Data Lifecycle:** Currency data cleaned up on delete
 - [ ] **Cache Cleanup:** Exchange rate cache deleted (if applicable)
+
+**⚠️ CRITICAL - Percentage/Ratio Calculations:**
+- [ ] **Percentage Invariance:** Progress percentages (current/target) MUST remain stable when switching display currencies
+- [ ] **Both Values Converted:** BOTH numerator and denominator must be converted to SAME currency before division
+- [ ] **No Mixed Currency Math:** Never calculate ratios/percentages from amounts in different currencies
+- [ ] **Seed/Sample Data:** Use dynamic `baseCurrency` parameter, never hardcode currencies
+- [ ] **UI Defaults:** New entities default to user's base currency from `currencyCodeProvider`
 
 ### 21.8 Common Violations
 

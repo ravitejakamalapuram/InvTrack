@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:any_date/any_date.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
@@ -230,8 +231,6 @@ class _CsvParserSession {
         map['currency'] = i;
       } else if (header.contains('note')) {
         map['notes'] = i;
-      } else if (header.contains('currency')) {
-        map['currency'] = i;
       }
     }
     return map;
@@ -501,6 +500,7 @@ class ParsedGoalRow {
   final List<String> linkedTypes;
   final String icon;
   final int colorValue;
+  final String currency; // Multi-currency support (Rule 21.2)
   final String? error;
 
   const ParsedGoalRow({
@@ -515,6 +515,7 @@ class ParsedGoalRow {
     required this.linkedTypes,
     required this.icon,
     required this.colorValue,
+    required this.currency,
     this.error,
   });
 
@@ -530,7 +531,8 @@ class ParsedGoalRow {
       linkedInvestmentNames = const [],
       linkedTypes = const [],
       icon = '🎯',
-      colorValue = 0xFF4CAF50;
+      colorValue = 0xFF4CAF50,
+      currency = 'USD'; // Default for error case
 }
 
 /// Result of parsing a Goals CSV file
@@ -635,6 +637,9 @@ class GoalsCsvParser {
         map['icon'] = i;
       } else if (header == 'color') {
         map['color'] = i;
+      } else if (header.contains('currency')) {
+        // Multi-currency support (Rule 21.4)
+        map['currency'] = i;
       }
     }
     return map;
@@ -734,6 +739,24 @@ class GoalsCsvParser {
         }
       }
 
+      // Currency (Rule 21.4 - backward compatibility with validation)
+      var currency = columnMap.containsKey('currency')
+          ? _getValue(values, columnMap['currency']!).trim().toUpperCase()
+          : 'USD'; // Default for old exports without currency column
+
+      // Validate currency code (ISO 4217)
+      if (currency.isNotEmpty && !_isValidCurrency(currency)) {
+        return ParsedGoalRow.withError(
+          rowNumber: rowNum,
+          error: 'Invalid currency code: $currency',
+        );
+      }
+
+      // Use USD as fallback for empty currency
+      if (currency.isEmpty) {
+        currency = 'USD';
+      }
+
       return ParsedGoalRow(
         rowNumber: rowNum,
         name: name,
@@ -746,6 +769,7 @@ class GoalsCsvParser {
         linkedTypes: linkedTypes,
         icon: icon.isNotEmpty ? icon : '🎯',
         colorValue: colorValue,
+        currency: currency,
       );
     } catch (e) {
       return ParsedGoalRow.withError(
@@ -753,5 +777,25 @@ class GoalsCsvParser {
         error: 'Parse error: $e',
       );
     }
+  }
+
+  /// Validate currency code against supported ISO 4217 currencies.
+  ///
+  /// Uses the single source of truth from [getValidCurrencyCodes] in
+  /// currency_utils.dart to avoid duplication and drift.
+  ///
+  /// ## Supported Currencies (40+)
+  ///
+  /// USD, EUR, GBP, INR, JPY, CAD, AUD, CHF, CNY, SGD, HKD, AED, SAR,
+  /// BRL, MXN, ZAR, SEK, NOK, DKK, PLN, CZK, HUF, RON, KRW, TWD, THB,
+  /// MYR, IDR, PHP, VND, BDT, PKR, LKR, ILS, TRY, NZD, ARS, CLP, COP,
+  /// PEN, NGN, KES, EGP
+  ///
+  /// ## Returns
+  ///
+  /// - **true**: Currency code is supported
+  /// - **false**: Currency code is not supported or invalid
+  static bool _isValidCurrency(String currencyCode) {
+    return getValidCurrencyCodes().contains(currencyCode);
   }
 }

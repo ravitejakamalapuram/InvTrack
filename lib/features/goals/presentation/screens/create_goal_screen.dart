@@ -69,8 +69,19 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     _selectedColor = goal?.color ?? GoalColors.defaultColor;
     _linkedInvestmentIds = goal?.linkedInvestmentIds ?? [];
     _linkedTypes = goal?.linkedTypes ?? [];
-    _selectedCurrency =
-        goal?.currency ?? 'USD'; // Default to USD if not editing
+    // Multi-currency: Default to editing goal's currency, or user's preferred currency for new goals (Rule 21.6)
+    // Note: We can't access ref in initState, so we use a placeholder.
+    // The actual default will be set in didChangeDependencies.
+    _selectedCurrency = goal?.currency ?? '';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set default currency from user's preferred currency if creating new goal (Rule 21.6)
+    if (widget.goalToEdit == null && _selectedCurrency.isEmpty) {
+      _selectedCurrency = ref.read(currencyCodeProvider);
+    }
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/seed_data_service.dart';
 
@@ -30,7 +31,11 @@ class SeedDataNotifier extends Notifier<AsyncValue<SeedResult?>> {
   Future<SeedResult?> seedData() async {
     state = const AsyncValue.loading();
     try {
-      final result = await ref.read(seedDataServiceProvider).seedDemoData();
+      // Get user's base currency for dynamic goal creation (Rule 21.6)
+      final baseCurrency = ref.read(currencyCodeProvider);
+      final result = await ref.read(seedDataServiceProvider).seedDemoData(
+        baseCurrency: baseCurrency,
+      );
       state = AsyncValue.data(result);
       return result;
     } catch (e, st) {

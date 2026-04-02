@@ -287,6 +287,37 @@ String getCurrencyLocale(String currencyCode) {
   return _currencyLocales[currencyCode] ?? _currencyLocales['INR']!;
 }
 
+/// Get set of all supported ISO 4217 currency codes.
+///
+/// Returns the complete set of currency codes supported by the app.
+/// This is the single source of truth for currency validation.
+///
+/// ## Returns
+///
+/// - **Set of String**: Set of supported currency codes (40+ currencies)
+///
+/// ## Example
+///
+/// ```dart
+/// final validCodes = getValidCurrencyCodes();
+/// final isValid = validCodes.contains('USD'); // true
+/// final isInvalid = validCodes.contains('XXX'); // false
+/// ```
+///
+/// ## Use Cases
+///
+/// - CSV import validation
+/// - API response validation
+/// - Form input validation
+/// - Currency picker dropdown
+///
+/// ## Supported Currencies
+///
+/// See [_currencySymbols] map for full list.
+Set<String> getValidCurrencyCodes() {
+  return _currencySymbols.keys.toSet();
+}
+
 /// Provider for the current currency code
 final currencyCodeProvider = Provider<String>((ref) {
   final settings = ref.watch(settingsProvider);
