@@ -39,3 +39,7 @@
 
 **Learning:** Found that a `GestureDetector` coupled with an `AbsorbPointer` used to create a feature gate or paywall overlay (like `PremiumGate`) acts as a visual blocker but lacks proper native accessibility roles in Flutter. Screen readers may fail to announce their role as an actionable item (button) to unlock the feature, and importantly, they may still read out the inaccessible, visually obscured locked content underneath.
 **Action:** When building paywall overlays or feature gates using `GestureDetector` and `AbsorbPointer`, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label` (e.g., 'Unlock Premium feature'), and set `excludeSemantics: true`. This provides a single, actionable announcement for screen readers while effectively hiding the underlying, inaccessible locked content from the accessibility tree.
+
+## 2024-06-25 - Added Semantics wrapper to AppTextField interactive label
+**Learning:** When using a `GestureDetector` to make text labels interactive in Flutter (e.g., clicking a label to focus an adjacent text field like in `AppTextField`), screen readers may just announce the text without conveying its actionable role.
+**Action:** When making text labels clickable to focus fields, wrap the `GestureDetector` in a `Semantics` widget with `button: true`, a descriptive action `label` (e.g., 'Focus [field name] field'), and `excludeSemantics: true` to ensure screen readers announce it properly without reading the label text twice.

@@ -172,18 +172,23 @@ class _AppTextFieldState extends State<AppTextField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null) ...[
-          GestureDetector(
-            onTap: () {
-              // UX: Allow clicking the label to focus the text field
-              if (widget.enabled && !widget.readOnly) {
-                _focusNode.requestFocus();
-              }
-            },
-            child: Text(
-              widget.label!,
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.neutral900Light,
+          Semantics(
+            button: true,
+            label: 'Focus ${widget.label} field',
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: () {
+                // UX: Allow clicking the label to focus the text field
+                if (widget.enabled && !widget.readOnly) {
+                  _focusNode.requestFocus();
+                }
+              },
+              child: Text(
+                widget.label!,
+                style: AppTypography.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
               ),
             ),
           ),
