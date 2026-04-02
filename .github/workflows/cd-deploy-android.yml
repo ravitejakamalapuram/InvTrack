@@ -242,21 +242,88 @@ jobs:
               console.log('   Build Number:', buildNumber);
               console.log('   Uploaded At:', uploadedAt);
 
-              // Set pending release flag
-              await db.collection('app_config').doc('version_info').update({
+              // First, verify document exists
+              const versionDoc = await db.collection('app_config').doc('version_info').get();
+
+              if (!versionDoc.exists) {
+                console.warn('⚠️  WARNING: Firestore document app_config/version_info does not exist!');
+                console.log('📝 Creating document with pending release info...');
+                console.log('');
+                console.log('ℹ️  Note: After manual promotion, you should run the init workflow to set proper defaults.');
+
+                // Create minimal document with pending info
+                await db.collection('app_config').doc('version_info').set({
+                  pendingRelease: true,
+                  pendingVersion: version,
+                  pendingBuildNumber: buildNumber,
+                  uploadedAt: uploadedAt,
+                  // Temporary defaults - should be updated by init workflow
+                  latestVersion: '1.0.0',
+                  latestBuildNumber: 1,
+                  minimumVersion: '1.0.0',
+                  minimumBuildNumber: 1,
+                  forceUpdate: false,
+                  // Additional fields to match init workflow schema
+                  updateMessage: '',
+                  whatsNew: '',
+                  downloadUrl: '',
+                  releaseDate: null,
+                  lastApprovedAt: null,
+                  createdAt: uploadedAt,
+                  updatedAt: uploadedAt,
+                });
+
+                console.log('✅ Temporary document created');
+                console.log('🔧 Recommended: Run "Init: Firestore Version Info" workflow to set proper defaults');
+                return;
+              }
+
+              // Set pending release flag (use merge to avoid overwriting other fields)
+              await db.collection('app_config').doc('version_info').set({
                 pendingRelease: true,
                 pendingVersion: version,
                 pendingBuildNumber: buildNumber,
                 uploadedAt: uploadedAt,
-              });
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(), // Always refresh timestamp
+              }, { merge: true });
 
               console.log('✅ Pending release flag set successfully!');
-              console.log('⏳ Automated monitoring will check Play Store approval every hour.');
+              console.log('');
+              console.log('📋 Next steps:');
+              console.log('   1. Manually promote from alpha → production in Play Console');
+              console.log('   2. Automated checker will detect promotion (runs hourly)');
+              console.log('   3. Firestore will be updated automatically');
+              console.log('   4. Users will see update notification');
+              console.log('');
+              console.log('🔗 Play Console: https://play.google.com/console/u/0/developers/7885006060068362419/app/4975815827002913060/tracks/alpha');
 
             } catch (error) {
               console.error('❌ Error setting pending flag:', error.message);
-              // Don't fail the workflow if this step fails
-              console.log('⚠️ Continuing anyway - you can manually trigger version update later.');
+              if (error.stack) {
+                console.error(error.stack);
+              }
+
+              // Fail workflow for critical errors
+              const criticalErrors = [
+                'not initialized',
+                'permission denied',
+                'unauthenticated',
+                'network',
+                'quota exceeded'
+              ];
+
+              const isCritical = criticalErrors.some(err =>
+                error.message.toLowerCase().includes(err.toLowerCase())
+              );
+
+              if (isCritical) {
+                console.error('❌ Critical error - workflow must fail');
+                process.exit(1);
+              }
+
+              // Log warning for non-critical errors
+              console.log('⚠️ Non-critical error - continuing anyway');
+              console.log('💡 You can manually trigger version update later if needed');
             }
           }
 

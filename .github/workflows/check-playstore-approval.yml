@@ -13,9 +13,17 @@ env:
   # Force GitHub Actions to use Node.js 24 (addresses deprecation warning)
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+permissions:
+  contents: read
+
+concurrency:
+  group: playstore-approval-check
+  cancel-in-progress: true
+
 jobs:
   check-approval:
     runs-on: self-hosted
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
@@ -111,11 +119,18 @@ jobs:
 
               const editId = editResponse.data.id;
 
-              // Get production track info (matching your deploy workflow)
+              // Monitor production track (where you manually promote releases from alpha)
+              // Deploy workflow uploads to alpha → You promote alpha→production → This detects it
+              console.log('🔍 Checking Play Store API...');
+              console.log('   Package:', packageName);
+              console.log('   Track: production (monitoring for manual promotion)');
+              console.log('   Pending Build:', versionData.pendingBuildNumber);
+              console.log('   Pending Version:', versionData.pendingVersion);
+
               const trackResponse = await androidPublisher.edits.tracks.get({
                 packageName: packageName,
                 editId: editId,
-                track: 'production',  // Matches your deploy workflow
+                track: 'production',  // Monitor production for manual promotion detection
               });
 
               // Delete the edit (we're just reading)
@@ -126,10 +141,38 @@ jobs:
 
               const releases = trackResponse.data.releases || [];
 
+              // Check if pending release is stale (uploaded > 7 days ago)
+              const uploadedAt = new Date(versionData.uploadedAt);
+              const now = new Date();
+              const hoursSinceUpload = (now - uploadedAt) / (1000 * 60 * 60);
+              const isStale = hoursSinceUpload > 168; // 7 days
+
               if (releases.length === 0) {
                 console.log('⚠️  No releases found in production track');
-                console.log('ℹ️  This is expected during Google Play review period.');
-                console.log('ℹ️  Releases appear in production track AFTER approval, not during review.');
+                console.log('');
+
+                // Clear stale pending releases
+                if (isStale) {
+                  console.log(`🧹 Pending release is stale (${Math.floor(hoursSinceUpload / 24)} days old)`);
+                  console.log('   Clearing stale pending flag...');
+                  await db.collection('app_config').doc('version_info').update({
+                    pendingRelease: false,
+                  });
+                  console.log('✅ Stale pending flag cleared');
+                  return;
+                }
+
+                console.log('ℹ️  This is expected when:');
+                console.log('   1. Release is still in alpha (not yet promoted)');
+                console.log('   2. Release promoted but pending Google review');
+                console.log('   3. First time deploying to production track');
+                console.log('');
+                console.log('📌 Next steps:');
+                console.log('   1. Ensure you promoted from alpha → production in Play Console');
+                console.log('   2. Check Play Console production track status');
+                console.log('   3. Wait for Google approval if recently promoted');
+                console.log('');
+                console.log('🔗 Play Console: https://play.google.com/console/u/0/developers/7885006060068362419/app/4975815827002913060/tracks/production');
                 console.log('⏳ Keeping pending flag active. Will check again next hour...');
                 return;
               }
