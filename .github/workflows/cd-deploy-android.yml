@@ -284,7 +284,7 @@ jobs:
                 pendingVersion: version,
                 pendingBuildNumber: buildNumber,
                 uploadedAt: uploadedAt,
-                updatedAt: uploadedAt,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(), // Always refresh timestamp
               }, { merge: true });
 
               console.log('✅ Pending release flag set successfully!');
