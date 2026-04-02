@@ -18,7 +18,12 @@ class GoalProgressCalculator {
   }) {
     // Filter investments based on tracking mode
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
-    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
+
+    // Optimization: Replace .map().toSet() with standard loop
+    final linkedIds = <String>{};
+    for (final i in linkedInvestments) {
+      linkedIds.add(i.id);
+    }
 
     // Filter cash flows for linked investments
     final linkedCashFlows = allCashFlows
@@ -101,13 +106,23 @@ class GoalProgressCalculator {
       case GoalTrackingMode.all:
         return allInvestments;
       case GoalTrackingMode.byType:
-        return allInvestments
-            .where((i) => goal.linkedTypes.contains(i.type))
-            .toList();
+        // Optimization: Replace .where().toList() with standard loop
+        final list = <InvestmentEntity>[];
+        for (final i in allInvestments) {
+          if (goal.linkedTypes.contains(i.type)) {
+            list.add(i);
+          }
+        }
+        return list;
       case GoalTrackingMode.selected:
-        return allInvestments
-            .where((i) => goal.linkedInvestmentIds.contains(i.id))
-            .toList();
+        // Optimization: Replace .where().toList() with standard loop
+        final list = <InvestmentEntity>[];
+        for (final i in allInvestments) {
+          if (goal.linkedInvestmentIds.contains(i.id)) {
+            list.add(i);
+          }
+        }
+        return list;
     }
   }
 
@@ -228,7 +243,11 @@ class GoalProgressCalculator {
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
     if (linkedInvestments.isEmpty) return null;
 
-    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
+    // Optimization: Replace .map().toSet() with standard loop
+    final linkedIds = <String>{};
+    for (final i in linkedInvestments) {
+      linkedIds.add(i.id);
+    }
     DateTime? maxDate;
 
     // Optimization: Find max date in a single pass without allocating new lists or sorting
@@ -260,7 +279,12 @@ class GoalProgressCalculator {
   }) async {
     // Filter investments based on tracking mode
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
-    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
+
+    // Optimization: Replace .map().toSet() with standard loop
+    final linkedIds = <String>{};
+    for (final i in linkedInvestments) {
+      linkedIds.add(i.id);
+    }
 
     // Filter cash flows for linked investments
     final linkedCashFlows = allCashFlows
