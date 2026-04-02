@@ -151,6 +151,42 @@ if (currency.isNotEmpty && !_isValidCurrency(currency)) {
 
 ---
 
+### ✅ 6. Export - Currency Column Included
+
+**Status:** COMPLIANT ✅
+
+All CSV exports include currency column:
+
+| Export Type | Currency Column | Location |
+|-------------|----------------|----------|
+| Cash Flows | ✅ Line 279 | `lib/features/settings/data/services/data_export_service.dart` |
+| Goals | ✅ Line 335 | `lib/features/settings/data/services/data_export_service.dart` |
+| Simple CSV Export | ✅ Line 74 | `lib/features/settings/data/services/export_service.dart` |
+
+**Code Evidence:**
+
+```dart
+// CashFlow CSV Export Header
+rows.add([
+  'Date',
+  'Investment Name',
+  'Type',
+  'Amount',
+  'Currency', // ✅ Included
+  'Notes',
+  ...
+]);
+
+// Data row
+rows.add([
+  ...
+  item.cashFlow.currency, // ✅ Preserve original currency (Rule 21.2)
+  ...
+]);
+```
+
+---
+
 ### ✅ 7. Sample Data - Multiple Currencies
 
 **Status:** COMPLIANT ✅
@@ -387,6 +423,7 @@ currency: data['currency'] as String? ?? 'USD'
 ## Recommendations
 
 ### 1. ✅ Already Implemented
+
 - Multi-currency providers migrated
 - Percentage calculation bug fixed
 - Sample data uses dynamic currency
@@ -442,41 +479,5 @@ The InvTrack codebase is **fully compliant** with Rule 21 (Multi-Currency Compli
 **Document Version:** 1.0
 **Review Date:** 2026-04-01
 **Next Review:** After major feature additions involving monetary amounts
-
-### ✅ 6. Export - Currency Column Included
-
-**Status:** COMPLIANT ✅
-
-All CSV exports include currency column:
-
-| Export Type | Currency Column | Location |
-|-------------|----------------|----------|
-| Cash Flows | ✅ Line 279 | `lib/features/settings/data/services/data_export_service.dart` |
-| Goals | ✅ Line 335 | `lib/features/settings/data/services/data_export_service.dart` |
-| Simple CSV Export | ✅ Line 74 | `lib/features/settings/data/services/export_service.dart` |
-
-**Code Evidence:**
-
-```dart
-// CashFlow CSV Export Header
-rows.add([
-  'Date',
-  'Investment Name',
-  'Type',
-  'Amount',
-  'Currency', // ✅ Included
-  'Notes',
-  ...
-]);
-
-// Data row
-rows.add([
-  ...
-  item.cashFlow.currency, // ✅ Preserve original currency (Rule 21.2)
-  ...
-]);
-```
-
----
 
 
