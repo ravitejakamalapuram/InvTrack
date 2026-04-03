@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- **ci**: Remove duplicate variable declarations in check-playstore-approval workflow (#321)
+
 ## [3.54.20] - 2026-04-02
 
 ### 👷 CI/CD
