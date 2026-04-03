@@ -23,6 +23,7 @@ class SecurityService {
   static const int _lockoutDurationSeconds = 900; // 15 minutes
 
   bool _isVerifying = false;
+  Future<bool>? _hasPinFuture;
 
   SecurityService(this._secureStorage, this._localAuth, this._prefs);
 
@@ -35,7 +36,12 @@ class SecurityService {
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
-  Future<bool> hasPin() async {
+  Future<bool> hasPin() {
+    _hasPinFuture ??= _hasPinInternal().whenComplete(() => _hasPinFuture = null);
+    return _hasPinFuture!;
+  }
+
+  Future<bool> _hasPinInternal() async {
     // Check Secure Storage first
     final pin = await _secureStorage.read(
       key: _pinKey,

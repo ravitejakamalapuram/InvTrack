@@ -368,6 +368,39 @@ void main() {
         expect(verifyResult, isTrue);
       },
     );
+
+    test(
+      'Concurrent hasPin calls safely migrate legacy PIN without race conditions',
+      () async {
+        // Setup: Legacy PIN stored in SharedPreferences
+        const legacyPin = '1234';
+        await prefs.setString('user_pin', legacyPin);
+        expect(
+          fakeSecureStorage.storage.containsKey('user_pin'),
+          isFalse,
+        );
+
+        // Simulate concurrent calls to hasPin (e.g., during app startup)
+        final results = await Future.wait([
+          service.hasPin(),
+          service.hasPin(),
+          service.hasPin(),
+        ]);
+
+        // All results should be true
+        expect(results, everyElement(isTrue));
+
+        // Legacy prefs should be removed
+        expect(prefs.getString('user_pin'), isNull);
+
+        // Secure storage should contain the migrated PIN
+        expect(fakeSecureStorage.storage['user_pin'], equals(legacyPin));
+
+        // Verify the migrated PIN is usable
+        final verifyResult = await service.verifyPin(legacyPin);
+        expect(verifyResult, isTrue);
+      },
+    );
   });
 
   group('SecurityService - Biometrics', () {
