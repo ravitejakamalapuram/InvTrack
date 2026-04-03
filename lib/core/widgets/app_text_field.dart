@@ -172,18 +172,23 @@ class _AppTextFieldState extends State<AppTextField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null) ...[
-          GestureDetector(
-            onTap: () {
-              // UX: Allow clicking the label to focus the text field
-              if (widget.enabled && !widget.readOnly) {
-                _focusNode.requestFocus();
-              }
-            },
-            child: Text(
-              widget.label!,
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.neutral900Light,
+          // UX: Allow clicking the label to focus the text field.
+          // Screen readers natively focus the adjacent text field via `labelText`.
+          // ExcludeSemantics prevents screen readers from reading this visual label
+          // twice (once here, and once when they focus the input field itself).
+          ExcludeSemantics(
+            child: GestureDetector(
+              onTap: () {
+                if (widget.enabled && !widget.readOnly) {
+                  _focusNode.requestFocus();
+                }
+              },
+              child: Text(
+                widget.label!,
+                style: AppTypography.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.neutral900Light,
+                ),
               ),
             ),
           ),
