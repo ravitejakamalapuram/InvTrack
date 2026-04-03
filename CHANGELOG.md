@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.54.20] - 2026-04-02
 
 ### 👷 CI/CD
 
