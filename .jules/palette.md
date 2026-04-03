@@ -41,5 +41,6 @@
 **Action:** When building paywall overlays or feature gates using `GestureDetector` and `AbsorbPointer`, ALWAYS wrap the gesture detector with a `Semantics` widget. Explicitly set `button: true`, provide a clear `label` (e.g., 'Unlock Premium feature'), and set `excludeSemantics: true`. This provides a single, actionable announcement for screen readers while effectively hiding the underlying, inaccessible locked content from the accessibility tree.
 
 ## 2024-05-18 - Excluded Semantics for explicit text field labels
+
 **Learning:** Found that the `GestureDetector` used to allow clicking the visual label to focus the text field in `AppTextField` creates a double-reading issue for screen readers. Screen readers natively focus the adjacent text field and read its `labelText` property. If the visual label is not excluded, it is read once as plain text, and then again when the field is focused. Making it a button is an anti-pattern.
 **Action:** Wrap the `GestureDetector` of custom visual labels in an `ExcludeSemantics` widget to hide it from the accessibility tree, relying entirely on the native `TextFormField`'s internal semantics for screen reader navigation, while preserving the visual tap-to-focus behavior for sighted users.

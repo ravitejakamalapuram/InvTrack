@@ -178,16 +178,26 @@ class _AppTextFieldState extends State<AppTextField> {
           // twice (once here, and once when they focus the input field itself).
           ExcludeSemantics(
             child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
               onTap: () {
                 if (widget.enabled && !widget.readOnly) {
                   _focusNode.requestFocus();
                 }
               },
-              child: Text(
-                widget.label!,
-                style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 44,
+                  minHeight: 44,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.label!,
+                    style: AppTypography.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : AppColors.neutral900Light,
+                    ),
+                  ),
                 ),
               ),
             ),
