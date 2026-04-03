@@ -36,12 +36,32 @@ class SecurityService {
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
   Future<bool> hasPin() async {
+    // Check Secure Storage first
     final pin = await _secureStorage.read(
       key: _pinKey,
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
-    return pin != null;
+    if (pin != null && pin.isNotEmpty) {
+      return true;
+    }
+
+    // Fallback/Migrate from SharedPreferences
+    final legacyPin = _prefs.getString(_pinKey);
+    if (legacyPin != null && legacyPin.isNotEmpty) {
+      // Migrate to Secure Storage
+      await _secureStorage.write(
+        key: _pinKey,
+        value: legacyPin,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+      // Cleanup legacy
+      await _prefs.remove(_pinKey);
+      return true;
+    }
+
+    return false;
   }
 
   /// Generate a random 16-byte salt
