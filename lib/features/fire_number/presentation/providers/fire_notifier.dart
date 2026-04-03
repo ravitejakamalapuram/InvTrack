@@ -73,7 +73,7 @@ class FireSettingsNotifier extends Notifier<AsyncValue<void>> {
       name: 'fire_setup_completed',
       parameters: {
         'fire_type': settings.fireType.name,
-        'monthly_expenses': settings.monthlyExpenses,
+        'monthly_expenses_range': _getAmountRange(settings.monthlyExpenses),
         'target_fire_age': settings.targetFireAge,
       },
     );
@@ -143,6 +143,17 @@ class FireSettingsNotifier extends Notifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
       rethrow;
     }
+  }
+
+  /// Get amount range bucket for analytics (privacy-preserving)
+  String _getAmountRange(double amount) {
+    if (amount < 1000) return 'under_1k';
+    if (amount < 10000) return '1k_10k';
+    if (amount < 50000) return '10k_50k';
+    if (amount < 100000) return '50k_1L';
+    if (amount < 500000) return '1L_5L';
+    if (amount < 1000000) return '5L_10L';
+    return 'over_10L';
   }
 }
 
