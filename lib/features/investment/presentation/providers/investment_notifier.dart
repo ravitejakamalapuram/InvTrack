@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/utils/analytics_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -441,7 +442,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(analyticsServiceProvider)
           .logCashFlowAdded(
             flowType: type.name,
-            amountRange: _getAmountRange(amount),
+            amountRange: getAmountRange(amount),
           );
 
       // Check for milestone achievements after adding return cash flows
@@ -685,17 +686,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         ValidationConstants.maxNotesLength,
       );
     }
-  }
-
-  /// Get amount range bucket for analytics (privacy-preserving)
-  String _getAmountRange(double amount) {
-    if (amount < 1000) return 'under_1k';
-    if (amount < 10000) return '1k_10k';
-    if (amount < 50000) return '10k_50k';
-    if (amount < 100000) return '50k_1L';
-    if (amount < 500000) return '1L_5L';
-    if (amount < 1000000) return '5L_10L';
-    return 'over_10L';
   }
 
   // ============ Income Reminder Helpers ============
