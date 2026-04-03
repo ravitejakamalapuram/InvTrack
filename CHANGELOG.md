@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.54.22] - 2026-04-03
 
 ### 🐛 Bug Fixes
 
