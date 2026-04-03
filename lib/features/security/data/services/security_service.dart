@@ -43,6 +43,10 @@ class SecurityService {
       iOptions: _getIOSOptions(),
     );
     if (pin != null && pin.isNotEmpty) {
+      // Cleanup legacy even if secure storage has PIN
+      if (_prefs.containsKey(_pinKey)) {
+        await _prefs.remove(_pinKey);
+      }
       return true;
     }
 

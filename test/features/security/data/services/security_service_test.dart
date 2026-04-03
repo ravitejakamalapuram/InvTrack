@@ -322,7 +322,7 @@ void main() {
     );
 
     test(
-      'user with existing PIN before upgrade remains locked after upgrade',
+      'user with existing PIN before upgrade is unlocked after upgrade',
       () async {
         // Setup: Legacy PIN stored in SharedPreferences (pre-upgrade state)
         const legacyPin = '1234';
@@ -343,6 +343,29 @@ void main() {
         // Verify legacy was cleaned up and PIN is now in SecureStorage
         expect(prefs.containsKey('user_pin'), isFalse);
         expect(fakeSecureStorage.storage.containsKey('user_pin'), isTrue);
+      },
+    );
+
+    test(
+      'Migrates PIN when both SharedPreferences and SecureStorage have user_pin',
+      () async {
+        // Setup: Both storages contain user_pin (edge case)
+        const legacyPin = '1234';
+        const securePin = '5678';
+        await prefs.setString('user_pin', legacyPin);
+        await fakeSecureStorage.write(key: 'user_pin', value: securePin);
+
+        // Check hasPin (should trigger cleanup of legacy)
+        final hasPinResult = await service.hasPin();
+        expect(hasPinResult, isTrue);
+
+        // Verify legacy was cleaned up
+        expect(prefs.containsKey('user_pin'), isFalse);
+        // Verify secure storage still has the PIN
+        expect(fakeSecureStorage.storage.containsKey('user_pin'), isTrue);
+        // Verify the secure storage PIN is the one that works
+        final verifyResult = await service.verifyPin(securePin);
+        expect(verifyResult, isTrue);
       },
     );
   });
