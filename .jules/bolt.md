@@ -42,3 +42,8 @@
 
 **Learning:** When extracting multiple metrics (e.g., counting achieved, on-track, behind goals, and separating active vs completed goals) from the same collection, using multiple sequential `.where()` and `.toList()` calls causes the application to iterate over the entire collection multiple times unnecessarily, generating intermediate lists and closures.
 **Action:** Replace sequential aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. This eliminates redundant iterations and intermediate iterable allocations, significantly improving performance on large collections.
+
+## 2024-05-20 - O(N*M) Multiple Iterable Generation
+
+**Learning:** When calculating values that group multiple subsets together (e.g. associating cash flows to recently closed investments), iterating over the smaller set and filtering the larger list on every pass via `.where(...).toList()` allocates multiple closures and intermediate lists with an O(N * M) cost.
+**Action:** Replace nested `.where(...).toList()` loops with an optimized single-pass O(N + M) implementation: loop over the large list once to populate a `Map` that groups items by the joining key, and then use O(1) lookups inside the smaller list iteration.
