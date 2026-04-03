@@ -42,10 +42,18 @@ final recentlyClosedInvestmentsProvider =
           return cashFlowsAsync.when(
             data: (allCashFlows) {
               final result = <InvestmentWithStats>[];
+              final recentClosedIds = recentClosed.map((e) => e.id).toSet();
+              final cashFlowsByInv = <String, List<CashFlowEntity>>{};
+
+              // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
+              for (final cf in allCashFlows) {
+                if (recentClosedIds.contains(cf.investmentId)) {
+                  cashFlowsByInv.putIfAbsent(cf.investmentId, () => []).add(cf);
+                }
+              }
+
               for (final inv in recentClosed) {
-                final invCashFlows = allCashFlows
-                    .where((cf) => cf.investmentId == inv.id)
-                    .toList();
+                final invCashFlows = cashFlowsByInv[inv.id] ?? const [];
                 final stats = invCashFlows.isEmpty
                     ? InvestmentStats.empty()
                     : calculateStats(invCashFlows);
