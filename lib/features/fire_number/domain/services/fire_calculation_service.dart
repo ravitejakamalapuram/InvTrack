@@ -136,8 +136,8 @@ class FireCalculationService {
     for (final m in milestones) {
       if (m.isAchieved) {
         achievedMilestones.add(m);
-      } else if (nextMilestone == null) {
-        nextMilestone = m;
+      } else {
+        nextMilestone ??= m;
       }
     }
 

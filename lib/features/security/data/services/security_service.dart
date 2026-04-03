@@ -29,9 +29,9 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  // Security: Removed encryptedSharedPreferences parameter as Jetpack Security library is deprecated by Google.
-  AndroidOptions _getAndroidOptions() =>
-      const AndroidOptions();
+  // Security: Android uses custom ciphers for encryption (EncryptedSharedPreferences is deprecated).
+  // Data will be automatically migrated from the deprecated library on first access.
+  AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
