@@ -298,6 +298,109 @@ void main() {
         expect(prefs.containsKey('pin_lockout_timestamp'), isFalse);
       },
     );
+
+    test(
+      'Migrates PIN from SharedPreferences to SecureStorage',
+      () async {
+        // Setup legacy state - PIN stored in SharedPreferences
+        const legacyPin = '1234';
+        await prefs.setString('user_pin', legacyPin);
+        expect(
+          fakeSecureStorage.storage.containsKey('user_pin'),
+          isFalse,
+        );
+
+        // Check if PIN exists (should trigger migration)
+        final hasPinResult = await service.hasPin();
+        expect(hasPinResult, isTrue);
+
+        // Should have migrated to SecureStorage
+        expect(fakeSecureStorage.storage['user_pin'], equals(legacyPin));
+        // Legacy should be removed
+        expect(prefs.containsKey('user_pin'), isFalse);
+      },
+    );
+
+    test(
+      'user with existing PIN before upgrade is unlocked after upgrade',
+      () async {
+        // Setup: Legacy PIN stored in SharedPreferences (pre-upgrade state)
+        const legacyPin = '1234';
+        await prefs.setString('user_pin', legacyPin);
+        expect(
+          fakeSecureStorage.storage.containsKey('user_pin'),
+          isFalse,
+        );
+
+        // Check hasPin (simulates app startup after upgrade)
+        final hasPinResult = await service.hasPin();
+        expect(hasPinResult, isTrue);
+
+        // Verify the migrated PIN works correctly
+        final verifyResult = await service.verifyPin(legacyPin);
+        expect(verifyResult, isTrue);
+
+        // Verify legacy was cleaned up and PIN is now in SecureStorage
+        expect(prefs.containsKey('user_pin'), isFalse);
+        expect(fakeSecureStorage.storage.containsKey('user_pin'), isTrue);
+      },
+    );
+
+    test(
+      'Migrates PIN when both SharedPreferences and SecureStorage have user_pin',
+      () async {
+        // Setup: Both storages contain user_pin (edge case)
+        const legacyPin = '1234';
+        const securePin = '5678';
+        await prefs.setString('user_pin', legacyPin);
+        await fakeSecureStorage.write(key: 'user_pin', value: securePin);
+
+        // Check hasPin (should trigger cleanup of legacy)
+        final hasPinResult = await service.hasPin();
+        expect(hasPinResult, isTrue);
+
+        // Verify legacy was cleaned up
+        expect(prefs.containsKey('user_pin'), isFalse);
+        // Verify secure storage still has the PIN
+        expect(fakeSecureStorage.storage.containsKey('user_pin'), isTrue);
+        // Verify the secure storage PIN is the one that works
+        final verifyResult = await service.verifyPin(securePin);
+        expect(verifyResult, isTrue);
+      },
+    );
+
+    test(
+      'Concurrent hasPin calls safely migrate legacy PIN without race conditions',
+      () async {
+        // Setup: Legacy PIN stored in SharedPreferences
+        const legacyPin = '1234';
+        await prefs.setString('user_pin', legacyPin);
+        expect(
+          fakeSecureStorage.storage.containsKey('user_pin'),
+          isFalse,
+        );
+
+        // Simulate concurrent calls to hasPin (e.g., during app startup)
+        final results = await Future.wait([
+          service.hasPin(),
+          service.hasPin(),
+          service.hasPin(),
+        ]);
+
+        // All results should be true
+        expect(results, everyElement(isTrue));
+
+        // Legacy prefs should be removed
+        expect(prefs.getString('user_pin'), isNull);
+
+        // Secure storage should contain the migrated PIN
+        expect(fakeSecureStorage.storage['user_pin'], equals(legacyPin));
+
+        // Verify the migrated PIN is usable
+        final verifyResult = await service.verifyPin(legacyPin);
+        expect(verifyResult, isTrue);
+      },
+    );
   });
 
   group('SecurityService - Biometrics', () {
