@@ -192,11 +192,7 @@ jobs:
               const isPendingVersion = Number(versionCode) === Number(versionData.pendingBuildNumber);
               const isApproved = status === 'completed';
 
-              // Check if pending release is stale (older than 7 days)
-              const uploadedAt = new Date(versionData.uploadedAt);
-              const now = new Date();
-              const hoursSinceUpload = (now - uploadedAt) / (1000 * 60 * 60);
-              const isStale = hoursSinceUpload > 168; // 7 days
+              // Note: uploadedAt, now, hoursSinceUpload, and isStale already declared above (line 145-148)
 
               if (!isPendingVersion) {
                 console.log('ℹ️  Play Store version does not match pending version');
