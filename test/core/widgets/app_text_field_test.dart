@@ -137,10 +137,12 @@ void main() {
     // Ensure semantics are generated
     final handle = tester.ensureSemantics();
 
-    // find.bySemanticsLabel should find multiple nodes with this label.
-    // This confirms that the TextField (via InputDecorator) is now announcing the label.
+    // find.bySemanticsLabel should find 1 node with this label: the internal one.
+    // The external visual label is wrapped in ExcludeSemantics so it is NOT read.
+    // This confirms that the TextField (via InputDecorator) is announcing the label,
+    // and the ExcludeSemantics wrapper prevents double reading.
     final finder = find.bySemanticsLabel('Semantic Label');
-    expect(finder, findsAtLeastNWidgets(2));
+    expect(finder, findsOneWidget);
 
     handle.dispose();
   });
