@@ -28,8 +28,8 @@ class PortfolioHealthCalculator {
   }) {
     // Calculate each component
     final returns = _calculateReturnsScore(investments, investmentStats);
-    final diversification = _calculateDiversificationScore(investments);
-    final liquidity = _calculateLiquidityScore(investments);
+    final diversification = _calculateDiversificationScore(investments, investmentStats);
+    final liquidity = _calculateLiquidityScore(investments, investmentStats);
     final goals = _calculateGoalAlignmentScore(goalProgress);
     final actions = _calculateActionReadinessScore(investments, allCashFlows);
 
@@ -79,7 +79,18 @@ class PortfolioHealthCalculator {
       }
     }
 
-    final avgXirr = totalInvested > 0 ? weightedXirr / totalInvested : 0.0;
+    // Return no-data result if no valid XIRR data
+    if (totalInvested == 0) {
+      return const ComponentScore(
+        name: 'Returns Performance',
+        score: 0,
+        weight: 0.30,
+        description: 'No return data available',
+        suggestions: ['Add investments with cash flows to track returns'],
+      );
+    }
+
+    final avgXirr = weightedXirr / totalInvested;
 
     // Score calculation:
     // XIRR >= Inflation + 10%: 100 points (excellent)
@@ -124,6 +135,7 @@ class PortfolioHealthCalculator {
   /// Score based on Herfindahl index (concentration)
   static ComponentScore _calculateDiversificationScore(
     List<InvestmentEntity> investments,
+    Map<String, InvestmentStats> stats,
   ) {
     if (investments.isEmpty) {
       return const ComponentScore(
@@ -135,16 +147,19 @@ class PortfolioHealthCalculator {
       );
     }
 
-    // Calculate Herfindahl index for investment types
-    final typeCounts = <InvestmentType, int>{};
+    // Calculate Herfindahl index using investment values (totalInvested) by type
+    final typeValues = <InvestmentType, double>{};
     for (final inv in investments) {
       if (!inv.isArchived) {
-        typeCounts[inv.type] = (typeCounts[inv.type] ?? 0) + 1;
+        final stat = stats[inv.id];
+        if (stat != null && stat.totalInvested > 0) {
+          typeValues[inv.type] = (typeValues[inv.type] ?? 0.0) + stat.totalInvested;
+        }
       }
     }
 
-    final totalActive = typeCounts.values.fold(0, (sum, count) => sum + count);
-    if (totalActive == 0) {
+    final totalValue = typeValues.values.fold(0.0, (sum, value) => sum + value);
+    if (totalValue == 0) {
       return const ComponentScore(
         name: 'Diversification',
         score: 0,
@@ -157,8 +172,8 @@ class PortfolioHealthCalculator {
     // Herfindahl index: Sum of squared market shares (0-1)
     // Lower is better (more diversified)
     double herfindahl = 0;
-    for (final count in typeCounts.values) {
-      final share = count / totalActive;
+    for (final value in typeValues.values) {
+      final share = value / totalValue;
       herfindahl += share * share;
     }
 
@@ -168,7 +183,7 @@ class PortfolioHealthCalculator {
 
     final suggestions = <String>[];
     if (herfindahl > 0.5) {
-      final dominantType = typeCounts.entries
+      final dominantType = typeValues.entries
           .reduce((a, b) => a.value > b.value ? a : b)
           .key;
       suggestions.add('Over-concentrated in ${dominantType.displayName}');
@@ -183,15 +198,16 @@ class PortfolioHealthCalculator {
       name: 'Diversification',
       score: score,
       weight: 0.25,
-      description: '${typeCounts.length} investment types',
+      description: '${typeValues.length} investment types',
       suggestions: suggestions,
     );
   }
 
   /// Component 3: Liquidity (20% weight)
-  /// Score based on % of portfolio maturing in next 90 days
+  /// Score based on % of portfolio value maturing in next 90 days
   static ComponentScore _calculateLiquidityScore(
     List<InvestmentEntity> investments,
+    Map<String, InvestmentStats> stats,
   ) {
     if (investments.isEmpty) {
       return const ComponentScore(
@@ -206,22 +222,28 @@ class PortfolioHealthCalculator {
     final now = DateTime.now();
     final next90Days = now.add(const Duration(days: 90));
 
-    int totalActive = 0;
-    int maturingSoon = 0;
+    double totalActiveValue = 0;
+    double maturingSoonValue = 0;
+    int maturingSoonCount = 0;
 
     for (final inv in investments) {
       if (!inv.isArchived && inv.status == InvestmentStatus.open) {
-        totalActive++;
-        final maturity = inv.calculatedMaturityDate;
-        if (maturity != null &&
-            maturity.isAfter(now) &&
-            maturity.isBefore(next90Days)) {
-          maturingSoon++;
+        final stat = stats[inv.id];
+        if (stat != null && stat.totalInvested > 0) {
+          totalActiveValue += stat.totalInvested;
+
+          final maturity = inv.calculatedMaturityDate;
+          if (maturity != null &&
+              maturity.isAfter(now) &&
+              maturity.isBefore(next90Days)) {
+            maturingSoonValue += stat.totalInvested;
+            maturingSoonCount++;
+          }
         }
       }
     }
 
-    if (totalActive == 0) {
+    if (totalActiveValue == 0) {
       return const ComponentScore(
         name: 'Liquidity',
         score: 0,
@@ -231,7 +253,7 @@ class PortfolioHealthCalculator {
       );
     }
 
-    final liquidityRatio = maturingSoon / totalActive;
+    final liquidityRatio = maturingSoonValue / totalActiveValue;
 
     // Score calculation:
     // 10-30% maturing soon: 100 points (ideal)
@@ -240,6 +262,7 @@ class PortfolioHealthCalculator {
 
     double score;
     final suggestions = <String>[];
+    final liquidityPercent = (liquidityRatio * 100).round();
 
     if (liquidityRatio >= 0.10 && liquidityRatio <= 0.30) {
       score = 100;
@@ -249,10 +272,10 @@ class PortfolioHealthCalculator {
       suggestions.add('Slightly low liquidity, but manageable');
     } else if (liquidityRatio > 0.30 && liquidityRatio <= 0.40) {
       score = 70;
-      suggestions.add('$maturingSoon investments maturing soon - plan reinvestment');
+      suggestions.add('$liquidityPercent% of portfolio maturing soon - plan reinvestment');
     } else if (liquidityRatio > 0.40) {
       score = 40;
-      suggestions.add('Too many investments maturing soon ($maturingSoon)');
+      suggestions.add('$liquidityPercent% of portfolio maturing soon ($maturingSoonCount investments)');
       suggestions.add('Stagger maturity dates to avoid renewal cliff');
     } else {
       score = 60;
@@ -263,7 +286,7 @@ class PortfolioHealthCalculator {
       name: 'Liquidity',
       score: score.clamp(0.0, 100.0),
       weight: 0.20,
-      description: '$maturingSoon of $totalActive maturing in 90 days',
+      description: '$liquidityPercent% maturing in 90 days',
       suggestions: suggestions,
     );
   }
@@ -299,6 +322,7 @@ class PortfolioHealthCalculator {
     int ahead = 0;
     int behind = 0;
     int achieved = 0;
+    int notStarted = 0;
 
     for (final progress in activeGoals) {
       switch (progress.status) {
@@ -315,6 +339,8 @@ class PortfolioHealthCalculator {
           behind++;
           break;
         case GoalStatus.notStarted:
+          notStarted++;
+          break;
         case GoalStatus.archived:
           break;
       }
@@ -336,6 +362,10 @@ class PortfolioHealthCalculator {
     }
     if (ahead > 0) {
       suggestions.add('$ahead goals ahead of schedule!');
+    }
+    if (notStarted > 0 && score == 0) {
+      suggestions.add('$notStarted goals not started yet');
+      suggestions.add('Begin allocating funds to your goals');
     }
 
     return ComponentScore(
@@ -365,13 +395,27 @@ class PortfolioHealthCalculator {
       );
     }
 
+    // Filter to only actionable open investments
+    final openInvestments = investments
+        .where((i) => !i.isArchived && i.status == InvestmentStatus.open)
+        .toList();
+
+    final totalActive = openInvestments.length;
+    if (totalActive == 0) {
+      return const ComponentScore(
+        name: 'Action Readiness',
+        score: 100,
+        weight: 0.10,
+        description: 'No active investments',
+        suggestions: ['All investments up to date!'],
+      );
+    }
+
     final now = DateTime.now();
     int overdueRenewals = 0;
     int staleInvestments = 0;
 
-    for (final inv in investments) {
-      if (inv.isArchived) continue;
-
+    for (final inv in openInvestments) {
       // Check for overdue maturity
       final maturity = inv.calculatedMaturityDate;
       if (maturity != null && maturity.isBefore(now)) {
@@ -393,7 +437,6 @@ class PortfolioHealthCalculator {
     }
 
     final totalIssues = overdueRenewals + staleInvestments;
-    final totalActive = investments.where((i) => !i.isArchived).length;
 
     // Score: Deduct points for each issue
     final score = max(0.0, 100.0 - (totalIssues / totalActive) * 100);

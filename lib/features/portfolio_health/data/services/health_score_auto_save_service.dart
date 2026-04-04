@@ -17,6 +17,7 @@ class HealthScoreAutoSaveService {
   Timer? _timer;
   PortfolioHealthScore? _lastScore;
   DateTime? _lastSaveTime;
+  bool _isSaving = false;
 
   HealthScoreAutoSaveService({
     required HealthScoreRepository repository,
@@ -49,21 +50,29 @@ class HealthScoreAutoSaveService {
   /// Check if score should be saved and save if needed
   Future<void> _checkAndSave() async {
     if (_lastScore == null) return;
+    if (_isSaving) return; // Prevent overlapping saves
 
+    _isSaving = true;
     try {
+      // Capture current score before any awaits to operate on immutable snapshot
+      final current = _lastScore;
+      if (current == null) {
+        _isSaving = false;
+        return;
+      }
+
       final latest = await _repository.getLatestSnapshot();
 
       // Save if: no previous snapshot OR score changed >1 point OR >24h old
       final shouldSave = latest == null ||
-          (_lastScore!.overallScore - latest.overallScore).abs() > 1.0 ||
-          (_lastSaveTime == null ||
-              DateTime.now().difference(_lastSaveTime!).inHours >= 24);
+          (current.overallScore - latest.overallScore).abs() > 1.0 ||
+          DateTime.now().difference(latest.calculatedAt).inHours >= 24;
 
       if (shouldSave) {
-        await _repository.saveSnapshot(_lastScore!);
+        await _repository.saveSnapshot(current);
         _lastSaveTime = DateTime.now();
         LoggerService.debug(
-          'Health score snapshot saved: ${_lastScore!.overallScore.round()}/100',
+          'Health score snapshot saved: ${current.overallScore.round()}/100',
         );
       }
     } catch (e, stackTrace) {
@@ -78,15 +87,26 @@ class HealthScoreAutoSaveService {
         reason: 'HealthScoreAutoSave failure',
       );
       // Don't rethrow - auto-save failures should not break the app
+    } finally {
+      _isSaving = false;
     }
   }
 
   /// Force save current score (used for explicit user actions)
   Future<void> forceSave() async {
     if (_lastScore == null) return;
+    if (_isSaving) return; // Prevent overlapping saves
 
+    _isSaving = true;
     try {
-      await _repository.saveSnapshot(_lastScore!);
+      // Capture current score before any awaits to operate on immutable snapshot
+      final current = _lastScore;
+      if (current == null) {
+        _isSaving = false;
+        return;
+      }
+
+      await _repository.saveSnapshot(current);
       _lastSaveTime = DateTime.now();
       LoggerService.debug('Health score snapshot force-saved');
     } catch (e, stackTrace) {
@@ -96,6 +116,8 @@ class HealthScoreAutoSaveService {
         stackTrace: stackTrace,
       );
       rethrow; // Force-save failures should be visible
+    } finally {
+      _isSaving = false;
     }
   }
 
