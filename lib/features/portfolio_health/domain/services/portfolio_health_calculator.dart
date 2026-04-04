@@ -105,7 +105,8 @@ class PortfolioHealthCalculator {
       suggestions.add('Returns below inflation. Your money is losing value');
       suggestions.add('Explore P2P lending or equity funds for better returns');
     } else {
-      score = max(0, 20 + (avgXirr / 0.20) * 20); // -20% XIRR = 0 score
+      // Negative returns: scale from 20 (0% XIRR) to 0 (-20% or worse XIRR)
+      score = max(0.0, 20.0 + (avgXirr / 0.20) * 20.0).clamp(0.0, 100.0);
       suggestions.add('Negative returns detected. Review underperforming investments');
       suggestions.add('Consider cutting losses and reallocating');
     }

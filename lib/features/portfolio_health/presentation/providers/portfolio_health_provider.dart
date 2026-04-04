@@ -4,6 +4,7 @@ import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
+import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
 
@@ -13,6 +14,21 @@ part 'portfolio_health_provider.g.dart';
 @Riverpod(keepAlive: true)
 HealthScoreRepository healthScoreRepository(ref) {
   return HealthScoreRepository();
+}
+
+/// Provider for auto-save service
+@Riverpod(keepAlive: true)
+HealthScoreAutoSaveService healthScoreAutoSaveService(ref) {
+  final repository = ref.watch(healthScoreRepositoryProvider);
+  final service = HealthScoreAutoSaveService(repository: repository);
+
+  // Start auto-save when service is created
+  service.start();
+
+  // Stop auto-save when service is disposed
+  ref.onDispose(() => service.dispose());
+
+  return service;
 }
 
 /// Provider for Portfolio Health Score
@@ -60,34 +76,15 @@ class PortfolioHealth extends _$PortfolioHealth {
       goalProgress: goalProgress,
     );
 
-    // Auto-save snapshot to Firestore (fire-and-forget)
-    // Only save if score changed significantly (>1 point) or it's been >24 hours
-    _autoSaveSnapshot(ref, score);
+    // Update auto-save service with latest score (non-blocking)
+    try {
+      final autoSaveService = ref.read(healthScoreAutoSaveServiceProvider);
+      autoSaveService.updateScore(score);
+    } catch (e) {
+      // Ignore - auto-save service issues shouldn't break score calculation
+    }
 
     return score;
-  }
-
-  /// Auto-save snapshot to Firestore (debounced)
-  void _autoSaveSnapshot(ref, PortfolioHealthScore score) {
-    // Fire-and-forget: Don't block score calculation
-    Future.microtask(() async {
-      try {
-        final repository = ref.read(healthScoreRepositoryProvider);
-        final latest = await repository.getLatestSnapshot();
-
-        // Save if: no previous snapshot OR score changed >1 point OR >24h old
-        final shouldSave = latest == null ||
-            (score.overallScore - latest.overallScore).abs() > 1.0 ||
-            DateTime.now().difference(latest.calculatedAt).inHours > 24;
-
-        if (shouldSave) {
-          await repository.saveSnapshot(score);
-        }
-      } catch (e) {
-        // Ignore errors - don't let Firestore issues break score calculation
-        // Errors already logged by repository
-      }
-    });
   }
 }
 

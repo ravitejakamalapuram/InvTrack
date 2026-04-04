@@ -61,6 +61,60 @@ final class HealthScoreRepositoryProvider
 String _$healthScoreRepositoryHash() =>
     r'c14eaf50c268915a06d675bbbd981091ee74125b';
 
+/// Provider for auto-save service
+
+@ProviderFor(healthScoreAutoSaveService)
+const healthScoreAutoSaveServiceProvider =
+    HealthScoreAutoSaveServiceProvider._();
+
+/// Provider for auto-save service
+
+final class HealthScoreAutoSaveServiceProvider
+    extends
+        $FunctionalProvider<
+          HealthScoreAutoSaveService,
+          HealthScoreAutoSaveService,
+          HealthScoreAutoSaveService
+        >
+    with $Provider<HealthScoreAutoSaveService> {
+  /// Provider for auto-save service
+  const HealthScoreAutoSaveServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'healthScoreAutoSaveServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$healthScoreAutoSaveServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<HealthScoreAutoSaveService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  HealthScoreAutoSaveService create(Ref ref) {
+    return healthScoreAutoSaveService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(HealthScoreAutoSaveService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<HealthScoreAutoSaveService>(value),
+    );
+  }
+}
+
+String _$healthScoreAutoSaveServiceHash() =>
+    r'a7549913c268710b3c78c6a2c03113afba737bcc';
+
 /// Provider for Portfolio Health Score
 ///
 /// Calculates health score based on:
@@ -110,7 +164,7 @@ final class PortfolioHealthProvider
   PortfolioHealth create() => PortfolioHealth();
 }
 
-String _$portfolioHealthHash() => r'0006866caed75451314774081234c90f08373173';
+String _$portfolioHealthHash() => r'08b557c43445a3d982aaaff94852a8c8b3441d03';
 
 /// Provider for Portfolio Health Score
 ///
