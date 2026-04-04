@@ -14,6 +14,7 @@ import 'package:inv_tracker/features/goals/presentation/screens/goal_details_scr
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -161,6 +162,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const FireSettingsScreen(),
           ),
         ],
+      ),
+      // Portfolio Health route
+      GoRoute(
+        path: '/portfolio-health',
+        builder: (context, state) => const PortfolioHealthDetailsScreen(),
       ),
     ],
   );

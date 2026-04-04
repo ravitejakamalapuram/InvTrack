@@ -111,6 +111,7 @@ async function deleteUserData(userId: string): Promise<void> {
     'fireSettings',
     'profile',
     'exchangeRates',
+    'healthScores', // Week 2: Portfolio Health Score snapshots
   ];
 
   for (const collection of collections) {

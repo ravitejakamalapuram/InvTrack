@@ -1,28 +1,93 @@
-# InvTrack - Comprehensive Action Items & Technical Debt
+# InvTrack - Strategic Roadmap & Action Items
 
-> Generated from comprehensive codebase review against InvTrack Enterprise Rules
-> Last Updated: 2026-02-25
->
-> **Status:** Production-ready with manageable technical debt
-> - ✅ Zero static analysis errors/warnings
-> - ✅ All 1078 unit tests passing
-> - ✅ Firebase Analytics & Crashlytics integrated
-> - ✅ Firebase Performance Monitoring integrated
-> - ✅ Comprehensive integration test infrastructure
-> - ✅ OWASP MASVS security compliant
-> - ✅ FLAG_SECURE implemented for sensitive screens
+> **Last Updated**: 2026-04-03
+> **Strategic Vision**: Transform from "tracking app" → "financial operating system"
+> **Full MBA-Level Analysis**: See `docs/research/MBA_LEVEL_INNOVATION_ANALYSIS.md`
+
+---
+
+## 🎯 Vision & Strategy
+
+### **The Big Idea: "Fitbit for Your Money"**
+
+Make portfolio health as tangible as physical health. Users should know their **Portfolio Health Score** (0-100) like they know their Fitbit steps.
+
+**Current State** (MVP Complete ✅):
+- ✅ XIRR tracking for alternative investments (core USP)
+- ✅ Multi-currency support (40+ currencies)
+- ✅ Goal tracking with smart projections
+- ✅ FIRE calculator with real returns
+- ✅ Offline-first architecture
+- ✅ 1020+ tests passing, zero analyzer errors
+
+**Gap**: No competitive moat, features can be copied in 6-12 months
+
+**Target State** (2027):
+- 🎯 **Portfolio Health Score** as industry standard (category ownership)
+- 🎯 **Network effects** from community benchmarks (more users = better data)
+- 🎯 **AI moat** from proprietary ML models
+- 🎯 **Platform lock-in** from ecosystem (docs, goals, tax, family)
 
 ---
 
 ## 📋 Quick Summary
 
-| Priority | Count | Status | Timeline |
-|----------|-------|--------|----------|
-| **P0 - Critical** | 2 | 🟡 Post-Launch | 3-4 weeks |
-| **P1 - High** | 2 | ✅ Complete | Done |
-| **P2 - Medium** | 3 | ✅ Complete | Done |
-| **P3 - Low** | 5 | ✅ Complete | Done |
-| **Pre-Launch** | 3 | ✅ Complete | Done |
+| Priority | Features | Status | Timeline | ARR Impact |
+|----------|----------|--------|----------|------------|
+| **P0 - Game-Changers** | 2 | 🔴 Not Started | Q2 2026 | Foundation |
+| **P1 - High** | 3 | 🟡 Planned | Q3 2026 | ₹86L ARR |
+| **P2 - Medium** | 2 | 🔵 Planned | Q4 2026 | ₹1.1 Cr ARR |
+| **P3 - Future** | 3 | ⚪ Backlog | 2027+ | ₹4.5 Cr ARR |
+| **MVP (Complete)** | 10 | ✅ Done | Launched | ₹0 ARR |
+
+---
+
+## 🚀 Market Opportunity
+
+**Total Addressable Market (TAM)**:
+- India: 15.9L potential users → ₹304 Cr ARR
+- Serviceable Addressable Market (SAM): 4.77L users → ₹91 Cr ARR
+- Serviceable Obtainable Market (SOM) [3-year]: 47,700 users → ₹9.1 Cr ARR
+
+**Competitive Landscape**:
+- ❌ **No direct competitor** for alternative investment XIRR tracking
+- ⚠️ **Weak moat**: Technical features can be copied
+- ✅ **White space**: No "Fitbit for Money" exists
+
+**Strategic Imperatives**:
+1. Build **network effects** before competitors copy (Health Score + Benchmarks)
+2. Create **data moat** with proprietary returns database
+3. Achieve **category ownership** ("Fitbit for Money" brand)
+
+---
+
+## ✅ What's Already Built (MVP Complete)
+
+**Core Features** (Production-Ready):
+- ✅ Multi-currency support (40+ currencies)
+- ✅ XIRR calculation with isolates (optimized)
+- ✅ Goal tracking with smart projections
+- ✅ FIRE number calculator
+- ✅ Smart notifications (11 types)
+- ✅ CSV import/export (bulk operations)
+- ✅ Document management (PDF/image attachments)
+- ✅ Offline-first with Firestore sync
+- ✅ Security (PIN, biometric, FLAG_SECURE)
+- ✅ Analytics & Crashlytics
+- ✅ Performance monitoring
+- ✅ Sample data with multiple currencies
+- ✅ Anonymous auth with account linking
+
+**Technical Excellence**:
+- ✅ Zero `flutter analyze` errors/warnings
+- ✅ 1020+ unit tests passing
+- ✅ Comprehensive integration tests
+- ✅ CI/CD with automated Play Store deployment
+- ✅ OWASP MASVS security compliant
+- ✅ Cyclomatic complexity <15 (enforced)
+- ✅ Code coverage >60% (enforced)
+
+---
 
 ---
 
@@ -84,31 +149,655 @@
 
 ---
 
-## P0 - Critical (Post-Launch - 3-4 weeks)
+## ✅ Phase 1 (MVP) - COMPLETE
 
-### 1. ~~Split Oversized Files~~ → DEPRECATED ✅
+**Status:** 100% Complete - Production Ready!
 
-**Status**: File size limits removed in favor of better quality metrics
-
-**Why Removed:**
-- File size (lines of code) doesn't measure code quality
-- Arbitrary limits (300/400/500 lines) don't measure actual complexity
-- 25+ files exceeded limits, indicating unrealistic thresholds
-- Better metrics now enforced: cyclomatic complexity, code coverage, architecture
-
-**New Quality Focus:**
-- ✅ Cyclomatic Complexity: <15 decision points per 100 lines (enforced by CI)
-- ✅ Code Coverage: ≥60% overall (enforced by CI)
-- ✅ Architecture Boundaries: No API in widgets, no navigation in domain
-- ✅ Static Analysis: Zero errors/warnings
-
-**Action Items:**
-- Review files with high cyclomatic complexity (>15)
-- Refactor complex functions into smaller, testable units
-- Focus on single responsibility principle
-- Improve test coverage for complex logic
+All MVP features are implemented, tested, and deployed:
+- ✅ Multi-currency support (40+ currencies)
+- ✅ Goal tracking with smart projections
+- ✅ FIRE number calculator
+- ✅ Smart notifications (11 types)
+- ✅ CSV import/export
+- ✅ Performance monitoring
+- ✅ Offline-first with Firestore
+- ✅ Security (PIN, biometric, FLAG_SECURE)
+- ✅ Localization (multi-currency, date formats)
+- ✅ Analytics & Crashlytics
+- ✅ CI/CD with automated Play Store deployment
+- ✅ 1020+ tests passing
 
 ---
+
+## 🚀 STRATEGIC INNOVATION FEATURES (MBA-Level Analysis)
+
+> **Full Analysis**: See `docs/research/MBA_LEVEL_INNOVATION_ANALYSIS.md`
+> **Market Opportunity**: ₹91 Cr SAM, ₹9.1 Cr SOM (3-year target)
+> **Competitive Moat**: Build network effects + data moat + AI moat
+
+### **Priority Framework (RICE Score)**
+
+| Feature | RICE Score | Priority | Timeline |
+|---------|-----------|----------|----------|
+| Portfolio Health Score | 68 | 🔥 P0 | Q2 2026 |
+| Predictive Risk Alerts | 24 | 🔥 P0 | Q2 2026 |
+| Smart AI Assistant | 14 | ⭐ P1 | Q3 2026 |
+| Peer Benchmarking | 20 | ⭐ P1 | Q3 2026 |
+| Alternative Marketplace | 8 | ⭐ P1 | Q4 2026 |
+| Tax Optimization | 5 | ⏰ P2 | Q4 2026 |
+| Family Sharing | 4 | ⏰ P2 | 2027 |
+| Bank Auto-Sync | 5 | ⏰ P2 | 2027 |
+| Scenario Planner | 5 | ⏰ P2 | 2027 |
+| Voice Entry | 3 | 💡 P3 | 2027 |
+
+---
+
+## P0 - GAME-CHANGERS (Q2 2026 - Apr-Jun)
+
+### 1. Portfolio Health Score™ - "The Fitbit for Your Money" 🔥
+
+**Vision**: Make portfolio health as tangible as physical health with a unified score (0-100).
+
+**Status**: ❌ Not Started
+**Effort**: 4 weeks
+**RICE Score**: 68 (Highest Priority)
+**Monetization**: Free (weekly), Premium (real-time + trends)
+
+#### **Why This Is Revolutionary**
+
+**Problem**: Users don't know if their portfolio is healthy until problems occur (defaults, concentration risk, poor returns).
+
+**Solution**: Single unified score measuring 5 dimensions:
+- Returns Performance (30%): XIRR vs inflation/benchmarks
+- Diversification (25%): Herfindahl index across types/platforms
+- Liquidity (20%): % maturing in next 90 days
+- Goal Alignment (15%): On-track vs behind
+- Action Readiness (10%): Overdue renewals, stale investments
+
+**Color Coding**:
+- 80-100 (Green): "Excellent - Your portfolio is thriving" 💚
+- 60-79 (Yellow): "Good - Minor improvements possible" 💛
+- 40-59 (Orange): "Fair - Attention needed" 🧡
+- 0-39 (Red): "Poor - Urgent action required" ❤️
+
+#### **Competitive Moat**
+
+| Moat Type | How We Build It |
+|-----------|-----------------|
+| **Network Effects** | Aggregate data → better benchmarks → more users |
+| **Habit Formation** | Users check daily (like Fitbit steps) → retention |
+| **Data Moat** | Proprietary scoring algorithm + historical trends |
+| **Brand** | "Fitbit for Money" category ownership |
+
+#### **Behavioral Hooks**
+
+- **Gamification**: "Improve your score from 68 to 75 this month"
+- **Social Proof**: "Users with 80+ scores achieve goals 2.3x faster"
+- **Loss Aversion**: "Your score dropped 5 points - here's why"
+- **Virality**: "My portfolio health is 82, what's yours?" (social sharing)
+
+#### **Implementation Roadmap (4 weeks)**
+
+**Week 1: Algorithm Design**
+- [ ] Define scoring formula with weights
+- [ ] Build Diversification calculator (Herfindahl index)
+- [ ] Build Liquidity analyzer (maturity dates)
+- [ ] Build Goal alignment tracker
+- [ ] Build Action readiness detector (stale investments, renewals)
+
+**Week 2: Backend Implementation**
+- [ ] Create `PortfolioHealthService` class
+- [ ] Implement score calculation logic
+- [ ] Add historical tracking (store weekly scores in Firestore)
+- [ ] Create providers (`portfolioHealthScoreProvider`)
+- [ ] Write unit tests (90%+ coverage)
+
+**Week 3: UI/UX**
+- [ ] Design dashboard widget (circular progress dial)
+- [ ] Build score breakdown view (tap to see sub-scores)
+- [ ] Create historical trend chart (line graph)
+- [ ] Add score improvement suggestions
+- [ ] Implement color-coded UI (green/yellow/orange/red)
+
+**Week 4: Analytics & Launch**
+- [ ] Add Firebase Analytics events (score_viewed, score_improved)
+- [ ] A/B test messaging ("68/100" vs "Good - 68")
+- [ ] Create onboarding tooltip ("Tap to see your Portfolio Health")
+- [ ] Soft launch to beta users (100 users)
+- [ ] Measure engagement (% viewing score within 7 days)
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Adoption Rate | 70%+ MAU view score | Analytics |
+| Engagement Lift | DAU/MAU +10% (25% → 35%) | Retention cohorts |
+| Session Duration | +3 min (2 → 5 min) | Analytics |
+| Viral Sharing | 10% share score on social | Share events |
+
+---
+
+### 2. Predictive Risk Alerts with AI - "Prevent Losses Before They Happen" 🔥
+
+**Vision**: ML-powered alerts that predict and prevent portfolio risks.
+
+**Status**: ❌ Not Started
+**Effort**: 8 weeks (Phase 1: Rule-based 4 weeks, Phase 2: ML 4 weeks)
+**RICE Score**: 24
+**Monetization**: Free (3 basic alerts), Premium (all 15+ alerts)
+
+#### **Why Users Need This**
+
+**Problem**: Users discover problems AFTER losses occur (platform defaults, over-concentration, underperformance).
+
+**Solution**: Proactive alerts based on pattern recognition.
+
+#### **Alert Types (15 Total)**
+
+**FREE Tier** (3 alerts):
+1. **Maturity Reminders**: FD maturing in 30 days
+2. **Concentration Risk**: >40% in single platform/type
+3. **Underperformance**: XIRR < Inflation for 6+ months
+
+**PREMIUM Tier** (12 additional alerts):
+
+**Financial Health Alerts**:
+4. **Renewal Cliff**: >30% portfolio maturing same month
+5. **Liquidity Crunch**: <10% liquid assets in next 6 months
+6. **Goal Derailment**: Projection shows 2+ year delay (ML-based)
+7. **Idle Cash**: ₹50K+ idle for 30+ days
+
+**Risk Alerts**:
+8. **Platform Health Warning**: News scraping detects RBI issues
+9. **Diversification**: Herfindahl index >0.5 (too concentrated)
+10. **Volatility Spike**: Returns variance increasing
+
+**Optimization Alerts**:
+11. **Tax Opportunity**: Capital gains near ₹1.25L threshold
+12. **Better Rates Available**: "HDFC FD @ 6.5% vs AU Bank @ 7.8%"
+13. **Rebalancing Needed**: Allocation drift >10% from target
+
+**Behavioral Alerts**:
+14. **Stale Investment**: No activity in 6+ months
+15. **Missing Income**: Expected income not received
+
+#### **Alert Examples (User Messages)**
+
+| Alert | Message | Action |
+|-------|---------|--------|
+| Concentration Risk | "Your P2P exposure is 65%. If LenDenClub defaults, you lose ₹3.2L" | "Diversify now" |
+| Renewal Cliff | "₹8L maturing in June. Plan reinvestment to avoid idle cash" | "Set reminder" |
+| Underperformance | "Gold XIRR (2%) is below inflation (6%). Consider rebalancing" | "View alternatives" |
+| Goal Derailment | "At current rate, Retirement Goal will miss by 3 years. Add ₹15K/month" | "Adjust SIP" |
+| Platform Health | "LenDenClub under RBI scrutiny. Monitor your ₹2.5L exposure" | "View news" |
+| Tax Opportunity | "Book ₹40K gains now to stay in 0% LTCG bracket" | "Optimize taxes" |
+
+#### **Implementation Roadmap (8 weeks)**
+
+**Phase 1: Rule-Based Alerts (Weeks 1-4)**
+- [ ] Build alert rule engine (trigger conditions)
+- [ ] Implement 8 rule-based alerts (concentration, maturity, underperformance, etc.)
+- [ ] Create notification system (in-app + push)
+- [ ] Add alert settings (user can enable/disable alerts)
+- [ ] Build alert history screen
+
+**Phase 2: ML-Powered Alerts (Weeks 5-8)**
+- [ ] Collect training data (historical user patterns)
+- [ ] Train goal derailment prediction model
+- [ ] Implement news scraping for platform health
+- [ ] Add platform risk scoring algorithm
+- [ ] Build recommendation engine (suggest actions)
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Alert Engagement | 50%+ users act on alerts | Click-through rate |
+| Premium Conversion | +2% (alerts as driver) | Upgrade funnel |
+| False Positive Rate | <10% | User feedback |
+| Prevented Losses | ₹10L+ (user-reported) | Surveys |
+
+---
+
+## P1 - High Priority (Q3 2026 - Jul-Sep)
+
+### 3. Smart Investment Assistant (AI Chat) - "Your Personal CFO" ⭐
+
+**Vision**: AI chatbot that answers investment questions and provides personalized advice.
+
+**Status**: ❌ Not Started
+**Effort**: 6 weeks
+**RICE Score**: 14
+**Monetization**: Free (10 Q/month), Premium (unlimited + proactive insights)
+
+#### **Capabilities**
+
+**Level 1: Portfolio Q&A** (Free - 10 questions/month)
+- "How much have I invested in P2P?"
+- "What's my XIRR for 2025?"
+- "When do my FDs mature?"
+- "Am I on track for retirement goal?"
+
+**Level 2: Personalized Recommendations** (Premium)
+- "Should I renew my HDFC FD or move to P2P?"
+- "How do I reduce concentration risk?"
+- "What's the best FD rate for ₹2L right now?"
+- "How can I optimize taxes this quarter?"
+
+**Level 3: Proactive Insights** (Premium+)
+- Weekly portfolio review: "Here's what changed this week"
+- Monthly optimization: "3 actions to improve Health Score by 10 points"
+- Goal coaching: "Increase SIP by ₹3K to retire 2 years earlier"
+
+#### **Technical Stack**
+
+| Component | Technology | Cost |
+|-----------|------------|------|
+| LLM | Google Gemini / GPT-4 Turbo | ₹2/query (avg) |
+| Context | User portfolio + financial KB | Firestore (free) |
+| Safety | Disclaimers + human review | Manual |
+
+#### **Implementation Roadmap (6 weeks)**
+
+**Week 1-2: LLM Integration**
+- [ ] Set up Gemini API / OpenAI API
+- [ ] Build financial knowledge base (alternative investments FAQ)
+- [ ] Create prompt templates (system message + context)
+- [ ] Implement token limiting (to control costs)
+
+**Week 3-4: Chat UI**
+- [ ] Design chat interface (bottom sheet modal)
+- [ ] Add typing indicators, message history
+- [ ] Implement question quota system
+- [ ] Add premium upgrade CTA after 10 questions
+
+**Week 5-6: Proactive Insights**
+- [ ] Weekly portfolio review automation
+- [ ] Monthly optimization suggestions
+- [ ] Goal coaching logic
+- [ ] Analytics tracking (questions asked, topics)
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Engagement | 40%+ MAU use chat | Monthly active chatters |
+| Premium Conversion | +1% (chat as driver) | Upgrade funnel |
+| User Satisfaction | 4.5+ stars | In-chat feedback |
+| Cost per Query | <₹3 | LLM API costs |
+
+---
+
+### 4. Peer Benchmarking & Community Insights - "How Do You Stack Up?" ⭐
+
+**Vision**: Anonymous aggregated benchmarks so users know if their returns are good/bad.
+
+**Status**: ❌ Not Started
+**Effort**: 6 weeks
+**RICE Score**: 20
+**Monetization**: Free (percentile), Premium (detailed cohort analysis)
+
+#### **Features**
+
+**Percentile Ranking**:
+- "Your XIRR (14.2%) is better than 78% of users with similar risk profile"
+- "Your P2P exposure (35%) is higher than 82% of users"
+
+**Category Benchmarks**:
+- Average XIRR by investment type (FD: 7.1%, P2P: 13.5%, MF: 15.2%)
+- Average returns by platform (LenDenClub: 14.2%, Faircent: 12.8%)
+- Risk-adjusted returns (Sharpe ratio for alternatives)
+
+**Community Best Practices**:
+- "Top 10% performers allocate 60% Debt, 30% Equity, 10% Gold"
+- "Users with Health Score >80 rebalance quarterly"
+
+#### **Privacy**
+- All data anonymized (remove PII)
+- Opt-in only
+- Aggregated (minimum 100 users per cohort)
+
+#### **Competitive Moat**
+- **Network effects**: More users = better benchmarks = more users
+- **Data moat**: Proprietary alternative investment returns database
+
+#### **Implementation Roadmap (6 weeks)**
+
+**Week 1-2: Anonymization Engine**
+- [ ] Build data anonymization service
+- [ ] Create aggregation logic (min 100 users per cohort)
+- [ ] Implement opt-in consent flow
+
+**Week 3-4: Percentile Calculation**
+- [ ] Calculate user percentile (XIRR, allocation, Health Score)
+- [ ] Build cohort matching (similar risk profile, age, portfolio size)
+
+**Week 5-6: UI & Launch**
+- [ ] Design benchmark cards for dashboard
+- [ ] Add category benchmark screens
+- [ ] Create best practices library
+- [ ] Soft launch to 1000 users
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Opt-In Rate | 60%+ users consent | Opt-in funnel |
+| Views | 60%+ MAU view benchmarks | Analytics |
+| Premium Conversion | +1% (benchmarks as driver) | Upgrade funnel |
+| Data Quality | >90% accurate benchmarks | Manual audits |
+
+---
+
+### 5. Alternative Investment Marketplace - "Discover Better Opportunities" ⭐
+
+**Vision**: Curated marketplace of vetted platforms with rate comparisons + referral commissions.
+
+**Status**: ❌ Not Started
+**Effort**: 8 weeks
+**RICE Score**: 8
+**Monetization**: Referral commissions (₹500-2000/lead) + sponsored placements
+
+#### **Platform Directory**
+
+| Category | Platforms | Data Points |
+|----------|-----------|-------------|
+| **P2P Lending** | LenDenClub, Faircent, i2iFunding | Rates, risk score, min investment |
+| **FD** | HDFC, ICICI, SBI, AU Bank, IDFC | Current rates, tenure options |
+| **Bonds** | Corporate bonds, SGBs, NCDs | Yield, credit rating, maturity |
+| **Real Estate** | Strata, PropShare | Expected returns, lock-in |
+
+#### **Smart Recommendations**
+
+**Rate Comparison**:
+- "Your HDFC FD @ 6.5% could be 7.8% at AU Small Finance Bank"
+- "Move ₹1L from Gold (2% XIRR) to P2P (18%)"
+
+**Trust Signals**:
+- RBI registration status
+- Platform financial health score
+- User ratings from InvTrack community
+
+#### **Monetization Model**
+
+**Revenue Streams**:
+1. **Referral Commissions**: ₹500-2000 per lead (P2P platforms pay well)
+2. **Sponsored Placements**: ₹10K-50K/month for top visibility
+3. **Affiliate Fees**: 0.1-0.5% of investment value
+
+**Target**: ₹25L ARR (Year 1) from 500 referrals @ ₹5K avg
+
+#### **Implementation Roadmap (8 weeks)**
+
+**Week 1-3: Platform Directory**
+- [ ] Research and onboard 10-15 platforms
+- [ ] Build platform profile pages (rates, trust signals, reviews)
+- [ ] Implement web scraping for FD rates
+- [ ] Create API integrations (where available)
+
+**Week 4-6: Recommendation Engine**
+- [ ] Build rate comparison logic
+- [ ] Add smart suggestions ("move from X to Y")
+- [ ] Implement trust scoring algorithm
+
+**Week 7-8: Referral Tracking**
+- [ ] Set up affiliate links with UTM parameters
+- [ ] Build referral tracking dashboard
+- [ ] Launch partnerships with 5 platforms
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Referral Conversions | 500/year (₹25L ARR) | Conversion funnel |
+| Click-Through Rate | 15%+ users visit marketplace | Analytics |
+| User Satisfaction | 4+ stars (rate comparisons helpful) | Surveys |
+
+---
+
+## P2 - Medium Priority (Q4 2026 - Oct-Dec)
+
+### 6. Tax Harvesting & Optimization Engine - "Keep More of What You Earn" ⏰
+
+**Vision**: AI-powered tax optimization recommendations (India-specific).
+
+**Status**: ❌ Not Started
+**Effort**: 12 weeks
+**RICE Score**: 5
+**Monetization**: Premium feature
+
+#### **Features**
+
+**Tax-Loss Harvesting**:
+- Identify underperforming investments to book losses
+- Offset against gains to reduce tax liability
+
+**Capital Gains Management**:
+- Alert when nearing LTCG ₹1.25L exemption limit
+- Suggest optimal timing to book gains (stay in 0% bracket)
+
+**TDS Tracking**:
+- Track TDS deducted on FD interest
+- Suggest claiming refunds if total income <₹5L
+
+**Tax Report Generation**:
+- India ITR-ready reports (Interest income, capital gains)
+- Section-wise breakdowns (80C, 10(38), 112A)
+- Export to CA-friendly format (Excel)
+
+#### **Implementation Roadmap (12 weeks)**
+
+**Week 1-4: India Tax Logic**
+- [ ] Build LTCG calculator (equity, debt, real estate)
+- [ ] Build STCG calculator
+- [ ] Implement 80C deduction tracking
+- [ ] Add TDS calculation logic
+
+**Week 5-8: Optimization Recommendations**
+- [ ] Tax-loss harvesting algorithm
+- [ ] Capital gains timing optimizer
+- [ ] TDS refund calculator
+
+**Week 9-12: Report Generation**
+- [ ] Create ITR report templates (JSON → PDF)
+- [ ] Add section-wise breakdowns
+- [ ] Build CA export (Excel)
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Premium Conversion | +2% (tax as driver) | Upgrade funnel |
+| Tax Savings | ₹10K+ avg per user | User surveys |
+| Report Downloads | 30%+ premium users | Analytics |
+
+---
+
+### 7. Family & Advisor Sharing - "Collaborate on Wealth" ⏰
+
+**Vision**: Permission-based portfolio sharing for families and CAs.
+
+**Status**: ❌ Not Started
+**Effort**: 8 weeks
+**RICE Score**: 4
+**Monetization**: Family Plan (₹499/month for 5 members)
+
+#### **Use Cases**
+
+**Family Accounts**:
+- Spouse can view portfolio (read-only or co-manage)
+- Adult children see parents' retirement planning
+- Joint investment tracking (shared FDs, real estate)
+
+**CA/Advisor Access**:
+- Temporary access for tax filing
+- Read-only for advisory services
+- Revocable permissions
+
+**Nominee Management**:
+- Designate family member for emergency access
+- Encrypted recovery instructions
+
+#### **Features**
+- Granular permissions (view-only, edit, admin)
+- Activity logs (who viewed/changed what)
+- Time-limited access (expire after 30 days)
+
+#### **Implementation Roadmap (8 weeks)**
+
+**Week 1-4: Role-Based Access Control**
+- [ ] Build permission system (RBAC)
+- [ ] Implement Firebase sharing rules
+- [ ] Add invite flow (email/link)
+
+**Week 5-8: UI & Collaboration**
+- [ ] Build family dashboard (aggregate net worth)
+- [ ] Add activity logs
+- [ ] Create permission management screen
+
+#### **Success Metrics**
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| Family Plan Adoption | 10% of premium users | Subscription data |
+| Sharing Engagement | 30%+ invite family members | Invite funnel |
+
+---
+
+## P3 - Future Roadmap (2027+)
+
+### 8. Automated Bank Sync - "Zero-Touch Tracking" (16 weeks)
+
+**Status**: ❌ Not Started
+**Monetization**: Premium feature (₹499/month for auto-sync)
+
+**Features**:
+- Integrate with RBI Account Aggregator
+- Auto-detect FD/RD transactions
+- Categorize as investment vs expense
+
+**Regulatory**: Requires RBI licensing compliance
+
+---
+
+### 9. Retirement Scenario Planner - "What-If for Your Future" (8 weeks)
+
+**Status**: ❌ Not Started
+**Monetization**: Premium feature
+
+**Features**:
+- "If I add ₹10K/month, when can I retire?"
+- Monte Carlo simulations (10,000 runs)
+- Probability distributions
+
+---
+
+### 10. Voice-First Data Entry - "Hey InvTrack" (6 weeks)
+
+**Status**: ❌ Not Started
+**Monetization**: Premium feature
+
+**Features**:
+- Voice commands: "Add ₹50K HDFC FD"
+- Speech-to-text with NLP entity extraction
+- Confirmation flow
+
+---
+
+## 📊 Success Metrics & KPIs
+
+### North Star Metric
+**Portfolio Health Score Engagement**: % of MAU who improve their score month-over-month
+**Target**: 40% of MAU
+
+### Key Performance Indicators
+
+**Acquisition**:
+- Monthly Signups: 5,000 (Q2) → 15,000 (Q4)
+- Organic %: 75% (virality from health score)
+- CAC: <₹300/user
+
+**Activation**:
+- First Investment Rate: 70% (up from 30%)
+- Time to First Health Score View: <2 minutes
+- D1 Retention: 60%
+
+**Engagement**:
+- DAU/MAU: 35% (up from 15%)
+- Avg Session Duration: 5 min (up from 2 min)
+- Monthly Cash Flows Added: 3+ per user
+
+**Retention**:
+- D7: 50%, D30: 35%, M3: 25%
+
+**Monetization**:
+- Freemium Conversion: 5% (2,385 paid from 47,700 MAU)
+- MRR: ₹7.2L, ARR: ₹86L
+- Churn: <5% monthly
+
+**Referral**:
+- Viral Coefficient: 0.4
+- NPS: 60+
+
+---
+
+## 💰 Revised Monetization Strategy
+
+### Pricing Tiers
+
+**Free Tier** (Generous Freemium)
+- Unlimited investments (was 5)
+- Basic Health Score (weekly)
+- 3 predictive alerts
+- 10 AI questions/month
+- Basic benchmarks (percentile only)
+
+**Premium** - ₹299/month or ₹2,999/year
+- Real-time Health Score + trends
+- All 15+ predictive alerts
+- Unlimited AI chat + proactive insights
+- Detailed benchmarks + cohort analysis
+- Tax optimization + ITR reports
+- Marketplace rate comparisons
+
+**Family** - ₹499/month or ₹4,999/year
+- All Premium features
+- 5 family members
+- Shared portfolios
+- Family net worth dashboard
+
+**Advisor** - ₹999/month or ₹9,999/year
+- All Premium features
+- Unlimited client portfolios
+- White-label branding
+- API access
+
+### Revenue Model Evolution
+
+**Year 1** (2026): Subscriptions only
+- ARR: ₹86L (5% conversion)
+
+**Year 2** (2027): Subscriptions + Marketplace
+- Subscriptions: ₹3.5 Cr
+- Referrals: ₹1 Cr
+- Total: ₹4.5 Cr
+
+**Year 3** (2028): Subscriptions + Marketplace + B2B
+- Subscriptions: ₹9 Cr
+- Referrals: ₹3 Cr
+- B2B (Advisors): ₹1.5 Cr
+- Total: ₹13.5 Cr
+
+### Unit Economics
+
+- **CAC**: ₹200 (blended: 75% organic, 25% paid)
+- **LTV**: ₹9,000 (₹3,600/year × 2.5 years retention)
+- **LTV:CAC**: 45:1 (Excellent)
+- **Payback Period**: 0.7 months
+
+---
+
+
 
 ### 2. Add Localization Support (Rule 7.1) ✅ COMPLETED
 

@@ -16,6 +16,7 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
@@ -676,6 +677,10 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       batch.delete(doc.reference);
     }
     await batch.commit();
+
+    // Delete portfolio health score snapshots (Week 2: Portfolio Health Score)
+    final healthScoreRepo = ref.read(healthScoreRepositoryProvider);
+    await healthScoreRepo.deleteAllSnapshots();
 
     // Clear sample data mode preferences (Rule 18: Data Lifecycle)
     final prefs = ref.read(sharedPreferencesProvider);
