@@ -73,7 +73,7 @@ class PortfolioHealthCalculator {
 
     for (final investment in investments) {
       final stat = stats[investment.id];
-      if (stat != null && stat.totalInvested > 0) {
+      if (stat != null && stat.totalInvested > 0 && stat.xirr.isFinite) {
         totalInvested += stat.totalInvested;
         weightedXirr += stat.xirr * stat.totalInvested;
       }
@@ -115,7 +115,7 @@ class PortfolioHealthCalculator {
       name: 'Returns Performance',
       score: score.clamp(0.0, 100.0),
       weight: 0.30,
-      description: 'XIRR: ${(avgXirr * 100).toStringAsFixed(1)}% vs Inflation: ${(_inflationRate * 100).toStringAsFixed(1)}%',
+      description: 'XIRR vs Inflation',
       suggestions: suggestions,
     );
   }

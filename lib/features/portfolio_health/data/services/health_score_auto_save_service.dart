@@ -6,6 +6,7 @@ library;
 
 import 'dart:async';
 
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
@@ -70,6 +71,11 @@ class HealthScoreAutoSaveService {
         'Failed to auto-save health score snapshot',
         error: e,
         stackTrace: stackTrace,
+      );
+      await CrashlyticsService().recordError(
+        e,
+        stackTrace,
+        reason: 'HealthScoreAutoSave failure',
       );
       // Don't rethrow - auto-save failures should not break the app
     }
