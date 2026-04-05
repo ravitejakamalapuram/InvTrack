@@ -15,15 +15,27 @@ class GoalProgressCalculator {
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
     required List<CashFlowEntity> allCashFlows,
+    Map<String, List<CashFlowEntity>>? cashFlowsByInvestment,
   }) {
     // Filter investments based on tracking mode
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
     final linkedIds = linkedInvestments.map((i) => i.id).toSet();
 
     // Filter cash flows for linked investments
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
+    final List<CashFlowEntity> linkedCashFlows;
+    if (cashFlowsByInvestment != null) {
+      linkedCashFlows = [];
+      for (final id in linkedIds) {
+        final flows = cashFlowsByInvestment[id];
+        if (flows != null) {
+          linkedCashFlows.addAll(flows);
+        }
+      }
+    } else {
+      linkedCashFlows = allCashFlows
+          .where((cf) => linkedIds.contains(cf.investmentId))
+          .toList();
+    }
 
     // Calculate current amount based on goal type
     double currentAmount;
@@ -224,6 +236,7 @@ class GoalProgressCalculator {
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
     required List<CashFlowEntity> allCashFlows,
+    Map<String, List<CashFlowEntity>>? cashFlowsByInvestment,
   }) {
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
     if (linkedInvestments.isEmpty) return null;
@@ -232,10 +245,23 @@ class GoalProgressCalculator {
     DateTime? maxDate;
 
     // Optimization: Find max date in a single pass without allocating new lists or sorting
-    for (final cf in allCashFlows) {
-      if (linkedIds.contains(cf.investmentId)) {
-        if (maxDate == null || cf.date.isAfter(maxDate)) {
-          maxDate = cf.date;
+    if (cashFlowsByInvestment != null) {
+      for (final id in linkedIds) {
+        final flows = cashFlowsByInvestment[id];
+        if (flows != null) {
+          for (final cf in flows) {
+            if (maxDate == null || cf.date.isAfter(maxDate)) {
+              maxDate = cf.date;
+            }
+          }
+        }
+      }
+    } else {
+      for (final cf in allCashFlows) {
+        if (linkedIds.contains(cf.investmentId)) {
+          if (maxDate == null || cf.date.isAfter(maxDate)) {
+            maxDate = cf.date;
+          }
         }
       }
     }
@@ -255,6 +281,7 @@ class GoalProgressCalculator {
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
     required List<CashFlowEntity> allCashFlows,
+    Map<String, List<CashFlowEntity>>? cashFlowsByInvestment,
     required BatchCurrencyConverter batchConverter,
     required String baseCurrency,
   }) async {
@@ -263,9 +290,20 @@ class GoalProgressCalculator {
     final linkedIds = linkedInvestments.map((i) => i.id).toSet();
 
     // Filter cash flows for linked investments
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
+    final List<CashFlowEntity> linkedCashFlows;
+    if (cashFlowsByInvestment != null) {
+      linkedCashFlows = [];
+      for (final id in linkedIds) {
+        final flows = cashFlowsByInvestment[id];
+        if (flows != null) {
+          linkedCashFlows.addAll(flows);
+        }
+      }
+    } else {
+      linkedCashFlows = allCashFlows
+          .where((cf) => linkedIds.contains(cf.investmentId))
+          .toList();
+    }
 
     // Convert all cash flows to base currency
     // Optimization: Use batch conversion to deduplicate rates and parallelize requests, avoiding N+1 bottleneck
@@ -410,23 +448,33 @@ final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((
           return cashFlowsAsync.when(
             data: (cashFlows) {
               // Track performance of goal progress calculation
-              final progressList = ref
-                  .read(performanceServiceProvider)
-                  .trackSync(
-                    'goal_progress_calculation',
-                    () => goals.map((goal) {
-                      return GoalProgressCalculator.calculate(
-                        goal: goal,
-                        allInvestments: investments,
-                        allCashFlows: cashFlows,
-                      );
-                    }).toList(),
-                    metrics: {
-                      'goal_count': goals.length,
-                      'investment_count': investments.length,
-                      'cash_flow_count': cashFlows.length,
-                    },
-                  );
+              final progressList = ref.read(performanceServiceProvider).trackSync(
+                'goal_progress_calculation',
+                () {
+                  // Pre-group cash flows by investment ID to change O(N*M) lookups to O(N+M)
+                  final cashFlowsByInvestment =
+                      <String, List<CashFlowEntity>>{};
+                  for (final cf in cashFlows) {
+                    cashFlowsByInvestment
+                        .putIfAbsent(cf.investmentId, () => [])
+                        .add(cf);
+                  }
+
+                  return goals.map((goal) {
+                    return GoalProgressCalculator.calculate(
+                      goal: goal,
+                      allInvestments: investments,
+                      allCashFlows: cashFlows,
+                      cashFlowsByInvestment: cashFlowsByInvestment,
+                    );
+                  }).toList();
+                },
+                metrics: {
+                  'goal_count': goals.length,
+                  'investment_count': investments.length,
+                  'cash_flow_count': cashFlows.length,
+                },
+              );
               return AsyncValue.data(progressList);
             },
             loading: () => const AsyncValue.loading(),
@@ -638,6 +686,12 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
   final baseCurrency = ref.watch(currencyCodeProvider);
 
+  // Pre-group cash flows by investment ID to change O(N*M) lookups to O(N+M)
+  final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+  for (final cf in cashFlows) {
+    cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+  }
+
   // Calculate progress for each goal with currency conversion
   final progressList = <GoalProgress>[];
   for (final goal in goals) {
@@ -645,6 +699,7 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
       goal: goal,
       allInvestments: investments,
       allCashFlows: cashFlows,
+      cashFlowsByInvestment: cashFlowsByInvestment,
       batchConverter: batchConverter,
       baseCurrency: baseCurrency,
     );

@@ -833,12 +833,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       final notificationService = ref.read(notificationServiceProvider);
 
+      // Pre-group cash flows by investment ID to avoid O(N*M) iteration
+      final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+      for (final cf in cashFlows) {
+        cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+      }
+
       // Check each goal for milestone achievements and alerts
       for (final goal in goals) {
         final progress = GoalProgressCalculator.calculate(
           goal: goal,
           allInvestments: investments,
           allCashFlows: cashFlows,
+          cashFlowsByInvestment: cashFlowsByInvestment,
         );
 
         // Check for milestone achievements
@@ -866,6 +873,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           goal: goal,
           allInvestments: investments,
           allCashFlows: cashFlows,
+          cashFlowsByInvestment: cashFlowsByInvestment,
         );
         await notificationService.showGoalStaleNotification(
           goalId: goal.id,
