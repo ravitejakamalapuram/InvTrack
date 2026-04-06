@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Trend chart showing health score over time
 class HealthScoreTrendChart extends ConsumerStatefulWidget {
@@ -37,35 +38,40 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
     return chartDataAsync.when(
       data: (chartData) {
         if (chartData.isEmpty || chartData.length < 2) {
-          return _buildEmptyState(isDark);
+          return _buildEmptyState(context, isDark);
         }
-        return _buildChart(isDark, chartData);
+        return _buildChart(context, isDark, chartData);
       },
       loading: () => SizedBox(
         height: widget.height,
         child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => _buildEmptyState(isDark),
+      error: (_, __) => _buildEmptyState(context, isDark),
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+
     return SizedBox(
       height: widget.height,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.show_chart,
-              size: 48,
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
+            Semantics(
+              label: l10n.healthScoreTrendNoData,
+              child: Icon(
+                Icons.show_chart,
+                size: 48,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Not enough data yet',
+              l10n.healthScoreTrendNoData,
               style: AppTypography.body.copyWith(
                 color: isDark
                     ? AppColors.textSecondaryDark
@@ -74,7 +80,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Check back in a week to see your trend',
+              l10n.healthScoreTrendCheckBack,
               style: AppTypography.caption.copyWith(
                 color: isDark
                     ? AppColors.textSecondaryDark
@@ -87,7 +93,9 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
     );
   }
 
-  Widget _buildChart(bool isDark, List<Map<String, dynamic>> chartData) {
+  Widget _buildChart(BuildContext context, bool isDark, List<Map<String, dynamic>> chartData) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -96,7 +104,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Score Trend (Last ${chartData.length} Weeks)',
+              l10n.healthScoreTrendWeeks(chartData.length),
               style: AppTypography.h4.copyWith(
                 color: isDark
                     ? AppColors.textPrimaryDark
@@ -114,7 +122,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
                 size: 16,
               ),
               label: Text(
-                _showComponentScores ? 'Hide Details' : 'Show Details',
+                _showComponentScores ? l10n.hideDetails : l10n.showDetails,
                 style: AppTypography.caption,
               ),
             ),

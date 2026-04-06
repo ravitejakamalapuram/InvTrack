@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/score_improvement_badge.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Dashboard card showing Portfolio Health Score
 ///
@@ -39,12 +40,14 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
         }
         return _buildScoreCard(context, isDark, score);
       },
-      loading: () => _buildLoadingCard(isDark),
+      loading: () => _buildLoadingCard(context, isDark),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
 
   Widget _buildEmptyCard(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+
     return GlassCard(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -63,7 +66,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Portfolio Health',
+                  l10n.portfolioHealth,
                   style: AppTypography.h3.copyWith(
                     color: isDark
                         ? AppColors.textPrimaryDark
@@ -75,7 +78,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Add investments to see your portfolio health score',
+            l10n.addInvestmentsToSeeHealth,
             style: AppTypography.body.copyWith(
               color: isDark
                   ? AppColors.textSecondaryDark
@@ -87,7 +90,9 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoadingCard(bool isDark) {
+  Widget _buildLoadingCard(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +106,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Portfolio Health',
+                l10n.portfolioHealth,
                 style: AppTypography.h3.copyWith(
                   color: isDark
                       ? AppColors.textPrimaryDark
@@ -243,26 +248,30 @@ class _HealthScoreRing extends StatelessWidget {
               ),
             ),
           ),
-          // Score text
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                score.round().toString(),
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+          // Score text with accessibility
+          Semantics(
+            label: AppLocalizations.of(context)!.healthScoreOutOf100(score.round()),
+            readOnly: true,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  score.round().toString(),
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
-              ),
-              Text(
-                '/ 100',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: color.withValues(alpha: 0.7),
+                Text(
+                  '/ 100',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: color.withValues(alpha: 0.7),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

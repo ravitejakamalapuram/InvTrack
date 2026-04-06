@@ -18,6 +18,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
@@ -133,34 +134,44 @@ class DebugSettingsScreen extends ConsumerWidget {
 
   /// Build feature flags section
   Widget _buildFeatureFlagsSection(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final featureFlags = ref.watch(featureFlagsProvider);
 
     return SettingsSection(
-      title: 'Experimental Features',
+      title: l10n.experimentalFeatures,
       children: [
         // Portfolio Health Score feature flag
         SettingsToggleTile(
           icon: Icons.favorite,
           iconColor: Colors.red,
-          title: FeatureFlag.portfolioHealthScore.displayName,
-          subtitle: 'Unified health score (0-100) with trend chart',
+          title: l10n.portfolioHealthScoreFeature,
+          subtitle: l10n.portfolioHealthScoreSubtitle,
           value: featureFlags[FeatureFlag.portfolioHealthScore] ?? false,
           onChanged: (value) async {
-            await ref
-                .read(featureFlagsProvider.notifier)
-                .toggle(FeatureFlag.portfolioHealthScore);
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.portfolioHealthScore);
 
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    value
-                        ? '✅ Portfolio Health Score enabled'
-                        : '❌ Portfolio Health Score disabled',
+              // Verify the toggle succeeded
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.portfolioHealthScoreEnabled
+                          : l10n.portfolioHealthScoreDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
                   ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
             }
           },
         ),

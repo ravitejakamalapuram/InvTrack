@@ -2188,6 +2188,150 @@
   "hiddenAmount": "Hidden amount",
   "@hiddenAmount": {
     "description": "Semantic label for privacy-masked amounts"
+  },
+
+  "portfolioHealth": "Portfolio Health",
+  "@portfolioHealth": {
+    "description": "Portfolio health score feature name"
+  },
+
+  "portfolioHealthScore": "Portfolio Health Score",
+  "@portfolioHealthScore": {
+    "description": "Portfolio health score title"
+  },
+
+  "portfolioHealthDetails": "Portfolio Health Details",
+  "@portfolioHealthDetails": {
+    "description": "Portfolio health details screen title"
+  },
+
+  "noPortfolioData": "No data available",
+  "@noPortfolioData": {
+    "description": "Message when portfolio health data is not available"
+  },
+
+  "addInvestmentsToSeeHealth": "Add investments to see your portfolio health score",
+  "@addInvestmentsToSeeHealth": {
+    "description": "Empty state message for portfolio health"
+  },
+
+  "healthScoreTrendWeeks": "Score Trend (Last {weeks} Weeks)",
+  "@healthScoreTrendWeeks": {
+    "description": "Health score trend chart title with weeks count",
+    "placeholders": {
+      "weeks": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+
+  "healthScoreTrendNoData": "Not enough data yet",
+  "@healthScoreTrendNoData": {
+    "description": "Message when there's no trend data"
+  },
+
+  "healthScoreTrendCheckBack": "Check back in a week to see your trend",
+  "@healthScoreTrendCheckBack": {
+    "description": "Message to check back later for trend data"
+  },
+
+  "hideDetails": "Hide Details",
+  "@hideDetails": {
+    "description": "Button to hide details"
+  },
+
+  "showDetails": "Show Details",
+  "@showDetails": {
+    "description": "Button to show details"
+  },
+
+  "historicalTrend": "Historical Trend",
+  "@historicalTrend": {
+    "description": "Historical trend section title"
+  },
+
+  "componentBreakdown": "Component Breakdown",
+  "@componentBreakdown": {
+    "description": "Component breakdown section title"
+  },
+
+  "topSuggestions": "Top Suggestions",
+  "@topSuggestions": {
+    "description": "Top suggestions section title"
+  },
+
+  "scoreCopiedToClipboard": "Score copied to clipboard",
+  "@scoreCopiedToClipboard": {
+    "description": "Message when score is copied"
+  },
+
+  "scoreImprovementPositive": "+{points} pts",
+  "@scoreImprovementPositive": {
+    "description": "Positive score improvement badge",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+
+  "scoreImprovementNegative": "{points} pts",
+  "@scoreImprovementNegative": {
+    "description": "Negative score improvement badge (already has minus sign in number)",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "example": "-3"
+      }
+    }
+  },
+
+  "experimentalFeatures": "Experimental Features",
+  "@experimentalFeatures": {
+    "description": "Experimental features section title"
+  },
+
+  "portfolioHealthScoreFeature": "Portfolio Health Score",
+  "@portfolioHealthScoreFeature": {
+    "description": "Portfolio health score feature toggle title"
+  },
+
+  "portfolioHealthScoreSubtitle": "Unified health score (0-100) with trend chart",
+  "@portfolioHealthScoreSubtitle": {
+    "description": "Portfolio health score feature description"
+  },
+
+  "portfolioHealthScoreEnabled": "Portfolio Health Score enabled",
+  "@portfolioHealthScoreEnabled": {
+    "description": "Message when feature is enabled"
+  },
+
+  "portfolioHealthScoreDisabled": "Portfolio Health Score disabled",
+  "@portfolioHealthScoreDisabled": {
+    "description": "Message when feature is disabled"
+  },
+
+  "healthScoreImproved": "Score improved",
+  "@healthScoreImproved": {
+    "description": "Accessibility label for positive score change"
+  },
+
+  "healthScoreDeclined": "Score declined",
+  "@healthScoreDeclined": {
+    "description": "Accessibility label for negative score change"
+  },
+
+  "healthScoreOutOf100": "Portfolio health score {score} out of 100",
+  "@healthScoreOutOf100": {
+    "description": "Accessibility label for health score display",
+    "placeholders": {
+      "score": {
+        "type": "int",
+        "example": "85"
+      }
+    }
   }
 }
 
