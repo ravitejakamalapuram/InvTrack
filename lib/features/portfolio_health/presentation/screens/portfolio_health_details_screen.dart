@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -22,6 +23,7 @@ import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/health_score_trend_chart.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/score_improvement_badge.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Portfolio Health Details Screen
 class PortfolioHealthDetailsScreen extends ConsumerWidget {
@@ -29,6 +31,8 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
     // Check if feature is enabled - if not, redirect to overview
     final isEnabled = ref.watch(isPortfolioHealthEnabledProvider);
 
@@ -49,7 +53,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Portfolio Health'),
+        title: Text(l10n.portfolioHealthDetails),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -58,26 +62,39 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () => _shareScore(context, scoreAsync.value),
-            tooltip: 'Share score',
+            tooltip: l10n.share,
           ),
         ],
       ),
       body: scoreAsync.when(
         data: (score) {
           if (score == null) {
-            return _buildEmptyState(isDark);
+            return _buildEmptyState(context, isDark);
           }
           return _buildContent(context, isDark, score);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Text('Error loading health score: $error'),
+        error: (error, stackTrace) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                ErrorHandler.getErrorMessage(error),
+                textAlign: TextAlign.center,
+                style: AppTypography.body,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -93,7 +110,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'No Portfolio Data',
+              l10n.noPortfolioData,
               style: AppTypography.h2.copyWith(
                 color: isDark
                     ? AppColors.textPrimaryDark
@@ -102,7 +119,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Add investments to see your portfolio health score',
+              l10n.addInvestmentsToSeeHealth,
               style: AppTypography.body.copyWith(
                 color: isDark
                     ? AppColors.textSecondaryDark
@@ -136,7 +153,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Historical Trend',
+                  AppLocalizations.of(context)!.historicalTrend,
                   style: AppTypography.h3.copyWith(
                     color: isDark
                         ? AppColors.textPrimaryDark
@@ -151,11 +168,11 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
 
           // Component Scores
-          _buildComponentScoresSection(isDark, score),
+          _buildComponentScoresSection(context, isDark, score),
           const SizedBox(height: AppSpacing.xl),
 
           // Top Suggestions
-          _buildSuggestionsSection(isDark, score),
+          _buildSuggestionsSection(context, isDark, score),
         ],
       ),
     );
@@ -237,12 +254,14 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildComponentScoresSection(bool isDark, PortfolioHealthScore score) {
+  Widget _buildComponentScoresSection(BuildContext context, bool isDark, PortfolioHealthScore score) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Component Breakdown',
+          l10n.componentBreakdown,
           style: AppTypography.h3.copyWith(
             color: isDark
                 ? AppColors.textPrimaryDark
@@ -331,7 +350,8 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSuggestionsSection(bool isDark, PortfolioHealthScore score) {
+  Widget _buildSuggestionsSection(BuildContext context, bool isDark, PortfolioHealthScore score) {
+    final l10n = AppLocalizations.of(context)!;
     final suggestions = score.topSuggestions;
 
     if (suggestions.isEmpty) {
@@ -342,7 +362,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Top Suggestions',
+          l10n.topSuggestions,
           style: AppTypography.h3.copyWith(
             color: isDark
                 ? AppColors.textPrimaryDark
@@ -427,7 +447,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
     HapticFeedback.lightImpact();
 
-    // TODO: Generate score card image and share
+    // TODO(@ravitejakamalapuram, 2026-04-06, #322): Generate score card image and share
     // For now, share text
     final text = '''
 My InvTrack Portfolio Health Score: ${score.overallScore.round()}/100 (${score.tier.label})
@@ -448,9 +468,9 @@ Track your investments with InvTrack!
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Score copied to clipboard!'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.scoreCopiedToClipboard),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
