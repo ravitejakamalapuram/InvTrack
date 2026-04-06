@@ -53,17 +53,54 @@ class HealthScoreSnapshotModel {
   factory HealthScoreSnapshotModel.fromFirestore(
     DocumentSnapshot doc,
   ) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data();
+
+    // Defensive null checks
+    if (data == null) {
+      throw const FormatException('Health score snapshot data is null');
+    }
+
+    if (data is! Map<String, dynamic>) {
+      throw FormatException('Invalid health score snapshot data type: ${data.runtimeType}');
+    }
+
+    // Helper to safely extract numeric fields
+    double _getDouble(String field) {
+      final value = data[field];
+      if (value == null) {
+        throw FormatException('Missing required field: $field');
+      }
+      if (value is! num) {
+        throw FormatException('Invalid type for $field: ${value.runtimeType}');
+      }
+      final doubleValue = value.toDouble();
+      if (!doubleValue.isFinite) {
+        throw FormatException('Invalid value for $field: $doubleValue');
+      }
+      return doubleValue;
+    }
+
+    // Extract calculatedAt
+    final calculatedAtValue = data['calculatedAt'];
+    if (calculatedAtValue == null) {
+      throw const FormatException('Missing required field: calculatedAt');
+    }
+    if (calculatedAtValue is! Timestamp) {
+      throw FormatException('Invalid type for calculatedAt: ${calculatedAtValue.runtimeType}');
+    }
+
     return HealthScoreSnapshotModel(
       id: doc.id,
-      overallScore: (data['overallScore'] as num).toDouble(),
-      returnsScore: (data['returnsScore'] as num).toDouble(),
-      diversificationScore: (data['diversificationScore'] as num).toDouble(),
-      liquidityScore: (data['liquidityScore'] as num).toDouble(),
-      goalAlignmentScore: (data['goalAlignmentScore'] as num).toDouble(),
-      actionReadinessScore: (data['actionReadinessScore'] as num).toDouble(),
-      calculatedAt: (data['calculatedAt'] as Timestamp).toDate(),
-      metadata: data['metadata'] as Map<String, dynamic>?,
+      overallScore: _getDouble('overallScore'),
+      returnsScore: _getDouble('returnsScore'),
+      diversificationScore: _getDouble('diversificationScore'),
+      liquidityScore: _getDouble('liquidityScore'),
+      goalAlignmentScore: _getDouble('goalAlignmentScore'),
+      actionReadinessScore: _getDouble('actionReadinessScore'),
+      calculatedAt: calculatedAtValue.toDate(),
+      metadata: data['metadata'] is Map<String, dynamic>
+          ? data['metadata'] as Map<String, dynamic>
+          : null,
     );
   }
 

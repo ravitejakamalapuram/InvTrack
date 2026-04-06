@@ -159,9 +159,22 @@ class PortfolioHealthScore {
     if (identical(this, other)) return true;
     return other is PortfolioHealthScore &&
         other.overallScore == overallScore &&
+        other.returnsPerformance == returnsPerformance &&
+        other.diversification == diversification &&
+        other.liquidity == liquidity &&
+        other.goalAlignment == goalAlignment &&
+        other.actionReadiness == actionReadiness &&
         other.calculatedAt == calculatedAt;
   }
 
   @override
-  int get hashCode => Object.hash(overallScore, calculatedAt);
+  int get hashCode => Object.hash(
+        overallScore,
+        returnsPerformance,
+        diversification,
+        liquidity,
+        goalAlignment,
+        actionReadiness,
+        calculatedAt,
+      );
 }

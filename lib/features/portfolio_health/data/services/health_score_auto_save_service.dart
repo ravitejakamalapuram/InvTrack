@@ -17,6 +17,7 @@ class HealthScoreAutoSaveService {
   Timer? _timer;
   PortfolioHealthScore? _lastScore;
   bool _isSaving = false;
+  bool _pendingForceSave = false;
 
   HealthScoreAutoSaveService({
     required HealthScoreRepository repository,
@@ -90,13 +91,25 @@ class HealthScoreAutoSaveService {
       // Don't rethrow - auto-save failures should not break the app
     } finally {
       _isSaving = false;
+
+      // Check if forceSave was requested while we were saving
+      if (_pendingForceSave) {
+        _pendingForceSave = false;
+        // Schedule another save with the latest score
+        Future.microtask(() => forceSave());
+      }
     }
   }
 
   /// Force save current score (used for explicit user actions)
   Future<void> forceSave() async {
     if (_lastScore == null) return;
-    if (_isSaving) return; // Prevent overlapping saves
+
+    // If already saving, mark pending and return (will be processed after current save)
+    if (_isSaving) {
+      _pendingForceSave = true;
+      return;
+    }
 
     _isSaving = true;
     try {

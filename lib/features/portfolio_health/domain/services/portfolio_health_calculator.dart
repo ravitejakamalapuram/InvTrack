@@ -16,8 +16,8 @@ import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_
 /// - Goal Alignment (15%): On-track vs behind goals
 /// - Action Readiness (10%): Overdue renewals, stale investments
 class PortfolioHealthCalculator {
-  /// India inflation rate (approximate annual average)
-  static const double _inflationRate = 0.06; // 6%
+  /// Default benchmark inflation rate (India annual average)
+  static const double defaultInflationRate = 0.06; // 6%
 
   /// Calculate portfolio health score
   static PortfolioHealthScore calculate({
@@ -25,9 +25,14 @@ class PortfolioHealthCalculator {
     required Map<String, InvestmentStats> investmentStats,
     required List<CashFlowEntity> allCashFlows,
     required List<GoalProgress> goalProgress,
+    double benchmarkInflationRate = defaultInflationRate,
   }) {
     // Calculate each component
-    final returns = _calculateReturnsScore(investments, investmentStats);
+    final returns = _calculateReturnsScore(
+      investments,
+      investmentStats,
+      benchmarkInflationRate,
+    );
     final diversification = _calculateDiversificationScore(investments, investmentStats);
     final liquidity = _calculateLiquidityScore(investments, investmentStats);
     final goals = _calculateGoalAlignmentScore(goalProgress);
@@ -56,6 +61,7 @@ class PortfolioHealthCalculator {
   static ComponentScore _calculateReturnsScore(
     List<InvestmentEntity> investments,
     Map<String, InvestmentStats> stats,
+    double benchmarkInflationRate,
   ) {
     if (investments.isEmpty || stats.isEmpty) {
       return const ComponentScore(
@@ -102,17 +108,17 @@ class PortfolioHealthCalculator {
     double score;
     final suggestions = <String>[];
 
-    if (avgXirr >= _inflationRate + 0.10) {
+    if (avgXirr >= benchmarkInflationRate + 0.10) {
       score = 100;
       suggestions.add('Excellent returns! Keep up the good work');
-    } else if (avgXirr >= _inflationRate + 0.05) {
-      score = 80 + ((avgXirr - (_inflationRate + 0.05)) / 0.05) * 20;
+    } else if (avgXirr >= benchmarkInflationRate + 0.05) {
+      score = 80 + ((avgXirr - (benchmarkInflationRate + 0.05)) / 0.05) * 20;
       suggestions.add('Good returns, beating inflation comfortably');
-    } else if (avgXirr >= _inflationRate) {
-      score = 60 + ((avgXirr - _inflationRate) / 0.05) * 20;
+    } else if (avgXirr >= benchmarkInflationRate) {
+      score = 60 + ((avgXirr - benchmarkInflationRate) / 0.05) * 20;
       suggestions.add('Returns are just above inflation. Consider higher-yield options');
     } else if (avgXirr >= 0) {
-      score = 40 + (avgXirr / _inflationRate) * 20;
+      score = 40 + (avgXirr / benchmarkInflationRate) * 20;
       suggestions.add('Returns below inflation. Your money is losing value');
       suggestions.add('Explore P2P lending or equity funds for better returns');
     } else {
