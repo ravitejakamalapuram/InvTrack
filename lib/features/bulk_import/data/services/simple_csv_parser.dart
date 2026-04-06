@@ -65,8 +65,13 @@ class ParsedCsvResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedCashFlowRow> get validRowsOnly =>
-      rows.where((r) => r.isValid).toList();
+  List<ParsedCashFlowRow> get validRowsOnly {
+    final list = <ParsedCashFlowRow>[];
+    for (final r in rows) {
+      if (r.isValid) list.add(r);
+    }
+    return list;
+  }
 }
 
 /// Simple CSV parser with smart date inference
@@ -201,7 +206,7 @@ class _CsvParserSession {
       rows: rows,
       errors: errors,
       totalRows: lines.length - 1,
-      validRows: rows.where((r) => r.isValid).length,
+      validRows: rows.length,
     );
   }
 
@@ -550,8 +555,13 @@ class ParsedGoalsResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedGoalRow> get validRowsOnly =>
-      rows.where((r) => r.isValid).toList();
+  List<ParsedGoalRow> get validRowsOnly {
+    final list = <ParsedGoalRow>[];
+    for (final r in rows) {
+      if (r.isValid) list.add(r);
+    }
+    return list;
+  }
 }
 
 /// Parser for Goals CSV files
@@ -607,7 +617,7 @@ class GoalsCsvParser {
       rows: rows,
       errors: errors,
       totalRows: lines.length - 1,
-      validRows: rows.where((r) => r.isValid).length,
+      validRows: rows.length,
     );
   }
 
@@ -712,10 +722,10 @@ class GoalsCsvParser {
       if (columnMap.containsKey('linkedInvestmentNames')) {
         final str = _getValue(values, columnMap['linkedInvestmentNames']!);
         if (str.isNotEmpty) {
-          linkedInvestmentNames = str
-              .split(';')
-              .where((s) => s.isNotEmpty)
-              .toList();
+          final parts = str.split(';');
+          for (final s in parts) {
+            if (s.isNotEmpty) linkedInvestmentNames.add(s);
+          }
         }
       }
 
@@ -723,7 +733,10 @@ class GoalsCsvParser {
       if (columnMap.containsKey('linkedTypes')) {
         final str = _getValue(values, columnMap['linkedTypes']!);
         if (str.isNotEmpty) {
-          linkedTypes = str.split(';').where((s) => s.isNotEmpty).toList();
+          final parts = str.split(';');
+          for (final s in parts) {
+            if (s.isNotEmpty) linkedTypes.add(s);
+          }
         }
       }
 
