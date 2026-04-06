@@ -3,6 +3,8 @@
 /// Handles Firestore operations for health score snapshots
 library;
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -40,11 +42,40 @@ class HealthScoreRepository {
   }
 
   /// Save health score snapshot
+  ///
+  /// Uses 5-second timeout for offline-first behavior.
+  /// If timeout occurs, snapshot is cached locally and syncs when online.
   Future<void> saveSnapshot(PortfolioHealthScore score) async {
     try {
       final snapshot = HealthScoreSnapshotModel.fromEntity(score);
-      await _collection.doc(snapshot.id).set(snapshot.toFirestore());
+
+      // 5-second timeout for offline-first behavior
+      await _collection
+          .doc(snapshot.id)
+          .set(snapshot.toFirestore())
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              // Timeout means cached locally, will sync when online
+              _crashlytics.recordError(
+                TimeoutException('Health score save timeout - cached locally'),
+                StackTrace.current,
+                reason: 'Health score write timeout (offline mode)',
+              );
+              // Don't throw - Firestore offline persistence handles this
+              return;
+            },
+          );
+    } on TimeoutException catch (e, stackTrace) {
+      // Timeout is expected offline - snapshot cached locally
+      _crashlytics.recordError(
+        e,
+        stackTrace,
+        reason: 'Health score save timeout - will sync when online',
+      );
+      // Don't throw - let offline persistence handle it
     } catch (e, stackTrace) {
+      // Other errors (permission denied, etc.) should fail
       _crashlytics.recordError(
         e,
         stackTrace,
@@ -125,6 +156,21 @@ class HealthScoreRepository {
           .where('calculatedAt', isGreaterThan: Timestamp.fromDate(cutoffDate))
           .orderBy('calculatedAt', descending: false)
           .snapshots()
+          .transform(
+            StreamTransformer<QuerySnapshot<Map<String, dynamic>>,
+                QuerySnapshot<Map<String, dynamic>>>.fromHandlers(
+              handleError: (error, stackTrace, sink) {
+                // Record stream errors to Crashlytics
+                _crashlytics.recordError(
+                  error,
+                  stackTrace,
+                  reason: 'Stream error in watchHistoricalSnapshots',
+                );
+                // Forward error to UI for handling
+                sink.addError(error, stackTrace);
+              },
+            ),
+          )
           .map(
             (snapshot) => snapshot.docs
                 .map((doc) => HealthScoreSnapshotModel.fromFirestore(doc))
@@ -134,7 +180,7 @@ class HealthScoreRepository {
       _crashlytics.recordError(
         e,
         stackTrace,
-        reason: 'Failed to watch historical health score snapshots',
+        reason: 'Failed to setup watchHistoricalSnapshots',
       );
       rethrow;
     }
@@ -143,14 +189,29 @@ class HealthScoreRepository {
   /// Delete all snapshots for current user (for data deletion compliance)
   Future<void> deleteAllSnapshots() async {
     try {
-      final querySnapshot = await _collection.get();
-      final batch = _firestore.batch();
+      // Use paginated batched delete to avoid OOM on large collections
+      const batchSize = 500;
+      bool hasMore = true;
 
-      for (final doc in querySnapshot.docs) {
-        batch.delete(doc.reference);
+      while (hasMore) {
+        // Get next page
+        final querySnapshot = await _collection.limit(batchSize).get();
+
+        if (querySnapshot.docs.isEmpty) {
+          hasMore = false;
+          break;
+        }
+
+        // Delete this page
+        final batch = _firestore.batch();
+        for (final doc in querySnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+
+        // Check if there are more docs
+        hasMore = querySnapshot.docs.length == batchSize;
       }
-
-      await batch.commit();
     } catch (e, stackTrace) {
       _crashlytics.recordError(
         e,

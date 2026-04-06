@@ -415,6 +415,14 @@ class PortfolioHealthCalculator {
     int overdueRenewals = 0;
     int staleInvestments = 0;
 
+    // Pre-index cash flows by investment ID to avoid O(n*m) complexity
+    final cashFlowsByInvestmentId = <String, List<CashFlowEntity>>{};
+    for (final cashFlow in allCashFlows) {
+      cashFlowsByInvestmentId
+          .putIfAbsent(cashFlow.investmentId, () => <CashFlowEntity>[])
+          .add(cashFlow);
+    }
+
     for (final inv in openInvestments) {
       // Check for overdue maturity
       final maturity = inv.calculatedMaturityDate;
@@ -423,8 +431,7 @@ class PortfolioHealthCalculator {
       }
 
       // Check for stale investments (no activity in 6+ months)
-      final cashFlows =
-          allCashFlows.where((cf) => cf.investmentId == inv.id).toList();
+      final cashFlows = cashFlowsByInvestmentId[inv.id] ?? const <CashFlowEntity>[];
       if (cashFlows.isNotEmpty) {
         final lastActivity = cashFlows
             .map((cf) => cf.date)

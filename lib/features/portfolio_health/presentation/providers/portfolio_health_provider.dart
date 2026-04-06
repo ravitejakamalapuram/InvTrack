@@ -59,10 +59,10 @@ class PortfolioHealth extends _$PortfolioHealth {
     final cashFlows = cashFlowsAsync.value ?? [];
     final goalProgress = goalProgressAsync.value ?? [];
 
-    // Build stats map for each investment
+    // Build stats map for each investment (use ref.watch for reactivity)
     final statsMap = <String, InvestmentStats>{};
     for (final inv in investments) {
-      final invStats = ref.read(multiCurrencyInvestmentStatsProvider(inv.id));
+      final invStats = ref.watch(multiCurrencyInvestmentStatsProvider(inv.id));
       if (invStats.hasValue && invStats.value != null) {
         statsMap[inv.id] = invStats.value!;
       }

@@ -16,7 +16,6 @@ class HealthScoreAutoSaveService {
   final HealthScoreRepository _repository;
   Timer? _timer;
   PortfolioHealthScore? _lastScore;
-  DateTime? _lastSaveTime;
   bool _isSaving = false;
 
   HealthScoreAutoSaveService({
@@ -70,7 +69,6 @@ class HealthScoreAutoSaveService {
 
       if (shouldSave) {
         await _repository.saveSnapshot(current);
-        _lastSaveTime = DateTime.now();
         LoggerService.debug(
           'Health score snapshot saved: ${current.overallScore.round()}/100',
         );
@@ -107,7 +105,6 @@ class HealthScoreAutoSaveService {
       }
 
       await _repository.saveSnapshot(current);
-      _lastSaveTime = DateTime.now();
       LoggerService.debug('Health score snapshot force-saved');
     } catch (e, stackTrace) {
       LoggerService.error(
@@ -125,6 +122,5 @@ class HealthScoreAutoSaveService {
   void dispose() {
     stop();
     _lastScore = null;
-    _lastSaveTime = null;
   }
 }

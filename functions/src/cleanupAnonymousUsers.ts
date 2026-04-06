@@ -95,10 +95,18 @@ export const cleanupOldAnonymousUsers = functions.pubsub
  * - fireSettings
  * - profile
  * - exchangeRates
+ * - healthScores
  */
 async function deleteUserData(userId: string): Promise<void> {
   const firestore = admin.firestore();
-  const batch = firestore.batch();
+  const bulkWriter = firestore.bulkWriter();
+
+  // Register error handler for failed deletes
+  bulkWriter.onWriteError((error) => {
+    console.error('BulkWriter delete failed:', error);
+    // Retry failed deletes
+    return true; // Return true to retry
+  });
 
   const collections = [
     'investments',
@@ -119,9 +127,11 @@ async function deleteUserData(userId: string): Promise<void> {
       .collection(`users/${userId}/${collection}`)
       .get();
 
-    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    for (const doc of snapshot.docs) {
+      bulkWriter.delete(doc.ref);
+    }
   }
 
-  await batch.commit();
+  await bulkWriter.close();
 }
 
