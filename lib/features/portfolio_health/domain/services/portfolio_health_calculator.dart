@@ -271,7 +271,7 @@ class PortfolioHealthCalculator {
       score = 80;
       suggestions.add('Slightly low liquidity, but manageable');
     } else if (liquidityRatio > 0.30 && liquidityRatio <= 0.40) {
-      score = 70;
+      score = 80; // Fixed: 30-40% band should be 80 points (good)
       suggestions.add('$liquidityPercent% of portfolio maturing soon - plan reinvestment');
     } else if (liquidityRatio > 0.40) {
       score = 40;
@@ -363,16 +363,19 @@ class PortfolioHealthCalculator {
     if (ahead > 0) {
       suggestions.add('$ahead goals ahead of schedule!');
     }
-    if (notStarted > 0 && score == 0) {
+    // Add notStarted suggestion even when other goals exist
+    if (notStarted > 0 && (achieved == 0 && ahead == 0 && onTrack == 0)) {
       suggestions.add('$notStarted goals not started yet');
       suggestions.add('Begin allocating funds to your goals');
+    } else if (notStarted > 0) {
+      suggestions.add('$notStarted goals not yet started');
     }
 
     return ComponentScore(
       name: 'Goal Alignment',
       score: score,
       weight: 0.15,
-      description: '$onTrack/$total goals on track',
+      description: '${achieved + ahead + onTrack}/$total goals on track or better',
       suggestions: suggestions.isEmpty
           ? ['All goals progressing well']
           : suggestions,

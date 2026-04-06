@@ -25,10 +25,10 @@ enum ScoreTier {
 
   /// Get tier for a given score
   static ScoreTier fromScore(double score) {
-    final roundedScore = score.round();
-    if (roundedScore >= 80) return ScoreTier.excellent;
-    if (roundedScore >= 60) return ScoreTier.good;
-    if (roundedScore >= 40) return ScoreTier.fair;
+    // Use raw double comparison to avoid rounding issues (79.6 should be good, not excellent)
+    if (score >= 80.0) return ScoreTier.excellent;
+    if (score >= 60.0) return ScoreTier.good;
+    if (score >= 40.0) return ScoreTier.fair;
     return ScoreTier.poor;
   }
 }
@@ -119,11 +119,19 @@ class PortfolioHealthScore {
     // Sort by lowest score (highest priority improvements)
     allSuggestions.sort((a, b) => a.score.compareTo(b.score));
 
-    // Return top 3 unique suggestions
-    return allSuggestions
-        .take(3)
-        .map((s) => s.suggestion)
-        .toList();
+    // Return top 3 unique suggestions (deduplicate by text)
+    final seen = <String>{};
+    final uniqueSuggestions = <String>[];
+
+    for (final item in allSuggestions) {
+      if (!seen.contains(item.suggestion)) {
+        seen.add(item.suggestion);
+        uniqueSuggestions.add(item.suggestion);
+        if (uniqueSuggestions.length >= 3) break;
+      }
+    }
+
+    return uniqueSuggestions;
   }
 
   PortfolioHealthScore copyWith({

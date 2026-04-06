@@ -69,9 +69,12 @@ class HealthScoreAutoSaveService {
 
       if (shouldSave) {
         await _repository.saveSnapshot(current);
-        LoggerService.debug(
-          'Health score snapshot saved: ${current.overallScore.round()}/100',
-        );
+        // Log score tier instead of exact score for privacy
+        final tier = current.overallScore >= 80 ? 'excellent'
+            : current.overallScore >= 60 ? 'good'
+            : current.overallScore >= 40 ? 'fair'
+            : 'poor';
+        LoggerService.debug('Health score snapshot saved: $tier tier');
       }
     } catch (e, stackTrace) {
       LoggerService.error(

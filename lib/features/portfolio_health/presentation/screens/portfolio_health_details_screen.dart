@@ -74,20 +74,23 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
           return _buildContent(context, isDark, score);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                ErrorHandler.getErrorMessage(error),
-                textAlign: TextAlign.center,
-                style: AppTypography.body,
-              ),
-            ],
-          ),
-        ),
+        error: (error, stackTrace) {
+          final appException = ErrorHandler.mapException(error, stackTrace);
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  appException.userMessage,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
