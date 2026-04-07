@@ -97,6 +97,8 @@ export const cleanupOldAnonymousUsers = functions.pubsub
  * - exchangeRates
  * - healthScores
  */
+const MAX_RETRY_ATTEMPTS = 3;
+
 async function deleteUserData(userId: string): Promise<void> {
   const firestore = admin.firestore();
   const bulkWriter = firestore.bulkWriter();
@@ -104,8 +106,30 @@ async function deleteUserData(userId: string): Promise<void> {
   // Register error handler for failed deletes
   bulkWriter.onWriteError((error) => {
     console.error('BulkWriter delete failed:', error);
-    // Retry failed deletes
-    return true; // Return true to retry
+
+    // Enforce max retry cap
+    if (error.failedAttempts >= MAX_RETRY_ATTEMPTS) {
+      console.error('Max retry attempts reached, giving up');
+      return false;
+    }
+
+    // Only retry transient errors
+    const code = error.code;
+    const transientCodes = [
+      'unavailable',
+      'aborted',
+      'deadline-exceeded',
+      'resource-exhausted',
+    ];
+
+    if (transientCodes.includes(code.toString().toLowerCase())) {
+      console.log('Transient error, will retry');
+      return true; // Retry
+    }
+
+    // Don't retry permanent errors (permission-denied, invalid-argument, etc.)
+    console.error('Permanent error, not retrying');
+    return false;
   });
 
   const collections = [
@@ -122,16 +146,40 @@ async function deleteUserData(userId: string): Promise<void> {
     'healthScores', // Week 2: Portfolio Health Score snapshots
   ];
 
-  for (const collection of collections) {
-    const snapshot = await firestore
-      .collection(`users/${userId}/${collection}`)
-      .get();
+  const PAGE_SIZE = 500;
 
-    for (const doc of snapshot.docs) {
-      bulkWriter.delete(doc.ref);
+  for (const collection of collections) {
+    let hasMore = true;
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+    while (hasMore) {
+      let query = firestore
+        .collection(`users/${userId}/${collection}`)
+        .limit(PAGE_SIZE);
+
+      if (lastDoc) {
+        query = query.startAfter(lastDoc);
+      }
+
+      const snapshot = await query.get();
+
+      if (snapshot.empty) {
+        hasMore = false;
+        break;
+      }
+
+      for (const doc of snapshot.docs) {
+        bulkWriter.delete(doc.ref);
+      }
+
+      // If we got fewer docs than PAGE_SIZE, we're done
+      if (snapshot.docs.length < PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      }
     }
   }
 
   await bulkWriter.close();
 }
-
