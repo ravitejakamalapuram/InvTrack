@@ -133,7 +133,7 @@ class DebugSettingsScreen extends ConsumerWidget {
 
   /// Build feature flags section
   Widget _buildFeatureFlagsSection(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final featureFlags = ref.watch(featureFlagsProvider);
 
     return SettingsSection(

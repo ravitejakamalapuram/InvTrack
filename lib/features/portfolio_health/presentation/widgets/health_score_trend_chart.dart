@@ -51,7 +51,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
   }
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return SizedBox(
       height: widget.height,
@@ -94,7 +94,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
   }
 
   Widget _buildChart(BuildContext context, bool isDark, List<Map<String, dynamic>> chartData) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

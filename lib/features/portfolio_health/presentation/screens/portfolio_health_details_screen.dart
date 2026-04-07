@@ -31,7 +31,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     // Check if feature is enabled - if not, redirect to overview
     final isEnabled = ref.watch(isPortfolioHealthEnabledProvider);
@@ -96,7 +96,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return Center(
       child: Padding(
@@ -156,7 +156,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppLocalizations.of(context)!.historicalTrend,
+                  AppLocalizations.of(context).historicalTrend,
                   style: AppTypography.h3.copyWith(
                     color: isDark
                         ? AppColors.textPrimaryDark
@@ -258,7 +258,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildComponentScoresSection(BuildContext context, bool isDark, PortfolioHealthScore score) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,7 +354,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildSuggestionsSection(BuildContext context, bool isDark, PortfolioHealthScore score) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final suggestions = score.topSuggestions;
 
     if (suggestions.isEmpty) {
@@ -472,7 +472,7 @@ Track your investments with InvTrack!
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context)!.scoreCopiedToClipboard),
+        content: Text(AppLocalizations.of(context).scoreCopiedToClipboard),
         duration: const Duration(seconds: 2),
       ),
     );

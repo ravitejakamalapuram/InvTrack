@@ -39,7 +39,7 @@ class ScoreImprovementBadge extends ConsumerWidget {
   }
 
   Widget _buildBadge(double delta, BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final isPositive = delta > 0;
     final color = isPositive ? Colors.green : Colors.red;
     final icon = isPositive ? Icons.trending_up : Icons.trending_down;

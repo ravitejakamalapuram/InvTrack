@@ -46,7 +46,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
   }
 
   Widget _buildEmptyCard(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return GlassCard(
       onTap: () {
@@ -91,7 +91,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
   }
 
   Widget _buildLoadingCard(BuildContext context, bool isDark) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return GlassCard(
       child: Column(
@@ -250,7 +250,7 @@ class _HealthScoreRing extends StatelessWidget {
           ),
           // Score text with accessibility
           Semantics(
-            label: AppLocalizations.of(context)!.healthScoreOutOf100(score.round()),
+            label: AppLocalizations.of(context).healthScoreOutOf100(score.round()),
             readOnly: true,
             child: Column(
               mainAxisSize: MainAxisSize.min,
