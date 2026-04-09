@@ -41,7 +41,11 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
         return _buildScoreCard(context, isDark, score);
       },
       loading: () => _buildLoadingCard(context, isDark),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) {
+        // Don't show error card on dashboard - just hide the widget
+        // Full error display is available on details screen
+        return const SizedBox.shrink();
+      },
     );
   }
 
