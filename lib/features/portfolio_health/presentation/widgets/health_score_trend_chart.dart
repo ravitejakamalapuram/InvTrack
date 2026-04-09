@@ -183,10 +183,11 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
               final date = DateTime.fromMillisecondsSinceEpoch(
                 chartData[value.toInt()]['date'] as int,
               );
+              final locale = Localizations.localeOf(context).toString();
               return Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                  DateFormat('M/d').format(date),
+                  DateFormat('M/d', locale).format(date),
                   style: TextStyle(color: textColor, fontSize: 10),
                 ),
               );
@@ -208,8 +209,9 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
               final date = DateTime.fromMillisecondsSinceEpoch(
                 chartData[spot.x.toInt()]['date'] as int,
               );
+              final locale = Localizations.localeOf(context).toString();
               return LineTooltipItem(
-                '${DateFormat.MMMd().format(date)}\n${spot.y.toInt()}/100',
+                '${DateFormat.MMMd(locale).format(date)}\n${spot.y.toInt()}/100',
                 const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

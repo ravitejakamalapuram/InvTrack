@@ -67,6 +67,32 @@ class ComponentScore {
       suggestions: suggestions ?? this.suggestions,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ComponentScore) return false;
+
+    // Compare suggestions list element by element
+    if (suggestions.length != other.suggestions.length) return false;
+    for (var i = 0; i < suggestions.length; i++) {
+      if (suggestions[i] != other.suggestions[i]) return false;
+    }
+
+    return name == other.name &&
+        score == other.score &&
+        weight == other.weight &&
+        description == other.description;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        name,
+        score,
+        weight,
+        description,
+        Object.hashAll(suggestions),
+      );
 }
 
 /// Portfolio Health Score Entity

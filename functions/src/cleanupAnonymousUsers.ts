@@ -103,6 +103,12 @@ async function deleteUserData(userId: string): Promise<void> {
   const firestore = admin.firestore();
   const bulkWriter = firestore.bulkWriter();
 
+  // Track terminal failures (when onWriteError returns false)
+  const terminalFailures: Array<{
+    documentPath: string;
+    error: string;
+  }> = [];
+
   // Register error handler for failed deletes
   bulkWriter.onWriteError((error) => {
     console.error('BulkWriter delete failed:', error);
@@ -110,6 +116,10 @@ async function deleteUserData(userId: string): Promise<void> {
     // Enforce max retry cap
     if (error.failedAttempts >= MAX_RETRY_ATTEMPTS) {
       console.error('Max retry attempts reached, giving up');
+      terminalFailures.push({
+        documentPath: error.documentRef.path,
+        error: `Max retries exceeded: ${error.code}`,
+      });
       return false;
     }
 
@@ -129,6 +139,10 @@ async function deleteUserData(userId: string): Promise<void> {
 
     // Don't retry permanent errors (permission-denied, invalid-argument, etc.)
     console.error('Permanent error, not retrying');
+    terminalFailures.push({
+      documentPath: error.documentRef.path,
+      error: `Permanent error: ${error.code}`,
+    });
     return false;
   });
 
@@ -182,4 +196,11 @@ async function deleteUserData(userId: string): Promise<void> {
   }
 
   await bulkWriter.close();
+
+  // Throw error if any permanent failures occurred
+  if (terminalFailures.length > 0) {
+    const errorMessage = `Failed to delete ${terminalFailures.length} documents for user ${userId}`;
+    console.error(errorMessage, terminalFailures);
+    throw new Error(errorMessage);
+  }
 }

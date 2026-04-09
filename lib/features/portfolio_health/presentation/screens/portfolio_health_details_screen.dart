@@ -450,20 +450,19 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
     HapticFeedback.lightImpact();
 
+    final l10n = AppLocalizations.of(context);
+
     // TODO(@ravitejakamalapuram, 2026-04-06, #322): Generate score card image and share
-    // For now, share text
-    final text = '''
-My InvTrack Portfolio Health Score: ${score.overallScore.round()}/100 (${score.tier.label})
-
-📊 Component Scores:
-- Returns: ${score.returnsPerformance.score.round()}/100
-- Diversification: ${score.diversification.score.round()}/100
-- Liquidity: ${score.liquidity.score.round()}/100
-- Goal Alignment: ${score.goalAlignment.score.round()}/100
-- Actions: ${score.actionReadiness.score.round()}/100
-
-Track your investments with InvTrack!
-''';
+    // For now, share text using localized template
+    final text = l10n.shareScoreText(
+      score.overallScore.round(),
+      score.tier.label,
+      score.returnsPerformance.score.round(),
+      score.diversification.score.round(),
+      score.liquidity.score.round(),
+      score.goalAlignment.score.round(),
+      score.actionReadiness.score.round(),
+    );
 
     // Use share package or clipboard
     await Clipboard.setData(ClipboardData(text: text));

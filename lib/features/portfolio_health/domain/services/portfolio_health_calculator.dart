@@ -241,7 +241,7 @@ class PortfolioHealthCalculator {
           final maturity = inv.calculatedMaturityDate;
           if (maturity != null &&
               maturity.isAfter(now) &&
-              maturity.isBefore(next90Days)) {
+              (maturity.isBefore(next90Days) || maturity.isAtSameMomentAs(next90Days))) {
             maturingSoonValue += stat.totalInvested;
             maturingSoonCount++;
           }

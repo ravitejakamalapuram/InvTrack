@@ -70,7 +70,7 @@ Successfully addressed **ALL 36 CodeRabbit review comments** through an intensiv
 
 ## ✅ **QUALITY METRICS**
 
-```
+```text
 Analyzer Errors:     0 ✅
 Warnings:           28 (cosmetic)
 Breaking Changes:    0 ✅
@@ -143,7 +143,7 @@ gh issue create \
 
 ## 📈 **MARATHON STATISTICS**
 
-```
+```text
 Start Time:    2026-04-06 10:00 AM
 End Time:      2026-04-06 06:00 PM
 Duration:      8 hours

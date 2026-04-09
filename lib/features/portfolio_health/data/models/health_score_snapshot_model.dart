@@ -160,9 +160,24 @@ class HealthScoreSnapshotModel {
     if (identical(this, other)) return true;
     return other is HealthScoreSnapshotModel &&
         other.id == id &&
+        other.overallScore == overallScore &&
+        other.returnsScore == returnsScore &&
+        other.diversificationScore == diversificationScore &&
+        other.liquidityScore == liquidityScore &&
+        other.goalAlignmentScore == goalAlignmentScore &&
+        other.actionReadinessScore == actionReadinessScore &&
         other.calculatedAt == calculatedAt;
   }
 
   @override
-  int get hashCode => Object.hash(id, calculatedAt);
+  int get hashCode => Object.hash(
+        id,
+        overallScore,
+        returnsScore,
+        diversificationScore,
+        liquidityScore,
+        goalAlignmentScore,
+        actionReadinessScore,
+        calculatedAt,
+      );
 }

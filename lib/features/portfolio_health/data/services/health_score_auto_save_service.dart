@@ -17,7 +17,7 @@ class HealthScoreAutoSaveService {
   Timer? _timer;
   PortfolioHealthScore? _lastScore;
   bool _isSaving = false;
-  bool _pendingForceSave = false;
+  Completer<void>? _pendingForceSaveCompleter;
 
   HealthScoreAutoSaveService({
     required HealthScoreRepository repository,
@@ -93,10 +93,11 @@ class HealthScoreAutoSaveService {
       _isSaving = false;
 
       // Check if forceSave was requested while we were saving
-      if (_pendingForceSave) {
-        _pendingForceSave = false;
-        // Schedule another save with the latest score
-        Future.microtask(() => forceSave());
+      if (_pendingForceSaveCompleter != null) {
+        final completer = _pendingForceSaveCompleter;
+        _pendingForceSaveCompleter = null;
+        // Schedule another save and complete the pending forceSave future
+        forceSave().then(completer.complete).catchError(completer.completeError);
       }
     }
   }
@@ -105,10 +106,16 @@ class HealthScoreAutoSaveService {
   Future<void> forceSave() async {
     if (_lastScore == null) return;
 
-    // If already saving, mark pending and return (will be processed after current save)
+    // If already saving, queue this request and return its completer's future
     if (_isSaving) {
-      _pendingForceSave = true;
-      return;
+      // If there's already a pending force save, return that future
+      if (_pendingForceSaveCompleter != null) {
+        return _pendingForceSaveCompleter!.future;
+      }
+
+      // Create new completer for this pending save
+      _pendingForceSaveCompleter = Completer<void>();
+      return _pendingForceSaveCompleter!.future;
     }
 
     _isSaving = true;

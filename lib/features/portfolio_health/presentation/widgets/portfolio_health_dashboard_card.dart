@@ -154,7 +154,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Portfolio Health',
+                  l10n.portfolioHealth,
                   style: AppTypography.h3.copyWith(
                     color: isDark
                         ? AppColors.textPrimaryDark

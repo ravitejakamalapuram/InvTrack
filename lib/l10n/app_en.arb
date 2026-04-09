@@ -2332,6 +2332,39 @@
         "example": "85"
       }
     }
+  },
+
+  "shareScoreText": "My InvTrack Portfolio Health Score: {score}/100 ({tier})\n\n📊 Component Scores:\n- Returns: {returns}/100\n- Diversification: {diversification}/100\n- Liquidity: {liquidity}/100\n- Goals: {goals}/100\n- Actions: {actions}/100\n\nTrack your investments with InvTrack!",
+  "@shareScoreText": {
+    "description": "Share text for portfolio health score",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      },
+      "tier": {
+        "type": "String"
+      },
+      "returns": {
+        "type": "int"
+      },
+      "diversification": {
+        "type": "int"
+      },
+      "liquidity": {
+        "type": "int"
+      },
+      "goals": {
+        "type": "int"
+      },
+      "actions": {
+        "type": "int"
+      }
+    }
+  },
+
+  "scoreCopiedToClipboard": "Score copied to clipboard",
+  "@scoreCopiedToClipboard": {
+    "description": "Snackbar message when score is copied"
   }
 }
 
