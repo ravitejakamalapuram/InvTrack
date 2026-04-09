@@ -8,6 +8,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 
+/// Sentinel value for copyWith metadata parameter
+const _metadataSentinel = Object();
+
 /// Firestore model for health score snapshot
 class HealthScoreSnapshotModel {
   final String id;
@@ -65,7 +68,7 @@ class HealthScoreSnapshotModel {
     }
 
     // Helper to safely extract numeric fields
-    double _getDouble(String field) {
+    double getDouble(String field) {
       final value = data[field];
       if (value == null) {
         throw FormatException('Missing required field: $field');
@@ -91,12 +94,12 @@ class HealthScoreSnapshotModel {
 
     return HealthScoreSnapshotModel(
       id: doc.id,
-      overallScore: _getDouble('overallScore'),
-      returnsScore: _getDouble('returnsScore'),
-      diversificationScore: _getDouble('diversificationScore'),
-      liquidityScore: _getDouble('liquidityScore'),
-      goalAlignmentScore: _getDouble('goalAlignmentScore'),
-      actionReadinessScore: _getDouble('actionReadinessScore'),
+      overallScore: getDouble('overallScore'),
+      returnsScore: getDouble('returnsScore'),
+      diversificationScore: getDouble('diversificationScore'),
+      liquidityScore: getDouble('liquidityScore'),
+      goalAlignmentScore: getDouble('goalAlignmentScore'),
+      actionReadinessScore: getDouble('actionReadinessScore'),
       calculatedAt: calculatedAtValue.toDate(),
       metadata: data['metadata'] is Map<String, dynamic>
           ? data['metadata'] as Map<String, dynamic>
@@ -140,7 +143,7 @@ class HealthScoreSnapshotModel {
     double? goalAlignmentScore,
     double? actionReadinessScore,
     DateTime? calculatedAt,
-    Map<String, dynamic>? metadata,
+    Object? metadata = _metadataSentinel,
   }) {
     return HealthScoreSnapshotModel(
       id: id ?? this.id,
@@ -151,7 +154,7 @@ class HealthScoreSnapshotModel {
       goalAlignmentScore: goalAlignmentScore ?? this.goalAlignmentScore,
       actionReadinessScore: actionReadinessScore ?? this.actionReadinessScore,
       calculatedAt: calculatedAt ?? this.calculatedAt,
-      metadata: metadata ?? this.metadata,
+      metadata: metadata == _metadataSentinel ? this.metadata : metadata as Map<String, dynamic>?,
     );
   }
 

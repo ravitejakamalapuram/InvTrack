@@ -87,6 +87,16 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                   style: AppTypography.body,
                 ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    // Log retry attempt
+                    debugPrint('PortfolioHealthDetailsScreen: User tapped Retry button');
+                    // Trigger re-fetch by invalidating the provider
+                    ref.invalidate(portfolioHealthProvider);
+                  },
+                  child: const Text('Retry'),
+                ),
               ],
             ),
           );

@@ -46,7 +46,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
         height: widget.height,
         child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => _buildEmptyState(context, isDark),
+      error: (error, stackTrace) => _buildErrorState(context, isDark, error, stackTrace),
     );
   }
 
@@ -86,6 +86,56 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
                     ? AppColors.textSecondaryDark
                     : AppColors.textSecondaryLight,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, bool isDark, Object error, StackTrace stackTrace) {
+    // Log the error
+    debugPrint('HealthScoreTrendChart error: $error');
+    debugPrint('StackTrace: $stackTrace');
+
+    return SizedBox(
+      height: widget.height,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: isDark ? Colors.redAccent : Colors.red,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load chart data',
+              style: AppTypography.body.copyWith(
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please try again',
+              style: AppTypography.caption.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                debugPrint('HealthScoreTrendChart: User tapped Retry button');
+                // Invalidate provider to refetch data
+                ref.invalidate(healthScoreChartDataProvider);
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Retry'),
             ),
           ],
         ),
@@ -300,4 +350,3 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
     );
   }
 }
-

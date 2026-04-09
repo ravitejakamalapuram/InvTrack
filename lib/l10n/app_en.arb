@@ -2360,11 +2360,5 @@
         "type": "int"
       }
     }
-  },
-
-  "scoreCopiedToClipboard": "Score copied to clipboard",
-  "@scoreCopiedToClipboard": {
-    "description": "Snackbar message when score is copied"
   }
 }
-

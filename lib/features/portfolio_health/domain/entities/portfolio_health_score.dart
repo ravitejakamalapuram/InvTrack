@@ -47,7 +47,10 @@ class ComponentScore {
     required this.weight,
     required this.description,
     required this.suggestions,
-  });
+  })  : assert(score.isFinite, 'ComponentScore.score must be finite'),
+        assert(score >= 0 && score <= 100, 'ComponentScore.score must be between 0 and 100'),
+        assert(weight.isFinite, 'ComponentScore.weight must be finite'),
+        assert(weight >= 0 && weight <= 1, 'ComponentScore.weight must be between 0 and 1');
 
   /// Weighted contribution to overall score
   double get weightedScore => score * weight;
@@ -121,7 +124,8 @@ class PortfolioHealthScore {
     required this.goalAlignment,
     required this.actionReadiness,
     required this.calculatedAt,
-  });
+  })  : assert(overallScore.isFinite, 'PortfolioHealthScore.overallScore must be finite'),
+        assert(overallScore >= 0 && overallScore <= 100, 'PortfolioHealthScore.overallScore must be between 0 and 100');
 
   /// All component scores as a list
   List<ComponentScore> get components => [

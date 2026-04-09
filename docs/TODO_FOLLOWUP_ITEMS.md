@@ -40,9 +40,14 @@ gh pr view 322 --web
 ### **2. Merge PR #322** ⏳ BLOCKED BY: CodeRabbit approval
 **When Approved**:
 ```bash
-# Final pre-merge checks
-flutter analyze  # Should be 0 errors
-flutter test     # Should pass (or skip if no tests)
+# Final pre-merge checks (ALL REQUIRED)
+flutter analyze  # Must be 0 errors
+flutter test     # Must pass (or explicitly state "no tests exist yet" with follow-up issue)
+# Additional required gates:
+# - Localization applied (gen-l10n run successfully)
+# - Accessibility verified (semantic labels present)
+# - Data lifecycle handled (proper cleanup/disposal)
+# - Help & FAQ updated for major changes
 git status       # Should be clean
 
 # Merge PR (squash recommended)

@@ -74,6 +74,15 @@ class PortfolioHealthCalculator {
     }
 
     // Calculate weighted average XIRR (weighted by total invested)
+    // TODO(@ravitejakamalapuram, 2026-04-09, #TBD): Convert each stat.totalInvested
+    // to a canonical/base currency before summing to fix multi-currency weighting.
+    // Currently, this sums stat.totalInvested across different currencies which breaks
+    // the avgXirr calculation. Need to:
+    // 1. Determine a base currency (e.g., user's default currency)
+    // 2. Obtain exchange rate for stat.currency using CurrencyConversionService.convert()
+    // 3. Compute convertedInvested = stat.totalInvested * rateToBase
+    // 4. Use convertedInvested when updating totalInvested and weightedXirr
+    // This ensures avgXirr = weightedXirr / totalInvested uses consistent currency units.
     double totalInvested = 0;
     double weightedXirr = 0;
 
