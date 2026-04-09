@@ -107,7 +107,8 @@ class DataImportService {
     // 1. Decode ZIP archive
     Archive archive;
     try {
-      archive = ZipDecoder().decodeBytes(zipBytes);
+      // Security: verify: true enforces CRC verification to protect against malformed/corrupted ZIP files
+      archive = ZipDecoder().decodeBytes(zipBytes, verify: true);
     } catch (e) {
       return ZipImportResult(
         investmentsImported: 0,
