@@ -94,7 +94,7 @@ class HealthScoreAutoSaveService {
 
       // Check if forceSave was requested while we were saving
       if (_pendingForceSaveCompleter != null) {
-        final completer = _pendingForceSaveCompleter;
+        final completer = _pendingForceSaveCompleter!;
         _pendingForceSaveCompleter = null;
         // Schedule another save and complete the pending forceSave future
         forceSave().then(completer.complete).catchError(completer.completeError);

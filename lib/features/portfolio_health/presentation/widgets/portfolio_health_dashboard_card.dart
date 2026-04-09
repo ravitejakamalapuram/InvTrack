@@ -133,6 +133,7 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
     bool isDark,
     PortfolioHealthScore score,
   ) {
+    final l10n = AppLocalizations.of(context);
     final tier = score.tier;
     final color = _getTierColor(tier, isDark);
 
