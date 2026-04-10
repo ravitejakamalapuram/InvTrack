@@ -106,6 +106,33 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
+          _buildSection(l10n.portfolioHealthSection, [
+            _buildFaqItem(
+              l10n.whatIsPortfolioHealthScore,
+              l10n.whatIsPortfolioHealthScoreAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howToEnablePortfolioHealth,
+              l10n.howToEnablePortfolioHealthAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatDoScoreTiersMean,
+              l10n.whatDoScoreTiersMeanAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howToImproveMyScore,
+              l10n.howToImproveMyScoreAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.isHealthScoreDataSaved,
+              l10n.isHealthScoreDataSavedAnswer,
+              isDark,
+            ),
+          ]),
           _buildSection(l10n.advancedFeatures, [
             _buildFaqItem(
               l10n.howToEnableDebugMode,

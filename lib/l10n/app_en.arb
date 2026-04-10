@@ -2360,5 +2360,65 @@
         "type": "int"
       }
     }
+  },
+
+  "scoreCopiedToClipboard": "Score copied to clipboard",
+  "@scoreCopiedToClipboard": {
+    "description": "Snackbar message when score is copied"
+  },
+
+  "portfolioHealthSection": "Portfolio Health Score",
+  "@portfolioHealthSection": {
+    "description": "FAQ section title for portfolio health"
+  },
+
+  "whatIsPortfolioHealthScore": "What is the Portfolio Health Score?",
+  "@whatIsPortfolioHealthScore": {
+    "description": "FAQ question about portfolio health score"
+  },
+
+  "whatIsPortfolioHealthScoreAnswer": "Portfolio Health Score is like a Fitbit for your money - a single number (0-100) that tells you how healthy your investments are. It analyzes 5 key areas: Returns (30%), Diversification (25%), Liquidity (20%), Goal Alignment (15%), and Action Readiness (10%). Think of it as your portfolio''s credit score!",
+  "@whatIsPortfolioHealthScoreAnswer": {
+    "description": "FAQ answer explaining portfolio health score"
+  },
+
+  "howToEnablePortfolioHealth": "How do I enable Portfolio Health Score?",
+  "@howToEnablePortfolioHealth": {
+    "description": "FAQ question about enabling portfolio health"
+  },
+
+  "howToEnablePortfolioHealthAnswer": "Go to Settings → Debug Settings → Experimental Features and toggle ''Portfolio Health Score'' ON. The feature is currently in beta testing. You''ll see your health score on the overview screen if you have investments.",
+  "@howToEnablePortfolioHealthAnswer": {
+    "description": "FAQ answer about enabling portfolio health"
+  },
+
+  "whatDoScoreTiersMean": "What do the score tiers mean?",
+  "@whatDoScoreTiersMean": {
+    "description": "FAQ question about score tiers"
+  },
+
+  "whatDoScoreTiersMeanAnswer": "Scores are categorized into 4 tiers:\n\n💚 Excellent (80-100): Your portfolio is thriving! Keep up the good work.\n\n💛 Good (60-79): Solid foundation with minor improvements possible.\n\n🧡 Fair (40-59): Attention needed. Review the suggestions.\n\n❤️ Poor (0-39): Urgent action required to improve portfolio health.",
+  "@whatDoScoreTiersMeanAnswer": {
+    "description": "FAQ answer explaining score tiers"
+  },
+
+  "howToImproveMyScore": "How can I improve my health score?",
+  "@howToImproveMyScore": {
+    "description": "FAQ question about improving score"
+  },
+
+  "howToImproveMyScoreAnswer": "Tap on your health score card to see detailed component scores and personalized suggestions. Each component (Returns, Diversification, Liquidity, Goals, Actions) shows specific recommendations to improve your portfolio health. Focus on the components with the lowest scores first.",
+  "@howToImproveMyScoreAnswer": {
+    "description": "FAQ answer about improving score"
+  },
+
+  "isHealthScoreDataSaved": "Is my health score data saved?",
+  "@isHealthScoreDataSaved": {
+    "description": "FAQ question about score persistence"
+  },
+
+  "isHealthScoreDataSavedAnswer": "Yes! Your health scores are automatically saved in your Firebase account and synced across devices. You can view your score trend over time in the details screen. Score history is included in data exports and deleted when you delete your account.",
+  "@isHealthScoreDataSavedAnswer": {
+    "description": "FAQ answer about score persistence"
   }
 }
