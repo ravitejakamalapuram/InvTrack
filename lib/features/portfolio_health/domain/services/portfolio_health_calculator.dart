@@ -64,7 +64,7 @@ class PortfolioHealthCalculator {
     double benchmarkInflationRate,
   ) {
     if (investments.isEmpty || stats.isEmpty) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Returns Performance',
         score: 0,
         weight: 0.30,
@@ -96,7 +96,7 @@ class PortfolioHealthCalculator {
 
     // Return no-data result if no valid XIRR data
     if (totalInvested == 0) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Returns Performance',
         score: 0,
         weight: 0.30,
@@ -153,7 +153,7 @@ class PortfolioHealthCalculator {
     Map<String, InvestmentStats> stats,
   ) {
     if (investments.isEmpty) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Diversification',
         score: 0,
         weight: 0.25,
@@ -175,7 +175,7 @@ class PortfolioHealthCalculator {
 
     final totalValue = typeValues.values.fold(0.0, (sum, value) => sum + value);
     if (totalValue == 0) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Diversification',
         score: 0,
         weight: 0.25,
@@ -225,7 +225,7 @@ class PortfolioHealthCalculator {
     Map<String, InvestmentStats> stats,
   ) {
     if (investments.isEmpty) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Liquidity',
         score: 0,
         weight: 0.20,
@@ -259,7 +259,7 @@ class PortfolioHealthCalculator {
     }
 
     if (totalActiveValue == 0) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Liquidity',
         score: 0,
         weight: 0.20,
@@ -312,7 +312,7 @@ class PortfolioHealthCalculator {
     List<GoalProgress> goalProgress,
   ) {
     if (goalProgress.isEmpty) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Goal Alignment',
         score: 100, // No goals = no misalignment
         weight: 0.15,
@@ -324,7 +324,7 @@ class PortfolioHealthCalculator {
     final activeGoals =
         goalProgress.where((g) => !g.goal.isArchived).toList();
     if (activeGoals.isEmpty) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Goal Alignment',
         score: 100,
         weight: 0.15,
@@ -404,7 +404,7 @@ class PortfolioHealthCalculator {
     List<CashFlowEntity> allCashFlows,
   ) {
     if (investments.isEmpty) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Action Readiness',
         score: 100,
         weight: 0.10,
@@ -420,7 +420,7 @@ class PortfolioHealthCalculator {
 
     final totalActive = openInvestments.length;
     if (totalActive == 0) {
-      return const ComponentScore(
+      return ComponentScore(
         name: 'Action Readiness',
         score: 100,
         weight: 0.10,

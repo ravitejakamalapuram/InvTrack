@@ -41,16 +41,22 @@ class ComponentScore {
   final String description;
   final List<String> suggestions;
 
-  const ComponentScore({
+  ComponentScore({
     required this.name,
     required this.score,
     required this.weight,
     required this.description,
     required this.suggestions,
-  })  : assert(score.isFinite, 'ComponentScore.score must be finite'),
-        assert(score >= 0 && score <= 100, 'ComponentScore.score must be between 0 and 100'),
-        assert(weight.isFinite, 'ComponentScore.weight must be finite'),
-        assert(weight >= 0 && weight <= 1, 'ComponentScore.weight must be between 0 and 1');
+  })  : assert(score >= 0 && score <= 100, 'ComponentScore.score must be between 0 and 100'),
+        assert(weight >= 0 && weight <= 1, 'ComponentScore.weight must be between 0 and 1') {
+    // Runtime validation for isFinite (can't be in const assertion)
+    if (!score.isFinite) {
+      throw ArgumentError('ComponentScore.score must be finite');
+    }
+    if (!weight.isFinite) {
+      throw ArgumentError('ComponentScore.weight must be finite');
+    }
+  }
 
   /// Weighted contribution to overall score
   double get weightedScore => score * weight;
@@ -116,7 +122,7 @@ class PortfolioHealthScore {
   /// Score tier for visual representation
   ScoreTier get tier => ScoreTier.fromScore(overallScore);
 
-  const PortfolioHealthScore({
+  PortfolioHealthScore({
     required this.overallScore,
     required this.returnsPerformance,
     required this.diversification,
@@ -124,8 +130,12 @@ class PortfolioHealthScore {
     required this.goalAlignment,
     required this.actionReadiness,
     required this.calculatedAt,
-  })  : assert(overallScore.isFinite, 'PortfolioHealthScore.overallScore must be finite'),
-        assert(overallScore >= 0 && overallScore <= 100, 'PortfolioHealthScore.overallScore must be between 0 and 100');
+  })  : assert(overallScore >= 0 && overallScore <= 100, 'PortfolioHealthScore.overallScore must be between 0 and 100') {
+    // Runtime validation for isFinite (can't be in const assertion)
+    if (!overallScore.isFinite) {
+      throw ArgumentError('PortfolioHealthScore.overallScore must be finite');
+    }
+  }
 
   /// All component scores as a list
   List<ComponentScore> get components => [
