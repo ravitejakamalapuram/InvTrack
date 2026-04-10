@@ -27,11 +27,18 @@ class PortfolioHealthCalculator {
     required List<GoalProgress> goalProgress,
     double benchmarkInflationRate = defaultInflationRate,
   }) {
+    // Validate benchmarkInflationRate to prevent NaN/Infinity propagation
+    // Replace invalid values with defaultInflationRate
+    double validatedInflationRate = benchmarkInflationRate;
+    if (!benchmarkInflationRate.isFinite || benchmarkInflationRate <= 0.0) {
+      validatedInflationRate = defaultInflationRate;
+    }
+
     // Calculate each component
     final returns = _calculateReturnsScore(
       investments,
       investmentStats,
-      benchmarkInflationRate,
+      validatedInflationRate,
     );
     final diversification = _calculateDiversificationScore(investments, investmentStats);
     final liquidity = _calculateLiquidityScore(investments, investmentStats);

@@ -45,27 +45,33 @@ class HealthScoreRepository {
   ///
   /// Uses 5-second timeout for offline-first behavior.
   /// If timeout occurs, snapshot is cached locally and syncs when online.
+  ///
+  /// Firestore auto-generates unique document IDs to prevent timestamp-based collisions
+  /// when multiple scores are calculated quickly.
   Future<void> saveSnapshot(PortfolioHealthScore score) async {
     try {
       final snapshot = HealthScoreSnapshotModel.fromEntity(score);
 
+      // Use Firestore auto-generated ID instead of timestamp to avoid collisions
+      // (when snapshot.id is empty, we use add() which auto-generates a unique ID)
+      final saveOperation = snapshot.id.isEmpty
+          ? _collection.add(snapshot.toFirestore())
+          : _collection.doc(snapshot.id).set(snapshot.toFirestore());
+
       // 5-second timeout for offline-first behavior
-      await _collection
-          .doc(snapshot.id)
-          .set(snapshot.toFirestore())
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              // Timeout means cached locally, will sync when online
-              _crashlytics.recordError(
-                TimeoutException('Health score save timeout - cached locally'),
-                StackTrace.current,
-                reason: 'Health score write timeout (offline mode)',
-              );
-              // Don't throw - Firestore offline persistence handles this
-              return;
-            },
+      await saveOperation.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          // Timeout means cached locally, will sync when online
+          _crashlytics.recordError(
+            TimeoutException('Health score save timeout - cached locally'),
+            StackTrace.current,
+            reason: 'Health score write timeout (offline mode)',
           );
+          // Don't throw - Firestore offline persistence handles this
+          return;
+        },
+      );
     } on TimeoutException catch (e, stackTrace) {
       // Timeout is expected offline - snapshot cached locally
       _crashlytics.recordError(

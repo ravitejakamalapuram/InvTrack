@@ -36,12 +36,17 @@ class HealthScoreSnapshotModel {
   });
 
   /// Convert from domain entity
+  ///
+  /// The [id] parameter is optional. If not provided, Firestore auto-generates
+  /// a unique document ID when saving (via collection.doc().set() or collection.add()).
+  /// This prevents timestamp-based ID collisions when multiple scores are calculated
+  /// in quick succession.
   factory HealthScoreSnapshotModel.fromEntity(
     PortfolioHealthScore entity, {
     String? id,
   }) {
     return HealthScoreSnapshotModel(
-      id: id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: id ?? '', // Empty string signals Firestore to auto-generate unique ID
       overallScore: entity.overallScore,
       returnsScore: entity.returnsPerformance.score,
       diversificationScore: entity.diversification.score,

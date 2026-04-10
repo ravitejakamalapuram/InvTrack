@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -42,6 +43,13 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
       },
       loading: () => _buildLoadingCard(context, isDark),
       error: (error, stackTrace) {
+        // Log error for debugging
+        LoggerService.error(
+          'PortfolioHealthDashboardCard error',
+          error: error,
+          stackTrace: stackTrace,
+          metadata: {'widget': 'PortfolioHealthDashboardCard'},
+        );
         // Don't show error card on dashboard - just hide the widget
         // Full error display is available on details screen
         return const SizedBox.shrink();
@@ -283,4 +291,3 @@ class _HealthScoreRing extends StatelessWidget {
     );
   }
 }
-

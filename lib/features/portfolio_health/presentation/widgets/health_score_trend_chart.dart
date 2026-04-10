@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
@@ -94,9 +95,15 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
   }
 
   Widget _buildErrorState(BuildContext context, bool isDark, Object error, StackTrace stackTrace) {
-    // Log the error
-    debugPrint('HealthScoreTrendChart error: $error');
-    debugPrint('StackTrace: $stackTrace');
+    final l10n = AppLocalizations.of(context);
+
+    // Log the error with structured logging
+    LoggerService.error(
+      'HealthScoreTrendChart error',
+      error: error,
+      stackTrace: stackTrace,
+      metadata: {'widget': 'HealthScoreTrendChart'},
+    );
 
     return SizedBox(
       height: widget.height,
@@ -111,7 +118,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load chart data',
+              l10n.failedToLoadChartData,
               style: AppTypography.body.copyWith(
                 color: isDark
                     ? AppColors.textPrimaryDark
@@ -120,7 +127,7 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Please try again',
+              l10n.pleaseTryAgain,
               style: AppTypography.caption.copyWith(
                 color: isDark
                     ? AppColors.textSecondaryDark
@@ -130,12 +137,15 @@ class _HealthScoreTrendChartState extends ConsumerState<HealthScoreTrendChart> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
-                debugPrint('HealthScoreTrendChart: User tapped Retry button');
+                LoggerService.info(
+                  'HealthScoreTrendChart: User tapped Retry button',
+                  metadata: {'action': 'retry_chart_load'},
+                );
                 // Invalidate provider to refetch data
                 ref.invalidate(healthScoreChartDataProvider);
               },
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Retry'),
+              label: Text(l10n.retry),
             ),
           ],
         ),

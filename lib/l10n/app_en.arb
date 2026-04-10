@@ -2420,5 +2420,15 @@
   "isHealthScoreDataSavedAnswer": "Yes! Your health scores are automatically saved in your Firebase account and synced across devices. You can view your score trend over time in the details screen. Score history is included in data exports and deleted when you delete your account.",
   "@isHealthScoreDataSavedAnswer": {
     "description": "FAQ answer about score persistence"
+  },
+
+  "failedToLoadChartData": "Failed to load chart data",
+  "@failedToLoadChartData": {
+    "description": "Error message when health score chart data fails to load"
+  },
+
+  "pleaseTryAgain": "Please try again",
+  "@pleaseTryAgain": {
+    "description": "Generic message to retry an operation"
   }
 }

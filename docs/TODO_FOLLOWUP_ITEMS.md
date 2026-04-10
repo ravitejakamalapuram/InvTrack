@@ -28,8 +28,12 @@
 # Check latest review status
 gh pr view 322 --json reviewDecision,latestReviews
 
-# Check for new comments
+# Check for new conversation comments
 gh pr view 322 --json comments | jq '.comments[-5:]'
+
+# Check for inline review comments on Files changed tab
+# (use GitHub REST API since 'gh pr view --json comments' only fetches Conversation tab)
+gh api repos/{owner}/{repo}/pulls/322/comments | jq '.[-5:]'
 
 # Open PR in browser
 gh pr view 322 --web

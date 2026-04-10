@@ -90,12 +90,10 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
-                    // Log retry attempt
-                    debugPrint('PortfolioHealthDetailsScreen: User tapped Retry button');
                     // Trigger re-fetch by invalidating the provider
                     ref.invalidate(portfolioHealthProvider);
                   },
-                  child: const Text('Retry'),
+                  child: Text(AppLocalizations.of(context).retry),
                 ),
               ],
             ),
