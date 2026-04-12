@@ -53,3 +53,9 @@
 
 **Learning:** In Dart, iterating over a list and running an asynchronous function sequentially inside a `for` loop using `await` creates an N+1 sequential waiting bottleneck.
 **Action:** Replace sequential `await` calls inside a loop with parallel execution using `Future.wait(list.map((item) async { ... }))`. This allows all futures to resolve concurrently, drastically improving performance. Ensure the underlying async operations are safe to run in parallel (e.g., they implement request coalescing to prevent cache stampedes).
+
+## 2024-04-12 - Dart Performance Optimization: Replacing .where().toList() with for-loops
+
+**Learning:** Replacing Dart's native `.where().toList()` and `.reduce()` functional methods with standard `for` loops in performance-critical sections avoids closure allocation overhead per iteration, improving overall execution time.
+
+**Action:** Identify and replace instances of `.where().toList()` and `.reduce()` in core service calculations, particularly in list aggregations and filtering within providers and business logic, to achieve significant performance improvements.
