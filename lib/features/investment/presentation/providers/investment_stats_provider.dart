@@ -133,9 +133,14 @@ final investmentStatsProvider =
       final cashFlowsAsync = ref.watch(
         validCashFlowsProvider.select((async) {
           return async.whenData((allFlows) {
-            return allFlows
-                .where((cf) => cf.investmentId == investmentId)
-                .toList();
+            // Optimization: Replace .where().toList() with standard loop
+            final filteredFlows = <CashFlowEntity>[];
+            for (final cf in allFlows) {
+              if (cf.investmentId == investmentId) {
+                filteredFlows.add(cf);
+              }
+            }
+            return filteredFlows;
           });
         }),
       );

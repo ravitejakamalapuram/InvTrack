@@ -29,9 +29,9 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  // Security: Explicitly enable encryptedSharedPreferences to ensure both keys and values are encrypted using Android's native EncryptedSharedPreferences.
+  // Security: Removed encryptedSharedPreferences parameter as Jetpack Security library is deprecated by Google.
   AndroidOptions _getAndroidOptions() =>
-      const AndroidOptions(encryptedSharedPreferences: true);
+      const AndroidOptions();
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
