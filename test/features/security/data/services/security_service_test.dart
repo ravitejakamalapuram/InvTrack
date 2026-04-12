@@ -1,12 +1,70 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../mocks/mock_security_service.dart';
+
+/// A fake secure storage that captures AndroidOptions passed to read/write/delete.
+class _CapturingFlutterSecureStorage extends FakeFlutterSecureStorage {
+  final List<AndroidOptions?> capturedWriteOptions = [];
+  final List<AndroidOptions?> capturedReadOptions = [];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    capturedWriteOptions.add(aOptions);
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    capturedReadOptions.add(aOptions);
+    return super.read(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  void resetCaptures() {
+    capturedWriteOptions.clear();
+    capturedReadOptions.clear();
+  }
+}
 
 void main() {
   late FakeFlutterSecureStorage fakeSecureStorage;
@@ -571,6 +629,55 @@ void main() {
         () => service.verifyPin('5678'),
         throwsA(isA<PlatformException>()),
       );
+    });
+  });
+
+  group('SecurityService - encryptedSharedPreferences', () {
+    late _CapturingFlutterSecureStorage capturingStorage;
+    late SecurityService capturingService;
+
+    setUp(() async {
+      capturingStorage = _CapturingFlutterSecureStorage();
+      SharedPreferences.setMockInitialValues({});
+      final capturingPrefs = await SharedPreferences.getInstance();
+      capturingService =
+          SecurityService(capturingStorage, fakeLocalAuth, capturingPrefs);
+    });
+
+    test('setPin passes AndroidOptions with encryptedSharedPreferences=true',
+        () async {
+      await capturingService.setPin('1234');
+
+      expect(capturingStorage.capturedWriteOptions, isNotEmpty);
+      for (final options in capturingStorage.capturedWriteOptions) {
+        expect(options, isNotNull);
+        expect(options!.encryptedSharedPreferences, isTrue);
+      }
+    });
+
+    test('hasPin read uses AndroidOptions with encryptedSharedPreferences=true',
+        () async {
+      await capturingService.hasPin();
+
+      expect(capturingStorage.capturedReadOptions, isNotEmpty);
+      for (final options in capturingStorage.capturedReadOptions) {
+        expect(options, isNotNull);
+        expect(options!.encryptedSharedPreferences, isTrue);
+      }
+    });
+
+    test('verifyPin read uses AndroidOptions with encryptedSharedPreferences=true',
+        () async {
+      await capturingService.setPin('1234');
+      capturingStorage.resetCaptures();
+
+      await capturingService.verifyPin('1234');
+
+      expect(capturingStorage.capturedReadOptions, isNotEmpty);
+      for (final options in capturingStorage.capturedReadOptions) {
+        expect(options, isNotNull);
+        expect(options!.encryptedSharedPreferences, isTrue);
+      }
     });
   });
 }
