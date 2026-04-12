@@ -120,6 +120,47 @@ void main() {
         expect(result.errors, contains(contains('Invalid ZIP file')));
       });
 
+      test('rejects ZIP with corrupted CRC (regression test for CRC verification)', () async {
+        // Create a valid ZIP archive first
+        final archive = Archive();
+        final content = utf8.encode('{"version":"1.0","files":[]}');
+        archive.addFile(ArchiveFile('metadata.json', content.length, content));
+
+        // Encode to get valid ZIP bytes
+        final validZipBytes = ZipEncoder().encode(archive)!;
+        final corruptedBytes = Uint8List.fromList(validZipBytes);
+
+        // Corrupt the CRC-32 field in the ZIP
+        // ZIP local file header structure:
+        // Offset 0-3: signature (0x04034b50)
+        // Offset 4-5: version needed
+        // Offset 6-7: flags
+        // Offset 8-9: compression method
+        // Offset 10-11: last mod time
+        // Offset 12-13: last mod date
+        // Offset 14-17: CRC-32
+        // Find and corrupt the CRC-32 at offset 14-17 of the local file header
+        if (corruptedBytes.length > 17) {
+          // Flip bits in the CRC-32 field to corrupt it
+          corruptedBytes[14] ^= 0xFF;
+          corruptedBytes[15] ^= 0xFF;
+          corruptedBytes[16] ^= 0xFF;
+          corruptedBytes[17] ^= 0xFF;
+        }
+
+        // Attempt to import the corrupted ZIP
+        final result = await service.importFromZip(
+          corruptedBytes,
+          ImportStrategy.merge,
+        );
+
+        // Should fail with CRC verification error
+        expect(result.isSuccess, false);
+        expect(result.errors, contains(contains('Invalid ZIP file')));
+        expect(result.investmentsImported, 0);
+        expect(result.cashflowsImported, 0);
+      });
+
       test('returns error for empty ZIP archive (missing metadata)', () async {
         final archive = Archive();
         final encoded = ZipEncoder().encode(archive);
