@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -107,6 +108,9 @@ class DebugSettingsScreen extends ConsumerWidget {
             ],
           ),
 
+          // Feature Flags (Experimental Features)
+          _buildFeatureFlagsSection(context, ref),
+
           // Diagnostics
           SettingsSection(
             title: l10n.diagnostics,
@@ -124,6 +128,88 @@ class DebugSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.xl),
         ],
       ),
+    );
+  }
+
+  /// Build feature flags section
+  Widget _buildFeatureFlagsSection(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final featureFlags = ref.watch(featureFlagsProvider);
+
+    return SettingsSection(
+      title: l10n.experimentalFeatures,
+      children: [
+        // Portfolio Health Score feature flag
+        SettingsToggleTile(
+          icon: Icons.favorite,
+          iconColor: Colors.red,
+          title: l10n.portfolioHealthScoreFeature,
+          subtitle: l10n.portfolioHealthScoreSubtitle,
+          value: featureFlags[FeatureFlag.portfolioHealthScore] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.portfolioHealthScore);
+
+              // Verify the toggle succeeded
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.portfolioHealthScore] ?? false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.portfolioHealthScoreEnabled
+                          : l10n.portfolioHealthScoreDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
+        // Future features (disabled - coming soon)
+        Opacity(
+          opacity: 0.5,
+          child: IgnorePointer(
+            child: Column(
+              children: [
+                SettingsToggleTile(
+                  icon: Icons.warning_amber,
+                  iconColor: Colors.orange,
+                  title: FeatureFlag.predictiveAlerts.displayName,
+                  subtitle: 'AI-powered risk alerts (Coming soon)',
+                  value: false,
+                  onChanged: (_) {}, // Disabled
+                ),
+                SettingsToggleTile(
+                  icon: Icons.people,
+                  iconColor: Colors.blue,
+                  title: FeatureFlag.peerBenchmarking.displayName,
+                  subtitle: 'Compare with community (Coming soon)',
+                  value: false,
+                  onChanged: (_) {}, // Disabled
+                ),
+                SettingsToggleTile(
+                  icon: Icons.smart_toy,
+                  iconColor: Colors.purple,
+                  title: FeatureFlag.aiAssistant.displayName,
+                  subtitle: 'Chat-based investment advisor (Coming soon)',
+                  value: false,
+                  onChanged: (_) {}, // Disabled
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

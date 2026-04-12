@@ -95,10 +95,56 @@ export const cleanupOldAnonymousUsers = functions.pubsub
  * - fireSettings
  * - profile
  * - exchangeRates
+ * - healthScores
  */
+const MAX_RETRY_ATTEMPTS = 3;
+
 async function deleteUserData(userId: string): Promise<void> {
   const firestore = admin.firestore();
-  const batch = firestore.batch();
+  const bulkWriter = firestore.bulkWriter();
+
+  // Track terminal failures (when onWriteError returns false)
+  const terminalFailures: Array<{
+    documentPath: string;
+    error: string;
+  }> = [];
+
+  // Register error handler for failed deletes
+  bulkWriter.onWriteError((error) => {
+    console.error('BulkWriter delete failed:', error);
+
+    // Enforce max retry cap
+    if (error.failedAttempts >= MAX_RETRY_ATTEMPTS) {
+      console.error('Max retry attempts reached, giving up');
+      terminalFailures.push({
+        documentPath: error.documentRef.path,
+        error: `Max retries exceeded: ${error.code}`,
+      });
+      return false;
+    }
+
+    // Only retry transient errors
+    const code = error.code;
+    const transientCodes = [
+      'unavailable',
+      'aborted',
+      'deadline-exceeded',
+      'resource-exhausted',
+    ];
+
+    if (transientCodes.includes(code.toString().toLowerCase())) {
+      console.log('Transient error, will retry');
+      return true; // Retry
+    }
+
+    // Don't retry permanent errors (permission-denied, invalid-argument, etc.)
+    console.error('Permanent error, not retrying');
+    terminalFailures.push({
+      documentPath: error.documentRef.path,
+      error: `Permanent error: ${error.code}`,
+    });
+    return false;
+  });
 
   const collections = [
     'investments',
@@ -111,16 +157,50 @@ async function deleteUserData(userId: string): Promise<void> {
     'fireSettings',
     'profile',
     'exchangeRates',
+    'healthScores', // Week 2: Portfolio Health Score snapshots
   ];
 
-  for (const collection of collections) {
-    const snapshot = await firestore
-      .collection(`users/${userId}/${collection}`)
-      .get();
+  const PAGE_SIZE = 500;
 
-    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+  for (const collection of collections) {
+    let hasMore = true;
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+    while (hasMore) {
+      let query = firestore
+        .collection(`users/${userId}/${collection}`)
+        .limit(PAGE_SIZE);
+
+      if (lastDoc) {
+        query = query.startAfter(lastDoc);
+      }
+
+      const snapshot = await query.get();
+
+      if (snapshot.empty) {
+        hasMore = false;
+        break;
+      }
+
+      for (const doc of snapshot.docs) {
+        bulkWriter.delete(doc.ref);
+      }
+
+      // If we got fewer docs than PAGE_SIZE, we're done
+      if (snapshot.docs.length < PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      }
+    }
   }
 
-  await batch.commit();
-}
+  await bulkWriter.close();
 
+  // Throw error if any permanent failures occurred
+  if (terminalFailures.length > 0) {
+    const errorMessage = `Failed to delete ${terminalFailures.length} documents for user ${userId}`;
+    console.error(errorMessage, terminalFailures);
+    throw new Error(errorMessage);
+  }
+}

@@ -142,7 +142,7 @@ final class MultiCurrencyInvestedAmountProvider
 }
 
 String _$multiCurrencyInvestedAmountHash() =>
-    r'35e4d3455db757e755eef54a1cf179d20d76ed60';
+    r'2f6b323b12094afaeabcfc3334472286c37ec241';
 
 /// Provider for multi-currency invested amount calculation
 ///
@@ -263,7 +263,7 @@ final class MultiCurrencyReturnedAmountProvider
 }
 
 String _$multiCurrencyReturnedAmountHash() =>
-    r'ad5374bace3d31c027c579e3a68b4a54c71826f9';
+    r'a27fdeb4a40fcec787b108af5b45dab71fa533de';
 
 /// Provider for multi-currency returned amount calculation
 ///
@@ -768,7 +768,7 @@ final class MultiCurrencyOpenStatsProvider
 }
 
 String _$multiCurrencyOpenStatsHash() =>
-    r'b733bc865689e336fba36ce102fbb994c62e86a9';
+    r'7e4ca722e7e55c6eccc8bd842716610e9be5c687';
 
 /// Provider for multi-currency closed investments stats
 ///
@@ -831,4 +831,4 @@ final class MultiCurrencyClosedStatsProvider
 }
 
 String _$multiCurrencyClosedStatsHash() =>
-    r'f8339e4e33a444d3d5cbf25906a636d5bdf525a9';
+    r'b955f412305b96c7ad4e77ba5e5228367eac0c18';

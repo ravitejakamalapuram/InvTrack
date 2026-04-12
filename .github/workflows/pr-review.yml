@@ -38,7 +38,7 @@ jobs:
           flutter gen-l10n
 
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --fatal-warnings --no-fatal-infos
 
       - name: Test
         run: flutter test --exclude-tags=golden

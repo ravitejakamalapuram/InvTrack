@@ -212,6 +212,19 @@ class DataException extends AppException {
       stackTrace: stackTrace,
     );
   }
+
+  factory DataException.fetchFailed({
+    String? details,
+    Object? cause,
+    StackTrace? stackTrace,
+  }) {
+    return DataException(
+      userMessage: 'Failed to load data. Please try again.',
+      technicalMessage: 'Fetch operation failed: ${details ?? cause}',
+      cause: cause,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 /// Input validation errors.
