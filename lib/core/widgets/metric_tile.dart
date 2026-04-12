@@ -151,38 +151,54 @@ class HeroMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTypography.label.copyWith(
-            color: Colors.white.withValues(alpha: 0.8),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Text(
-                value,
-                style: AppTypography.numberLarge.copyWith(color: Colors.white),
+    final semanticLabel =
+        '$label: $value${subtitle != null ? ', $subtitle' : ''}';
+
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      explicitChildNodes: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ExcludeSemantics(
+            child: Text(
+              label,
+              style: AppTypography.label.copyWith(
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
-            if (trailing != null) trailing!,
-          ],
-        ),
-        if (subtitle != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            subtitle!,
-            style: AppTypography.caption.copyWith(
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
           ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: ExcludeSemantics(
+                  child: Text(
+                    value,
+                    style: AppTypography.numberLarge.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 8),
+            ExcludeSemantics(
+              child: Text(
+                subtitle!,
+                style: AppTypography.caption.copyWith(
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
