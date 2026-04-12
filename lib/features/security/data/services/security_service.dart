@@ -29,8 +29,8 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  // Security: Android uses custom ciphers for encryption (EncryptedSharedPreferences is deprecated).
-  // Data will be automatically migrated from the deprecated library on first access.
+  // Security: Android uses Keystore for encryption via FlutterSecureStorage.
+  // Data will be automatically migrated from SharedPreferences (legacy) on first access.
   AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
   IOSOptions _getIOSOptions() =>
