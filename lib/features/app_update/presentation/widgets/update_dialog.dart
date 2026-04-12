@@ -142,6 +142,22 @@ class UpdateDialog extends ConsumerWidget {
         return;
       }
 
+      // Additional security: For HTTPS, validate against trusted host allowlist
+      if (uri.scheme == 'https') {
+        const trustedHosts = [
+          'play.google.com',
+          'apps.apple.com',
+          'github.com', // For GitHub releases
+        ];
+        if (!trustedHosts.contains(uri.host)) {
+          final l10n = AppLocalizations.of(context);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.invalidUpdateLink)));
+          return;
+        }
+      }
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
