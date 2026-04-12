@@ -40,13 +40,17 @@ class PortfolioHealthCalculator {
       investmentStats,
       validatedInflationRate,
     );
-    final diversification = _calculateDiversificationScore(investments, investmentStats);
+    final diversification = _calculateDiversificationScore(
+      investments,
+      investmentStats,
+    );
     final liquidity = _calculateLiquidityScore(investments, investmentStats);
     final goals = _calculateGoalAlignmentScore(goalProgress);
     final actions = _calculateActionReadinessScore(investments, allCashFlows);
 
     // Calculate weighted overall score
-    final overall = returns.weightedScore +
+    final overall =
+        returns.weightedScore +
         diversification.weightedScore +
         liquidity.weightedScore +
         goals.weightedScore +
@@ -132,7 +136,9 @@ class PortfolioHealthCalculator {
       suggestions.add('Good returns, beating inflation comfortably');
     } else if (avgXirr >= benchmarkInflationRate) {
       score = 60 + ((avgXirr - benchmarkInflationRate) / 0.05) * 20;
-      suggestions.add('Returns are just above inflation. Consider higher-yield options');
+      suggestions.add(
+        'Returns are just above inflation. Consider higher-yield options',
+      );
     } else if (avgXirr >= 0) {
       score = 40 + (avgXirr / benchmarkInflationRate) * 20;
       suggestions.add('Returns below inflation. Your money is losing value');
@@ -140,7 +146,9 @@ class PortfolioHealthCalculator {
     } else {
       // Negative returns: scale from 20 (0% XIRR) to 0 (-20% or worse XIRR)
       score = max(0.0, 20.0 + (avgXirr / 0.20) * 20.0).clamp(0.0, 100.0);
-      suggestions.add('Negative returns detected. Review underperforming investments');
+      suggestions.add(
+        'Negative returns detected. Review underperforming investments',
+      );
       suggestions.add('Consider cutting losses and reallocating');
     }
 
@@ -175,7 +183,8 @@ class PortfolioHealthCalculator {
       if (!inv.isArchived) {
         final stat = stats[inv.id];
         if (stat != null && stat.totalInvested > 0) {
-          typeValues[inv.type] = (typeValues[inv.type] ?? 0.0) + stat.totalInvested;
+          typeValues[inv.type] =
+              (typeValues[inv.type] ?? 0.0) + stat.totalInvested;
         }
       }
     }
@@ -205,9 +214,14 @@ class PortfolioHealthCalculator {
 
     final suggestions = <String>[];
     if (herfindahl > 0.5) {
-      final dominantType = typeValues.entries
-          .reduce((a, b) => a.value > b.value ? a : b)
-          .key;
+      // Optimization: Replace .reduce() with a standard loop to avoid closure overhead
+      var maxEntry = typeValues.entries.first;
+      for (final entry in typeValues.entries) {
+        if (entry.value > maxEntry.value) {
+          maxEntry = entry;
+        }
+      }
+      final dominantType = maxEntry.key;
       suggestions.add('Over-concentrated in ${dominantType.displayName}');
       suggestions.add('Diversify across at least 3 investment types');
     } else if (herfindahl > 0.3) {
@@ -257,7 +271,8 @@ class PortfolioHealthCalculator {
           final maturity = inv.calculatedMaturityDate;
           if (maturity != null &&
               maturity.isAfter(now) &&
-              (maturity.isBefore(next90Days) || maturity.isAtSameMomentAs(next90Days))) {
+              (maturity.isBefore(next90Days) ||
+                  maturity.isAtSameMomentAs(next90Days))) {
             maturingSoonValue += stat.totalInvested;
             maturingSoonCount++;
           }
@@ -294,10 +309,14 @@ class PortfolioHealthCalculator {
       suggestions.add('Slightly low liquidity, but manageable');
     } else if (liquidityRatio > 0.30 && liquidityRatio <= 0.40) {
       score = 80; // Fixed: 30-40% band should be 80 points (good)
-      suggestions.add('$liquidityPercent% of portfolio maturing soon - plan reinvestment');
+      suggestions.add(
+        '$liquidityPercent% of portfolio maturing soon - plan reinvestment',
+      );
     } else if (liquidityRatio > 0.40) {
       score = 40;
-      suggestions.add('$liquidityPercent% of portfolio maturing soon ($maturingSoonCount investments)');
+      suggestions.add(
+        '$liquidityPercent% of portfolio maturing soon ($maturingSoonCount investments)',
+      );
       suggestions.add('Stagger maturity dates to avoid renewal cliff');
     } else {
       score = 60;
@@ -328,8 +347,13 @@ class PortfolioHealthCalculator {
       );
     }
 
-    final activeGoals =
-        goalProgress.where((g) => !g.goal.isArchived).toList();
+    // Optimization: Replace .where().toList() with a standard loop to avoid closure overhead
+    final activeGoals = <GoalProgress>[];
+    for (final g in goalProgress) {
+      if (!g.goal.isArchived) {
+        activeGoals.add(g);
+      }
+    }
     if (activeGoals.isEmpty) {
       return ComponentScore(
         name: 'Goal Alignment',
@@ -397,7 +421,8 @@ class PortfolioHealthCalculator {
       name: 'Goal Alignment',
       score: score,
       weight: 0.15,
-      description: '${achieved + ahead + onTrack}/$total goals on track or better',
+      description:
+          '${achieved + ahead + onTrack}/$total goals on track or better',
       suggestions: suggestions.isEmpty
           ? ['All goals progressing well']
           : suggestions,
@@ -421,9 +446,13 @@ class PortfolioHealthCalculator {
     }
 
     // Filter to only actionable open investments
-    final openInvestments = investments
-        .where((i) => !i.isArchived && i.status == InvestmentStatus.open)
-        .toList();
+    // Optimization: Replace .where().toList() with a standard loop
+    final openInvestments = <InvestmentEntity>[];
+    for (final i in investments) {
+      if (!i.isArchived && i.status == InvestmentStatus.open) {
+        openInvestments.add(i);
+      }
+    }
 
     final totalActive = openInvestments.length;
     if (totalActive == 0) {
@@ -456,11 +485,16 @@ class PortfolioHealthCalculator {
       }
 
       // Check for stale investments (no activity in 6+ months)
-      final cashFlows = cashFlowsByInvestmentId[inv.id] ?? const <CashFlowEntity>[];
+      final cashFlows =
+          cashFlowsByInvestmentId[inv.id] ?? const <CashFlowEntity>[];
       if (cashFlows.isNotEmpty) {
-        final lastActivity = cashFlows
-            .map((cf) => cf.date)
-            .reduce((a, b) => a.isAfter(b) ? a : b);
+        // Optimization: Replace .map().reduce() with a standard loop
+        var lastActivity = cashFlows.first.date;
+        for (var i = 1; i < cashFlows.length; i++) {
+          if (cashFlows[i].date.isAfter(lastActivity)) {
+            lastActivity = cashFlows[i].date;
+          }
+        }
         final daysSinceActivity = now.difference(lastActivity).inDays;
         if (daysSinceActivity > 180) {
           staleInvestments++;
