@@ -31,11 +31,14 @@ final recentlyClosedInvestmentsProvider =
 
       return investmentsAsync.when(
         data: (investments) {
-          final closed =
-              investments
-                  .where((i) => i.status == InvestmentStatus.closed)
-                  .toList()
-                ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+          // Optimization: Replace .where().toList() with standard loop
+          final closed = <InvestmentEntity>[];
+          for (final i in investments) {
+            if (i.status == InvestmentStatus.closed) {
+              closed.add(i);
+            }
+          }
+          closed.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
           final recentClosed = closed.take(3).toList();
 
