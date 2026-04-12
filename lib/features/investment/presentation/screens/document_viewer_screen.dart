@@ -96,11 +96,8 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         children: [
           // Document content
           Semantics(
-            label: l10n.documentViewerLabel,
-            hint: l10n.documentViewerHint,
-            customSemanticsActions: {
-              const CustomSemanticsAction(label: 'Reset zoom'): _resetZoom,
-            },
+            label: 'Document content',
+            hint: 'Double tap to reset zoom',
             child: GestureDetector(
               onDoubleTap: _resetZoom,
               child: document.isImage
@@ -112,7 +109,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                         child: Image.file(
                           File(document.localPath),
                           fit: BoxFit.contain,
-                          semanticLabel: l10n.documentViewerTitle(document.name),
+                          semanticLabel: 'Document: ${document.name}',
                           errorBuilder: (context, error, stackTrace) =>
                               _buildErrorState(),
                         ),
