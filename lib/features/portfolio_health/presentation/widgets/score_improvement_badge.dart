@@ -34,7 +34,7 @@ class ScoreImprovementBadge extends ConsumerWidget {
         return _buildBadge(delta, context);
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stackTrace) => const SizedBox.shrink(),
     );
   }
 
