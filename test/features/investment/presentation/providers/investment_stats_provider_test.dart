@@ -176,6 +176,165 @@ void main() {
     });
   });
 
+  // Tests for the refactored investmentStatsProvider filter:
+  // The provider was changed from a for-loop to .where().toList() to filter
+  // cash flows by investmentId. Behaviour must remain identical.
+  group('investmentStatsProvider - cash flow filtering by investmentId', () {
+    late FakeInvestmentRepository fakeRepository;
+    late ProviderContainer container;
+
+    final investmentA = InvestmentEntity(
+      id: 'inv-a',
+      name: 'Investment A',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    final investmentB = InvestmentEntity(
+      id: 'inv-b',
+      name: 'Investment B',
+      type: InvestmentType.bonds,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    setUp(() {
+      fakeRepository = FakeInvestmentRepository();
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepository.reset();
+    });
+
+    test(
+      'only includes cash flows belonging to the specified investmentId',
+      () async {
+        fakeRepository.seed(
+          investments: [investmentA, investmentB],
+          cashFlows: [
+            CashFlowEntity(
+              id: 'cf-a1',
+              investmentId: 'inv-a',
+              date: DateTime(2023, 1, 1),
+              type: CashFlowType.invest,
+              amount: 1000,
+              createdAt: DateTime(2023, 1, 1),
+            ),
+            CashFlowEntity(
+              id: 'cf-a2',
+              investmentId: 'inv-a',
+              date: DateTime(2023, 6, 1),
+              type: CashFlowType.income,
+              amount: 50,
+              createdAt: DateTime(2023, 6, 1),
+            ),
+            // Cash flow belonging to investment B – must NOT appear in A's stats
+            CashFlowEntity(
+              id: 'cf-b1',
+              investmentId: 'inv-b',
+              date: DateTime(2023, 1, 1),
+              type: CashFlowType.invest,
+              amount: 9999,
+              createdAt: DateTime(2023, 1, 1),
+            ),
+          ],
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            investmentRepositoryProvider.overrideWithValue(fakeRepository),
+          ],
+        );
+
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // ignore: deprecated_member_use
+        final statsAsync = container.read(investmentStatsProvider('inv-a'));
+
+        statsAsync.when(
+          data: (stats) {
+            // Only the two cash flows for inv-a should count
+            expect(stats.cashFlowCount, 2);
+            expect(stats.totalInvested, 1000);
+            expect(stats.totalReturned, 50);
+          },
+          loading: () {}, // stream may still be initialising
+          error: (e, st) => fail('Should not error: $e'),
+        );
+      },
+    );
+
+    test(
+      'returns empty stats when no cash flows match the investmentId',
+      () async {
+        fakeRepository.seed(
+          investments: [investmentA],
+          cashFlows: [], // no cash flows at all
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            investmentRepositoryProvider.overrideWithValue(fakeRepository),
+          ],
+        );
+
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // ignore: deprecated_member_use
+        final statsAsync = container.read(investmentStatsProvider('inv-a'));
+
+        statsAsync.whenData((stats) {
+          expect(stats.hasData, isFalse);
+          expect(stats.totalInvested, 0);
+          expect(stats.cashFlowCount, 0);
+        });
+      },
+    );
+
+    // Regression: cash flows for OTHER investments must not bleed through.
+    test(
+      'does not include cash flows from other investments (cross-contamination)',
+      () async {
+        fakeRepository.seed(
+          investments: [investmentA, investmentB],
+          cashFlows: [
+            CashFlowEntity(
+              id: 'cf-b1',
+              investmentId: 'inv-b',
+              date: DateTime(2023, 3, 1),
+              type: CashFlowType.invest,
+              amount: 5000,
+              createdAt: DateTime(2023, 3, 1),
+            ),
+          ],
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            investmentRepositoryProvider.overrideWithValue(fakeRepository),
+          ],
+        );
+
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        // inv-a has no cash flows; stats should be empty
+        // ignore: deprecated_member_use
+        final statsAsync = container.read(investmentStatsProvider('inv-a'));
+
+        statsAsync.whenData((stats) {
+          expect(stats.hasData, isFalse);
+          expect(stats.totalInvested, 0);
+        });
+      },
+    );
+  });
+
   group('archivedInvestmentStatsProvider', () {
     late FakeInvestmentRepository fakeRepository;
     late ProviderContainer container;

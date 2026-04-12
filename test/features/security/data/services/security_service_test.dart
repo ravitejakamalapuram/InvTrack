@@ -559,6 +559,61 @@ void main() {
     });
   });
 
+  // Regression tests for the encryptedSharedPreferences: true change.
+  // The private _getAndroidOptions() method was updated to pass
+  // `encryptedSharedPreferences: true` to AndroidOptions. On the test host
+  // the FakeFlutterSecureStorage ignores the options object, so these tests
+  // confirm that the public behaviour is unchanged (and therefore the options
+  // are at least being passed without error) after the security hardening.
+  group('SecurityService - encryptedSharedPreferences option (regression)', () {
+    test(
+      'PIN can be set and verified after encryptedSharedPreferences option change',
+      () async {
+        // This test acts as a regression guard: if _getAndroidOptions() threw
+        // or returned incompatible options the round-trip would fail.
+        await service.setPin('4321');
+        expect(await service.verifyPin('4321'), isTrue);
+        expect(await service.verifyPin('0000'), isFalse);
+      },
+    );
+
+    test(
+      'failed-attempts counter persists across read/write with current options',
+      () async {
+        await service.setPin('1234');
+
+        await service.verifyPin('wrong'); // 1
+        await service.verifyPin('wrong'); // 2
+
+        // Attempts are stored via _getAndroidOptions() – verify they were
+        // written correctly by checking that the 3rd failure is tracked.
+        await service.verifyPin('wrong'); // 3
+
+        final storedAttempts = fakeSecureStorage.storage['pin_failed_attempts'];
+        expect(storedAttempts, equals('3'));
+      },
+    );
+
+    test(
+      'lockout timestamp is stored and read correctly with current options',
+      () async {
+        await service.setPin('1234');
+
+        // Trigger lockout (5 failures)
+        for (int i = 0; i < 5; i++) {
+          await service.verifyPin('wrong');
+        }
+
+        // Lockout should be active; the timestamp must have been persisted via
+        // the (now encrypted) options – otherwise getLockoutRemainingSeconds
+        // would return null.
+        final remaining = await service.getLockoutRemainingSeconds();
+        expect(remaining, isNotNull);
+        expect(remaining!, greaterThan(0));
+      },
+    );
+  });
+
   group('SecurityService - Fail Securely', () {
     test('verifyPin throws when reading failed attempts fails', () async {
       await service.setPin('1234');

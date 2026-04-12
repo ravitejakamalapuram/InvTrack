@@ -120,6 +120,38 @@ void main() {
         expect(result.errors, contains(contains('Invalid ZIP file')));
       });
 
+      // Regression test for CRC verification enforcement (verify: true).
+      // Prior to this fix, ZipDecoder().decodeBytes() was called without
+      // verify:true, which allowed malformed ZIP archives with corrupted
+      // CRC checksums to be processed silently.
+      test(
+        'returns error for ZIP with corrupted CRC (verify:true enforcement)',
+        () async {
+          // Create a valid ZIP archive first
+          final archive = Archive();
+          final content = utf8.encode('{"version":"1.0","files":[]}');
+          archive.addFile(ArchiveFile('metadata.json', content.length, content));
+          final validBytes = ZipEncoder().encode(archive)!;
+
+          // Corrupt the CRC field: in a ZIP local file header the CRC-32 is at
+          // bytes 14–17 (0-indexed). Flip all four bytes so the CRC is invalid.
+          final corruptedBytes = Uint8List.fromList(validBytes);
+          // Find local file header signature 'PK\x03\x04' (bytes 0–3)
+          // CRC-32 is at offset 14 within the local file header.
+          for (int i = 14; i <= 17; i++) {
+            corruptedBytes[i] = corruptedBytes[i] ^ 0xFF;
+          }
+
+          final result = await service.importFromZip(
+            corruptedBytes,
+            ImportStrategy.merge,
+          );
+
+          expect(result.isSuccess, false);
+          expect(result.errors, contains(contains('Invalid ZIP file')));
+        },
+      );
+
       test('returns error for empty ZIP archive (missing metadata)', () async {
         final archive = Archive();
         final encoded = ZipEncoder().encode(archive);
