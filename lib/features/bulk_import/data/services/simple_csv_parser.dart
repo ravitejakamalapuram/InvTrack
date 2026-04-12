@@ -65,13 +65,8 @@ class ParsedCsvResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedCashFlowRow> get validRowsOnly {
-    final list = <ParsedCashFlowRow>[];
-    for (final r in rows) {
-      if (r.isValid) list.add(r);
-    }
-    return list;
-  }
+  List<ParsedCashFlowRow> get validRowsOnly =>
+      rows.where((r) => r.isValid).toList();
 }
 
 /// Simple CSV parser with smart date inference
@@ -206,7 +201,7 @@ class _CsvParserSession {
       rows: rows,
       errors: errors,
       totalRows: lines.length - 1,
-      validRows: rows.length,
+      validRows: rows.where((r) => r.isValid).length,
     );
   }
 
@@ -555,13 +550,8 @@ class ParsedGoalsResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
-  List<ParsedGoalRow> get validRowsOnly {
-    final list = <ParsedGoalRow>[];
-    for (final r in rows) {
-      if (r.isValid) list.add(r);
-    }
-    return list;
-  }
+  List<ParsedGoalRow> get validRowsOnly =>
+      rows.where((r) => r.isValid).toList();
 }
 
 /// Parser for Goals CSV files
@@ -617,7 +607,7 @@ class GoalsCsvParser {
       rows: rows,
       errors: errors,
       totalRows: lines.length - 1,
-      validRows: rows.length,
+      validRows: rows.where((r) => r.isValid).length,
     );
   }
 
@@ -722,10 +712,10 @@ class GoalsCsvParser {
       if (columnMap.containsKey('linkedInvestmentNames')) {
         final str = _getValue(values, columnMap['linkedInvestmentNames']!);
         if (str.isNotEmpty) {
-          final parts = str.split(';');
-          for (final s in parts) {
-            if (s.isNotEmpty) linkedInvestmentNames.add(s);
-          }
+          linkedInvestmentNames = str
+              .split(';')
+              .where((s) => s.isNotEmpty)
+              .toList();
         }
       }
 
@@ -733,10 +723,7 @@ class GoalsCsvParser {
       if (columnMap.containsKey('linkedTypes')) {
         final str = _getValue(values, columnMap['linkedTypes']!);
         if (str.isNotEmpty) {
-          final parts = str.split(';');
-          for (final s in parts) {
-            if (s.isNotEmpty) linkedTypes.add(s);
-          }
+          linkedTypes = str.split(';').where((s) => s.isNotEmpty).toList();
         }
       }
 

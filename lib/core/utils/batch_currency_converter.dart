@@ -150,15 +150,8 @@ class BatchCurrencyConverter {
         throw CurrencyConversionException('Batch conversion failed', error);
 
       case ConversionFallbackStrategy.skipTransaction:
-        // Optimization: Replace .where().toList() with standard loop
         // Return only cash flows already in base currency
-        final list = <CashFlowEntity>[];
-        for (final cf in cashFlows) {
-          if (cf.currency == baseCurrency) {
-            list.add(cf);
-          }
-        }
-        return list;
+        return cashFlows.where((cf) => cf.currency == baseCurrency).toList();
     }
   }
 
@@ -281,7 +274,9 @@ class BatchCurrencyConverter {
           return amount; // Fall back to original if no cached rate
 
         case ConversionFallbackStrategy.throwError:
-          throw CurrencyConversionException('Failed to convert $from → $to');
+          throw CurrencyConversionException(
+            'Failed to convert $from → $to',
+          );
 
         case ConversionFallbackStrategy.skipTransaction:
           return 0.0; // Exclude from calculation
