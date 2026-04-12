@@ -430,4 +430,128 @@ void main() {
       skip: 'TODO: Fix async stream-to-future timing issue',
     );
   });
+
+  // ignore: deprecated_member_use
+  group('investmentStatsProvider (deprecated) - filter by investmentId', () {
+    late FakeInvestmentRepository fakeRepository;
+    late ProviderContainer container;
+
+    final investment1 = InvestmentEntity(
+      id: 'inv-filter-1',
+      name: 'Filter Investment 1',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    final investment2 = InvestmentEntity(
+      id: 'inv-filter-2',
+      name: 'Filter Investment 2',
+      type: InvestmentType.realEstate,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: DateTime(2023, 1, 1),
+      updatedAt: DateTime(2023, 1, 1),
+    );
+
+    final cashFlowsForInv1 = [
+      CashFlowEntity(
+        id: 'cf-f1-1',
+        investmentId: 'inv-filter-1',
+        date: DateTime(2023, 1, 1),
+        type: CashFlowType.invest,
+        amount: 3000,
+        createdAt: DateTime(2023, 1, 1),
+      ),
+      CashFlowEntity(
+        id: 'cf-f1-2',
+        investmentId: 'inv-filter-1',
+        date: DateTime(2023, 6, 1),
+        type: CashFlowType.income,
+        amount: 300,
+        createdAt: DateTime(2023, 6, 1),
+      ),
+    ];
+
+    final cashFlowsForInv2 = [
+      CashFlowEntity(
+        id: 'cf-f2-1',
+        investmentId: 'inv-filter-2',
+        date: DateTime(2023, 2, 1),
+        type: CashFlowType.invest,
+        amount: 7000,
+        createdAt: DateTime(2023, 2, 1),
+      ),
+    ];
+
+    setUp(() {
+      fakeRepository = FakeInvestmentRepository();
+      fakeRepository.seed(
+        investments: [investment1, investment2],
+        cashFlows: [...cashFlowsForInv1, ...cashFlowsForInv2],
+      );
+      container = ProviderContainer(
+        overrides: [
+          investmentRepositoryProvider.overrideWithValue(fakeRepository),
+          isAuthenticatedProvider.overrideWith((ref) => true),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepository.reset();
+    });
+
+    test('returns stats for only the matching investmentId, excluding others',
+        () async {
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final statsAsync = container.read(investmentStatsProvider('inv-filter-1'));
+
+      statsAsync.whenData((stats) {
+        // Should only include cash flows for inv-filter-1 (total 3000 invested, 300 income)
+        expect(stats.totalInvested, 3000);
+        expect(stats.totalReturned, 300);
+        expect(stats.cashFlowCount, 2);
+        expect(stats.hasData, isTrue);
+        // Must NOT include inv-filter-2's 7000 investment
+        expect(stats.totalInvested, isNot(equals(10000)));
+      });
+    });
+
+    test('returns empty stats for an investmentId with no matching cash flows',
+        () async {
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final statsAsync = container.read(
+        investmentStatsProvider('inv-filter-nonexistent'),
+      );
+
+      statsAsync.whenData((stats) {
+        expect(stats.hasData, isFalse);
+        expect(stats.totalInvested, 0);
+        expect(stats.cashFlowCount, 0);
+      });
+    });
+
+    test(
+        'second investment returns its own stats independently of the first',
+        () async {
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final statsAsync = container.read(investmentStatsProvider('inv-filter-2'));
+
+      statsAsync.whenData((stats) {
+        expect(stats.totalInvested, 7000);
+        expect(stats.cashFlowCount, 1);
+        expect(stats.hasData, isTrue);
+      });
+    });
+  });
 }
