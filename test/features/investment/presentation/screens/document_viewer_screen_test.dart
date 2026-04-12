@@ -272,5 +272,74 @@ void main() {
         expect(find.textContaining('500 B'), findsWidgets);
       });
     });
+
+    group('Semantics', () {
+      testWidgets(
+        'image branch: Semantics node has correct label and hint',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(buildTestWidget(testImageDocument));
+
+          final semanticsNode = tester.getSemantics(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Document content',
+            ),
+          );
+
+          expect(semanticsNode.label, 'Document content');
+          expect(semanticsNode.hint, 'Double tap to reset zoom');
+
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'image branch: CustomSemanticsAction "Reset zoom" is exposed',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(buildTestWidget(testImageDocument));
+
+          final semanticsNode = tester.getSemantics(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Document content',
+            ),
+          );
+
+          expect(
+            semanticsNode.customActions.any(
+              (action) => action.label == 'Reset zoom',
+            ),
+            isTrue,
+          );
+
+          handle.dispose();
+        },
+      );
+
+      testWidgets(
+        'PDF branch: Semantics wrapper is present with correct label',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await tester.pumpWidget(buildTestWidget(testPdfDocument));
+
+          final semanticsNode = tester.getSemantics(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Document content',
+            ),
+          );
+
+          expect(semanticsNode.label, 'Document content');
+          expect(semanticsNode.hint, 'Double tap to reset zoom');
+
+          handle.dispose();
+        },
+      );
+    });
   });
 }

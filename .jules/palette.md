@@ -43,6 +43,8 @@
 ## 2024-05-18 - Excluded Semantics for explicit text field labels
 
 **Learning:** Found that the `GestureDetector` used to allow clicking the visual label to focus the text field in `AppTextField` creates a double-reading issue for screen readers. Screen readers natively focus the adjacent text field and read its `labelText` property. If the visual label is not excluded, it is read once as plain text, and then again when the field is focused. Making it a button is an anti-pattern.
-**Action:** Wrap the `GestureDetector` of custom visual labels in an `ExcludeSemantics` widget to hide it from the accessibility tree, relying entirely on the native `TextFormField`'s internal semantics for screen reader navigation, while preserving the visual tap-to-focus behavior for sighted users.## 2026-04-12 - Added Semantics to Document Viewer zoom gesture
+**Action:** Wrap the `GestureDetector` of custom visual labels in an `ExcludeSemantics` widget to hide it from the accessibility tree, relying entirely on the native `TextFormField`'s internal semantics for screen reader navigation, while preserving the visual tap-to-focus behavior for sighted users.
+
+## 2026-04-12 - Added Semantics to Document Viewer zoom gesture
 **Learning:** Found that a `GestureDetector` handling double-tap to reset zoom on images in `DocumentViewerScreen` lacks semantic meaning for screen readers. They won't announce the zoom capability.
 **Action:** When wrapping visual or interactive elements with `GestureDetector` for custom gestures (like double-tap), ensure it is wrapped in a `Semantics` widget with appropriate `label` and `hint` to announce the interaction capability.

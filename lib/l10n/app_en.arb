@@ -2430,5 +2430,25 @@
   "pleaseTryAgain": "Please try again",
   "@pleaseTryAgain": {
     "description": "Generic message to retry an operation"
+  },
+
+  "documentViewerLabel": "Document content",
+  "@documentViewerLabel": {
+    "description": "Semantic label for the document viewer content area"
+  },
+
+  "documentViewerHint": "Double tap to reset zoom",
+  "@documentViewerHint": {
+    "description": "Semantic hint for the document viewer double-tap to reset zoom gesture"
+  },
+
+  "documentViewerTitle": "Document: {name}",
+  "@documentViewerTitle": {
+    "description": "Semantic/image label for document content showing document name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
