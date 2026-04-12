@@ -110,12 +110,13 @@ class DataImportService {
       // Security: enforce CRC verification to protect against malformed or corrupted ZIP file extraction
       archive = ZipDecoder().decodeBytes(zipBytes, verify: true);
     } catch (e) {
+      // Security: Return generic error message to avoid leaking internal parser details
       return ZipImportResult(
         investmentsImported: 0,
         cashflowsImported: 0,
         goalsImported: 0,
         documentsImported: 0,
-        errors: ['Invalid ZIP file: $e'],
+        errors: ['Invalid or corrupted ZIP file. Please ensure the file is not damaged and try again.'],
       );
     }
 
