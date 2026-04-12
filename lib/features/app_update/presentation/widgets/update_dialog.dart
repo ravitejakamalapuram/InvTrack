@@ -59,8 +59,7 @@ class UpdateDialog extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              versionInfo.updateMessage ??
-                  l10n.newVersionAvailableMessage,
+              versionInfo.updateMessage ?? l10n.newVersionAvailableMessage,
               style: AppTypography.body.copyWith(
                 color: isDark
                     ? AppColors.neutral300Dark
@@ -133,14 +132,30 @@ class UpdateDialog extends ConsumerWidget {
       final uri = Uri.parse(updateUrl);
 
       // Security: Validate scheme to prevent arbitrary intent/javascript execution
-      // Allow https, http, and standard app store schemes
-      const allowedSchemes = ['https', 'http', 'market', 'itms-apps'];
+      // Allow https, and standard app store schemes (HTTP is removed to prevent MitM)
+      const allowedSchemes = ['https', 'market', 'itms-apps'];
       if (!allowedSchemes.contains(uri.scheme)) {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.invalidUpdateLink)));
         return;
+      }
+
+      // Additional security: For HTTPS, validate against trusted host allowlist
+      if (uri.scheme == 'https') {
+        const trustedHosts = [
+          'play.google.com',
+          'apps.apple.com',
+          'github.com', // For GitHub releases
+        ];
+        if (!trustedHosts.contains(uri.host)) {
+          final l10n = AppLocalizations.of(context);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.invalidUpdateLink)));
+          return;
+        }
       }
 
       if (await canLaunchUrl(uri)) {
