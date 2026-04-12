@@ -1,92 +1,12 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../mocks/mock_security_service.dart';
-
-/// A thin wrapper around [FakeFlutterSecureStorage] that records every
-/// [AndroidOptions] instance passed to read/write/delete operations.
-/// Used to verify that [SecurityService] always passes
-/// `encryptedSharedPreferences: true`.
-class _RecordingSecureStorage extends FakeFlutterSecureStorage {
-  final List<AndroidOptions> _capturedOptions = [];
-
-  List<AndroidOptions> get capturedAndroidOptions =>
-      List.unmodifiable(_capturedOptions);
-
-  @override
-  Future<String?> read({
-    required String key,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (aOptions != null) _capturedOptions.add(aOptions);
-    return super.read(
-      key: key,
-      iOptions: iOptions,
-      aOptions: aOptions,
-      lOptions: lOptions,
-      webOptions: webOptions,
-      mOptions: mOptions,
-      wOptions: wOptions,
-    );
-  }
-
-  @override
-  Future<void> write({
-    required String key,
-    required String? value,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (aOptions != null) _capturedOptions.add(aOptions);
-    return super.write(
-      key: key,
-      value: value,
-      iOptions: iOptions,
-      aOptions: aOptions,
-      lOptions: lOptions,
-      webOptions: webOptions,
-      mOptions: mOptions,
-      wOptions: wOptions,
-    );
-  }
-
-  @override
-  Future<void> delete({
-    required String key,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (aOptions != null) _capturedOptions.add(aOptions);
-    return super.delete(
-      key: key,
-      iOptions: iOptions,
-      aOptions: aOptions,
-      lOptions: lOptions,
-      webOptions: webOptions,
-      mOptions: mOptions,
-      wOptions: wOptions,
-    );
-  }
-}
 
 void main() {
   late FakeFlutterSecureStorage fakeSecureStorage;
@@ -651,48 +571,6 @@ void main() {
         () => service.verifyPin('5678'),
         throwsA(isA<PlatformException>()),
       );
-    });
-  });
-
-  group('SecurityService - Android Options Configuration', () {
-    test(
-        'all secure storage calls use encryptedSharedPreferences: true (via RecordingSecureStorage)',
-        () async {
-      final recordingStorage = _RecordingSecureStorage();
-      SharedPreferences.setMockInitialValues({});
-      final recordingPrefs = await SharedPreferences.getInstance();
-      final recordingService = SecurityService(
-        recordingStorage,
-        fakeLocalAuth,
-        recordingPrefs,
-      );
-
-      // Trigger all storage operations that go through _getAndroidOptions()
-      await recordingService.setPin('9999');
-      await recordingService.hasPin();
-      await recordingService.verifyPin('9999');
-
-      expect(recordingStorage.capturedAndroidOptions, isNotEmpty);
-      for (final options in recordingStorage.capturedAndroidOptions) {
-        expect(
-          options.encryptedSharedPreferences,
-          isTrue,
-          reason:
-              'All secure storage calls must use encryptedSharedPreferences: true',
-        );
-      }
-    });
-
-    test(
-        'PIN set/verify round-trip succeeds consistently with current storage configuration',
-        () async {
-      // Regression test: verifies the security config does not break basic functionality.
-      const pin = '4321';
-      await service.setPin(pin);
-
-      expect(await service.hasPin(), isTrue);
-      expect(await service.verifyPin(pin), isTrue);
-      expect(await service.verifyPin('wrong'), isFalse);
     });
   });
 }

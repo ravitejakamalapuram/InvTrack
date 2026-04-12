@@ -1,0 +1,12 @@
+--- a/lib/features/settings/data/services/data_import_service.dart
++++ b/lib/features/settings/data/services/data_import_service.dart
+@@ -107,7 +107,8 @@
+     // 1. Decode ZIP archive
+     Archive archive;
+     try {
+-      archive = ZipDecoder().decodeBytes(zipBytes);
++      // Security: Enforce CRC verification to prevent malformed ZIP extraction
++      archive = ZipDecoder().decodeBytes(zipBytes, verify: true);
+     } catch (e) {
+       return ZipImportResult(
+         investmentsImported: 0,

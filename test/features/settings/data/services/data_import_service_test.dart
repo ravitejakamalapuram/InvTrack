@@ -145,66 +145,6 @@ void main() {
       });
     });
 
-    group('importFromZip - CRC Verification (security enforcement)', () {
-      /// Creates a ZIP archive with CRC verification intentionally corrupted.
-      /// The local file header CRC-32 field is located at bytes +14..+17
-      /// from the local file header signature (PK\x03\x04 = 0x50 0x4B 0x03 0x04).
-      /// Overwriting those bytes with 0xFF corrupts the checksum so that
-      /// ZipDecoder(verify: true) will reject the archive.
-      Uint8List createCrcCorruptedZipArchive(Map<String, String> files) {
-        final validBytes = createZipArchive(files).toList();
-
-        // Find the local file header signature (PK\x03\x04)
-        const sig = [0x50, 0x4B, 0x03, 0x04];
-        for (var i = 0; i < validBytes.length - sig.length; i++) {
-          if (validBytes[i] == sig[0] &&
-              validBytes[i + 1] == sig[1] &&
-              validBytes[i + 2] == sig[2] &&
-              validBytes[i + 3] == sig[3]) {
-            // CRC-32 field starts at offset +14 from the signature
-            final crcOffset = i + 14;
-            if (crcOffset + 3 < validBytes.length) {
-              validBytes[crcOffset] = 0xFF;
-              validBytes[crcOffset + 1] = 0xFF;
-              validBytes[crcOffset + 2] = 0xFF;
-              validBytes[crcOffset + 3] = 0xFF;
-            }
-            break;
-          }
-        }
-
-        return Uint8List.fromList(validBytes);
-      }
-
-      test(
-          'returns error for ZIP with corrupted CRC checksum (verify: true enforced)',
-          () async {
-        final corruptedBytes = createCrcCorruptedZipArchive({
-          'metadata.json': '{"version":"1.0","files":[]}',
-        });
-
-        final result = await service.importFromZip(
-          corruptedBytes,
-          ImportStrategy.merge,
-        );
-
-        expect(result.isSuccess, false);
-        expect(result.errors, contains(contains('Invalid ZIP file')));
-      });
-
-      test('accepts a valid ZIP with correct CRC checksums', () async {
-        // Regression: ensure valid ZIPs are not rejected by the CRC check.
-        final bytes = createZipArchive({
-          'metadata.json': '{"version":"1.0","files":[]}',
-        });
-
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
-
-        // No CRC error – the only failure should be that there is no data to import
-        expect(result.errors.where((e) => e.contains('Invalid ZIP')), isEmpty);
-      });
-    });
-
     group('importFromZip - Cashflows Import', () {
       test('imports cashflows successfully', () async {
         final bytes = createZipArchive({

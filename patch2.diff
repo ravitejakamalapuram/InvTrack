@@ -1,0 +1,10 @@
+--- a/test/features/security/data/services/security_service_test.dart
++++ b/test/features/security/data/services/security_service_test.dart
+@@ -675,7 +675,8 @@
+     test('verifyPin throws when reading failed attempts fails', () async {
+       await service.setPin('1234');
+
+       // Simulate read error for failed attempts
+       fakeSecureStorage.setThrowRead('pin_failed_attempts', true);
+
+       // Should throw exception instead of allowing access or retry
