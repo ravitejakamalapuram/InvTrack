@@ -103,4 +103,176 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('HeroMetric Semantics', () {
+    testWidgets('constructs semantic label with label and value only', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(label: 'Portfolio Value', value: '₹1,00,000'),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.byType(HeroMetric)),
+        matchesSemantics(label: 'Portfolio Value: ₹1,00,000'),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('includes subtitle in semantic label when provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(
+              label: 'Total Returns',
+              value: '₹50,000',
+              subtitle: '+5.2% this year',
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.byType(HeroMetric)),
+        matchesSemantics(label: 'Total Returns: ₹50,000, +5.2% this year'),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('omits subtitle from semantic label when subtitle is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(label: 'Net P&L', value: '-₹2,000'),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      final semantics = tester.getSemantics(find.byType(HeroMetric));
+      expect(semantics.label, 'Net P&L: -₹2,000');
+      expect(semantics.label, isNot(contains(',')));
+      handle.dispose();
+    });
+
+    testWidgets('excludeSemantics prevents child text widgets from being read', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(
+              label: 'XIRR',
+              value: '12.4%',
+              subtitle: 'annualised',
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      // The parent Semantics node with excludeSemantics:true should be the
+      // only semantic node for this widget - child Text nodes should not
+      // appear as separate semantic nodes under HeroMetric.
+      final heroNode = tester.getSemantics(find.byType(HeroMetric));
+      expect(heroNode.label, 'XIRR: 12.4%, annualised');
+      // Child Text widgets should NOT produce additional semantic children
+      // when excludeSemantics is true.
+      expect(heroNode.children, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets('renders label and value text visually', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(label: 'MOIC', value: '2.5x'),
+          ),
+        ),
+      );
+
+      expect(find.text('MOIC'), findsOneWidget);
+      expect(find.text('2.5x'), findsOneWidget);
+    });
+
+    testWidgets('renders subtitle text visually when provided', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(
+              label: 'Balance',
+              value: '₹10,000',
+              subtitle: 'as of today',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('as of today'), findsOneWidget);
+    });
+
+    testWidgets('does not render subtitle when null', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(label: 'Balance', value: '₹10,000'),
+          ),
+        ),
+      );
+
+      // Only label and value should be rendered as Text
+      expect(find.text('Balance'), findsOneWidget);
+      expect(find.text('₹10,000'), findsOneWidget);
+      expect(find.byType(Text), findsNWidgets(2));
+    });
+
+    testWidgets('renders trailing widget when provided', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(
+              label: 'Status',
+              value: 'Open',
+              trailing: const Icon(Icons.arrow_forward),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+    });
+
+    testWidgets('semantic label is correct with trailing widget', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HeroMetric(
+              label: 'Invested',
+              value: '₹5,00,000',
+              trailing: const Icon(Icons.trending_up),
+            ),
+          ),
+        ),
+      );
+
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.byType(HeroMetric)),
+        matchesSemantics(label: 'Invested: ₹5,00,000'),
+      );
+      handle.dispose();
+    });
+  });
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
@@ -573,4 +574,157 @@ void main() {
       );
     });
   });
+
+  group('SecurityService - Android Options (encryptedSharedPreferences)', () {
+    // Extend FakeFlutterSecureStorage to capture the AndroidOptions passed
+    // to each storage operation, so we can verify encryptedSharedPreferences
+    // is enabled after the PR change.
+    late _CapturingFakeStorage capturingStorage;
+    late SecurityService capturingService;
+
+    setUp(() async {
+      capturingStorage = _CapturingFakeStorage();
+      SharedPreferences.setMockInitialValues({});
+      final capturingPrefs = await SharedPreferences.getInstance();
+      capturingService = SecurityService(
+        capturingStorage,
+        fakeLocalAuth,
+        capturingPrefs,
+      );
+    });
+
+    tearDown(() {
+      capturingStorage.reset();
+    });
+
+    test('setPin passes encryptedSharedPreferences:true AndroidOptions', () async {
+      await capturingService.setPin('1234');
+
+      expect(capturingStorage.lastWriteAOptions, isNotNull);
+      expect(
+        capturingStorage.lastWriteAOptions!.encryptedSharedPreferences,
+        isTrue,
+      );
+    });
+
+    test('hasPin (read) passes encryptedSharedPreferences:true AndroidOptions', () async {
+      await capturingService.hasPin();
+
+      expect(capturingStorage.lastReadAOptions, isNotNull);
+      expect(
+        capturingStorage.lastReadAOptions!.encryptedSharedPreferences,
+        isTrue,
+      );
+    });
+
+    test('verifyPin (read) passes encryptedSharedPreferences:true AndroidOptions', () async {
+      await capturingService.setPin('1234');
+      // Reset captured options so we only observe verifyPin's read call
+      capturingStorage.resetCaptured();
+
+      await capturingService.verifyPin('1234');
+
+      expect(capturingStorage.lastReadAOptions, isNotNull);
+      expect(
+        capturingStorage.lastReadAOptions!.encryptedSharedPreferences,
+        isTrue,
+      );
+    });
+
+    test('removePin (delete) passes encryptedSharedPreferences:true AndroidOptions', () async {
+      await capturingService.setPin('1234');
+      capturingStorage.resetCaptured();
+
+      await capturingService.removePin();
+
+      expect(capturingStorage.lastDeleteAOptions, isNotNull);
+      expect(
+        capturingStorage.lastDeleteAOptions!.encryptedSharedPreferences,
+        isTrue,
+      );
+    });
+  });
+}
+
+/// Extends [FakeFlutterSecureStorage] to capture the [AndroidOptions]
+/// passed to each read/write/delete call so tests can assert the
+/// correct options are used.
+class _CapturingFakeStorage extends FakeFlutterSecureStorage {
+  AndroidOptions? lastReadAOptions;
+  AndroidOptions? lastWriteAOptions;
+  AndroidOptions? lastDeleteAOptions;
+
+  void resetCaptured() {
+    lastReadAOptions = null;
+    lastWriteAOptions = null;
+    lastDeleteAOptions = null;
+  }
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    lastReadAOptions = aOptions;
+    return super.read(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    lastWriteAOptions = aOptions;
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    lastDeleteAOptions = aOptions;
+    return super.delete(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 }

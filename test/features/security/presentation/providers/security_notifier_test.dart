@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
@@ -361,6 +362,28 @@ void main() {
           expect(container.read(securityProvider).isLocked, isFalse);
         },
       );
+    });
+  });
+
+  group('flutterSecureStorageProvider - Android options', () {
+    test('creates FlutterSecureStorage with encryptedSharedPreferences enabled', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final storage = container.read(flutterSecureStorageProvider);
+
+      expect(storage, isA<FlutterSecureStorage>());
+      // Verify that the Android options have encryptedSharedPreferences enabled.
+      // This reflects the security change in the PR that explicitly enables
+      // Android's native EncryptedSharedPreferences for key and value encryption.
+      expect(storage.aOptions.encryptedSharedPreferences, isTrue);
     });
   });
 }

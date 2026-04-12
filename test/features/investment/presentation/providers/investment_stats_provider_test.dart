@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -429,5 +430,219 @@ void main() {
       },
       skip: 'TODO: Fix async stream-to-future timing issue',
     );
+  });
+
+  // ignore: deprecated_member_use
+  group('investmentStatsProvider (deprecated) - cash flow filter', () {
+    late FakeInvestmentRepository fakeRepository;
+    late ProviderContainer container;
+
+    final baseDate = DateTime(2024, 1, 1);
+
+    final activeInvestmentA = InvestmentEntity(
+      id: 'active-a',
+      name: 'Investment A',
+      type: InvestmentType.stocks,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: baseDate,
+      updatedAt: baseDate,
+    );
+
+    final activeInvestmentB = InvestmentEntity(
+      id: 'active-b',
+      name: 'Investment B',
+      type: InvestmentType.bonds,
+      status: InvestmentStatus.open,
+      isArchived: false,
+      createdAt: baseDate,
+      updatedAt: baseDate,
+    );
+
+    setUp(() {
+      fakeRepository = FakeInvestmentRepository();
+      container = ProviderContainer(
+        overrides: [
+          investmentRepositoryProvider.overrideWithValue(fakeRepository),
+          isAuthenticatedProvider.overrideWithValue(true),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      fakeRepository.reset();
+    });
+
+    test('returns empty stats when no cash flows exist for the investment', () async {
+      fakeRepository.seed(investments: [activeInvestmentA]);
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final result = container.read(investmentStatsProvider('active-a'));
+
+      result.when(
+        data: (stats) {
+          expect(stats.hasData, isFalse);
+          expect(stats.totalInvested, 0);
+          expect(stats.cashFlowCount, 0);
+        },
+        loading: () {},
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
+
+    test('only includes cash flows matching the given investmentId', () async {
+      fakeRepository.seed(
+        investments: [activeInvestmentA, activeInvestmentB],
+        cashFlows: [
+          CashFlowEntity(
+            id: 'cf-a1',
+            investmentId: 'active-a',
+            type: CashFlowType.invest,
+            amount: 3000,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+          CashFlowEntity(
+            id: 'cf-b1',
+            investmentId: 'active-b',
+            type: CashFlowType.invest,
+            amount: 9999,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+        ],
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final statsA = container.read(investmentStatsProvider('active-a'));
+      statsA.when(
+        data: (stats) {
+          expect(stats.totalInvested, 3000);
+          expect(stats.cashFlowCount, 1);
+        },
+        loading: () {},
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
+
+    test('cash flows of other investments do not appear in stats', () async {
+      fakeRepository.seed(
+        investments: [activeInvestmentA, activeInvestmentB],
+        cashFlows: [
+          CashFlowEntity(
+            id: 'cf-b1',
+            investmentId: 'active-b',
+            type: CashFlowType.invest,
+            amount: 5000,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+          CashFlowEntity(
+            id: 'cf-b2',
+            investmentId: 'active-b',
+            type: CashFlowType.returnFlow,
+            amount: 6000,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+        ],
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Reading stats for investment A (which has no cash flows)
+      // ignore: deprecated_member_use
+      final statsA = container.read(investmentStatsProvider('active-a'));
+      statsA.when(
+        data: (stats) {
+          // Investment A has no cash flows; B's cash flows must not bleed in
+          expect(stats.hasData, isFalse);
+          expect(stats.totalInvested, 0);
+          expect(stats.totalReturned, 0);
+        },
+        loading: () {},
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
+
+    test('includes all cash flow types for the matching investmentId', () async {
+      fakeRepository.seed(
+        investments: [activeInvestmentA],
+        cashFlows: [
+          CashFlowEntity(
+            id: 'cf-1',
+            investmentId: 'active-a',
+            type: CashFlowType.invest,
+            amount: 1000,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+          CashFlowEntity(
+            id: 'cf-2',
+            investmentId: 'active-a',
+            type: CashFlowType.fee,
+            amount: 50,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+          CashFlowEntity(
+            id: 'cf-3',
+            investmentId: 'active-a',
+            type: CashFlowType.income,
+            amount: 100,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+        ],
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final result = container.read(investmentStatsProvider('active-a'));
+      result.when(
+        data: (stats) {
+          expect(stats.cashFlowCount, 3);
+          expect(stats.totalInvested, 1050); // invest + fee
+          expect(stats.totalReturned, 100); // income
+        },
+        loading: () {},
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
+
+    test('returns empty stats for an unknown investmentId', () async {
+      fakeRepository.seed(
+        investments: [activeInvestmentA],
+        cashFlows: [
+          CashFlowEntity(
+            id: 'cf-a1',
+            investmentId: 'active-a',
+            type: CashFlowType.invest,
+            amount: 1000,
+            date: baseDate,
+            createdAt: baseDate,
+          ),
+        ],
+      );
+
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // ignore: deprecated_member_use
+      final result = container.read(investmentStatsProvider('does-not-exist'));
+      result.when(
+        data: (stats) {
+          expect(stats.hasData, isFalse);
+          expect(stats.totalInvested, 0);
+        },
+        loading: () {},
+        error: (e, st) => fail('Should not error: $e'),
+      );
+    });
   });
 }
