@@ -9,6 +9,7 @@
 **Prevention:** Always construct and validate file paths using a user-specific identifier (e.g., `userId`) in the path hierarchy, and ensure validation checks (like `isWithin`) use the user-scoped directory (`_documentsDirectory`) rather than the global app directory.
 
 ## 2026-04-09 - [Data Import] Enforce CRC verification during ZIP extraction
+
 **Vulnerability:** The application decoded imported ZIP files using `ZipDecoder().decodeBytes(zipBytes)` without CRC verification. This could allow malformed or intentionally corrupted ZIP files to be processed, potentially leading to application instability or memory issues during the extraction phase.
 **Learning:** When using the `archive` package in Dart to decode ZIP files, it does not verify the CRC checksums by default. Failing to enforce this allows corrupted data to be parsed and potentially saved to the file system.
 **Prevention:** Always explicitly pass `verify: true` when calling `ZipDecoder().decodeBytes()` to enforce strict structural and checksum validation of the ZIP archive before processing its contents.
