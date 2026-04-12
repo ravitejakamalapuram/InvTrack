@@ -19,6 +19,7 @@ import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;
@@ -175,6 +176,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyFormat = ref.watch(currencyFormatPreciseProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: isDark
@@ -251,8 +253,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               SizedBox(height: AppSpacing.xs),
               Semantics(
                 button: true,
-                label:
-                    'Select transaction date, ${AppDateUtils.formatLong(_selectedDate)}',
+                label: l10n.selectTransactionDate(
+                  AppDateUtils.formatLong(_selectedDate),
+                ),
                 excludeSemantics: true,
                 child: GestureDetector(
                   onTap: () => _selectDate(context, isDark),

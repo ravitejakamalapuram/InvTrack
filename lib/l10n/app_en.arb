@@ -2188,6 +2188,15 @@
   "hiddenAmount": "Hidden amount",
   "@hiddenAmount": {
     "description": "Semantic label for privacy-masked amounts"
+  },
+
+  "selectTransactionDate": "Select transaction date, {date}",
+  "@selectTransactionDate": {
+    "description": "Semantic label for transaction date picker button",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   }
 }
-
