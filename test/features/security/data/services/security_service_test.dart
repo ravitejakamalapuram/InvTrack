@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/utils/security_utils.dart';
 import 'package:inv_tracker/features/security/data/services/security_service.dart';
@@ -573,4 +574,167 @@ void main() {
       );
     });
   });
+
+  // Tests verifying that SecurityService uses encryptedSharedPreferences: true
+  // for all secure storage operations (PR change: _getAndroidOptions now
+  // explicitly passes AndroidOptions(encryptedSharedPreferences: true)).
+  group('SecurityService - Android EncryptedSharedPreferences configuration', () {
+    // A capturing fake that records AndroidOptions passed to each operation.
+    late _CapturingFakeSecureStorage capturingStorage;
+    late SecurityService capturingService;
+
+    setUp(() async {
+      capturingStorage = _CapturingFakeSecureStorage();
+      final fakeAuth = FakeLocalAuthentication();
+      SharedPreferences.setMockInitialValues({});
+      final testPrefs = await SharedPreferences.getInstance();
+      capturingService = SecurityService(capturingStorage, fakeAuth, testPrefs);
+    });
+
+    test('setPin passes encryptedSharedPreferences: true to write', () async {
+      await capturingService.setPin('1234');
+
+      expect(
+        capturingStorage.lastWriteOptions?.encryptedSharedPreferences,
+        isTrue,
+        reason: 'setPin should use AndroidOptions(encryptedSharedPreferences: true)',
+      );
+    });
+
+    test('hasPin passes encryptedSharedPreferences: true to read', () async {
+      await capturingService.hasPin();
+
+      expect(
+        capturingStorage.lastReadOptions?.encryptedSharedPreferences,
+        isTrue,
+        reason: 'hasPin should use AndroidOptions(encryptedSharedPreferences: true)',
+      );
+    });
+
+    test('verifyPin passes encryptedSharedPreferences: true to read', () async {
+      // First set a PIN so verifyPin proceeds to the storage read
+      await capturingService.setPin('1234');
+      capturingStorage.resetCaptured();
+
+      await capturingService.verifyPin('1234');
+
+      expect(
+        capturingStorage.lastReadOptions?.encryptedSharedPreferences,
+        isTrue,
+        reason: 'verifyPin should use AndroidOptions(encryptedSharedPreferences: true)',
+      );
+    });
+
+    test('removePin passes encryptedSharedPreferences: true to delete', () async {
+      await capturingService.setPin('1234');
+      capturingStorage.resetCaptured();
+
+      await capturingService.removePin();
+
+      expect(
+        capturingStorage.lastDeleteOptions?.encryptedSharedPreferences,
+        isTrue,
+        reason: 'removePin should use AndroidOptions(encryptedSharedPreferences: true)',
+      );
+    });
+
+    test('all PIN operations consistently use encryptedSharedPreferences: true', () async {
+      // Write (setPin)
+      await capturingService.setPin('9999');
+      expect(capturingStorage.lastWriteOptions?.encryptedSharedPreferences, isTrue);
+
+      // Read (hasPin)
+      capturingStorage.resetCaptured();
+      await capturingService.hasPin();
+      expect(capturingStorage.lastReadOptions?.encryptedSharedPreferences, isTrue);
+
+      // Read + possible write (verifyPin correct PIN → clears rate limit via delete)
+      capturingStorage.resetCaptured();
+      await capturingService.verifyPin('9999');
+      // Read and delete should both use the same options
+      expect(capturingStorage.lastReadOptions?.encryptedSharedPreferences, isTrue);
+    });
+  });
+}
+
+/// Capturing fake that records the AndroidOptions passed to the last
+/// read / write / delete call for assertion in tests.
+class _CapturingFakeSecureStorage extends FakeFlutterSecureStorage {
+  AndroidOptions? lastReadOptions;
+  AndroidOptions? lastWriteOptions;
+  AndroidOptions? lastDeleteOptions;
+
+  void resetCaptured() {
+    lastReadOptions = null;
+    lastWriteOptions = null;
+    lastDeleteOptions = null;
+  }
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) {
+    lastReadOptions = aOptions;
+    return super.read(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) {
+    lastWriteOptions = aOptions;
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) {
+    lastDeleteOptions = aOptions;
+    return super.delete(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 }
