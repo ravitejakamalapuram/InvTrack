@@ -47,9 +47,7 @@
 
 **Learning:** When calculating values that group multiple subsets together (e.g. associating cash flows to recently closed investments), iterating over the smaller set and filtering the larger list on every pass via `.where(...).toList()` allocates multiple closures and intermediate lists with an O(N * M) cost.
 **Action:** Replace nested `.where(...).toList()` loops with an optimized single-pass O(N + M) implementation: loop over the large list once to populate a `Map` that groups items by the joining key, and then use O(1) lookups inside the smaller list iteration.
-## 2024-05-20 - Eliminate redundant iterable allocations
-**Learning:** When generating a list with conditions, using `rows.where(condition).toList()` allocates closures and intermediate iterables. Also, calculating `.where(...).length` on a list that implicitly already satisfies the condition is redundant O(N) overhead.
-**Action:** Replace `.where(...).toList()` with explicit `for` loops and `.add()` in hot paths, and simplify  to  if the list is guaranteed to be pre-filtered.
+
 ## 2024-05-20 - Eliminate redundant iterable allocations
 **Learning:** When generating a list with conditions, using `rows.where(condition).toList()` allocates closures and intermediate iterables. Also, calculating `.where(...).length` on a list that implicitly already satisfies the condition is redundant O(N) overhead.
 **Action:** Replace `.where(...).toList()` with explicit `for` loops and `.add()` in hot paths, and simplify `.where(...).length` to `.length` if the list is guaranteed to be pre-filtered.
