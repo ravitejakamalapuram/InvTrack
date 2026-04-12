@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- Portfolio Health Score with Feature Flag (#322)
+
 ## [3.54.22] - 2026-04-03
 
 ### 🐛 Bug Fixes
