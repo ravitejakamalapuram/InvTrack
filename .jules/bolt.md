@@ -49,5 +49,7 @@
 **Action:** Replace nested `.where(...).toList()` loops with an optimized single-pass O(N + M) implementation: loop over the large list once to populate a `Map` that groups items by the joining key, and then use O(1) lookups inside the smaller list iteration.
 
 ## 2024-05-20 - Parallel Async Calculations in Loops
+
+
 **Learning:** In Dart, iterating over a list and running an asynchronous function sequentially inside a `for` loop using `await` creates an N+1 sequential waiting bottleneck.
 **Action:** Replace sequential `await` calls inside a loop with parallel execution using `Future.wait(list.map((item) async { ... }))`. This allows all futures to resolve concurrently, drastically improving performance. Ensure the underlying async operations are safe to run in parallel (e.g., they implement request coalescing to prevent cache stampedes).
