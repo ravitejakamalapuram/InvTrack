@@ -834,10 +834,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       final notificationService = ref.read(notificationServiceProvider);
 
       // Pre-group cash flows by investment ID to avoid O(N*M) iteration
-      final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
-      for (final cf in cashFlows) {
-        cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
-      }
+      final cashFlowsByInvestment =
+          GoalProgressCalculator.groupByInvestmentId(cashFlows);
 
       // Check each goal for milestone achievements and alerts
       for (final goal in goals) {

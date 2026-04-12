@@ -10,6 +10,19 @@ import 'package:inv_tracker/features/investment/presentation/providers/multi_cur
 
 /// Calculate progress for a single goal
 class GoalProgressCalculator {
+  /// Group cash flows by investment ID for efficient lookups
+  ///
+  /// Converts O(N*M) filtering to O(N+M) by pre-grouping cash flows.
+  static Map<String, List<CashFlowEntity>> groupByInvestmentId(
+    List<CashFlowEntity> cashFlows,
+  ) {
+    final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in cashFlows) {
+      cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
+    return cashFlowsByInvestment;
+  }
+
   /// Calculate progress for a goal based on investments and cash flows
   static GoalProgress calculate({
     required GoalEntity goal,
@@ -453,12 +466,7 @@ final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((
                 () {
                   // Pre-group cash flows by investment ID to change O(N*M) lookups to O(N+M)
                   final cashFlowsByInvestment =
-                      <String, List<CashFlowEntity>>{};
-                  for (final cf in cashFlows) {
-                    cashFlowsByInvestment
-                        .putIfAbsent(cf.investmentId, () => [])
-                        .add(cf);
-                  }
+                      GoalProgressCalculator.groupByInvestmentId(cashFlows);
 
                   return goals.map((goal) {
                     return GoalProgressCalculator.calculate(
@@ -687,10 +695,8 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   final baseCurrency = ref.watch(currencyCodeProvider);
 
   // Pre-group cash flows by investment ID to change O(N*M) lookups to O(N+M)
-  final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
-  for (final cf in cashFlows) {
-    cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
-  }
+  final cashFlowsByInvestment =
+      GoalProgressCalculator.groupByInvestmentId(cashFlows);
 
   // Calculate progress for each goal with currency conversion
   final progressList = <GoalProgress>[];
