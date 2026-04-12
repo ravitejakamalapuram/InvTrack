@@ -639,17 +639,18 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   final baseCurrency = ref.watch(currencyCodeProvider);
 
   // Calculate progress for each goal with currency conversion
-  final progressList = <GoalProgress>[];
-  for (final goal in goals) {
-    final progress = await GoalProgressCalculator.calculateMultiCurrency(
-      goal: goal,
-      allInvestments: investments,
-      allCashFlows: cashFlows,
-      batchConverter: batchConverter,
-      baseCurrency: baseCurrency,
-    );
-    progressList.add(progress);
-  }
+  // Optimization: Parallel execution of multiple multi-currency calculations
+  final progressList = await Future.wait(
+    goals.map(
+      (goal) => GoalProgressCalculator.calculateMultiCurrency(
+        goal: goal,
+        allInvestments: investments,
+        allCashFlows: cashFlows,
+        batchConverter: batchConverter,
+        baseCurrency: baseCurrency,
+      ),
+    ),
+  );
 
   return progressList;
 });
