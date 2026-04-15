@@ -272,5 +272,165 @@ void main() {
         expect(find.textContaining('500 B'), findsWidgets);
       });
     });
+
+    group('Accessibility - Semantics', () {
+      testWidgets(
+        'image document should have correct semantics with zoom reset action',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(testImageDocument));
+
+          // Find the Semantics widget wrapping the image viewer
+          final semanticsFinder = find.descendant(
+            of: find.byType(DocumentViewerScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'Document content',
+            ),
+          );
+
+          expect(semanticsFinder, findsOneWidget);
+
+          // Verify the semantics properties
+          final semanticsWidget = tester.widget<Semantics>(semanticsFinder);
+          final props = semanticsWidget.properties;
+
+          // Check label and hint
+          expect(props.label, equals('Document content'));
+          expect(props.hint, equals('Double tap to reset zoom'));
+
+          // Verify customSemanticsActions contains reset zoom action
+          expect(props.customSemanticsActions, isNotNull);
+          expect(props.customSemanticsActions, isNotEmpty);
+
+          // Check that the action is present
+          final actions = props.customSemanticsActions!;
+          final resetZoomAction = actions.keys.firstWhere(
+            (action) => action.label == 'Reset zoom',
+          );
+          expect(resetZoomAction, isNotNull);
+        },
+      );
+
+      testWidgets(
+        'PDF document should have descriptive semantics without zoom actions',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(testPdfDocument));
+
+          // Find the Semantics widget wrapping the PDF viewer
+          final semanticsFinder = find.descendant(
+            of: find.byType(DocumentViewerScreen),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label != null &&
+                  widget.properties.label!.contains('Test PDF Document'),
+            ),
+          );
+
+          expect(semanticsFinder, findsOneWidget);
+
+          // Verify the semantics properties
+          final semanticsWidget = tester.widget<Semantics>(semanticsFinder);
+          final props = semanticsWidget.properties;
+
+          // Check label contains PDF document name
+          expect(props.label, contains('PDF document'));
+          expect(props.label, contains('Test PDF Document'));
+
+          // Verify NO zoom hint or customSemanticsActions for PDFs
+          expect(props.hint, isNull);
+          expect(
+            props.customSemanticsActions,
+            anyOf(isNull, isEmpty),
+            reason: 'PDF documents should not have zoom reset actions',
+          );
+        },
+      );
+
+      testWidgets(
+        'image semanticLabel should be localized with document name',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(testImageDocument));
+
+          // Pump and settle to ensure everything is rendered
+          await tester.pumpAndSettle();
+
+          // Find the Image widget and verify its semantic label
+          final imageFinder = find.descendant(
+            of: find.byType(InteractiveViewer),
+            matching: find.byType(Image),
+          );
+
+          expect(imageFinder, findsOneWidget);
+
+          // Verify the semanticLabel is set correctly
+          final imageWidget = tester.widget<Image>(imageFinder);
+          expect(
+            imageWidget.semanticLabel,
+            'Document: ${testImageDocument.name}',
+          );
+        },
+      );
+
+      testWidgets(
+        'GestureDetector should trigger zoom reset for images',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(testImageDocument));
+          await tester.pumpAndSettle();
+
+          // Find the GestureDetector that wraps the InteractiveViewer (not the ones in AppBar)
+          final gestureDetectorFinder = find.descendant(
+            of: find.byType(Stack),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is GestureDetector && widget.onDoubleTap != null,
+            ),
+          );
+
+          expect(gestureDetectorFinder, findsOneWidget);
+
+          // Verify double-tap functionality exists
+          // Note: We can't actually test the zoom reset behavior without a real file,
+          // but we can verify the GestureDetector is present with onDoubleTap
+          final gestureDetector =
+              tester.widget<GestureDetector>(gestureDetectorFinder);
+          expect(gestureDetector.onDoubleTap, isNotNull);
+        },
+      );
+
+      testWidgets(
+        'PDF document should not have GestureDetector with zoom reset',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(testPdfDocument));
+          await tester.pumpAndSettle();
+
+          // For PDF documents, the GestureDetector should not be present
+          // in the content area (only in app bar for navigation)
+          final contentSemanticsFinder = find.descendant(
+            of: find.byType(Stack),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label != null &&
+                  widget.properties.label!.contains('PDF'),
+            ),
+          );
+
+          expect(contentSemanticsFinder, findsOneWidget);
+
+          // Verify the child is NOT a GestureDetector with onDoubleTap
+          final semanticsWidget = tester.widget<Semantics>(contentSemanticsFinder);
+          final child = semanticsWidget.child;
+
+          // The child should be the PDF viewer widget, not wrapped in GestureDetector
+          expect(
+            child is GestureDetector && child.onDoubleTap != null,
+            isFalse,
+            reason: 'PDF documents should not have double-tap zoom reset',
+          );
+        },
+      );
+    });
   });
 }

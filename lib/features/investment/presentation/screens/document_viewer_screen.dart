@@ -4,6 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -94,26 +95,41 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Document content
-          GestureDetector(
-            onDoubleTap: _resetZoom,
-            child: document.isImage
-                ? InteractiveViewer(
-                    transformationController: _transformationController,
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: Center(
-                      child: Image.file(
-                        File(document.localPath),
-                        fit: BoxFit.contain,
-                        semanticLabel: 'Document: ${document.name}',
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildErrorState(),
-                      ),
+          // Document content - separate semantics for images vs PDFs
+          if (document.isImage)
+            // Image viewer with zoom reset capability
+            Semantics(
+              label: l10n.documentViewerContentLabel,
+              hint: l10n.documentViewerResetZoomHint,
+              customSemanticsActions: {
+                CustomSemanticsAction(
+                  label: l10n.documentViewerResetZoomAction,
+                ): _resetZoom,
+              },
+              child: GestureDetector(
+                onDoubleTap: _resetZoom,
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Center(
+                    child: Image.file(
+                      File(document.localPath),
+                      fit: BoxFit.contain,
+                      semanticLabel: l10n.documentSemanticLabel(document.name),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildErrorState(),
                     ),
-                  )
-                : _buildPdfViewer(document),
-          ),
+                  ),
+                ),
+              ),
+            )
+          else
+            // PDF viewer - descriptive semantics only (no zoom)
+            Semantics(
+              label: l10n.pdfDocumentLabel(document.name),
+              child: _buildPdfViewer(document),
+            ),
 
           // Info overlay
           if (_showInfo)
