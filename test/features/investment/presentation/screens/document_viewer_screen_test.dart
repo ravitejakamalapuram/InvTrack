@@ -363,6 +363,13 @@ void main() {
           );
 
           expect(imageFinder, findsOneWidget);
+
+          // Verify the semanticLabel is set correctly
+          final imageWidget = tester.widget<Image>(imageFinder);
+          expect(
+            imageWidget.semanticLabel,
+            'Document: ${testImageDocument.name}',
+          );
         },
       );
 
