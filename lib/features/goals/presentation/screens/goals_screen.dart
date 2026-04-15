@@ -583,18 +583,18 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen>
 
     return allGoalsAsync.maybeWhen(
       data: (allGoals) {
-        // Apply same filter as the list
-        final filteredGoals = allGoals.where((goal) {
+        // Apply same filter as the list to check if we have any goals to show
+        final hasVisibleGoals = allGoals.any((goal) {
           switch (_filter) {
             case GoalsFilter.active:
               return !goal.isArchived;
             case GoalsFilter.archived:
               return goal.isArchived;
           }
-        }).toList();
+        });
 
         // Hide FAB when empty state is shown or viewing archived goals
-        if (filteredGoals.isEmpty || _filter == GoalsFilter.archived) {
+        if (!hasVisibleGoals || _filter == GoalsFilter.archived) {
           return null;
         }
 
