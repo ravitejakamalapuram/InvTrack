@@ -95,24 +95,27 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
         fit: StackFit.expand,
         children: [
           // Document content
-          GestureDetector(
-            onDoubleTap: _resetZoom,
-            child: document.isImage
-                ? InteractiveViewer(
-                    transformationController: _transformationController,
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: Center(
-                      child: Image.file(
-                        File(document.localPath),
-                        fit: BoxFit.contain,
-                        semanticLabel: 'Document: ${document.name}',
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildErrorState(),
+          Semantics(
+            label: 'Double tap to reset zoom',
+            child: GestureDetector(
+              onDoubleTap: _resetZoom,
+              child: document.isImage
+                  ? InteractiveViewer(
+                      transformationController: _transformationController,
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      child: Center(
+                        child: Image.file(
+                          File(document.localPath),
+                          fit: BoxFit.contain,
+                          semanticLabel: 'Document: ${document.name}',
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildErrorState(),
+                        ),
                       ),
-                    ),
-                  )
-                : _buildPdfViewer(document),
+                    )
+                  : _buildPdfViewer(document),
+            ),
           ),
 
           // Info overlay
