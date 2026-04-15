@@ -216,7 +216,7 @@ class AnalyticsService {
   /// ## Privacy
   ///
   /// **NEVER include:**
-  /// - Exact amounts (use ranges: "1k_10k", "10k_100k")
+  /// - Exact amounts (use ranges: "under_1k", "1k_10k", "10k_50k", "50k_1L", "1L_5L", "5L_10L", "over_10L")
   /// - PII (names, emails, phone numbers)
   /// - Sensitive IDs (account numbers, transaction IDs)
   ///
@@ -232,7 +232,7 @@ class AnalyticsService {
   /// // ✅ GOOD: Uses amount range
   /// await analyticsService.logEvent(
   ///   name: 'investment_created',
-  ///   parameters: {'amount_range': '10k_100k'},
+  ///   parameters: {'amount_range': '10k_50k'},
   /// );
   /// ```
   ///
@@ -441,7 +441,7 @@ class AnalyticsService {
   /// ## Parameters
   ///
   /// - [flowType]: Type of cash flow (e.g., "buy", "sell", "dividend", "interest")
-  /// - [amountRange]: Amount range (e.g., "under_1k", "1k_10k", "10k_100k", "over_100k")
+  /// - [amountRange]: Amount range (e.g., "under_1k", "1k_10k", "10k_50k", "50k_1L", "1L_5L", "5L_10L", "over_10L")
   ///
   /// ## Privacy
   ///

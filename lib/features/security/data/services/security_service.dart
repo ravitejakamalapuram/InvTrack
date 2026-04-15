@@ -29,9 +29,9 @@ class SecurityService {
 
   // --- PIN Management ---
 
-  // Security: Removed encryptedSharedPreferences parameter as Jetpack Security library is deprecated by Google.
-  AndroidOptions _getAndroidOptions() =>
-      const AndroidOptions();
+  // Security: Android uses Keystore for encryption via FlutterSecureStorage.
+  // Data will be automatically migrated from SharedPreferences (legacy) on first access.
+  AndroidOptions _getAndroidOptions() => const AndroidOptions();
 
   IOSOptions _getIOSOptions() =>
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);

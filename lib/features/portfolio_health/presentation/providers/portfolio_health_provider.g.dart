@@ -59,7 +59,7 @@ final class HealthScoreRepositoryProvider
 }
 
 String _$healthScoreRepositoryHash() =>
-    r'c14eaf50c268915a06d675bbbd981091ee74125b';
+    r'a0b29d47638a71ef00325a32bee2be9a2d9c6f92';
 
 /// Provider for auto-save service
 
@@ -113,7 +113,7 @@ final class HealthScoreAutoSaveServiceProvider
 }
 
 String _$healthScoreAutoSaveServiceHash() =>
-    r'a7549913c268710b3c78c6a2c03113afba737bcc';
+    r'7f102135e91f673dfcc83ca5fdf8a76d4cd3ed55';
 
 /// Provider for Portfolio Health Score
 ///
@@ -164,7 +164,7 @@ final class PortfolioHealthProvider
   PortfolioHealth create() => PortfolioHealth();
 }
 
-String _$portfolioHealthHash() => r'08b557c43445a3d982aaaff94852a8c8b3441d03';
+String _$portfolioHealthHash() => r'09c0d8ee8ed16427961fadb2a6d3843ead44f0c5';
 
 /// Provider for Portfolio Health Score
 ///
@@ -244,7 +244,7 @@ final class HistoricalHealthScoresProvider
 }
 
 String _$historicalHealthScoresHash() =>
-    r'9d1336bbf32cbe5dd60f3bdc2db10c1326b201a0';
+    r'02ad64a0fb73cfb760c3533fca19b87070871439';
 
 /// Provider for chart data (simplified for trend visualization)
 
@@ -291,7 +291,7 @@ final class HealthScoreChartDataProvider
 }
 
 String _$healthScoreChartDataHash() =>
-    r'8ea34a10ade8e7de1f62c8c3390c02b26aadd9a3';
+    r'6cddf7cf98a84abeea23e9faa17bead3c564a22f';
 
 /// Provider for latest health score value (for quick access)
 
@@ -338,7 +338,7 @@ final class LatestHealthScoreValueProvider
 }
 
 String _$latestHealthScoreValueHash() =>
-    r'213e97b9bfa6f78c6c8fd3106a3c55283b98d695';
+    r'13d08e0c2afcdae3c44a52fabbe8787d9804daad';
 
 /// Provider for latest health score tier (for color coding)
 
@@ -385,4 +385,4 @@ final class LatestHealthScoreTierProvider
 }
 
 String _$latestHealthScoreTierHash() =>
-    r'42e226ef43356254a65ae24a7d687929ebcbad4a';
+    r'7d17d04697e8787b2edb6a85aa78e2b91d1b383b';

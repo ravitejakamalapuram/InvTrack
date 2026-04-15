@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/utils/analytics_utils.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/services/fire_settings_validator.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
@@ -73,7 +74,7 @@ class FireSettingsNotifier extends Notifier<AsyncValue<void>> {
       name: 'fire_setup_completed',
       parameters: {
         'fire_type': settings.fireType.name,
-        'monthly_expenses': settings.monthlyExpenses,
+        'monthly_expenses_range': getAmountRange(settings.monthlyExpenses),
         'target_fire_age': settings.targetFireAge,
       },
     );
