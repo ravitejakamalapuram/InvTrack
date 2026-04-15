@@ -1636,6 +1636,41 @@
     "description": "Tooltip for toggle information button"
   },
 
+  "documentViewerContentLabel": "Document content",
+  "@documentViewerContentLabel": {
+    "description": "Accessibility label for document viewer content area"
+  },
+
+  "documentViewerResetZoomHint": "Double tap to reset zoom",
+  "@documentViewerResetZoomHint": {
+    "description": "Accessibility hint for resetting zoom in document viewer"
+  },
+
+  "documentViewerResetZoomAction": "Reset zoom",
+  "@documentViewerResetZoomAction": {
+    "description": "Accessibility action label for resetting zoom"
+  },
+
+  "documentSemanticLabel": "Document: {name}",
+  "@documentSemanticLabel": {
+    "description": "Accessibility label for document image",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
+  "pdfDocumentLabel": "PDF document: {name}",
+  "@pdfDocumentLabel": {
+    "description": "Accessibility label for PDF document viewer",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
   "tooltipSearchInvestments": "Search investments",
   "@tooltipSearchInvestments": {
     "description": "Tooltip for search investments button"
