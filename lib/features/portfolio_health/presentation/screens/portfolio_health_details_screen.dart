@@ -43,9 +43,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
           context.go('/');
         }
       });
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -55,6 +53,7 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.portfolioHealthDetails),
         leading: IconButton(
+          tooltip: l10n.tooltipBack,
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
@@ -144,7 +143,11 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, bool isDark, PortfolioHealthScore score) {
+  Widget _buildContent(
+    BuildContext context,
+    bool isDark,
+    PortfolioHealthScore score,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -238,15 +241,9 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                tier.emoji,
-                style: const TextStyle(fontSize: 24),
-              ),
+              Text(tier.emoji, style: const TextStyle(fontSize: 24)),
               const SizedBox(width: 8),
-              Text(
-                tier.label,
-                style: AppTypography.h2.copyWith(color: color),
-              ),
+              Text(tier.label, style: AppTypography.h2.copyWith(color: color)),
             ],
           ),
           const SizedBox(height: 8),
@@ -265,7 +262,11 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildComponentScoresSection(BuildContext context, bool isDark, PortfolioHealthScore score) {
+  Widget _buildComponentScoresSection(
+    BuildContext context,
+    bool isDark,
+    PortfolioHealthScore score,
+  ) {
     final l10n = AppLocalizations.of(context);
 
     return Column(
@@ -280,7 +281,11 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildComponentCard(isDark, score.returnsPerformance, Icons.trending_up),
+        _buildComponentCard(
+          isDark,
+          score.returnsPerformance,
+          Icons.trending_up,
+        ),
         const SizedBox(height: 12),
         _buildComponentCard(isDark, score.diversification, Icons.pie_chart),
         const SizedBox(height: 12),
@@ -293,7 +298,11 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildComponentCard(bool isDark, ComponentScore component, IconData icon) {
+  Widget _buildComponentCard(
+    bool isDark,
+    ComponentScore component,
+    IconData icon,
+  ) {
     final color = _getScoreColor(component.score, isDark);
 
     return GlassCard(
@@ -329,7 +338,10 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
               ),
               // Score badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -361,7 +373,11 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSuggestionsSection(BuildContext context, bool isDark, PortfolioHealthScore score) {
+  Widget _buildSuggestionsSection(
+    BuildContext context,
+    bool isDark,
+    PortfolioHealthScore score,
+  ) {
     final l10n = AppLocalizations.of(context);
     final suggestions = score.topSuggestions;
 
@@ -453,7 +469,10 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _shareScore(BuildContext context, PortfolioHealthScore? score) async {
+  Future<void> _shareScore(
+    BuildContext context,
+    PortfolioHealthScore? score,
+  ) async {
     if (score == null) return;
 
     HapticFeedback.lightImpact();
