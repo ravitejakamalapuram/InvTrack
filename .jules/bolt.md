@@ -59,3 +59,7 @@
 **Learning:** Replacing Dart's native `.where().toList()` and `.reduce()` functional methods with standard `for` loops in performance-critical sections avoids closure allocation overhead per iteration, improving overall execution time.
 
 **Action:** Identify and replace instances of `.where().toList()` and `.reduce()` in core service calculations, particularly in list aggregations and filtering within providers and business logic, to achieve significant performance improvements.
+
+## 2026-04-15 - Optimize Collection Emptiness Checks
+**Learning:** In Dart, checking if a filtered collection is empty using `.where(...).toList().isEmpty` is an anti-pattern that causes unnecessary O(N) memory allocation and iteration.
+**Action:** Replace `.where(...).toList().isEmpty` with `!any(...)` (and `.where(...).toList().isNotEmpty` with `any(...)`) to enable short-circuiting, stopping iteration early on the first match and achieving O(1) memory and O(k) time complexity.
