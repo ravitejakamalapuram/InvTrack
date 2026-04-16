@@ -19,6 +19,7 @@ import 'package:inv_tracker/core/widgets/gradient_button.dart';
 import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;
@@ -172,6 +173,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyFormat = ref.watch(currencyFormatPreciseProvider);
@@ -184,7 +186,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          tooltip: 'Close',
+          tooltip: l10n.tooltipClose,
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(

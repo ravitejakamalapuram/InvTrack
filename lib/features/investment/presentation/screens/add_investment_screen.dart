@@ -376,7 +376,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          tooltip: 'Close',
+          tooltip: l10n.tooltipClose,
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(

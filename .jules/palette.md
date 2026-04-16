@@ -50,3 +50,6 @@
 **Learning:** Found that a `GestureDetector` handling double-tap to reset zoom on images in `DocumentViewerScreen` lacks semantic meaning for screen readers. They won't announce the zoom capability.
 **Action:** When wrapping visual or interactive elements with `GestureDetector` for custom gestures (like double-tap), ensure it is wrapped in a `Semantics` widget with appropriate `label` and `hint` to announce the interaction capability.
 
+## $(date +%Y-%m-%d) - Add localized tooltips to icon-only buttons
+**Learning:** Icon-only buttons (e.g., `IconButton` widgets in Flutter) are inaccessible to screen readers without explicit semantic labels. Providing a `tooltip` automatically attaches the necessary semantics to ensure accessibility. Missing `tooltip` attributes was a common pattern across app bars in this app.
+**Action:** In future PRs, I will routinely check for `IconButton` components that are missing the `tooltip` attribute and apply localized labels (e.g., `l10n.tooltipClose`) to ensure compliance with basic accessibility standards.
