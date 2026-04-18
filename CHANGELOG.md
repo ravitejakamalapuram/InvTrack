@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- Add complete ad integration infrastructure (Phase 1 of 5)
+
+### 📚 Documentation
+
+- Archive PR #322 marathon session documentation
+
 ## [3.55.3] - 2026-04-15
 
 ### 🐛 Bug Fixes
