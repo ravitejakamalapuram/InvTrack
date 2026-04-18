@@ -1,10 +1,22 @@
 /// Idle Alert Report Screen
+///
+/// Notifies user about an investment with no recent activity.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
+import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
+import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investments_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/currency_settings_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class IdleAlertReportScreen extends ConsumerStatefulWidget {
   final String investmentId;
@@ -29,20 +41,134 @@ class _IdleAlertReportScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(analyticsServiceProvider).logEvent(
         name: 'notification_report_viewed',
-        parameters: {'report_type': 'idle_alert'},
+        parameters: {
+          'report_type': 'idle_alert',
+          'days_since_activity': widget.daysSinceActivity,
+        },
       );
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final investmentsAsync = ref.watch(allInvestmentsProvider);
+
     return Scaffold(
       appBar: ReportHeader(
         icon: Icons.hourglass_empty_rounded,
-        title: 'Investment Idle',
+        title: l10n.investmentIdle,
         subtitle: '${widget.daysSinceActivity} days inactive',
       ),
-      body: Center(child: Text('Idle Alert Report - TODO')),
+      body: investmentsAsync.when(
+        data: (investments) {
+          final investment = investments.cast<InvestmentEntity?>().firstWhere(
+            (inv) => inv?.id == widget.investmentId,
+            orElse: () => null,
+          );
+
+          if (investment == null) {
+            return const Center(child: Text('Investment not found'));
+          }
+
+          return _buildContent(context, investment);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, InvestmentEntity investment) {
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final currencyLocale = ref.watch(currencyLocaleProvider);
+
+    final currentValueFormatted = formatCompactCurrency(
+      investment.currentValue,
+      symbol: currencySymbol,
+      locale: currencyLocale,
+    );
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          SizedBox(height: AppSpacing.md),
+
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Text(
+              investment.name,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.lg),
+
+          // Metrics
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: ReportMetricCard(
+              label: 'Current Value',
+              value: currentValueFormatted,
+              trend: 'No activity in ${widget.daysSinceActivity} days',
+              icon: Icons.account_balance_wallet_outlined,
+              accentColor: AppColors.warningLight,
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.md),
+
+          // Info message
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Container(
+              padding: EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.infoLight.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppColors.infoLight),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Consider adding a transaction to keep this investment active.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: AppSpacing.lg),
+
+          // Action Buttons
+          ReportActionButtons(
+            buttons: [
+              ReportActionButton(
+                label: 'Add Transaction',
+                icon: Icons.add_circle_outline,
+                onPressed: () {
+                  context.pop();
+                  context.push(
+                    '/investments/${widget.investmentId}/cashflow/add',
+                  );
+                },
+              ),
+              ReportActionButton(
+                label: 'View Investment',
+                icon: Icons.visibility_outlined,
+                isPrimary: false,
+                onPressed: () {
+                  context.pop();
+                  context.push('/investments/${widget.investmentId}');
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

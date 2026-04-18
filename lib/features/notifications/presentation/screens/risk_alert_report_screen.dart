@@ -1,10 +1,17 @@
 /// Risk Alert Report Screen
+///
+/// Displays portfolio risk analysis and recommendations.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
+import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class RiskAlertReportScreen extends ConsumerStatefulWidget {
   const RiskAlertReportScreen({super.key});
@@ -29,12 +36,92 @@ class _RiskAlertReportScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: ReportHeader(
         icon: Icons.shield_outlined,
-        title: 'Risk Alert',
+        title: l10n.riskAlert,
       ),
-      body: Center(child: Text('Risk Alert Report - TODO')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(height: AppSpacing.lg),
+
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 64,
+                    color: AppColors.warningLight,
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Portfolio Risk Alert',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Your portfolio may have concentration risk in certain asset types.',
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: AppSpacing.md),
+                  Container(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.infoLight.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Recommendations:',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: AppSpacing.sm),
+                        Text('• Diversify across multiple asset types'),
+                        Text('• Review investment risk levels'),
+                        Text('• Consider rebalancing portfolio'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: AppSpacing.lg),
+
+            ReportActionButtons(
+              buttons: [
+                ReportActionButton(
+                  label: 'View Portfolio Health',
+                  icon: Icons.health_and_safety_outlined,
+                  onPressed: () {
+                    context.pop();
+                    context.push('/portfolio-health');
+                  },
+                ),
+                ReportActionButton(
+                  label: 'View Investments',
+                  icon: Icons.list_rounded,
+                  isPrimary: false,
+                  onPressed: () {
+                    context.pop();
+                    context.go('/investments');
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
