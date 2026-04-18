@@ -78,6 +78,10 @@ post_install do |installer|
         'PERMISSION_CRITICAL_ALERTS=0',
         'PERMISSION_ASSISTANT=0',
       ]
+
+      # Enable dSYM generation for Crashlytics symbol upload
+      # This ensures crash reports have file names and line numbers
+      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
     end
   end
 end
