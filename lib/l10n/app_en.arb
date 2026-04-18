@@ -404,6 +404,66 @@
     "description": "Scheduled test success message"
   },
 
+  "viewAllInvestments": "View All Investments",
+  "@viewAllInvestments": {
+    "description": "Button to view all investments"
+  },
+
+  "addNewTransaction": "Add New Transaction",
+  "@addNewTransaction": {
+    "description": "Button to add new transaction"
+  },
+
+  "monthlySummary": "Monthly Summary",
+  "@monthlySummary": {
+    "description": "Monthly summary report title"
+  },
+
+  "maturityReminder": "Maturity Reminder",
+  "@maturityReminder": {
+    "description": "Maturity reminder report title"
+  },
+
+  "incomeAlert": "Income Alert",
+  "@incomeAlert": {
+    "description": "Income alert report title"
+  },
+
+  "milestoneAchieved": "Milestone Achieved",
+  "@milestoneAchieved": {
+    "description": "Milestone report title"
+  },
+
+  "goalMilestone": "Goal Milestone",
+  "@goalMilestone": {
+    "description": "Goal milestone report title"
+  },
+
+  "goalAtRisk": "Goal At Risk",
+  "@goalAtRisk": {
+    "description": "Goal at-risk report title"
+  },
+
+  "goalInactive": "Goal Inactive",
+  "@goalInactive": {
+    "description": "Goal stale report title"
+  },
+
+  "riskAlert": "Risk Alert",
+  "@riskAlert": {
+    "description": "Risk alert report title"
+  },
+
+  "investmentIdle": "Investment Idle",
+  "@investmentIdle": {
+    "description": "Idle alert report title"
+  },
+
+  "fySummary": "FY Summary",
+  "@fySummary": {
+    "description": "Financial year summary report title"
+  },
+
   "securityTitle": "Security",
   "@securityTitle": {
     "description": "Security screen title"

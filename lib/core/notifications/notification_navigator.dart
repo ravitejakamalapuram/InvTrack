@@ -84,6 +84,47 @@ class NotificationNavigator {
 
       case NotificationPayloadType.unknown:
         return false;
+
+      // ============ Notification Report Screens ============
+
+      case NotificationPayloadType.weeklySummaryReport:
+        return _navigateToWeeklySummaryReport();
+
+      case NotificationPayloadType.monthlySummaryReport:
+        return _navigateToMonthlySummaryReport();
+
+      case NotificationPayloadType.maturityReport:
+        return _navigateToMaturityReport(payload.investmentId, payload.params);
+
+      case NotificationPayloadType.incomeReport:
+        return _navigateToIncomeReport(payload.investmentId);
+
+      case NotificationPayloadType.milestoneReport:
+        return _navigateToMilestoneReport(
+          payload.investmentId,
+          payload.params,
+        );
+
+      case NotificationPayloadType.goalMilestoneReport:
+        return _navigateToGoalMilestoneReport(payload.goalId, payload.params);
+
+      case NotificationPayloadType.goalAtRiskReport:
+        return _navigateToGoalAtRiskReport(payload.goalId);
+
+      case NotificationPayloadType.goalStaleReport:
+        return _navigateToGoalStaleReport(payload.goalId, payload.params);
+
+      case NotificationPayloadType.riskAlertReport:
+        return _navigateToRiskAlertReport();
+
+      case NotificationPayloadType.idleAlertReport:
+        return _navigateToIdleAlertReport(
+          payload.investmentId,
+          payload.params,
+        );
+
+      case NotificationPayloadType.fySummaryReport:
+        return _navigateToFYSummaryReport();
     }
   }
 
@@ -197,5 +238,99 @@ class NotificationNavigator {
       );
       return null;
     }
+  }
+
+  // ============ Notification Report Navigation Methods ============
+
+  Future<bool> _navigateToWeeklySummaryReport() async {
+    rootNavigatorKey.currentContext?.push('/reports/weekly');
+    return true;
+  }
+
+  Future<bool> _navigateToMonthlySummaryReport() async {
+    rootNavigatorKey.currentContext?.push('/reports/monthly');
+    return true;
+  }
+
+  Future<bool> _navigateToMaturityReport(
+    String? investmentId,
+    Map<String, String> params,
+  ) async {
+    if (investmentId == null) return false;
+    final daysToMaturity = params['daysToMaturity'] ?? '0';
+    rootNavigatorKey.currentContext?.push(
+      '/reports/maturity/$investmentId?daysToMaturity=$daysToMaturity',
+    );
+    return true;
+  }
+
+  Future<bool> _navigateToIncomeReport(String? investmentId) async {
+    if (investmentId == null) return false;
+    rootNavigatorKey.currentContext?.push('/reports/income/$investmentId');
+    return true;
+  }
+
+  Future<bool> _navigateToMilestoneReport(
+    String? investmentId,
+    Map<String, String> params,
+  ) async {
+    if (investmentId == null) return false;
+    final milestonePercent = params['milestonePercent'] ?? '0';
+    rootNavigatorKey.currentContext?.push(
+      '/reports/milestone/$investmentId?milestonePercent=$milestonePercent',
+    );
+    return true;
+  }
+
+  Future<bool> _navigateToGoalMilestoneReport(
+    String? goalId,
+    Map<String, String> params,
+  ) async {
+    if (goalId == null) return false;
+    final milestonePercent = params['milestonePercent'] ?? '0';
+    rootNavigatorKey.currentContext?.push(
+      '/reports/goal-milestone/$goalId?milestonePercent=$milestonePercent',
+    );
+    return true;
+  }
+
+  Future<bool> _navigateToGoalAtRiskReport(String? goalId) async {
+    if (goalId == null) return false;
+    rootNavigatorKey.currentContext?.push('/reports/goal-at-risk/$goalId');
+    return true;
+  }
+
+  Future<bool> _navigateToGoalStaleReport(
+    String? goalId,
+    Map<String, String> params,
+  ) async {
+    if (goalId == null) return false;
+    final daysSinceActivity = params['daysSinceActivity'] ?? '0';
+    rootNavigatorKey.currentContext?.push(
+      '/reports/goal-stale/$goalId?daysSinceActivity=$daysSinceActivity',
+    );
+    return true;
+  }
+
+  Future<bool> _navigateToRiskAlertReport() async {
+    rootNavigatorKey.currentContext?.push('/reports/risk-alert');
+    return true;
+  }
+
+  Future<bool> _navigateToIdleAlertReport(
+    String? investmentId,
+    Map<String, String> params,
+  ) async {
+    if (investmentId == null) return false;
+    final daysSinceActivity = params['daysSinceActivity'] ?? '0';
+    rootNavigatorKey.currentContext?.push(
+      '/reports/idle/$investmentId?daysSinceActivity=$daysSinceActivity',
+    );
+    return true;
+  }
+
+  Future<bool> _navigateToFYSummaryReport() async {
+    rootNavigatorKey.currentContext?.push('/reports/fy-summary');
+    return true;
   }
 }

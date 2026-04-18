@@ -38,6 +38,41 @@ enum NotificationPayloadType {
 
   /// Generic/unknown payload (no navigation)
   unknown,
+
+  // ============ Notification Report Screens ============
+
+  /// Navigate to weekly summary report screen
+  weeklySummaryReport,
+
+  /// Navigate to monthly summary report screen
+  monthlySummaryReport,
+
+  /// Navigate to maturity reminder report screen
+  maturityReport,
+
+  /// Navigate to income alert report screen
+  incomeReport,
+
+  /// Navigate to milestone report screen
+  milestoneReport,
+
+  /// Navigate to goal milestone report screen
+  goalMilestoneReport,
+
+  /// Navigate to goal at-risk report screen
+  goalAtRiskReport,
+
+  /// Navigate to goal stale report screen
+  goalStaleReport,
+
+  /// Navigate to risk alert report screen
+  riskAlertReport,
+
+  /// Navigate to idle alert report screen
+  idleAlertReport,
+
+  /// Navigate to FY summary report screen
+  fySummaryReport,
 }
 
 /// Parsed notification payload with type and parameters
@@ -73,25 +108,32 @@ class NotificationPayload {
     switch (type) {
       case 'income_reminder':
         return NotificationPayload(
-          type: NotificationPayloadType.addCashFlow,
+          type: NotificationPayloadType.incomeReport,
           investmentId: parts.length > 1 ? parts[1] : null,
-          params: {'flowType': 'income'},
+          params: {
+            'flowType': 'income',
+            'expectedIncome': parts.length > 2 ? parts[2] : '0',
+          },
         );
 
       case 'maturity_reminder':
         return NotificationPayload(
-          type: NotificationPayloadType.investmentDetail,
+          type: NotificationPayloadType.maturityReport,
           investmentId: parts.length > 1 ? parts[1] : null,
           params: {
             'daysToMaturity': parts.length > 2 ? parts[2] : '0',
-            'showMaturityAction': 'true',
+            'expectedAmount': parts.length > 3 ? parts[3] : '0',
           },
         );
 
       case 'weekly_summary':
+        return const NotificationPayload(
+          type: NotificationPayloadType.weeklySummaryReport,
+        );
+
       case 'monthly_summary':
         return const NotificationPayload(
-          type: NotificationPayloadType.overview,
+          type: NotificationPayloadType.monthlySummaryReport,
         );
 
       case 'milestone':
@@ -130,7 +172,54 @@ class NotificationPayload {
 
       case 'fy_summary':
         return const NotificationPayload(
-          type: NotificationPayloadType.overview,
+          type: NotificationPayloadType.fySummaryReport,
+        );
+
+      case 'milestone':
+        return NotificationPayload(
+          type: NotificationPayloadType.milestoneReport,
+          investmentId: parts.length > 1 ? parts[1] : null,
+          params: {
+            'milestonePercent': parts.length > 2 ? parts[2] : '0',
+          },
+        );
+
+      case 'goal_milestone':
+        return NotificationPayload(
+          type: NotificationPayloadType.goalMilestoneReport,
+          goalId: parts.length > 1 ? parts[1] : null,
+          params: {
+            'milestonePercent': parts.length > 2 ? parts[2] : '0',
+          },
+        );
+
+      case 'goal_at_risk':
+        return NotificationPayload(
+          type: NotificationPayloadType.goalAtRiskReport,
+          goalId: parts.length > 1 ? parts[1] : null,
+        );
+
+      case 'goal_stale':
+        return NotificationPayload(
+          type: NotificationPayloadType.goalStaleReport,
+          goalId: parts.length > 1 ? parts[1] : null,
+          params: {
+            'daysSinceActivity': parts.length > 2 ? parts[2] : '0',
+          },
+        );
+
+      case 'risk_alert':
+        return const NotificationPayload(
+          type: NotificationPayloadType.riskAlertReport,
+        );
+
+      case 'idle_alert':
+        return NotificationPayload(
+          type: NotificationPayloadType.idleAlertReport,
+          investmentId: parts.length > 1 ? parts[1] : null,
+          params: {
+            'daysSinceActivity': parts.length > 2 ? parts[2] : '0',
+          },
         );
 
       case 'goal_milestone':

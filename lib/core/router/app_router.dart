@@ -20,6 +20,19 @@ import 'package:inv_tracker/features/security/presentation/providers/security_pr
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
 
+// Notification Report Screens
+import 'package:inv_tracker/features/notifications/presentation/screens/weekly_summary_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/monthly_summary_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/maturity_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/income_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/milestone_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/goal_milestone_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/goal_at_risk_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/goal_stale_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/risk_alert_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/idle_alert_report_screen.dart';
+import 'package:inv_tracker/features/notifications/presentation/screens/fy_summary_report_screen.dart';
+
 // Root navigator key - used for showing dialogs from anywhere in the app
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -167,6 +180,125 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/portfolio-health',
         builder: (context, state) => const PortfolioHealthDetailsScreen(),
+      ),
+
+      // ============ Notification Report Routes ============
+
+      // Weekly Summary Report
+      GoRoute(
+        path: '/reports/weekly',
+        builder: (context, state) => const WeeklySummaryReportScreen(),
+      ),
+
+      // Monthly Summary Report
+      GoRoute(
+        path: '/reports/monthly',
+        builder: (context, state) => const MonthlySummaryReportScreen(),
+      ),
+
+      // Maturity Report
+      GoRoute(
+        path: '/reports/maturity/:investmentId',
+        builder: (context, state) {
+          final investmentId = state.pathParameters['investmentId']!;
+          final daysToMaturity = int.tryParse(
+            state.uri.queryParameters['daysToMaturity'] ?? '0',
+          ) ?? 0;
+          return MaturityReportScreen(
+            investmentId: investmentId,
+            daysToMaturity: daysToMaturity,
+          );
+        },
+      ),
+
+      // Income Report
+      GoRoute(
+        path: '/reports/income/:investmentId',
+        builder: (context, state) {
+          final investmentId = state.pathParameters['investmentId']!;
+          return IncomeReportScreen(investmentId: investmentId);
+        },
+      ),
+
+      // Milestone Report
+      GoRoute(
+        path: '/reports/milestone/:investmentId',
+        builder: (context, state) {
+          final investmentId = state.pathParameters['investmentId']!;
+          final milestonePercent = int.tryParse(
+            state.uri.queryParameters['milestonePercent'] ?? '0',
+          ) ?? 0;
+          return MilestoneReportScreen(
+            investmentId: investmentId,
+            milestonePercent: milestonePercent,
+          );
+        },
+      ),
+
+      // Goal Milestone Report
+      GoRoute(
+        path: '/reports/goal-milestone/:goalId',
+        builder: (context, state) {
+          final goalId = state.pathParameters['goalId']!;
+          final milestonePercent = int.tryParse(
+            state.uri.queryParameters['milestonePercent'] ?? '0',
+          ) ?? 0;
+          return GoalMilestoneReportScreen(
+            goalId: goalId,
+            milestonePercent: milestonePercent,
+          );
+        },
+      ),
+
+      // Goal At-Risk Report
+      GoRoute(
+        path: '/reports/goal-at-risk/:goalId',
+        builder: (context, state) {
+          final goalId = state.pathParameters['goalId']!;
+          return GoalAtRiskReportScreen(goalId: goalId);
+        },
+      ),
+
+      // Goal Stale Report
+      GoRoute(
+        path: '/reports/goal-stale/:goalId',
+        builder: (context, state) {
+          final goalId = state.pathParameters['goalId']!;
+          final daysSinceActivity = int.tryParse(
+            state.uri.queryParameters['daysSinceActivity'] ?? '0',
+          ) ?? 0;
+          return GoalStaleReportScreen(
+            goalId: goalId,
+            daysSinceActivity: daysSinceActivity,
+          );
+        },
+      ),
+
+      // Risk Alert Report
+      GoRoute(
+        path: '/reports/risk-alert',
+        builder: (context, state) => const RiskAlertReportScreen(),
+      ),
+
+      // Idle Alert Report
+      GoRoute(
+        path: '/reports/idle/:investmentId',
+        builder: (context, state) {
+          final investmentId = state.pathParameters['investmentId']!;
+          final daysSinceActivity = int.tryParse(
+            state.uri.queryParameters['daysSinceActivity'] ?? '0',
+          ) ?? 0;
+          return IdleAlertReportScreen(
+            investmentId: investmentId,
+            daysSinceActivity: daysSinceActivity,
+          );
+        },
+      ),
+
+      // FY Summary Report
+      GoRoute(
+        path: '/reports/fy-summary',
+        builder: (context, state) => const FYSummaryReportScreen(),
       ),
     ],
   );
