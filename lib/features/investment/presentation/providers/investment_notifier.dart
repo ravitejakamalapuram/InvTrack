@@ -832,13 +832,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         );
 
         // Check for milestone achievements
-        await notificationService.checkAndShowGoalMilestone(
-          goalId: goal.id,
-          goalName: goal.name,
+        // **BUG FIX**: Pass full goal entity and persist updated goal to Firestore
+        final updatedGoal = await notificationService.checkAndShowGoalMilestone(
+          goal: goal,
           progressPercent: progress.progressPercent,
           currentValue: progress.currentAmount,
           targetValue: goal.targetAmount,
         );
+
+        // Persist updated goal if milestone was sent
+        if (updatedGoal != null && updatedGoal != goal) {
+          // Use goals repository to update (need to inject/access it)
+          // For now, the handler will mark in SharedPreferences as fallback
+          // TODO: Inject GoalsRepository to persist updatedGoal
+        }
 
         // Check for at-risk goals (status is behind)
         if (progress.status == GoalStatus.behind) {

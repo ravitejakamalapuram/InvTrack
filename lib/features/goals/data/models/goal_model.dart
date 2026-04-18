@@ -22,6 +22,7 @@ class GoalModel {
       'colorValue': goal.colorValue,
       'isArchived': goal.isArchived,
       'currency': goal.currency, // Multi-currency support (Rule 21.2)
+      'notificationMilestonesSent': goal.notificationMilestonesSent, // Bug fix: Persist milestone notifications
       'createdAt': Timestamp.fromDate(goal.createdAt),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -52,6 +53,11 @@ class GoalModel {
           data['colorValue'] as int? ?? GoalColors.defaultColor.toARGB32(),
       isArchived: data['isArchived'] as bool? ?? false,
       currency: data['currency'] as String? ?? 'USD', // Backward compatibility
+      notificationMilestonesSent:
+          (data['notificationMilestonesSent'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList() ??
+          [], // Backward compatibility: empty list for existing goals
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()

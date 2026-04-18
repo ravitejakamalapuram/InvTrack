@@ -141,6 +141,11 @@ class GoalEntity {
   final DateTime updatedAt;
   final String currency; // Multi-currency support (Rule 21.2)
 
+  /// Notification milestones already sent (to prevent duplicates)
+  /// Example: [25, 50, 75] means 25%, 50%, 75% notifications sent
+  /// This is persisted in Firestore to survive app restarts
+  final List<int> notificationMilestonesSent;
+
   const GoalEntity({
     required this.id,
     required this.name,
@@ -157,6 +162,7 @@ class GoalEntity {
     required this.createdAt,
     required this.updatedAt,
     this.currency = 'USD', // Default for backward compatibility
+    this.notificationMilestonesSent = const [], // Empty list for new goals
   });
 
   /// Check if goal has a deadline
@@ -194,6 +200,7 @@ class GoalEntity {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? currency,
+    List<int>? notificationMilestonesSent,
   }) {
     return GoalEntity(
       id: id ?? this.id,
@@ -211,6 +218,8 @@ class GoalEntity {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       currency: currency ?? this.currency,
+      notificationMilestonesSent:
+          notificationMilestonesSent ?? this.notificationMilestonesSent,
     );
   }
 

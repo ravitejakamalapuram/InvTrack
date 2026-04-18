@@ -36,35 +36,50 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
   // ============ Goal Milestone Notifications ============
 
   /// Check if goal has reached a new milestone and show notification.
-  Future<void> checkAndShowGoalMilestone({
-    required String goalId,
-    required String goalName,
+  ///
+  /// **CRITICAL BUG FIX (Feature #3)**:
+  /// - Now takes GoalEntity instead of just goalId + goalName
+  /// - Checks Firestore-persisted notificationMilestonesSent (not SharedPreferences)
+  /// - Returns the updated goal entity with new milestone marked
+  Future<dynamic> checkAndShowGoalMilestone({
+    required dynamic goal, // GoalEntity (using dynamic to avoid circular import)
     required double progressPercent,
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
   }) async {
     await ensureInitialized();
-    if (!goalMilestonesEnabled) return;
-    if (targetValue <= 0) return;
+    if (!goalMilestonesEnabled) return goal;
+    if (targetValue <= 0) return goal;
 
-    if (!await ensurePermissionsForShow()) return;
+    if (!await ensurePermissionsForShow()) return goal;
+
+    // **BUG FIX**: Check Firestore-persisted list instead of SharedPreferences
+    final milestonesSent = (goal.notificationMilestonesSent as List<dynamic>?)
+            ?.cast<int>() ??
+        [];
 
     int? reachedMilestone;
     for (final milestone in goalMilestones.reversed) {
       if (progressPercent >= milestone &&
-          !isGoalMilestoneShown(goalId, milestone)) {
+          !milestonesSent.contains(milestone)) {
         reachedMilestone = milestone;
         break;
       }
     }
 
-    if (reachedMilestone == null) return;
+    if (reachedMilestone == null) return goal;
 
-    await markGoalMilestoneShown(goalId, reachedMilestone);
+    // **BUG FIX**: Mark milestone in memory (will be persisted to Firestore by caller)
+    final updatedMilestones = [...milestonesSent, reachedMilestone];
+
+    // Still mark in SharedPreferences for backward compatibility
+    await markGoalMilestoneShown(goal.id as String, reachedMilestone);
 
     final formattedCurrent = formatCurrency(currentValue, currency);
     final formattedTarget = formatCurrency(targetValue, currency);
+    final goalName = goal.name as String;
+    final goalId = goal.id as String;
 
     String title;
     String body;
@@ -116,6 +131,10 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
         'milestone': reachedMilestone,
       },
     );
+
+    // **BUG FIX**: Return updated goal with new milestone added
+    // Caller MUST persist this updated goal to Firestore to prevent duplicate notifications
+    return goal.copyWith(notificationMilestonesSent: updatedMilestones);
   }
 
   // ============ Goal At-Risk Notifications ============

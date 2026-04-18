@@ -76,15 +76,15 @@ class FakeNotificationService implements NotificationService {
   }
 
   @override
-  Future<void> checkAndShowGoalMilestone({
-    required String goalId,
-    required String goalName,
+  Future<dynamic> checkAndShowGoalMilestone({
+    required dynamic goal,
     required double progressPercent,
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
   }) async {
-    shownGoalMilestones.add(goalId);
+    shownGoalMilestones.add(goal.id as String);
+    return goal; // Return unchanged goal for mock
   }
 
   @override

@@ -786,16 +786,17 @@ class NotificationService with NotificationPreferencesMixin {
   // --- Goal Notifications ---
 
   /// Check if goal has reached a new milestone and show notification
-  Future<void> checkAndShowGoalMilestone({
-    required String goalId,
-    required String goalName,
+  ///
+  /// **BUG FIX (Feature #3)**: Now takes GoalEntity instead of individual params
+  /// Returns updated goal with milestone marked (caller MUST persist to Firestore)
+  Future<dynamic> checkAndShowGoalMilestone({
+    required dynamic goal, // GoalEntity
     required double progressPercent,
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
   }) => _goalHandler.checkAndShowGoalMilestone(
-    goalId: goalId,
-    goalName: goalName,
+    goal: goal,
     progressPercent: progressPercent,
     currentValue: currentValue,
     targetValue: targetValue,
