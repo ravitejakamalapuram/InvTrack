@@ -230,8 +230,7 @@ class _MonthlySummaryReportScreenState
                 icon: Icons.add_rounded,
                 isPrimary: false,
                 onPressed: () {
-                  context.pop();
-                  context.push('/investments/add');
+                  context.go('/investments/add');
                 },
               ),
             ],

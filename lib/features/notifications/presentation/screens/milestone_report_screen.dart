@@ -128,8 +128,7 @@ class _MilestoneReportScreenState
                 label: 'View Investment Details',
                 icon: Icons.visibility_outlined,
                 onPressed: () {
-                  context.pop();
-                  context.push('/investments/${widget.investmentId}');
+                  context.go('/investments/${widget.investmentId}');
                 },
               ),
             ],

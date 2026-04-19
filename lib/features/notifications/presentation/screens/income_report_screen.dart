@@ -173,8 +173,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
                 label: 'Record Income',
                 icon: Icons.add_circle_outline,
                 onPressed: () {
-                  context.pop();
-                  context.push(
+                  context.go(
                     '/investments/${widget.investmentId}/cashflow/add?type=INCOME',
                   );
                 },
@@ -184,8 +183,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
                 icon: Icons.visibility_outlined,
                 isPrimary: false,
                 onPressed: () {
-                  context.pop();
-                  context.push('/investments/${widget.investmentId}');
+                  context.go('/investments/${widget.investmentId}');
                 },
               ),
             ],

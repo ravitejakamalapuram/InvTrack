@@ -236,8 +236,7 @@ class _GoalMilestoneReportScreenState
                   icon: Icons.add_circle_outline,
                   onPressed: () {
                     // Navigate to add cashflow (linked to goal's investments)
-                    context.pop();
-                    context.push('/investments');
+                    context.go('/investments');
                   },
                 ),
               ReportActionButton(
@@ -245,8 +244,7 @@ class _GoalMilestoneReportScreenState
                 icon: Icons.visibility_outlined,
                 isPrimary: isGoalComplete,
                 onPressed: () {
-                  context.pop();
-                  context.push('/goals/${widget.goalId}');
+                  context.go('/goals/${widget.goalId}');
                 },
               ),
             ],

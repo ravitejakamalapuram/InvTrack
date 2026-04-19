@@ -390,8 +390,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   icon: Icons.autorenew_rounded,
                   onPressed: () {
                     // Navigate to add investment with pre-filled data
-                    context.pop();
-                    context.push('/investments/add', extra: investment);
+                    context.go('/investments/add', extra: investment);
                   },
                 ),
               ReportActionButton(
@@ -399,8 +398,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                 icon: Icons.visibility_outlined,
                 isPrimary: isMatured,
                 onPressed: () {
-                  context.pop();
-                  context.push('/investments/${widget.investmentId}');
+                  context.go('/investments/${widget.investmentId}');
                 },
               ),
             ],

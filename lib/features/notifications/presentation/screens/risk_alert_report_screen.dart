@@ -104,8 +104,7 @@ class _RiskAlertReportScreenState
                   label: 'View Portfolio Health',
                   icon: Icons.health_and_safety_outlined,
                   onPressed: () {
-                    context.pop();
-                    context.push('/portfolio-health');
+                    context.go('/portfolio-health');
                   },
                 ),
                 ReportActionButton(
@@ -113,7 +112,6 @@ class _RiskAlertReportScreenState
                   icon: Icons.list_rounded,
                   isPrimary: false,
                   onPressed: () {
-                    context.pop();
                     context.go('/investments');
                   },
                 ),

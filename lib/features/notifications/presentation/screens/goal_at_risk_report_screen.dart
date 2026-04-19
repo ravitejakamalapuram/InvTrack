@@ -90,8 +90,7 @@ class _GoalAtRiskReportScreenState
                       label: 'Adjust Goal',
                       icon: Icons.edit_outlined,
                       onPressed: () {
-                        context.pop();
-                        context.push('/goals/${widget.goalId}/edit');
+                        context.go('/goals/${widget.goalId}/edit');
                       },
                     ),
                     ReportActionButton(
@@ -99,8 +98,7 @@ class _GoalAtRiskReportScreenState
                       icon: Icons.visibility_outlined,
                       isPrimary: false,
                       onPressed: () {
-                        context.pop();
-                        context.push('/goals/${widget.goalId}');
+                        context.go('/goals/${widget.goalId}');
                       },
                     ),
                   ],

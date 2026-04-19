@@ -121,8 +121,7 @@ class _GoalStaleReportScreenState
                       label: 'Add Funds',
                       icon: Icons.add_circle_outline,
                       onPressed: () {
-                        context.pop();
-                        context.push('/investments');
+                        context.go('/investments');
                       },
                     ),
                     ReportActionButton(
@@ -130,8 +129,7 @@ class _GoalStaleReportScreenState
                       icon: Icons.visibility_outlined,
                       isPrimary: false,
                       onPressed: () {
-                        context.pop();
-                        context.push('/goals/${widget.goalId}');
+                        context.go('/goals/${widget.goalId}');
                       },
                     ),
                   ],
