@@ -50,7 +50,26 @@
 
 ---
 
-## ⚠️ REMAINING ISSUES (38 comments - reduced from 43)
+## ✅ LOOP 6 & 7 COMPLETE (11 more issues fixed)
+
+### ✅ Loop 6: Wrong Enum Comparisons (8 fixes):
+- ✅ income_report_screen.dart - 1 fix
+- ✅ monthly_summary_report_screen.dart - 3 fixes
+- ✅ weekly_summary_report_screen.dart - 2 fixes
+- ✅ fy_summary_report_screen.dart - 2 fixes
+
+**Total: 8 wrong enum comparisons fixed** (cf.type.name == 'INVEST' → cf.type == CashFlowType.invest)
+
+### ✅ Loop 7: Missing Locale Parameters (3 fixes):
+- ✅ income_report_screen.dart - DateFormat.yMMMd(locale)
+- ✅ maturity_report_screen.dart - DateFormat.yMMMd(locale)
+- ✅ monthly_summary_report_screen.dart - DateFormat.yMMMM(locale)
+
+**Total: 3 missing locale parameters fixed**
+
+---
+
+## ⚠️ REMAINING ISSUES (27 comments - reduced from 46)
 
 CodeRabbit identified 43 additional issues across categories below. **These are NOT blocking** for this PR but should be addressed in follow-up PRs.
 
