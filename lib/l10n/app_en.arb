@@ -414,8 +414,8 @@
     "description": "Button to add new transaction"
   },
 
-  "monthlySummary": "Monthly Summary",
-  "@monthlySummary": {
+  "monthlySummaryReport": "Monthly Summary",
+  "@monthlySummaryReport": {
     "description": "Monthly summary report title"
   },
 
@@ -2455,11 +2455,6 @@
         "type": "int"
       }
     }
-  },
-
-  "scoreCopiedToClipboard": "Score copied to clipboard",
-  "@scoreCopiedToClipboard": {
-    "description": "Snackbar message when score is copied"
   },
 
   "portfolioHealthSection": "Portfolio Health Score",

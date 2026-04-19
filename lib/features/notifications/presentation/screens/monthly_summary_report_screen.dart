@@ -66,7 +66,7 @@ class _MonthlySummaryReportScreenState
     return Scaffold(
       appBar: ReportHeader(
         icon: Icons.calendar_month_rounded,
-        title: l10n.monthlySummary,
+        title: l10n.monthlySummaryReport,
         subtitle: monthName,
       ),
       body: investmentsAsync.when(
