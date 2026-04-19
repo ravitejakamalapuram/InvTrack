@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Migrate ad provider to Riverpod 3.x and fix theme API
+
+### 📚 Documentation
+
+- Add comprehensive summary of all PR analyzer error fixes
+- Add comprehensive final review for completed sprint
+
+## [3.56.0] - 2026-04-18
+
 ### ✨ Features
 
 - Add complete ad integration infrastructure (Phase 1 of 5)
