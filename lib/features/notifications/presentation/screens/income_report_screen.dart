@@ -108,7 +108,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
     final lastIncome = cashFlows
         .where((cf) =>
             cf.investmentId == widget.investmentId &&
-            cf.type.name == 'INCOME')
+            cf.type == CashFlowType.income)
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 

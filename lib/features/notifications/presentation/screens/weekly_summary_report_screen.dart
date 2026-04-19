@@ -121,7 +121,7 @@ class _WeeklySummaryReportScreenState
     // Calculate metrics
     final investmentsTracked = activeInvestments.length;
     final totalInvested = weeklyCashFlows
-        .where((cf) => cf.type.name == 'INVEST')
+        .where((cf) => cf.type == CashFlowType.invest)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
 
     return SingleChildScrollView(
@@ -141,7 +141,7 @@ class _WeeklySummaryReportScreenState
               ReportMetricCard(
                 label: 'Added This Week',
                 value: '₹${totalInvested.toStringAsFixed(0)}',
-                trend: '${weeklyCashFlows.where((cf) => cf.type.name == 'INVEST').length} transactions',
+                trend: '${weeklyCashFlows.where((cf) => cf.type == CashFlowType.invest).length} transactions',
                 icon: Icons.add_circle_outline,
               ),
             ],

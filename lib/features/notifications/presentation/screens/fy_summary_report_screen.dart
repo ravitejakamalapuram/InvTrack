@@ -95,10 +95,10 @@ class _FYSummaryReportScreenState
 
     // Calculate metrics
     final totalInvested = fyCashFlows
-        .where((cf) => cf.type.name == 'INVEST')
+        .where((cf) => cf.type == CashFlowType.invest)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
     final totalReturns = fyCashFlows
-        .where((cf) => cf.type.name == 'RETURN' || cf.type.name == 'INCOME')
+        .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
 
     final totalInvestedFormatted = formatCompactCurrency(

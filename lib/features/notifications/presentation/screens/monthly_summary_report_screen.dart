@@ -129,16 +129,16 @@ class _MonthlySummaryReportScreenState
     // Calculate metrics for current month
     final investmentsTracked = activeInvestments.length;
     final totalInvested = monthlyCashFlows
-        .where((cf) => cf.type.name == 'INVEST')
+        .where((cf) => cf.type == CashFlowType.invest)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
     final totalReturns = monthlyCashFlows
-        .where((cf) => cf.type.name == 'RETURN' || cf.type.name == 'INCOME')
+        .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
     final netCashFlow = totalInvested - totalReturns;
 
     // Calculate previous month metrics
     final prevTotalInvested = prevMonthlyCashFlows
-        .where((cf) => cf.type.name == 'INVEST')
+        .where((cf) => cf.type == CashFlowType.invest)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
 
     // Month-over-month change
@@ -190,7 +190,7 @@ class _MonthlySummaryReportScreenState
                 label: 'Returns Received',
                 value: totalReturnsFormatted,
                 trend:
-                    '${monthlyCashFlows.where((cf) => cf.type.name == 'RETURN' || cf.type.name == 'INCOME').length} transactions',
+                    '${monthlyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income).length} transactions',
                 icon: Icons.trending_up_rounded,
                 accentColor: AppColors.successLight,
               ),
