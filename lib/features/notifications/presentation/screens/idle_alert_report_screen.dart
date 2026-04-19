@@ -55,7 +55,7 @@ class _IdleAlertReportScreenState
       appBar: ReportHeader(
         icon: Icons.hourglass_empty_rounded,
         title: l10n.investmentIdle,
-        subtitle: '${widget.daysSinceActivity} days inactive',
+        subtitle: l10n.daysInactive(widget.daysSinceActivity),
       ),
       body: investmentsAsync.when(
         data: (investments) {
@@ -65,13 +65,13 @@ class _IdleAlertReportScreenState
           );
 
           if (investment == null) {
-            return const Center(child: Text('Investment not found'));
+            return Center(child: Text(l10n.investmentNotFound));
           }
 
           return _buildContent(context, investment);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) => Center(child: Text(l10n.errorLoadingInvestment)),
       ),
     );
   }

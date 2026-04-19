@@ -112,11 +112,12 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
+    final l10n = AppLocalizations.of(context);
     final lastIncomeDate =
         lastIncome.isNotEmpty ? lastIncome.first.date : null;
     final lastIncomeDateFormatted = lastIncomeDate != null
         ? DateFormat.yMMMd().format(lastIncomeDate)
-        : 'Never';
+        : l10n.never;
 
     // Calculate expected income (simplified: use expected rate)
     // TODO: Use actual investment stats to calculate expected income
@@ -149,13 +150,13 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
           ReportMetricsGrid(
             metrics: [
               ReportMetricCard(
-                label: 'Expected Monthly Income',
+                label: l10n.expectedMonthlyIncome,
                 value: expectedIncomeFormatted,
                 icon: Icons.trending_up_rounded,
                 accentColor: AppColors.successLight,
               ),
               ReportMetricCard(
-                label: 'Last Income Received',
+                label: l10n.lastIncomeReceived,
                 value: lastIncomeDateFormatted,
                 icon: Icons.calendar_today_rounded,
               ),
