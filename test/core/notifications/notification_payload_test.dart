@@ -19,7 +19,7 @@ void main() {
     test('should parse income_reminder with investment ID', () {
       final payload = NotificationPayload.parse('income_reminder:inv-456');
 
-      expect(payload.type, NotificationPayloadType.addCashFlow);
+      expect(payload.type, NotificationPayloadType.incomeReport);
       expect(payload.investmentId, 'inv-456');
       expect(payload.params['flowType'], 'income');
     });
@@ -27,31 +27,30 @@ void main() {
     test('should parse maturity_reminder with investment ID and days', () {
       final payload = NotificationPayload.parse('maturity_reminder:inv-789:7');
 
-      expect(payload.type, NotificationPayloadType.investmentDetail);
+      expect(payload.type, NotificationPayloadType.maturityReport);
       expect(payload.investmentId, 'inv-789');
       expect(payload.params['daysToMaturity'], '7');
-      expect(payload.params['showMaturityAction'], 'true');
     });
 
     test('should parse maturity_reminder with 1 day', () {
       final payload = NotificationPayload.parse('maturity_reminder:inv-abc:1');
 
-      expect(payload.type, NotificationPayloadType.investmentDetail);
+      expect(payload.type, NotificationPayloadType.maturityReport);
       expect(payload.investmentId, 'inv-abc');
       expect(payload.params['daysToMaturity'], '1');
     });
 
-    test('should parse weekly_summary as overview', () {
+    test('should parse weekly_summary as weeklySummaryReport', () {
       final payload = NotificationPayload.parse('weekly_summary');
 
-      expect(payload.type, NotificationPayloadType.overview);
+      expect(payload.type, NotificationPayloadType.weeklySummaryReport);
       expect(payload.investmentId, isNull);
     });
 
-    test('should parse monthly_summary as overview', () {
+    test('should parse monthly_summary as monthlySummaryReport', () {
       final payload = NotificationPayload.parse('monthly_summary');
 
-      expect(payload.type, NotificationPayloadType.overview);
+      expect(payload.type, NotificationPayloadType.monthlySummaryReport);
     });
 
     test('should parse test_notification as unknown', () {
@@ -96,7 +95,7 @@ void main() {
       final payloadString = NotificationPayload.incomeReminder('reminder-id');
       final parsed = NotificationPayload.parse(payloadString);
 
-      expect(parsed.type, NotificationPayloadType.addCashFlow);
+      expect(parsed.type, NotificationPayloadType.incomeReport);
       expect(parsed.investmentId, 'reminder-id');
     });
 
@@ -107,7 +106,7 @@ void main() {
       );
       final parsed = NotificationPayload.parse(payloadString);
 
-      expect(parsed.type, NotificationPayloadType.investmentDetail);
+      expect(parsed.type, NotificationPayloadType.maturityReport);
       expect(parsed.investmentId, 'maturity-id');
       expect(parsed.params['daysToMaturity'], '7');
     });
@@ -117,7 +116,7 @@ void main() {
     test('should provide readable string representation', () {
       final payload = NotificationPayload.parse('income_reminder:test-id');
 
-      expect(payload.toString(), contains('addCashFlow'));
+      expect(payload.toString(), contains('incomeReport'));
       expect(payload.toString(), contains('test-id'));
     });
   });
@@ -144,10 +143,9 @@ void main() {
     test('should parse milestone payload correctly', () {
       final parsed = NotificationPayload.parse('milestone:inv-123:2.0');
 
-      expect(parsed.type, NotificationPayloadType.investmentDetail);
+      expect(parsed.type, NotificationPayloadType.milestoneReport);
       expect(parsed.investmentId, 'inv-123');
-      expect(parsed.params['moic'], '2.0');
-      expect(parsed.params['celebration'], 'true');
+      expect(parsed.params['milestonePercent'], '2.0');
     });
 
     test('taxReminder should create correct payload string', () {
@@ -204,7 +202,7 @@ void main() {
     test('should parse fy_summary payload correctly', () {
       final parsed = NotificationPayload.parse('fy_summary');
 
-      expect(parsed.type, NotificationPayloadType.overview);
+      expect(parsed.type, NotificationPayloadType.fySummaryReport);
     });
 
     test('goalMilestone should create correct payload string', () {
@@ -215,16 +213,15 @@ void main() {
     test('should parse goal_milestone payload correctly', () {
       final parsed = NotificationPayload.parse('goal_milestone:goal-456:75');
 
-      expect(parsed.type, NotificationPayloadType.goalDetail);
+      expect(parsed.type, NotificationPayloadType.goalMilestoneReport);
       expect(parsed.goalId, 'goal-456');
       expect(parsed.params['milestonePercent'], '75');
-      expect(parsed.params['celebration'], 'true');
     });
 
     test('should parse goal_milestone with 100% correctly', () {
       final parsed = NotificationPayload.parse('goal_milestone:goal-789:100');
 
-      expect(parsed.type, NotificationPayloadType.goalDetail);
+      expect(parsed.type, NotificationPayloadType.goalMilestoneReport);
       expect(parsed.goalId, 'goal-789');
       expect(parsed.params['milestonePercent'], '100');
     });
@@ -233,7 +230,7 @@ void main() {
       final payloadString = NotificationPayload.goalMilestone('test-goal', 25);
       final parsed = NotificationPayload.parse(payloadString);
 
-      expect(parsed.type, NotificationPayloadType.goalDetail);
+      expect(parsed.type, NotificationPayloadType.goalMilestoneReport);
       expect(parsed.goalId, 'test-goal');
       expect(parsed.params['milestonePercent'], '25');
     });
