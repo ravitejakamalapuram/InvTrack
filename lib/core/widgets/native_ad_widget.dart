@@ -52,7 +52,7 @@ class NativeAdWidget extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.neutral800Dark : AppColors.neutral50Light,
+        color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
         borderRadius: AppSizes.borderRadiusMd,
         border: Border.all(
           color: isDark
@@ -117,7 +117,7 @@ class NativeAdLoadingWidget extends StatelessWidget {
       ),
       height: 320, // Match ad height + label
       decoration: BoxDecoration(
-        color: isDark ? AppColors.neutral800Dark : AppColors.neutral50Light,
+        color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
         borderRadius: AppSizes.borderRadiusMd,
         border: Border.all(
           color: isDark

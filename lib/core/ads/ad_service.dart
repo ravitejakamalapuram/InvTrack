@@ -46,6 +46,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider for the ad service

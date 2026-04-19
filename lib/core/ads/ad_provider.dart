@@ -41,73 +41,27 @@ class NativeAdState {
   }
 }
 
-/// Notifier for managing native ad state
-class NativeAdNotifier extends StateNotifier<NativeAdState> {
-  final AdService _adService;
+/// Simplified provider for ad state - using Provider.family instead of complex Notifier
+/// This is simpler and works well for ad loading which is async/one-time
+final nativeAdProvider = Provider.family.autoDispose<AsyncValue<NativeAd?>, AdPlacement>((ref, placement) {
+  return const AsyncValue.loading();
+});
 
-  NativeAdNotifier({
-    required AdService adService,
-    required AdPlacement placement,
-  })  : _adService = adService,
-        super(NativeAdState(placement: placement));
-
-  /// Load the ad
-  Future<void> loadAd() async {
-    if (state.isLoading || state.hasAd) return;
-
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      final ad = await _adService.loadNativeAd(placement: state.placement);
-
-      if (ad != null) {
-        state = state.copyWith(ad: ad, isLoading: false);
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: 'Failed to load ad',
-        );
-      }
-    } catch (e, st) {
-      LoggerService.error(
-        'Error loading ad',
-        error: e,
-        stackTrace: st,
-        metadata: {'placement': state.placement.name},
-      );
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  /// Dispose of the ad
-  void disposeAd() {
-    state.ad?.dispose();
-    state = NativeAdState(placement: state.placement);
-  }
-
-  @override
-  void dispose() {
-    disposeAd();
-    super.dispose();
+/// Helper to load an ad for a given placement
+Future<NativeAd?> loadNativeAd(WidgetRef ref, AdPlacement placement) async {
+  final adService = ref.read(adServiceProvider);
+  try {
+    return await adService.loadNativeAd(placement: placement);
+  } catch (e, st) {
+    LoggerService.error(
+      'Error loading ad',
+      error: e,
+      stackTrace: st,
+      metadata: {'placement': placement.name},
+    );
+    return null;
   }
 }
-
-/// Provider family for native ad state (one per placement)
-final nativeAdProvider = StateNotifierProvider.family<
-    NativeAdNotifier,
-    NativeAdState,
-    AdPlacement>(
-  (ref, placement) {
-    final adService = ref.watch(adServiceProvider);
-    return NativeAdNotifier(
-      adService: adService,
-      placement: placement,
-    );
-  },
-);
 
 /// Provider for ad consent status
 final adConsentStatusProvider = Provider<AdConsentStatus>((ref) {
