@@ -61,7 +61,8 @@ class _MonthlySummaryReportScreenState
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0); // Last day of month
-    final monthName = DateFormat.yMMMM().format(now);
+    final locale = Localizations.localeOf(context).toString();
+    final monthName = DateFormat.yMMMM(locale).format(now);
 
     return Scaffold(
       appBar: ReportHeader(

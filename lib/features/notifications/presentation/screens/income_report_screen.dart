@@ -113,10 +113,11 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
       ..sort((a, b) => b.date.compareTo(a.date));
 
     final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
     final lastIncomeDate =
         lastIncome.isNotEmpty ? lastIncome.first.date : null;
     final lastIncomeDateFormatted = lastIncomeDate != null
-        ? DateFormat.yMMMd().format(lastIncomeDate)
+        ? DateFormat.yMMMd(locale).format(lastIncomeDate)
         : l10n.never;
 
     // Calculate expected income (simplified: use expected rate)

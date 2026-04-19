@@ -159,9 +159,10 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
     );
 
     // Maturity date
+    final locale = Localizations.localeOf(context).toString();
     final maturityDate = investment.calculatedMaturityDate;
     final maturityDateFormatted = maturityDate != null
-        ? DateFormat.yMMMd().format(maturityDate)
+        ? DateFormat.yMMMd(locale).format(maturityDate)
         : l10n.unknown;
 
     final isMatured = widget.daysToMaturity == 0;
