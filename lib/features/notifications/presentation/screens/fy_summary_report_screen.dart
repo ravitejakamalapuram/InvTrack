@@ -65,12 +65,12 @@ class _FYSummaryReportScreenState
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) =>
-                Center(child: Text('Error loading cashflows: $error')),
+                Center(child: Text(l10n.errorLoadingData)),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            Center(child: Text('Error loading investments: $error')),
+            Center(child: Text(l10n.errorLoadingInvestment)),
       ),
     );
   }

@@ -65,14 +65,14 @@ class _MilestoneReportScreenState
           );
 
           if (investment == null) {
-            return const Center(child: Text('Investment not found'));
+            return Center(child: Text(l10n.investmentNotFound));
           }
 
           return _buildContent(context, investment);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            Center(child: Text('Error: $error')),
+            Center(child: Text(l10n.errorLoadingInvestment)),
       ),
     );
   }

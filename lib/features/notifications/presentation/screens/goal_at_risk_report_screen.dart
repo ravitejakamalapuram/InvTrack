@@ -50,7 +50,7 @@ class _GoalAtRiskReportScreenState
       body: goalAsync.when(
         data: (goal) {
           if (goal == null) {
-            return const Center(child: Text('Goal not found'));
+            return Center(child: Text(l10n.goalNotFound));
           }
 
           return SingleChildScrollView(

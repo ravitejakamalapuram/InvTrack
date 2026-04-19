@@ -83,13 +83,13 @@ class _MonthlySummaryReportScreenState
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Center(
-              child: Text('Error loading cash flows: $error'),
+              child: Text(l10n.errorLoadingData),
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error loading investments: $error'),
+          child: Text(l10n.errorLoadingInvestment),
         ),
       ),
     );
