@@ -2,10 +2,27 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
 import '../../mocks/mock_notification_service.dart';
+
+/// Helper function to create mock GoalEntity for tests
+GoalEntity createMockGoal({required String id, required String name}) {
+  return GoalEntity(
+    id: id,
+    name: name,
+    type: GoalType.targetAmount,
+    targetAmount: 100000,
+    trackingMode: GoalTrackingMode.all,
+    icon: GoalIcons.defaultIcon,
+    colorValue: GoalColors.defaultColor.toARGB32(),
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  );
+}
 
 void main() {
   late FakeFlutterLocalNotificationsPlugin fakePlugin;
@@ -875,9 +892,9 @@ void main() {
 
   group('NotificationService - Goal Milestones', () {
     test('should show goal milestone notification at 25%', () async {
+      final mockGoal = createMockGoal(id: 'goal-123', name: 'Retirement Fund');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-123',
-        goalName: 'Retirement Fund',
+        goal: mockGoal,
         progressPercent: 25,
         currentValue: 25000,
         targetValue: 100000,
@@ -892,9 +909,9 @@ void main() {
     });
 
     test('should show goal milestone notification at 50%', () async {
+      final mockGoal = createMockGoal(id: 'goal-456', name: 'Emergency Fund');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-456',
-        goalName: 'Emergency Fund',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
@@ -906,9 +923,9 @@ void main() {
     });
 
     test('should show goal milestone notification at 75%', () async {
+      final mockGoal = createMockGoal(id: 'goal-789', name: 'House Down Payment');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-789',
-        goalName: 'House Down Payment',
+        goal: mockGoal,
         progressPercent: 75,
         currentValue: 75000,
         targetValue: 100000,
@@ -920,9 +937,9 @@ void main() {
     });
 
     test('should show goal achieved notification at 100%', () async {
+      final mockGoal = createMockGoal(id: 'goal-complete', name: 'Vacation Fund');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-complete',
-        goalName: 'Vacation Fund',
+        goal: mockGoal,
         progressPercent: 100,
         currentValue: 100000,
         targetValue: 100000,
@@ -934,9 +951,9 @@ void main() {
     });
 
     test('should use correct notification ID based on goal ID', () async {
+      final mockGoal = createMockGoal(id: 'goal-abc', name: 'Test Goal');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-abc',
-        goalName: 'Test Goal',
+        goal: mockGoal,
         progressPercent: 25,
         currentValue: 2500,
         targetValue: 10000,
@@ -953,9 +970,9 @@ void main() {
       () async {
         await service.setGoalMilestonesEnabled(false);
 
+        final mockGoal = createMockGoal(id: 'goal-disabled', name: 'Disabled Goal');
         await service.checkAndShowGoalMilestone(
-          goalId: 'goal-disabled',
-          goalName: 'Disabled Goal',
+          goal: mockGoal,
           progressPercent: 50,
           currentValue: 50000,
           targetValue: 100000,
@@ -966,10 +983,12 @@ void main() {
     );
 
     test('should show lower milestones if skipped initially', () async {
+      // Create a mock goal
+      final mockGoal = createMockGoal(id: 'goal-dup', name: 'Duplicate Test');
+
       // First call at 50% shows 50% (highest reached)
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-dup',
-        goalName: 'Duplicate Test',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
@@ -980,8 +999,7 @@ void main() {
 
       // Second call at 50% shows 25% (next highest not shown)
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-dup',
-        goalName: 'Duplicate Test',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
@@ -993,8 +1011,7 @@ void main() {
 
       // Third call should not show anything (both 25% and 50% already shown)
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-dup',
-        goalName: 'Duplicate Test',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
@@ -1005,10 +1022,11 @@ void main() {
     });
 
     test('should show new milestone when higher threshold reached', () async {
+      final mockGoal = createMockGoal(id: 'goal-progress', name: 'Progress Test');
+
       // First call shows 50% notification
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-progress',
-        goalName: 'Progress Test',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
@@ -1018,8 +1036,7 @@ void main() {
 
       // Second call at 75% should show new notification
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-progress',
-        goalName: 'Progress Test',
+        goal: mockGoal,
         progressPercent: 75,
         currentValue: 75000,
         targetValue: 100000,
@@ -1058,9 +1075,9 @@ void main() {
     test('should not show goal milestone when permissions denied', () async {
       fakePlugin.permissionsGranted = false;
 
+      final mockGoal = createMockGoal(id: 'goal-no-perm', name: 'No Permission Goal');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-no-perm',
-        goalName: 'No Permission Goal',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
@@ -1088,9 +1105,9 @@ void main() {
     test('should show goal milestone when permissions granted', () async {
       fakePlugin.permissionsGranted = true;
 
+      final mockGoal = createMockGoal(id: 'goal-with-perm', name: 'With Permission Goal');
       await service.checkAndShowGoalMilestone(
-        goalId: 'goal-with-perm',
-        goalName: 'With Permission Goal',
+        goal: mockGoal,
         progressPercent: 50,
         currentValue: 50000,
         targetValue: 100000,
