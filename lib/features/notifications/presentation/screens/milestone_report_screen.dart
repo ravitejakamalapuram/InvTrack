@@ -113,7 +113,7 @@ class _MilestoneReportScreenState
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: ReportMetricCard(
               label: 'Milestone Achieved',
-              value: widget.milestoneLabel,
+              value: '${widget.milestonePercent}%',
               icon: Icons.account_balance_wallet_outlined,
               accentColor: AppColors.successLight,
             ),
