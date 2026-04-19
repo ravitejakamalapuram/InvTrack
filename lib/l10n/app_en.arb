@@ -2690,5 +2690,208 @@
   "matured": "Matured",
   "@matured": {
     "description": "Badge for matured investments"
+  },
+
+  "totalInvestedFY": "Total Invested (FY)",
+  "@totalInvestedFY": {
+    "description": "Label for total invested in financial year"
+  },
+
+  "totalReturnsFY": "Total Returns (FY)",
+  "@totalReturnsFY": {
+    "description": "Label for total returns in financial year"
+  },
+
+  "goalAtRiskMessage": "Your {goalName} goal may be at risk",
+  "@goalAtRiskMessage": {
+    "description": "Warning message for at-risk goal",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "adjustGoalAdvice": "Consider adjusting your target or adding more funds to stay on track.",
+  "@adjustGoalAdvice": {
+    "description": "Advice for adjusting at-risk goal"
+  },
+
+  "adjustGoal": "Adjust Goal",
+  "@adjustGoal": {
+    "description": "Button label to adjust goal"
+  },
+
+  "viewGoalDetails": "View Goal Details",
+  "@viewGoalDetails": {
+    "description": "Button label to view goal details"
+  },
+
+  "goalReachedMessage": "You''ve reached your {goalName} goal!",
+  "@goalReachedMessage": {
+    "description": "Congratulations message for reached goal",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalMilestoneMessage": "You''ve reached {percent}% of your {goalName} goal!",
+  "@goalMilestoneMessage": {
+    "description": "Message for goal milestone achievement",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "currentAmount": "Current Amount",
+  "@currentAmount": {
+    "description": "Label for current amount"
+  },
+
+  "targetAmount": "Target Amount",
+  "@targetAmount": {
+    "description": "Label for target amount"
+  },
+
+  "nextMilestoneLabel": "Next Milestone: {percent}%",
+  "@nextMilestoneLabel": {
+    "description": "Label for next milestone percentage",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "noActivityInDays": "No activity in {days} days",
+  "@noActivityInDays": {
+    "description": "Message showing days since last activity",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "keepGoalActiveAdvice": "Keep your goal active by adding funds or adjusting your target.",
+  "@keepGoalActiveAdvice": {
+    "description": "Advice to keep goal active"
+  },
+
+  "addFunds": "Add Funds",
+  "@addFunds": {
+    "description": "Button label to add funds"
+  },
+
+  "viewGoal": "View Goal",
+  "@viewGoal": {
+    "description": "Button label to view goal"
+  },
+
+  "investment": "Investment",
+  "@investment": {
+    "description": "Label for investment"
+  },
+
+  "keepInvestmentActiveAdvice": "Consider adding a transaction to keep this investment active.",
+  "@keepInvestmentActiveAdvice": {
+    "description": "Advice to keep investment active"
+  },
+
+  "addTransaction": "Add Transaction",
+  "@addTransaction": {
+    "description": "Button label to add transaction"
+  },
+
+  "viewInvestment": "View Investment",
+  "@viewInvestment": {
+    "description": "Button label to view investment"
+  },
+
+  "recordIncome": "Record Income",
+  "@recordIncome": {
+    "description": "Button label to record income"
+  },
+
+  "investmentMayBeDeleted": "This investment may have been deleted",
+  "@investmentMayBeDeleted": {
+    "description": "Warning message for potentially deleted investment"
+  },
+
+  "renewInvestment": "Renew Investment",
+  "@renewInvestment": {
+    "description": "Button label to renew investment"
+  },
+
+  "viewInvestmentDetails": "View Investment Details",
+  "@viewInvestmentDetails": {
+    "description": "Button label to view investment details"
+  },
+
+  "investmentsTracked": "Investments Tracked",
+  "@investmentsTracked": {
+    "description": "Label for number of investments being tracked"
+  },
+
+  "addedThisWeek": "Added This Week",
+  "@addedThisWeek": {
+    "description": "Label for amount added this week"
+  },
+
+  "investedThisMonth": "Invested This Month",
+  "@investedThisMonth": {
+    "description": "Label for amount invested this month"
+  },
+
+  "returnsReceived": "Returns Received",
+  "@returnsReceived": {
+    "description": "Label for returns received"
+  },
+
+  "netCashFlow": "Net Cash Flow",
+  "@netCashFlow": {
+    "description": "Label for net cash flow"
+  },
+
+  "netInvestment": "Net investment",
+  "@netInvestment": {
+    "description": "Label when cash flow is positive (invested)"
+  },
+
+  "netReturn": "Net return",
+  "@netReturn": {
+    "description": "Label when cash flow is negative (returned)"
+  },
+
+  "breakEven": "Break-even",
+  "@breakEven": {
+    "description": "Label when cash flow is zero"
+  },
+
+  "transactionsCount": "{count} transactions",
+  "@transactionsCount": {
+    "description": "Label showing count of transactions",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "errorGeneric": "Error: {error}",
+  "@errorGeneric": {
+    "description": "Generic error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

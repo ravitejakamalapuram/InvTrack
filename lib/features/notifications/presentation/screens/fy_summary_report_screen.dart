@@ -121,13 +121,13 @@ class _FYSummaryReportScreenState
           ReportMetricsGrid(
             metrics: [
               ReportMetricCard(
-                label: 'Total Invested (FY)',
+                label: l10n.totalInvestedFY,
                 value: totalInvestedFormatted,
                 icon: Icons.add_circle_outline,
                 isSensitive: true,
               ),
               ReportMetricCard(
-                label: 'Total Returns (FY)',
+                label: l10n.totalReturnsFY,
                 value: totalReturnsFormatted,
                 icon: Icons.trending_up_rounded,
                 accentColor: AppColors.successLight,
