@@ -73,7 +73,7 @@ class _GoalMilestoneReportScreenState
       appBar: ReportHeader(
         icon: Icons.flag_rounded,
         title: l10n.goalMilestone,
-        subtitle: '${widget.milestonePercent}% Complete',
+        subtitle: l10n.percentComplete(widget.milestonePercent),
       ),
       body: goalAsync.when(
         data: (goal) {
@@ -89,7 +89,7 @@ class _GoalMilestoneReportScreenState
                   ),
                   SizedBox(height: AppSpacing.md),
                   Text(
-                    'Goal not found',
+                    l10n.goalNotFound,
                     style: AppTypography.h3,
                   ),
                 ],
@@ -101,11 +101,11 @@ class _GoalMilestoneReportScreenState
             return const Center(child: CircularProgressIndicator());
           }
 
-          return _buildContent(context, goal, progressAsync);
+          return _buildContent(context, goal, progressAsync, l10n);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error loading goal: $error'),
+          child: Text(l10n.errorLoadingGoal),
         ),
       ),
     );
@@ -126,6 +126,7 @@ class _GoalMilestoneReportScreenState
     BuildContext context,
     dynamic goal,
     dynamic progress,
+    AppLocalizations l10n,
   ) {
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
@@ -231,7 +232,7 @@ class _GoalMilestoneReportScreenState
             buttons: [
               if (!isGoalComplete)
                 ReportActionButton(
-                  label: 'Add More Funds',
+                  label: l10n.addMoreFunds,
                   icon: Icons.add_circle_outline,
                   onPressed: () {
                     // Navigate to add cashflow (linked to goal's investments)
@@ -240,7 +241,7 @@ class _GoalMilestoneReportScreenState
                   },
                 ),
               ReportActionButton(
-                label: 'View Goal Details',
+                label: l10n.viewGoalDetails,
                 icon: Icons.visibility_outlined,
                 isPrimary: isGoalComplete,
                 onPressed: () {

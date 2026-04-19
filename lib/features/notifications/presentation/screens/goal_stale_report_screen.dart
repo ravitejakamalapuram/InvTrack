@@ -54,12 +54,12 @@ class _GoalStaleReportScreenState
       appBar: ReportHeader(
         icon: Icons.schedule_rounded,
         title: l10n.goalInactive,
-        subtitle: '${widget.daysSinceActivity} days since activity',
+        subtitle: l10n.daysSinceActivity(widget.daysSinceActivity),
       ),
       body: goalAsync.when(
         data: (goal) {
           if (goal == null) {
-            return const Center(child: Text('Goal not found'));
+            return Center(child: Text(l10n.goalNotFound));
           }
 
           return SingleChildScrollView(

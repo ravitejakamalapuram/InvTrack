@@ -2520,5 +2520,175 @@
   "pleaseTryAgain": "Please try again",
   "@pleaseTryAgain": {
     "description": "Generic message to retry an operation"
+  },
+
+  "goalNotFound": "Goal not found",
+  "@goalNotFound": {
+    "description": "Error message when goal cannot be found"
+  },
+
+  "investmentNotFound": "Investment not found",
+  "@investmentNotFound": {
+    "description": "Error message when investment cannot be found"
+  },
+
+  "errorLoadingGoal": "Error loading goal",
+  "@errorLoadingGoal": {
+    "description": "Error message when goal fails to load"
+  },
+
+  "errorLoadingInvestment": "Error loading investment",
+  "@errorLoadingInvestment": {
+    "description": "Error message when investment fails to load"
+  },
+
+  "errorLoadingData": "Error loading data",
+  "@errorLoadingData": {
+    "description": "Generic error message for data loading failures"
+  },
+
+  "addMoreFunds": "Add More Funds",
+  "@addMoreFunds": {
+    "description": "Button to add more funds to goal"
+  },
+
+  "viewGoalDetails": "View Goal Details",
+  "@viewGoalDetails": {
+    "description": "Button to view goal details"
+  },
+
+  "viewInvestmentDetails": "View Investment Details",
+  "@viewInvestmentDetails": {
+    "description": "Button to view investment details"
+  },
+
+  "renewInvestment": "Renew Investment",
+  "@renewInvestment": {
+    "description": "Button to renew investment"
+  },
+
+  "recordIncome": "Record Income",
+  "@recordIncome": {
+    "description": "Button to record income"
+  },
+
+  "addTransaction": "Add Transaction",
+  "@addTransaction": {
+    "description": "Button to add transaction"
+  },
+
+  "viewPortfolioHealth": "View Portfolio Health",
+  "@viewPortfolioHealth": {
+    "description": "Button to view portfolio health"
+  },
+
+  "adjustGoal": "Adjust Goal",
+  "@adjustGoal": {
+    "description": "Button to adjust goal settings"
+  },
+
+  "addFunds": "Add Funds",
+  "@addFunds": {
+    "description": "Button to add funds"
+  },
+
+  "maturedToday": "Matured today",
+  "@maturedToday": {
+    "description": "Label for investment that matured today"
+  },
+
+  "oneDayRemaining": "1 day remaining",
+  "@oneDayRemaining": {
+    "description": "Label for investment with 1 day to maturity"
+  },
+
+  "daysRemaining": "{days} days remaining",
+  "@daysRemaining": {
+    "description": "Label for investment with multiple days to maturity",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "daysSinceActivity": "{days} days since activity",
+  "@daysSinceActivity": {
+    "description": "Label showing days of inactivity",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "daysInactive": "{days} days inactive",
+  "@daysInactive": {
+    "description": "Label showing days inactive",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "percentComplete": "{percent}% Complete",
+  "@percentComplete": {
+    "description": "Label showing percentage completion",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "expectedMonthlyIncome": "Expected Monthly Income",
+  "@expectedMonthlyIncome": {
+    "description": "Label for expected monthly income metric"
+  },
+
+  "lastIncomeReceived": "Last Income Received",
+  "@lastIncomeReceived": {
+    "description": "Label for last income received date"
+  },
+
+  "never": "Never",
+  "@never": {
+    "description": "Used when something has never happened"
+  },
+
+  "unknown": "Unknown",
+  "@unknown": {
+    "description": "Used when a value is unknown"
+  },
+
+  "principal": "Principal",
+  "@principal": {
+    "description": "Label for principal amount"
+  },
+
+  "expectedInterest": "Expected Interest",
+  "@expectedInterest": {
+    "description": "Label for expected interest"
+  },
+
+  "maturityAmount": "Maturity Amount",
+  "@maturityAmount": {
+    "description": "Label for maturity amount"
+  },
+
+  "maturityDate": "Maturity Date",
+  "@maturityDate": {
+    "description": "Label for maturity date"
+  },
+
+  "maturingSoon": "Maturing Soon",
+  "@maturingSoon": {
+    "description": "Badge for investments maturing soon"
+  },
+
+  "matured": "Matured",
+  "@matured": {
+    "description": "Badge for matured investments"
   }
 }

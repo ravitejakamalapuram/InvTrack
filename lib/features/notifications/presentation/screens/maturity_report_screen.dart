@@ -75,10 +75,10 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
         icon: Icons.event_available_rounded,
         title: l10n.maturityReminder,
         subtitle: widget.daysToMaturity == 0
-            ? 'Matured today'
+            ? l10n.maturedToday
             : widget.daysToMaturity == 1
-                ? '1 day remaining'
-                : '${widget.daysToMaturity} days remaining',
+                ? l10n.oneDayRemaining
+                : l10n.daysRemaining(widget.daysToMaturity),
       ),
       body: investmentsAsync.when(
         data: (investments) {
@@ -99,7 +99,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   ),
                   SizedBox(height: AppSpacing.md),
                   Text(
-                    'Investment not found',
+                    l10n.investmentNotFound,
                     style: AppTypography.h3,
                   ),
                   SizedBox(height: AppSpacing.sm),
@@ -112,17 +112,21 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
             );
           }
 
-          return _buildContent(context, investment);
+          return _buildContent(context, investment, l10n);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: Text('Error loading investment: $error'),
+          child: Text(l10n.errorLoadingInvestment),
         ),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, InvestmentEntity investment) {
+  Widget _buildContent(
+    BuildContext context,
+    InvestmentEntity investment,
+    AppLocalizations l10n,
+  ) {
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
     final statsAsync = ref.watch(
@@ -158,7 +162,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
     final maturityDate = investment.calculatedMaturityDate;
     final maturityDateFormatted = maturityDate != null
         ? DateFormat.yMMMd().format(maturityDate)
-        : 'Unknown';
+        : l10n.unknown;
 
     final isMatured = widget.daysToMaturity == 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
