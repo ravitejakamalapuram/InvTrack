@@ -77,6 +77,7 @@ class _IdleAlertReportScreenState
   }
 
   Widget _buildContent(BuildContext context, InvestmentEntity investment) {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -96,9 +97,9 @@ class _IdleAlertReportScreenState
           Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: ReportMetricCard(
-              label: 'Investment',
+              label: l10n.investment,
               value: investment.name,
-              trend: 'No activity in ${widget.daysSinceActivity} days',
+              trend: l10n.noActivityInDays(widget.daysSinceActivity),
               icon: Icons.account_balance_wallet_outlined,
               accentColor: AppColors.warningLight,
             ),
@@ -121,7 +122,7 @@ class _IdleAlertReportScreenState
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'Consider adding a transaction to keep this investment active.',
+                      l10n.keepInvestmentActiveAdvice,
                     ),
                   ),
                 ],
@@ -135,7 +136,7 @@ class _IdleAlertReportScreenState
           ReportActionButtons(
             buttons: [
               ReportActionButton(
-                label: 'Add Transaction',
+                label: l10n.addTransaction,
                 icon: Icons.add_circle_outline,
                 onPressed: () {
                   context.go(
@@ -144,7 +145,7 @@ class _IdleAlertReportScreenState
                 },
               ),
               ReportActionButton(
-                label: 'View Investment',
+                label: l10n.viewInvestment,
                 icon: Icons.visibility_outlined,
                 isPrimary: false,
                 onPressed: () {

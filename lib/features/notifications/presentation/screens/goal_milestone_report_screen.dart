@@ -175,8 +175,8 @@ class _GoalMilestoneReportScreenState
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               isGoalComplete
-                  ? 'You\'ve reached your ${goal.name} goal!'
-                  : 'You\'ve reached ${widget.milestonePercent}% of your ${goal.name} goal!',
+                  ? l10n.goalReachedMessage(goal.name)
+                  : l10n.goalMilestoneMessage(widget.milestonePercent, goal.name),
               style: AppTypography.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -196,7 +196,7 @@ class _GoalMilestoneReportScreenState
               children: [
                 Expanded(
                   child: ReportMetricCard(
-                    label: 'Current Amount',
+                    label: l10n.currentAmount,
                     value: currentAmountFormatted,
                     icon: Icons.account_balance_wallet_outlined,
                     accentColor: AppColors.successLight,
@@ -206,7 +206,7 @@ class _GoalMilestoneReportScreenState
                 SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: ReportMetricCard(
-                    label: 'Target Amount',
+                    label: l10n.targetAmount,
                     value: targetAmountFormatted,
                     icon: Icons.flag_outlined,
                     isSensitive: true,
@@ -332,6 +332,7 @@ class _GoalMilestoneReportScreenState
     String currencySymbol,
     String currencyLocale,
   ) {
+    final l10n = AppLocalizations.of(context);
     final amountNeeded = goal.targetAmount *
         (nextMilestone / 100) -
         progress.currentAmount;
@@ -369,7 +370,7 @@ class _GoalMilestoneReportScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Next Milestone: $nextMilestone%',
+                    l10n.nextMilestoneLabel(nextMilestone),
                     style: AppTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark

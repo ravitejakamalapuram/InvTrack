@@ -83,7 +83,7 @@ class _GoalStaleReportScreenState
                       ),
                       SizedBox(height: AppSpacing.sm),
                       Text(
-                        'No activity in ${widget.daysSinceActivity} days',
+                        l10n.noActivityInDays(widget.daysSinceActivity),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AppColors.warningLight,
                             ),
@@ -103,7 +103,7 @@ class _GoalStaleReportScreenState
                             SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(
-                                'Keep your goal active by adding funds or adjusting your target.',
+                                l10n.keepGoalActiveAdvice,
                               ),
                             ),
                           ],
@@ -118,14 +118,14 @@ class _GoalStaleReportScreenState
                 ReportActionButtons(
                   buttons: [
                     ReportActionButton(
-                      label: 'Add Funds',
+                      label: l10n.addFunds,
                       icon: Icons.add_circle_outline,
                       onPressed: () {
                         context.go('/investments');
                       },
                     ),
                     ReportActionButton(
-                      label: 'View Goal',
+                      label: l10n.viewGoal,
                       icon: Icons.visibility_outlined,
                       isPrimary: false,
                       onPressed: () {
@@ -139,7 +139,7 @@ class _GoalStaleReportScreenState
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) => Center(child: Text(l10n.errorGeneric(error.toString()))),
       ),
     );
   }

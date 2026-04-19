@@ -2893,5 +2893,25 @@
         "type": "String"
       }
     }
+  },
+  "expectedRate": "Expected Rate",
+  "@expectedRate": {
+    "description": "Label for expected interest rate on investment"
+  },
+  "portfolioRiskAlert": "Portfolio Risk Alert",
+  "@portfolioRiskAlert": {
+    "description": "Title for portfolio risk alert notification"
+  },
+  "viewInvestments": "View Investments",
+  "@viewInvestments": {
+    "description": "Button text to view all investments"
+  },
+  "milestoneAchieved": "Milestone Achieved",
+  "@milestoneAchieved": {
+    "description": "Label for milestone achievement metric"
+  },
+  "viewPortfolioHealth": "View Portfolio Health",
+  "@viewPortfolioHealth": {
+    "description": "Button text to view portfolio health metrics"
   }
 }

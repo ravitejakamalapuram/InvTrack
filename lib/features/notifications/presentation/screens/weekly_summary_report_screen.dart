@@ -134,14 +134,14 @@ class _WeeklySummaryReportScreenState
           ReportMetricsGrid(
             metrics: [
               ReportMetricCard(
-                label: 'Investments Tracked',
+                label: l10n.investmentsTracked,
                 value: '$investmentsTracked',
                 icon: Icons.account_balance_wallet_outlined,
               ),
               ReportMetricCard(
-                label: 'Added This Week',
+                label: l10n.addedThisWeek,
                 value: '₹${totalInvested.toStringAsFixed(0)}',
-                trend: '${weeklyCashFlows.where((cf) => cf.type == CashFlowType.invest).length} transactions',
+                trend: l10n.transactionsCount(weeklyCashFlows.where((cf) => cf.type == CashFlowType.invest).length),
                 icon: Icons.add_circle_outline,
                 isSensitive: true,
               ),

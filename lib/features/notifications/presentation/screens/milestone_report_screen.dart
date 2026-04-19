@@ -78,6 +78,7 @@ class _MilestoneReportScreenState
   }
 
   Widget _buildContent(BuildContext context, InvestmentEntity investment) {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -112,7 +113,7 @@ class _MilestoneReportScreenState
           Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: ReportMetricCard(
-              label: 'Milestone Achieved',
+              label: l10n.milestoneAchieved,
               value: '${widget.milestonePercent}%',
               icon: Icons.account_balance_wallet_outlined,
               accentColor: AppColors.successLight,
@@ -125,7 +126,7 @@ class _MilestoneReportScreenState
           ReportActionButtons(
             buttons: [
               ReportActionButton(
-                label: 'View Investment Details',
+                label: l10n.viewInvestmentDetails,
                 icon: Icons.visibility_outlined,
                 onPressed: () {
                   context.go('/investments/${widget.investmentId}');

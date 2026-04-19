@@ -69,13 +69,13 @@ class _GoalAtRiskReportScreenState
                       ),
                       SizedBox(height: AppSpacing.md),
                       Text(
-                        'Your ${goal.name} goal may be at risk',
+                        l10n.goalAtRiskMessage(goal.name),
                         style: Theme.of(context).textTheme.headlineSmall,
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Consider adjusting your target or adding more funds to stay on track.',
+                        l10n.adjustGoalAdvice,
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -87,14 +87,14 @@ class _GoalAtRiskReportScreenState
                 ReportActionButtons(
                   buttons: [
                     ReportActionButton(
-                      label: 'Adjust Goal',
+                      label: l10n.adjustGoal,
                       icon: Icons.edit_outlined,
                       onPressed: () {
                         context.go('/goals/${widget.goalId}/edit');
                       },
                     ),
                     ReportActionButton(
-                      label: 'View Goal Details',
+                      label: l10n.viewGoalDetails,
                       icon: Icons.visibility_outlined,
                       isPrimary: false,
                       onPressed: () {
@@ -108,7 +108,7 @@ class _GoalAtRiskReportScreenState
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        error: (error, stack) => Center(child: Text(l10n.errorGeneric(error.toString()))),
       ),
     );
   }

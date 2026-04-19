@@ -104,7 +104,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   ),
                   SizedBox(height: AppSpacing.sm),
                   Text(
-                    'This investment may have been deleted',
+                    l10n.investmentMayBeDeleted,
                     style: AppTypography.caption,
                   ),
                 ],
@@ -207,7 +207,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   ),
                   SizedBox(width: AppSpacing.sm),
                   Text(
-                    isMatured ? 'Matured' : 'Maturing Soon',
+                    isMatured ? l10n.matured : l10n.maturingSoon,
                     style: AppTypography.h3.copyWith(
                       color: isMatured
                           ? AppColors.successLight
@@ -298,7 +298,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Maturity Date',
+                        l10n.maturityDate,
                         style: AppTypography.caption.copyWith(
                           color: isDark
                               ? AppColors.neutral400Dark
@@ -319,7 +319,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Expected Rate',
+                          l10n.expectedRate,
                           style: AppTypography.caption.copyWith(
                             color: isDark
                                 ? AppColors.neutral400Dark
@@ -352,7 +352,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   children: [
                     Expanded(
                       child: ReportMetricCard(
-                        label: 'Principal',
+                        label: l10n.principal,
                         value: principalFormatted,
                         icon: Icons.account_balance_wallet_outlined,
                         isSensitive: true,
@@ -361,7 +361,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                     SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: ReportMetricCard(
-                        label: 'Expected Interest',
+                        label: l10n.expectedInterest,
                         value: interestFormatted,
                         icon: Icons.trending_up_rounded,
                         accentColor: AppColors.successLight,
@@ -372,7 +372,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                 ),
                 SizedBox(height: AppSpacing.sm),
                 ReportMetricCard(
-                  label: 'Maturity Amount',
+                  label: l10n.maturityAmount,
                   value: maturityAmountFormatted,
                   icon: Icons.monetization_on_outlined,
                   accentColor: AppColors.primaryLight,
@@ -389,7 +389,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
             buttons: [
               if (!isMatured)
                 ReportActionButton(
-                  label: 'Renew Investment',
+                  label: l10n.renewInvestment,
                   icon: Icons.autorenew_rounded,
                   onPressed: () {
                     // Navigate to add investment with pre-filled data
@@ -397,7 +397,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   },
                 ),
               ReportActionButton(
-                label: 'View Investment Details',
+                label: l10n.viewInvestmentDetails,
                 icon: Icons.visibility_outlined,
                 isPrimary: isMatured,
                 onPressed: () {

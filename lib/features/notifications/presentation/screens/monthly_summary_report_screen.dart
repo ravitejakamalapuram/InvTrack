@@ -175,12 +175,12 @@ class _MonthlySummaryReportScreenState
           ReportMetricsGrid(
             metrics: [
               ReportMetricCard(
-                label: 'Investments Tracked',
+                label: l10n.investmentsTracked,
                 value: '$investmentsTracked',
                 icon: Icons.account_balance_wallet_outlined,
               ),
               ReportMetricCard(
-                label: 'Invested This Month',
+                label: l10n.investedThisMonth,
                 value: totalInvestedFormatted,
                 trend: monthOverMonthChange != 0
                     ? '${isPositiveChange ? '+' : ''}${monthOverMonthChange.toStringAsFixed(1)}% from last month'
@@ -189,22 +189,21 @@ class _MonthlySummaryReportScreenState
                 isSensitive: true,
               ),
               ReportMetricCard(
-                label: 'Returns Received',
+                label: l10n.returnsReceived,
                 value: totalReturnsFormatted,
-                trend:
-                    '${monthlyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income).length} transactions',
+                trend: l10n.transactionsCount(monthlyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income).length),
                 icon: Icons.trending_up_rounded,
                 accentColor: AppColors.successLight,
                 isSensitive: true,
               ),
               ReportMetricCard(
-                label: 'Net Cash Flow',
+                label: l10n.netCashFlow,
                 value: netCashFlowFormatted,
                 trend: netCashFlow > 0
-                    ? 'Net investment'
+                    ? l10n.netInvestment
                     : netCashFlow < 0
-                        ? 'Net return'
-                        : 'Break-even',
+                        ? l10n.netReturn
+                        : l10n.breakEven,
                 icon: Icons.account_balance_rounded,
                 accentColor: netCashFlow > 0
                     ? AppColors.warningLight

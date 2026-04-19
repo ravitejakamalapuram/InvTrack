@@ -76,7 +76,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
                     color: AppColors.errorLight,
                   ),
                   SizedBox(height: AppSpacing.md),
-                  const Text('Investment not found'),
+                  Text(l10n.investmentNotFound),
                 ],
               ),
             );
@@ -86,12 +86,12 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
             data: (cashFlows) => _buildContent(context, investment, cashFlows),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) =>
-                Center(child: Text('Error loading cashflows: $error')),
+                Center(child: Text(l10n.errorGeneric(error.toString()))),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) =>
-            Center(child: Text('Error loading investment: $error')),
+            Center(child: Text(l10n.errorGeneric(error.toString()))),
       ),
     );
   }
@@ -171,7 +171,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
           ReportActionButtons(
             buttons: [
               ReportActionButton(
-                label: 'Record Income',
+                label: l10n.recordIncome,
                 icon: Icons.add_circle_outline,
                 onPressed: () {
                   context.go(
@@ -180,7 +180,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
                 },
               ),
               ReportActionButton(
-                label: 'View Investment',
+                label: l10n.viewInvestment,
                 icon: Icons.visibility_outlined,
                 isPrimary: false,
                 onPressed: () {

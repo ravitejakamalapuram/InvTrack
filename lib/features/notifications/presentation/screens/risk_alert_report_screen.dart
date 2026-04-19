@@ -59,7 +59,7 @@ class _RiskAlertReportScreenState
                   ),
                   SizedBox(height: AppSpacing.md),
                   Text(
-                    'Portfolio Risk Alert',
+                    l10n.portfolioRiskAlert,
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
@@ -101,14 +101,14 @@ class _RiskAlertReportScreenState
             ReportActionButtons(
               buttons: [
                 ReportActionButton(
-                  label: 'View Portfolio Health',
+                  label: l10n.viewPortfolioHealth,
                   icon: Icons.health_and_safety_outlined,
                   onPressed: () {
                     context.go('/portfolio-health');
                   },
                 ),
                 ReportActionButton(
-                  label: 'View Investments',
+                  label: l10n.viewInvestments,
                   icon: Icons.list_rounded,
                   isPrimary: false,
                   onPressed: () {
