@@ -9,13 +9,10 @@ import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
-import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investments_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/currency_settings_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class IdleAlertReportScreen extends ConsumerStatefulWidget {
@@ -80,15 +77,6 @@ class _IdleAlertReportScreenState
   }
 
   Widget _buildContent(BuildContext context, InvestmentEntity investment) {
-    final currencySymbol = ref.watch(currencySymbolProvider);
-    final currencyLocale = ref.watch(currencyLocaleProvider);
-
-    final currentValueFormatted = formatCompactCurrency(
-      investment.currentValue,
-      symbol: currencySymbol,
-      locale: currencyLocale,
-    );
-
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -108,8 +96,8 @@ class _IdleAlertReportScreenState
           Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: ReportMetricCard(
-              label: 'Current Value',
-              value: currentValueFormatted,
+              label: 'Investment',
+              value: investment.name,
               trend: 'No activity in ${widget.daysSinceActivity} days',
               icon: Icons.account_balance_wallet_outlined,
               accentColor: AppColors.warningLight,
@@ -124,12 +112,12 @@ class _IdleAlertReportScreenState
             child: Container(
               padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.infoLight.withOpacity(0.1),
+                color: AppColors.primaryLight.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.infoLight),
+                  Icon(Icons.info_outline, color: AppColors.primaryLight),
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(

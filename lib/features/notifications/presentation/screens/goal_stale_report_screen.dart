@@ -93,13 +93,13 @@ class _GoalStaleReportScreenState
                       Container(
                         padding: EdgeInsets.all(AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: AppColors.infoLight.withOpacity(0.1),
+                          color: AppColors.primaryLight.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
                             Icon(Icons.info_outline,
-                                color: AppColors.infoLight),
+                                color: AppColors.primaryLight),
                             SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(

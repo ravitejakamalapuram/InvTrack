@@ -72,7 +72,7 @@ class _RiskAlertReportScreenState
                   Container(
                     padding: EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: AppColors.infoLight.withOpacity(0.1),
+                      color: AppColors.primaryLight.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(

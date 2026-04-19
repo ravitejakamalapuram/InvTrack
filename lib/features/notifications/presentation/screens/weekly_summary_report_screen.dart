@@ -24,9 +24,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investments_provider.dart';
-import 'package:inv_tracker/features/cashflow/presentation/providers/cashflows_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Weekly summary report screen
@@ -58,8 +56,8 @@ class _WeeklySummaryReportScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final investmentsAsync = ref.watch(investmentsStreamProvider);
-    final cashFlowsAsync = ref.watch(cashFlowsStreamProvider);
+    final investmentsAsync = ref.watch(allInvestmentsProvider);
+    final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
 
     // Calculate week range
     final now = DateTime.now();

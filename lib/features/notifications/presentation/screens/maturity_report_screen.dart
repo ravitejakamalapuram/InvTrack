@@ -31,10 +31,8 @@ import 'package:inv_tracker/core/calculations/investment_projector.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investments_provider.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_calculations_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/currency_settings_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class MaturityReportScreen extends ConsumerStatefulWidget {
@@ -107,7 +105,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                   SizedBox(height: AppSpacing.sm),
                   Text(
                     'This investment may have been deleted',
-                    style: AppTypography.body2,
+                    style: AppTypography.caption,
                   ),
                 ],
               ),
@@ -128,12 +126,12 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
     final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
-    final calculationsAsync = ref.watch(
-      investmentCalculationsProvider(investment.id),
+    final statsAsync = ref.watch(
+      investmentStatsProvider(investment.id),
     );
 
     // Calculate expected maturity amount
-    final principal = calculationsAsync.value?.totalInvested ?? 0;
+    final principal = statsAsync.value?.totalInvested ?? 0;
     final expectedMaturityAmount = _calculateExpectedMaturity(
       investment,
       principal,
@@ -257,7 +255,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                       SizedBox(width: AppSpacing.xs),
                       Text(
                         investment.type.displayName,
-                        style: AppTypography.body2.copyWith(
+                        style: AppTypography.caption.copyWith(
                           color: isDark
                               ? AppColors.neutral400Dark
                               : AppColors.neutral600Light,
@@ -267,7 +265,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                         SizedBox(width: AppSpacing.sm),
                         Text(
                           '•',
-                          style: AppTypography.body2.copyWith(
+                          style: AppTypography.caption.copyWith(
                             color: isDark
                                 ? AppColors.neutral400Dark
                                 : AppColors.neutral600Light,
@@ -276,7 +274,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                         SizedBox(width: AppSpacing.sm),
                         Text(
                           investment.platform!,
-                          style: AppTypography.body2.copyWith(
+                          style: AppTypography.caption.copyWith(
                             color: isDark
                                 ? AppColors.neutral400Dark
                                 : AppColors.neutral600Light,
@@ -297,7 +295,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                     children: [
                       Text(
                         'Maturity Date',
-                        style: AppTypography.body2.copyWith(
+                        style: AppTypography.caption.copyWith(
                           color: isDark
                               ? AppColors.neutral400Dark
                               : AppColors.neutral600Light,
@@ -305,7 +303,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                       ),
                       Text(
                         maturityDateFormatted,
-                        style: AppTypography.body1.copyWith(
+                        style: AppTypography.bodyMedium.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -318,7 +316,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                       children: [
                         Text(
                           'Expected Rate',
-                          style: AppTypography.body2.copyWith(
+                          style: AppTypography.caption.copyWith(
                             color: isDark
                                 ? AppColors.neutral400Dark
                                 : AppColors.neutral600Light,
@@ -326,7 +324,7 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
                         ),
                         Text(
                           '${investment.expectedRate!.toStringAsFixed(2)}% p.a.',
-                          style: AppTypography.body1.copyWith(
+                          style: AppTypography.bodyMedium.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.successLight,
                           ),

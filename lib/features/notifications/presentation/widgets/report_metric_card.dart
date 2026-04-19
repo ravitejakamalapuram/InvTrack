@@ -66,7 +66,7 @@ class ReportMetricCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.body2.copyWith(
+                  style: AppTypography.caption.copyWith(
                     color: isDark
                         ? AppColors.neutral400Dark
                         : AppColors.neutral600Light,

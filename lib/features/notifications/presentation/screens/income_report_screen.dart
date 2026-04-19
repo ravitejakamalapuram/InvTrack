@@ -22,10 +22,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investments_provider.dart';
-import 'package:inv_tracker/features/cashflow/presentation/providers/cashflows_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/currency_settings_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class IncomeReportScreen extends ConsumerStatefulWidget {
@@ -54,7 +51,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final investmentsAsync = ref.watch(allInvestmentsProvider);
-    final cashFlowsAsync = ref.watch(cashFlowsStreamProvider);
+    final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
 
     return Scaffold(
       appBar: ReportHeader(
@@ -123,9 +120,8 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
         : 'Never';
 
     // Calculate expected income (simplified: use expected rate)
-    final expectedMonthlyIncome = investment.hasExpectedRate
-        ? (investment.currentValue * investment.expectedRate!) / 100 / 12
-        : 0.0;
+    // TODO: Use actual investment stats to calculate expected income
+    final expectedMonthlyIncome = 0.0;
 
     final expectedIncomeFormatted = formatCompactCurrency(
       expectedMonthlyIncome,

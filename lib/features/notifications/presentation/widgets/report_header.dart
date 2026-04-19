@@ -35,12 +35,12 @@ class ReportHeader extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: isDark
           ? AppColors.neutral900Dark
-          : AppColors.neutral50Light,
+          : AppColors.neutral200Light,
       elevation: 0,
       leading: IconButton(
         icon: Icon(
           Icons.arrow_back_rounded,
-          color: isDark ? AppColors.neutral50Light : AppColors.neutral900Light,
+          color: isDark ? AppColors.neutral200Light : AppColors.neutral900Light,
         ),
         onPressed: () => Navigator.of(context).pop(),
       ),
@@ -68,7 +68,7 @@ class ReportHeader extends StatelessWidget implements PreferredSizeWidget {
                   title,
                   style: AppTypography.h3.copyWith(
                     color: isDark
-                        ? AppColors.neutral50Light
+                        ? AppColors.neutral200Light
                         : AppColors.neutral900Light,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -76,7 +76,7 @@ class ReportHeader extends StatelessWidget implements PreferredSizeWidget {
                 if (subtitle != null)
                   Text(
                     subtitle!,
-                    style: AppTypography.body2.copyWith(
+                    style: AppTypography.caption.copyWith(
                       color: isDark
                           ? AppColors.neutral400Dark
                           : AppColors.neutral600Light,

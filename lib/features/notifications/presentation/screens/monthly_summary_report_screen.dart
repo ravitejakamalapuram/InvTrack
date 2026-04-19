@@ -27,10 +27,7 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investments_provider.dart';
-import 'package:inv_tracker/features/cashflow/presentation/providers/cashflows_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/currency_settings_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class MonthlySummaryReportScreen extends ConsumerStatefulWidget {
@@ -57,8 +54,8 @@ class _MonthlySummaryReportScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final investmentsAsync = ref.watch(investmentsStreamProvider);
-    final cashFlowsAsync = ref.watch(cashFlowsStreamProvider);
+    final investmentsAsync = ref.watch(allInvestmentsProvider);
+    final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
 
     // Calculate month range (1st to last day of current month)
     final now = DateTime.now();

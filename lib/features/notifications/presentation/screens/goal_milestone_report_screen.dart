@@ -16,11 +16,9 @@
 /// - View Goal Details
 library;
 
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -32,7 +30,6 @@ import 'package:inv_tracker/features/notifications/presentation/widgets/report_m
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/currency_settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class GoalMilestoneReportScreen extends ConsumerStatefulWidget {
@@ -179,7 +176,7 @@ class _GoalMilestoneReportScreenState
               isGoalComplete
                   ? 'You\'ve reached your ${goal.name} goal!'
                   : 'You\'ve reached ${widget.milestonePercent}% of your ${goal.name} goal!',
-              style: AppTypography.body1,
+              style: AppTypography.bodyMedium,
               textAlign: TextAlign.center,
             ),
           ),
@@ -351,10 +348,10 @@ class _GoalMilestoneReportScreenState
       child: Container(
         padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.infoLight.withOpacity(0.1),
+          color: AppColors.primaryLight.withOpacity(0.1),
           borderRadius: AppSizes.borderRadiusMd,
           border: Border.all(
-            color: AppColors.infoLight.withOpacity(0.3),
+            color: AppColors.primaryLight.withOpacity(0.3),
             width: 1,
           ),
         ),
@@ -363,7 +360,7 @@ class _GoalMilestoneReportScreenState
             Icon(
               Icons.trending_up_rounded,
               size: 32,
-              color: AppColors.infoLight,
+              color: AppColors.primaryLight,
             ),
             SizedBox(width: AppSpacing.md),
             Expanded(
@@ -372,17 +369,17 @@ class _GoalMilestoneReportScreenState
                 children: [
                   Text(
                     'Next Milestone: $nextMilestone%',
-                    style: AppTypography.body1.copyWith(
+                    style: AppTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark
-                          ? AppColors.neutral50Light
+                          ? AppColors.neutral200Light
                           : AppColors.neutral900Light,
                     ),
                   ),
                   SizedBox(height: AppSpacing.xs),
                   Text(
                     '$amountNeededFormatted more needed',
-                    style: AppTypography.body2.copyWith(
+                    style: AppTypography.caption.copyWith(
                       color: isDark
                           ? AppColors.neutral400Dark
                           : AppColors.neutral600Light,
@@ -401,7 +398,7 @@ class _GoalMilestoneReportScreenState
   Color _getMilestoneColor(int milestonePercent) {
     if (milestonePercent >= 100) return AppColors.successLight;
     if (milestonePercent >= 75) return AppColors.successLight;
-    if (milestonePercent >= 50) return AppColors.infoLight;
+    if (milestonePercent >= 50) return AppColors.primaryLight;
     return AppColors.primaryLight;
   }
 }
