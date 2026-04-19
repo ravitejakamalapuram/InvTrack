@@ -244,7 +244,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
       title,
       body,
       NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: NotificationPayload.goalStale(goalId),
+      payload: NotificationPayload.goalStale(goalId, daysSinceActivity),
     );
 
     LoggerService.info(

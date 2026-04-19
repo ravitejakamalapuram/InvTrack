@@ -131,7 +131,7 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
         '💤 Investment Review Needed',
         body,
         const NotificationDetails(android: androidDetails, iOS: iosDetails),
-        payload: NotificationPayload.idleAlert(inv.id),
+        payload: NotificationPayload.idleAlert(inv.id, daysSinceActivity ?? idleAlertDays),
       );
 
       LoggerService.info(

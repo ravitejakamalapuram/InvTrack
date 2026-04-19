@@ -240,8 +240,8 @@ class NotificationPayload {
   static String get monthlySummary => 'monthly_summary';
 
   /// Create a payload string for milestone celebration
-  static String milestone(String investmentId, double moic) =>
-      'milestone:$investmentId:${moic.toStringAsFixed(1)}';
+  static String milestone(String investmentId, int milestonePercent) =>
+      'milestone:$investmentId:$milestonePercent';
 
   /// Create a payload string for tax reminder
   static String taxReminder(String reminderId) => 'tax_reminder:$reminderId';
@@ -253,7 +253,8 @@ class NotificationPayload {
   static String get weeklyCheckIn => 'weekly_check_in';
 
   /// Create a payload string for idle investment alert
-  static String idleAlert(String investmentId) => 'idle_alert:$investmentId';
+  static String idleAlert(String investmentId, int daysSinceActivity) =>
+      'idle_alert:$investmentId:$daysSinceActivity';
 
   /// Create a payload string for FY summary
   static String get fySummary => 'fy_summary';
@@ -266,7 +267,8 @@ class NotificationPayload {
   static String goalAtRisk(String goalId) => 'goal_at_risk:$goalId';
 
   /// Create a payload string for goal stale alert
-  static String goalStale(String goalId) => 'goal_stale:$goalId';
+  static String goalStale(String goalId, int daysSinceActivity) =>
+      'goal_stale:$goalId:$daysSinceActivity';
 
   // ============ New User Activation Payloads ============
 

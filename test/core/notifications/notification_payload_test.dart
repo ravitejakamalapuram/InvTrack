@@ -136,16 +136,16 @@ void main() {
 
   group('NotificationPayload - Phase 2 Types', () {
     test('milestone should create correct payload string', () {
-      final payload = NotificationPayload.milestone('inv-123', 1.5);
-      expect(payload, 'milestone:inv-123:1.5');
+      final payload = NotificationPayload.milestone('inv-123', 50);
+      expect(payload, 'milestone:inv-123:50');
     });
 
     test('should parse milestone payload correctly', () {
-      final parsed = NotificationPayload.parse('milestone:inv-123:2.0');
+      final parsed = NotificationPayload.parse('milestone:inv-123:100');
 
       expect(parsed.type, NotificationPayloadType.milestoneReport);
       expect(parsed.investmentId, 'inv-123');
-      expect(parsed.params['milestonePercent'], '2.0');
+      expect(parsed.params['milestonePercent'], '100');
     });
 
     test('taxReminder should create correct payload string', () {
@@ -183,16 +183,16 @@ void main() {
     });
 
     test('idleAlert should create correct payload string', () {
-      final payload = NotificationPayload.idleAlert('inv-123');
-      expect(payload, 'idle_alert:inv-123');
+      final payload = NotificationPayload.idleAlert('inv-123', 30);
+      expect(payload, 'idle_alert:inv-123:30');
     });
 
     test('should parse idle_alert payload correctly', () {
-      final parsed = NotificationPayload.parse('idle_alert:inv-456');
+      final parsed = NotificationPayload.parse('idle_alert:inv-456:30');
 
-      expect(parsed.type, NotificationPayloadType.investmentDetail);
+      expect(parsed.type, NotificationPayloadType.idleAlertReport);
       expect(parsed.investmentId, 'inv-456');
-      expect(parsed.params['source'], 'idle_alert');
+      expect(parsed.params['daysSinceActivity'], '30');
     });
 
     test('fySummary should create correct payload string', () {

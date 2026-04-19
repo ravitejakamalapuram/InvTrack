@@ -492,12 +492,15 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       threadIdentifier: NotificationGroups.milestones,
     );
 
+    // Convert MOIC to milestone percent (e.g., 1.5x → 50%, 2.0x → 100%)
+    final milestonePercent = ((reachedMilestone - 1.0) * 100).round();
+
     await _plugin.show(
       NotificationIds.milestone(investmentId, reachedMilestone),
       title,
       body,
       NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: NotificationPayload.milestone(investmentId, reachedMilestone),
+      payload: NotificationPayload.milestone(investmentId, milestonePercent),
     );
 
     LoggerService.info(
