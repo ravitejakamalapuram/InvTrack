@@ -155,6 +155,7 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
                 value: expectedIncomeFormatted,
                 icon: Icons.trending_up_rounded,
                 accentColor: AppColors.successLight,
+                isSensitive: true,
               ),
               ReportMetricCard(
                 label: l10n.lastIncomeReceived,

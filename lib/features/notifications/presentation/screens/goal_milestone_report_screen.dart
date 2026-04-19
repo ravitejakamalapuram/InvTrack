@@ -25,6 +25,7 @@ import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
@@ -199,6 +200,7 @@ class _GoalMilestoneReportScreenState
                     value: currentAmountFormatted,
                     icon: Icons.account_balance_wallet_outlined,
                     accentColor: AppColors.successLight,
+                    isSensitive: true,
                   ),
                 ),
                 SizedBox(width: AppSpacing.sm),
@@ -207,6 +209,7 @@ class _GoalMilestoneReportScreenState
                     label: 'Target Amount',
                     value: targetAmountFormatted,
                     icon: Icons.flag_outlined,
+                    isSensitive: true,
                   ),
                 ),
               ],
@@ -375,8 +378,8 @@ class _GoalMilestoneReportScreenState
                     ),
                   ),
                   SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '$amountNeededFormatted more needed',
+                  MaskedAmountText(
+                    text: '$amountNeededFormatted more needed',
                     style: AppTypography.caption.copyWith(
                       color: isDark
                           ? AppColors.neutral400Dark

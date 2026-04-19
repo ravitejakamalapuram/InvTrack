@@ -143,6 +143,7 @@ class _WeeklySummaryReportScreenState
                 value: '₹${totalInvested.toStringAsFixed(0)}',
                 trend: '${weeklyCashFlows.where((cf) => cf.type == CashFlowType.invest).length} transactions',
                 icon: Icons.add_circle_outline,
+                isSensitive: true,
               ),
             ],
           ),

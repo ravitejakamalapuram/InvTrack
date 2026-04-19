@@ -8,18 +8,23 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 
 /// Metric card widget
-class ReportMetricCard extends StatelessWidget {
+class ReportMetricCard extends ConsumerWidget {
   final String label;
   final String value;
   final String? trend;
   final IconData? icon;
   final Color? accentColor;
+  /// Whether this value contains financial data that should be masked in privacy mode
+  final bool isSensitive;
 
   const ReportMetricCard({
     super.key,
@@ -28,12 +33,14 @@ class ReportMetricCard extends StatelessWidget {
     this.trend,
     this.icon,
     this.accentColor,
+    this.isSensitive = false,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveAccentColor = accentColor ?? AppColors.primaryLight;
+    final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.md),
@@ -77,14 +84,22 @@ class ReportMetricCard extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.xs),
 
-          // Value
-          Text(
-            value,
-            style: AppTypography.h1.copyWith(
-              color: effectiveAccentColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          // Value (with privacy masking if sensitive)
+          isSensitive && isPrivacyMode
+              ? MaskedAmountText(
+                  text: value,
+                  style: AppTypography.h1.copyWith(
+                    color: effectiveAccentColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : Text(
+                  value,
+                  style: AppTypography.h1.copyWith(
+                    color: effectiveAccentColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
           // Trend indicator
           if (trend != null) ...[

@@ -186,6 +186,7 @@ class _MonthlySummaryReportScreenState
                     ? '${isPositiveChange ? '+' : ''}${monthOverMonthChange.toStringAsFixed(1)}% from last month'
                     : null,
                 icon: Icons.add_circle_outline,
+                isSensitive: true,
               ),
               ReportMetricCard(
                 label: 'Returns Received',
@@ -194,6 +195,7 @@ class _MonthlySummaryReportScreenState
                     '${monthlyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income).length} transactions',
                 icon: Icons.trending_up_rounded,
                 accentColor: AppColors.successLight,
+                isSensitive: true,
               ),
               ReportMetricCard(
                 label: 'Net Cash Flow',
@@ -207,6 +209,7 @@ class _MonthlySummaryReportScreenState
                 accentColor: netCashFlow > 0
                     ? AppColors.warningLight
                     : AppColors.successLight,
+                isSensitive: true,
               ),
             ],
           ),
