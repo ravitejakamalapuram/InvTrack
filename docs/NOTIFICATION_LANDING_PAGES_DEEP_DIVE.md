@@ -52,7 +52,7 @@ Each of InvTrack's 11 notification types gets a dedicated report screen:
 
 ### **Deep Linking Flow**
 
-```
+```text
 User taps notification
         ↓
 NotificationPayload.parse("weekly_summary")
@@ -72,7 +72,7 @@ Displays: Bar chart, metrics, actions
 
 ### **File Structure**
 
-```
+```text
 lib/features/notifications/
 ├── domain/
 │   ├── entities/
