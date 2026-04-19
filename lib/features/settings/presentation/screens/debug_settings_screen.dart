@@ -127,8 +127,8 @@ class DebugSettingsScreen extends ConsumerWidget {
               SettingsNavTile(
                 icon: Icons.system_update,
                 iconColor: Colors.purple,
-                title: 'Force Show Update Dialog',
-                subtitle: 'Test version update popup (Feature #5 Debug)',
+                title: l10n.forceShowUpdateDialog,
+                subtitle: l10n.testVersionUpdatePopup,
                 onTap: () => _forceShowUpdateDialog(context, ref),
               ),
             ],
@@ -399,45 +399,72 @@ class DebugSettingsScreen extends ConsumerWidget {
 
   /// Force show update dialog for testing (Feature #5 Debug)
   void _forceShowUpdateDialog(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
     // Get current app version
     final packageInfoAsync = ref.read(packageInfoProvider);
-    packageInfoAsync.whenData((packageInfo) {
-      // Create mock version info
-      final mockVersion = AppVersionEntity(
-        latestVersion: '${int.parse(packageInfo.version.split('.')[0]) + 1}.0.0',
-        latestBuildNumber: int.parse(packageInfo.buildNumber) + 100,
-        minimumVersion: packageInfo.version,
-        minimumBuildNumber: int.parse(packageInfo.buildNumber),
-        forceUpdate: false,
-        releaseDate: DateTime.now().subtract(const Duration(days: 1)),
-        updateMessage: '''
-**This is a test update dialog (Debug Mode)**
+    packageInfoAsync.when(
+      data: (packageInfo) {
+        // Parse version and build number safely
+        final versionParts = packageInfo.version.split('.');
+        final majorVersion = int.tryParse(versionParts.isNotEmpty ? versionParts[0] : '1') ?? 1;
+        final currentBuildNumber = int.tryParse(packageInfo.buildNumber.replaceAll(RegExp(r'[^\d]'), '')) ?? 1;
 
-This dialog is shown to test Feature #5 (Version Update Popup Fix).
-
-In production, this appears when:
-1. Firestore has a newer version
-2. releaseDate is in the past
-3. User hasn't dismissed it yet
-
-To fix the issue:
-1. Update Firestore releaseDate to today (or remove field)
-2. Fix GitHub Actions workflow
-        ''',
-        downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
-      );
-
-      // Show dialog with mock data
-      showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => UpdateDialog(
-          versionInfo: mockVersion,
+        // Create mock version info
+        final mockVersion = AppVersionEntity(
+          latestVersion: '${majorVersion + 1}.0.0',
+          latestBuildNumber: currentBuildNumber + 100,
+          minimumVersion: packageInfo.version,
+          minimumBuildNumber: currentBuildNumber,
           forceUpdate: false,
-        ),
-      );
+          releaseDate: DateTime.now().subtract(const Duration(days: 1)),
+          updateMessage: l10n.debugUpdateDialogMessage,
+          downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+        );
 
-      LoggerService.info('Force showed update dialog for testing (Feature #5)');
-    });
+        // Show dialog with mock data
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => UpdateDialog(
+            versionInfo: mockVersion,
+            forceUpdate: false,
+          ),
+        );
+
+        LoggerService.info('Force showed update dialog for testing (Feature #5)');
+      },
+      loading: () {
+        // Show loading indicator while package info loads
+        LoggerService.info('Package info loading, cannot show update dialog yet');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.loading),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      error: (error, stackTrace) {
+        // Log and show error to user
+        LoggerService.error(
+          'Failed to load package info for update dialog',
+          error: error,
+          stackTrace: stackTrace,
+          metadata: {'screen': 'DebugSettings', 'action': 'forceShowUpdateDialog'},
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.errorOccurred(error.toString())),
+              backgroundColor: AppColors.errorLight,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+    );
   }
 }

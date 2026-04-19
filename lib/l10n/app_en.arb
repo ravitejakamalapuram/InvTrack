@@ -2465,5 +2465,20 @@
   "pleaseTryAgain": "Please try again",
   "@pleaseTryAgain": {
     "description": "Generic message to retry an operation"
+  },
+
+  "forceShowUpdateDialog": "Force Show Update Dialog",
+  "@forceShowUpdateDialog": {
+    "description": "Debug settings tile title for forcing update dialog"
+  },
+
+  "testVersionUpdatePopup": "Test version update popup (Feature #5 Debug)",
+  "@testVersionUpdatePopup": {
+    "description": "Debug settings tile subtitle for forcing update dialog"
+  },
+
+  "debugUpdateDialogMessage": "This is a test update dialog (Debug Mode)\n\nThis dialog is shown to test Feature #5 (Version Update Popup Fix).\n\nIn production, this appears when:\n1. Firestore has a newer version\n2. releaseDate is in the past\n3. User hasn't dismissed it yet\n\nTo fix the issue:\n1. Update Firestore releaseDate to today (or remove field)\n2. Fix GitHub Actions workflow",
+  "@debugUpdateDialogMessage": {
+    "description": "Mock update message shown in debug update dialog"
   }
 }

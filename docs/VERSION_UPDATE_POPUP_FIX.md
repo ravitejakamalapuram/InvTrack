@@ -70,13 +70,36 @@ releaseDate <= now() // Should be true
 **Code**:
 ```dart
 // File: lib/features/settings/presentation/screens/debug_settings_screen.dart
+// See also: lib/features/app_update/domain/entities/app_version_entity.dart
 void _forceShowUpdateDialog(BuildContext context, WidgetRef ref) {
-  showUpdateDialog(
-    context: context,
-    currentVersion: packageInfo.version,
-    latestVersion: '${nextMajorVersion}.0.0', // Mock
-    releaseNotes: 'Test update dialog (Debug Mode)',
-    isForced: false,
+  final packageInfoAsync = ref.read(packageInfoProvider);
+  packageInfoAsync.when(
+    data: (packageInfo) {
+      // Create mock AppVersionEntity for testing
+      final mockVersion = AppVersionEntity(
+        latestVersion: '${int.tryParse(packageInfo.version.split('.')[0]) ?? 1 + 1}.0.0',
+        latestBuildNumber: int.tryParse(packageInfo.buildNumber) ?? 1 + 100,
+        minimumVersion: packageInfo.version,
+        minimumBuildNumber: int.tryParse(packageInfo.buildNumber) ?? 1,
+        forceUpdate: false,
+        releaseDate: DateTime.now().subtract(const Duration(days: 1)),
+        updateMessage: 'Test update dialog (Debug Mode)',
+      );
+
+      // Show UpdateDialog using Flutter's showDialog
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => UpdateDialog(
+          versionInfo: mockVersion,
+          forceUpdate: false,
+        ),
+      );
+
+      LoggerService.info('Force showed update dialog for testing');
+    },
+    loading: () => /* show loading indicator */,
+    error: (err, stack) => /* handle error */,
   );
 }
 ```
@@ -184,10 +207,14 @@ appConfig/versionInfo
 ```json
 {
   "latestVersion": "1.2.1",
-  "releaseDate": Timestamp(2026-04-18 00:00:00), // ✅ Today or earlier
-  "releaseNotes": "- Bug fixes\n- Performance improvements",
-  "isForced": false,
-  "minSupportedVersion": "1.0.0"
+  "latestBuildNumber": 42,
+  "minimumVersion": "1.0.0",
+  "minimumBuildNumber": 1,
+  "forceUpdate": false,
+  "updateMessage": "A new version of InvTrack is available with bug fixes and performance improvements!",
+  "whatsNew": "- Bug fixes\n- Performance improvements\n- New features",
+  "downloadUrl": "https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker",
+  "releaseDate": Timestamp(2026-04-18 00:00:00)
 }
 ```
 
@@ -196,10 +223,14 @@ appConfig/versionInfo
 | Field | Type | Description | Required |
 |-------|------|-------------|----------|
 | `latestVersion` | String | Latest app version (e.g., "1.2.1") | ✅ Yes |
+| `latestBuildNumber` | Number | Latest build number (e.g., 42) | ✅ Yes |
+| `minimumVersion` | String | Minimum supported version (e.g., "1.0.0") | ✅ Yes |
+| `minimumBuildNumber` | Number | Minimum supported build number (e.g., 1) | ✅ Yes |
+| `forceUpdate` | Boolean | Force update (block app if not updated) | ❌ No (default: false) |
+| `updateMessage` | String | User-facing update message shown in dialog | ❌ No |
+| `whatsNew` | String | Markdown-formatted release notes | ❌ No |
+| `downloadUrl` | String | Custom download URL (defaults to Play Store) | ❌ No |
 | `releaseDate` | Timestamp | When version was released | ❌ No (null = immediate) |
-| `releaseNotes` | String | Markdown-formatted release notes | ❌ No |
-| `isForced` | Boolean | Force update (block app if not updated) | ❌ No (default: false) |
-| `minSupportedVersion` | String | Min version that can run | ❌ No |
 
 ---
 
