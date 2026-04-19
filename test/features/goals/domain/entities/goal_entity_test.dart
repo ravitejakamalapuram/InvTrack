@@ -153,4 +153,98 @@ void main() {
       expect(GoalIcons.available, contains(GoalIcons.defaultIcon));
     });
   });
+
+  group('GoalEntity - notificationMilestonesSent', () {
+    final baseGoal = GoalEntity(
+      id: 'goal-notif',
+      name: 'Notification Test Goal',
+      type: GoalType.targetAmount,
+      targetAmount: 50000,
+      trackingMode: GoalTrackingMode.all,
+      icon: GoalIcons.defaultIcon,
+      colorValue: GoalColors.defaultColor.toARGB32(),
+      createdAt: DateTime(2024, 6, 1),
+      updatedAt: DateTime(2024, 6, 1),
+    );
+
+    test('defaults to empty list when not provided', () {
+      expect(baseGoal.notificationMilestonesSent, isEmpty);
+    });
+
+    test('accepts non-empty list on construction', () {
+      final goal = GoalEntity(
+        id: 'goal-milestones',
+        name: 'Milestone Goal',
+        type: GoalType.targetAmount,
+        targetAmount: 100000,
+        trackingMode: GoalTrackingMode.all,
+        icon: GoalIcons.defaultIcon,
+        colorValue: GoalColors.defaultColor.toARGB32(),
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
+        notificationMilestonesSent: [25, 50],
+      );
+
+      expect(goal.notificationMilestonesSent, equals([25, 50]));
+    });
+
+    test('copyWith updates notificationMilestonesSent correctly', () {
+      final updated = baseGoal.copyWith(
+        notificationMilestonesSent: [25, 50, 75],
+      );
+
+      expect(updated.notificationMilestonesSent, equals([25, 50, 75]));
+    });
+
+    test('copyWith without notificationMilestonesSent preserves existing value', () {
+      final goalWithMilestones = baseGoal.copyWith(
+        notificationMilestonesSent: [25, 50],
+      );
+      final updated = goalWithMilestones.copyWith(name: 'Renamed Goal');
+
+      expect(updated.notificationMilestonesSent, equals([25, 50]));
+      expect(updated.name, 'Renamed Goal');
+    });
+
+    test('copyWith can set notificationMilestonesSent to empty list', () {
+      final goalWithMilestones = baseGoal.copyWith(
+        notificationMilestonesSent: [25, 50, 75, 100],
+      );
+      final cleared = goalWithMilestones.copyWith(
+        notificationMilestonesSent: [],
+      );
+
+      expect(cleared.notificationMilestonesSent, isEmpty);
+    });
+
+    test('copyWith appending a milestone creates new list', () {
+      final goalWith25 = baseGoal.copyWith(
+        notificationMilestonesSent: [25],
+      );
+      final goalWith25and50 = goalWith25.copyWith(
+        notificationMilestonesSent: [...goalWith25.notificationMilestonesSent, 50],
+      );
+
+      expect(goalWith25and50.notificationMilestonesSent, equals([25, 50]));
+      // Original should be unchanged
+      expect(goalWith25.notificationMilestonesSent, equals([25]));
+    });
+
+    test('notificationMilestonesSent stores all four standard milestones', () {
+      final goal = baseGoal.copyWith(
+        notificationMilestonesSent: [25, 50, 75, 100],
+      );
+
+      expect(goal.notificationMilestonesSent, containsAll([25, 50, 75, 100]));
+      expect(goal.notificationMilestonesSent.length, 4);
+    });
+
+    test('equality is not affected by different notificationMilestonesSent values', () {
+      // GoalEntity equality uses id, name, type, etc., NOT notificationMilestonesSent
+      final goal1 = baseGoal.copyWith(notificationMilestonesSent: []);
+      final goal2 = baseGoal.copyWith(notificationMilestonesSent: [25, 50]);
+
+      expect(goal1, equals(goal2));
+    });
+  });
 }
