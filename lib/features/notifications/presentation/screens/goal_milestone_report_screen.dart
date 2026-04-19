@@ -127,7 +127,6 @@ class _GoalMilestoneReportScreenState
     dynamic goal,
     dynamic progress,
   ) {
-    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
 
@@ -348,10 +347,10 @@ class _GoalMilestoneReportScreenState
       child: Container(
         padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.primaryLight.withOpacity(0.1),
+          color: AppColors.primaryLight.withValues(alpha: 0.1),
           borderRadius: AppSizes.borderRadiusMd,
           border: Border.all(
-            color: AppColors.primaryLight.withOpacity(0.3),
+            color: AppColors.primaryLight.withValues(alpha: 0.3),
             width: 1,
           ),
         ),

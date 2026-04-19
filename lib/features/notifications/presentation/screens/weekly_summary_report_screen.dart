@@ -123,9 +123,6 @@ class _WeeklySummaryReportScreenState
     final totalInvested = weeklyCashFlows
         .where((cf) => cf.type.name == 'INVEST')
         .fold<double>(0, (sum, cf) => sum + cf.amount);
-    final totalReturns = weeklyCashFlows
-        .where((cf) => cf.type.name == 'RETURN' || cf.type.name == 'INCOME')
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
 
     return SingleChildScrollView(
       child: Column(

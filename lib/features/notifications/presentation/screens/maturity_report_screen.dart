@@ -32,7 +32,7 @@ import 'package:inv_tracker/features/notifications/presentation/widgets/report_h
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class MaturityReportScreen extends ConsumerStatefulWidget {
@@ -123,11 +123,10 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
   }
 
   Widget _buildContent(BuildContext context, InvestmentEntity investment) {
-    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
     final statsAsync = ref.watch(
-      investmentStatsProvider(investment.id),
+      multiCurrencyInvestmentStatsProvider(investment.id),
     );
 
     // Calculate expected maturity amount
@@ -179,8 +178,8 @@ class _MaturityReportScreenState extends ConsumerState<MaturityReportScreen> {
               ),
               decoration: BoxDecoration(
                 color: isMatured
-                    ? AppColors.successLight.withOpacity(0.1)
-                    : AppColors.warningLight.withOpacity(0.1),
+                    ? AppColors.successLight.withValues(alpha: 0.1)
+                    : AppColors.warningLight.withValues(alpha: 0.1),
                 borderRadius: AppSizes.borderRadiusMd,
                 border: Border.all(
                   color: isMatured

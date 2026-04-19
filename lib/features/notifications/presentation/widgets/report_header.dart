@@ -49,7 +49,7 @@ class ReportHeader extends StatelessWidget implements PreferredSizeWidget {
           Container(
             padding: EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withOpacity(0.1),
+              color: AppColors.primaryLight.withValues(alpha: 0.1),
               borderRadius: AppSizes.borderRadiusMd,
             ),
             child: Icon(

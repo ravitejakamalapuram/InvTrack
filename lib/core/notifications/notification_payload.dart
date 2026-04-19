@@ -136,16 +136,6 @@ class NotificationPayload {
           type: NotificationPayloadType.monthlySummaryReport,
         );
 
-      case 'milestone':
-        return NotificationPayload(
-          type: NotificationPayloadType.investmentDetail,
-          investmentId: parts.length > 1 ? parts[1] : null,
-          params: {
-            'moic': parts.length > 2 ? parts[2] : '0',
-            'celebration': 'true',
-          },
-        );
-
       case 'tax_reminder':
         return const NotificationPayload(
           type: NotificationPayloadType.overview,
@@ -206,44 +196,6 @@ class NotificationPayload {
           params: {
             'daysSinceActivity': parts.length > 2 ? parts[2] : '0',
           },
-        );
-
-      case 'risk_alert':
-        return const NotificationPayload(
-          type: NotificationPayloadType.riskAlertReport,
-        );
-
-      case 'idle_alert':
-        return NotificationPayload(
-          type: NotificationPayloadType.idleAlertReport,
-          investmentId: parts.length > 1 ? parts[1] : null,
-          params: {
-            'daysSinceActivity': parts.length > 2 ? parts[2] : '0',
-          },
-        );
-
-      case 'goal_milestone':
-        return NotificationPayload(
-          type: NotificationPayloadType.goalDetail,
-          goalId: parts.length > 1 ? parts[1] : null,
-          params: {
-            'milestonePercent': parts.length > 2 ? parts[2] : '0',
-            'celebration': 'true',
-          },
-        );
-
-      case 'goal_at_risk':
-        return NotificationPayload(
-          type: NotificationPayloadType.goalDetail,
-          goalId: parts.length > 1 ? parts[1] : null,
-          params: {'source': 'at_risk'},
-        );
-
-      case 'goal_stale':
-        return NotificationPayload(
-          type: NotificationPayloadType.goalDetail,
-          goalId: parts.length > 1 ? parts[1] : null,
-          params: {'source': 'stale'},
         );
 
       case 'test_notification':

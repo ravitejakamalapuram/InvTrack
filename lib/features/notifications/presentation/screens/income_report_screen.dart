@@ -101,7 +101,6 @@ class _IncomeReportScreenState extends ConsumerState<IncomeReportScreen> {
     InvestmentEntity investment,
     List<dynamic> cashFlows,
   ) {
-    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
 
