@@ -21,7 +21,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/sample_data
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
-import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
+import 'package:inv_tracker/features/app_update/domain/entities/app_version_entity.dart';
 import 'package:inv_tracker/features/app_update/presentation/widgets/update_dialog.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -402,12 +402,15 @@ class DebugSettingsScreen extends ConsumerWidget {
     // Get current app version
     final packageInfoAsync = ref.read(packageInfoProvider);
     packageInfoAsync.whenData((packageInfo) {
-      // Show dialog with mock update info
-      showUpdateDialog(
-        context: context,
-        currentVersion: packageInfo.version,
-        latestVersion: '${int.parse(packageInfo.version.split('.')[0]) + 1}.0.0', // Mock next major version
-        releaseNotes: '''
+      // Create mock version info
+      final mockVersion = AppVersionEntity(
+        latestVersion: '${int.parse(packageInfo.version.split('.')[0]) + 1}.0.0',
+        latestBuildNumber: int.parse(packageInfo.buildNumber) + 100,
+        minimumVersion: packageInfo.version,
+        minimumBuildNumber: int.parse(packageInfo.buildNumber),
+        forceUpdate: false,
+        releaseDate: DateTime.now().subtract(const Duration(days: 1)),
+        updateMessage: '''
 **This is a test update dialog (Debug Mode)**
 
 This dialog is shown to test Feature #5 (Version Update Popup Fix).
@@ -421,7 +424,17 @@ To fix the issue:
 1. Update Firestore releaseDate to today (or remove field)
 2. Fix GitHub Actions workflow
         ''',
-        isForced: false, // Can dismiss
+        downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+      );
+
+      // Show dialog with mock data
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => UpdateDialog(
+          versionInfo: mockVersion,
+          forceUpdate: false,
+        ),
       );
 
       LoggerService.info('Force showed update dialog for testing (Feature #5)');
