@@ -150,9 +150,6 @@ class _WeeklySummaryReportScreenState
 
           SizedBox(height: AppSpacing.md),
 
-          // TODO: Add chart visualization here
-          // Weekly cashflow bar chart
-
           SizedBox(height: AppSpacing.lg),
 
           // Action Buttons

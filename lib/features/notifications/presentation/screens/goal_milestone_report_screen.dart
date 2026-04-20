@@ -114,7 +114,7 @@ class _GoalMilestoneReportScreenState
 
   /// Get next milestone percentage (or null if complete)
   int? _getNextMilestone(int currentMilestone) {
-    const milestones = [25, 50, 75, 100];
+    const milestones = [25, 50, 75, 90, 100];
     for (final milestone in milestones) {
       if (milestone > currentMilestone) {
         return milestone;

@@ -111,20 +111,20 @@ class _MonthlySummaryReportScreenState
     final activeInvestments =
         investments.where((inv) => !inv.isArchived).toList();
 
-    // Filter cashflows from this month
+    // Filter cashflows from this month (inclusive start, exclusive end)
+    final nextMonthStart = DateTime(monthStart.year, monthStart.month + 1, 1);
     final monthlyCashFlows = cashFlows.where((cf) {
       final date = cf.date;
-      return date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-          date.isBefore(monthEnd.add(const Duration(days: 1)));
+      return date.isAtSameMomentAs(monthStart) ||
+          (date.isAfter(monthStart) && date.isBefore(nextMonthStart));
     }).toList();
 
     // Calculate previous month for comparison
     final prevMonthStart = DateTime(monthStart.year, monthStart.month - 1, 1);
-    final prevMonthEnd = DateTime(monthStart.year, monthStart.month, 0);
     final prevMonthlyCashFlows = cashFlows.where((cf) {
       final date = cf.date;
-      return date.isAfter(prevMonthStart.subtract(const Duration(days: 1))) &&
-          date.isBefore(prevMonthEnd.add(const Duration(days: 1)));
+      return date.isAtSameMomentAs(prevMonthStart) ||
+          (date.isAfter(prevMonthStart) && date.isBefore(monthStart));
     }).toList();
 
     // Calculate metrics for current month

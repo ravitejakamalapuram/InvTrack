@@ -10,10 +10,13 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_header.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class FYSummaryReportScreen extends ConsumerStatefulWidget {
@@ -78,13 +81,15 @@ class _FYSummaryReportScreenState
   Widget _buildContent(
     BuildContext context,
     List<InvestmentEntity> investments,
-    List<dynamic> cashFlows,
+    List<CashFlowEntity> cashFlows,
     DateTime fyStart,
     DateTime fyEnd,
   ) {
     final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final currencyLocale = ref.watch(currencyLocaleProvider);
+    final userCurrency = ref.watch(currencyCodeProvider);
+    final conversionService = ref.watch(currencyConversionServiceProvider);
 
     // Filter cashflows from this FY
     final fyCashFlows = cashFlows.where((cf) {
@@ -93,63 +98,110 @@ class _FYSummaryReportScreenState
           date.isBefore(fyEnd.add(const Duration(days: 1)));
     }).toList();
 
-    // Calculate metrics
-    final totalInvested = fyCashFlows
-        .where((cf) => cf.type == CashFlowType.invest)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-    final totalReturns = fyCashFlows
-        .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    final totalInvestedFormatted = formatCompactCurrency(
-      totalInvested,
-      symbol: currencySymbol,
-      locale: currencyLocale,
-    );
-    final totalReturnsFormatted = formatCompactCurrency(
-      totalReturns,
-      symbol: currencySymbol,
-      locale: currencyLocale,
+    // Create future for calculating converted metrics
+    final metricsFuture = _calculateConvertedMetrics(
+      fyCashFlows,
+      userCurrency,
+      conversionService,
     );
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          SizedBox(height: AppSpacing.md),
+    return FutureBuilder<Map<String, double>>(
+      future: metricsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // Metrics
-          ReportMetricsGrid(
-            metrics: [
-              ReportMetricCard(
-                label: l10n.totalInvestedFY,
-                value: totalInvestedFormatted,
-                icon: Icons.add_circle_outline,
-                isSensitive: true,
+        if (snapshot.hasError) {
+          return Center(child: Text(l10n.errorLoadingData));
+        }
+
+        final metrics = snapshot.data!;
+        final totalInvested = metrics['invested']!;
+        final totalReturns = metrics['returns']!;
+
+        final totalInvestedFormatted = formatCompactCurrency(
+          totalInvested,
+          symbol: currencySymbol,
+          locale: currencyLocale,
+        );
+        final totalReturnsFormatted = formatCompactCurrency(
+          totalReturns,
+          symbol: currencySymbol,
+          locale: currencyLocale,
+        );
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(height: AppSpacing.md),
+
+              // Metrics
+              ReportMetricsGrid(
+                metrics: [
+                  ReportMetricCard(
+                    label: l10n.totalInvestedFY,
+                    value: totalInvestedFormatted,
+                    icon: Icons.add_circle_outline,
+                    isSensitive: true,
+                  ),
+                  ReportMetricCard(
+                    label: l10n.totalReturnsFY,
+                    value: totalReturnsFormatted,
+                    icon: Icons.trending_up_rounded,
+                    accentColor: AppColors.successLight,
+                    isSensitive: true,
+                  ),
+                ],
               ),
-              ReportMetricCard(
-                label: l10n.totalReturnsFY,
-                value: totalReturnsFormatted,
-                icon: Icons.trending_up_rounded,
-                accentColor: AppColors.successLight,
-                isSensitive: true,
+
+              SizedBox(height: AppSpacing.lg),
+
+              // Action Buttons
+              ReportActionButtons(
+                buttons: [
+                  ReportActionButton(
+                    label: l10n.viewAllInvestments,
+                    icon: Icons.list_rounded,
+                    onPressed: () => context.go('/investments'),
+                  ),
+                ],
               ),
             ],
           ),
-
-          SizedBox(height: AppSpacing.lg),
-
-          // Action Buttons
-          ReportActionButtons(
-            buttons: [
-              ReportActionButton(
-                label: l10n.viewAllInvestments,
-                icon: Icons.list_rounded,
-                onPressed: () => context.go('/investments'),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Future<Map<String, double>> _calculateConvertedMetrics(
+    List<CashFlowEntity> cashFlows,
+    String userCurrency,
+    CurrencyConversionService conversionService,
+  ) async {
+    double totalInvested = 0;
+    for (final cf in cashFlows.where((cf) => cf.type == CashFlowType.invest)) {
+      final convertedAmount = await conversionService.convert(
+        amount: cf.amount,
+        from: cf.currency,
+        to: userCurrency,
+      );
+      totalInvested += convertedAmount;
+    }
+
+    double totalReturns = 0;
+    for (final cf in cashFlows.where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)) {
+      final convertedAmount = await conversionService.convert(
+        amount: cf.amount,
+        from: cf.currency,
+        to: userCurrency,
+      );
+      totalReturns += convertedAmount;
+    }
+
+    return {
+      'invested': totalInvested,
+      'returns': totalReturns,
+    };
   }
 }

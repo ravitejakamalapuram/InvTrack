@@ -75,4 +75,6 @@ android/.bundle/
 # Patrol CLI generated files
 patrol_test/
 
-test/
+# Test-specific ignores (keep test sources tracked)
+test/coverage/
+test/**/*.g.dart
