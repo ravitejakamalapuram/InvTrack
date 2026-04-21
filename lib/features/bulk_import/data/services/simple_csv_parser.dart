@@ -201,7 +201,9 @@ class _CsvParserSession {
       rows: rows,
       errors: errors,
       totalRows: lines.length - 1,
-      validRows: rows.where((r) => r.isValid).length,
+      // Optimization: The rows list only contains valid rows due to the check above,
+      // so we can use rows.length directly to avoid an unnecessary O(N) iteration.
+      validRows: rows.length,
     );
   }
 
@@ -607,7 +609,9 @@ class GoalsCsvParser {
       rows: rows,
       errors: errors,
       totalRows: lines.length - 1,
-      validRows: rows.where((r) => r.isValid).length,
+      // Optimization: The rows list only contains valid rows due to the check above,
+      // so we can use rows.length directly to avoid an unnecessary O(N) iteration.
+      validRows: rows.length,
     );
   }
 
