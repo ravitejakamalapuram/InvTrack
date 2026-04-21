@@ -65,6 +65,11 @@ class ParsedCsvResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
+
+  /// Returns only the valid rows from the result.
+  /// Note: While the SimpleCsvParser implementation only adds valid rows to the list,
+  /// this getter provides defensive filtering to maintain the public API contract,
+  /// as ParsedCsvResult can be instantiated directly (e.g., in tests).
   List<ParsedCashFlowRow> get validRowsOnly =>
       rows.where((r) => r.isValid).toList();
 }
@@ -552,6 +557,11 @@ class ParsedGoalsResult {
   });
 
   bool get hasErrors => errors.isNotEmpty;
+
+  /// Returns only the valid rows from the result.
+  /// Note: While the GoalsCsvParser implementation only adds valid rows to the list,
+  /// this getter provides defensive filtering to maintain the public API contract,
+  /// as ParsedGoalsResult can be instantiated directly (e.g., in tests).
   List<ParsedGoalRow> get validRowsOnly =>
       rows.where((r) => r.isValid).toList();
 }
