@@ -177,25 +177,33 @@ class _FYSummaryReportScreenState
     String userCurrency,
     CurrencyConversionService conversionService,
   ) async {
-    double totalInvested = 0;
-    for (final cf in cashFlows.where((cf) => cf.type == CashFlowType.invest)) {
-      final convertedAmount = await conversionService.convert(
-        amount: cf.amount,
-        from: cf.currency,
-        to: userCurrency,
-      );
-      totalInvested += convertedAmount;
-    }
+    // Build list of futures for invest cash flows
+    final investFutures = cashFlows
+        .where((cf) => cf.type == CashFlowType.invest)
+        .map((cf) => conversionService.convert(
+              amount: cf.amount,
+              from: cf.currency,
+              to: userCurrency,
+            ))
+        .toList();
 
-    double totalReturns = 0;
-    for (final cf in cashFlows.where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)) {
-      final convertedAmount = await conversionService.convert(
-        amount: cf.amount,
-        from: cf.currency,
-        to: userCurrency,
-      );
-      totalReturns += convertedAmount;
-    }
+    // Build list of futures for returns cash flows
+    final returnsFutures = cashFlows
+        .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
+        .map((cf) => conversionService.convert(
+              amount: cf.amount,
+              from: cf.currency,
+              to: userCurrency,
+            ))
+        .toList();
+
+    // Await all conversions in parallel
+    final investResults = await Future.wait(investFutures);
+    final returnsResults = await Future.wait(returnsFutures);
+
+    // Sum the converted amounts
+    final totalInvested = investResults.fold<double>(0, (sum, amount) => sum + amount);
+    final totalReturns = returnsResults.fold<double>(0, (sum, amount) => sum + amount);
 
     return {
       'invested': totalInvested,
