@@ -227,11 +227,14 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
 
     // Listen for currency switch completion (moved from SettingsScreen)
     ref.listen<CurrencySwitchStatus>(currencySwitchProvider, (previous, next) {
+      // Safe null handling: targetCurrency should always be set but guard against null
+      final targetCurrency = next.targetCurrency ?? 'Unknown';
+
       if (next.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              l10n.currencySwitchedSuccessfully(next.targetCurrency!),
+              l10n.currencySwitchedSuccessfully(targetCurrency),
             ),
             backgroundColor: AppColors.successLight,
             duration: const Duration(seconds: 2),
@@ -246,16 +249,19 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
       } else if (next.isFailed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.currencySwitchFailed(next.targetCurrency!)),
+            content: Text(l10n.currencySwitchFailed(targetCurrency)),
             backgroundColor: AppColors.errorLight,
             duration: const Duration(seconds: 3),
             action: SnackBarAction(
               label: l10n.retry,
               textColor: Colors.white,
               onPressed: () {
-                ref
-                    .read(currencySwitchProvider.notifier)
-                    .switchCurrencyDebounced(next.targetCurrency!);
+                // Only retry if targetCurrency is not null
+                if (next.targetCurrency != null) {
+                  ref
+                      .read(currencySwitchProvider.notifier)
+                      .switchCurrencyDebounced(next.targetCurrency!);
+                }
               },
             ),
           ),
@@ -282,8 +288,8 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
                   currencySwitchStatus.fetchedRates != null &&
                       currencySwitchStatus.totalRates != null
                   ? l10n.loadingProgress(
-                      currencySwitchStatus.fetchedRates!,
-                      currencySwitchStatus.totalRates!,
+                      currencySwitchStatus.fetchedRates ?? 0,
+                      currencySwitchStatus.totalRates ?? 0,
                     )
                   : l10n.loading,
               child: SizedBox(

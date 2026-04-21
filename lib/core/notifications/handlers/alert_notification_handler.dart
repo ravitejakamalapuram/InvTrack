@@ -90,8 +90,9 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
     for (final inv in investments) {
       if (inv.isClosed) continue;
 
-      if (inv.lastActivityDate != null &&
-          inv.lastActivityDate!.isAfter(threshold)) {
+      // Safe null handling: Use local variable to avoid multiple null assertions
+      final activityDate = inv.lastActivityDate;
+      if (activityDate != null && activityDate.isAfter(threshold)) {
         continue;
       }
 
@@ -102,8 +103,8 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
 
       await markIdleAlertShown(inv.id);
 
-      final daysSinceActivity = inv.lastActivityDate != null
-          ? now.difference(inv.lastActivityDate!).inDays
+      final daysSinceActivity = activityDate != null
+          ? now.difference(activityDate).inDays
           : null;
 
       final body = daysSinceActivity != null

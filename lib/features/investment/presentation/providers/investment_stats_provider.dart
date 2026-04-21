@@ -30,14 +30,14 @@ final activeInvestmentBasicStatsMapProvider =
 
       if (investmentsAsync.hasError) {
         return AsyncValue.error(
-          investmentsAsync.error!,
-          investmentsAsync.stackTrace!,
+          investmentsAsync.error ?? Exception('Unknown error loading investments'),
+          investmentsAsync.stackTrace ?? StackTrace.current,
         );
       }
       if (cashFlowsAsync.hasError) {
         return AsyncValue.error(
-          cashFlowsAsync.error!,
-          cashFlowsAsync.stackTrace!,
+          cashFlowsAsync.error ?? Exception('Unknown error loading cash flows'),
+          cashFlowsAsync.stackTrace ?? StackTrace.current,
         );
       }
 
@@ -94,7 +94,7 @@ final activeInvestmentXirrMapProvider = FutureProvider<Map<String, double>>((
   }
 
   if (cashFlowsAsync.hasError) {
-    throw cashFlowsAsync.error!;
+    throw cashFlowsAsync.error ?? Exception('Unknown error loading cash flows for XIRR calculation');
   }
 
   final cashFlows = cashFlowsAsync.value ?? [];
