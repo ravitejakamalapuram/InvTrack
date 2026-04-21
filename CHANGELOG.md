@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Critical null-safety crash prevention
+
+## [3.56.1] - 2026-04-19
+
+### 🐛 Bug Fixes
+
 - Migrate ad provider to Riverpod 3.x and fix theme API
 
 ### 📚 Documentation

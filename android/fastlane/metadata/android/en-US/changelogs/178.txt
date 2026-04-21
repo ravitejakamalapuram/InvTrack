@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Migrate ad provider to Riverpod 3.x and fix theme API
