@@ -63,3 +63,8 @@
 ## 2026-04-15 - Optimize Collection Emptiness Checks
 **Learning:** In Dart, checking if a filtered collection is empty using `.where(...).toList().isEmpty` is an anti-pattern that causes unnecessary O(N) memory allocation and iteration.
 **Action:** Replace `.where(...).toList().isEmpty` with `!any(...)` (and `.where(...).toList().isNotEmpty` with `any(...)`) to enable short-circuiting, stopping iteration early on the first match and achieving O(1) memory and O(k) time complexity.
+
+## 2024-05-24 - Avoid Micro-Optimizations that Mask Regressions
+
+**Learning:** Attempting extreme micro-optimizations (like changing `.where().length` to `.length` on pre-validated lists) can lead to unintended consequences if data class contracts are violated or if unit tests are artificially altered to accommodate the change.
+**Action:** Focus on measurable performance bottlenecks. Crucially, never modify existing unit test data (e.g., removing invalid rows from a test suite) simply to force an optimization to pass, as this destroys test coverage and masks regressions.
