@@ -15,8 +15,6 @@ import 'package:inv_tracker/features/notifications/presentation/widgets/report_h
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_metric_card.dart';
 import 'package:inv_tracker/features/notifications/presentation/widgets/report_action_button.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class FYSummaryReportScreen extends ConsumerStatefulWidget {
