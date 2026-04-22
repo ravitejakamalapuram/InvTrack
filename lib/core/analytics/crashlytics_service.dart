@@ -18,23 +18,37 @@ final crashlyticsServiceProvider = Provider<CrashlyticsService>((ref) {
 class CrashlyticsService {
   final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
+  /// Enable Crashlytics in debug mode for testing (default: false)
+  /// Set this to true via debug settings to test Crashlytics in debug builds
+  static bool enableInDebugMode = false;
+
   /// Initialize Crashlytics with Flutter error handlers
   Future<void> initialize() async {
-    // Disable Crashlytics in debug mode to avoid noise
-    await _crashlytics.setCrashlyticsCollectionEnabled(!kDebugMode);
+    // BUG FIX: Allow enabling Crashlytics in debug mode for testing
+    // By default, disabled in debug mode to avoid noise
+    // Can be enabled via Debug Settings -> Enable Crashlytics in Debug Mode
+    final shouldEnable = !kDebugMode || enableInDebugMode;
+    await _crashlytics.setCrashlyticsCollectionEnabled(shouldEnable);
 
     // Pass all uncaught "fatal" errors from the framework to Crashlytics
     FlutterError.onError = (errorDetails) {
-      if (kDebugMode) {
-        // In debug mode, print to console
+      if (kDebugMode && !enableInDebugMode) {
+        // In debug mode (without override), print to console
         FlutterError.presentError(errorDetails);
       } else {
-        // In release mode, send to Crashlytics
+        // In release mode OR debug mode with override, send to Crashlytics
         _crashlytics.recordFlutterFatalError(errorDetails);
       }
     };
 
-    LoggerService.info('Crashlytics initialized (disabled in debug mode)');
+    LoggerService.info(
+      'Crashlytics initialized',
+      metadata: {
+        'enabled': shouldEnable,
+        'debugMode': kDebugMode,
+        'debugOverride': enableInDebugMode,
+      },
+    );
   }
 
   /// Record a non-fatal error
@@ -45,9 +59,9 @@ class CrashlyticsService {
     bool fatal = false,
     Iterable<Object> information = const [],
   }) async {
-    if (kDebugMode) {
+    if (kDebugMode && !enableInDebugMode) {
       LoggerService.error(
-        'Crashlytics recording error',
+        'Crashlytics recording error (debug mode - not sent)',
         error: exception,
         stackTrace: stack,
         metadata: {'reason': reason, 'fatal': fatal},
@@ -55,6 +69,7 @@ class CrashlyticsService {
       return;
     }
 
+    // In release mode OR debug mode with override, send to Crashlytics
     await _crashlytics.recordError(
       exception,
       stack,
@@ -62,15 +77,21 @@ class CrashlyticsService {
       fatal: fatal,
       information: information,
     );
+
+    LoggerService.info(
+      'Error recorded to Crashlytics',
+      metadata: {'reason': reason, 'fatal': fatal},
+    );
   }
 
   /// Record a Flutter error
   Future<void> recordFlutterError(FlutterErrorDetails details) async {
-    if (kDebugMode) {
+    if (kDebugMode && !enableInDebugMode) {
       FlutterError.presentError(details);
       return;
     }
     await _crashlytics.recordFlutterError(details);
+    LoggerService.info('Flutter error recorded to Crashlytics');
   }
 
   /// Set user identifier for crash reports
@@ -94,13 +115,31 @@ class CrashlyticsService {
     LoggerService.debug('Crashlytics log', metadata: {'message': message});
   }
 
-  /// Force a crash for testing (only use in debug/testing!)
+  /// Force a crash for testing (works in debug mode if enableInDebugMode is true)
+  ///
+  /// BUG FIX: Now works in debug mode when Crashlytics is enabled via debug settings
+  /// This allows testing crash reporting before releasing to production
   void testCrash() {
-    if (kDebugMode) {
-      LoggerService.warn('Test crash requested (disabled in debug mode)');
+    if (kDebugMode && !enableInDebugMode) {
+      LoggerService.warn(
+        'Test crash requested but Crashlytics is disabled in debug mode. '
+        'Enable "Crashlytics in Debug Mode" in Debug Settings to test crashes.',
+      );
       return;
     }
+
+    LoggerService.warn('Test crash initiated - app will crash now!');
     _crashlytics.crash();
+  }
+
+  /// Record a test non-fatal error for testing Crashlytics
+  Future<void> testNonFatalError() async {
+    await recordError(
+      Exception('Test non-fatal error from Debug Settings'),
+      StackTrace.current,
+      reason: 'Testing Crashlytics error reporting',
+      fatal: false,
+    );
   }
 
   /// Check if Crashlytics collection is enabled

@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
@@ -111,6 +112,9 @@ class DebugSettingsScreen extends ConsumerWidget {
           // Feature Flags (Experimental Features)
           _buildFeatureFlagsSection(context, ref),
 
+          // Crashlytics Testing (BUG FIX: Allow testing Crashlytics in debug mode)
+          _buildCrashlyticsSection(context, ref),
+
           // Diagnostics
           SettingsSection(
             title: l10n.diagnostics,
@@ -128,6 +132,64 @@ class DebugSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.xl),
         ],
       ),
+    );
+  }
+
+  /// Build Crashlytics testing section (BUG FIX for BUG-2)
+  Widget _buildCrashlyticsSection(BuildContext context, WidgetRef ref) {
+    final crashlyticsService = ref.watch(crashlyticsServiceProvider);
+    final isEnabled = crashlyticsService.isCrashlyticsCollectionEnabled;
+
+    return SettingsSection(
+      title: 'Crashlytics Testing',
+      children: [
+        // Toggle Crashlytics in debug mode
+        SettingsToggleTile(
+          icon: Icons.bug_report,
+          iconColor: Colors.red,
+          title: 'Enable Crashlytics in Debug Mode',
+          subtitle: isEnabled
+              ? 'Crashlytics is enabled - errors will be reported'
+              : 'Enable to test crash reporting in debug builds',
+          value: CrashlyticsService.enableInDebugMode,
+          onChanged: (value) async {
+            CrashlyticsService.enableInDebugMode = value;
+            // Re-initialize Crashlytics to apply changes
+            await crashlyticsService.initialize();
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    value
+                        ? 'Crashlytics enabled in debug mode'
+                        : 'Crashlytics disabled in debug mode',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+        ),
+
+        // Test non-fatal error
+        SettingsNavTile(
+          icon: Icons.error_outline,
+          iconColor: Colors.orange,
+          title: 'Test Non-Fatal Error',
+          subtitle: 'Send a test error to Firebase Crashlytics',
+          onTap: () => _handleTestNonFatalError(context, ref),
+        ),
+
+        // Test fatal crash
+        SettingsNavTile(
+          icon: Icons.warning_amber,
+          iconColor: Colors.red,
+          title: 'Test Fatal Crash',
+          subtitle: '⚠️ This will crash the app!',
+          onTap: () => _handleTestCrash(context, ref),
+        ),
+      ],
     );
   }
 
@@ -325,6 +387,94 @@ class DebugSettingsScreen extends ConsumerWidget {
           );
         }
       }
+    }
+  }
+
+  /// Handle testing non-fatal error (BUG FIX for BUG-2)
+  Future<void> _handleTestNonFatalError(BuildContext context, WidgetRef ref) async {
+    final crashlyticsService = ref.read(crashlyticsServiceProvider);
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test Non-Fatal Error'),
+        content: const Text(
+          'This will send a test non-fatal error to Firebase Crashlytics. '
+          'The error will appear in your Firebase Console within a few minutes.\n\n'
+          'Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Send Test Error'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await crashlyticsService.testNonFatalError();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Test error sent to Crashlytics! Check Firebase Console in 5 minutes.',
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Handle testing fatal crash (BUG FIX for BUG-2)
+  Future<void> _handleTestCrash(BuildContext context, WidgetRef ref) async {
+    final crashlyticsService = ref.read(crashlyticsServiceProvider);
+
+    // Show WARNING dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber, color: AppColors.errorLight),
+            const SizedBox(width: 8),
+            const Text('Test Fatal Crash'),
+          ],
+        ),
+        content: const Text(
+          '⚠️ WARNING: This will CRASH the app immediately!\n\n'
+          'The crash will be reported to Firebase Crashlytics and you will need '
+          'to restart the app.\n\n'
+          'Only use this to verify Crashlytics is working correctly.\n\n'
+          'Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.errorLight,
+            ),
+            child: const Text('Crash Now'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Give user time to read the confirmation before crashing
+      await Future.delayed(const Duration(seconds: 1));
+      crashlyticsService.testCrash();
     }
   }
 
