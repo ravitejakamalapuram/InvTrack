@@ -36,6 +36,10 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
   // ============ Goal Milestone Notifications ============
 
   /// Check if goal has reached a new milestone and show notification.
+  ///
+  /// BUG FIX: Prevents spamming notifications on every cashflow addition when goal
+  /// is already achieved (>= 100%). Only shows notification when milestone is FRESHLY
+  /// crossed, not when it's significantly exceeded.
   Future<void> checkAndShowGoalMilestone({
     required String goalId,
     required String goalName,
@@ -50,6 +54,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
 
     if (!await ensurePermissionsForShow()) return;
 
+    // Find the highest milestone that has been reached but not yet shown
     int? reachedMilestone;
     for (final milestone in goalMilestones.reversed) {
       if (progressPercent >= milestone &&
@@ -60,6 +65,45 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     }
 
     if (reachedMilestone == null) return;
+
+    // BUG FIX: Prevent spam notifications when goal is significantly exceeded
+    // Only show notification if progress is within reasonable range of milestone
+    // This prevents 120% progress from re-triggering 100% notification on every cashflow
+    if (reachedMilestone == 100) {
+      // For 100% milestone, only show if progress is between 100-110%
+      // This allows for slight overshoot but prevents spam on continued contributions
+      if (progressPercent > 110.0) {
+        // Mark as shown to prevent future spam, but don't actually show notification
+        await markGoalMilestoneShown(goalId, reachedMilestone);
+        LoggerService.debug(
+          'Goal milestone 100% already exceeded significantly, skipping notification',
+          metadata: {
+            'goalId': goalId,
+            'progressPercent': progressPercent,
+          },
+        );
+        return;
+      }
+    } else {
+      // For other milestones (25%, 50%, 75%), allow up to +15% overshoot
+      // Example: 50% milestone shows if progress is 50-65%
+      final upperBound = reachedMilestone + 15.0;
+      if (progressPercent > upperBound) {
+        // Mark as shown to prevent future spam, but don't actually show notification
+        await markGoalMilestoneShown(goalId, reachedMilestone);
+        LoggerService.debug(
+          'Goal milestone $reachedMilestone% already exceeded significantly, skipping notification',
+          metadata: {
+            'goalId': goalId,
+            'milestone': reachedMilestone,
+            'progressPercent': progressPercent,
+          },
+        );
+        return;
+      }
+    }
+
+    // All checks passed, show the notification
 
     await markGoalMilestoneShown(goalId, reachedMilestone);
 
