@@ -81,7 +81,12 @@ Future<void> _initializeNonCriticalServices(
     // Note: We create a standalone instance here since we don't have access to
     // the ProviderContainer. The service will read debug mode from SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
-    final debugModeEnabled = prefs.getBool('crashlytics_debug_mode_enabled') ?? false;
+    final debugModeEnabled =
+        prefs.getBool('crashlytics_debug_mode_enabled') ?? false;
+
+    // Set static field for backward compatibility with direct instantiation
+    CrashlyticsService.enableInDebugMode = debugModeEnabled;
+
     final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
     unawaited(crashlyticsService.initialize());
 

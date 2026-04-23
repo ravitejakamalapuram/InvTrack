@@ -157,6 +157,9 @@ class DebugSettingsScreen extends ConsumerWidget {
           value: isEnabled,
           onChanged: (value) async {
             try {
+              // Update both the provider AND the static field for backward compatibility
+              CrashlyticsService.enableInDebugMode = value;
+
               // Update the provider (which also updates Crashlytics collection)
               await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(value);
 
@@ -176,7 +179,8 @@ class DebugSettingsScreen extends ConsumerWidget {
                 );
               }
             } catch (e, st) {
-              // Revert the provider on error
+              // Revert both the provider and static field on error
+              CrashlyticsService.enableInDebugMode = !value;
               await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(!value);
 
               if (context.mounted) {

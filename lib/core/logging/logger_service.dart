@@ -130,9 +130,12 @@ class LoggerService {
       debugPrint(buffer.toString());
     }
 
-    // In production: send warnings and errors to Crashlytics
+    // Report critical errors to Crashlytics in production OR debug if enabled
     // BUT: Skip transient errors (shouldReport = false) to avoid spam
-    if (!kDebugMode && (level == LogLevel.warn || level == LogLevel.error)) {
+    final shouldSendToCrashlytics =
+        !kDebugMode || CrashlyticsService.enableInDebugMode;
+    if (shouldSendToCrashlytics &&
+        (level == LogLevel.warn || level == LogLevel.error)) {
       // Check if error is an AppException with shouldReport = false
       bool shouldReport = true;
       if (error is AppException) {
@@ -145,7 +148,9 @@ class LoggerService {
             : message;
 
         // Initialize Crashlytics service lazily to avoid provider errors
-        _crashlyticsService ??= CrashlyticsService(debugModeEnabled: false);
+        _crashlyticsService ??= CrashlyticsService(
+          debugModeEnabled: CrashlyticsService.enableInDebugMode,
+        );
         _crashlyticsService!.recordError(
           error ?? Exception(message),
           stackTrace,

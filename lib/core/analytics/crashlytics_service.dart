@@ -69,6 +69,11 @@ class CrashlyticsService {
   // Track whether handlers have been installed to make installation idempotent
   static bool _handlersInstalled = false;
 
+  /// Static flag for backward compatibility with direct instantiation
+  /// This allows CrashlyticsService(debugModeEnabled: CrashlyticsService.enableInDebugMode)
+  /// TODO: Remove once all call sites migrate to using crashlyticsDebugModeProvider
+  static bool enableInDebugMode = false;
+
   // Store previous handlers so we can chain them
   static FlutterExceptionHandler? _previousFlutterOnError;
   static ErrorCallback? _previousPlatformOnError;

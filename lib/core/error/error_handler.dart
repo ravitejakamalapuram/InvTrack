@@ -267,16 +267,20 @@ class ErrorHandler {
         debugPrint('Stack Trace:\n${exception.stackTrace}');
       }
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    } else {
-      // In production, only send to Crashlytics if shouldReport is true
-      // This prevents spam from transient errors (network timeouts, validation errors)
-      if (exception.shouldReport) {
-        CrashlyticsService(debugModeEnabled: false).recordError(
-          exception.cause ?? exception,
-          exception.stackTrace,
-          reason: '${exception.runtimeType}: ${exception.technicalMessage}',
-        );
-      }
+    }
+
+    // Report to Crashlytics in production OR in debug mode if enabled via settings
+    // This allows testing crash reporting from Debug Settings
+    final shouldSendToCrashlytics =
+        !kDebugMode || CrashlyticsService.enableInDebugMode;
+    if (shouldSendToCrashlytics && exception.shouldReport) {
+      CrashlyticsService(
+        debugModeEnabled: CrashlyticsService.enableInDebugMode,
+      ).recordError(
+        exception.cause ?? exception,
+        exception.stackTrace,
+        reason: '${exception.runtimeType}: ${exception.technicalMessage}',
+      );
     }
   }
 
