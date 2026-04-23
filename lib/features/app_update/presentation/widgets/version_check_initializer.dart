@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
+import 'package:inv_tracker/features/app_update/domain/entities/app_version_entity.dart';
 import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
 import 'package:inv_tracker/features/app_update/presentation/widgets/update_dialog.dart';
 
@@ -22,7 +24,6 @@ class _VersionCheckInitializerState
   bool _hasShownDialog = false;
   Timer? _checkTimer;
   Timer? _dialogTimer;
-  Timer? _retryTimer;
 
   @override
   void initState() {
@@ -37,7 +38,6 @@ class _VersionCheckInitializerState
   void dispose() {
     _checkTimer?.cancel();
     _dialogTimer?.cancel();
-    _retryTimer?.cancel();
     super.dispose();
   }
 
@@ -51,71 +51,131 @@ class _VersionCheckInitializerState
 
     if (!mounted) return;
 
-    // Trigger the version check
-    await ref.read(versionCheckProvider.notifier).checkForUpdates();
+    // Trigger the version check with error handling
+    try {
+      await ref.read(versionCheckProvider.notifier).checkForUpdates();
+    } catch (e, st) {
+      LoggerService.error(
+        'Error during version check',
+        error: e,
+        stackTrace: st,
+      );
+      return; // Exit gracefully on error
+    }
 
     if (!mounted) return;
 
     final versionState = ref.read(versionCheckProvider);
+    final latestVersion = versionState.latestVersion;
+
+    // Null safety: Only show dialog if latestVersion is available
+    if (latestVersion == null) {
+      LoggerService.debug('Version check completed but no latestVersion available');
+      return;
+    }
 
     // Show dialog if update is available and not dismissed
     if (versionState.shouldShowUpdateDialog && !_hasShownDialog) {
-      _showUpdateDialog(versionState.latestVersion!);
+      _showUpdateDialog(latestVersion);
     } else if (versionState.requiresForceUpdate && !_hasShownDialog) {
-      _showUpdateDialog(versionState.latestVersion!, forceUpdate: true);
+      _showUpdateDialog(latestVersion, forceUpdate: true);
     }
   }
 
-  void _showUpdateDialog(dynamic versionInfo, {bool forceUpdate = false}) {
+  /// Show update dialog with safe context handling
+  ///
+  /// Uses a retry mechanism to ensure navigator context is available
+  /// before showing the dialog. Prevents crashes when app is still initializing.
+  void _showUpdateDialog(AppVersionEntity versionInfo, {bool forceUpdate = false}) {
     if (!mounted) return;
 
     _hasShownDialog = true;
 
-    // Wait for Navigator to be ready
-    _dialogTimer = Timer(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
+    // Wait for Navigator to be fully ready (increased from 500ms to 1000ms)
+    // This prevents crashes during app initialization/update
+    _dialogTimer = Timer(const Duration(milliseconds: 1000), () {
+      _attemptShowDialog(versionInfo, forceUpdate, retryCount: 0);
+    });
+  }
 
-      final navigatorContext = rootNavigatorKey.currentContext;
-      if (navigatorContext == null) {
-        // Navigator still not ready, try one more time
-        _retryTimer = Timer(const Duration(milliseconds: 500), () {
-          if (!mounted) return;
+  /// Attempt to show dialog with retry mechanism
+  ///
+  /// Retries up to 3 times if navigator context is not yet available.
+  /// This prevents crashes when rootNavigatorKey.currentContext is null.
+  void _attemptShowDialog(
+    AppVersionEntity versionInfo,
+    bool forceUpdate, {
+    required int retryCount,
+  }) {
+    if (!mounted) return;
 
-          final retryContext = rootNavigatorKey.currentContext;
-          if (retryContext != null) {
-            showDialog(
-              context: retryContext,
-              barrierDismissible: !forceUpdate,
-              builder: (context) => UpdateDialog(
-                versionInfo: versionInfo,
-                forceUpdate: forceUpdate,
-              ),
-            );
-          }
+    final navigatorContext = rootNavigatorKey.currentContext;
+
+    if (navigatorContext == null) {
+      // Navigator not ready yet
+      if (retryCount < 3) {
+        // Retry after delay (exponential backoff: 500ms, 1000ms, 2000ms)
+        final delayMs = 500 * (1 << retryCount); // 500ms * 2^retryCount
+        LoggerService.debug(
+          'Navigator context not ready, retrying...',
+          metadata: {'retryCount': retryCount, 'delayMs': delayMs},
+        );
+
+        Timer(Duration(milliseconds: delayMs), () {
+          _attemptShowDialog(versionInfo, forceUpdate, retryCount: retryCount + 1);
         });
-        return;
+      } else {
+        // Give up after 3 retries
+        LoggerService.warn(
+          'Failed to show update dialog: navigator context unavailable after 3 retries',
+        );
       }
+      return;
+    }
 
+    // Navigator is ready, show the dialog
+    try {
       showDialog(
         context: navigatorContext,
         barrierDismissible: !forceUpdate,
-        builder: (context) =>
-            UpdateDialog(versionInfo: versionInfo, forceUpdate: forceUpdate),
+        builder: (context) => UpdateDialog(
+          versionInfo: versionInfo,
+          forceUpdate: forceUpdate,
+        ),
       );
-    });
+      LoggerService.info(
+        'Update dialog shown',
+        metadata: {'forceUpdate': forceUpdate, 'version': versionInfo.latestVersion},
+      );
+    } catch (e, st) {
+      // Catch any dialog-related errors to prevent crashes
+      LoggerService.error(
+        'Error showing update dialog',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     // Listen to version check state changes
+    // Using safe null handling to prevent crashes if latestVersion is null
     ref.listen<VersionCheckState>(versionCheckProvider, (previous, next) {
       if (!mounted || _hasShownDialog) return;
 
+      // Null safety: Only show dialog if latestVersion is available
+      final latestVersion = next.latestVersion;
+      if (latestVersion == null) {
+        LoggerService.debug('Version check completed but latestVersion is null');
+        return;
+      }
+
       // Show dialog when update becomes available
       if (next.shouldShowUpdateDialog) {
-        _showUpdateDialog(next.latestVersion!);
+        _showUpdateDialog(latestVersion);
       } else if (next.requiresForceUpdate) {
-        _showUpdateDialog(next.latestVersion!, forceUpdate: true);
+        _showUpdateDialog(latestVersion, forceUpdate: true);
       }
     });
 
