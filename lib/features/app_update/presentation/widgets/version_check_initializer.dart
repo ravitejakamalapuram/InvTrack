@@ -24,6 +24,7 @@ class _VersionCheckInitializerState
   bool _hasShownDialog = false;
   Timer? _checkTimer;
   Timer? _dialogTimer;
+  Timer? _retryTimer; // Track retry timer to cancel on dispose
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _VersionCheckInitializerState
   void dispose() {
     _checkTimer?.cancel();
     _dialogTimer?.cancel();
+    _retryTimer?.cancel(); // Cancel retry timer to prevent memory leaks
     super.dispose();
   }
 
@@ -89,7 +91,8 @@ class _VersionCheckInitializerState
   void _showUpdateDialog(AppVersionEntity versionInfo, {bool forceUpdate = false}) {
     if (!mounted) return;
 
-    _hasShownDialog = true;
+    // NOTE: _hasShownDialog is NOT set here - it's set AFTER dialog shows successfully
+    // This prevents permanent suppression if all retries fail
 
     // Wait for Navigator to be fully ready (increased from 500ms to 1000ms)
     // This prevents crashes during app initialization/update
@@ -102,6 +105,7 @@ class _VersionCheckInitializerState
   ///
   /// Retries up to 3 times if navigator context is not yet available.
   /// This prevents crashes when rootNavigatorKey.currentContext is null.
+  /// Sets _hasShownDialog ONLY after successful dialog display.
   void _attemptShowDialog(
     AppVersionEntity versionInfo,
     bool forceUpdate, {
@@ -121,14 +125,19 @@ class _VersionCheckInitializerState
           metadata: {'retryCount': retryCount, 'delayMs': delayMs},
         );
 
-        Timer(Duration(milliseconds: delayMs), () {
+        // Cancel existing retry timer before creating new one
+        _retryTimer?.cancel();
+        _retryTimer = Timer(Duration(milliseconds: delayMs), () {
           _attemptShowDialog(versionInfo, forceUpdate, retryCount: retryCount + 1);
         });
       } else {
-        // Give up after 3 retries
+        // Give up after 3 retries - do NOT set _hasShownDialog
+        // This allows future ref.listen emissions to retry showing the dialog
         LoggerService.warn(
           'Failed to show update dialog: navigator context unavailable after 3 retries',
         );
+        // Reset flag so future attempts can try again
+        _hasShownDialog = false;
       }
       return;
     }
@@ -143,12 +152,17 @@ class _VersionCheckInitializerState
           forceUpdate: forceUpdate,
         ),
       );
+
+      // SUCCESS: Set flag AFTER dialog is shown
+      _hasShownDialog = true;
+
       LoggerService.info(
         'Update dialog shown',
         metadata: {'forceUpdate': forceUpdate, 'version': versionInfo.latestVersion},
       );
     } catch (e, st) {
       // Catch any dialog-related errors to prevent crashes
+      // Do NOT set _hasShownDialog on error - allow retry
       LoggerService.error(
         'Error showing update dialog',
         error: e,
