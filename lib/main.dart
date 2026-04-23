@@ -69,12 +69,20 @@ void main() async {
 
 /// Initialize non-critical services after the first frame is rendered.
 /// This prevents blocking the UI during app startup.
+///
+/// Note: This function doesn't have access to ProviderContainer, so it creates
+/// a standalone CrashlyticsService. The debug mode state will be read from
+/// SharedPreferences when the service initializes.
 Future<void> _initializeNonCriticalServices(
   NotificationService notificationService,
 ) async {
   try {
     // Initialize Crashlytics in background
-    final crashlyticsService = CrashlyticsService();
+    // Note: We create a standalone instance here since we don't have access to
+    // the ProviderContainer. The service will read debug mode from SharedPreferences.
+    final prefs = await SharedPreferences.getInstance();
+    final debugModeEnabled = prefs.getBool('crashlytics_debug_mode_enabled') ?? false;
+    final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
     unawaited(crashlyticsService.initialize());
 
     // Initialize Performance Monitoring in background

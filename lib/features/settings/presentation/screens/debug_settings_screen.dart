@@ -7,6 +7,7 @@
 /// - Toggling debug mode on/off
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
@@ -137,37 +138,50 @@ class DebugSettingsScreen extends ConsumerWidget {
 
   /// Build Crashlytics testing section (BUG FIX for comprehensive crash reporting)
   Widget _buildCrashlyticsSection(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final crashlyticsService = ref.watch(crashlyticsServiceProvider);
-    final isEnabled = crashlyticsService.isCrashlyticsCollectionEnabled;
+    final isEnabled = ref.watch(crashlyticsDebugModeProvider);
+    final isCollectionEnabled = crashlyticsService.isCrashlyticsCollectionEnabled;
 
     return SettingsSection(
-      title: 'Crashlytics Testing',
+      title: l10n.crashlyticsTestingTitle,
       children: [
         // Toggle Crashlytics in debug mode
         SettingsToggleTile(
           icon: Icons.bug_report,
           iconColor: Colors.red,
-          title: 'Enable Crashlytics in Debug Mode',
-          subtitle: isEnabled
-              ? 'Crashlytics is enabled - errors will be reported'
-              : 'Enable to test crash reporting in debug builds',
-          value: CrashlyticsService.enableInDebugMode,
+          title: l10n.enableCrashlyticsInDebugTitle,
+          subtitle: isCollectionEnabled
+              ? l10n.crashlyticsEnabledSubtitle
+              : l10n.crashlyticsDisabledSubtitle,
+          value: isEnabled,
           onChanged: (value) async {
-            CrashlyticsService.enableInDebugMode = value;
-            // Re-initialize Crashlytics to apply changes
-            await crashlyticsService.initialize();
+            try {
+              // Update the provider (which also updates Crashlytics collection)
+              await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(value);
 
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    value
-                        ? 'Crashlytics enabled in debug mode'
-                        : 'Crashlytics disabled in debug mode',
+              // Re-initialize to ensure handlers are set up
+              await crashlyticsService.initialize();
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      value
+                          ? l10n.crashlyticsEnabledSnack
+                          : l10n.crashlyticsDisabledSnack,
+                    ),
+                    duration: const Duration(seconds: 2),
                   ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+                );
+              }
+            } catch (e, st) {
+              // Revert the provider on error
+              await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(!value);
+
+              if (context.mounted) {
+                ErrorHandler.handle(e, st, context: context, showFeedback: true);
+              }
             }
           },
         ),
@@ -176,8 +190,8 @@ class DebugSettingsScreen extends ConsumerWidget {
         SettingsNavTile(
           icon: Icons.error_outline,
           iconColor: Colors.orange,
-          title: 'Test Non-Fatal Error',
-          subtitle: 'Send a test error to Firebase Crashlytics',
+          title: l10n.testNonFatalTitle,
+          subtitle: l10n.testNonFatalSubtitle,
           onTap: () => _handleTestNonFatalError(context, ref),
         ),
 
@@ -185,8 +199,8 @@ class DebugSettingsScreen extends ConsumerWidget {
         SettingsNavTile(
           icon: Icons.warning_amber,
           iconColor: Colors.red,
-          title: 'Test Fatal Crash',
-          subtitle: '⚠️ This will crash the app!',
+          title: l10n.testFatalTitle,
+          subtitle: l10n.testFatalSubtitle,
           onTap: () => _handleTestCrash(context, ref),
         ),
       ],
@@ -452,50 +466,69 @@ class DebugSettingsScreen extends ConsumerWidget {
 
   /// Handle testing non-fatal error (BUG FIX for Crashlytics testing)
   Future<void> _handleTestNonFatalError(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final crashlyticsService = ref.read(crashlyticsServiceProvider);
+    final isEnabled = ref.read(crashlyticsDebugModeProvider);
 
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Test Non-Fatal Error'),
-        content: const Text(
-          'This will send a test non-fatal error to Firebase Crashlytics. '
-          'The error will appear in your Firebase Console within a few minutes.\n\n'
-          'Continue?',
-        ),
+        title: Text(l10n.testNonFatalDialogTitle),
+        content: Text(l10n.testNonFatalDialogMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Send Test Error'),
+            child: Text(l10n.sendTestError),
           ),
         ],
       ),
     );
 
     if (confirmed == true && context.mounted) {
-      await crashlyticsService.testNonFatalError();
+      try {
+        await crashlyticsService.testNonFatalError();
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Test error sent to Crashlytics! Check Firebase Console in 5 minutes.',
+        // Only show success message if Crashlytics is actually enabled
+        if (context.mounted && (isEnabled || !kDebugMode)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.testErrorSentSuccess),
+              duration: const Duration(seconds: 5),
             ),
-            duration: Duration(seconds: 5),
-          ),
-        );
+          );
+        }
+      } catch (e, st) {
+        if (context.mounted) {
+          ErrorHandler.handle(e, st, context: context, showFeedback: true);
+        }
       }
     }
   }
 
   /// Handle testing fatal crash (BUG FIX for Crashlytics testing)
   Future<void> _handleTestCrash(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final crashlyticsService = ref.read(crashlyticsServiceProvider);
+    final isEnabled = ref.read(crashlyticsDebugModeProvider);
+
+    // Check if Crashlytics is enabled before showing confirmation
+    if (kDebugMode && !isEnabled) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.crashlyticsDisabledWarning),
+            duration: const Duration(seconds: 4),
+            backgroundColor: AppColors.errorLight,
+          ),
+        );
+      }
+      return;
+    }
 
     // Show WARNING dialog
     final confirmed = await showDialog<bool>(
@@ -505,27 +538,21 @@ class DebugSettingsScreen extends ConsumerWidget {
           children: [
             Icon(Icons.warning_amber, color: AppColors.errorLight),
             const SizedBox(width: 8),
-            const Text('Test Fatal Crash'),
+            Text(l10n.testFatalDialogTitle),
           ],
         ),
-        content: const Text(
-          '⚠️ WARNING: This will CRASH the app immediately!\n\n'
-          'The crash will be reported to Firebase Crashlytics and you will need '
-          'to restart the app.\n\n'
-          'Only use this to verify Crashlytics is working correctly.\n\n'
-          'Continue?',
-        ),
+        content: Text(l10n.testFatalDialogMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.errorLight,
             ),
-            child: const Text('Crash Now'),
+            child: Text(l10n.crashNow),
           ),
         ],
       ),

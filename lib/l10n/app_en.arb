@@ -2465,5 +2465,95 @@
   "pleaseTryAgain": "Please try again",
   "@pleaseTryAgain": {
     "description": "Generic message to retry an operation"
+  },
+
+  "crashlyticsTestingTitle": "Crashlytics Testing",
+  "@crashlyticsTestingTitle": {
+    "description": "Crashlytics testing section title"
+  },
+
+  "enableCrashlyticsInDebugTitle": "Enable Crashlytics in Debug Mode",
+  "@enableCrashlyticsInDebugTitle": {
+    "description": "Toggle title for enabling Crashlytics in debug mode"
+  },
+
+  "crashlyticsEnabledSubtitle": "Crashlytics is enabled - errors will be reported",
+  "@crashlyticsEnabledSubtitle": {
+    "description": "Subtitle when Crashlytics is enabled"
+  },
+
+  "crashlyticsDisabledSubtitle": "Enable to test crash reporting in debug builds",
+  "@crashlyticsDisabledSubtitle": {
+    "description": "Subtitle when Crashlytics is disabled"
+  },
+
+  "crashlyticsEnabledSnack": "Crashlytics enabled in debug mode",
+  "@crashlyticsEnabledSnack": {
+    "description": "Snackbar message when Crashlytics is enabled"
+  },
+
+  "crashlyticsDisabledSnack": "Crashlytics disabled in debug mode",
+  "@crashlyticsDisabledSnack": {
+    "description": "Snackbar message when Crashlytics is disabled"
+  },
+
+  "testNonFatalTitle": "Test Non-Fatal Error",
+  "@testNonFatalTitle": {
+    "description": "Title for test non-fatal error button"
+  },
+
+  "testNonFatalSubtitle": "Send a test error to Firebase Crashlytics",
+  "@testNonFatalSubtitle": {
+    "description": "Subtitle for test non-fatal error button"
+  },
+
+  "testFatalTitle": "Test Fatal Crash",
+  "@testFatalTitle": {
+    "description": "Title for test fatal crash button"
+  },
+
+  "testFatalSubtitle": "⚠️ This will crash the app!",
+  "@testFatalSubtitle": {
+    "description": "Subtitle for test fatal crash button"
+  },
+
+  "testNonFatalDialogTitle": "Test Non-Fatal Error",
+  "@testNonFatalDialogTitle": {
+    "description": "Dialog title for test non-fatal error"
+  },
+
+  "testNonFatalDialogMessage": "This will send a test non-fatal error to Firebase Crashlytics. The error will appear in your Firebase Console within a few minutes.\n\nContinue?",
+  "@testNonFatalDialogMessage": {
+    "description": "Dialog message for test non-fatal error"
+  },
+
+  "sendTestError": "Send Test Error",
+  "@sendTestError": {
+    "description": "Button text to send test error"
+  },
+
+  "testErrorSentSuccess": "Test error sent to Crashlytics! Check Firebase Console in 5 minutes.",
+  "@testErrorSentSuccess": {
+    "description": "Success message when test error is sent"
+  },
+
+  "testFatalDialogTitle": "Test Fatal Crash",
+  "@testFatalDialogTitle": {
+    "description": "Dialog title for test fatal crash"
+  },
+
+  "testFatalDialogMessage": "⚠️ WARNING: This will CRASH the app immediately!\n\nThe crash will be reported to Firebase Crashlytics and you will need to restart the app.\n\nOnly use this to verify Crashlytics is working correctly.\n\nContinue?",
+  "@testFatalDialogMessage": {
+    "description": "Dialog message for test fatal crash"
+  },
+
+  "crashNow": "Crash Now",
+  "@crashNow": {
+    "description": "Button text to crash the app now"
+  },
+
+  "crashlyticsDisabledWarning": "Crashlytics is disabled in debug mode. Enable it in the toggle above to test crash reporting.",
+  "@crashlyticsDisabledWarning": {
+    "description": "Warning message when Crashlytics is disabled"
   }
 }
