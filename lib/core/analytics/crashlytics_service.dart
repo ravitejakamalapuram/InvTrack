@@ -9,8 +9,11 @@
 /// - Improved debug mode handling
 library;
 
+import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,7 +74,7 @@ class CrashlyticsService {
 
   /// Static flag for backward compatibility with direct instantiation
   /// This allows CrashlyticsService(debugModeEnabled: CrashlyticsService.enableInDebugMode)
-  /// TODO: Remove once all call sites migrate to using crashlyticsDebugModeProvider
+  /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
   static bool enableInDebugMode = false;
 
   // Store previous handlers so we can chain them
@@ -116,7 +119,9 @@ class CrashlyticsService {
     _previousFlutterOnError = FlutterError.onError;
 
     FlutterError.onError = (errorDetails) {
-      if (kDebugMode && !debugModeEnabled) {
+      // BUG FIX: Read static field at callback time (not instance field)
+      // This ensures the handler respects runtime toggle changes
+      if (kDebugMode && !enableInDebugMode) {
         // In debug mode (without override), print to console
         FlutterError.presentError(errorDetails);
       } else {
@@ -141,7 +146,9 @@ class CrashlyticsService {
     _previousPlatformOnError = PlatformDispatcher.instance.onError;
 
     PlatformDispatcher.instance.onError = (error, stack) {
-      if (kDebugMode && !debugModeEnabled) {
+      // BUG FIX: Read static field at callback time (not instance field)
+      // This ensures the handler respects runtime toggle changes
+      if (kDebugMode && !enableInDebugMode) {
         // In debug mode (without override), log to console
         LoggerService.error(
           'Uncaught async error',
@@ -173,36 +180,45 @@ class CrashlyticsService {
 
   /// Determine if an error is transient/recoverable (non-fatal)
   ///
+  /// BUG FIX: Use type-based checks instead of fragile string matching
   /// Returns true for network errors, timeouts, stream cancellations, etc.
   /// Returns false for logic errors, state errors, etc. (fatal)
   bool _isTransientError(dynamic error, StackTrace? stack) {
+    // Type-based checks (most reliable) - check these first
+    if (error is TimeoutException) return true;
+    if (error is SocketException) return true;
+    if (error is HttpException) return true;
+
+    // Firebase-specific errors (check code property)
+    if (error is FirebaseException) {
+      final code = error.code.toLowerCase();
+      if (code == 'unavailable' ||
+          code == 'deadline-exceeded' ||
+          code == 'cancelled' ||
+          code == 'aborted') {
+        return true;
+      }
+    }
+
+    // Stream/Future cancellation errors (check runtime type)
+    final typeName = error.runtimeType.toString();
+    if (typeName.contains('StateError')) {
+      final errorString = error.toString().toLowerCase();
+      if (errorString.contains('stream') && errorString.contains('closed')) {
+        return true;
+      }
+    }
+
+    // Fallback: narrow string-based heuristics (only for specific known patterns)
+    // Avoid generic terms like "connection" or "bad state"
     final errorString = error.toString().toLowerCase();
-
-    // Network-related errors (transient)
-    if (errorString.contains('network') ||
-        errorString.contains('timeout') ||
-        errorString.contains('connection') ||
-        errorString.contains('socket')) {
+    if (errorString.contains('connection refused') ||
+        errorString.contains('network unreachable') ||
+        errorString.contains('host unreachable')) {
       return true;
     }
 
-    // Stream/async cancellations (transient)
-    if (errorString.contains('bad state: stream has already been listened to') ||
-        errorString.contains('bad state: no element') ||
-        errorString.contains('bad state: cannot') ||
-        errorString.contains('cancelled')) {
-      return true;
-    }
-
-    // HTTP errors (transient)
-    if (errorString.contains('http') ||
-        errorString.contains('404') ||
-        errorString.contains('500') ||
-        errorString.contains('503')) {
-      return true;
-    }
-
-    // Default: treat as fatal
+    // Default: treat as fatal (better to over-report than under-report)
     return false;
   }
 
@@ -216,7 +232,8 @@ class CrashlyticsService {
     bool fatal = false,
     Iterable<Object> information = const [],
   }) async {
-    if (kDebugMode && !debugModeEnabled) {
+    // BUG FIX: Read static field (not instance field) for runtime toggle support
+    if (kDebugMode && !enableInDebugMode) {
       LoggerService.error(
         'Crashlytics recording error (debug mode - not sent)',
         error: exception,
@@ -252,7 +269,8 @@ class CrashlyticsService {
   ///
   /// BUG FIX: Now respects debug override
   Future<void> recordFlutterError(FlutterErrorDetails details) async {
-    if (kDebugMode && !debugModeEnabled) {
+    // BUG FIX: Read static field (not instance field) for runtime toggle support
+    if (kDebugMode && !enableInDebugMode) {
       FlutterError.presentError(details);
       return;
     }
@@ -296,7 +314,8 @@ class CrashlyticsService {
   /// BUG FIX: Now works in debug mode when Crashlytics is enabled via debug settings
   /// This allows testing crash reporting before releasing to production
   void testCrash() {
-    if (kDebugMode && !debugModeEnabled) {
+    // BUG FIX: Read static field (not instance field) for runtime toggle support
+    if (kDebugMode && !enableInDebugMode) {
       LoggerService.warn(
         'Test crash requested but Crashlytics is disabled in debug mode. '
         'Enable "Crashlytics in Debug Mode" in Debug Settings to test crashes.',
