@@ -83,7 +83,7 @@ class HealthScoreAutoSaveService {
         error: e,
         stackTrace: stackTrace,
       );
-      await CrashlyticsService().recordError(
+      await CrashlyticsService(debugModeEnabled: false).recordError(
         e,
         stackTrace,
         reason: 'HealthScoreAutoSave failure',

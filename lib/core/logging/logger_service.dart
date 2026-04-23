@@ -145,7 +145,7 @@ class LoggerService {
             : message;
 
         // Initialize Crashlytics service lazily to avoid provider errors
-        _crashlyticsService ??= CrashlyticsService();
+        _crashlyticsService ??= CrashlyticsService(debugModeEnabled: false);
         _crashlyticsService!.recordError(
           error ?? Exception(message),
           stackTrace,

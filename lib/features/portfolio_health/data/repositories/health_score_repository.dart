@@ -25,7 +25,8 @@ class HealthScoreRepository {
     CrashlyticsService? crashlytics,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _auth = auth ?? FirebaseAuth.instance,
-        _crashlytics = crashlytics ?? CrashlyticsService();
+        _crashlytics =
+            crashlytics ?? CrashlyticsService(debugModeEnabled: false);
 
   /// Get current user ID
   String get _userId {

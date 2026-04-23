@@ -271,7 +271,7 @@ class ErrorHandler {
       // In production, only send to Crashlytics if shouldReport is true
       // This prevents spam from transient errors (network timeouts, validation errors)
       if (exception.shouldReport) {
-        CrashlyticsService().recordError(
+        CrashlyticsService(debugModeEnabled: false).recordError(
           exception.cause ?? exception,
           exception.stackTrace,
           reason: '${exception.runtimeType}: ${exception.technicalMessage}',
