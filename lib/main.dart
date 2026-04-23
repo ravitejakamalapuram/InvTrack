@@ -53,7 +53,7 @@ void main() async {
 
       // Defer non-critical initialization to after first frame
       SchedulerBinding.instance.addPostFrameCallback((_) {
-        _initializeNonCriticalServices(notificationService);
+        _initializeNonCriticalServices(notificationService, sharedPreferences);
       });
     },
     (error, stack) {
@@ -72,16 +72,16 @@ void main() async {
 /// This prevents blocking the UI during app startup.
 ///
 /// Note: This function doesn't have access to ProviderContainer, so it creates
-/// a standalone CrashlyticsService. The debug mode state will be read from
-/// SharedPreferences when the service initializes.
+/// a standalone CrashlyticsService. The debug mode state is passed from the
+/// already-resolved SharedPreferences instance.
 Future<void> _initializeNonCriticalServices(
   NotificationService notificationService,
+  SharedPreferences prefs,
 ) async {
   try {
     // Initialize Crashlytics in background
     // Note: We create a standalone instance here since we don't have access to
-    // the ProviderContainer. The service will read debug mode from SharedPreferences.
-    final prefs = await SharedPreferences.getInstance();
+    // the ProviderContainer. Use the passed SharedPreferences instance.
     final debugModeEnabled =
         prefs.getBool(CrashlyticsDebugModeNotifier.prefKey) ?? false;
 

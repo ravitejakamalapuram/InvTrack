@@ -17,6 +17,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
@@ -57,7 +58,7 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
 
     // Only update state and prefs if Firebase call succeeded
     await prefs.setBool(prefKey, enabled);
-    CrashlyticsService.enableInDebugMode = enabled; // Keep static mirror in sync
+    CrashlyticsService._enableInDebugMode = enabled; // Keep static mirror in sync
     state = enabled;
   }
 }
@@ -79,9 +80,20 @@ class CrashlyticsService {
   static bool _handlersInstalled = false;
 
   /// Static flag for backward compatibility with direct instantiation
-  /// This allows CrashlyticsService(debugModeEnabled: CrashlyticsService.enableInDebugMode)
+  /// This allows CrashlyticsService(debugModeEnabled: CrashlyticsService._enableInDebugMode)
   /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
-  static bool enableInDebugMode = false;
+  static bool _enableInDebugMode = false;
+
+  /// Public getter for backward compatibility with existing code
+  /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
+  static bool get enableInDebugMode => _enableInDebugMode;
+
+  /// Public setter for backward compatibility with existing code
+  /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
+  static set enableInDebugMode(bool value) => _enableInDebugMode = value;
+
+  /// Single source of truth for debug mode checks
+  bool get _debugMode => _enableInDebugMode;
 
   // Store previous handlers so we can chain them
   static FlutterExceptionHandler? _previousFlutterOnError;
@@ -95,6 +107,9 @@ class CrashlyticsService {
   /// Handler installation is idempotent - handlers are installed only once
   /// and existing handlers are chained to prevent clobbering other code.
   Future<void> initialize() async {
+    // Set static flag from instance field (single source of truth)
+    _enableInDebugMode = debugModeEnabled;
+
     // Update Crashlytics collection state
     final shouldEnable = !kDebugMode || debugModeEnabled;
     await _crashlytics.setCrashlyticsCollectionEnabled(shouldEnable);
@@ -125,9 +140,9 @@ class CrashlyticsService {
     _previousFlutterOnError = FlutterError.onError;
 
     FlutterError.onError = (errorDetails) {
-      // BUG FIX: Read static field at callback time (not instance field)
+      // BUG FIX: Read via private getter for single source of truth
       // This ensures the handler respects runtime toggle changes
-      if (kDebugMode && !enableInDebugMode) {
+      if (kDebugMode && !_debugMode) {
         // In debug mode (without override), print to console
         FlutterError.presentError(errorDetails);
       } else {
@@ -152,9 +167,9 @@ class CrashlyticsService {
     _previousPlatformOnError = PlatformDispatcher.instance.onError;
 
     PlatformDispatcher.instance.onError = (error, stack) {
-      // BUG FIX: Read static field at callback time (not instance field)
+      // BUG FIX: Read via private getter for single source of truth
       // This ensures the handler respects runtime toggle changes
-      if (kDebugMode && !enableInDebugMode) {
+      if (kDebugMode && !_debugMode) {
         // In debug mode (without override), log to console
         LoggerService.error(
           'Uncaught async error',
@@ -190,6 +205,24 @@ class CrashlyticsService {
   /// Returns true for network errors, timeouts, stream cancellations, etc.
   /// Returns false for logic errors, state errors, etc. (fatal)
   bool _isTransientError(dynamic error, StackTrace? stack) {
+    // Check if error is an AppException (or subclass)
+    if (error is AppException) {
+      // If AppException says don't report, treat as transient
+      if (!error.shouldReport) return true;
+
+      // Unwrap and check the cause
+      final cause = error.cause;
+      final causeStack = error.stackTrace ?? stack;
+
+      // If there's a cause, recursively check it
+      if (cause != null) {
+        return _isTransientError(cause, causeStack);
+      }
+
+      // No cause - fall through to check the AppException itself
+      // (in case it's a NetworkException.timeout or similar)
+    }
+
     // Type-based checks (most reliable) - check these first
     if (error is TimeoutException) return true;
     if (error is SocketException) return true;
@@ -238,8 +271,8 @@ class CrashlyticsService {
     bool fatal = false,
     Iterable<Object> information = const [],
   }) async {
-    // BUG FIX: Read static field (not instance field) for runtime toggle support
-    if (kDebugMode && !enableInDebugMode) {
+    // BUG FIX: Read via private getter for single source of truth
+    if (kDebugMode && !_debugMode) {
       LoggerService.error(
         'Crashlytics recording error (debug mode - not sent)',
         error: exception,
@@ -275,8 +308,8 @@ class CrashlyticsService {
   ///
   /// BUG FIX: Now respects debug override
   Future<void> recordFlutterError(FlutterErrorDetails details) async {
-    // BUG FIX: Read static field (not instance field) for runtime toggle support
-    if (kDebugMode && !enableInDebugMode) {
+    // BUG FIX: Read via private getter for single source of truth
+    if (kDebugMode && !_debugMode) {
       FlutterError.presentError(details);
       return;
     }
@@ -320,8 +353,8 @@ class CrashlyticsService {
   /// BUG FIX: Now works in debug mode when Crashlytics is enabled via debug settings
   /// This allows testing crash reporting before releasing to production
   void testCrash() {
-    // BUG FIX: Read static field (not instance field) for runtime toggle support
-    if (kDebugMode && !enableInDebugMode) {
+    // BUG FIX: Read via private getter for single source of truth
+    if (kDebugMode && !_debugMode) {
       LoggerService.warn(
         'Test crash requested but Crashlytics is disabled in debug mode. '
         'Enable "Crashlytics in Debug Mode" in Debug Settings to test crashes.',
