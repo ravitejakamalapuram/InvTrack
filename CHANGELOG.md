@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 📚 Documentation
+
+- Add comprehensive TODO.md for features and bugs
+
 ## [3.56.2] - 2026-04-21
 
 ### 🐛 Bug Fixes
