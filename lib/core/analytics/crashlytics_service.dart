@@ -15,7 +15,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
 /// Provider for Crashlytics debug mode state (reactive toggle)
 ///

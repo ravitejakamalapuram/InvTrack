@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// Re-export sharedPreferencesProvider from core for backward compatibility
+// This fixes architecture violation while maintaining existing imports
+export 'package:inv_tracker/core/providers/shared_preferences_provider.dart'
+    show sharedPreferencesProvider;
 
 class SettingsState {
   final ThemeMode themeMode;
@@ -32,10 +38,6 @@ class SettingsState {
     );
   }
 }
-
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError();
-});
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
   SettingsNotifier.new,
