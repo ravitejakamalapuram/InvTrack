@@ -70,5 +70,18 @@
 		<string>http</string>
 		<string>mailto</string>
 	</array>
+	<!-- Google Mobile Ads App ID (REQUIRED to prevent crash) -->
+	<!-- Using Google's test app ID - replace with actual AdMob App ID in production -->
+	<!-- To get your App ID: https://admob.google.com/home/ -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<!-- SKAdNetwork identifiers for ad attribution (iOS 14+) -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 </dict>
 </plist>
