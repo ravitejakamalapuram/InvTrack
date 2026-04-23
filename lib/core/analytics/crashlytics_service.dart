@@ -46,15 +46,19 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
   /// Set Crashlytics debug mode to a specific value.
   ///
   /// This also updates the Firebase Crashlytics collection state immediately.
+  /// Updates are atomic - only persists to SharedPreferences if Firebase call succeeds.
   Future<void> setEnabled(bool enabled) async {
     if (state == enabled) return; // No change needed
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setBool(prefKey, enabled);
-    state = enabled;
 
-    // Update Crashlytics collection state
+    // Update Crashlytics collection state FIRST (atomic - only persist if this succeeds)
     final shouldEnable = !kDebugMode || enabled;
     await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(shouldEnable);
+
+    // Only update state and prefs if Firebase call succeeded
+    await prefs.setBool(prefKey, enabled);
+    CrashlyticsService.enableInDebugMode = enabled; // Keep static mirror in sync
+    state = enabled;
   }
 }
 
