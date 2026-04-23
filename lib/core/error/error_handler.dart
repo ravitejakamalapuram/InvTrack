@@ -272,12 +272,22 @@ class ErrorHandler {
     // Report to Crashlytics if exception should be reported
     // CrashlyticsService.recordError already handles debug mode gating internally
     if (exception.shouldReport) {
-      CrashlyticsService(
-        debugModeEnabled: CrashlyticsService.enableInDebugMode,
-      ).recordError(
-        exception.cause ?? exception,
-        exception.stackTrace,
-        reason: '${exception.runtimeType}: ${exception.technicalMessage}',
+      unawaited(
+        CrashlyticsService(
+          debugModeEnabled: CrashlyticsService.enableInDebugMode,
+        ).recordError(
+          exception.cause ?? exception,
+          exception.stackTrace,
+          reason: '${exception.runtimeType}: ${exception.technicalMessage}',
+        ).catchError((error, stack) {
+          // Log Crashlytics recording failure without triggering another Crashlytics call
+          debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          debugPrint('⚠️  Failed to record error to Crashlytics');
+          debugPrint('Original exception: ${exception.runtimeType}');
+          debugPrint('Crashlytics error: $error');
+          debugPrint('Stack trace: $stack');
+          debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        }),
       );
     }
   }

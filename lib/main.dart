@@ -89,7 +89,20 @@ Future<void> _initializeNonCriticalServices(
     CrashlyticsService.enableInDebugMode = debugModeEnabled;
 
     final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
-    unawaited(crashlyticsService.initialize());
+    unawaited(
+      crashlyticsService.initialize().catchError((error, stack) {
+        // Log Crashlytics initialization failure
+        LoggerService.error(
+          'Failed to initialize CrashlyticsService',
+          error: error,
+          stackTrace: stack,
+          metadata: {
+            'service': 'CrashlyticsService',
+            'debugModeEnabled': debugModeEnabled.toString(),
+          },
+        );
+      }),
+    );
 
     // Initialize Performance Monitoring in background
     final performanceService = PerformanceService();

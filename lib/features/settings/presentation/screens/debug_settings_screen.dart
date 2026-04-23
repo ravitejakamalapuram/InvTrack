@@ -10,7 +10,6 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
@@ -21,6 +20,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/crashlytics_settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -113,8 +113,8 @@ class DebugSettingsScreen extends ConsumerWidget {
           // Feature Flags (Experimental Features)
           _buildFeatureFlagsSection(context, ref),
 
-          // BUG FIX: Crashlytics Testing Section
-          _buildCrashlyticsSection(context, ref),
+          // Crashlytics Testing Section
+          const CrashlyticsSettingsSection(),
 
           // Diagnostics
           SettingsSection(
@@ -133,93 +133,6 @@ class DebugSettingsScreen extends ConsumerWidget {
           SizedBox(height: AppSpacing.xl),
         ],
       ),
-    );
-  }
-
-  /// Build Crashlytics testing section (BUG FIX for comprehensive crash reporting)
-  Widget _buildCrashlyticsSection(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final crashlyticsService = ref.watch(crashlyticsServiceProvider);
-    final isEnabled = ref.watch(crashlyticsDebugModeProvider);
-    final isCollectionEnabled = crashlyticsService.isCrashlyticsCollectionEnabled;
-
-    return SettingsSection(
-      title: l10n.crashlyticsTestingTitle,
-      children: [
-        // Toggle Crashlytics in debug mode
-        SettingsToggleTile(
-          icon: Icons.bug_report,
-          iconColor: Colors.red,
-          title: l10n.enableCrashlyticsInDebugTitle,
-          subtitle: isCollectionEnabled
-              ? l10n.crashlyticsEnabledSubtitle
-              : l10n.crashlyticsDisabledSubtitle,
-          value: isEnabled,
-          onChanged: (value) async {
-            try {
-              // Update the provider first (which also updates Crashlytics collection)
-              await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(value);
-
-              // Update the static field AFTER provider succeeds for backward compatibility
-              CrashlyticsService.enableInDebugMode = value;
-
-              // Re-read the provider to get fresh instance with updated debugModeEnabled
-              final freshCrashlyticsService = ref.read(crashlyticsServiceProvider);
-              await freshCrashlyticsService.initialize();
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      value
-                          ? l10n.crashlyticsEnabledSnack
-                          : l10n.crashlyticsDisabledSnack,
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            } catch (e, st) {
-              // Revert both the provider and static field on error
-              // Wrap revert logic to prevent masking the original error
-              try {
-                await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(!value);
-                CrashlyticsService.enableInDebugMode = !value;
-              } catch (revertError, revertStack) {
-                // Log revert failure but don't replace original error
-                LoggerService.error(
-                  'Failed to revert Crashlytics debug mode setting',
-                  error: revertError,
-                  stackTrace: revertStack,
-                  metadata: {'originalError': e.toString()},
-                );
-              }
-
-              if (context.mounted) {
-                ErrorHandler.handle(e, st, context: context, showFeedback: true);
-              }
-            }
-          },
-        ),
-
-        // Test non-fatal error
-        SettingsNavTile(
-          icon: Icons.error_outline,
-          iconColor: Colors.orange,
-          title: l10n.testNonFatalTitle,
-          subtitle: l10n.testNonFatalSubtitle,
-          onTap: () => _handleTestNonFatalError(context, ref),
-        ),
-
-        // Test fatal crash
-        SettingsNavTile(
-          icon: Icons.warning_amber,
-          iconColor: Colors.red,
-          title: l10n.testFatalTitle,
-          subtitle: l10n.testFatalSubtitle,
-          onTap: () => _handleTestCrash(context, ref),
-        ),
-      ],
     );
   }
 
@@ -480,104 +393,4 @@ class DebugSettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Handle testing non-fatal error (BUG FIX for Crashlytics testing)
-  Future<void> _handleTestNonFatalError(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final crashlyticsService = ref.read(crashlyticsServiceProvider);
-    final isEnabled = ref.read(crashlyticsDebugModeProvider);
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.testNonFatalDialogTitle),
-        content: Text(l10n.testNonFatalDialogMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.sendTestError),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        await crashlyticsService.testNonFatalError();
-
-        // Only show success message if Crashlytics is actually enabled
-        if (context.mounted && (isEnabled || !kDebugMode)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.testErrorSentSuccess),
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      } catch (e, st) {
-        if (context.mounted) {
-          ErrorHandler.handle(e, st, context: context, showFeedback: true);
-        }
-      }
-    }
-  }
-
-  /// Handle testing fatal crash (BUG FIX for Crashlytics testing)
-  Future<void> _handleTestCrash(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final crashlyticsService = ref.read(crashlyticsServiceProvider);
-    final isEnabled = ref.read(crashlyticsDebugModeProvider);
-
-    // Check if Crashlytics is enabled before showing confirmation
-    if (kDebugMode && !isEnabled) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.crashlyticsDisabledWarning),
-            duration: const Duration(seconds: 4),
-            backgroundColor: AppColors.errorLight,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Show WARNING dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber, color: AppColors.errorLight),
-            const SizedBox(width: 8),
-            Text(l10n.testFatalDialogTitle),
-          ],
-        ),
-        content: Text(l10n.testFatalDialogMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.errorLight,
-            ),
-            child: Text(l10n.crashNow),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      // Give user time to read the confirmation before crashing
-      await Future.delayed(const Duration(seconds: 1));
-      crashlyticsService.testCrash();
-    }
-  }
 }
