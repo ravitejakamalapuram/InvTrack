@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
 void main() async {
   runZonedGuarded(
@@ -82,7 +83,7 @@ Future<void> _initializeNonCriticalServices(
     // the ProviderContainer. The service will read debug mode from SharedPreferences.
     final prefs = await SharedPreferences.getInstance();
     final debugModeEnabled =
-        prefs.getBool('crashlytics_debug_mode_enabled') ?? false;
+        prefs.getBool(CrashlyticsDebugModeNotifier.prefKey) ?? false;
 
     // Set static field for backward compatibility with direct instantiation
     CrashlyticsService.enableInDebugMode = debugModeEnabled;

@@ -157,14 +157,15 @@ class DebugSettingsScreen extends ConsumerWidget {
           value: isEnabled,
           onChanged: (value) async {
             try {
-              // Update both the provider AND the static field for backward compatibility
-              CrashlyticsService.enableInDebugMode = value;
-
-              // Update the provider (which also updates Crashlytics collection)
+              // Update the provider first (which also updates Crashlytics collection)
               await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(value);
 
-              // Re-initialize to ensure handlers are set up
-              await crashlyticsService.initialize();
+              // Update the static field AFTER provider succeeds for backward compatibility
+              CrashlyticsService.enableInDebugMode = value;
+
+              // Re-read the provider to get fresh instance with updated debugModeEnabled
+              final freshCrashlyticsService = ref.read(crashlyticsServiceProvider);
+              await freshCrashlyticsService.initialize();
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -180,8 +181,19 @@ class DebugSettingsScreen extends ConsumerWidget {
               }
             } catch (e, st) {
               // Revert both the provider and static field on error
-              CrashlyticsService.enableInDebugMode = !value;
-              await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(!value);
+              // Wrap revert logic to prevent masking the original error
+              try {
+                await ref.read(crashlyticsDebugModeProvider.notifier).setEnabled(!value);
+                CrashlyticsService.enableInDebugMode = !value;
+              } catch (revertError, revertStack) {
+                // Log revert failure but don't replace original error
+                LoggerService.error(
+                  'Failed to revert Crashlytics debug mode setting',
+                  error: revertError,
+                  stackTrace: revertStack,
+                  metadata: {'originalError': e.toString()},
+                );
+              }
 
               if (context.mounted) {
                 ErrorHandler.handle(e, st, context: context, showFeedback: true);

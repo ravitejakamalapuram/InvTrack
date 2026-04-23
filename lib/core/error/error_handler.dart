@@ -269,11 +269,9 @@ class ErrorHandler {
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
 
-    // Report to Crashlytics in production OR in debug mode if enabled via settings
-    // This allows testing crash reporting from Debug Settings
-    final shouldSendToCrashlytics =
-        !kDebugMode || CrashlyticsService.enableInDebugMode;
-    if (shouldSendToCrashlytics && exception.shouldReport) {
+    // Report to Crashlytics if exception should be reported
+    // CrashlyticsService.recordError already handles debug mode gating internally
+    if (exception.shouldReport) {
       CrashlyticsService(
         debugModeEnabled: CrashlyticsService.enableInDebugMode,
       ).recordError(

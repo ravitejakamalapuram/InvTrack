@@ -33,12 +33,14 @@ final crashlyticsDebugModeProvider = NotifierProvider<CrashlyticsDebugModeNotifi
 /// When enabled in debug mode, Crashlytics will collect and report crashes.
 /// When disabled in debug mode, errors are only logged locally.
 class CrashlyticsDebugModeNotifier extends Notifier<bool> {
-  static const _prefKey = 'crashlytics_debug_mode_enabled';
+  /// SharedPreferences key for storing Crashlytics debug mode state.
+  /// Public to allow consistent access from main.dart initialization.
+  static const String prefKey = 'crashlytics_debug_mode_enabled';
 
   @override
   bool build() {
     final prefs = ref.watch(sharedPreferencesProvider);
-    return prefs.getBool(_prefKey) ?? false;
+    return prefs.getBool(prefKey) ?? false;
   }
 
   /// Set Crashlytics debug mode to a specific value.
@@ -47,7 +49,7 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
   Future<void> setEnabled(bool enabled) async {
     if (state == enabled) return; // No change needed
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setBool(_prefKey, enabled);
+    await prefs.setBool(prefKey, enabled);
     state = enabled;
 
     // Update Crashlytics collection state
