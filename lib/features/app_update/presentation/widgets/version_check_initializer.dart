@@ -96,8 +96,9 @@ class _VersionCheckInitializerState
 
     // Wait for Navigator to be fully ready (increased from 500ms to 1000ms)
     // This prevents crashes during app initialization/update
-    // Cancel existing timer to prevent duplicate dialogs if ref.listen fires again
+    // Cancel ALL existing timers to prevent duplicate dialogs and overlapping retry chains
     _dialogTimer?.cancel();
+    _retryTimer?.cancel(); // CRITICAL: Cancel retry timer to prevent race conditions
     _dialogTimer = Timer(const Duration(milliseconds: 1000), () {
       _attemptShowDialog(versionInfo, forceUpdate, retryCount: 0);
     });
@@ -105,7 +106,8 @@ class _VersionCheckInitializerState
 
   /// Attempt to show dialog with retry mechanism
   ///
-  /// Retries up to 3 times if navigator context is not yet available.
+  /// Retries up to 3 times with exponential backoff (500ms, 1000ms, 2000ms),
+  /// then one final retry after 5 seconds for slow cold starts.
   /// This prevents crashes when rootNavigatorKey.currentContext is null.
   /// Sets _hasShownDialog ONLY after successful dialog display.
   void _attemptShowDialog(
@@ -114,6 +116,10 @@ class _VersionCheckInitializerState
     required int retryCount,
   }) {
     if (!mounted) return;
+
+    // Defense-in-depth: Bail early if dialog already shown
+    // (prevents duplicate dialogs from any stale timers)
+    if (_hasShownDialog) return;
 
     final navigatorContext = rootNavigatorKey.currentContext;
 
@@ -133,13 +139,43 @@ class _VersionCheckInitializerState
           _attemptShowDialog(versionInfo, forceUpdate, retryCount: retryCount + 1);
         });
       } else {
-        // Give up after 3 retries - do NOT set _hasShownDialog
-        // This allows future ref.listen emissions to retry showing the dialog
-        LoggerService.warn(
-          'Failed to show update dialog: navigator context unavailable after 3 retries',
+        // After 3 fast retries, schedule one final retry after 5 seconds
+        // This handles slow cold starts without blocking future attempts
+        LoggerService.debug(
+          'Navigator context unavailable after 3 retries, scheduling final retry in 5s...',
         );
-        // Reset flag so future attempts can try again
-        _hasShownDialog = false;
+
+        _retryTimer?.cancel();
+        _retryTimer = Timer(const Duration(seconds: 5), () {
+          if (!mounted || _hasShownDialog) return;
+
+          final context = rootNavigatorKey.currentContext;
+          if (context != null) {
+            // SUCCESS: Navigator ready after extended delay
+            try {
+              showDialog(
+                context: context,
+                barrierDismissible: !forceUpdate,
+                builder: (ctx) => UpdateDialog(
+                  versionInfo: versionInfo,
+                  forceUpdate: forceUpdate,
+                ),
+              );
+              _hasShownDialog = true;
+            } catch (e, st) {
+              LoggerService.error(
+                'Error showing update dialog on final retry',
+                error: e,
+                stackTrace: st,
+              );
+            }
+          } else {
+            // PERMANENT FAILURE: Log and allow future ref.listen to retry
+            LoggerService.warn(
+              'Failed to show update dialog: navigator context unavailable after final retry (9.5s total)',
+            );
+          }
+        });
       }
       return;
     }
