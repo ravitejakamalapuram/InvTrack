@@ -25,6 +25,12 @@ void main() {
       expect(CsvUtils.sanitizeField('\rCR'), "'\rCR");
     });
 
+    test('sanitizeField should sanitize when spaces precede dangerous characters', () {
+      expect(CsvUtils.sanitizeField(' =SUM(A1:B1)'), "' =SUM(A1:B1)");
+      expect(CsvUtils.sanitizeField('   +SUM(A1:B1)'), "'   +SUM(A1:B1)");
+      expect(CsvUtils.sanitizeField('\n-SUM(A1:B1)'), "'\n-SUM(A1:B1)");
+    });
+
     test(
       'sanitizeField should not sanitize if dangerous char is not at start',
       () {
