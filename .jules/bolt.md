@@ -68,3 +68,7 @@
 
 **Learning:** Attempting extreme micro-optimizations (like changing `.where().length` to `.length` on pre-validated lists) can lead to unintended consequences if data class contracts are violated or if unit tests are artificially altered to accommodate the change.
 **Action:** Focus on measurable performance bottlenecks. Crucially, never modify existing unit test data (e.g., removing invalid rows from a test suite) simply to force an optimization to pass, as this destroys test coverage and masks regressions.
+
+## 2024-05-25 - Single Pass Multiple Metric Extraction in Merge Dialog
+**Learning:** When calculating `investmentTypes` to pass to a dialog, combining multiple iterations over `toMerge` (like finding the most common type via `.fold()`/`reduce()` or counting and making `.map().toSet().toList()`) causes multiple list and closure allocations.
+**Action:** Replace multiple sequential operations (like `.where().toList()` and `.map().toSet().toList()`) with a single `O(N)` pass `for` loop to build the required lists/sets simultaneously and eliminate overhead.

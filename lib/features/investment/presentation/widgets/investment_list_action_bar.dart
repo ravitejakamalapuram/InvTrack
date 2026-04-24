@@ -101,14 +101,16 @@ class InvestmentListActionBar extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final listState = ref.read(investmentListStateProvider);
     final allInvestments = ref.read(allInvestmentsProvider).value ?? [];
-    final toMerge = allInvestments
-        .where((i) => listState.selectedIds.contains(i.id))
-        .toList();
 
-    // Find the most common type as default
+    // Optimization: Single pass loop for multiple metrics replacing sequential .where().toList() calls
     final typeCount = <InvestmentType, int>{};
-    for (final inv in toMerge) {
-      typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
+    final investmentTypesSet = <InvestmentType>{};
+
+    for (final inv in allInvestments) {
+      if (listState.selectedIds.contains(inv.id)) {
+        typeCount[inv.type] = (typeCount[inv.type] ?? 0) + 1;
+        investmentTypesSet.add(inv.type);
+      }
     }
 
     // Optimization: Replace .reduce() with a standard loop to avoid closure overhead
@@ -126,7 +128,7 @@ class InvestmentListActionBar extends ConsumerWidget {
       context: context,
       selectedCount: listState.selectedIds.length,
       defaultType: defaultType,
-      investmentTypes: toMerge.map((i) => i.type).toSet().toList(),
+      investmentTypes: investmentTypesSet.toList(),
     );
 
     if (result != null && result.name.isNotEmpty && context.mounted) {
