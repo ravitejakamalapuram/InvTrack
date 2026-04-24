@@ -96,6 +96,8 @@ class _VersionCheckInitializerState
 
     // Wait for Navigator to be fully ready (increased from 500ms to 1000ms)
     // This prevents crashes during app initialization/update
+    // Cancel existing timer to prevent duplicate dialogs if ref.listen fires again
+    _dialogTimer?.cancel();
     _dialogTimer = Timer(const Duration(milliseconds: 1000), () {
       _attemptShowDialog(versionInfo, forceUpdate, retryCount: 0);
     });
