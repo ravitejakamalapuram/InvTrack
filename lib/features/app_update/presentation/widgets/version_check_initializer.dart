@@ -84,6 +84,43 @@ class _VersionCheckInitializerState
     }
   }
 
+  /// Present the update dialog and set _hasShownDialog on success
+  ///
+  /// Centralized dialog display with error handling.
+  /// Sets _hasShownDialog = true ONLY on successful dialog display.
+  void _presentDialog(
+    BuildContext context,
+    AppVersionEntity versionInfo,
+    bool forceUpdate,
+  ) {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: !forceUpdate,
+        builder: (ctx) => UpdateDialog(
+          versionInfo: versionInfo,
+          forceUpdate: forceUpdate,
+        ),
+      );
+
+      // SUCCESS: Set flag AFTER dialog is shown
+      _hasShownDialog = true;
+
+      LoggerService.info(
+        'Update dialog shown',
+        metadata: {'forceUpdate': forceUpdate, 'version': versionInfo.latestVersion},
+      );
+    } catch (e, st) {
+      // Catch any dialog-related errors to prevent crashes
+      // Do NOT set _hasShownDialog on error - allow retry
+      LoggerService.error(
+        'Error showing update dialog',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
   /// Show update dialog with safe context handling
   ///
   /// Uses a retry mechanism to ensure navigator context is available
@@ -152,23 +189,7 @@ class _VersionCheckInitializerState
           final context = rootNavigatorKey.currentContext;
           if (context != null) {
             // SUCCESS: Navigator ready after extended delay
-            try {
-              showDialog(
-                context: context,
-                barrierDismissible: !forceUpdate,
-                builder: (ctx) => UpdateDialog(
-                  versionInfo: versionInfo,
-                  forceUpdate: forceUpdate,
-                ),
-              );
-              _hasShownDialog = true;
-            } catch (e, st) {
-              LoggerService.error(
-                'Error showing update dialog on final retry',
-                error: e,
-                stackTrace: st,
-              );
-            }
+            _presentDialog(context, versionInfo, forceUpdate);
           } else {
             // PERMANENT FAILURE: Log and allow future ref.listen to retry
             LoggerService.warn(
@@ -181,32 +202,7 @@ class _VersionCheckInitializerState
     }
 
     // Navigator is ready, show the dialog
-    try {
-      showDialog(
-        context: navigatorContext,
-        barrierDismissible: !forceUpdate,
-        builder: (context) => UpdateDialog(
-          versionInfo: versionInfo,
-          forceUpdate: forceUpdate,
-        ),
-      );
-
-      // SUCCESS: Set flag AFTER dialog is shown
-      _hasShownDialog = true;
-
-      LoggerService.info(
-        'Update dialog shown',
-        metadata: {'forceUpdate': forceUpdate, 'version': versionInfo.latestVersion},
-      );
-    } catch (e, st) {
-      // Catch any dialog-related errors to prevent crashes
-      // Do NOT set _hasShownDialog on error - allow retry
-      LoggerService.error(
-        'Error showing update dialog',
-        error: e,
-        stackTrace: st,
-      );
-    }
+    _presentDialog(navigatorContext, versionInfo, forceUpdate);
   }
 
   @override
