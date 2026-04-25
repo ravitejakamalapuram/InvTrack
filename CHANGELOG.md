@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚡ Performance
+
+- Optimize CSV injection regex for hot-path performance (#355)
+
 ## [3.56.5] - 2026-04-25
 
 ### 🐛 Bug Fixes
