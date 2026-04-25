@@ -55,3 +55,6 @@
 **Learning:** Icon-only buttons (e.g., `IconButton` widgets in Flutter) are inaccessible to screen readers without explicit semantic labels. Providing a `tooltip` automatically attaches the necessary semantics to ensure accessibility. Missing `tooltip` attributes was a common pattern across app bars in this app.
 **Action:** In future PRs, I will routinely check for `IconButton` components that are missing the `tooltip` attribute and apply localized labels (e.g., `l10n.tooltipClose`) to ensure compliance with basic accessibility standards.
 
+## 2026-04-25 - Replaced GestureDetector with InkWell for better visual feedback
+**Learning:** In Flutter, placing an opaque `Container` directly inside an `InkWell` obscures the Material ripple effect. When building custom interactive elements, prefer `InkWell` coupled with an inner `Ink` widget over `GestureDetector` + `Container` to ensure users get immediate visual feedback (ripple effect) upon interaction.
+**Action:** Always use `InkWell` + `Ink` for interactive components that require a background color to preserve the Material splash/ripple effect.

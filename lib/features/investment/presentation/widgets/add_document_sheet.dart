@@ -743,9 +743,10 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                   label: type.displayName,
                   excludeSemantics: true,
                   onTap: onTap,
-                  child: GestureDetector(
+                  child: InkWell(
                     onTap: onTap,
-                    child: Container(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Ink(
                       padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.sm,
