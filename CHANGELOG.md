@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Remove unnecessary getter/setter for enableInDebugMode
+
+## [3.56.8] - 2026-04-25
+
+### 🐛 Bug Fixes
+
 - Comprehensive Crashlytics improvements with async error handling (#349)
 
 ## [3.56.7] - 2026-04-25

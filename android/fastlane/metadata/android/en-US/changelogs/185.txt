@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Comprehensive Crashlytics improvements with async error handling (#349)
