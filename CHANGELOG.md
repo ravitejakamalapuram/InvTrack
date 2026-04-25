@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Comprehensive Crashlytics improvements with async error handling (#349)
+
+## [3.56.7] - 2026-04-25
+
 ### ⚡ Performance
 
 - Optimize CSV injection regex for hot-path performance (#355)

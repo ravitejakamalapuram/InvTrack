@@ -1,0 +1,2 @@
+⚡ Performance Improvements
+• Optimize CSV injection regex for hot-path performance (#355)
