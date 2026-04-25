@@ -58,7 +58,7 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
 
     // Only update state and prefs if Firebase call succeeded
     await prefs.setBool(prefKey, enabled);
-    CrashlyticsService._enableInDebugMode = enabled; // Keep static mirror in sync
+    CrashlyticsService.enableInDebugMode = enabled; // Keep static mirror in sync
     state = enabled;
   }
 }
@@ -82,18 +82,12 @@ class CrashlyticsService {
   /// Static flag for backward compatibility with direct instantiation
   /// This allows CrashlyticsService(debugModeEnabled: CrashlyticsService._enableInDebugMode)
   /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
-  static bool _enableInDebugMode = false;
-
-  /// Public getter for backward compatibility with existing code
+  /// Enable Crashlytics in debug mode
   /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
-  static bool get enableInDebugMode => _enableInDebugMode;
-
-  /// Public setter for backward compatibility with existing code
-  /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
-  static set enableInDebugMode(bool value) => _enableInDebugMode = value;
+  static bool enableInDebugMode = false;
 
   /// Single source of truth for debug mode checks
-  bool get _debugMode => _enableInDebugMode;
+  bool get _debugMode => enableInDebugMode;
 
   // Store previous handlers so we can chain them
   static FlutterExceptionHandler? _previousFlutterOnError;
@@ -108,7 +102,7 @@ class CrashlyticsService {
   /// and existing handlers are chained to prevent clobbering other code.
   Future<void> initialize() async {
     // Set static flag from instance field (single source of truth)
-    _enableInDebugMode = debugModeEnabled;
+    enableInDebugMode = debugModeEnabled;
 
     // Update Crashlytics collection state
     final shouldEnable = !kDebugMode || debugModeEnabled;
