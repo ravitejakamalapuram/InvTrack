@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Improve version check initialization with retry mechanism (#350)
