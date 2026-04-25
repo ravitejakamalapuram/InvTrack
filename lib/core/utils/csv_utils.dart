@@ -8,7 +8,8 @@ class CsvUtils {
   /// Reference: https://owasp.org/www-community/attacks/CSV_Injection
   static dynamic sanitizeField(dynamic value) {
     if (value is String) {
-      if (value.startsWith(RegExp(r'[=+\-@\t\r]'))) {
+      // Security: Prevent CSV injection by accounting for leading whitespace before dangerous characters.
+      if (RegExp(r'^[\s]*[=+\-@\t\r]').hasMatch(value)) {
         return "'$value";
       }
     }
