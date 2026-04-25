@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Improve version check initialization with retry mechanism (#350)
+
+## [3.56.4] - 2026-04-23
+
 ### 📚 Documentation
 
 - Add comprehensive TODO.md for features and bugs
