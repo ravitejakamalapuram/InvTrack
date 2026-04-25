@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 
 void main() async {
   runZonedGuarded(
@@ -52,7 +53,7 @@ void main() async {
 
       // Defer non-critical initialization to after first frame
       SchedulerBinding.instance.addPostFrameCallback((_) {
-        _initializeNonCriticalServices(notificationService);
+        _initializeNonCriticalServices(notificationService, sharedPreferences);
       });
     },
     (error, stack) {
@@ -69,13 +70,39 @@ void main() async {
 
 /// Initialize non-critical services after the first frame is rendered.
 /// This prevents blocking the UI during app startup.
+///
+/// Note: This function doesn't have access to ProviderContainer, so it creates
+/// a standalone CrashlyticsService. The debug mode state is passed from the
+/// already-resolved SharedPreferences instance.
 Future<void> _initializeNonCriticalServices(
   NotificationService notificationService,
+  SharedPreferences prefs,
 ) async {
   try {
     // Initialize Crashlytics in background
-    final crashlyticsService = CrashlyticsService();
-    unawaited(crashlyticsService.initialize());
+    // Note: We create a standalone instance here since we don't have access to
+    // the ProviderContainer. Use the passed SharedPreferences instance.
+    final debugModeEnabled =
+        prefs.getBool(CrashlyticsDebugModeNotifier.prefKey) ?? false;
+
+    // Set static field for backward compatibility with direct instantiation
+    CrashlyticsService.enableInDebugMode = debugModeEnabled;
+
+    final crashlyticsService = CrashlyticsService(debugModeEnabled: debugModeEnabled);
+    unawaited(
+      crashlyticsService.initialize().catchError((error, stack) {
+        // Log Crashlytics initialization failure
+        LoggerService.error(
+          'Failed to initialize CrashlyticsService',
+          error: error,
+          stackTrace: stack,
+          metadata: {
+            'service': 'CrashlyticsService',
+            'debugModeEnabled': debugModeEnabled.toString(),
+          },
+        );
+      }),
+    );
 
     // Initialize Performance Monitoring in background
     final performanceService = PerformanceService();

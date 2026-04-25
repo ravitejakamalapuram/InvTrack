@@ -267,15 +267,34 @@ class ErrorHandler {
         debugPrint('Stack Trace:\n${exception.stackTrace}');
       }
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    } else {
-      // In production, only send to Crashlytics if shouldReport is true
-      // This prevents spam from transient errors (network timeouts, validation errors)
-      if (exception.shouldReport) {
-        CrashlyticsService().recordError(
-          exception.cause ?? exception,
-          exception.stackTrace,
-          reason: '${exception.runtimeType}: ${exception.technicalMessage}',
+    }
+
+    // Report to Crashlytics if exception should be reported
+    // CrashlyticsService.recordError already handles debug mode gating internally
+    if (exception.shouldReport) {
+      // Wrap in try-catch to gracefully handle cases where Firebase isn't initialized (e.g., tests)
+      try {
+        unawaited(
+          CrashlyticsService(
+            debugModeEnabled: CrashlyticsService.enableInDebugMode,
+          ).recordError(
+            exception.cause ?? exception,
+            exception.stackTrace,
+            reason: '${exception.runtimeType}: ${exception.technicalMessage}',
+          ).catchError((error, stack) {
+            // Log Crashlytics recording failure without triggering another Crashlytics call
+            debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            debugPrint('⚠️  Failed to record error to Crashlytics');
+            debugPrint('Original exception: ${exception.runtimeType}');
+            debugPrint('Crashlytics error: $error');
+            debugPrint('Stack trace: $stack');
+            debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          }),
         );
+      } catch (e) {
+        // Silently ignore Crashlytics initialization errors (e.g., in test environment)
+        // This ensures tests don't fail when Firebase isn't initialized
+        debugPrint('⚠️  Crashlytics not available (likely in test environment): $e');
       }
     }
   }

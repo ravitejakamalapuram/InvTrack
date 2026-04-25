@@ -19,6 +19,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/crashlytics_settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -110,6 +111,9 @@ class DebugSettingsScreen extends ConsumerWidget {
 
           // Feature Flags (Experimental Features)
           _buildFeatureFlagsSection(context, ref),
+
+          // Crashlytics Testing Section
+          const CrashlyticsSettingsSection(),
 
           // Diagnostics
           SettingsSection(
@@ -387,4 +391,5 @@ class DebugSettingsScreen extends ConsumerWidget {
       ),
     );
   }
+
 }
