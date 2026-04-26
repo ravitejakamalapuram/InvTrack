@@ -62,19 +62,19 @@ class HealthScoreRepository {
           : _collection.doc(snapshot.id).set(snapshot.toFirestore());
 
       // 5-second timeout for offline-first behavior
-      await saveOperation.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          // Timeout means cached locally, will sync when online
-          _crashlytics.recordError(
-            TimeoutException('Health score save timeout - cached locally'),
-            StackTrace.current,
-            reason: 'Health score write timeout (offline mode)',
-          );
-          // Don't throw - Firestore offline persistence handles this
-          return;
-        },
-      );
+      // Catch timeout and handle gracefully (data is cached by Firestore)
+      try {
+        await saveOperation.timeout(const Duration(seconds: 5));
+      } on TimeoutException {
+        // Timeout means cached locally, will sync when online
+        _crashlytics.recordError(
+          TimeoutException('Health score save timeout - cached locally'),
+          StackTrace.current,
+          reason: 'Health score write timeout (offline mode)',
+          fatal: false,
+        );
+        // Don't rethrow - Firestore offline persistence handles the actual save
+      }
     } on TimeoutException catch (e, stackTrace) {
       // Timeout is expected offline - snapshot cached locally
       _crashlytics.recordError(
