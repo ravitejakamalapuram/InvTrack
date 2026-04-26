@@ -131,22 +131,26 @@ firestore_query_collection
 ## 4. Other Useful Firestore Collections
 
 ### Portfolio Health Snapshots
-```
+
+```text
 users/{userId}/healthScores
 ```
 
 ### Investments
-```
+
+```text
 users/{userId}/investments
 ```
 
 ### Goals
-```
+
+```text
 users/{userId}/goals
 ```
 
 ### User Settings
-```
+
+```text
 users/{userId}/settings
 ```
 
