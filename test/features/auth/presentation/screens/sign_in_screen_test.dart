@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
-import 'package:inv_tracker/core/config/google_sign_in_config.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
+import 'package:inv_tracker/firebase_options.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -119,15 +119,18 @@ void main() {
   // Bug fix PR: #357
   testWidgets('googleSignInInitializedProvider uses centralized OAuth config',
       (tester) async {
-    // This test verifies that the provider uses GoogleSignInConfig constants
+    // This test verifies that the provider uses DefaultFirebaseOptions constants
     // instead of hardcoded strings, preventing configuration drift
 
-    // Verify GoogleSignInConfig constants are properly defined
-    expect(GoogleSignInConfig.webClientId, isNotEmpty);
-    expect(GoogleSignInConfig.androidServerClientId, isNotEmpty);
-    expect(GoogleSignInConfig.webClientId, contains('.apps.googleusercontent.com'));
+    // Verify DefaultFirebaseOptions OAuth constants are properly defined
+    expect(DefaultFirebaseOptions.webOAuthClientId, isNotEmpty);
+    expect(DefaultFirebaseOptions.mobileServerClientId, isNotEmpty);
     expect(
-      GoogleSignInConfig.androidServerClientId,
+      DefaultFirebaseOptions.webOAuthClientId,
+      contains('.apps.googleusercontent.com'),
+    );
+    expect(
+      DefaultFirebaseOptions.mobileServerClientId,
       contains('.apps.googleusercontent.com'),
     );
 

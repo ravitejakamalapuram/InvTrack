@@ -97,4 +97,26 @@ class DefaultFirebaseOptions {
     storageBucket: 'invtracker-b19d1.firebasestorage.app',
     measurementId: 'G-K2VF1ERRED',
   );
+
+  /// OAuth Client IDs for Google Sign-In
+  /// These are PUBLIC identifiers from Firebase project configuration.
+  /// NOT secrets - safe to include in source control.
+
+  /// Web OAuth Client ID for web platform
+  /// Used in: google_sign_in initialization on web (clientId parameter)
+  /// Source: Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
+  static const String webOAuthClientId =
+      '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com';
+
+  /// Android/iOS Server Client ID (Web OAuth Client ID)
+  /// Used in: google_sign_in initialization on mobile (serverClientId parameter)
+  ///
+  /// IMPORTANT: This is the Web Client ID (client_type: 3 in google-services.json)
+  /// Google Sign-In v7+ REQUIRES this on Android to prevent:
+  /// GoogleSignInException: "serverClientId must be provided on Android"
+  ///
+  /// Source: google-services.json (client_type: 3) / Firebase Console
+  /// See: https://github.com/flutter/flutter/issues/172073
+  static const String mobileServerClientId =
+      '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com';
 }
