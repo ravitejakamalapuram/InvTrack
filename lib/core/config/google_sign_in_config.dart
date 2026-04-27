@@ -4,6 +4,11 @@
 /// (google-services.json for Android, GoogleService-Info.plist for iOS).
 /// NOT secrets - safe to include in source control.
 ///
+/// Firebase Project: invtracker-b19d1 (project number: 784857267556)
+///
+/// IMPORTANT: Both webClientId and androidServerClientId MUST be from the SAME
+/// Firebase project to ensure cross-platform token verification works correctly.
+///
 /// References:
 /// - Web Client ID: From Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
 /// - Android Server Client ID: google-services.json (client_type: 3)
@@ -11,13 +16,15 @@
 class GoogleSignInConfig {
   /// Web OAuth Client ID for web platform
   /// Used in: google_sign_in initialization on web (clientId parameter)
+  /// Firebase project: invtracker-b19d1
   static const String webClientId =
-      '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com';
+      '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com';
 
   /// Android/iOS Server Client ID (Web OAuth Client ID)
   /// Used in: google_sign_in initialization on mobile (serverClientId parameter)
+  /// Firebase project: invtracker-b19d1
   ///
-  /// IMPORTANT: This is the SAME as the Web Client ID (client_type: 3 in google-services.json)
+  /// IMPORTANT: This is the Web OAuth Client ID (client_type: 3 in google-services.json)
   /// Google Sign-In v7+ REQUIRES this on Android to prevent:
   /// GoogleSignInException: "serverClientId must be provided on Android"
   ///

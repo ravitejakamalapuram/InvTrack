@@ -72,14 +72,15 @@ void main() {
     });
 
     test('webClientId constant matches expected Web Client ID', () {
-      // Regression test: Verify the webClientId is correct
+      // Regression test: Verify the webClientId is correct for the active Firebase project
+      // Firebase project: invtracker-b19d1 (project number: 784857267556)
       const expectedWebClientId =
-          '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com';
+          '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com';
 
       expect(
         GoogleSignInConfig.webClientId,
         expectedWebClientId,
-        reason: 'webClientId must match Firebase Console web configuration',
+        reason: 'webClientId must match the active Firebase project (invtracker-b19d1)',
       );
     });
 
@@ -91,11 +92,25 @@ void main() {
         contains('.apps.googleusercontent.com'),
       );
 
-      // Verify they're different (web vs server)
+      // Verify they're from the same Firebase project (invtracker-b19d1)
+      // Both should start with the same project number: 784857267556
       expect(
         GoogleSignInConfig.webClientId,
-        isNot(equals(GoogleSignInConfig.androidServerClientId)),
-        reason: 'Web and Android server client IDs should be different',
+        startsWith('784857267556-'),
+        reason: 'Web client ID must be from the active Firebase project (invtracker-b19d1)',
+      );
+      expect(
+        GoogleSignInConfig.androidServerClientId,
+        startsWith('784857267556-'),
+        reason: 'Android server client ID must be from the active Firebase project (invtracker-b19d1)',
+      );
+
+      // For cross-platform token verification, both IDs should be identical
+      // (the Web OAuth Client ID from client_type: 3 in google-services.json)
+      expect(
+        GoogleSignInConfig.webClientId,
+        equals(GoogleSignInConfig.androidServerClientId),
+        reason: 'Web and Android must use the SAME Firebase project OAuth client ID for cross-platform token verification',
       );
     });
   });
