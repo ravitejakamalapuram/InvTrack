@@ -21,10 +21,14 @@ final googleSignInInitializedProvider = FutureProvider<void>((ref) async {
           '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com',
     );
   } else {
-    // Android/iOS: Don't pass serverClientId - it's deprecated in v7 and causes NETWORK_ERROR
-    // Firebase Auth only needs idToken from GoogleSignInAccount.authentication
-    // The Web Client ID in google-services.json is automatically used
-    await GoogleSignIn.instance.initialize();
+    // Android/iOS: MUST pass serverClientId (Web Client ID) for google_sign_in v7+
+    // This is the Web OAuth Client ID from google-services.json (client_type: 3)
+    // Required to fix GoogleSignInException: "serverClientId must be provided on Android"
+    // See: https://github.com/flutter/flutter/issues/172073
+    await GoogleSignIn.instance.initialize(
+      serverClientId:
+          '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com',
+    );
   }
 });
 
