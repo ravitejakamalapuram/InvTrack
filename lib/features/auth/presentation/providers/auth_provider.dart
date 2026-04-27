@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/config/google_sign_in_config.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
@@ -17,8 +18,7 @@ final googleSignInProvider = Provider<GoogleSignIn>((ref) {
 final googleSignInInitializedProvider = FutureProvider<void>((ref) async {
   if (kIsWeb) {
     await GoogleSignIn.instance.initialize(
-      clientId:
-          '20057918856-r6qh2gt5eqk2o3oiq8fkt8pgfhquja6a.apps.googleusercontent.com',
+      clientId: GoogleSignInConfig.webClientId,
     );
   } else {
     // Android/iOS: MUST pass serverClientId (Web Client ID) for google_sign_in v7+
@@ -26,8 +26,7 @@ final googleSignInInitializedProvider = FutureProvider<void>((ref) async {
     // Required to fix GoogleSignInException: "serverClientId must be provided on Android"
     // See: https://github.com/flutter/flutter/issues/172073
     await GoogleSignIn.instance.initialize(
-      serverClientId:
-          '784857267556-dkge5l37c12n1ohrljle8s6nim0cgq84.apps.googleusercontent.com',
+      serverClientId: GoogleSignInConfig.androidServerClientId,
     );
   }
 });
