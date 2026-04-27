@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Resolve Crashlytics type mismatch in HealthScoreRepository timeout handling (#356)
+
+## [3.56.9] - 2026-04-25
+
+### 🐛 Bug Fixes
+
 - Remove unnecessary getter/setter for enableInDebugMode
 
 ## [3.56.8] - 2026-04-25

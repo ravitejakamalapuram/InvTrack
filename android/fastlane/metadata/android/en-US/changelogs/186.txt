@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Remove unnecessary getter/setter for enableInDebugMode
