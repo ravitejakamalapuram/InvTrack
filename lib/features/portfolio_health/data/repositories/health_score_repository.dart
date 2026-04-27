@@ -51,6 +51,9 @@ class HealthScoreRepository {
   ///
   /// Firestore auto-generates unique document IDs to prevent timestamp-based collisions
   /// when multiple scores are calculated quickly.
+  ///
+  /// Throws [TimeoutException] if save times out (data is cached locally by Firestore).
+  /// Throws [DataException.saveFailed] for other errors (permission denied, etc.).
   Future<void> saveSnapshot(PortfolioHealthScore score) async {
     try {
       final snapshot = HealthScoreSnapshotModel.fromEntity(score);
@@ -62,27 +65,17 @@ class HealthScoreRepository {
           : _collection.doc(snapshot.id).set(snapshot.toFirestore());
 
       // 5-second timeout for offline-first behavior
-      await saveOperation.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          // Timeout means cached locally, will sync when online
-          _crashlytics.recordError(
-            TimeoutException('Health score save timeout - cached locally'),
-            StackTrace.current,
-            reason: 'Health score write timeout (offline mode)',
-          );
-          // Don't throw - Firestore offline persistence handles this
-          return;
-        },
-      );
+      await saveOperation.timeout(const Duration(seconds: 5));
     } on TimeoutException catch (e, stackTrace) {
       // Timeout is expected offline - snapshot cached locally
       _crashlytics.recordError(
         e,
         stackTrace,
         reason: 'Health score save timeout - will sync when online',
+        fatal: false,
       );
-      // Don't throw - let offline persistence handle it
+      // Rethrow to let callers handle timeout (forceSave vs auto-save)
+      rethrow;
     } catch (e, stackTrace) {
       // Other errors (permission denied, etc.) should fail
       _crashlytics.recordError(
