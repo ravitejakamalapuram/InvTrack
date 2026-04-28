@@ -105,12 +105,12 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
         const SizedBox(height: 24),
 
         // Top Performers
-        _buildTopPerformers(context, report, symbol, locale),
+        _buildTopPerformers(context, l10n, report, symbol, locale),
 
         const SizedBox(height: 24),
 
         // Bottom Performers
-        _buildBottomPerformers(context, report, symbol, locale),
+        _buildBottomPerformers(context, l10n, report, symbol, locale),
 
         const SizedBox(height: 24),
 
@@ -122,6 +122,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
 
   Widget _buildTopPerformers(
     BuildContext context,
+    AppLocalizations l10n,
     PerformanceReport report,
     String symbol,
     String locale,
@@ -135,15 +136,21 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
         ),
         const SizedBox(height: 12),
         ...report.topPerformers.take(5).map((perf) {
+          final sign = perf.absoluteReturn > 0 ? '+' : (perf.absoluteReturn < 0 ? '' : '');
+          final returnColor = perf.absoluteReturn > 0
+              ? Colors.green
+              : (perf.absoluteReturn < 0 ? Colors.red : null);
           return Card(
             child: ListTile(
               title: Text(perf.investment.name),
-              subtitle: Text('${l10n.xirrLabel}: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
+              subtitle: PrivacyMask(
+                child: Text('${l10n.xirrLabel}: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
+              ),
               trailing: PrivacyMask(
                 child: Text(
-                  '+${formatCompactCurrency(perf.absoluteReturn, symbol: symbol, locale: locale)}',
-                  style: const TextStyle(
-                    color: Colors.green,
+                  '$sign${formatCompactCurrency(perf.absoluteReturn.abs(), symbol: symbol, locale: locale)}',
+                  style: TextStyle(
+                    color: returnColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -157,6 +164,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
 
   Widget _buildBottomPerformers(
     BuildContext context,
+    AppLocalizations l10n,
     PerformanceReport report,
     String symbol,
     String locale,
@@ -170,15 +178,21 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
         ),
         const SizedBox(height: 12),
         ...report.bottomPerformers.take(5).map((perf) {
+          final sign = perf.absoluteReturn > 0 ? '+' : (perf.absoluteReturn < 0 ? '' : '');
+          final returnColor = perf.absoluteReturn > 0
+              ? Colors.green
+              : (perf.absoluteReturn < 0 ? Colors.red : null);
           return Card(
             child: ListTile(
               title: Text(perf.investment.name),
-              subtitle: Text('${l10n.xirrLabel}: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
+              subtitle: PrivacyMask(
+                child: Text('${l10n.xirrLabel}: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
+              ),
               trailing: PrivacyMask(
                 child: Text(
-                  formatCompactCurrency(perf.absoluteReturn, symbol: symbol, locale: locale),
+                  '$sign${formatCompactCurrency(perf.absoluteReturn.abs(), symbol: symbol, locale: locale)}',
                   style: TextStyle(
-                    color: perf.absoluteReturn >= 0 ? Colors.green : Colors.red,
+                    color: returnColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

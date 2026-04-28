@@ -71,29 +71,33 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: ReportStatCard(
-                icon: Icons.schedule_rounded,
-                label: l10n.next30Days,
-                value: formatCompactCurrency(
-                  report.totalUpcoming30Days,
-                  symbol: symbol,
-                  locale: locale,
+              child: PrivacyMask(
+                child: ReportStatCard(
+                  icon: Icons.schedule_rounded,
+                  label: l10n.next30Days,
+                  value: formatCompactCurrency(
+                    report.totalUpcoming30Days,
+                    symbol: symbol,
+                    locale: locale,
+                  ),
+                  iconColor: Colors.orange,
                 ),
-                iconColor: Colors.orange,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        ReportStatCard(
-          icon: Icons.calendar_month_rounded,
-          label: l10n.next90DaysTotal,
-          value: formatCompactCurrency(
-            report.totalNext90Days,
-            symbol: symbol,
-            locale: locale,
+        PrivacyMask(
+          child: ReportStatCard(
+            icon: Icons.calendar_month_rounded,
+            label: l10n.next90DaysTotal,
+            value: formatCompactCurrency(
+              report.totalNext90Days,
+              symbol: symbol,
+              locale: locale,
+            ),
+            iconColor: Colors.green,
           ),
-          iconColor: Colors.green,
         ),
 
         const SizedBox(height: 24),

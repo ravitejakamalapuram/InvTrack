@@ -154,7 +154,9 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
           ),
           const SizedBox(height: AppSpacing.md),
           ...data.incomeByType.entries.map((entry) {
-            final percentage = (entry.value / data.totalIncome) * 100;
+            final percentage = data.totalIncome <= 0
+                ? 0.0
+                : (entry.value / data.totalIncome) * 100;
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
               child: Row(

@@ -6,6 +6,7 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/reports/data/services/report_csv_exporter.dart';
@@ -61,6 +62,37 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      // Check privacy mode before exporting
+      final isPrivacyMode = ref.read(privacyModeProvider);
+
+      if (isPrivacyMode && context.mounted) {
+        final l10n = AppLocalizations.of(context);
+        final shouldContinue = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Privacy Mode Active'),
+            content: const Text(
+              'Privacy mode is enabled. Exporting will include unmasked financial data. Continue?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldContinue != true) {
+          state = state.copyWith(isLoading: false);
+          return;
+        }
+      }
+
       final symbol = ref.read(currencySymbolProvider);
       final locale = ref.read(currencyLocaleProvider);
       final exporter = ref.read(csvExporterProvider);
@@ -102,6 +134,37 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      // Check privacy mode before exporting
+      final isPrivacyMode = ref.read(privacyModeProvider);
+
+      if (isPrivacyMode && context.mounted) {
+        final l10n = AppLocalizations.of(context);
+        final shouldContinue = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Privacy Mode Active'),
+            content: const Text(
+              'Privacy mode is enabled. Exporting will include unmasked financial data. Continue?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldContinue != true) {
+          state = state.copyWith(isLoading: false);
+          return;
+        }
+      }
+
       final symbol = ref.read(currencySymbolProvider);
       final locale = ref.read(currencyLocaleProvider);
       final exporter = ref.read(pdfExporterProvider);
