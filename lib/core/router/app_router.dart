@@ -15,6 +15,12 @@ import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashb
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/weekly_summary_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/monthly_income_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/performance_report_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/goal_progress_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -118,7 +124,39 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // Tab 4: Settings
+          // Tab 4: Reports
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/reports',
+                builder: (context, state) => const ReportsHomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'weekly',
+                    builder: (context, state) => const WeeklySummaryScreen(),
+                  ),
+                  GoRoute(
+                    path: 'monthly',
+                    builder: (context, state) => const MonthlyIncomeScreen(),
+                  ),
+                  GoRoute(
+                    path: 'fy',
+                    builder: (context, state) => const FYReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'performance',
+                    builder: (context, state) => const PerformanceReportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'goals',
+                    builder: (context, state) => const GoalProgressScreen(),
+                  ),
+                  // TODO: Add other report routes (Maturity, Action, Health)
+                ],
+              ),
+            ],
+          ),
+          // Tab 5: Settings
           StatefulShellBranch(
             routes: [
               GoRoute(

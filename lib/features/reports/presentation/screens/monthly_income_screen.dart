@@ -1,0 +1,289 @@
+/// Monthly Income & Cash Flow Report Screen
+///
+/// Displays a detailed monthly summary including:
+/// - Total income, invested, returns, fees
+/// - Net cashflow with month-over-month comparison
+/// - Income breakdown by type (Dividend, Interest, Rent, etc.)
+/// - Top income-generating investments
+/// - All income transactions for the month
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/features/reports/domain/entities/monthly_income_report.dart';
+import 'package:inv_tracker/features/reports/presentation/providers/monthly_income_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
+
+/// Monthly income report screen
+class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
+  const MonthlyIncomeScreen({super.key});
+
+  @override
+  String getTitle(BuildContext context) {
+    return 'Monthly Income Report';
+  }
+
+  @override
+  FutureProvider<MonthlyIncomeReport> getDataProvider(WidgetRef ref) {
+    return currentMonthlyIncomeProvider;
+  }
+
+  @override
+  Widget buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    MonthlyIncomeReport data,
+  ) {
+    final locale = ref.watch(currencyLocaleProvider);
+    final symbol = ref.watch(currencySymbolProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Period header
+        Text(
+          data.monthName(),
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Summary cards
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            ReportStatCard(
+              icon: Icons.trending_up_rounded,
+              label: 'Total Income',
+              value: formatCompactCurrency(
+                data.totalIncome,
+                symbol: symbol,
+                locale: locale,
+              ),
+              iconColor: Colors.green,
+            ),
+            ReportStatCard(
+              icon: Icons.account_balance_wallet_rounded,
+              label: 'Net Cashflow',
+              value: formatCompactCurrency(
+                data.netCashFlow,
+                symbol: symbol,
+                locale: locale,
+              ),
+              iconColor: data.isPositiveMonth ? Colors.green : Colors.red,
+            ),
+            ReportStatCard(
+              icon: Icons.attach_money_rounded,
+              label: 'Total Invested',
+              value: formatCompactCurrency(
+                data.totalInvested,
+                symbol: symbol,
+                locale: locale,
+              ),
+            ),
+            ReportStatCard(
+              icon: Icons.payments_rounded,
+              label: 'Total Returns',
+              value: formatCompactCurrency(
+                data.totalReturns,
+                symbol: symbol,
+                locale: locale,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppSpacing.lg),
+
+        // Income by type
+        if (data.incomeByType.isNotEmpty) ...[
+          _buildIncomeBreakdown(context, ref, data),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // Top earners
+        if (data.topEarners.isNotEmpty) ...[
+          _buildTopEarners(context, ref, data),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // Transactions list
+        if (data.transactions.isNotEmpty) ...[
+          _buildTransactionsList(context, ref, data),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildIncomeBreakdown(
+    BuildContext context,
+    WidgetRef ref,
+    MonthlyIncomeReport data,
+  ) {
+    final locale = ref.watch(currencyLocaleProvider);
+    final symbol = ref.watch(currencySymbolProvider);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Income by Type',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ...data.incomeByType.entries.map((entry) {
+            final percentage = (entry.value / data.totalIncome) * 100;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(entry.key),
+                  ),
+                  Text(
+                    formatCompactCurrency(
+                      entry.value,
+                      symbol: symbol,
+                      locale: locale,
+                    ),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    '${percentage.toStringAsFixed(1)}%',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopEarners(
+    BuildContext context,
+    WidgetRef ref,
+    MonthlyIncomeReport data,
+  ) {
+    final locale = ref.watch(currencyLocaleProvider);
+    final symbol = ref.watch(currencySymbolProvider);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Top Income Generators',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ...data.topEarners.map((earner) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          earner.investment.name,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          earner.incomeType,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    formatCompactCurrency(
+                      earner.income,
+                      symbol: symbol,
+                      locale: locale,
+                    ),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionsList(
+    BuildContext context,
+    WidgetRef ref,
+    MonthlyIncomeReport data,
+  ) {
+    final locale = ref.watch(currencyLocaleProvider);
+    final symbol = ref.watch(currencySymbolProvider);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Transactions (${data.transactions.length})',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          ...data.transactions.take(10).map((tx) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tx.investmentName,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          '${DateFormat.MMMd(locale).format(tx.date)} • ${tx.type}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    formatCompactCurrency(
+                      tx.amount,
+                      symbol: symbol,
+                      locale: locale,
+                    ),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Colors.green,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (data.transactions.length > 10) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Center(
+              child: Text(
+                '+ ${data.transactions.length - 10} more transactions',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
