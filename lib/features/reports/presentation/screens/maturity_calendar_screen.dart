@@ -147,6 +147,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -32,7 +32,7 @@ class ReportsHomeScreen extends ConsumerWidget {
           children: [
             // Quick Reports Section
             Text(
-              'Quick Reports',
+              l10n.quickReports,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -67,7 +67,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.calendar_today_rounded,
                   title: l10n.fyReport,
-                  subtitle: 'FY 2023-24',
+                  subtitle: l10n.currentFY('2023', '24'),
                   onTap: () => context.push('/reports/fy'),
                 ),
                 _buildReportCard(
@@ -83,7 +83,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.flag_rounded,
                   title: l10n.goals,
-                  subtitle: '5 Active Goals',
+                  subtitle: l10n.activeGoalsCount(5),
                   onTap: () => context.push('/reports/goals'),
                 ),
                 _buildReportCard(
@@ -99,7 +99,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.notification_important_rounded,
                   title: l10n.actionRequired,
-                  subtitle: '3 Items',
+                  subtitle: l10n.actionItemsCount(3),
                   onTap: () => context.push('/reports/actions'),
                 ),
                 _buildReportCard(
@@ -107,7 +107,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.health_and_safety_rounded,
                   title: l10n.portfolioHealth,
-                  subtitle: 'Score: 85/100',
+                  subtitle: l10n.healthScore(85),
                   onTap: () => context.push('/reports/health'),
                 ),
               ],

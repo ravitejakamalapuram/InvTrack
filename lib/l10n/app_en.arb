@@ -2617,6 +2617,59 @@
     "description": "Portfolio health report title"
   },
 
+  "quickReports": "Quick Reports",
+  "@quickReports": {
+    "description": "Quick reports section title on reports home screen"
+  },
+
+  "currentFY": "FY {year1}-{year2}",
+  "@currentFY": {
+    "description": "Current financial year label (e.g., FY 2023-24)",
+    "placeholders": {
+      "year1": {
+        "type": "String"
+      },
+      "year2": {
+        "type": "String"
+      }
+    }
+  },
+
+  "activeGoalsCount": "{count, plural, =0{No Active Goals} =1{1 Active Goal} other{{count} Active Goals}}",
+  "@activeGoalsCount": {
+    "description": "Active goals count for reports home screen",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "actionItemsCount": "{count, plural, =0{No Items} =1{1 Item} other{{count} Items}}",
+  "@actionItemsCount": {
+    "description": "Action items count for reports home screen",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "healthScore": "Score: {score}/100",
+  "@healthScore": {
+    "description": "Portfolio health score label",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+
+  "dailyCashflowTrend": "Daily Cashflow Trend",
+  "@dailyCashflowTrend": {
+    "description": "Section title for daily cashflow trend chart in weekly summary"
+  },
+
   "historicalReports": "Historical Reports",
   "@historicalReports": {
     "description": "Historical reports section title"

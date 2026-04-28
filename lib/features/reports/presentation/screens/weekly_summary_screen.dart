@@ -63,7 +63,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
       children: [
         // Period header
         Text(
-          '${DateFormat.MMMd().format(data.periodStart)} - ${DateFormat.MMMd().format(data.periodEnd)}',
+          '${DateFormat.MMMd(Localizations.localeOf(context).toString()).format(data.periodStart)} - ${DateFormat.MMMd(Localizations.localeOf(context).toString()).format(data.periodEnd)}',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -193,12 +193,13 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
     WidgetRef ref,
     WeeklySummary data,
   ) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Daily Cashflow Trend',
+            l10n.dailyCashflowTrend,
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: AppSpacing.md),

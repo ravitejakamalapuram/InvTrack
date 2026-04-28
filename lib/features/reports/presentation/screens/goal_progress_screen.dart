@@ -129,6 +129,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,6 +169,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -217,6 +219,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
