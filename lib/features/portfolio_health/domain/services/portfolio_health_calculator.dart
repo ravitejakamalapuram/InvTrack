@@ -179,17 +179,20 @@ class PortfolioHealthCalculator {
 
     // Calculate Herfindahl index using investment values (totalInvested) by type
     final typeValues = <InvestmentType, double>{};
+    double totalValue = 0.0;
+
+    // Optimization: Calculate totalValue within the same loop to avoid .fold() closure overhead
     for (final inv in investments) {
       if (!inv.isArchived) {
         final stat = stats[inv.id];
         if (stat != null && stat.totalInvested > 0) {
           typeValues[inv.type] =
               (typeValues[inv.type] ?? 0.0) + stat.totalInvested;
+          totalValue += stat.totalInvested;
         }
       }
     }
 
-    final totalValue = typeValues.values.fold(0.0, (sum, value) => sum + value);
     if (totalValue == 0) {
       return ComponentScore(
         name: 'Diversification',
