@@ -17,13 +17,15 @@ import 'package:inv_tracker/features/reports/presentation/providers/performance_
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
   const PerformanceReportScreen({super.key});
 
   @override
   String getTitle(BuildContext context) {
-    return 'Performance Report';
+    final l10n = AppLocalizations.of(context);
+    return l10n.performanceReportTitle;
   }
 
   @override
@@ -43,6 +45,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
 
   @override
   Widget buildContent(BuildContext context, WidgetRef ref, PerformanceReport report) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -60,7 +63,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.trending_up_rounded,
-                label: 'Avg XIRR',
+                label: l10n.avgXirr,
                 value: '${(report.averageXIRR * 100).toStringAsFixed(2)}%',
                 iconColor: report.averageXIRR >= 0 ? Colors.green : Colors.red,
               ),
@@ -69,7 +72,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.analytics_rounded,
-                label: 'Median XIRR',
+                label: l10n.medianXirr,
                 value: '${(report.medianXIRR * 100).toStringAsFixed(2)}%',
                 iconColor: report.medianXIRR >= 0 ? Colors.green : Colors.red,
               ),
@@ -82,7 +85,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.thumb_up_rounded,
-                label: 'Profitable',
+                label: l10n.profitable,
                 value: '${report.profitableCount}/${report.totalInvestments}',
                 iconColor: Colors.green,
               ),
@@ -91,7 +94,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.thumb_down_rounded,
-                label: 'Loss Making',
+                label: l10n.lossMaking,
                 value: '${report.lossCount}/${report.totalInvestments}',
                 iconColor: Colors.red,
               ),
@@ -135,7 +138,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
           return Card(
             child: ListTile(
               title: Text(perf.investment.name),
-              subtitle: Text('XIRR: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
+              subtitle: Text('${l10n.xirrLabel}: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
               trailing: PrivacyMask(
                 child: Text(
                   '+${formatCompactCurrency(perf.absoluteReturn, symbol: symbol, locale: locale)}',
@@ -170,7 +173,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
           return Card(
             child: ListTile(
               title: Text(perf.investment.name),
-              subtitle: Text('XIRR: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
+              subtitle: Text('${l10n.xirrLabel}: ${(perf.xirr * 100).toStringAsFixed(2)}%'),
               trailing: PrivacyMask(
                 child: Text(
                   formatCompactCurrency(perf.absoluteReturn, symbol: symbol, locale: locale),

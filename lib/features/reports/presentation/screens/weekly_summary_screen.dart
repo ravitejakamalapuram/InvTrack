@@ -21,6 +21,7 @@ import 'package:inv_tracker/features/reports/presentation/widgets/base_report_sc
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/daily_cashflow_chart.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Weekly summary screen
 class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
@@ -28,7 +29,8 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
 
   @override
   String getTitle(BuildContext context) {
-    return 'Weekly Summary';
+    final l10n = AppLocalizations.of(context);
+    return l10n.weeklySummaryTitle;
   }
 
   @override
@@ -52,6 +54,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
     WidgetRef ref,
     WeeklySummary data,
   ) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -76,7 +79,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
           children: [
             ReportStatCard(
               icon: Icons.trending_down_rounded,
-              label: 'Total Invested',
+              label: l10n.totalInvested,
               value: formatCompactCurrency(
                 data.totalInvested,
                 symbol: symbol,
@@ -85,7 +88,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
             ),
             ReportStatCard(
               icon: Icons.trending_up_rounded,
-              label: 'Total Returns',
+              label: l10n.totalReturns,
               value: formatCompactCurrency(
                 data.totalReturns,
                 symbol: symbol,
@@ -96,7 +99,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
               icon: data.isPositiveWeek
                   ? Icons.arrow_upward_rounded
                   : Icons.arrow_downward_rounded,
-              label: 'Net Position',
+              label: l10n.netPosition,
               value: formatCompactCurrency(
                 data.netPosition,
                 symbol: symbol,
@@ -109,7 +112,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
             ),
             ReportStatCard(
               icon: Icons.payments_rounded,
-              label: 'Total Income',
+              label: l10n.totalIncome,
               value: formatCompactCurrency(
                 data.totalIncome,
                 symbol: symbol,
@@ -151,6 +154,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
     WidgetRef ref,
     WeeklySummary data,
   ) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +164,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
               const Icon(Icons.emoji_events_rounded, color: Colors.amber),
               const SizedBox(width: AppSpacing.xs),
               Text(
-                'Top Performer',
+                l10n.topPerformer,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ],
@@ -174,7 +178,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'XIRR: ${(data.topPerformerXirr! * 100).toStringAsFixed(2)}%',
+            '${l10n.xirrLabel}: ${(data.topPerformerXirr! * 100).toStringAsFixed(2)}%',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.green,
                 ),
@@ -212,12 +216,13 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
     WidgetRef ref,
     WeeklySummary data,
   ) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'New Investments (${data.newInvestments.length})',
+            '${l10n.newInvestments} (${data.newInvestments.length})',
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -241,6 +246,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
     WidgetRef ref,
     WeeklySummary data,
   ) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +256,7 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
               const Icon(Icons.calendar_today_rounded, size: 18),
               const SizedBox(width: AppSpacing.xs),
               Text(
-                'Maturing Next Week (${data.upcomingMaturities.length})',
+                '${l10n.maturesSoon} (${data.upcomingMaturities.length})',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ],

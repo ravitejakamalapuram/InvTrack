@@ -2767,5 +2767,350 @@
   "totalReturns": "Total Returns",
   "@totalReturns": {
     "description": "Total returns label"
+  },
+
+  "weeklySummaryTitle": "Weekly Summary",
+  "@weeklySummaryTitle": {
+    "description": "Weekly summary screen title"
+  },
+
+  "monthlyIncomeReportTitle": "Monthly Income Report",
+  "@monthlyIncomeReportTitle": {
+    "description": "Monthly income report screen title"
+  },
+
+  "fyReportTitle": "Financial Year Report",
+  "@fyReportTitle": {
+    "description": "FY report screen title"
+  },
+
+  "performanceReportTitle": "Performance Report",
+  "@performanceReportTitle": {
+    "description": "Performance report screen title"
+  },
+
+  "goalProgressReportTitle": "Goal Progress Report",
+  "@goalProgressReportTitle": {
+    "description": "Goal progress report screen title"
+  },
+
+  "goalProgressTitle": "Goal Progress Report",
+  "@goalProgressTitle": {
+    "description": "Goal progress screen title"
+  },
+
+  "targetLabel": "Target",
+  "@targetLabel": {
+    "description": "Target amount label"
+  },
+
+  "maturityCalendarTitle": "Maturity Calendar",
+  "@maturityCalendarTitle": {
+    "description": "Maturity calendar screen title"
+  },
+
+  "actionRequiredTitle": "Action Required",
+  "@actionRequiredTitle": {
+    "description": "Action required screen title"
+  },
+
+  "portfolioHealthTitle": "Portfolio Health",
+  "@portfolioHealthTitle": {
+    "description": "Portfolio health screen title"
+  },
+
+  "totalIncome": "Total Income",
+  "@totalIncome": {
+    "description": "Total income label"
+  },
+
+  "totalFees": "Total Fees",
+  "@totalFees": {
+    "description": "Total fees label"
+  },
+
+  "netCashflow": "Net Cashflow",
+  "@netCashflow": {
+    "description": "Net cashflow label"
+  },
+
+  "totalReturned": "Total Returned",
+  "@totalReturned": {
+    "description": "Total returned label"
+  },
+
+  "netPosition": "Net Position",
+  "@netPosition": {
+    "description": "Net position label"
+  },
+
+  "topPerformer": "Top Performer",
+  "@topPerformer": {
+    "description": "Top performer label"
+  },
+
+  "newInvestments": "New Investments",
+  "@newInvestments": {
+    "description": "New investments label"
+  },
+
+  "upcomingMaturities": "Upcoming Maturities",
+  "@upcomingMaturities": {
+    "description": "Upcoming maturities label"
+  },
+
+  "incomeBreakdown": "Income Breakdown",
+  "@incomeBreakdown": {
+    "description": "Income breakdown section title"
+  },
+
+  "topIncomeGenerators": "Top Income Generators",
+  "@topIncomeGenerators": {
+    "description": "Top income generators section title"
+  },
+
+  "allTransactions": "All Transactions",
+  "@allTransactions": {
+    "description": "All transactions section title"
+  },
+
+  "xirrLabel": "XIRR",
+  "@xirrLabel": {
+    "description": "XIRR label"
+  },
+
+  "monthlyBreakdown": "Monthly Breakdown",
+  "@monthlyBreakdown": {
+    "description": "Monthly breakdown section title"
+  },
+
+  "capitalGainsSummary": "Capital Gains Summary",
+  "@capitalGainsSummary": {
+    "description": "Capital gains summary section title"
+  },
+
+  "capitalGains": "Capital Gains",
+  "@capitalGains": {
+    "description": "Capital gains section title (without Summary)"
+  },
+
+  "investedLabel": "Invested",
+  "@investedLabel": {
+    "description": "Invested label for charts"
+  },
+
+  "returnedLabel": "Returned",
+  "@returnedLabel": {
+    "description": "Returned label for charts"
+  },
+
+  "shortTermGains": "Short-term Gains",
+  "@shortTermGains": {
+    "description": "Short-term gains label"
+  },
+
+  "longTermGains": "Long-term Gains",
+  "@longTermGains": {
+    "description": "Long-term gains label"
+  },
+
+  "topPerformersByReturns": "Top Performers (by Returns)",
+  "@topPerformersByReturns": {
+    "description": "Top performers by returns section title"
+  },
+
+  "topPerformersByXirr": "Top Performers (by XIRR)",
+  "@topPerformersByXirr": {
+    "description": "Top performers by XIRR section title"
+  },
+
+  "medianXirr": "Median XIRR",
+  "@medianXirr": {
+    "description": "Median XIRR label"
+  },
+
+  "topPerformersSection": "Top Performers",
+  "@topPerformersSection": {
+    "description": "Top performers section title"
+  },
+
+  "bottomPerformers": "Bottom Performers",
+  "@bottomPerformers": {
+    "description": "Bottom performers section title"
+  },
+
+  "recentMilestones": "Recent Milestones",
+  "@recentMilestones": {
+    "description": "Recent milestones section title"
+  },
+
+  "onTrack": "On Track",
+  "@onTrack": {
+    "description": "On track goals label"
+  },
+
+  "atRisk": "At Risk",
+  "@atRisk": {
+    "description": "At risk goals label"
+  },
+
+  "achieved": "Achieved",
+  "@achieved": {
+    "description": "Achieved goals label"
+  },
+
+  "goalsOnTrack": "Goals On Track",
+  "@goalsOnTrack": {
+    "description": "Goals on track section title"
+  },
+
+  "goalsAtRisk": "Goals At Risk",
+  "@goalsAtRisk": {
+    "description": "Goals at risk section title"
+  },
+
+  "maturityOverview": "Maturity Overview",
+  "@maturityOverview": {
+    "description": "Maturity overview section title"
+  },
+
+  "totalWithMaturity": "Total w/ Maturity",
+  "@totalWithMaturity": {
+    "description": "Total investments with maturity label"
+  },
+
+  "next30Days": "Next 30 Days",
+  "@next30Days": {
+    "description": "Next 30 days label"
+  },
+
+  "next90Days": "Next 90 Days",
+  "@next90Days": {
+    "description": "Next 90 days label"
+  },
+
+  "upcomingMaturitiesSection": "Upcoming Maturities",
+  "@upcomingMaturitiesSection": {
+    "description": "Upcoming maturities section title"
+  },
+
+  "maturesSoon": "Matures Soon",
+  "@maturesSoon": {
+    "description": "Matures soon label"
+  },
+
+  "next90DaysTotal": "Next 90 Days Total",
+  "@next90DaysTotal": {
+    "description": "Next 90 days total label"
+  },
+
+  "maturesLabel": "Matures",
+  "@maturesLabel": {
+    "description": "Matures label for maturity date"
+  },
+
+  "allClear": "All Clear!",
+  "@allClear": {
+    "description": "All clear message when no actions required"
+  },
+
+  "noActionsRequired": "No actions required at this time.",
+  "@noActionsRequired": {
+    "description": "No actions required message"
+  },
+
+  "urgentActions": "Urgent",
+  "@urgentActions": {
+    "description": "Urgent actions label"
+  },
+
+  "overdueItems": "Overdue",
+  "@overdueItems": {
+    "description": "Overdue items label"
+  },
+
+  "maturedInvestments": "Matured Investments",
+  "@maturedInvestments": {
+    "description": "Matured investments section title"
+  },
+
+  "missedDividends": "Missed Dividends",
+  "@missedDividends": {
+    "description": "Missed dividends section title"
+  },
+
+  "missingData": "Missing Data",
+  "@missingData": {
+    "description": "Missing data section title"
+  },
+
+  "overallHealthScore": "Overall Health Score",
+  "@overallHealthScore": {
+    "description": "Overall health score label"
+  },
+
+  "healthMetrics": "Health Metrics",
+  "@healthMetrics": {
+    "description": "Health metrics section title"
+  },
+
+  "diversification": "Diversification",
+  "@diversification": {
+    "description": "Diversification label"
+  },
+
+  "performanceLabel": "Performance",
+  "@performanceLabel": {
+    "description": "Performance label"
+  },
+
+  "activity": "Activity",
+  "@activity": {
+    "description": "Activity label"
+  },
+
+  "typesLabel": "Types",
+  "@typesLabel": {
+    "description": "Types label"
+  },
+
+  "investmentsLabel": "investments",
+  "@investmentsLabel": {
+    "description": "Investments label (lowercase for use in sentences)"
+  },
+
+  "returnsQuality": "Returns Quality",
+  "@returnsQuality": {
+    "description": "Returns quality label"
+  },
+
+  "dataCompleteness": "Data Completeness",
+  "@dataCompleteness": {
+    "description": "Data completeness label"
+  },
+
+  "riskLevel": "Risk Level",
+  "@riskLevel": {
+    "description": "Risk level label"
+  },
+
+  "recommendationsSection": "Recommendations",
+  "@recommendationsSection": {
+    "description": "Recommendations section title"
+  },
+
+  "byType": "By Type",
+  "@byType": {
+    "description": "By type label"
+  },
+
+  "byStatus": "By Status",
+  "@byStatus": {
+    "description": "By status label"
+  },
+
+  "summary": "Summary",
+  "@summary": {
+    "description": "Summary section title"
   }
 }

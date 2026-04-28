@@ -13,13 +13,15 @@ import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_ca
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
   const PortfolioHealthScreen({super.key});
 
   @override
   String getTitle(BuildContext context) {
-    return 'Portfolio Health';
+    final l10n = AppLocalizations.of(context);
+    return l10n.portfolioHealthTitle;
   }
 
   @override
@@ -43,6 +45,7 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
     WidgetRef ref,
     PortfolioHealthReport report,
   ) {
+    final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
 
@@ -82,7 +85,7 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.donut_small_rounded,
-                label: 'Diversification',
+                label: l10n.diversification,
                 value: '${report.diversificationScore.toStringAsFixed(0)}%',
                 iconColor: _getScoreColor(report.diversificationScore),
                 isPrivacySensitive: false,
@@ -92,7 +95,7 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.trending_up_rounded,
-                label: 'Performance',
+                label: l10n.performanceLabel,
                 value: '${report.performanceScore.toStringAsFixed(0)}%',
                 iconColor: _getScoreColor(report.performanceScore),
                 isPrivacySensitive: false,
@@ -108,7 +111,7 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.local_activity_rounded,
-                label: 'Activity',
+                label: l10n.activity,
                 value: '${report.activityScore.toStringAsFixed(0)}%',
                 iconColor: _getScoreColor(report.activityScore),
                 isPrivacySensitive: false,
@@ -118,7 +121,7 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.pie_chart_rounded,
-                label: 'Types',
+                label: l10n.typesLabel,
                 value: '${report.typeCount}',
                 iconColor: Colors.blue,
                 isPrivacySensitive: false,
@@ -146,7 +149,7 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
                   size: 32,
                 ),
                 title: Text(item.type.displayName),
-                subtitle: Text('${item.count} investments'),
+                subtitle: Text('${item.count} ${l10n.investmentsLabel}'),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,

@@ -20,6 +20,7 @@ import 'package:inv_tracker/features/reports/presentation/providers/monthly_inco
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Monthly income report screen
 class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
@@ -27,7 +28,8 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
 
   @override
   String getTitle(BuildContext context) {
-    return 'Monthly Income Report';
+    final l10n = AppLocalizations.of(context);
+    return l10n.monthlyIncomeReportTitle;
   }
 
   @override
@@ -51,6 +53,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
     WidgetRef ref,
     MonthlyIncomeReport data,
   ) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -71,7 +74,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
           children: [
             ReportStatCard(
               icon: Icons.trending_up_rounded,
-              label: 'Total Income',
+              label: l10n.totalIncome,
               value: formatCompactCurrency(
                 data.totalIncome,
                 symbol: symbol,
@@ -81,7 +84,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
             ),
             ReportStatCard(
               icon: Icons.account_balance_wallet_rounded,
-              label: 'Net Cashflow',
+              label: l10n.netCashflow,
               value: formatCompactCurrency(
                 data.netCashFlow,
                 symbol: symbol,
@@ -91,7 +94,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
             ),
             ReportStatCard(
               icon: Icons.attach_money_rounded,
-              label: 'Total Invested',
+              label: l10n.totalInvested,
               value: formatCompactCurrency(
                 data.totalInvested,
                 symbol: symbol,
@@ -100,7 +103,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
             ),
             ReportStatCard(
               icon: Icons.payments_rounded,
-              label: 'Total Returns',
+              label: l10n.totalReturns,
               value: formatCompactCurrency(
                 data.totalReturns,
                 symbol: symbol,
@@ -137,6 +140,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
     WidgetRef ref,
     MonthlyIncomeReport data,
   ) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -145,7 +149,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Income by Type',
+            l10n.incomeBreakdown,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -185,6 +189,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
     WidgetRef ref,
     MonthlyIncomeReport data,
   ) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -193,7 +198,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Top Income Generators',
+            l10n.topIncomeGenerators,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -239,6 +244,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
     WidgetRef ref,
     MonthlyIncomeReport data,
   ) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -247,7 +253,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'All Transactions (${data.transactions.length})',
+            '${l10n.allTransactions} (${data.transactions.length})',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),

@@ -16,13 +16,15 @@ import 'package:inv_tracker/features/reports/presentation/providers/goal_progres
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
   const GoalProgressScreen({super.key});
 
   @override
   String getTitle(BuildContext context) {
-    return 'Goal Progress Report';
+    final l10n = AppLocalizations.of(context);
+    return l10n.goalProgressTitle;
   }
 
   @override
@@ -42,6 +44,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
 
   @override
   Widget buildContent(BuildContext context, WidgetRef ref, GoalProgressReport report) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -50,7 +53,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
       children: [
         // Summary Stats
         Text(
-          'Goals Overview',
+          l10n.goalsOverview,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -59,7 +62,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.flag_rounded,
-                label: 'Total Goals',
+                label: l10n.totalGoals,
                 value: '${report.totalGoals}',
                 iconColor: Colors.blue,
               ),
@@ -68,7 +71,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.trending_up_rounded,
-                label: 'Avg Progress',
+                label: l10n.avgProgress,
                 value: '${report.averageProgress.toStringAsFixed(1)}%',
                 iconColor: Colors.green,
               ),
@@ -81,7 +84,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.check_circle_rounded,
-                label: 'On Track',
+                label: l10n.onTrack,
                 value: '${report.onTrackGoals.length}',
                 iconColor: Colors.green,
               ),
@@ -90,7 +93,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.warning_rounded,
-                label: 'At Risk',
+                label: l10n.atRisk,
                 value: '${report.atRiskGoals.length}',
                 iconColor: Colors.orange,
               ),
@@ -141,7 +144,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
             child: ListTile(
               leading: Text(goal.icon, style: const TextStyle(fontSize: 32)),
               title: Text(goal.name),
-              subtitle: Text('Target: ${formatCompactCurrency(goal.targetAmount, symbol: symbol, locale: locale)}'),
+              subtitle: Text('${l10n.targetLabel}: ${formatCompactCurrency(goal.targetAmount, symbol: symbol, locale: locale)}'),
               trailing: PrivacyMask(
                 child: Text(
                   '${progress.progressPercent.toStringAsFixed(0)}%',
@@ -183,7 +186,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Target: ${formatCompactCurrency(goal.targetAmount, symbol: symbol, locale: locale)}'),
+                  Text('${l10n.targetLabel}: ${formatCompactCurrency(goal.targetAmount, symbol: symbol, locale: locale)}'),
                   LinearProgressIndicator(
                     value: progress.progressPercent / 100,
                     backgroundColor: Colors.grey[300],
@@ -233,7 +236,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Target: ${formatCompactCurrency(goal.targetAmount, symbol: symbol, locale: locale)}'),
+                  Text('${l10n.targetLabel}: ${formatCompactCurrency(goal.targetAmount, symbol: symbol, locale: locale)}'),
                   Text(
                     progress.statusMessage,
                     style: TextStyle(

@@ -14,13 +14,15 @@ import 'package:inv_tracker/features/reports/presentation/providers/maturity_cal
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
   const MaturityCalendarScreen({super.key});
 
   @override
   String getTitle(BuildContext context) {
-    return 'Maturity Calendar';
+    final l10n = AppLocalizations.of(context);
+    return l10n.maturityCalendarTitle;
   }
 
   @override
@@ -44,6 +46,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
     WidgetRef ref,
     MaturityCalendarReport report,
   ) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -61,7 +64,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.event_rounded,
-                label: 'Total w/ Maturity',
+                label: l10n.totalWithMaturity,
                 value: '${report.totalInvestments}',
                 iconColor: Colors.blue,
               ),
@@ -70,7 +73,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.schedule_rounded,
-                label: 'Next 30 Days',
+                label: l10n.next30Days,
                 value: formatCompactCurrency(
                   report.totalUpcoming30Days,
                   symbol: symbol,
@@ -84,7 +87,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         const SizedBox(height: 12),
         ReportStatCard(
           icon: Icons.calendar_month_rounded,
-          label: 'Next 90 Days Total',
+          label: l10n.next90DaysTotal,
           value: formatCompactCurrency(
             report.totalNext90Days,
             symbol: symbol,
@@ -163,7 +166,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Matures: ${dateFormat.format(item.maturityDate)}'),
+                  Text('${l10n.maturesLabel}: ${dateFormat.format(item.maturityDate)}'),
                   Text(
                     '${item.daysUntilMaturity} days remaining',
                     style: TextStyle(color: urgencyColor),

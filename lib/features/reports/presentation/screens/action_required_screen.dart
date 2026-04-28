@@ -12,13 +12,15 @@ import 'package:inv_tracker/features/reports/presentation/providers/action_requi
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
   const ActionRequiredScreen({super.key});
 
   @override
   String getTitle(BuildContext context) {
-    return 'Action Required';
+    final l10n = AppLocalizations.of(context);
+    return l10n.actionRequiredTitle;
   }
 
   @override
@@ -42,6 +44,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
     WidgetRef ref,
     ActionRequiredReport report,
   ) {
+    final l10n = AppLocalizations.of(context);
     if (report.isEmpty) {
       return Center(
         child: Column(
@@ -54,12 +57,12 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
             ),
             const SizedBox(height: 16),
             Text(
-              'All Clear!',
+              l10n.allClear,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              'No actions required at this time.',
+              l10n.noActionsRequired,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -76,7 +79,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.warning_rounded,
-                label: 'Total Actions',
+                label: l10n.totalActions,
                 value: '${report.totalActions}',
                 iconColor: report.hasUrgentActions ? Colors.red : Colors.blue,
                 isPrivacySensitive: false,
@@ -86,7 +89,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.error_rounded,
-                label: 'Urgent',
+                label: l10n.urgentActions,
                 value:
                     '${report.criticalActions.length + report.highPriorityActions.length}',
                 iconColor: Colors.red,
@@ -99,7 +102,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.overdueActions > 0)
           ReportStatCard(
             icon: Icons.alarm_rounded,
-            label: 'Overdue Actions',
+            label: l10n.overdueActions,
             value: '${report.overdueActions}',
             iconColor: Colors.red.shade700,
             isPrivacySensitive: false,

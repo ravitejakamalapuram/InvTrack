@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/reports/presentation/providers/fy_report_pr
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class FYReportScreen extends BaseReportScreen<FYReport> {
   final int? fyYear;
@@ -25,10 +26,11 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
 
   @override
   String getTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (fyYear != null) {
       return 'FY $fyYear-${(fyYear! + 1) % 100}';
     }
-    return 'Financial Year Report';
+    return l10n.fyReportTitle;
   }
 
   @override
@@ -50,6 +52,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
 
   @override
   Widget buildContent(BuildContext context, WidgetRef ref, FYReport report) {
+    final l10n = AppLocalizations.of(context);
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -67,7 +70,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                 Expanded(
                   child: ReportStatCard(
                     icon: Icons.arrow_downward_rounded,
-                    label: 'Total Invested',
+                    label: l10n.totalInvested,
                     value: formatCompactCurrency(
                       report.totalInvested,
                       symbol: symbol,
@@ -80,7 +83,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                 Expanded(
                   child: ReportStatCard(
                     icon: Icons.arrow_upward_rounded,
-                    label: 'Total Returns',
+                    label: l10n.totalReturns,
                     value: formatCompactCurrency(
                       report.totalReturns,
                       symbol: symbol,
@@ -97,7 +100,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                 Expanded(
                   child: ReportStatCard(
                     icon: Icons.account_balance_wallet_rounded,
-                    label: 'Net Cashflow',
+                    label: l10n.netCashflow,
                     value: formatCompactCurrency(
                       report.netCashFlow,
                       symbol: symbol,
@@ -111,7 +114,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                 Expanded(
                   child: ReportStatCard(
                     icon: Icons.trending_up_rounded,
-                    label: 'XIRR',
+                    label: l10n.xirrLabel,
                     value: '${(report.xirr * 100).toStringAsFixed(2)}%',
                     iconColor: report.xirr >= 0 ? Colors.green : Colors.red,
                     isTrendPositive: report.xirr >= 0,
@@ -144,11 +147,12 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Capital Gains',
+          l10n.capitalGains,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -157,7 +161,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.flash_on_rounded,
-                label: 'Short-term (<1yr)',
+                label: l10n.shortTermGains,
                 value: formatCompactCurrency(
                   report.shortTermCapitalGains,
                   symbol: symbol,
@@ -170,7 +174,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
             Expanded(
               child: ReportStatCard(
                 icon: Icons.savings_rounded,
-                label: 'Long-term (>1yr)',
+                label: l10n.longTermGains,
                 value: formatCompactCurrency(
                   report.longTermCapitalGains,
                   symbol: symbol,
@@ -191,11 +195,12 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Top Performers',
+          l10n.topPerformersSection,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -261,11 +266,12 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
     String symbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Monthly Breakdown',
+          l10n.monthlyBreakdown,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -280,8 +286,8 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Invested: ${formatCompactCurrency(monthData.invested, symbol: symbol, locale: locale)}'),
-                        Text('Returned: ${formatCompactCurrency(monthData.returns, symbol: symbol, locale: locale)}'),
+                        Text('${l10n.investedLabel}: ${formatCompactCurrency(monthData.invested, symbol: symbol, locale: locale)}'),
+                        Text('${l10n.returnedLabel}: ${formatCompactCurrency(monthData.returns, symbol: symbol, locale: locale)}'),
                       ],
                     ),
                   ),
