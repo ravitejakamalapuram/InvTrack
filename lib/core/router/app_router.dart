@@ -21,6 +21,7 @@ import 'package:inv_tracker/features/reports/presentation/screens/monthly_income
 import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/performance_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/goal_progress_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/maturity_calendar_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -151,7 +152,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'goals',
                     builder: (context, state) => const GoalProgressScreen(),
                   ),
-                  // TODO: Add other report routes (Maturity, Action, Health)
+                  GoRoute(
+                    path: 'maturity',
+                    builder: (context, state) => const MaturityCalendarScreen(),
+                  ),
+                  // TODO: Add other report routes (Action, Health)
                 ],
               ),
             ],

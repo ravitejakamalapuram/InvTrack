@@ -84,9 +84,22 @@
   - At-risk goals with warning indicators
 - ✅ Route: `/reports/goals`
 
+#### Maturity Calendar (P1) ✅ COMPLETE
+- ✅ `MaturityCalendarReport` entity with maturity tracking
+- ✅ `MaturityCalendarService` for maturity timeline generation
+- ✅ `maturityCalendarReportProvider` (Riverpod)
+- ✅ `MaturityCalendarScreen` with:
+  - Summary cards (Total w/ Maturity, Next 30 Days, Next 90 Days)
+  - Upcoming 30 days section with urgency indicators
+  - Next 90 days timeline
+  - Beyond 90 days list
+  - Color-coded urgency levels (Critical, Warning, Normal, Low)
+- ✅ Route: `/reports/maturity`
+
 ### 📊 Progress Metrics
-- **Reports Completed:** 5/8 (62.5%)
+- **Reports Completed:** 6/8 (75%)
 - **High Priority (P0) Completed:** 5/5 (100%!)
+- **Medium Priority (P1) Completed:** 1/3 (33%)
 - **Code Quality:** ✅ Zero analyzer errors
 - **Architecture Compliance:** ✅ Clean layer boundaries maintained
 - **Privacy Compliance:** ✅ All amounts wrapped in PrivacyMask
@@ -94,9 +107,8 @@
 
 ### 🎯 Next Priority Tasks
 1. **Export Services (P0)** - PDF & CSV generation (Complex feature, requires significant implementation)
-2. **Maturity Calendar (P1)** - Upcoming maturity timeline
-3. **Action Required (P1)** - Action items dashboard
-4. **Portfolio Health (P1)** - Health assessment integration
+2. **Action Required (P1)** - Action items dashboard (NEXT)
+3. **Portfolio Health (P1)** - Health assessment integration
 
 ---
 
