@@ -6,8 +6,10 @@
 ///
 /// Firebase Project: invtracker-b19d1 (project number: 784857267556)
 ///
-/// IMPORTANT: Both webClientId and androidServerClientId MUST be from the SAME
-/// Firebase project to ensure cross-platform token verification works correctly.
+/// IMPORTANT: Both webClientId and androidServerClientId must come from the
+/// active Firebase project's OAuth clients to ensure proper authentication and
+/// cross-platform token verification. They may have the same value or different
+/// values depending on the project's OAuth client configuration.
 ///
 /// References:
 /// - Web Client ID: From Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration

@@ -105,12 +105,13 @@ void main() {
         reason: 'Android server client ID must be from the active Firebase project (invtracker-b19d1)',
       );
 
-      // For cross-platform token verification, both IDs should be identical
-      // (the Web OAuth Client ID from client_type: 3 in google-services.json)
+      // For this project (invtracker-b19d1), both IDs are identical
+      // (both use the Web OAuth Client ID from client_type: 3 in google-services.json)
+      // Note: In other projects, these MAY be different OAuth clients from the same Firebase project
       expect(
         GoogleSignInConfig.webClientId,
         equals(GoogleSignInConfig.androidServerClientId),
-        reason: 'Web and Android must use the SAME Firebase project OAuth client ID for cross-platform token verification',
+        reason: 'In this project, both use the same OAuth client ID from the active Firebase project (invtracker-b19d1)',
       );
     });
   });
