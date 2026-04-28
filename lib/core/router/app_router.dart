@@ -23,6 +23,7 @@ import 'package:inv_tracker/features/reports/presentation/screens/performance_re
 import 'package:inv_tracker/features/reports/presentation/screens/goal_progress_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/maturity_calendar_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/action_required_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/portfolio_health_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -161,7 +162,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'actions',
                     builder: (context, state) => const ActionRequiredScreen(),
                   ),
-                  // TODO: Add other report routes (Health)
+                  GoRoute(
+                    path: 'health',
+                    builder: (context, state) => const PortfolioHealthScreen(),
+                  ),
                 ],
               ),
             ],
