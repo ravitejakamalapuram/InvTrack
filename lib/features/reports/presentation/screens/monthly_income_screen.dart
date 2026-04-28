@@ -62,7 +62,7 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
       children: [
         // Period header
         Text(
-          data.monthName(),
+          DateFormat.yMMMM(Localizations.localeOf(context).toString()).format(data.period),
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: AppSpacing.lg),

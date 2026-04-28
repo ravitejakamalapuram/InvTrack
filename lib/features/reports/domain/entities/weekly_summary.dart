@@ -111,10 +111,4 @@ class DailyCashFlow {
 
   /// Net cashflow for the day
   double get net => inflows - outflows;
-
-  /// Day name (Mon, Tue, Wed, etc.)
-  String get dayName {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[dayOfWeek];
-  }
 }

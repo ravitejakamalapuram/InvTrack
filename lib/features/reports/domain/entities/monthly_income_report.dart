@@ -67,25 +67,6 @@ class MonthlyIncomeReport {
 
   /// Whether this month had any income
   bool get hasIncome => totalIncome > 0;
-
-  /// Month name (e.g., "January 2024")
-  String monthName() {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
-    ];
-    return '${months[period.month - 1]} ${period.year}';
-  }
 }
 
 /// Investment with income details
@@ -117,8 +98,11 @@ class IncomeTransaction {
   /// Transaction date
   final DateTime date;
 
-  /// Amount
+  /// Amount (in original currency)
   final double amount;
+
+  /// Currency code (ISO 4217) for this transaction
+  final String currency;
 
   /// Income type (Dividend, Interest, Rent, etc.)
   final String type;
@@ -131,6 +115,7 @@ class IncomeTransaction {
     required this.investmentName,
     required this.date,
     required this.amount,
+    required this.currency,
     required this.type,
     this.note,
   });

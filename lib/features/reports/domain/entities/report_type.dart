@@ -7,39 +7,36 @@ library;
 
 enum ReportType {
   /// Weekly investment activity summary (Dynamic)
-  weeklySummary('weekly_summary', 'Weekly Summary', true),
+  weeklySummary('weekly_summary', true),
 
   /// Monthly income report (Static + Dynamic)
-  monthlyIncome('monthly_income', 'Monthly Income', false),
+  monthlyIncome('monthly_income', false),
 
   /// Financial year report (Static)
-  fyReport('fy_report', 'FY Report', false),
+  fyReport('fy_report', false),
 
   /// Investment performance analysis (Dynamic)
-  performance('performance', 'Performance', true),
+  performance('performance', true),
 
   /// Goal progress tracking (Dynamic)
-  goalProgress('goal_progress', 'Goal Progress', true),
+  goalProgress('goal_progress', true),
 
   /// Maturity calendar (Dynamic)
-  maturityCalendar('maturity_calendar', 'Maturity Calendar', true),
+  maturityCalendar('maturity_calendar', true),
 
   /// Action required items (Dynamic)
-  actionRequired('action_required', 'Action Required', true),
+  actionRequired('action_required', true),
 
   /// Portfolio health assessment (Dynamic)
-  portfolioHealth('portfolio_health', 'Portfolio Health', true);
+  portfolioHealth('portfolio_health', true);
 
   /// Report type identifier (used in Firestore, analytics)
   final String id;
 
-  /// Display name for UI
-  final String displayName;
-
   /// Whether this is a dynamic report (true) or static (false)
   final bool isDynamic;
 
-  const ReportType(this.id, this.displayName, this.isDynamic);
+  const ReportType(this.id, this.isDynamic);
 
   /// Get report type from string ID
   static ReportType fromId(String id) {

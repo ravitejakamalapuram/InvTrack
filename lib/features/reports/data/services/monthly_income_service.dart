@@ -57,6 +57,7 @@ class MonthlyIncomeService {
               investmentName: investment.name,
               date: cf.date,
               amount: cf.amount,
+              currency: cf.currency,
               type: type,
               note: cf.notes,
             ),

@@ -27,6 +27,11 @@ class DailyCashFlowChart extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final locale = Localizations.localeOf(context).toString();
 
+    // Helper to get localized day name
+    String getDayName(DateTime date) {
+      return DateFormat.E(locale).format(date);
+    }
+
     if (dailyCashFlows.isEmpty) {
       return SizedBox(
         height: height,
@@ -60,7 +65,7 @@ class DailyCashFlowChart extends ConsumerWidget {
                 final data = dailyCashFlows[groupIndex];
                 final amount = rod.toY;
                 return BarTooltipItem(
-                  '${data.dayName}\n${NumberFormat.compactSimpleCurrency(locale: locale).format(amount)}',
+                  '${getDayName(data.date)}\n${NumberFormat.compactSimpleCurrency(locale: locale).format(amount)}',
                   const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -82,7 +87,7 @@ class DailyCashFlowChart extends ConsumerWidget {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      data.dayName,
+                      getDayName(data.date),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: isDark
                                 ? AppColors.neutral400Dark
