@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/reports/domain/entities/weekly_summary.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/weekly_summary_provider.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
@@ -177,11 +178,13 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
                 ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            '${l10n.xirrLabel}: ${(data.topPerformerXirr! * 100).toStringAsFixed(2)}%',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.green,
-                ),
+          PrivacyMask(
+            child: Text(
+              '${l10n.xirrLabel}: ${(data.topPerformerXirr! * 100).toStringAsFixed(2)}%',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.green,
+                  ),
+            ),
           ),
         ],
       ),

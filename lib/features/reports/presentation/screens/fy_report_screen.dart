@@ -286,8 +286,12 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${l10n.investedLabel}: ${formatCompactCurrency(monthData.invested, symbol: symbol, locale: locale)}'),
-                        Text('${l10n.returnedLabel}: ${formatCompactCurrency(monthData.returns, symbol: symbol, locale: locale)}'),
+                        MaskedAmountText(
+                          text: '${l10n.investedLabel}: ${formatCompactCurrency(monthData.invested, symbol: symbol, locale: locale)}',
+                        ),
+                        MaskedAmountText(
+                          text: '${l10n.returnedLabel}: ${formatCompactCurrency(monthData.returns, symbol: symbol, locale: locale)}',
+                        ),
                       ],
                     ),
                   ),

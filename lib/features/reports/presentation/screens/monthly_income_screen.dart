@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/reports/domain/entities/monthly_income_report.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/monthly_income_provider.dart';
@@ -164,8 +165,8 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
                   Expanded(
                     child: Text(entry.key),
                   ),
-                  Text(
-                    formatCompactCurrency(
+                  MaskedAmountText(
+                    text: formatCompactCurrency(
                       entry.value,
                       symbol: symbol,
                       locale: locale,
@@ -173,8 +174,8 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    '${percentage.toStringAsFixed(1)}%',
+                  MaskedAmountText(
+                    text: '${percentage.toStringAsFixed(1)}%',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -224,8 +225,8 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
                       ],
                     ),
                   ),
-                  Text(
-                    formatCompactCurrency(
+                  MaskedAmountText(
+                    text: formatCompactCurrency(
                       earner.income,
                       symbol: symbol,
                       locale: locale,
@@ -279,8 +280,8 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
                       ],
                     ),
                   ),
-                  Text(
-                    formatCompactCurrency(
+                  MaskedAmountText(
+                    text: formatCompactCurrency(
                       tx.amount,
                       symbol: symbol,
                       locale: locale,
