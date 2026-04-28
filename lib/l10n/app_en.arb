@@ -2555,5 +2555,217 @@
   "crashlyticsDisabledWarning": "Crashlytics is disabled in debug mode. Enable it in the toggle above to test crash reporting.",
   "@crashlyticsDisabledWarning": {
     "description": "Warning message when Crashlytics is disabled"
+  },
+
+  "reports": "Reports",
+  "@reports": {
+    "description": "Reports tab/screen title"
+  },
+
+  "weeklySummary": "Weekly Summary",
+  "@weeklySummary": {
+    "description": "Weekly summary report title"
+  },
+
+  "thisWeek": "This Week",
+  "@thisWeek": {
+    "description": "Subtitle for weekly summary report"
+  },
+
+  "monthlyIncome": "Monthly Income",
+  "@monthlyIncome": {
+    "description": "Monthly income report title"
+  },
+
+  "thisMonth": "This Month",
+  "@thisMonth": {
+    "description": "Subtitle for monthly income report"
+  },
+
+  "fyReport": "FY Report",
+  "@fyReport": {
+    "description": "Financial Year report title"
+  },
+
+  "performance": "Performance",
+  "@performance": {
+    "description": "Performance analysis report title"
+  },
+
+  "topPerformers": "Top Performers",
+  "@topPerformers": {
+    "description": "Subtitle for performance report"
+  },
+
+  "maturity": "Maturity",
+  "@maturity": {
+    "description": "Maturity calendar report title"
+  },
+
+  "upcoming": "Upcoming",
+  "@upcoming": {
+    "description": "Subtitle for maturity calendar"
+  },
+
+  "actionRequired": "Action Required",
+  "@actionRequired": {
+    "description": "Action required report title"
+  },
+
+  "portfolioHealth": "Portfolio Health",
+  "@portfolioHealth": {
+    "description": "Portfolio health report title"
+  },
+
+  "historicalReports": "Historical Reports",
+  "@historicalReports": {
+    "description": "Historical reports section title"
+  },
+
+  "noHistoricalReportsYet": "No historical reports yet",
+  "@noHistoricalReportsYet": {
+    "description": "Empty state message for historical reports"
+  },
+
+  "exportReport": "Export Report",
+  "@exportReport": {
+    "description": "Tooltip for export button"
+  },
+
+  "exportAsCsv": "Export as CSV",
+  "@exportAsCsv": {
+    "description": "CSV export menu item"
+  },
+
+  "forSpreadsheetApps": "For spreadsheet apps",
+  "@forSpreadsheetApps": {
+    "description": "Description for CSV export"
+  },
+
+  "exportAsPdf": "Export as PDF",
+  "@exportAsPdf": {
+    "description": "PDF export menu item"
+  },
+
+  "forSharingAndPrinting": "For sharing & printing",
+  "@forSharingAndPrinting": {
+    "description": "Description for PDF export"
+  },
+
+  "csvExportedSuccessfully": "CSV exported successfully ({size} KB)",
+  "@csvExportedSuccessfully": {
+    "description": "Success message for CSV export",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "45"
+      }
+    }
+  },
+
+  "pdfExportedSuccessfully": "PDF exported successfully ({size} KB)",
+  "@pdfExportedSuccessfully": {
+    "description": "Success message for PDF export",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "120"
+      }
+    }
+  },
+
+  "failedToExportCsv": "Failed to export CSV: {error}",
+  "@failedToExportCsv": {
+    "description": "Error message for CSV export failure",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "failedToExportPdf": "Failed to export PDF: {error}",
+  "@failedToExportPdf": {
+    "description": "Error message for PDF export failure",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "portfolioPerformance": "Portfolio Performance",
+  "@portfolioPerformance": {
+    "description": "Portfolio performance section title"
+  },
+
+  "avgXirr": "Avg XIRR",
+  "@avgXirr": {
+    "description": "Average XIRR label"
+  },
+
+  "medianXirr": "Median XIRR",
+  "@medianXirr": {
+    "description": "Median XIRR label"
+  },
+
+  "profitable": "Profitable",
+  "@profitable": {
+    "description": "Profitable investments label"
+  },
+
+  "lossMaking": "Loss Making",
+  "@lossMaking": {
+    "description": "Loss making investments label"
+  },
+
+  "totalActions": "Total Actions",
+  "@totalActions": {
+    "description": "Total actions label"
+  },
+
+  "urgent": "Urgent",
+  "@urgent": {
+    "description": "Urgent actions label"
+  },
+
+  "overdueActions": "Overdue Actions",
+  "@overdueActions": {
+    "description": "Overdue actions label"
+  },
+
+  "criticalActions": "⚠️ Critical Actions",
+  "@criticalActions": {
+    "description": "Critical actions section title"
+  },
+
+  "highPriority": "🔴 High Priority",
+  "@highPriority": {
+    "description": "High priority section title"
+  },
+
+  "goalsOverview": "Goals Overview",
+  "@goalsOverview": {
+    "description": "Goals overview section title"
+  },
+
+  "totalGoals": "Total Goals",
+  "@totalGoals": {
+    "description": "Total goals label"
+  },
+
+  "avgProgress": "Avg Progress",
+  "@avgProgress": {
+    "description": "Average progress label"
+  },
+
+  "totalInvested": "Total Invested",
+  "@totalInvested": {
+    "description": "Total invested label"
+  },
+
+  "totalReturns": "Total Returns",
+  "@totalReturns": {
+    "description": "Total returns label"
   }
 }

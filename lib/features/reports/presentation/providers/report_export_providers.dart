@@ -7,10 +7,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/reports/data/services/report_csv_exporter.dart';
 import 'package:inv_tracker/features/reports/data/services/report_pdf_exporter.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
-import 'package:inv_tracker/features/settings/presentation/providers/currency_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// CSV exporter provider
@@ -77,15 +78,17 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
       state = state.copyWith(isLoading: false);
 
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
         AppFeedback.showSuccess(
           context,
-          'CSV exported successfully (${result.fileSizeKB} KB)',
+          l10n.csvExportedSuccessfully(result.fileSizeKB.toString()),
         );
       }
-    } catch (e, st) {
+    } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       if (context.mounted) {
-        AppFeedback.showError(context, 'Failed to export CSV: $e');
+        final l10n = AppLocalizations.of(context);
+        AppFeedback.showError(context, l10n.failedToExportCsv(e.toString()));
       }
     }
   }
@@ -116,15 +119,17 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
       state = state.copyWith(isLoading: false);
 
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
         AppFeedback.showSuccess(
           context,
-          'PDF exported successfully (${result.fileSizeKB} KB)',
+          l10n.pdfExportedSuccessfully(result.fileSizeKB.toString()),
         );
       }
-    } catch (e, st) {
+    } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
       if (context.mounted) {
-        AppFeedback.showError(context, 'Failed to export PDF: $e');
+        final l10n = AppLocalizations.of(context);
+        AppFeedback.showError(context, l10n.failedToExportPdf(e.toString()));
       }
     }
   }

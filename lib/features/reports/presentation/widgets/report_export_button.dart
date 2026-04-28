@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/report_export_providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Export menu button for reports
 class ReportExportButton extends ConsumerWidget {
@@ -21,6 +22,7 @@ class ReportExportButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final exportState = ref.watch(reportExportProvider);
     final isLoading = exportState.isLoading;
 
@@ -32,7 +34,7 @@ class ReportExportButton extends ConsumerWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.download_rounded),
-      tooltip: 'Export Report',
+      tooltip: l10n.exportReport,
       enabled: !isLoading,
       onSelected: (format) => _handleExport(context, ref, format),
       itemBuilder: (context) => [
@@ -45,13 +47,13 @@ class ReportExportButton extends ConsumerWidget {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 12),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Export as CSV'),
+                  Text(l10n.exportAsCsv),
                   Text(
-                    'For spreadsheet apps',
-                    style: TextStyle(fontSize: 11),
+                    l10n.forSpreadsheetApps,
+                    style: const TextStyle(fontSize: 11),
                   ),
                 ],
               ),
@@ -67,13 +69,13 @@ class ReportExportButton extends ConsumerWidget {
                 color: Theme.of(context).colorScheme.secondary,
               ),
               const SizedBox(width: 12),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Export as PDF'),
+                  Text(l10n.exportAsPdf),
                   Text(
-                    'For sharing & printing',
-                    style: TextStyle(fontSize: 11),
+                    l10n.forSharingAndPrinting,
+                    style: const TextStyle(fontSize: 11),
                   ),
                 ],
               ),
