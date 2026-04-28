@@ -11,9 +11,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/reports/domain/entities/goal_progress_report.dart';
+import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
 
 class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
   const GoalProgressScreen({super.key});
@@ -26,6 +28,16 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
   @override
   FutureProvider<GoalProgressReport> getDataProvider(WidgetRef ref) {
     return goalProgressReportProvider;
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context, WidgetRef ref, GoalProgressReport data) {
+    return [
+      ReportExportButton(
+        reportData: data,
+        reportType: ReportType.goalProgress,
+      ),
+    ];
   }
 
   @override

@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/features/reports/domain/entities/action_required_report.dart';
+import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/action_required_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
 
 class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
   const ActionRequiredScreen({super.key});
@@ -22,6 +24,16 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
   @override
   FutureProvider<ActionRequiredReport> getDataProvider(WidgetRef ref) {
     return actionRequiredReportProvider;
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context, WidgetRef ref, ActionRequiredReport data) {
+    return [
+      ReportExportButton(
+        reportData: data,
+        reportType: ReportType.actionRequired,
+      ),
+    ];
   }
 
   @override

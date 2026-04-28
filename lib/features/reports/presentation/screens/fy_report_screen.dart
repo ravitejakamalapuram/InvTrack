@@ -12,9 +12,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
+import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/fy_report_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
 
 class FYReportScreen extends BaseReportScreen<FYReport> {
   final int? fyYear;
@@ -34,6 +36,16 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
     return fyYear != null
         ? fyReportProvider(fyYear!)
         : currentFYReportProvider;
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context, WidgetRef ref, FYReport data) {
+    return [
+      ReportExportButton(
+        reportData: data,
+        reportType: ReportType.fyReport,
+      ),
+    ];
   }
 
   @override

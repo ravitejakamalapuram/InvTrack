@@ -16,9 +16,11 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/reports/domain/entities/weekly_summary.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/weekly_summary_provider.dart';
+import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/daily_cashflow_chart.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
 
 /// Weekly summary screen
 class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
@@ -32,6 +34,16 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
   @override
   FutureProvider<WeeklySummary> getDataProvider(WidgetRef ref) {
     return currentWeeklySummaryProvider;
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context, WidgetRef ref, WeeklySummary data) {
+    return [
+      ReportExportButton(
+        reportData: data,
+        reportType: ReportType.weeklySummary,
+      ),
+    ];
   }
 
   @override
