@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Resolve Crashlytics type mismatch in HealthScoreRepository timeout handling (#356)

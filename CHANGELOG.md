@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Add serverClientId for Google Sign-In on Android (#357)
+
+## [3.56.10] - 2026-04-27
+
+### 🐛 Bug Fixes
+
 - Resolve Crashlytics type mismatch in HealthScoreRepository timeout handling (#356)
 
 ## [3.56.9] - 2026-04-25
