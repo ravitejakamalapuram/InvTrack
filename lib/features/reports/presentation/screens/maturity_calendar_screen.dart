@@ -53,9 +53,12 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         // Summary Stats
         Text(
           'Maturity Overview',
@@ -140,6 +143,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
           ),
         ],
       ],
+      ),
     );
   }
 

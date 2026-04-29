@@ -141,7 +141,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
         ),
         const SizedBox(height: 12),
         ...report.topPerformers.take(5).map((perf) {
-          final sign = perf.absoluteReturn > 0 ? '+' : (perf.absoluteReturn < 0 ? '' : '');
+          final sign = perf.absoluteReturn > 0 ? '+' : (perf.absoluteReturn < 0 ? '-' : '');
           final returnColor = perf.absoluteReturn > 0
               ? Colors.green
               : (perf.absoluteReturn < 0 ? Colors.red : null);
@@ -184,7 +184,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
         ),
         const SizedBox(height: 12),
         ...report.bottomPerformers.take(5).map((perf) {
-          final sign = perf.absoluteReturn > 0 ? '+' : (perf.absoluteReturn < 0 ? '' : '');
+          final sign = perf.absoluteReturn > 0 ? '+' : (perf.absoluteReturn < 0 ? '-' : '');
           final returnColor = perf.absoluteReturn > 0
               ? Colors.green
               : (perf.absoluteReturn < 0 ? Colors.red : null);
