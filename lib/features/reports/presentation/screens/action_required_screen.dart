@@ -29,6 +29,9 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
   }
 
   @override
+  String getReportType() => 'actions';
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, ActionRequiredReport data) {
     return [
       ReportExportButton(

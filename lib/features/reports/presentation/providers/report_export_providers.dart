@@ -6,6 +6,7 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -15,14 +16,16 @@ import 'package:inv_tracker/features/reports/domain/services/report_export_servi
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// CSV exporter provider
+/// CSV exporter provider (with analytics)
 final csvExporterProvider = Provider<ReportCsvExporter>((ref) {
-  return ReportCsvExporter();
+  final analytics = AnalyticsService();
+  return ReportCsvExporter(analytics: analytics);
 });
 
-/// PDF exporter provider
+/// PDF exporter provider (with analytics)
 final pdfExporterProvider = Provider<ReportPdfExporter>((ref) {
-  return ReportPdfExporter();
+  final analytics = AnalyticsService();
+  return ReportPdfExporter(analytics: analytics);
 });
 
 /// Export state class

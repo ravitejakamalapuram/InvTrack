@@ -34,6 +34,9 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
   }
 
   @override
+  String getReportType() => 'performance';
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, PerformanceReport data) {
     return [
       ReportExportButton(

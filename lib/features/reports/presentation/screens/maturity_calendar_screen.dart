@@ -31,6 +31,9 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
   }
 
   @override
+  String getReportType() => 'maturity';
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, MaturityCalendarReport data) {
     return [
       ReportExportButton(

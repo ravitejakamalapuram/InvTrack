@@ -40,6 +40,9 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
   }
 
   @override
+  String getReportType() => 'weekly';
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, WeeklySummary data) {
     return [
       ReportExportButton(

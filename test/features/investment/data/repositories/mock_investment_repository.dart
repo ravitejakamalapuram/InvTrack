@@ -73,6 +73,26 @@ class FakeInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Stream<List<InvestmentEntity>> watchInvestmentsPaginated({
+    required int limit,
+    String? startAfterInvestmentId,
+  }) {
+    var result = List<InvestmentEntity>.from(_investments);
+    if (startAfterInvestmentId != null) {
+      final index = result.indexWhere((i) => i.id == startAfterInvestmentId);
+      if (index >= 0 && index + 1 < result.length) {
+        result = result.sublist(index + 1);
+      } else {
+        result = [];
+      }
+    }
+    if (result.length > limit) {
+      result = result.sublist(0, limit);
+    }
+    return Stream.value(result);
+  }
+
+  @override
   Future<List<InvestmentEntity>> getAllInvestments() async {
     return List.from(_investments);
   }
@@ -227,6 +247,29 @@ class FakeInvestmentRepository implements InvestmentRepository {
   @override
   Future<List<CashFlowEntity>> getAllCashFlows() async {
     return List.from(_cashFlows);
+  }
+
+  @override
+  Future<List<CashFlowEntity>> getCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    return _cashFlows.where((cf) {
+      return cf.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          cf.date.isBefore(endDate.add(const Duration(days: 1)));
+    }).toList();
+  }
+
+  @override
+  Stream<List<CashFlowEntity>> watchCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    final filtered = _cashFlows.where((cf) {
+      return cf.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          cf.date.isBefore(endDate.add(const Duration(days: 1)));
+    }).toList();
+    return Stream.value(filtered);
   }
 
   @override

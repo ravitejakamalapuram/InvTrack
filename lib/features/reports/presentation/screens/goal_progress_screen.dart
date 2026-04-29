@@ -33,6 +33,9 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
   }
 
   @override
+  String getReportType() => 'goals';
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, GoalProgressReport data) {
     return [
       ReportExportButton(

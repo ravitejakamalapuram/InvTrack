@@ -51,6 +51,19 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
   }
 
   @override
+  String getReportType() => 'monthly';
+
+  @override
+  bool isHistoricalReport() => period != null;
+
+  @override
+  String? getPeriodIdentifier() {
+    if (period == null) return null;
+    // Format as YYYY-MM
+    return '${period!.year}-${period!.month.toString().padLeft(2, '0')}';
+  }
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, MonthlyIncomeReport data) {
     return [
       ReportExportButton(

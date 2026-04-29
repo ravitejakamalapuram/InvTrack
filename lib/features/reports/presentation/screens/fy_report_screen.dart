@@ -42,6 +42,15 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
   }
 
   @override
+  String getReportType() => 'fy';
+
+  @override
+  bool isHistoricalReport() => fyYear != null;
+
+  @override
+  String? getPeriodIdentifier() => fyYear?.toString();
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, FYReport data) {
     return [
       ReportExportButton(

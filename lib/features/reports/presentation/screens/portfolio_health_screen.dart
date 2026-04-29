@@ -30,6 +30,9 @@ class PortfolioHealthScreen extends BaseReportScreen<PortfolioHealthReport> {
   }
 
   @override
+  String getReportType() => 'health';
+
+  @override
   List<Widget> buildActions(BuildContext context, WidgetRef ref, PortfolioHealthReport data) {
     return [
       ReportExportButton(

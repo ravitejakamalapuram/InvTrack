@@ -8,9 +8,15 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 
 /// PDF exporter service for reports
 class ReportPdfExporter {
+  final AnalyticsService? _analytics;
+
+  /// Create PDF exporter with optional analytics service
+  ReportPdfExporter({AnalyticsService? analytics}) : _analytics = analytics;
+
   /// Export any report data to PDF
   Future<ExportResult> export({
     required dynamic reportData,
@@ -35,6 +41,13 @@ class ReportPdfExporter {
     // Get file size
     final fileSize = await file.length();
 
+    // Track export analytics
+    await _analytics?.logReportExported(
+      reportType: reportType.name,
+      format: 'pdf',
+      recordCount: _getRecordCount(reportData),
+    );
+
     return ExportResult(
       filePath: filePath,
       format: ExportFormat.pdf,
@@ -42,6 +55,29 @@ class ReportPdfExporter {
       fileSizeBytes: fileSize,
       exportedAt: DateTime.now(),
     );
+  }
+
+  /// Extract record count from report data for analytics
+  int? _getRecordCount(dynamic reportData) {
+    if (reportData == null) return null;
+
+    // Try to extract count from common report data structures
+    if (reportData is Map) {
+      // Weekly/Monthly reports have transactions list
+      if (reportData['transactions'] is List) {
+        return (reportData['transactions'] as List).length;
+      }
+      // Maturity calendar has upcoming maturities
+      if (reportData['upcomingMaturities'] is List) {
+        return (reportData['upcomingMaturities'] as List).length;
+      }
+      // Action required has actionItems
+      if (reportData['actionItems'] is List) {
+        return (reportData['actionItems'] as List).length;
+      }
+    }
+
+    return null;
   }
 
   /// Add report pages to PDF

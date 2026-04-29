@@ -14,13 +14,10 @@ class MockReportCacheService implements ReportCacheService {
   void set<T>(ReportType type, DateTime start, DateTime end, T value) {}
 
   @override
-  void clear(ReportType type) {}
+  void clearType(ReportType type) {}
 
   @override
   void clearAll() {}
-
-  @override
-  void clearType(ReportType type) {}
 
   @override
   void cleanupExpired() {}

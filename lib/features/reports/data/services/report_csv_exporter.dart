@@ -8,9 +8,15 @@ import 'package:csv/csv.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 
 /// CSV exporter service for reports
 class ReportCsvExporter {
+  final AnalyticsService? _analytics;
+
+  /// Create CSV exporter with optional analytics service
+  ReportCsvExporter({AnalyticsService? analytics}) : _analytics = analytics;
+
   /// Export any report data to CSV
   Future<ExportResult> export({
     required dynamic reportData,
@@ -34,6 +40,13 @@ class ReportCsvExporter {
 
     // Get file size
     final fileSize = await file.length();
+
+    // Track export analytics (rows - 1 for header row)
+    await _analytics?.logReportExported(
+      reportType: reportType.name,
+      format: 'csv',
+      recordCount: rows.length > 1 ? rows.length - 1 : 0,
+    );
 
     return ExportResult(
       filePath: filePath,

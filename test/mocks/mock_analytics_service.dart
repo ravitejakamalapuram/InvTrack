@@ -387,4 +387,68 @@ class FakeAnalyticsService implements AnalyticsService {
     // Return null for fake implementation - no Firebase in tests
     return null;
   }
+
+  // ============ Reports Analytics Events ============
+
+  @override
+  Future<void> logReportViewed({
+    required String reportType,
+    bool isHistorical = false,
+    String? period,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.reportViewed,
+      parameters: {
+        'report_type': reportType,
+        'is_historical': isHistorical ? 1 : 0,
+        if (period != null) 'period': period,
+      },
+    );
+  }
+
+  @override
+  Future<void> logReportExported({
+    required String reportType,
+    required String format,
+    int? recordCount,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.reportExported,
+      parameters: {
+        'report_type': reportType,
+        'format': format,
+        if (recordCount != null) 'record_count': recordCount,
+      },
+    );
+  }
+
+  @override
+  Future<void> logHistoricalReportAccessed({
+    required String reportType,
+    required int periodsBack,
+    required String period,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.historicalReportAccessed,
+      parameters: {
+        'report_type': reportType,
+        'periods_back': periodsBack,
+        'period': period,
+      },
+    );
+  }
+
+  @override
+  Future<void> logReportMetricTooltipViewed({
+    required String metricName,
+    required String reportType,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.reportMetricTooltipViewed,
+      parameters: {
+        'metric_name': metricName,
+        'report_type': reportType,
+      },
+    );
+  }
 }
