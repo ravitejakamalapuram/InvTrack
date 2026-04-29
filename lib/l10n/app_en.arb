@@ -3165,5 +3165,40 @@
   "summary": "Summary",
   "@summary": {
     "description": "Summary section title"
+  },
+
+  "xirrTooltip": "Extended Internal Rate of Return - Industry standard for calculating returns with multiple transactions at different times. Accounts for when you invested and withdrew money.",
+  "@xirrTooltip": {
+    "description": "Tooltip explaining XIRR metric"
+  },
+
+  "capitalGainsTooltip": "Profit from selling investments. Short-term (<1 year) gains are taxed higher than long-term (>1 year) gains in India.",
+  "@capitalGainsTooltip": {
+    "description": "Tooltip explaining capital gains"
+  },
+
+  "netCashflowTooltip": "Total money in (dividends, interest) minus money out (investments, withdrawals) for the period. Positive = earning, Negative = investing.",
+  "@netCashflowTooltip": {
+    "description": "Tooltip explaining net cashflow"
+  },
+
+  "diversificationTooltip": "How spread out your investments are across types and platforms. Higher diversification = lower risk.",
+  "@diversificationTooltip": {
+    "description": "Tooltip explaining diversification score"
+  },
+
+  "liquidityTooltip": "Percentage of your portfolio maturing in next 90 days. Ideal: 10-30%. Too high = reinvestment work, Too low = illiquid.",
+  "@liquidityTooltip": {
+    "description": "Tooltip explaining liquidity score"
+  },
+
+  "goalAlignmentTooltip": "Percentage of your financial goals that are on-track based on current progress. Higher = better goal achievement.",
+  "@goalAlignmentTooltip": {
+    "description": "Tooltip explaining goal alignment score"
+  },
+
+  "actionReadinessTooltip": "Measures overdue renewals and stale investments. Lower score means you have pending actions to take.",
+  "@actionReadinessTooltip": {
+    "description": "Tooltip explaining action readiness score"
   }
 }

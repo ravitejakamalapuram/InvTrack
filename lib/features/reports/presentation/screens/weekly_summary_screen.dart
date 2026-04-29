@@ -230,7 +230,14 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
-          ...data.newInvestments.map((inv) => Padding(
+          // Use ListView.builder for efficient rendering
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: data.newInvestments.length,
+            itemBuilder: (context, index) {
+              final inv = data.newInvestments[index];
+              return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                 child: Row(
                   children: [
@@ -239,7 +246,9 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
                     Expanded(child: Text(inv.name)),
                   ],
                 ),
-              )),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -266,7 +275,14 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          ...data.upcomingMaturities.map((inv) => Padding(
+          // Use ListView.builder for efficient rendering
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: data.upcomingMaturities.length,
+            itemBuilder: (context, index) {
+              final inv = data.upcomingMaturities[index];
+              return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                 child: Row(
                   children: [
@@ -279,7 +295,9 @@ class WeeklySummaryScreen extends BaseReportScreen<WeeklySummary> {
                     ),
                   ],
                 ),
-              )),
+              );
+            },
+          ),
         ],
       ),
     );

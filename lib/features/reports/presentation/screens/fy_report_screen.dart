@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/reports/presentation/providers/fy_report_pr
 import 'package:inv_tracker/features/reports/presentation/widgets/base_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_stat_card.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/report_export_button.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/metric_with_tooltip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class FYReportScreen extends BaseReportScreen<FYReport> {
@@ -108,6 +109,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                     ),
                     iconColor: report.netCashFlow >= 0 ? Colors.green : Colors.red,
                     isTrendPositive: report.netCashFlow >= 0,
+                    tooltip: l10n.netCashflowTooltip,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -118,6 +120,7 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
                     value: '${(report.xirr * 100).toStringAsFixed(2)}%',
                     iconColor: report.xirr >= 0 ? Colors.green : Colors.red,
                     isTrendPositive: report.xirr >= 0,
+                    tooltip: l10n.xirrTooltip,
                   ),
                 ),
               ],
@@ -151,9 +154,11 @@ class FYReportScreen extends BaseReportScreen<FYReport> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.capitalGains,
-          style: Theme.of(context).textTheme.titleLarge,
+        MetricWithTooltip(
+          label: l10n.capitalGains,
+          tooltip: l10n.capitalGainsTooltip,
+          labelStyle: Theme.of(context).textTheme.titleLarge,
+          iconSize: 20,
         ),
         const SizedBox(height: 12),
         Row(

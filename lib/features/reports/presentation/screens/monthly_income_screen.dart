@@ -251,6 +251,9 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
     final locale = ref.watch(currencyLocaleProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
+    // Limit to 50 transactions for performance (can show all with pagination later)
+    final displayTransactions = data.transactions.take(50).toList();
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,45 +263,52 @@ class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
-          ...data.transactions.take(10).map((tx) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tx.investmentName,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          '${DateFormat.MMMd(locale).format(tx.date)} • ${tx.type}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+          // Use ListView.builder for efficient rendering
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: displayTransactions.length,
+            itemBuilder: (context, index) {
+              final tx = displayTransactions[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tx.investmentName,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          Text(
+                            '${DateFormat.MMMd(locale).format(tx.date)} • ${tx.type}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  MaskedAmountText(
-                    text: formatCompactCurrency(
-                      tx.amount,
-                      symbol: symbol,
-                      locale: locale,
+                    MaskedAmountText(
+                      text: formatCompactCurrency(
+                        tx.amount,
+                        symbol: symbol,
+                        locale: locale,
+                      ),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: Colors.green,
+                          ),
                     ),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.green,
-                        ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          if (data.transactions.length > 10) ...[
+                  ],
+                ),
+              );
+            },
+          ),
+          if (data.transactions.length > 50) ...[
             const SizedBox(height: AppSpacing.sm),
             Center(
               child: Text(
-                '+ ${data.transactions.length - 10} more transactions',
+                '+ ${data.transactions.length - 50} more transactions',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

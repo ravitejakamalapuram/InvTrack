@@ -66,6 +66,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
                 label: l10n.avgXirr,
                 value: '${(report.averageXIRR * 100).toStringAsFixed(2)}%',
                 iconColor: report.averageXIRR >= 0 ? Colors.green : Colors.red,
+                tooltip: l10n.xirrTooltip,
               ),
             ),
             const SizedBox(width: 12),

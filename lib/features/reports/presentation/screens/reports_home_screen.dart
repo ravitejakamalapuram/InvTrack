@@ -12,6 +12,9 @@ import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/providers/action_required_provider.dart';
+import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 
 /// Reports home screen
 class ReportsHomeScreen extends ConsumerWidget {
@@ -20,6 +23,27 @@ class ReportsHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+
+    // Watch dynamic counts for report cards
+    final activeGoalsAsync = ref.watch(activeGoalsProvider);
+    final actionRequiredAsync = ref.watch(actionRequiredReportProvider);
+    final portfolioHealthAsync = ref.watch(portfolioHealthProvider);
+
+    // Extract counts with defaults
+    final activeGoalsCount = activeGoalsAsync.maybeWhen(
+      data: (goals) => goals.length,
+      orElse: () => 0,
+    );
+
+    final actionItemsCount = actionRequiredAsync.maybeWhen(
+      data: (report) => report.totalActions,
+      orElse: () => 0,
+    );
+
+    final healthScore = portfolioHealthAsync.maybeWhen(
+      data: (health) => health?.overallScore.round() ?? 0,
+      orElse: () => 0,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -83,7 +107,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.flag_rounded,
                   title: l10n.goals,
-                  subtitle: l10n.activeGoalsCount(5),
+                  subtitle: l10n.activeGoalsCount(activeGoalsCount),
                   onTap: () => context.push('/reports/goals'),
                 ),
                 _buildReportCard(
@@ -99,7 +123,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.notification_important_rounded,
                   title: l10n.actionRequired,
-                  subtitle: l10n.actionItemsCount(3),
+                  subtitle: l10n.actionItemsCount(actionItemsCount),
                   onTap: () => context.push('/reports/actions'),
                 ),
                 _buildReportCard(
@@ -107,7 +131,7 @@ class ReportsHomeScreen extends ConsumerWidget {
                   l10n,
                   icon: Icons.health_and_safety_rounded,
                   title: l10n.portfolioHealth,
-                  subtitle: l10n.healthScore(85),
+                  subtitle: l10n.healthScore(healthScore),
                   onTap: () => context.push('/reports/health'),
                 ),
               ],

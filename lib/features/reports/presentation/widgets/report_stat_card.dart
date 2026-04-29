@@ -23,6 +23,7 @@ class ReportStatCard extends ConsumerWidget {
   final bool isPrivacySensitive;
   final double? trendValue;
   final bool? isTrendPositive;
+  final String? tooltip; // Optional tooltip explanation
 
   const ReportStatCard({
     super.key,
@@ -33,6 +34,7 @@ class ReportStatCard extends ConsumerWidget {
     this.isPrivacySensitive = true,
     this.trendValue,
     this.isTrendPositive,
+    this.tooltip,
   });
 
   @override
@@ -45,7 +47,7 @@ class ReportStatCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon + Label
+          // Icon + Label (with optional tooltip)
           Row(
             children: [
               Icon(icon, color: effectiveIconColor, size: 20),
@@ -57,6 +59,29 @@ class ReportStatCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (tooltip != null) ...[
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: tooltip!,
+                  triggerMode: TooltipTriggerMode.tap,
+                  showDuration: const Duration(seconds: 5),
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.inverseSurface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onInverseSurface,
+                    fontSize: 13,
+                  ),
+                  child: Icon(
+                    Icons.help_outline_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.sm),

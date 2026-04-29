@@ -170,50 +170,57 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
-        ...items.map((item) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Icon(
-                _getActionIcon(item.type),
-                color: color,
-                size: 32,
-              ),
-              title: Text(item.title),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.description),
-                  if (item.dueDate != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Due: ${DateFormat('MMM dd, yyyy').format(item.dueDate!)}${item.isOverdue ? ' (OVERDUE)' : ''}',
-                      style: TextStyle(
-                        color: item.isOverdue ? Colors.red : color,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              trailing: item.daysUntilDue != null
-                  ? Chip(
-                      label: Text(
-                        item.isOverdue
-                            ? '${-item.daysUntilDue!}d ago'
-                            : '${item.daysUntilDue}d',
+        // Use ListView.builder for efficient rendering
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: Icon(
+                  _getActionIcon(item.type),
+                  color: color,
+                  size: 32,
+                ),
+                title: Text(item.title),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.description),
+                    if (item.dueDate != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Due: ${DateFormat('MMM dd, yyyy').format(item.dueDate!)}${item.isOverdue ? ' (OVERDUE)' : ''}',
                         style: TextStyle(
-                          color: item.isOverdue ? Colors.white : color,
-                          fontSize: 12,
+                          color: item.isOverdue ? Colors.red : color,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      backgroundColor:
-                          item.isOverdue ? Colors.red : color.withValues(alpha: 0.2),
-                    )
-                  : null,
-            ),
-          );
-        }),
+                    ],
+                  ],
+                ),
+                trailing: item.daysUntilDue != null
+                    ? Chip(
+                        label: Text(
+                          item.isOverdue
+                              ? '${-item.daysUntilDue!}d ago'
+                              : '${item.daysUntilDue}d',
+                          style: TextStyle(
+                            color: item.isOverdue ? Colors.white : color,
+                            fontSize: 12,
+                          ),
+                        ),
+                        backgroundColor:
+                            item.isOverdue ? Colors.red : color.withValues(alpha: 0.2),
+                      )
+                    : null,
+              ),
+            );
+          },
+        ),
       ],
     );
   }
