@@ -82,6 +82,34 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Stream<List<InvestmentEntity>> watchInvestmentsPaginated({
+    required int limit,
+    String? startAfterInvestmentId,
+  }) async* {
+    // Clamp limit to prevent excessive data transfer
+    final effectiveLimit = limit.clamp(1, 100);
+
+    Query<Map<String, dynamic>> query = _investmentsRef
+        .orderBy('createdAt', descending: true)
+        .limit(effectiveLimit);
+
+    // If pagination cursor provided, start after that document
+    if (startAfterInvestmentId != null) {
+      final startAfterDoc = await _investmentsRef.doc(startAfterInvestmentId).get();
+      if (startAfterDoc.exists) {
+        query = query.startAfterDocument(startAfterDoc);
+      }
+    }
+
+    // Stream paginated results
+    await for (final snapshot in query.snapshots()) {
+      yield snapshot.docs
+          .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+          .toList();
+    }
+  }
+
+  @override
   Future<List<InvestmentEntity>> getAllInvestments() async {
     final snapshot = await _investmentsRef
         .orderBy('createdAt', descending: true)
