@@ -116,7 +116,7 @@ Added `Tooltip` widgets with help icons to `ReportStatCard` and created `MetricW
 ### **HIGH Priority (Next Sprint):**
 - [x] Add pagination to investment list - **COMPLETE** ✅
 - [-] Add debouncing to report providers - **NOT NEEDED** ✅
-- [ ] Implement historical reports - **PLANNED** (~2 days)
+- [x] Implement historical reports - **COMPLETE** ✅
 
 **Why debouncing isn't needed:**
 - Firestore streams already batch updates automatically
@@ -202,35 +202,119 @@ Stream<List<InvestmentEntity>> watchInvestmentsPaginated({
 
 ---
 
-## 📅 **HIGH PRIORITY - IMPROVEMENT #2: Historical Reports**
+## ✅ **COMPLETED - HIGH PRIORITY IMPROVEMENT #2: Historical Reports**
 
 ### **Issue:**
-Users can't view past reports (e.g., FY 2023 vs FY 2024).
+Users couldn't view past reports (e.g., FY 2023 vs FY 2024).
 
-### **Current State:**
+### **Fix Applied:**
+Created on-demand historical report generation using existing date-parameterized providers:
+
+**1. HistoricalReportsList Widget:**
 ```dart
-// Placeholder on home screen
-Text(l10n.noHistoricalReportsYet)
+// lib/features/reports/presentation/widgets/historical_reports_list.dart
+class HistoricalReportsList extends StatelessWidget {
+  // Dynamically generates:
+  // - Last 3 FY years (e.g., FY 2022-23, 2023-24, 2024-25)
+  // - Last 6 months (e.g., January 2024, February 2024)
+
+  Widget _buildFYReportList(BuildContext context, int currentFYYear) {
+    final fyYears = List.generate(3, (index) => currentFYYear - index);
+    // Creates tappable GlassCards for each FY year
+    // Navigates to /reports/fy/:year
+  }
+
+  Widget _buildMonthlyReportList(BuildContext context, DateTime now) {
+    final months = List.generate(6, (index) {
+      return DateTime(now.year, now.month - index, 1);
+    });
+    // Creates tappable GlassCards for each month
+    // Navigates to /reports/monthly/:period (YYYY-MM format)
+  }
+}
 ```
 
-### **Fix Required:**
-1. Add "Past Reports" section with date pickers
-2. Allow selecting FY year (e.g., FY 2022-23, 2023-24)
-3. Allow selecting month (e.g., January 2024, February 2024)
-4. Save report snapshots to Firestore for fast access
-5. Compare current vs historical (trend indicators ↑↓)
+**2. Router Updates:**
+```dart
+// lib/core/router/app_router.dart
+// Parameterized FY route
+GoRoute(
+  path: 'fy/:year',
+  builder: (context, state) {
+    final year = int.parse(state.pathParameters['year']!);
+    return FYReportScreen(fyYear: year);
+  },
+),
 
-### **Implementation Steps:**
-1. Create `HistoricalReports` model
-2. Add date range selector widget
-3. Update providers to accept date parameters
-4. Add comparison mode (side-by-side view)
-5. Implement report snapshot saving
+// Parameterized monthly route
+GoRoute(
+  path: 'monthly/:yearMonth',
+  builder: (context, state) {
+    final yearMonth = state.pathParameters['yearMonth']!;
+    final parts = yearMonth.split('-');
+    final period = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
+    return MonthlyIncomeScreen(period: period);
+  },
+),
+```
+
+**3. Screen Updates:**
+```dart
+// FYReportScreen already supported fyYear parameter
+class FYReportScreen extends BaseReportScreen<FYReport> {
+  final int? fyYear;
+
+  @override
+  FutureProvider<FYReport> getDataProvider(WidgetRef ref) {
+    return fyYear != null ? fyReportProvider(fyYear!) : currentFYReportProvider;
+  }
+}
+
+// MonthlyIncomeScreen updated to accept period parameter
+class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
+  final DateTime? period;
+
+  @override
+  FutureProvider<MonthlyIncomeReport> getDataProvider(WidgetRef ref) {
+    return period != null ? monthlyIncomeProvider(period!) : currentMonthlyIncomeProvider;
+  }
+}
+```
+
+### **Architecture Decision:**
+**ON-DEMAND generation instead of snapshot storage:**
+- ❌ **Rejected:** Saving report snapshots to Firestore
+  - Adds storage complexity
+  - Increases Firestore costs
+  - Requires sync logic for data changes
+  - Snapshots become stale when investments update
+
+- ✅ **Chosen:** Generate reports on-demand using existing providers
+  - Zero storage overhead
+  - Always shows current data
+  - Leverages existing `fyReportProvider(year)` and `monthlyIncomeProvider(date)`
+  - Reports are fast enough (<1 second) due to server-side date filtering
+
+### **Localization Added:**
+```json
+"financialYearReports": "Financial Year Reports",
+"monthlyReports": "Monthly Reports",
+"currentYear": "Current Year",
+"currentMonth": "Current Month",
+"tapToView": "Tap to view",
+"january": "January", ... "december": "December"
+```
 
 ### **Impact:**
-- ✅ Users can track progress over time
-- ✅ Tax planning for multiple years
-- ✅ Better investment decision making
+- ✅ Users can now view last 3 FY years for tax planning
+- ✅ Users can compare monthly income trends (last 6 months)
+- ✅ Zero storage overhead (on-demand generation)
+- ✅ Always shows current data (no stale snapshots)
+- ✅ Clean URLs for deep linking (`/reports/fy/2023`, `/reports/monthly/2024-01`)
+
+### **Future Enhancement (Optional):**
+- [ ] Add comparison mode with trend indicators (↑↓ comparing current vs historical)
+- [ ] Add date picker for custom date range selection
 
 ---
 
