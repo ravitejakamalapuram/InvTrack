@@ -11,6 +11,29 @@ abstract class InvestmentRepository {
   /// Watch all active (non-archived) investments (reactive stream)
   Stream<List<InvestmentEntity>> watchAllInvestments();
 
+  /// Watch investments with pagination (optimized for large datasets)
+  ///
+  /// Returns a stream of paginated investments sorted by creation date descending.
+  /// Use [limit] to control page size (default: 50, max: 100).
+  /// Use [startAfterInvestmentId] to fetch the next page (provide last investment ID from previous page).
+  ///
+  /// Example usage:
+  /// ```dart
+  /// // First page
+  /// final page1 = await repo.watchInvestmentsPaginated(limit: 50).first;
+  ///
+  /// // Second page
+  /// final lastId = page1.last.id;
+  /// final page2 = await repo.watchInvestmentsPaginated(
+  ///   limit: 50,
+  ///   startAfterInvestmentId: lastId,
+  /// ).first;
+  /// ```
+  Stream<List<InvestmentEntity>> watchInvestmentsPaginated({
+    required int limit,
+    String? startAfterInvestmentId,
+  });
+
   /// Watch investments by status (active only)
   Stream<List<InvestmentEntity>> watchInvestmentsByStatus(
     InvestmentStatus status,
@@ -65,11 +88,24 @@ abstract class InvestmentRepository {
   /// Watch cash flows for an active investment (reactive stream)
   Stream<List<CashFlowEntity>> watchCashFlowsByInvestment(String investmentId);
 
+  /// Watch cash flows in a date range (optimized for reports)
+  /// Reduces data transfer by filtering server-side
+  Stream<List<CashFlowEntity>> watchCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
   /// Get cash flows for an active investment
   Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId);
 
   /// Get all active cash flows across all investments
   Future<List<CashFlowEntity>> getAllCashFlows();
+
+  /// Get cash flows in a date range (optimized for reports)
+  Future<List<CashFlowEntity>> getCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 
   /// Add a new cash flow
   Future<void> addCashFlow(CashFlowEntity cashFlow);

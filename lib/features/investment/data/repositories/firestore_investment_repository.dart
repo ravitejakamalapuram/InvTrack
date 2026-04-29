@@ -82,6 +82,34 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Stream<List<InvestmentEntity>> watchInvestmentsPaginated({
+    required int limit,
+    String? startAfterInvestmentId,
+  }) async* {
+    // Clamp limit to prevent excessive data transfer
+    final effectiveLimit = limit.clamp(1, 100);
+
+    Query<Map<String, dynamic>> query = _investmentsRef
+        .orderBy('createdAt', descending: true)
+        .limit(effectiveLimit);
+
+    // If pagination cursor provided, start after that document
+    if (startAfterInvestmentId != null) {
+      final startAfterDoc = await _investmentsRef.doc(startAfterInvestmentId).get();
+      if (startAfterDoc.exists) {
+        query = query.startAfterDocument(startAfterDoc);
+      }
+    }
+
+    // Stream paginated results
+    await for (final snapshot in query.snapshots()) {
+      yield snapshot.docs
+          .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+          .toList();
+    }
+  }
+
+  @override
   Future<List<InvestmentEntity>> getAllInvestments() async {
     final snapshot = await _investmentsRef
         .orderBy('createdAt', descending: true)
@@ -323,6 +351,27 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   }
 
   @override
+  Stream<List<CashFlowEntity>> watchCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    // Convert DateTime to Firestore Timestamp for query
+    final startTimestamp = Timestamp.fromDate(startDate);
+    final endTimestamp = Timestamp.fromDate(endDate);
+
+    return _cashFlowsRef
+        .where('date', isGreaterThanOrEqualTo: startTimestamp)
+        .where('date', isLessThanOrEqualTo: endTimestamp)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
+  }
+
+  @override
   Future<List<CashFlowEntity>> getCashFlowsByInvestment(
     String investmentId,
   ) async {
@@ -338,6 +387,25 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   @override
   Future<List<CashFlowEntity>> getAllCashFlows() async {
     final snapshot = await _cashFlowsRef
+        .orderBy('date', descending: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => _cashFlowFromFirestore(doc.data(), doc.id))
+        .toList();
+  }
+
+  @override
+  Future<List<CashFlowEntity>> getCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    // Convert DateTime to Firestore Timestamp for query
+    final startTimestamp = Timestamp.fromDate(startDate);
+    final endTimestamp = Timestamp.fromDate(endDate);
+
+    final snapshot = await _cashFlowsRef
+        .where('date', isGreaterThanOrEqualTo: startTimestamp)
+        .where('date', isLessThanOrEqualTo: endTimestamp)
         .orderBy('date', descending: true)
         .get();
     return snapshot.docs

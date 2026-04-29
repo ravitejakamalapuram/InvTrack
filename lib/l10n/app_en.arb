@@ -2555,5 +2555,700 @@
   "crashlyticsDisabledWarning": "Crashlytics is disabled in debug mode. Enable it in the toggle above to test crash reporting.",
   "@crashlyticsDisabledWarning": {
     "description": "Warning message when Crashlytics is disabled"
+  },
+
+  "reports": "Reports",
+  "@reports": {
+    "description": "Reports tab/screen title"
+  },
+
+  "weeklySummary": "Weekly Summary",
+  "@weeklySummary": {
+    "description": "Weekly summary report title"
+  },
+
+  "thisWeek": "This Week",
+  "@thisWeek": {
+    "description": "Subtitle for weekly summary report"
+  },
+
+  "monthlyIncome": "Monthly Income",
+  "@monthlyIncome": {
+    "description": "Monthly income report title"
+  },
+
+  "thisMonth": "This Month",
+  "@thisMonth": {
+    "description": "Subtitle for monthly income report"
+  },
+
+  "fyReport": "FY Report",
+  "@fyReport": {
+    "description": "Financial Year report title"
+  },
+
+  "performance": "Performance",
+  "@performance": {
+    "description": "Performance analysis report title"
+  },
+
+  "topPerformers": "Top Performers",
+  "@topPerformers": {
+    "description": "Subtitle for performance report"
+  },
+
+  "maturity": "Maturity",
+  "@maturity": {
+    "description": "Maturity calendar report title"
+  },
+
+  "upcoming": "Upcoming",
+  "@upcoming": {
+    "description": "Subtitle for maturity calendar"
+  },
+
+  "actionRequired": "Action Required",
+  "@actionRequired": {
+    "description": "Action required report title"
+  },
+
+  "portfolioHealth": "Portfolio Health",
+  "@portfolioHealth": {
+    "description": "Portfolio health report title"
+  },
+
+  "quickReports": "Quick Reports",
+  "@quickReports": {
+    "description": "Quick reports section title on reports home screen"
+  },
+
+  "currentFY": "FY {year1}-{year2}",
+  "@currentFY": {
+    "description": "Current financial year label (e.g., FY 2023-24)",
+    "placeholders": {
+      "year1": {
+        "type": "String"
+      },
+      "year2": {
+        "type": "String"
+      }
+    }
+  },
+
+  "activeGoalsCount": "{count, plural, =0{No Active Goals} =1{1 Active Goal} other{{count} Active Goals}}",
+  "@activeGoalsCount": {
+    "description": "Active goals count for reports home screen",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "actionItemsCount": "{count, plural, =0{No Items} =1{1 Item} other{{count} Items}}",
+  "@actionItemsCount": {
+    "description": "Action items count for reports home screen",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "healthScore": "Score: {score}/100",
+  "@healthScore": {
+    "description": "Portfolio health score label",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+
+  "dailyCashflowTrend": "Daily Cashflow Trend",
+  "@dailyCashflowTrend": {
+    "description": "Section title for daily cashflow trend chart in weekly summary"
+  },
+
+  "historicalReports": "Historical Reports",
+  "@historicalReports": {
+    "description": "Historical reports section title"
+  },
+
+  "noHistoricalReportsYet": "No historical reports yet",
+  "@noHistoricalReportsYet": {
+    "description": "Empty state message for historical reports"
+  },
+
+  "financialYearReports": "Financial Year Reports",
+  "@financialYearReports": {
+    "description": "Section title for FY reports in historical reports list"
+  },
+
+  "monthlyReports": "Monthly Reports",
+  "@monthlyReports": {
+    "description": "Section title for monthly reports in historical reports list"
+  },
+
+  "currentYear": "Current Year",
+  "@currentYear": {
+    "description": "Label for current financial year"
+  },
+
+  "currentMonth": "Current Month",
+  "@currentMonth": {
+    "description": "Label for current month"
+  },
+
+  "tapToView": "Tap to view",
+  "@tapToView": {
+    "description": "Hint text for tappable list items"
+  },
+
+  "january": "January",
+  "@january": {"description": "Month name"},
+  "february": "February",
+  "@february": {"description": "Month name"},
+  "march": "March",
+  "@march": {"description": "Month name"},
+  "april": "April",
+  "@april": {"description": "Month name"},
+  "may": "May",
+  "@may": {"description": "Month name"},
+  "june": "June",
+  "@june": {"description": "Month name"},
+  "july": "July",
+  "@july": {"description": "Month name"},
+  "august": "August",
+  "@august": {"description": "Month name"},
+  "september": "September",
+  "@september": {"description": "Month name"},
+  "october": "October",
+  "@october": {"description": "Month name"},
+  "november": "November",
+  "@november": {"description": "Month name"},
+  "december": "December",
+  "@december": {"description": "Month name"},
+
+  "exportReport": "Export Report",
+  "@exportReport": {
+    "description": "Tooltip for export button"
+  },
+
+  "exportAsCsv": "Export as CSV",
+  "@exportAsCsv": {
+    "description": "CSV export menu item"
+  },
+
+  "forSpreadsheetApps": "For spreadsheet apps",
+  "@forSpreadsheetApps": {
+    "description": "Description for CSV export"
+  },
+
+  "exportAsPdf": "Export as PDF",
+  "@exportAsPdf": {
+    "description": "PDF export menu item"
+  },
+
+  "forSharingAndPrinting": "For sharing & printing",
+  "@forSharingAndPrinting": {
+    "description": "Description for PDF export"
+  },
+
+  "csvExportedSuccessfully": "CSV exported successfully ({size} KB)",
+  "@csvExportedSuccessfully": {
+    "description": "Success message for CSV export",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "45"
+      }
+    }
+  },
+
+  "pdfExportedSuccessfully": "PDF exported successfully ({size} KB)",
+  "@pdfExportedSuccessfully": {
+    "description": "Success message for PDF export",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "120"
+      }
+    }
+  },
+
+  "failedToExportCsv": "Failed to export CSV: {error}",
+  "@failedToExportCsv": {
+    "description": "Error message for CSV export failure",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "failedToExportPdf": "Failed to export PDF: {error}",
+  "@failedToExportPdf": {
+    "description": "Error message for PDF export failure",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "portfolioPerformance": "Portfolio Performance",
+  "@portfolioPerformance": {
+    "description": "Portfolio performance section title"
+  },
+
+  "avgXirr": "Avg XIRR",
+  "@avgXirr": {
+    "description": "Average XIRR label"
+  },
+
+  "medianXirr": "Median XIRR",
+  "@medianXirr": {
+    "description": "Median XIRR label"
+  },
+
+  "profitable": "Profitable",
+  "@profitable": {
+    "description": "Profitable investments label"
+  },
+
+  "lossMaking": "Loss Making",
+  "@lossMaking": {
+    "description": "Loss making investments label"
+  },
+
+  "totalActions": "Total Actions",
+  "@totalActions": {
+    "description": "Total actions label"
+  },
+
+  "urgent": "Urgent",
+  "@urgent": {
+    "description": "Urgent actions label"
+  },
+
+  "overdueActions": "Overdue Actions",
+  "@overdueActions": {
+    "description": "Overdue actions label"
+  },
+
+  "criticalActions": "⚠️ Critical Actions",
+  "@criticalActions": {
+    "description": "Critical actions section title"
+  },
+
+  "highPriority": "🔴 High Priority",
+  "@highPriority": {
+    "description": "High priority section title"
+  },
+
+  "goalsOverview": "Goals Overview",
+  "@goalsOverview": {
+    "description": "Goals overview section title"
+  },
+
+  "totalGoals": "Total Goals",
+  "@totalGoals": {
+    "description": "Total goals label"
+  },
+
+  "avgProgress": "Avg Progress",
+  "@avgProgress": {
+    "description": "Average progress label"
+  },
+
+  "totalInvested": "Total Invested",
+  "@totalInvested": {
+    "description": "Total invested label"
+  },
+
+  "totalReturns": "Total Returns",
+  "@totalReturns": {
+    "description": "Total returns label"
+  },
+
+  "weeklySummaryTitle": "Weekly Summary",
+  "@weeklySummaryTitle": {
+    "description": "Weekly summary screen title"
+  },
+
+  "monthlyIncomeReportTitle": "Monthly Income Report",
+  "@monthlyIncomeReportTitle": {
+    "description": "Monthly income report screen title"
+  },
+
+  "fyReportTitle": "Financial Year Report",
+  "@fyReportTitle": {
+    "description": "FY report screen title"
+  },
+
+  "performanceReportTitle": "Performance Report",
+  "@performanceReportTitle": {
+    "description": "Performance report screen title"
+  },
+
+  "goalProgressReportTitle": "Goal Progress Report",
+  "@goalProgressReportTitle": {
+    "description": "Goal progress report screen title"
+  },
+
+  "goalProgressTitle": "Goal Progress Report",
+  "@goalProgressTitle": {
+    "description": "Goal progress screen title"
+  },
+
+  "targetLabel": "Target",
+  "@targetLabel": {
+    "description": "Target amount label"
+  },
+
+  "maturityCalendarTitle": "Maturity Calendar",
+  "@maturityCalendarTitle": {
+    "description": "Maturity calendar screen title"
+  },
+
+  "actionRequiredTitle": "Action Required",
+  "@actionRequiredTitle": {
+    "description": "Action required screen title"
+  },
+
+  "portfolioHealthTitle": "Portfolio Health",
+  "@portfolioHealthTitle": {
+    "description": "Portfolio health screen title"
+  },
+
+  "totalIncome": "Total Income",
+  "@totalIncome": {
+    "description": "Total income label"
+  },
+
+  "totalFees": "Total Fees",
+  "@totalFees": {
+    "description": "Total fees label"
+  },
+
+  "netCashflow": "Net Cashflow",
+  "@netCashflow": {
+    "description": "Net cashflow label"
+  },
+
+  "totalReturned": "Total Returned",
+  "@totalReturned": {
+    "description": "Total returned label"
+  },
+
+  "netPosition": "Net Position",
+  "@netPosition": {
+    "description": "Net position label"
+  },
+
+  "topPerformer": "Top Performer",
+  "@topPerformer": {
+    "description": "Top performer label"
+  },
+
+  "newInvestments": "New Investments",
+  "@newInvestments": {
+    "description": "New investments label"
+  },
+
+  "upcomingMaturities": "Upcoming Maturities",
+  "@upcomingMaturities": {
+    "description": "Upcoming maturities label"
+  },
+
+  "incomeBreakdown": "Income Breakdown",
+  "@incomeBreakdown": {
+    "description": "Income breakdown section title"
+  },
+
+  "topIncomeGenerators": "Top Income Generators",
+  "@topIncomeGenerators": {
+    "description": "Top income generators section title"
+  },
+
+  "allTransactions": "All Transactions",
+  "@allTransactions": {
+    "description": "All transactions section title"
+  },
+
+  "xirrLabel": "XIRR",
+  "@xirrLabel": {
+    "description": "XIRR label"
+  },
+
+  "monthlyBreakdown": "Monthly Breakdown",
+  "@monthlyBreakdown": {
+    "description": "Monthly breakdown section title"
+  },
+
+  "capitalGainsSummary": "Capital Gains Summary",
+  "@capitalGainsSummary": {
+    "description": "Capital gains summary section title"
+  },
+
+  "capitalGains": "Capital Gains",
+  "@capitalGains": {
+    "description": "Capital gains section title (without Summary)"
+  },
+
+  "investedLabel": "Invested",
+  "@investedLabel": {
+    "description": "Invested label for charts"
+  },
+
+  "returnedLabel": "Returned",
+  "@returnedLabel": {
+    "description": "Returned label for charts"
+  },
+
+  "shortTermGains": "Short-term Gains",
+  "@shortTermGains": {
+    "description": "Short-term gains label"
+  },
+
+  "longTermGains": "Long-term Gains",
+  "@longTermGains": {
+    "description": "Long-term gains label"
+  },
+
+  "topPerformersByReturns": "Top Performers (by Returns)",
+  "@topPerformersByReturns": {
+    "description": "Top performers by returns section title"
+  },
+
+  "topPerformersByXirr": "Top Performers (by XIRR)",
+  "@topPerformersByXirr": {
+    "description": "Top performers by XIRR section title"
+  },
+
+  "medianXirr": "Median XIRR",
+  "@medianXirr": {
+    "description": "Median XIRR label"
+  },
+
+  "topPerformersSection": "Top Performers",
+  "@topPerformersSection": {
+    "description": "Top performers section title"
+  },
+
+  "bottomPerformers": "Bottom Performers",
+  "@bottomPerformers": {
+    "description": "Bottom performers section title"
+  },
+
+  "recentMilestones": "Recent Milestones",
+  "@recentMilestones": {
+    "description": "Recent milestones section title"
+  },
+
+  "onTrack": "On Track",
+  "@onTrack": {
+    "description": "On track goals label"
+  },
+
+  "atRisk": "At Risk",
+  "@atRisk": {
+    "description": "At risk goals label"
+  },
+
+  "achieved": "Achieved",
+  "@achieved": {
+    "description": "Achieved goals label"
+  },
+
+  "goalsOnTrack": "Goals On Track",
+  "@goalsOnTrack": {
+    "description": "Goals on track section title"
+  },
+
+  "goalsAtRisk": "Goals At Risk",
+  "@goalsAtRisk": {
+    "description": "Goals at risk section title"
+  },
+
+  "maturityOverview": "Maturity Overview",
+  "@maturityOverview": {
+    "description": "Maturity overview section title"
+  },
+
+  "totalWithMaturity": "Total w/ Maturity",
+  "@totalWithMaturity": {
+    "description": "Total investments with maturity label"
+  },
+
+  "next30Days": "Next 30 Days",
+  "@next30Days": {
+    "description": "Next 30 days label"
+  },
+
+  "next90Days": "Next 90 Days",
+  "@next90Days": {
+    "description": "Next 90 days label"
+  },
+
+  "upcomingMaturitiesSection": "Upcoming Maturities",
+  "@upcomingMaturitiesSection": {
+    "description": "Upcoming maturities section title"
+  },
+
+  "maturesSoon": "Matures Soon",
+  "@maturesSoon": {
+    "description": "Matures soon label"
+  },
+
+  "next90DaysTotal": "Next 90 Days Total",
+  "@next90DaysTotal": {
+    "description": "Next 90 days total label"
+  },
+
+  "maturesLabel": "Matures",
+  "@maturesLabel": {
+    "description": "Matures label for maturity date"
+  },
+
+  "allClear": "All Clear!",
+  "@allClear": {
+    "description": "All clear message when no actions required"
+  },
+
+  "noActionsRequired": "No actions required at this time.",
+  "@noActionsRequired": {
+    "description": "No actions required message"
+  },
+
+  "urgentActions": "Urgent",
+  "@urgentActions": {
+    "description": "Urgent actions label"
+  },
+
+  "overdueItems": "Overdue",
+  "@overdueItems": {
+    "description": "Overdue items label"
+  },
+
+  "maturedInvestments": "Matured Investments",
+  "@maturedInvestments": {
+    "description": "Matured investments section title"
+  },
+
+  "missedDividends": "Missed Dividends",
+  "@missedDividends": {
+    "description": "Missed dividends section title"
+  },
+
+  "missingData": "Missing Data",
+  "@missingData": {
+    "description": "Missing data section title"
+  },
+
+  "overallHealthScore": "Overall Health Score",
+  "@overallHealthScore": {
+    "description": "Overall health score label"
+  },
+
+  "healthMetrics": "Health Metrics",
+  "@healthMetrics": {
+    "description": "Health metrics section title"
+  },
+
+  "diversification": "Diversification",
+  "@diversification": {
+    "description": "Diversification label"
+  },
+
+  "performanceLabel": "Performance",
+  "@performanceLabel": {
+    "description": "Performance label"
+  },
+
+  "activity": "Activity",
+  "@activity": {
+    "description": "Activity label"
+  },
+
+  "typesLabel": "Types",
+  "@typesLabel": {
+    "description": "Types label"
+  },
+
+  "investmentsLabel": "investments",
+  "@investmentsLabel": {
+    "description": "Investments label (lowercase for use in sentences)"
+  },
+
+  "returnsQuality": "Returns Quality",
+  "@returnsQuality": {
+    "description": "Returns quality label"
+  },
+
+  "dataCompleteness": "Data Completeness",
+  "@dataCompleteness": {
+    "description": "Data completeness label"
+  },
+
+  "riskLevel": "Risk Level",
+  "@riskLevel": {
+    "description": "Risk level label"
+  },
+
+  "recommendationsSection": "Recommendations",
+  "@recommendationsSection": {
+    "description": "Recommendations section title"
+  },
+
+  "byType": "By Type",
+  "@byType": {
+    "description": "By type label"
+  },
+
+  "byStatus": "By Status",
+  "@byStatus": {
+    "description": "By status label"
+  },
+
+  "summary": "Summary",
+  "@summary": {
+    "description": "Summary section title"
+  },
+
+  "xirrTooltip": "Extended Internal Rate of Return - Industry standard for calculating returns with multiple transactions at different times. Accounts for when you invested and withdrew money.",
+  "@xirrTooltip": {
+    "description": "Tooltip explaining XIRR metric"
+  },
+
+  "capitalGainsTooltip": "Profit from selling investments. Short-term (<1 year) gains are taxed higher than long-term (>1 year) gains in India.",
+  "@capitalGainsTooltip": {
+    "description": "Tooltip explaining capital gains"
+  },
+
+  "netCashflowTooltip": "Total money in (dividends, interest) minus money out (investments, withdrawals) for the period. Positive = earning, Negative = investing.",
+  "@netCashflowTooltip": {
+    "description": "Tooltip explaining net cashflow"
+  },
+
+  "diversificationTooltip": "How spread out your investments are across types and platforms. Higher diversification = lower risk.",
+  "@diversificationTooltip": {
+    "description": "Tooltip explaining diversification score"
+  },
+
+  "liquidityTooltip": "Percentage of your portfolio maturing in next 90 days. Ideal: 10-30%. Too high = reinvestment work, Too low = illiquid.",
+  "@liquidityTooltip": {
+    "description": "Tooltip explaining liquidity score"
+  },
+
+  "goalAlignmentTooltip": "Percentage of your financial goals that are on-track based on current progress. Higher = better goal achievement.",
+  "@goalAlignmentTooltip": {
+    "description": "Tooltip explaining goal alignment score"
+  },
+
+  "actionReadinessTooltip": "Measures overdue renewals and stale investments. Lower score means you have pending actions to take.",
+  "@actionReadinessTooltip": {
+    "description": "Tooltip explaining action readiness score"
   }
 }
