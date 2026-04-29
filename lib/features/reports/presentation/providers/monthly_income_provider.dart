@@ -19,12 +19,24 @@ final currentMonthlyIncomeProvider =
 });
 
 /// Provider for monthly income report with custom period
+/// Optimized: Uses date-range filtered cashflows (server-side) instead of fetching all
 final monthlyIncomeProvider =
     FutureProvider.autoDispose.family<MonthlyIncomeReport, DateTime>(
   (ref, period) async {
-    // Get all data
+    // Calculate month boundaries
+    final monthStart = DateTime(period.year, period.month, 1);
+    final monthEnd = DateTime(period.year, period.month + 1, 0, 23, 59, 59);
+
+    // Get all investments (needed for income source mapping)
     final investmentsAsync = ref.watch(activeInvestmentsProvider);
-    final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+    // Get only cashflows in month range (optimized - server-side filtering)
+    final cashFlowsAsync = ref.watch(
+      cashFlowsInDateRangeProvider((
+        start: monthStart,
+        end: monthEnd,
+      )),
+    );
 
     // Wait for all data to load
     final investments = await investmentsAsync.when(

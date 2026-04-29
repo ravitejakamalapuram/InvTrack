@@ -18,12 +18,24 @@ final currentFYReportProvider =
 });
 
 /// Provider for FY report with custom year
+/// Optimized: Uses date-range filtered cashflows (server-side) instead of fetching all
 final fyReportProvider =
     FutureProvider.autoDispose.family<FYReport, int>(
   (ref, fyYear) async {
-    // Get all data
+    // FY period: Apr 1 of fyYear to Mar 31 of (fyYear+1)
+    final fyStart = DateTime(fyYear, 4, 1);
+    final fyEnd = DateTime(fyYear + 1, 3, 31, 23, 59, 59);
+
+    // Get all investments (needed for capital gains, portfolio values)
     final investmentsAsync = ref.watch(activeInvestmentsProvider);
-    final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+    // Get only cashflows in FY range (optimized - server-side filtering)
+    final cashFlowsAsync = ref.watch(
+      cashFlowsInDateRangeProvider((
+        start: fyStart,
+        end: fyEnd,
+      )),
+    );
 
     // Wait for all data to load
     final investments = await investmentsAsync.when(

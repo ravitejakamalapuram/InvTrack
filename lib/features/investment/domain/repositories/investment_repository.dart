@@ -65,11 +65,24 @@ abstract class InvestmentRepository {
   /// Watch cash flows for an active investment (reactive stream)
   Stream<List<CashFlowEntity>> watchCashFlowsByInvestment(String investmentId);
 
+  /// Watch cash flows in a date range (optimized for reports)
+  /// Reduces data transfer by filtering server-side
+  Stream<List<CashFlowEntity>> watchCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
   /// Get cash flows for an active investment
   Future<List<CashFlowEntity>> getCashFlowsByInvestment(String investmentId);
 
   /// Get all active cash flows across all investments
   Future<List<CashFlowEntity>> getAllCashFlows();
+
+  /// Get cash flows in a date range (optimized for reports)
+  Future<List<CashFlowEntity>> getCashFlowsInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 
   /// Add a new cash flow
   Future<void> addCashFlow(CashFlowEntity cashFlow);

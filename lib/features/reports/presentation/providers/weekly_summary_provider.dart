@@ -22,12 +22,21 @@ final currentWeeklySummaryProvider =
 });
 
 /// Provider for weekly summary with custom date range
+/// Optimized: Uses date-range filtered cashflows (server-side) instead of fetching all
 final weeklySummaryProvider = FutureProvider.autoDispose
     .family<WeeklySummary, ({DateTime periodStart, DateTime periodEnd})>(
   (ref, params) async {
-    // Get all data
+    // Get all investments (needed for XIRR and maturity checks)
     final investmentsAsync = ref.watch(activeInvestmentsProvider);
-    final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+    // Get only cashflows in date range (optimized - server-side filtering)
+    final cashFlowsAsync = ref.watch(
+      cashFlowsInDateRangeProvider((
+        start: params.periodStart,
+        end: params.periodEnd,
+      )),
+    );
+
     final xirrMapAsync = ref.watch(activeInvestmentXirrMapProvider);
 
     // Wait for all data to load
