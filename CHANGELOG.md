@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Implement Reports Feature - Complete (Phases 1-5) (#358)
+
+## [3.56.11] - 2026-04-29
+
 ### 🐛 Bug Fixes
 
 - Add serverClientId for Google Sign-In on Android (#357)
