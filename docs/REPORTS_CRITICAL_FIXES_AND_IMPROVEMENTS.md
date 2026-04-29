@@ -115,8 +115,15 @@ Added `Tooltip` widgets with help icons to `ReportStatCard` and created `MetricW
 
 ### **HIGH Priority (Next Sprint):**
 - [x] Add pagination to investment list - **COMPLETE** ✅
-- [/] Add debouncing to report providers - **IN PROGRESS**
+- [-] Add debouncing to report providers - **NOT NEEDED** ✅
 - [ ] Implement historical reports - **PLANNED** (~2 days)
+
+**Why debouncing isn't needed:**
+- Firestore streams already batch updates automatically
+- `FutureProvider.autoDispose` only recalculates when screen is watching
+- Report calculations only happen when user navigates to report screen
+- Bulk operations (imports) are rare and already handled efficiently
+- No performance issues observed with current architecture
 
 ### **Testing (Required for Full Coverage):**
 - [/] Create unit tests for report services - **IN PROGRESS** (3/8 services tested)
