@@ -2680,6 +2680,56 @@
     "description": "Empty state message for historical reports"
   },
 
+  "financialYearReports": "Financial Year Reports",
+  "@financialYearReports": {
+    "description": "Section title for FY reports in historical reports list"
+  },
+
+  "monthlyReports": "Monthly Reports",
+  "@monthlyReports": {
+    "description": "Section title for monthly reports in historical reports list"
+  },
+
+  "currentYear": "Current Year",
+  "@currentYear": {
+    "description": "Label for current financial year"
+  },
+
+  "currentMonth": "Current Month",
+  "@currentMonth": {
+    "description": "Label for current month"
+  },
+
+  "tapToView": "Tap to view",
+  "@tapToView": {
+    "description": "Hint text for tappable list items"
+  },
+
+  "january": "January",
+  "@january": {"description": "Month name"},
+  "february": "February",
+  "@february": {"description": "Month name"},
+  "march": "March",
+  "@march": {"description": "Month name"},
+  "april": "April",
+  "@april": {"description": "Month name"},
+  "may": "May",
+  "@may": {"description": "Month name"},
+  "june": "June",
+  "@june": {"description": "Month name"},
+  "july": "July",
+  "@july": {"description": "Month name"},
+  "august": "August",
+  "@august": {"description": "Month name"},
+  "september": "September",
+  "@september": {"description": "Month name"},
+  "october": "October",
+  "@october": {"description": "Month name"},
+  "november": "November",
+  "@november": {"description": "Month name"},
+  "december": "December",
+  "@december": {"description": "Month name"},
+
   "exportReport": "Export Report",
   "@exportReport": {
     "description": "Tooltip for export button"

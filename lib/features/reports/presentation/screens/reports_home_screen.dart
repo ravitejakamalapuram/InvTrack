@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/action_required_provider.dart';
+import 'package:inv_tracker/features/reports/presentation/widgets/historical_reports_list.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 
 /// Reports home screen
@@ -146,18 +147,8 @@ class ReportsHomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Placeholder for historical reports
-            GlassCard(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Center(
-                  child: Text(
-                    l10n.noHistoricalReportsYet,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              ),
-            ),
+            // Historical reports list
+            const HistoricalReportsList(),
           ],
         ),
       ),

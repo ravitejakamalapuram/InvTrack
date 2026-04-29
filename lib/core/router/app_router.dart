@@ -142,9 +142,29 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'monthly',
                     builder: (context, state) => const MonthlyIncomeScreen(),
                   ),
+                  // Monthly report with date parameter (YYYY-MM)
+                  GoRoute(
+                    path: 'monthly/:yearMonth',
+                    builder: (context, state) {
+                      final yearMonth = state.pathParameters['yearMonth']!;
+                      final parts = yearMonth.split('-');
+                      final year = int.parse(parts[0]);
+                      final month = int.parse(parts[1]);
+                      final period = DateTime(year, month, 1);
+                      return MonthlyIncomeScreen(period: period);
+                    },
+                  ),
                   GoRoute(
                     path: 'fy',
                     builder: (context, state) => const FYReportScreen(),
+                  ),
+                  // FY report with year parameter
+                  GoRoute(
+                    path: 'fy/:year',
+                    builder: (context, state) {
+                      final year = int.parse(state.pathParameters['year']!);
+                      return FYReportScreen(fyYear: year);
+                    },
                   ),
                   GoRoute(
                     path: 'performance',

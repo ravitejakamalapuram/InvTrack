@@ -25,17 +25,29 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Monthly income report screen
 class MonthlyIncomeScreen extends BaseReportScreen<MonthlyIncomeReport> {
-  const MonthlyIncomeScreen({super.key});
+  final DateTime? period;
+
+  const MonthlyIncomeScreen({super.key, this.period});
 
   @override
   String getTitle(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (period != null) {
+      final monthNames = [
+        l10n.january, l10n.february, l10n.march, l10n.april,
+        l10n.may, l10n.june, l10n.july, l10n.august,
+        l10n.september, l10n.october, l10n.november, l10n.december,
+      ];
+      return '${monthNames[period!.month - 1]} ${period!.year}';
+    }
     return l10n.monthlyIncomeReportTitle;
   }
 
   @override
   FutureProvider<MonthlyIncomeReport> getDataProvider(WidgetRef ref) {
-    return currentMonthlyIncomeProvider;
+    return period != null
+        ? monthlyIncomeProvider(period!)
+        : currentMonthlyIncomeProvider;
   }
 
   @override
