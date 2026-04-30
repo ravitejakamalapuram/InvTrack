@@ -108,6 +108,7 @@ class OverviewScreen extends ConsumerWidget {
                           closedStats,
                           currencyFormat,
                           isDark,
+                          l10n,
                         )
                       : _buildEmptyStateContent(
                           context,
@@ -150,6 +151,7 @@ class OverviewScreen extends ConsumerWidget {
     AsyncValue<InvestmentStats> closedStats,
     NumberFormat currencyFormat,
     bool isDark,
+    AppLocalizations l10n,
   ) {
     return SliverList(
       delegate: SliverChildListDelegate([
@@ -183,7 +185,7 @@ class OverviewScreen extends ConsumerWidget {
 
         // Quick Stats Grid
         globalStats.when(
-          data: (stats) => _buildQuickStats(context, stats, currencyFormat),
+          data: (stats) => _buildQuickStats(context, stats, currencyFormat, l10n),
           loading: () => const SizedBox.shrink(),
           error: (e, s) => const SizedBox.shrink(),
         ),
@@ -511,17 +513,18 @@ class OverviewScreen extends ConsumerWidget {
     BuildContext context,
     InvestmentStats stats,
     NumberFormat currencyFormat,
+    AppLocalizations l10n,
   ) {
     return Row(
       children: [
         Expanded(
           child: QuickStatCard(
             icon: Icons.trending_up,
-            label: 'MOIC',
+            label: l10n.moicLabel,
             value: '${NumberFormat('#,##0.00').format(stats.moic)}x',
             color: AppColors.successLight,
             subtitle: stats.durationFormatted != null
-                ? 'over ${stats.durationFormatted}'
+                ? l10n.overDuration(stats.durationFormatted!)
                 : null,
           ),
         ),
@@ -529,7 +532,7 @@ class OverviewScreen extends ConsumerWidget {
         Expanded(
           child: QuickStatCard(
             icon: Icons.receipt_long,
-            label: 'Cash Flows',
+            label: l10n.cashFlowsLabel,
             value: '${stats.cashFlowCount}',
             color: AppColors.primaryLight,
             isSensitive: false, // Count is not sensitive
