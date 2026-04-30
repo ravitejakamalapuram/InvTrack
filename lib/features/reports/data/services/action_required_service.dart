@@ -157,18 +157,31 @@ class ActionRequiredService {
       ));
     }
 
-    // Categorize actions by priority
-    final critical = actions
-        .where((a) => a.priority == ActionPriority.critical)
-        .toList();
-    final high =
-        actions.where((a) => a.priority == ActionPriority.high).toList();
-    final medium =
-        actions.where((a) => a.priority == ActionPriority.medium).toList();
-    final low = actions.where((a) => a.priority == ActionPriority.low).toList();
+    // Optimization: Single pass loop for categorizing actions and counting overdue items
+    // replacing multiple sequential .where().toList() and .where().length calls
+    final critical = <ActionItem>[];
+    final high = <ActionItem>[];
+    final medium = <ActionItem>[];
+    final low = <ActionItem>[];
+    int overdue = 0;
 
-    // Count overdue actions
-    final overdue = actions.where((a) => a.isOverdue).length;
+    for (final a in actions) {
+      if (a.isOverdue) overdue++;
+      switch (a.priority) {
+        case ActionPriority.critical:
+          critical.add(a);
+          break;
+        case ActionPriority.high:
+          high.add(a);
+          break;
+        case ActionPriority.medium:
+          medium.add(a);
+          break;
+        case ActionPriority.low:
+          low.add(a);
+          break;
+      }
+    }
 
     return ActionRequiredReport(
       criticalActions: critical,
