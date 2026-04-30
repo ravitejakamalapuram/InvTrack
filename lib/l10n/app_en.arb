@@ -3440,5 +3440,35 @@
   "reportPdfDiversification": "Diversification",
   "@reportPdfDiversification": {
     "description": "PDF report section header for diversification analysis"
+  },
+
+  "calculateYourFireNumber": "Calculate Your FIRE Number",
+  "@calculateYourFireNumber": {
+    "description": "Call-to-action title for FIRE calculator card"
+  },
+
+  "setupFinancialIndependenceGoals": "Set up your financial independence goals",
+  "@setupFinancialIndependenceGoals": {
+    "description": "Subtitle for FIRE calculator card explaining the feature"
+  },
+
+  "moicLabel": "MOIC",
+  "@moicLabel": {
+    "description": "Label for Multiple on Invested Capital metric"
+  },
+
+  "overDuration": "over {duration}",
+  "@overDuration": {
+    "description": "Shows duration of investment returns (e.g., 'over 2 years')",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+
+  "cashFlowsLabel": "Cash Flows",
+  "@cashFlowsLabel": {
+    "description": "Label for cash flows count metric"
   }
 }
