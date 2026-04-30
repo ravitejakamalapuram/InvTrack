@@ -117,12 +117,28 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
       final locale = ref.read(currencyLocaleProvider);
       final exporter = ref.read(pdfExporterProvider);
 
+      // Get localized strings for PDF headers
+      final l10n = AppLocalizations.of(context);
+      final localizedStrings = <String, String>{
+        'reportPdfDailyCashflows': l10n.reportPdfDailyCashflows,
+        'reportPdfIncomeByType': l10n.reportPdfIncomeByType,
+        'reportPdfMonthlyBreakdown': l10n.reportPdfMonthlyBreakdown,
+        'reportPdfTopPerformers': l10n.reportPdfTopPerformers,
+        'reportPdfBottomPerformers': l10n.reportPdfBottomPerformers,
+        'reportPdfOnTrackGoals': l10n.reportPdfOnTrackGoals,
+        'reportPdfAtRiskGoals': l10n.reportPdfAtRiskGoals,
+        'reportPdfUpcomingMaturities': l10n.reportPdfUpcomingMaturities,
+        'reportPdfIdleInvestments': l10n.reportPdfIdleInvestments,
+        'reportPdfDiversification': l10n.reportPdfDiversification,
+      };
+
       final result = await exporter.export(
         reportData: reportData,
         reportType: reportType,
         currencySymbol: symbol,
         locale: locale,
         isPrivacyMode: isPrivacyMode,
+        localizedStrings: localizedStrings,
       );
 
       // Share the file

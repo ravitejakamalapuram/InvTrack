@@ -24,12 +24,13 @@ class ReportPdfExporter {
     String currencySymbol = '\$',
     String locale = 'en_US',
     bool isPrivacyMode = false,
+    Map<String, String>? localizedStrings,
   }) async {
     // Create PDF document
     final pdf = pw.Document();
 
     // Add pages based on report type
-    _addReportPages(pdf, reportData, reportType, currencySymbol, isPrivacyMode);
+    _addReportPages(pdf, reportData, reportType, currencySymbol, isPrivacyMode, localizedStrings);
 
     // Save to file
     final directory = await getTemporaryDirectory();
@@ -56,6 +57,11 @@ class ReportPdfExporter {
       fileSizeBytes: fileSize,
       exportedAt: DateTime.now(),
     );
+  }
+
+  /// Get localized string with fallback to English key
+  String _l10n(Map<String, String>? localizedStrings, String key, String fallback) {
+    return localizedStrings?[key] ?? fallback;
   }
 
   /// Format amount with privacy masking support
@@ -96,6 +102,7 @@ class ReportPdfExporter {
     ReportType reportType,
     String currencySymbol,
     bool isPrivacyMode,
+    Map<String, String>? localizedStrings,
   ) {
     pdf.addPage(
       pw.MultiPage(
@@ -103,7 +110,7 @@ class ReportPdfExporter {
         build: (context) => [
           _buildHeader(reportType),
           pw.SizedBox(height: 20),
-          _buildContent(reportData, reportType, currencySymbol, isPrivacyMode),
+          _buildContent(reportData, reportType, currencySymbol, isPrivacyMode, localizedStrings),
         ],
         footer: (context) => pw.Container(
           alignment: pw.Alignment.centerRight,
@@ -151,40 +158,41 @@ class ReportPdfExporter {
     ReportType reportType,
     String currencySymbol,
     bool isPrivacyMode,
+    Map<String, String>? localizedStrings,
   ) {
     switch (reportType) {
       case ReportType.weeklySummary:
-        return _buildWeeklySummary(reportData, currencySymbol, isPrivacyMode);
+        return _buildWeeklySummary(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.monthlyIncome:
-        return _buildMonthlyIncome(reportData, currencySymbol, isPrivacyMode);
+        return _buildMonthlyIncome(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.fyReport:
-        return _buildFyReport(reportData, currencySymbol, isPrivacyMode);
+        return _buildFyReport(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.performance:
-        return _buildPerformance(reportData, currencySymbol, isPrivacyMode);
+        return _buildPerformance(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.goalProgress:
-        return _buildGoalProgress(reportData, currencySymbol, isPrivacyMode);
+        return _buildGoalProgress(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.maturityCalendar:
-        return _buildMaturityCalendar(reportData, currencySymbol, isPrivacyMode);
+        return _buildMaturityCalendar(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.actionRequired:
-        return _buildActionRequired(reportData, currencySymbol, isPrivacyMode);
+        return _buildActionRequired(reportData, currencySymbol, isPrivacyMode, localizedStrings);
       case ReportType.portfolioHealth:
-        return _buildPortfolioHealth(reportData, currencySymbol, isPrivacyMode);
+        return _buildPortfolioHealth(reportData, currencySymbol, isPrivacyMode, localizedStrings);
     }
   }
 
   /// Build Weekly Summary PDF
-  pw.Widget _buildWeeklySummary(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildWeeklySummary(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('Week of ${report.weekStart.toString().split(' ')[0]}'),
+        pw.Text(_l10n(l10n, 'reportPdfWeekOf', 'Week of ${report.weekStart.toString().split(' ')[0]}')),
         pw.SizedBox(height: 10),
         _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode)),
         _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode)),
         _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode)),
         _buildKeyValueRow('New Investments', report.newInvestments.toString()),
         pw.SizedBox(height: 20),
-        pw.Text('Daily Cashflows', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfDailyCashflows', 'Daily Cashflows'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Date', 'Inflow', 'Outflow', 'Net'],
@@ -213,7 +221,7 @@ class ReportPdfExporter {
     );
   }
   /// Build Monthly Income PDF
-  pw.Widget _buildMonthlyIncome(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildMonthlyIncome(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -222,7 +230,7 @@ class ReportPdfExporter {
         _buildKeyValueRow('Total Income', _formatAmount(report.totalIncome, symbol, isPrivacyMode)),
         _buildKeyValueRow('Transactions', report.totalTransactions.toString()),
         pw.SizedBox(height: 20),
-        pw.Text('Income by Type', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfIncomeByType', 'Income by Type'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Type', 'Amount', '%'],
@@ -236,7 +244,7 @@ class ReportPdfExporter {
   }
 
   /// Build FY Report PDF
-  pw.Widget _buildFyReport(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildFyReport(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -247,7 +255,7 @@ class ReportPdfExporter {
         _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode)),
         _buildKeyValueRow('XIRR', '${report.xirr.toStringAsFixed(2)}%'),
         pw.SizedBox(height: 20),
-        pw.Text('Monthly Breakdown', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfMonthlyBreakdown', 'Monthly Breakdown'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Month', 'Invested', 'Returns', 'Income', 'Fees'],
@@ -264,11 +272,11 @@ class ReportPdfExporter {
   }
 
   /// Build Performance Report PDF
-  pw.Widget _buildPerformance(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildPerformance(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('Top Performers', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfTopPerformers', 'Top Performers'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Investment', 'Returns', 'XIRR %'],
@@ -279,7 +287,7 @@ class ReportPdfExporter {
           ]).toList(),
         ),
         pw.SizedBox(height: 20),
-        pw.Text('Bottom Performers', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfBottomPerformers', 'Bottom Performers'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Investment', 'Returns', 'XIRR %'],
@@ -294,11 +302,11 @@ class ReportPdfExporter {
   }
 
   /// Build Goal Progress PDF
-  pw.Widget _buildGoalProgress(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildGoalProgress(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('On-Track Goals', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfOnTrackGoals', 'On-Track Goals'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Goal', 'Progress', 'Target', 'Current'],
@@ -310,7 +318,7 @@ class ReportPdfExporter {
           ]).toList(),
         ),
         pw.SizedBox(height: 20),
-        pw.Text('At-Risk Goals', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfAtRiskGoals', 'At-Risk Goals'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Goal', 'Progress', 'Target', 'Current'],
@@ -326,7 +334,7 @@ class ReportPdfExporter {
   }
 
   /// Build Maturity Calendar PDF
-  pw.Widget _buildMaturityCalendar(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildMaturityCalendar(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -344,11 +352,11 @@ class ReportPdfExporter {
   }
 
   /// Build Action Required PDF
-  pw.Widget _buildActionRequired(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildActionRequired(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('Upcoming Maturities', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfUpcomingMaturities', 'Upcoming Maturities'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Investment', 'Maturity Date', 'Days Left'],
@@ -359,7 +367,7 @@ class ReportPdfExporter {
           ]).toList(),
         ),
         pw.SizedBox(height: 20),
-        pw.Text('Idle Investments', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfIdleInvestments', 'Idle Investments'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Investment', 'Last Activity', 'Days Idle'],
@@ -374,14 +382,14 @@ class ReportPdfExporter {
   }
 
   /// Build Portfolio Health PDF
-  pw.Widget _buildPortfolioHealth(dynamic report, String symbol, bool isPrivacyMode) {
+  pw.Widget _buildPortfolioHealth(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         _buildKeyValueRow('Health Score', report.scoreValue.toString()),
         _buildKeyValueRow('Status', report.overallScore.displayName),
         pw.SizedBox(height: 20),
-        pw.Text('Diversification', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(_l10n(l10n, 'reportPdfDiversification', 'Diversification'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
           headers: ['Type', 'Count', 'Amount', '%'],

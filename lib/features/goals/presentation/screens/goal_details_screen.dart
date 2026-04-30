@@ -544,7 +544,7 @@ class GoalDetailsScreen extends ConsumerWidget {
           icon: Icon(
             goal.isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
           ),
-          label: Text(goal.isArchived ? 'Unarchive Goal' : 'Archive Goal'),
+          label: Text(goal.isArchived ? l10n.unarchiveGoal : l10n.archiveGoal),
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
           ),
