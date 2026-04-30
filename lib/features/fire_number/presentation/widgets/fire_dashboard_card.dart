@@ -38,6 +38,7 @@ class FireDashboardCard extends ConsumerWidget {
           data: (calculation) => _buildProgressCard(
             context,
             isDark,
+            l10n,
             calculation,
             currencySymbol,
             locale,
@@ -114,6 +115,7 @@ class FireDashboardCard extends ConsumerWidget {
   Widget _buildProgressCard(
     BuildContext context,
     bool isDark,
+    AppLocalizations l10n,
     FireCalculationResult calculation,
     String currencySymbol,
     String locale,
@@ -135,7 +137,7 @@ class FireDashboardCard extends ConsumerWidget {
               Icon(Icons.local_fire_department, color: status.color, size: 24),
               SizedBox(width: AppSpacing.sm),
               Text(
-                'FIRE Progress',
+                l10n.fireProgressTitle,
                 style: AppTypography.h4.copyWith(
                   color: isDark
                       ? AppColors.textPrimaryDark

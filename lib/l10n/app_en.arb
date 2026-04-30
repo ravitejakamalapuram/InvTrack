@@ -3272,11 +3272,6 @@
     "description": "Label for days remaining until maturity"
   },
 
-  "topPerformersSection": "🏆 Top Performers",
-  "@topPerformersSection": {
-    "description": "Section title for top performing investments"
-  },
-
   "bottomPerformersSection": "📉 Bottom Performers",
   "@bottomPerformersSection": {
     "description": "Section title for bottom performing investments"
@@ -3470,5 +3465,10 @@
   "cashFlowsLabel": "Cash Flows",
   "@cashFlowsLabel": {
     "description": "Label for cash flows count metric"
+  },
+
+  "fireProgressTitle": "FIRE Progress",
+  "@fireProgressTitle": {
+    "description": "Title for FIRE progress card showing progress towards financial independence"
   }
 }
