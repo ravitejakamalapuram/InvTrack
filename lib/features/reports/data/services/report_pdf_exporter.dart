@@ -4,6 +4,7 @@
 library;
 
 import 'dart:io';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
@@ -30,7 +31,7 @@ class ReportPdfExporter {
     final pdf = pw.Document();
 
     // Add pages based on report type
-    _addReportPages(pdf, reportData, reportType, currencySymbol, isPrivacyMode, localizedStrings);
+    _addReportPages(pdf, reportData, reportType, currencySymbol, locale, isPrivacyMode, localizedStrings);
 
     // Save to file
     final directory = await getTemporaryDirectory();
@@ -64,12 +65,14 @@ class ReportPdfExporter {
     return localizedStrings?[key] ?? fallback;
   }
 
-  /// Format amount with privacy masking support
-  String _formatAmount(double amount, String symbol, bool isPrivacyMode) {
+  /// Format amount with privacy masking support and locale-aware formatting
+  String _formatAmount(double amount, String symbol, bool isPrivacyMode, String locale) {
     if (isPrivacyMode) {
       return '••••••';
     }
-    return '$symbol${amount.toStringAsFixed(2)}';
+    // Use locale-aware currency formatting (Rule 16.5 compliance)
+    final formatter = NumberFormat.currency(locale: locale, symbol: symbol, decimalDigits: 2);
+    return formatter.format(amount);
   }
 
   /// Extract record count from report data for analytics
@@ -101,6 +104,7 @@ class ReportPdfExporter {
     dynamic reportData,
     ReportType reportType,
     String currencySymbol,
+    String locale,
     bool isPrivacyMode,
     Map<String, String>? localizedStrings,
   ) {
@@ -110,7 +114,7 @@ class ReportPdfExporter {
         build: (context) => [
           _buildHeader(reportType),
           pw.SizedBox(height: 20),
-          _buildContent(reportData, reportType, currencySymbol, isPrivacyMode, localizedStrings),
+          _buildContent(reportData, reportType, currencySymbol, locale, isPrivacyMode, localizedStrings),
         ],
         footer: (context) => pw.Container(
           alignment: pw.Alignment.centerRight,
@@ -157,39 +161,40 @@ class ReportPdfExporter {
     dynamic reportData,
     ReportType reportType,
     String currencySymbol,
+    String locale,
     bool isPrivacyMode,
     Map<String, String>? localizedStrings,
   ) {
     switch (reportType) {
       case ReportType.weeklySummary:
-        return _buildWeeklySummary(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildWeeklySummary(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.monthlyIncome:
-        return _buildMonthlyIncome(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildMonthlyIncome(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.fyReport:
-        return _buildFyReport(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildFyReport(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.performance:
-        return _buildPerformance(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildPerformance(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.goalProgress:
-        return _buildGoalProgress(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildGoalProgress(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.maturityCalendar:
-        return _buildMaturityCalendar(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildMaturityCalendar(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.actionRequired:
-        return _buildActionRequired(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildActionRequired(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
       case ReportType.portfolioHealth:
-        return _buildPortfolioHealth(reportData, currencySymbol, isPrivacyMode, localizedStrings);
+        return _buildPortfolioHealth(reportData, currencySymbol, locale, isPrivacyMode, localizedStrings);
     }
   }
 
   /// Build Weekly Summary PDF
-  pw.Widget _buildWeeklySummary(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildWeeklySummary(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(_l10n(l10n, 'reportPdfWeekOf', 'Week of ${report.weekStart.toString().split(' ')[0]}')),
         pw.SizedBox(height: 10),
-        _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode)),
-        _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode)),
-        _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode)),
+        _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
         _buildKeyValueRow('New Investments', report.newInvestments.toString()),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfDailyCashflows', 'Daily Cashflows'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
@@ -198,9 +203,9 @@ class ReportPdfExporter {
           headers: ['Date', 'Inflow', 'Outflow', 'Net'],
           data: report.dailyCashflows.map((d) => [
             d.date.toString().split(' ')[0],
-            _formatAmount(d.inflow, symbol, isPrivacyMode),
-            _formatAmount(d.outflow, symbol, isPrivacyMode),
-            _formatAmount(d.net, symbol, isPrivacyMode),
+            _formatAmount(d.inflow, symbol, isPrivacyMode, locale),
+            _formatAmount(d.outflow, symbol, isPrivacyMode, locale),
+            _formatAmount(d.net, symbol, isPrivacyMode, locale),
           ]).toList(),
         ),
       ],
@@ -221,13 +226,13 @@ class ReportPdfExporter {
     );
   }
   /// Build Monthly Income PDF
-  pw.Widget _buildMonthlyIncome(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildMonthlyIncome(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text('${report.monthName} ${report.year}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
-        _buildKeyValueRow('Total Income', _formatAmount(report.totalIncome, symbol, isPrivacyMode)),
+        _buildKeyValueRow('Total Income', _formatAmount(report.totalIncome, symbol, isPrivacyMode, locale)),
         _buildKeyValueRow('Transactions', report.totalTransactions.toString()),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfIncomeByType', 'Income by Type'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
@@ -236,7 +241,7 @@ class ReportPdfExporter {
           headers: ['Type', 'Amount', '%'],
           data: report.incomeByType.entries.map((e) {
             final pct = report.totalIncome > 0 ? (e.value / report.totalIncome * 100).toStringAsFixed(1) : '0.0';
-            return [e.key.displayName, _formatAmount(e.value, symbol, isPrivacyMode), '$pct%'];
+            return [e.key.displayName, _formatAmount(e.value, symbol, isPrivacyMode, locale), '$pct%'];
           }).toList(),
         ),
       ],
@@ -244,15 +249,15 @@ class ReportPdfExporter {
   }
 
   /// Build FY Report PDF
-  pw.Widget _buildFyReport(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildFyReport(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text('FY ${report.fyYear}-${report.fyYear + 1}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
-        _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode)),
-        _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode)),
-        _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode)),
+        _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
         _buildKeyValueRow('XIRR', '${report.xirr.toStringAsFixed(2)}%'),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfMonthlyBreakdown', 'Monthly Breakdown'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
@@ -261,10 +266,10 @@ class ReportPdfExporter {
           headers: ['Month', 'Invested', 'Returns', 'Income', 'Fees'],
           data: report.monthlyBreakdown.map((m) => [
             m.monthName,
-            _formatAmount(m.invested, symbol, isPrivacyMode),
-            _formatAmount(m.returns, symbol, isPrivacyMode),
-            _formatAmount(m.income, symbol, isPrivacyMode),
-            _formatAmount(m.fees, symbol, isPrivacyMode),
+            _formatAmount(m.invested, symbol, isPrivacyMode, locale),
+            _formatAmount(m.returns, symbol, isPrivacyMode, locale),
+            _formatAmount(m.income, symbol, isPrivacyMode, locale),
+            _formatAmount(m.fees, symbol, isPrivacyMode, locale),
           ]).toList(),
         ),
       ],
@@ -272,7 +277,7 @@ class ReportPdfExporter {
   }
 
   /// Build Performance Report PDF
-  pw.Widget _buildPerformance(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildPerformance(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -282,7 +287,7 @@ class ReportPdfExporter {
           headers: ['Investment', 'Returns', 'XIRR %'],
           data: report.topPerformers.map((p) => [
             p.investment.name,
-            _formatAmount(p.returns, symbol, isPrivacyMode),
+            _formatAmount(p.returns, symbol, isPrivacyMode, locale),
             '${p.xirr.toStringAsFixed(2)}%',
           ]).toList(),
         ),
@@ -293,7 +298,7 @@ class ReportPdfExporter {
           headers: ['Investment', 'Returns', 'XIRR %'],
           data: report.bottomPerformers.map((p) => [
             p.investment.name,
-            _formatAmount(p.returns, symbol, isPrivacyMode),
+            _formatAmount(p.returns, symbol, isPrivacyMode, locale),
             '${p.xirr.toStringAsFixed(2)}%',
           ]).toList(),
         ),
@@ -302,7 +307,7 @@ class ReportPdfExporter {
   }
 
   /// Build Goal Progress PDF
-  pw.Widget _buildGoalProgress(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildGoalProgress(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -313,8 +318,8 @@ class ReportPdfExporter {
           data: report.onTrackGoals.map((g) => [
             g.name,
             '${g.progressPercentage.toStringAsFixed(1)}%',
-            _formatAmount(g.targetAmount, symbol, isPrivacyMode),
-            _formatAmount(g.currentAmount, symbol, isPrivacyMode),
+            _formatAmount(g.targetAmount, symbol, isPrivacyMode, locale),
+            _formatAmount(g.currentAmount, symbol, isPrivacyMode, locale),
           ]).toList(),
         ),
         pw.SizedBox(height: 20),
@@ -325,8 +330,8 @@ class ReportPdfExporter {
           data: report.atRiskGoals.map((g) => [
             g.name,
             '${g.progressPercentage.toStringAsFixed(1)}%',
-            _formatAmount(g.targetAmount, symbol, isPrivacyMode),
-            _formatAmount(g.currentAmount, symbol, isPrivacyMode),
+            _formatAmount(g.targetAmount, symbol, isPrivacyMode, locale),
+            _formatAmount(g.currentAmount, symbol, isPrivacyMode, locale),
           ]).toList(),
         ),
       ],
@@ -334,7 +339,7 @@ class ReportPdfExporter {
   }
 
   /// Build Maturity Calendar PDF
-  pw.Widget _buildMaturityCalendar(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildMaturityCalendar(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -352,7 +357,7 @@ class ReportPdfExporter {
   }
 
   /// Build Action Required PDF
-  pw.Widget _buildActionRequired(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildActionRequired(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -382,7 +387,7 @@ class ReportPdfExporter {
   }
 
   /// Build Portfolio Health PDF
-  pw.Widget _buildPortfolioHealth(dynamic report, String symbol, bool isPrivacyMode, Map<String, String>? l10n) {
+  pw.Widget _buildPortfolioHealth(dynamic report, String symbol, String locale, bool isPrivacyMode, Map<String, String>? l10n) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -396,7 +401,7 @@ class ReportPdfExporter {
           data: report.diversification.map((d) => [
             d.type.displayName,
             d.count.toString(),
-            _formatAmount(d.amount, symbol, isPrivacyMode),
+            _formatAmount(d.amount, symbol, isPrivacyMode, locale),
             '${d.percentage.toStringAsFixed(1)}%',
           ]).toList(),
         ),
