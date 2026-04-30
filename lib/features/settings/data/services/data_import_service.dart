@@ -15,6 +15,7 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/core/utils/file_signature_utils.dart';
 import 'package:uuid/uuid.dart';
 
 /// Import strategy options
@@ -587,12 +588,20 @@ class DataImportService {
     final documentId = docMeta['id'] as String? ?? _uuid.v4();
     final fileName = docMeta['fileName'] as String;
 
+    final uint8Bytes = Uint8List.fromList(bytes);
+
+    // Security: Validate file signature to prevent extension spoofing
+    // and malicious file uploads during ZIP import.
+    if (!FileSignatureUtils.validateFileSignature(uint8Bytes, fileName)) {
+      throw Exception('Security: File signature validation failed for $fileName');
+    }
+
     // Save the file to local storage
     final localPath = await _documentStorageService.saveDocument(
       investmentId: investmentId,
       documentId: documentId,
       fileName: fileName,
-      bytes: Uint8List.fromList(bytes),
+      bytes: uint8Bytes,
     );
 
     // Create document entity with the remapped investment ID
