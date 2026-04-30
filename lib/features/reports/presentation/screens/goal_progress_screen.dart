@@ -137,7 +137,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '🎉 Achieved Goals',
+          l10n.achievedGoalsSection,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -177,7 +177,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '✅ On Track Goals',
+          l10n.goalsOnTrack,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -227,7 +227,7 @@ class GoalProgressScreen extends BaseReportScreen<GoalProgressReport> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '⚠️ At Risk Goals',
+          l10n.goalsAtRisk,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),

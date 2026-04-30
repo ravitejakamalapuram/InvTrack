@@ -65,36 +65,8 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Check privacy mode before exporting
+      // Read privacy mode state
       final isPrivacyMode = ref.read(privacyModeProvider);
-
-      if (isPrivacyMode && context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        final shouldContinue = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Privacy Mode Active'),
-            content: const Text(
-              'Privacy mode is enabled. Exporting will include unmasked financial data. Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Continue'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldContinue != true) {
-          state = state.copyWith(isLoading: false);
-          return;
-        }
-      }
 
       final symbol = ref.read(currencySymbolProvider);
       final locale = ref.read(currencyLocaleProvider);
@@ -105,6 +77,7 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
         reportType: reportType,
         currencySymbol: symbol,
         locale: locale,
+        isPrivacyMode: isPrivacyMode,
       );
 
       // Share the file
@@ -137,36 +110,8 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Check privacy mode before exporting
+      // Read privacy mode state
       final isPrivacyMode = ref.read(privacyModeProvider);
-
-      if (isPrivacyMode && context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        final shouldContinue = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Privacy Mode Active'),
-            content: const Text(
-              'Privacy mode is enabled. Exporting will include unmasked financial data. Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Continue'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldContinue != true) {
-          state = state.copyWith(isLoading: false);
-          return;
-        }
-      }
 
       final symbol = ref.read(currencySymbolProvider);
       final locale = ref.read(currencyLocaleProvider);
@@ -177,6 +122,7 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
         reportType: reportType,
         currencySymbol: symbol,
         locale: locale,
+        isPrivacyMode: isPrivacyMode,
       );
 
       // Share the file

@@ -3250,5 +3250,60 @@
   "actionReadinessTooltip": "Measures overdue renewals and stale investments. Lower score means you have pending actions to take.",
   "@actionReadinessTooltip": {
     "description": "Tooltip explaining action readiness score"
+  },
+
+  "maturingNext30Days": "⏰ Maturing in Next 30 Days",
+  "@maturingNext30Days": {
+    "description": "Section title for investments maturing in next 30 days"
+  },
+
+  "maturing31to90Days": "📅 Maturing in 31-90 Days",
+  "@maturing31to90Days": {
+    "description": "Section title for investments maturing in 31-90 days"
+  },
+
+  "maturingBeyond90Days": "🗓️ Maturing Beyond 90 Days",
+  "@maturingBeyond90Days": {
+    "description": "Section title for investments maturing beyond 90 days"
+  },
+
+  "daysRemaining": "days remaining",
+  "@daysRemaining": {
+    "description": "Label for days remaining until maturity"
+  },
+
+  "topPerformersSection": "🏆 Top Performers",
+  "@topPerformersSection": {
+    "description": "Section title for top performing investments"
+  },
+
+  "bottomPerformersSection": "📉 Bottom Performers",
+  "@bottomPerformersSection": {
+    "description": "Section title for bottom performing investments"
+  },
+
+  "recentMilestonesSection": "🎯 Recent Milestones",
+  "@recentMilestonesSection": {
+    "description": "Section title for recent investment milestones"
+  },
+
+  "achievedGoalsSection": "🎉 Achieved Goals",
+  "@achievedGoalsSection": {
+    "description": "Section title for achieved goals"
+  },
+
+  "highPrioritySection": "🔴 High Priority",
+  "@highPrioritySection": {
+    "description": "Section title for high priority action items"
+  },
+
+  "mediumPrioritySection": "🟡 Medium Priority",
+  "@mediumPrioritySection": {
+    "description": "Section title for medium priority action items"
+  },
+
+  "lowPrioritySection": "Low Priority",
+  "@lowPrioritySection": {
+    "description": "Section title for low priority action items"
   }
 }
