@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -92,11 +93,10 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
           l10n.csvExportedSuccessfully(result.fileSizeKB.toString()),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       state = state.copyWith(isLoading: false, error: e.toString());
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        AppFeedback.showError(context, l10n.failedToExportCsv(e.toString()));
+        ErrorHandler.handle(e, st, context: context, showFeedback: true);
       }
     }
   }
@@ -153,11 +153,10 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
           l10n.pdfExportedSuccessfully(result.fileSizeKB.toString()),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       state = state.copyWith(isLoading: false, error: e.toString());
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        AppFeedback.showError(context, l10n.failedToExportPdf(e.toString()));
+        ErrorHandler.handle(e, st, context: context, showFeedback: true);
       }
     }
   }
