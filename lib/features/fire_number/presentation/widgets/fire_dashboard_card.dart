@@ -12,6 +12,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Compact FIRE progress card for the overview dashboard
 class FireDashboardCard extends ConsumerWidget {
@@ -19,6 +20,7 @@ class FireDashboardCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final settingsAsync = ref.watch(fireSettingsProvider);
     final calculationAsync = ref.watch(fireCalculationProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -29,13 +31,14 @@ class FireDashboardCard extends ConsumerWidget {
     return settingsAsync.when(
       data: (settings) {
         if (settings == null || !settings.isSetupComplete) {
-          return _buildSetupCard(context, isDark);
+          return _buildSetupCard(context, isDark, l10n);
         }
 
         return calculationAsync.when(
           data: (calculation) => _buildProgressCard(
             context,
             isDark,
+            l10n,
             calculation,
             currencySymbol,
             locale,
@@ -50,7 +53,7 @@ class FireDashboardCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSetupCard(BuildContext context, bool isDark) {
+  Widget _buildSetupCard(BuildContext context, bool isDark, AppLocalizations l10n) {
     final accentColor = isDark ? AppColors.accentDark : AppColors.accentLight;
 
     return GlassCard(
@@ -78,7 +81,7 @@ class FireDashboardCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Calculate Your FIRE Number',
+                  l10n.calculateYourFireNumber,
                   style: AppTypography.bodyMedium.copyWith(
                     color: isDark
                         ? AppColors.textPrimaryDark
@@ -87,7 +90,7 @@ class FireDashboardCard extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'Set up your financial independence goals',
+                  l10n.setupFinancialIndependenceGoals,
                   style: AppTypography.small.copyWith(
                     color: isDark
                         ? AppColors.neutral400Dark
@@ -112,6 +115,7 @@ class FireDashboardCard extends ConsumerWidget {
   Widget _buildProgressCard(
     BuildContext context,
     bool isDark,
+    AppLocalizations l10n,
     FireCalculationResult calculation,
     String currencySymbol,
     String locale,
@@ -133,7 +137,7 @@ class FireDashboardCard extends ConsumerWidget {
               Icon(Icons.local_fire_department, color: status.color, size: 24),
               SizedBox(width: AppSpacing.sm),
               Text(
-                'FIRE Progress',
+                l10n.fireProgressTitle,
                 style: AppTypography.h4.copyWith(
                   color: isDark
                       ? AppColors.textPrimaryDark

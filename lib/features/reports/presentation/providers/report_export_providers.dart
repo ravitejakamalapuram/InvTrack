@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -65,36 +66,8 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Check privacy mode before exporting
+      // Read privacy mode state
       final isPrivacyMode = ref.read(privacyModeProvider);
-
-      if (isPrivacyMode && context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        final shouldContinue = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Privacy Mode Active'),
-            content: const Text(
-              'Privacy mode is enabled. Exporting will include unmasked financial data. Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Continue'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldContinue != true) {
-          state = state.copyWith(isLoading: false);
-          return;
-        }
-      }
 
       final symbol = ref.read(currencySymbolProvider);
       final locale = ref.read(currencyLocaleProvider);
@@ -105,6 +78,7 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
         reportType: reportType,
         currencySymbol: symbol,
         locale: locale,
+        isPrivacyMode: isPrivacyMode,
       );
 
       // Share the file
@@ -119,11 +93,10 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
           l10n.csvExportedSuccessfully(result.fileSizeKB.toString()),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       state = state.copyWith(isLoading: false, error: e.toString());
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        AppFeedback.showError(context, l10n.failedToExportCsv(e.toString()));
+        ErrorHandler.handle(e, st, context: context, showFeedback: true);
       }
     }
   }
@@ -137,46 +110,35 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Check privacy mode before exporting
+      // Read privacy mode state
       final isPrivacyMode = ref.read(privacyModeProvider);
-
-      if (isPrivacyMode && context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        final shouldContinue = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Privacy Mode Active'),
-            content: const Text(
-              'Privacy mode is enabled. Exporting will include unmasked financial data. Continue?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Continue'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldContinue != true) {
-          state = state.copyWith(isLoading: false);
-          return;
-        }
-      }
 
       final symbol = ref.read(currencySymbolProvider);
       final locale = ref.read(currencyLocaleProvider);
       final exporter = ref.read(pdfExporterProvider);
+
+      // Get localized strings for PDF headers
+      final l10n = AppLocalizations.of(context);
+      final localizedStrings = <String, String>{
+        'reportPdfDailyCashflows': l10n.reportPdfDailyCashflows,
+        'reportPdfIncomeByType': l10n.reportPdfIncomeByType,
+        'reportPdfMonthlyBreakdown': l10n.reportPdfMonthlyBreakdown,
+        'reportPdfTopPerformers': l10n.reportPdfTopPerformers,
+        'reportPdfBottomPerformers': l10n.reportPdfBottomPerformers,
+        'reportPdfOnTrackGoals': l10n.reportPdfOnTrackGoals,
+        'reportPdfAtRiskGoals': l10n.reportPdfAtRiskGoals,
+        'reportPdfUpcomingMaturities': l10n.reportPdfUpcomingMaturities,
+        'reportPdfIdleInvestments': l10n.reportPdfIdleInvestments,
+        'reportPdfDiversification': l10n.reportPdfDiversification,
+      };
 
       final result = await exporter.export(
         reportData: reportData,
         reportType: reportType,
         currencySymbol: symbol,
         locale: locale,
+        isPrivacyMode: isPrivacyMode,
+        localizedStrings: localizedStrings,
       );
 
       // Share the file
@@ -191,11 +153,10 @@ class ReportExportNotifier extends Notifier<ReportExportState> {
           l10n.pdfExportedSuccessfully(result.fileSizeKB.toString()),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       state = state.copyWith(isLoading: false, error: e.toString());
       if (context.mounted) {
-        final l10n = AppLocalizations.of(context);
-        AppFeedback.showError(context, l10n.failedToExportPdf(e.toString()));
+        ErrorHandler.handle(e, st, context: context, showFeedback: true);
       }
     }
   }

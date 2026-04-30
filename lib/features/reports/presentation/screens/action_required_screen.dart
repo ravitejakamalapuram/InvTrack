@@ -117,7 +117,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.criticalActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\u26a0\ufe0f Critical Actions',
+            l10n.criticalActions,
             report.criticalActions,
             Colors.red,
           ),
@@ -128,7 +128,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.highPriorityActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\ud83d\udd34 High Priority',
+            l10n.highPrioritySection,
             report.highPriorityActions,
             Colors.orange,
           ),
@@ -139,7 +139,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.mediumPriorityActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\ud83d\udfe1 Medium Priority',
+            l10n.mediumPrioritySection,
             report.mediumPriorityActions,
             Colors.amber,
           ),
@@ -150,7 +150,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.lowPriorityActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\ud83d\udd35 Low Priority',
+            l10n.lowPrioritySection,
             report.lowPriorityActions,
             Colors.blue,
           ),

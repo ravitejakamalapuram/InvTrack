@@ -3250,5 +3250,225 @@
   "actionReadinessTooltip": "Measures overdue renewals and stale investments. Lower score means you have pending actions to take.",
   "@actionReadinessTooltip": {
     "description": "Tooltip explaining action readiness score"
+  },
+
+  "maturingNext30Days": "⏰ Maturing in Next 30 Days",
+  "@maturingNext30Days": {
+    "description": "Section title for investments maturing in next 30 days"
+  },
+
+  "maturing31to90Days": "📅 Maturing in 31-90 Days",
+  "@maturing31to90Days": {
+    "description": "Section title for investments maturing in 31-90 days"
+  },
+
+  "maturingBeyond90Days": "🗓️ Maturing Beyond 90 Days",
+  "@maturingBeyond90Days": {
+    "description": "Section title for investments maturing beyond 90 days"
+  },
+
+  "daysRemaining": "days remaining",
+  "@daysRemaining": {
+    "description": "Label for days remaining until maturity"
+  },
+
+  "bottomPerformersSection": "📉 Bottom Performers",
+  "@bottomPerformersSection": {
+    "description": "Section title for bottom performing investments"
+  },
+
+  "recentMilestonesSection": "🎯 Recent Milestones",
+  "@recentMilestonesSection": {
+    "description": "Section title for recent investment milestones"
+  },
+
+  "achievedGoalsSection": "🎉 Achieved Goals",
+  "@achievedGoalsSection": {
+    "description": "Section title for achieved goals"
+  },
+
+  "highPrioritySection": "🔴 High Priority",
+  "@highPrioritySection": {
+    "description": "Section title for high priority action items"
+  },
+
+  "mediumPrioritySection": "🟡 Medium Priority",
+  "@mediumPrioritySection": {
+    "description": "Section title for medium priority action items"
+  },
+
+  "lowPrioritySection": "Low Priority",
+  "@lowPrioritySection": {
+    "description": "Section title for low priority action items"
+  },
+
+  "archiveGoal": "Archive Goal",
+  "@archiveGoal": {
+    "description": "Button label for archiving a goal"
+  },
+
+  "unarchiveGoal": "Unarchive Goal",
+  "@unarchiveGoal": {
+    "description": "Button label for unarchiving a goal"
+  },
+
+  "googleAccountExists": "Google Account Already Exists",
+  "@googleAccountExists": {
+    "description": "Alert title when signing in with an existing Google account"
+  },
+
+  "accountAlreadyRegistered": "This Google account is already registered.",
+  "@accountAlreadyRegistered": {
+    "description": "Message explaining the account already exists"
+  },
+
+  "guestDataBackupMessage": "Your guest data will be backed up as a ZIP file. After signing in, you can import it to merge with existing data.",
+  "@guestDataBackupMessage": {
+    "description": "Explanation of the backup process before signing in"
+  },
+
+  "backupAndSignIn": "Backup & Sign In",
+  "@backupAndSignIn": {
+    "description": "Button label to backup data and sign in"
+  },
+
+  "backupCreated": "Backup Created",
+  "@backupCreated": {
+    "description": "Alert title when backup is successfully created"
+  },
+
+  "guestDataBackedUp": "Your guest data has been backed up.",
+  "@guestDataBackedUp": {
+    "description": "Success message after creating backup"
+  },
+
+  "backupLocation": "Location: {path}",
+  "@backupLocation": {
+    "description": "Shows the file path where backup was saved",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importNowQuestion": "Would you like to import it now?",
+  "@importNowQuestion": {
+    "description": "Asks user if they want to import the backup immediately"
+  },
+
+  "later": "Later",
+  "@later": {
+    "description": "Button label to postpone action"
+  },
+
+  "importNow": "Import Now",
+  "@importNow": {
+    "description": "Button label to import backup immediately"
+  },
+
+  "backupFailed": "Backup failed: {error}",
+  "@backupFailed": {
+    "description": "Error message when backup fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "reportPdfWeekOf": "Week of {date}",
+  "@reportPdfWeekOf": {
+    "description": "PDF report header for weekly reports",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
+  "reportPdfDailyCashflows": "Daily Cashflows",
+  "@reportPdfDailyCashflows": {
+    "description": "PDF report section header for daily cashflows"
+  },
+
+  "reportPdfIncomeByType": "Income by Type",
+  "@reportPdfIncomeByType": {
+    "description": "PDF report section header for income breakdown by type"
+  },
+
+  "reportPdfMonthlyBreakdown": "Monthly Breakdown",
+  "@reportPdfMonthlyBreakdown": {
+    "description": "PDF report section header for monthly data breakdown"
+  },
+
+  "reportPdfTopPerformers": "Top Performers",
+  "@reportPdfTopPerformers": {
+    "description": "PDF report section header for top performing investments"
+  },
+
+  "reportPdfBottomPerformers": "Bottom Performers",
+  "@reportPdfBottomPerformers": {
+    "description": "PDF report section header for bottom performing investments"
+  },
+
+  "reportPdfOnTrackGoals": "On-Track Goals",
+  "@reportPdfOnTrackGoals": {
+    "description": "PDF report section header for goals on track"
+  },
+
+  "reportPdfAtRiskGoals": "At-Risk Goals",
+  "@reportPdfAtRiskGoals": {
+    "description": "PDF report section header for goals at risk"
+  },
+
+  "reportPdfUpcomingMaturities": "Upcoming Maturities",
+  "@reportPdfUpcomingMaturities": {
+    "description": "PDF report section header for upcoming investment maturities"
+  },
+
+  "reportPdfIdleInvestments": "Idle Investments",
+  "@reportPdfIdleInvestments": {
+    "description": "PDF report section header for idle investments"
+  },
+
+  "reportPdfDiversification": "Diversification",
+  "@reportPdfDiversification": {
+    "description": "PDF report section header for diversification analysis"
+  },
+
+  "calculateYourFireNumber": "Calculate Your FIRE Number",
+  "@calculateYourFireNumber": {
+    "description": "Call-to-action title for FIRE calculator card"
+  },
+
+  "setupFinancialIndependenceGoals": "Set up your financial independence goals",
+  "@setupFinancialIndependenceGoals": {
+    "description": "Subtitle for FIRE calculator card explaining the feature"
+  },
+
+  "moicLabel": "MOIC",
+  "@moicLabel": {
+    "description": "Label for Multiple on Invested Capital metric"
+  },
+
+  "overDuration": "over {duration}",
+  "@overDuration": {
+    "description": "Shows duration of investment returns (e.g., 'over 2 years')",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+
+  "cashFlowsLabel": "Cash Flows",
+  "@cashFlowsLabel": {
+    "description": "Label for cash flows count metric"
+  },
+
+  "fireProgressTitle": "FIRE Progress",
+  "@fireProgressTitle": {
+    "description": "Title for FIRE progress card showing progress towards financial independence"
   }
 }
