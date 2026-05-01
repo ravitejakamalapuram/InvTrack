@@ -3277,6 +3277,112 @@
     }
   },
 
+  "maturityOverdueTitle": "{investmentName} - Maturity Overdue",
+  "@maturityOverdueTitle": {
+    "description": "Title for overdue maturity action item",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "maturityOverdueDescription": "Investment matured {daysOverdue} days ago. Take action to close or renew.",
+  "@maturityOverdueDescription": {
+    "description": "Description for overdue maturity action item",
+    "placeholders": {
+      "daysOverdue": {
+        "type": "int"
+      }
+    }
+  },
+
+  "maturityUpcomingTitle": "{investmentName} - Maturing in {days} days",
+  "@maturityUpcomingTitle": {
+    "description": "Title for upcoming maturity action item",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "maturityUpcomingDescription": "Plan for reinvestment or withdrawal.",
+  "@maturityUpcomingDescription": {
+    "description": "Description for upcoming maturity action item"
+  },
+
+  "maturitySoonTitle": "{investmentName} - Maturing soon",
+  "@maturitySoonTitle": {
+    "description": "Title for maturity within 30 days action item",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "maturitySoonDescription": "Review renewal options or explore alternatives.",
+  "@maturitySoonDescription": {
+    "description": "Description for maturity within 30 days action item"
+  },
+
+  "idleInvestmentTitle": "{investmentName} - Idle for {months} months",
+  "@idleInvestmentTitle": {
+    "description": "Title for idle investment action item",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      },
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+
+  "idleInvestmentDescription": "Consider reviewing or updating this investment.",
+  "@idleInvestmentDescription": {
+    "description": "Description for idle investment action item"
+  },
+
+  "idleInvestment90DaysTitle": "{investmentName} - No activity for 90+ days",
+  "@idleInvestment90DaysTitle": {
+    "description": "Title for 90+ days idle investment action item",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "idleInvestment90DaysDescription": "Check if this investment needs attention.",
+  "@idleInvestment90DaysDescription": {
+    "description": "Description for 90+ days idle investment action item"
+  },
+
+  "goalDeadlineApproachingTitle": "{goalName} - Deadline approaching",
+  "@goalDeadlineApproachingTitle": {
+    "description": "Title for goal deadline approaching action item",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalDeadlineApproachingDescription": "Goal deadline in {days} days. Review progress.",
+  "@goalDeadlineApproachingDescription": {
+    "description": "Description for goal deadline approaching action item",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
   "bottomPerformersSection": "📉 Bottom Performers",
   "@bottomPerformersSection": {
     "description": "Section title for bottom performing investments"
@@ -3352,6 +3458,16 @@
     "description": "Shows the file path where backup was saved",
     "placeholders": {
       "path": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalDeadline90DaysTitle": "{goalName} - Deadline in 90 days",
+  "@goalDeadline90DaysTitle": {
+    "description": "Title for goal deadline in 90 days action item",
+    "placeholders": {
+      "goalName": {
         "type": "String"
       }
     }
@@ -3437,6 +3553,24 @@
     "description": "Shows days in the past",
     "placeholders": {
       "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "goalDeadline90DaysDescription": "Review goal progress and adjust if needed.",
+  "@goalDeadline90DaysDescription": {
+    "description": "Description for goal deadline in 90 days action item"
+  },
+
+  "taxDeadlineTitle": "ITR Filing Deadline - FY {fiscalYear}-{nextYear}",
+  "@taxDeadlineTitle": {
+    "description": "Title for tax filing deadline action item",
+    "placeholders": {
+      "fiscalYear": {
+        "type": "int"
+      },
+      "nextYear": {
         "type": "int"
       }
     }
@@ -3575,5 +3709,15 @@
   "fireProgressTitle": "FIRE Progress",
   "@fireProgressTitle": {
     "description": "Title for FIRE progress card showing progress towards financial independence"
+  },
+
+  "taxDeadlineDescription": "File income tax return by July 31. {daysRemaining} days remaining.",
+  "@taxDeadlineDescription": {
+    "description": "Description for tax filing deadline action item",
+    "placeholders": {
+      "daysRemaining": {
+        "type": "int"
+      }
+    }
   }
 }
