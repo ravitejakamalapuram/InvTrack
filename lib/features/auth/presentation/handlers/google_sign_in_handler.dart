@@ -27,9 +27,33 @@ class GoogleSignInHandler {
   /// Handles the Google Sign-In flow with account linking.
   ///
   /// Returns true if sign-in/linking succeeded, false otherwise.
+  ///
+  /// BUG FIX (2026-05-01): Ensure GoogleSignIn is initialized before linking
+  /// to prevent Crashlytics issue #9dfdf1143e4d5e88cbfe9a9d91440e44
   Future<bool> handleSignIn() async {
     try {
       LoggerService.info('Starting Google Sign-In with account linking');
+
+      // BUG FIX: Ensure Google Sign-In is initialized before attempting linking
+      // This prevents "serverClientId must be provided on Android" crashes
+      try {
+        await ref.read(googleSignInInitializedProvider.future);
+      } catch (e, st) {
+        LoggerService.error(
+          'GoogleSignIn initialization failed',
+          error: e,
+          stackTrace: st,
+        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to initialize Google Sign-In. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
 
       final linkUseCase = ref.read(linkAccountUseCaseProvider);
       final result = await linkUseCase.execute();

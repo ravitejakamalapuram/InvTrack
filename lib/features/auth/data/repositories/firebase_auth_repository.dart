@@ -75,6 +75,14 @@ class FirebaseAuthRepository implements AuthRepository {
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
+      // BUG FIX (2026-05-01): Don't report user cancellations to Crashlytics
+      // Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff variant
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled Google Sign-In');
+        return null;
+      }
+
+      // Log other GoogleSignInExceptions (config errors, etc.)
       LoggerService.error(
         'GoogleSignInException during sign-in',
         error: e,
@@ -84,10 +92,7 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        LoggerService.info('User cancelled Google Sign-In');
-        return null;
-      }
+
       // Map exception to user-friendly message
       throw Exception(_mapGoogleSignInException(e));
     } catch (e, stackTrace) {
