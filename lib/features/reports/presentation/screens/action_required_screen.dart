@@ -165,6 +165,8 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
     List<ActionItem> items,
     Color color,
   ) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
