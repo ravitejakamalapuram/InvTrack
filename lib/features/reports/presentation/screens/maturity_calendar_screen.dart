@@ -183,7 +183,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
                 children: [
                   Text('${l10n.maturesLabel}: ${dateFormat.format(item.maturityDate)}'),
                   Text(
-                    '${item.daysUntilMaturity} ${l10n.daysRemaining}',
+                    l10n.daysRemaining(item.daysUntilMaturity),
                     style: TextStyle(color: urgencyColor),
                   ),
                 ],

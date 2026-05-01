@@ -3267,9 +3267,14 @@
     "description": "Section title for investments maturing beyond 90 days"
   },
 
-  "daysRemaining": "days remaining",
+  "daysRemaining": "{days} days remaining",
   "@daysRemaining": {
-    "description": "Label for days remaining until maturity"
+    "description": "Label for days remaining until maturity",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
 
   "bottomPerformersSection": "📉 Bottom Performers",
@@ -3297,7 +3302,7 @@
     "description": "Section title for medium priority action items"
   },
 
-  "lowPrioritySection": "Low Priority",
+  "lowPrioritySection": "🔵 Low Priority",
   "@lowPrioritySection": {
     "description": "Section title for low priority action items"
   },
@@ -3372,16 +3377,6 @@
     "description": "Error message when backup fails",
     "placeholders": {
       "error": {
-        "type": "String"
-      }
-    }
-  },
-
-  "reportPdfWeekOf": "Week of {date}",
-  "@reportPdfWeekOf": {
-    "description": "PDF report header for weekly reports",
-    "placeholders": {
-      "date": {
         "type": "String"
       }
     }

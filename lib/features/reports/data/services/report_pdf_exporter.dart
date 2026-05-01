@@ -190,7 +190,7 @@ class ReportPdfExporter {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(_l10n(l10n, 'reportPdfWeekOf', 'Week of ${report.weekStart.toString().split(' ')[0]}')),
+        pw.Text('Week of ${report.weekStart.toString().split(' ')[0]}'),
         pw.SizedBox(height: 10),
         _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
         _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
