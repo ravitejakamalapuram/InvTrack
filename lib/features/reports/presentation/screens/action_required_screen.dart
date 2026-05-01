@@ -117,7 +117,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.criticalActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\u26a0\ufe0f Critical Actions',
+            l10n.criticalActions,
             report.criticalActions,
             Colors.red,
           ),
@@ -128,7 +128,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.highPriorityActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\ud83d\udd34 High Priority',
+            l10n.highPrioritySection,
             report.highPriorityActions,
             Colors.orange,
           ),
@@ -139,7 +139,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.mediumPriorityActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\ud83d\udfe1 Medium Priority',
+            l10n.mediumPrioritySection,
             report.mediumPriorityActions,
             Colors.amber,
           ),
@@ -150,7 +150,7 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
         if (report.lowPriorityActions.isNotEmpty) ...[
           _buildActionSection(
             context,
-            '\ud83d\udd35 Low Priority',
+            l10n.lowPrioritySection,
             report.lowPriorityActions,
             Colors.blue,
           ),
@@ -165,6 +165,8 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
     List<ActionItem> items,
     Color color,
   ) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -195,12 +197,26 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
                     Text(item.description),
                     if (item.dueDate != null) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        'Due: ${DateFormat('MMM dd, yyyy').format(item.dueDate!)}${item.isOverdue ? ' (OVERDUE)' : ''}',
-                        style: TextStyle(
-                          color: item.isOverdue ? Colors.red : color,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            l10n.dueOnDate(DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(item.dueDate!)),
+                            style: TextStyle(
+                              color: item.isOverdue ? Colors.red : color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (item.isOverdue) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${l10n.overdue})',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ],
@@ -209,8 +225,8 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
                     ? Chip(
                         label: Text(
                           item.isOverdue
-                              ? '${-item.daysUntilDue!}d ago'
-                              : '${item.daysUntilDue}d',
+                              ? l10n.daysAgo(-item.daysUntilDue!)
+                              : l10n.daysShort(item.daysUntilDue!),
                           style: TextStyle(
                             color: item.isOverdue ? Colors.white : color,
                             fontSize: 12,

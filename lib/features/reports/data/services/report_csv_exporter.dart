@@ -5,6 +5,7 @@ library;
 
 import 'dart:io';
 import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -23,9 +24,10 @@ class ReportCsvExporter {
     required ReportType reportType,
     String currencySymbol = '\$',
     String locale = 'en_US',
+    bool isPrivacyMode = false,
   }) async {
     // Generate CSV rows based on report type
-    final rows = _generateCsvRows(reportData, reportType, currencySymbol);
+    final rows = _generateCsvRows(reportData, reportType, currencySymbol, locale, isPrivacyMode);
 
     // Convert to CSV string
     final csvData = const ListToCsvConverter().convert(rows);
@@ -57,34 +59,46 @@ class ReportCsvExporter {
     );
   }
 
+  /// Format amount with privacy masking support and locale-aware formatting
+  String _formatAmount(double amount, String symbol, bool isPrivacyMode, String locale) {
+    if (isPrivacyMode) {
+      return '••••••';
+    }
+    // Use locale-aware currency formatting (Rule 16.5 compliance)
+    final formatter = NumberFormat.currency(locale: locale, symbol: symbol, decimalDigits: 2);
+    return formatter.format(amount);
+  }
+
   /// Generate CSV rows based on report type
   List<List<dynamic>> _generateCsvRows(
     dynamic reportData,
     ReportType reportType,
     String currencySymbol,
+    String locale,
+    bool isPrivacyMode,
   ) {
     switch (reportType) {
       case ReportType.weeklySummary:
-        return _exportWeeklySummary(reportData, currencySymbol);
+        return _exportWeeklySummary(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.monthlyIncome:
-        return _exportMonthlyIncome(reportData, currencySymbol);
+        return _exportMonthlyIncome(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.fyReport:
-        return _exportFyReport(reportData, currencySymbol);
+        return _exportFyReport(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.performance:
-        return _exportPerformance(reportData, currencySymbol);
+        return _exportPerformance(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.goalProgress:
-        return _exportGoalProgress(reportData, currencySymbol);
+        return _exportGoalProgress(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.maturityCalendar:
-        return _exportMaturityCalendar(reportData, currencySymbol);
+        return _exportMaturityCalendar(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.actionRequired:
-        return _exportActionRequired(reportData, currencySymbol);
+        return _exportActionRequired(reportData, currencySymbol, locale, isPrivacyMode);
       case ReportType.portfolioHealth:
-        return _exportPortfolioHealth(reportData, currencySymbol);
+        return _exportPortfolioHealth(reportData, currencySymbol, locale, isPrivacyMode);
     }
   }
 
   /// Export Weekly Summary Report to CSV
-  List<List<dynamic>> _exportWeeklySummary(dynamic report, String symbol) {
+  List<List<dynamic>> _exportWeeklySummary(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
 
     // Header
@@ -94,9 +108,9 @@ class ReportCsvExporter {
 
     // Summary Stats
     rows.add(['Summary']);
-    rows.add(['Total Invested', '$symbol${report.totalInvested.toStringAsFixed(2)}']);
-    rows.add(['Total Returned', '$symbol${report.totalReturned.toStringAsFixed(2)}']);
-    rows.add(['Net Position', '$symbol${report.netPosition.toStringAsFixed(2)}']);
+    rows.add(['Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)]);
+    rows.add(['Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)]);
+    rows.add(['Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)]);
     rows.add(['New Investments', report.newInvestments.toString()]);
     rows.add([]);
 
@@ -106,9 +120,9 @@ class ReportCsvExporter {
     for (final day in report.dailyCashflows) {
       rows.add([
         day.date.toString().split(' ')[0],
-        CsvUtils.sanitizeField('$symbol${day.inflow.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${day.outflow.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${day.net.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(day.inflow, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(day.outflow, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(day.net, symbol, isPrivacyMode, locale)),
       ]);
     }
     rows.add([]);
@@ -119,7 +133,7 @@ class ReportCsvExporter {
     for (final performer in report.topPerformers.take(5)) {
       rows.add([
         CsvUtils.sanitizeField(performer.investment.name),
-        CsvUtils.sanitizeField('$symbol${performer.returns.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(performer.returns, symbol, isPrivacyMode, locale)),
         CsvUtils.sanitizeField('${performer.xirr.toStringAsFixed(2)}%'),
       ]);
     }
@@ -128,15 +142,15 @@ class ReportCsvExporter {
   }
 
   /// Export FY Report to CSV
-  List<List<dynamic>> _exportFyReport(dynamic report, String symbol) {
+  List<List<dynamic>> _exportFyReport(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
     rows.add(['InvTrack - Financial Year Report']);
     rows.add(['FY ${report.fyYear}-${report.fyYear + 1} (Apr-Mar)']);
     rows.add([]);
     rows.add(['Summary']);
-    rows.add(['Total Invested', '$symbol${report.totalInvested.toStringAsFixed(2)}']);
-    rows.add(['Total Returned', '$symbol${report.totalReturned.toStringAsFixed(2)}']);
-    rows.add(['Net Position', '$symbol${report.netPosition.toStringAsFixed(2)}']);
+    rows.add(['Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)]);
+    rows.add(['Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)]);
+    rows.add(['Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)]);
     rows.add(['XIRR', '${report.xirr.toStringAsFixed(2)}%']);
     rows.add([]);
     rows.add(['Monthly Breakdown']);
@@ -144,18 +158,18 @@ class ReportCsvExporter {
     for (final month in report.monthlyBreakdown) {
       rows.add([
         month.monthName,
-        CsvUtils.sanitizeField('$symbol${month.invested.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${month.returns.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${month.income.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${month.fees.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${month.net.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(month.invested, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(month.returns, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(month.income, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(month.fees, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(month.net, symbol, isPrivacyMode, locale)),
       ]);
     }
     return rows;
   }
 
   /// Export Performance Report to CSV
-  List<List<dynamic>> _exportPerformance(dynamic report, String symbol) {
+  List<List<dynamic>> _exportPerformance(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
     rows.add(['InvTrack - Performance Report']);
     rows.add([]);
@@ -164,7 +178,7 @@ class ReportCsvExporter {
     for (final p in report.topPerformers) {
       rows.add([
         CsvUtils.sanitizeField(p.investment.name),
-        CsvUtils.sanitizeField('$symbol${p.returns.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(p.returns, symbol, isPrivacyMode, locale)),
         '${p.xirr.toStringAsFixed(2)}%',
       ]);
     }
@@ -174,7 +188,7 @@ class ReportCsvExporter {
     for (final p in report.bottomPerformers) {
       rows.add([
         CsvUtils.sanitizeField(p.investment.name),
-        CsvUtils.sanitizeField('$symbol${p.returns.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(p.returns, symbol, isPrivacyMode, locale)),
         '${p.xirr.toStringAsFixed(2)}%',
       ]);
     }
@@ -182,7 +196,7 @@ class ReportCsvExporter {
   }
 
   /// Export Goal Progress Report to CSV
-  List<List<dynamic>> _exportGoalProgress(dynamic report, String symbol) {
+  List<List<dynamic>> _exportGoalProgress(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
     rows.add(['InvTrack - Goal Progress Report']);
     rows.add([]);
@@ -192,8 +206,8 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(g.name),
         '${g.progressPercentage.toStringAsFixed(1)}%',
-        CsvUtils.sanitizeField('$symbol${g.targetAmount.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${g.currentAmount.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
       ]);
     }
     rows.add([]);
@@ -203,15 +217,15 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(g.name),
         '${g.progressPercentage.toStringAsFixed(1)}%',
-        CsvUtils.sanitizeField('$symbol${g.targetAmount.toStringAsFixed(2)}'),
-        CsvUtils.sanitizeField('$symbol${g.currentAmount.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
       ]);
     }
     return rows;
   }
 
   /// Export Maturity Calendar Report to CSV
-  List<List<dynamic>> _exportMaturityCalendar(dynamic report, String symbol) {
+  List<List<dynamic>> _exportMaturityCalendar(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
     rows.add(['InvTrack - Maturity Calendar Report']);
     rows.add([]);
@@ -228,7 +242,7 @@ class ReportCsvExporter {
   }
 
   /// Export Action Required Report to CSV
-  List<List<dynamic>> _exportActionRequired(dynamic report, String symbol) {
+  List<List<dynamic>> _exportActionRequired(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
     rows.add(['InvTrack - Action Required Report']);
     rows.add([]);
@@ -255,7 +269,7 @@ class ReportCsvExporter {
   }
 
   /// Export Portfolio Health Report to CSV
-  List<List<dynamic>> _exportPortfolioHealth(dynamic report, String symbol) {
+  List<List<dynamic>> _exportPortfolioHealth(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
     rows.add(['InvTrack - Portfolio Health Report']);
     rows.add([]);
@@ -268,15 +282,15 @@ class ReportCsvExporter {
       rows.add([
         d.type.displayName,
         d.count.toString(),
-        CsvUtils.sanitizeField('$symbol${d.amount.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(d.amount, symbol, isPrivacyMode, locale)),
         '${d.percentage.toStringAsFixed(1)}%',
       ]);
     }
     return rows;
   }
-}
+
   /// Export Monthly Income Report to CSV
-  List<List<dynamic>> _exportMonthlyIncome(dynamic report, String symbol) {
+  List<List<dynamic>> _exportMonthlyIncome(dynamic report, String symbol, String locale, bool isPrivacyMode) {
     final rows = <List<dynamic>>[];
 
     // Header
@@ -286,7 +300,7 @@ class ReportCsvExporter {
 
     // Summary
     rows.add(['Summary']);
-    rows.add(['Total Income', '$symbol${report.totalIncome.toStringAsFixed(2)}']);
+    rows.add(['Total Income', _formatAmount(report.totalIncome, symbol, isPrivacyMode, locale)]);
     rows.add(['Total Transactions', report.totalTransactions.toString()]);
     rows.add([]);
 
@@ -299,10 +313,11 @@ class ReportCsvExporter {
           : '0.0';
       rows.add([
         entry.key.displayName,
-        CsvUtils.sanitizeField('$symbol${entry.value.toStringAsFixed(2)}'),
+        CsvUtils.sanitizeField(_formatAmount(entry.value, symbol, isPrivacyMode, locale)),
         '$percentage%',
       ]);
     }
 
     return rows;
   }
+}

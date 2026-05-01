@@ -61,7 +61,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         children: [
         // Summary Stats
         Text(
-          'Maturity Overview',
+          l10n.maturityOverview,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -112,7 +112,8 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         if (report.upcoming30Days.isNotEmpty) ...[
           _buildMaturitySection(
             context,
-            '⏰ Maturing in Next 30 Days',
+            l10n,
+            l10n.maturingNext30Days,
             report.upcoming30Days,
             symbol,
             locale,
@@ -124,7 +125,8 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         if (report.next90Days.isNotEmpty) ...[
           _buildMaturitySection(
             context,
-            '📅 Maturing in 31-90 Days',
+            l10n,
+            l10n.maturing31to90Days,
             report.next90Days,
             symbol,
             locale,
@@ -136,7 +138,8 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         if (report.beyond90Days.isNotEmpty) ...[
           _buildMaturitySection(
             context,
-            '🗓️ Maturing Beyond 90 Days',
+            l10n,
+            l10n.maturingBeyond90Days,
             report.beyond90Days,
             symbol,
             locale,
@@ -149,12 +152,12 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
 
   Widget _buildMaturitySection(
     BuildContext context,
+    AppLocalizations l10n,
     String title,
     List<MaturityItem> items,
     String symbol,
     String locale,
   ) {
-    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -165,7 +168,9 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         const SizedBox(height: 12),
         ...items.map((item) {
           final urgencyColor = _getUrgencyColor(item.urgency);
-          final dateFormat = DateFormat('MMM dd, yyyy');
+          // Use locale-aware date formatting (Rule 16.5)
+          final locale = Localizations.localeOf(context).toString();
+          final dateFormat = DateFormat.yMMMd(locale);
 
           return Card(
             child: ListTile(
@@ -180,7 +185,7 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
                 children: [
                   Text('${l10n.maturesLabel}: ${dateFormat.format(item.maturityDate)}'),
                   Text(
-                    '${item.daysUntilMaturity} days remaining',
+                    l10n.daysRemaining(item.daysUntilMaturity),
                     style: TextStyle(color: urgencyColor),
                   ),
                 ],

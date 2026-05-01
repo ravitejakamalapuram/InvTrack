@@ -57,7 +57,7 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
       children: [
         // Summary Stats
         Text(
-          'Portfolio Performance',
+          l10n.portfolioPerformance,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -131,12 +131,11 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
     String symbol,
     String locale,
   ) {
-    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '🏆 Top Performers',
+          l10n.topPerformersSection,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -174,12 +173,11 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
     String symbol,
     String locale,
   ) {
-    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '📉 Bottom Performers',
+          l10n.bottomPerformersSection,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
@@ -220,11 +218,12 @@ class PerformanceReportScreen extends BaseReportScreen<PerformanceReport> {
       return const SizedBox.shrink();
     }
 
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '🎯 Recent Milestones',
+          l10n.recentMilestonesSection,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 12),

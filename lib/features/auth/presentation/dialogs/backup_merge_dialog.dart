@@ -22,16 +22,14 @@ Future<bool?> showBackupMergeDialog(BuildContext context, WidgetRef ref) async {
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => AlertDialog(
-      title: const Text('Google Account Already Exists'),
+      title: Text(l10n.googleAccountExists),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('This Google account is already registered.'),
+          Text(l10n.accountAlreadyRegistered),
           const SizedBox(height: 16),
-          const Text(
-            'Your guest data will be backed up as a ZIP file. After signing in, you can import it to merge with existing data.',
-          ),
+          Text(l10n.guestDataBackupMessage),
         ],
       ),
       actions: [
@@ -44,7 +42,7 @@ Future<bool?> showBackupMergeDialog(BuildContext context, WidgetRef ref) async {
             Navigator.pop(dialogContext); // Close dialog
             await _handleBackupAndSignIn(context, ref);
           },
-          child: const Text('Backup & Sign In'),
+          child: Text(l10n.backupAndSignIn),
         ),
       ],
     ),
@@ -95,34 +93,37 @@ Future<void> _handleBackupAndSignIn(BuildContext context, WidgetRef ref) async {
     if (context.mounted) {
       final import = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Backup Created'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 64),
-              const SizedBox(height: 16),
-              const Text('Your guest data has been backed up.'),
-              const SizedBox(height: 8),
-              Text(
-                'Location: $backupPath',
-                style: const TextStyle(fontSize: 12),
+        builder: (dialogContext) {
+          final dialogL10n = AppLocalizations.of(dialogContext);
+          return AlertDialog(
+            title: Text(dialogL10n.backupCreated),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green, size: 64),
+                const SizedBox(height: 16),
+                Text(dialogL10n.guestDataBackedUp),
+                const SizedBox(height: 8),
+                Text(
+                  dialogL10n.backupLocation(backupPath),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                Text(dialogL10n.importNowQuestion),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(dialogL10n.later),
               ),
-              const SizedBox(height: 16),
-              const Text('Would you like to import it now?'),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(dialogL10n.importNow),
+              ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Later'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Import Now'),
-            ),
-          ],
-        ),
+          );
+        },
       );
 
       if (import == true && context.mounted) {
@@ -137,9 +138,10 @@ Future<void> _handleBackupAndSignIn(BuildContext context, WidgetRef ref) async {
     if (context.mounted) Navigator.pop(context);
 
     if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Backup failed: ${e.toString()}'),
+          content: Text(l10n.backupFailed(e.toString())),
           backgroundColor: AppColors.errorLight,
         ),
       );
