@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/usecases/link_account_usecase.dart';
 import 'package:inv_tracker/features/auth/presentation/dialogs/backup_merge_dialog.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Provider for LinkAccountUseCase
 final linkAccountUseCaseProvider = Provider<LinkAccountUseCase>((ref) {
@@ -45,9 +46,12 @@ class GoogleSignInHandler {
           stackTrace: st,
         );
         if (context.mounted) {
+          // BUGFIX (2026-05-01): Use localized string instead of hardcoded text
+          // Fixes CodeRabbit review comment
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to initialize Google Sign-In. Please try again.'),
+            SnackBar(
+              content: Text(l10n.googleSignInInitFailure),
               backgroundColor: Colors.red,
             ),
           );

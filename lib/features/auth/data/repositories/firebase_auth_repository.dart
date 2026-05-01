@@ -167,6 +167,14 @@ class FirebaseAuthRepository implements AuthRepository {
       );
       return true;
     } on GoogleSignInException catch (e) {
+      // BUGFIX (2026-05-01): Check for cancellation BEFORE logging to avoid Crashlytics noise
+      // Fixes CodeRabbit review comment
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled re-authentication');
+        return false;
+      }
+
+      // Only log non-cancellation errors
       LoggerService.error(
         'GoogleSignInException during re-authentication',
         error: e,
@@ -176,10 +184,6 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        LoggerService.info('User cancelled re-authentication');
-        return false;
-      }
       throw Exception(_mapGoogleSignInException(e));
     } catch (e, stackTrace) {
       LoggerService.error(
@@ -374,6 +378,14 @@ class FirebaseAuthRepository implements AuthRepository {
         shouldReport: !_isTransientAuthError(e.code),
       );
     } on GoogleSignInException catch (e, stackTrace) {
+      // BUGFIX (2026-05-01): Check for cancellation BEFORE logging to avoid Crashlytics noise
+      // Fixes CodeRabbit review comment
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled account linking');
+        throw AuthException.signInCancelled();
+      }
+
+      // Only log non-cancellation errors
       LoggerService.error(
         'GoogleSignInException during account linking',
         error: e,
@@ -383,11 +395,6 @@ class FirebaseAuthRepository implements AuthRepository {
           'description': e.description,
         },
       );
-
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        LoggerService.info('User cancelled account linking');
-        throw AuthException.signInCancelled();
-      }
 
       throw AuthException(
         userMessage: _mapGoogleSignInException(e),

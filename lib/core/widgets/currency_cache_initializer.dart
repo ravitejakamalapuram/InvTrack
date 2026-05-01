@@ -41,7 +41,6 @@ class _CurrencyCacheInitializerState
 
   Future<void> _initializeCurrencyCache() async {
     if (_initialized) return;
-    _initialized = true;
 
     try {
       // BUG FIX (2026-05-01): Check auth state before accessing currencyConversionServiceProvider
@@ -69,6 +68,10 @@ class _CurrencyCacheInitializerState
       // Preload rates for all currencies (background)
       unawaited(service.preloadRates(currencies, baseCurrency));
 
+      // BUGFIX (2026-05-01): Only mark as initialized after successful completion
+      // Fixes CodeRabbit review comment - allows retry after sign-in
+      _initialized = true;
+
       LoggerService.info(
         'Currency cache initialized',
         metadata: {
@@ -77,6 +80,9 @@ class _CurrencyCacheInitializerState
         },
       );
     } catch (e) {
+      // BUGFIX (2026-05-01): Reset flag on error to allow retry
+      _initialized = false;
+
       LoggerService.error(
         'Error initializing currency cache',
         error: e,
