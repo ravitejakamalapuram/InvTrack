@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Resolve 3 critical Crashlytics issues and localization errors
+
 ## [3.58.0] - 2026-05-01
 
 ### ✨ Features
