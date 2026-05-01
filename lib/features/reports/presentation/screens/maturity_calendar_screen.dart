@@ -168,7 +168,9 @@ class MaturityCalendarScreen extends BaseReportScreen<MaturityCalendarReport> {
         const SizedBox(height: 12),
         ...items.map((item) {
           final urgencyColor = _getUrgencyColor(item.urgency);
-          final dateFormat = DateFormat('MMM dd, yyyy');
+          // Use locale-aware date formatting (Rule 16.5)
+          final locale = Localizations.localeOf(context).toString();
+          final dateFormat = DateFormat.yMMMd(locale);
 
           return Card(
             child: ListTile(

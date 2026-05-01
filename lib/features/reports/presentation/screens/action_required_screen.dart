@@ -195,12 +195,26 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
                     Text(item.description),
                     if (item.dueDate != null) ...[
                       const SizedBox(height: 4),
-                      Text(
-                        'Due: ${DateFormat('MMM dd, yyyy').format(item.dueDate!)}${item.isOverdue ? ' (OVERDUE)' : ''}',
-                        style: TextStyle(
-                          color: item.isOverdue ? Colors.red : color,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            l10n.dueOnDate(DateFormat.yMMMd(Localizations.localeOf(context).toString()).format(item.dueDate!)),
+                            style: TextStyle(
+                              color: item.isOverdue ? Colors.red : color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (item.isOverdue) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${l10n.overdue})',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ],
@@ -209,8 +223,8 @@ class ActionRequiredScreen extends BaseReportScreen<ActionRequiredReport> {
                     ? Chip(
                         label: Text(
                           item.isOverdue
-                              ? '${-item.daysUntilDue!}d ago'
-                              : '${item.daysUntilDue}d',
+                              ? l10n.daysAgo(-item.daysUntilDue!)
+                              : l10n.daysShort(item.daysUntilDue!),
                           style: TextStyle(
                             color: item.isOverdue ? Colors.white : color,
                             fontSize: 12,

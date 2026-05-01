@@ -192,15 +192,20 @@ class ReportPdfExporter {
       children: [
         pw.Text('Week of ${report.weekStart.toString().split(' ')[0]}'),
         pw.SizedBox(height: 10),
-        _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('New Investments', report.newInvestments.toString()),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalInvested', 'Total Invested'), _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalReturned', 'Total Returned'), _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfNetPosition', 'Net Position'), _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfNewInvestments', 'New Investments'), report.newInvestments.toString()),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfDailyCashflows', 'Daily Cashflows'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
         pw.TableHelper.fromTextArray(
-          headers: ['Date', 'Inflow', 'Outflow', 'Net'],
+          headers: [
+            _l10n(l10n, 'reportPdfTableHeaderDate', 'Date'),
+            _l10n(l10n, 'reportPdfTableHeaderInflow', 'Inflow'),
+            _l10n(l10n, 'reportPdfTableHeaderOutflow', 'Outflow'),
+            _l10n(l10n, 'reportPdfTableHeaderNet', 'Net'),
+          ],
           data: report.dailyCashflows.map((d) => [
             d.date.toString().split(' ')[0],
             _formatAmount(d.inflow, symbol, isPrivacyMode, locale),
@@ -232,8 +237,8 @@ class ReportPdfExporter {
       children: [
         pw.Text('${report.monthName} ${report.year}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
-        _buildKeyValueRow('Total Income', _formatAmount(report.totalIncome, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('Transactions', report.totalTransactions.toString()),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalIncome', 'Total Income'), _formatAmount(report.totalIncome, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfTransactions', 'Transactions'), report.totalTransactions.toString()),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfIncomeByType', 'Income by Type'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
@@ -255,10 +260,10 @@ class ReportPdfExporter {
       children: [
         pw.Text('FY ${report.fyYear}-${report.fyYear + 1}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
-        _buildKeyValueRow('Total Invested', _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('Total Returned', _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('Net Position', _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow('XIRR', '${report.xirr.toStringAsFixed(2)}%'),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalInvested', 'Total Invested'), _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalReturned', 'Total Returned'), _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfNetPosition', 'Net Position'), _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfXirr', 'XIRR'), '${report.xirr.toStringAsFixed(2)}%'),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfMonthlyBreakdown', 'Monthly Breakdown'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
@@ -391,8 +396,8 @@ class ReportPdfExporter {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _buildKeyValueRow('Health Score', report.scoreValue.toString()),
-        _buildKeyValueRow('Status', report.overallScore.displayName),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfHealthScore', 'Health Score'), report.scoreValue.toString()),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfStatus', 'Status'), report.overallScore.displayName),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfDiversification', 'Diversification'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
