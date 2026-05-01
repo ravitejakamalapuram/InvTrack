@@ -1355,6 +1355,11 @@
     "description": "Loading state text for sign-in button"
   },
 
+  "googleSignInInitFailure": "Failed to initialize Google Sign-In. Please try again.",
+  "@googleSignInInitFailure": {
+    "description": "Error message when Google Sign-In initialization fails"
+  },
+
   "sampleDataLoaded": "🧪 Sample data loaded! Explore the app.",
   "@sampleDataLoaded": {
     "description": "Success message when sample data is loaded"

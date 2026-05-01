@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 /// Widget that initializes currency conversion cache on app start.
@@ -40,9 +41,19 @@ class _CurrencyCacheInitializerState
 
   Future<void> _initializeCurrencyCache() async {
     if (_initialized) return;
-    _initialized = true;
 
     try {
+      // BUG FIX (2026-05-01): Check auth state before accessing currencyConversionServiceProvider
+      // Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff variant
+      // The provider requires authenticated user, so skip if user is not logged in
+      final authState = await ref.read(authStateProvider.future);
+      if (authState == null) {
+        LoggerService.debug(
+          'Skipping currency cache initialization - user not authenticated',
+        );
+        return;
+      }
+
       final service = ref.read(currencyConversionServiceProvider);
       final baseCurrency = ref.read(currencyCodeProvider);
 
@@ -57,6 +68,10 @@ class _CurrencyCacheInitializerState
       // Preload rates for all currencies (background)
       unawaited(service.preloadRates(currencies, baseCurrency));
 
+      // BUGFIX (2026-05-01): Only mark as initialized after successful completion
+      // Fixes CodeRabbit review comment - allows retry after sign-in
+      _initialized = true;
+
       LoggerService.info(
         'Currency cache initialized',
         metadata: {
@@ -65,6 +80,9 @@ class _CurrencyCacheInitializerState
         },
       );
     } catch (e) {
+      // BUGFIX (2026-05-01): Reset flag on error to allow retry
+      _initialized = false;
+
       LoggerService.error(
         'Error initializing currency cache',
         error: e,

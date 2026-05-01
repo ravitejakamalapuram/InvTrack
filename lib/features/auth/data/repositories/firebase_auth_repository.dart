@@ -75,6 +75,14 @@ class FirebaseAuthRepository implements AuthRepository {
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
+      // BUG FIX (2026-05-01): Don't report user cancellations to Crashlytics
+      // Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff variant
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled Google Sign-In');
+        return null;
+      }
+
+      // Log other GoogleSignInExceptions (config errors, etc.)
       LoggerService.error(
         'GoogleSignInException during sign-in',
         error: e,
@@ -84,10 +92,7 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        LoggerService.info('User cancelled Google Sign-In');
-        return null;
-      }
+
       // Map exception to user-friendly message
       throw Exception(_mapGoogleSignInException(e));
     } catch (e, stackTrace) {
@@ -162,6 +167,14 @@ class FirebaseAuthRepository implements AuthRepository {
       );
       return true;
     } on GoogleSignInException catch (e) {
+      // BUGFIX (2026-05-01): Check for cancellation BEFORE logging to avoid Crashlytics noise
+      // Fixes CodeRabbit review comment
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled re-authentication');
+        return false;
+      }
+
+      // Only log non-cancellation errors
       LoggerService.error(
         'GoogleSignInException during re-authentication',
         error: e,
@@ -171,10 +184,6 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        LoggerService.info('User cancelled re-authentication');
-        return false;
-      }
       throw Exception(_mapGoogleSignInException(e));
     } catch (e, stackTrace) {
       LoggerService.error(
@@ -369,6 +378,14 @@ class FirebaseAuthRepository implements AuthRepository {
         shouldReport: !_isTransientAuthError(e.code),
       );
     } on GoogleSignInException catch (e, stackTrace) {
+      // BUGFIX (2026-05-01): Check for cancellation BEFORE logging to avoid Crashlytics noise
+      // Fixes CodeRabbit review comment
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        LoggerService.info('User cancelled account linking');
+        throw AuthException.signInCancelled();
+      }
+
+      // Only log non-cancellation errors
       LoggerService.error(
         'GoogleSignInException during account linking',
         error: e,
@@ -378,11 +395,6 @@ class FirebaseAuthRepository implements AuthRepository {
           'description': e.description,
         },
       );
-
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        LoggerService.info('User cancelled account linking');
-        throw AuthException.signInCancelled();
-      }
 
       throw AuthException(
         userMessage: _mapGoogleSignInException(e),

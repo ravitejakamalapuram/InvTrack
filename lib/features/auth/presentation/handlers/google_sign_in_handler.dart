@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/usecases/link_account_usecase.dart';
 import 'package:inv_tracker/features/auth/presentation/dialogs/backup_merge_dialog.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Provider for LinkAccountUseCase
 final linkAccountUseCaseProvider = Provider<LinkAccountUseCase>((ref) {
@@ -27,9 +28,36 @@ class GoogleSignInHandler {
   /// Handles the Google Sign-In flow with account linking.
   ///
   /// Returns true if sign-in/linking succeeded, false otherwise.
+  ///
+  /// BUG FIX (2026-05-01): Ensure GoogleSignIn is initialized before linking
+  /// to prevent Crashlytics issue #9dfdf1143e4d5e88cbfe9a9d91440e44
   Future<bool> handleSignIn() async {
     try {
       LoggerService.info('Starting Google Sign-In with account linking');
+
+      // BUG FIX: Ensure Google Sign-In is initialized before attempting linking
+      // This prevents "serverClientId must be provided on Android" crashes
+      try {
+        await ref.read(googleSignInInitializedProvider.future);
+      } catch (e, st) {
+        LoggerService.error(
+          'GoogleSignIn initialization failed',
+          error: e,
+          stackTrace: st,
+        );
+        if (context.mounted) {
+          // BUGFIX (2026-05-01): Use localized string instead of hardcoded text
+          // Fixes CodeRabbit review comment
+          final l10n = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.googleSignInInitFailure),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
 
       final linkUseCase = ref.read(linkAccountUseCaseProvider);
       final result = await linkUseCase.execute();
