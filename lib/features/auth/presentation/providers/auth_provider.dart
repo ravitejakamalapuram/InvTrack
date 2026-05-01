@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/core/config/google_sign_in_config.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
@@ -43,14 +44,17 @@ final googleSignInInitializedProvider = FutureProvider<void>((ref) async {
       );
     }
   } catch (e, st) {
+    // BUGFIX (2026-05-01): Use LoggerService instead of print() to comply with security rules
     // Log initialization failure for debugging
-    // Note: Don't use LoggerService here as it may not be initialized yet
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('❌ GoogleSignIn initialization failed: $e');
-      // ignore: avoid_print
-      print('Stack trace: $st');
-    }
+    LoggerService.error(
+      'GoogleSignIn initialization failed',
+      error: e,
+      stackTrace: st,
+      metadata: {
+        'platform': defaultTargetPlatform.toString(),
+        'serverClientId': GoogleSignInConfig.androidServerClientId,
+      },
+    );
     rethrow; // Re-throw to mark provider as failed
   }
 });
