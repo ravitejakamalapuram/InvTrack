@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Base report screen for code reuse
 abstract class BaseReportScreen<T> extends ConsumerStatefulWidget {
@@ -71,6 +72,7 @@ abstract class BaseReportScreen<T> extends ConsumerStatefulWidget {
     Object error,
     StackTrace stackTrace,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -84,7 +86,7 @@ abstract class BaseReportScreen<T> extends ConsumerStatefulWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Failed to generate report',
+              l10n.failedToGenerateReport,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -100,7 +102,7 @@ abstract class BaseReportScreen<T> extends ConsumerStatefulWidget {
                 Navigator.of(context).pop();
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
+              label: Text(l10n.tryAgain),
             ),
           ],
         ),

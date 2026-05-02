@@ -2472,6 +2472,16 @@
     "description": "Generic message to retry an operation"
   },
 
+  "tryAgain": "Try Again",
+  "@tryAgain": {
+    "description": "Button text to retry an operation"
+  },
+
+  "failedToGenerateReport": "Failed to generate report",
+  "@failedToGenerateReport": {
+    "description": "Error message when report generation fails"
+  },
+
   "crashlyticsTestingTitle": "Crashlytics Testing",
   "@crashlyticsTestingTitle": {
     "description": "Crashlytics testing section title"
