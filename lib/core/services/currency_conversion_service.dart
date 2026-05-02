@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -938,10 +938,19 @@ class CurrencyConversionService {
 /// Provider for CurrencyConversionService
 ///
 /// Provides access to currency conversion with three-tier caching
+///
+/// **CRITICAL FIX (2026-05-02)**: Watch authStateProvider to avoid race condition
+/// Previous implementation used FirebaseAuth.instance.currentUser?.uid which
+/// caused crashes during onboarding when auth state wasn't fully initialized yet.
+/// Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff (368 events, 124 users)
 @riverpod
 CurrencyConversionService currencyConversionService(Ref ref) {
   final firestore = FirebaseFirestore.instance;
-  final userId = FirebaseAuth.instance.currentUser?.uid;
+
+  // BUG FIX: Watch auth state instead of checking currentUser synchronously
+  // This ensures we react to auth state changes and avoid race conditions
+  final authState = ref.watch(authStateProvider);
+  final userId = authState.value?.id;
 
   if (userId == null) {
     throw Exception('User must be authenticated to use currency conversion');
