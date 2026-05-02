@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Critical startup crash - Disable AdMob auto-initialization + Update golden tests (#365)
+
+## [3.58.2] - 2026-05-01
+
+### 🐛 Bug Fixes
+
 - Resolve 3 critical Crashlytics issues and localization errors
 
 ## [3.58.0] - 2026-05-01
