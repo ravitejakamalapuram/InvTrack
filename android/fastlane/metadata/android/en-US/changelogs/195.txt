@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Currency conversion auth crash - Watch authStateProvider (#366)

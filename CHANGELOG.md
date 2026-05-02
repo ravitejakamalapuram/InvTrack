@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Add AdMob Application ID to prevent Android startup crash
+
+## [3.58.4] - 2026-05-02
+
+### 🐛 Bug Fixes
+
 - Currency conversion auth crash - Watch authStateProvider (#366)
 
 ## [3.58.3] - 2026-05-02
