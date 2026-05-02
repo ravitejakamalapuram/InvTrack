@@ -54,19 +54,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google Mobile Ads App ID -->
-        <!-- BUG FIX (2026-05-01): Commented out to prevent Crashlytics issue #9f42a227738541f847425f153a08385a -->
-        <!-- AdMob is not actively used yet - AdService exists but is not initialized in main.dart -->
+        <!-- Google Mobile Ads - DISABLED -->
+        <!-- BUG FIX (2026-05-02): Disable MobileAdsInitProvider to prevent startup crash -->
+        <!-- Issue: google_mobile_ads auto-initializes via ContentProvider, crashes without App ID -->
+        <!-- Solution: Remove the provider to prevent auto-initialization -->
         <!-- When ready to enable ads: -->
         <!-- 1. Get real AdMob App ID from https://admob.google.com/home/ -->
-        <!-- 2. Replace test ID: ca-app-pub-3940256099942544~3347511713 -->
-        <!-- 3. Initialize AdService in main.dart after first frame -->
-        <!-- 4. Uncomment the meta-data below -->
-        <!--
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
-        -->
+        <!-- 2. Add <meta-data> with com.google.android.gms.ads.APPLICATION_ID -->
+        <!-- 3. Remove the provider removal below -->
+        <!-- 4. Initialize AdService in main.dart after first frame -->
+        <provider
+            android:name="com.google.android.gms.ads.MobileAdsInitProvider"
+            android:authorities="${applicationId}.mobileadsinitprovider"
+            tools:node="remove" />
         <!-- FileProvider for share_plus file sharing -->
         <provider
             android:name="androidx.core.content.FileProvider"
