@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
@@ -79,6 +80,18 @@ class PortfolioHealth extends _$PortfolioHealth {
       allCashFlows: cashFlows,
       goalProgress: goalProgress,
     );
+
+    // Log analytics - score calculated (non-blocking, privacy-safe)
+    try {
+      final analytics = AnalyticsService();
+      await analytics.logHealthScoreCalculated(
+        scoreTier: getScoreTier(score.overallScore),
+        investmentCount: investments.length,
+        hasGoals: goalProgress.isNotEmpty,
+      );
+    } catch (e) {
+      // Ignore - analytics failures shouldn't break score calculation
+    }
 
     // Update auto-save service with latest score (non-blocking)
     try {

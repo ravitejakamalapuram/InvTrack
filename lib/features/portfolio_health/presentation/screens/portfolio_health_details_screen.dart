@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -26,11 +27,21 @@ import 'package:inv_tracker/features/portfolio_health/presentation/widgets/score
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Portfolio Health Details Screen
-class PortfolioHealthDetailsScreen extends ConsumerWidget {
+class PortfolioHealthDetailsScreen extends ConsumerStatefulWidget {
   const PortfolioHealthDetailsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PortfolioHealthDetailsScreen> createState() =>
+      _PortfolioHealthDetailsScreenState();
+}
+
+class _PortfolioHealthDetailsScreenState
+    extends ConsumerState<PortfolioHealthDetailsScreen> {
+  bool _analyticsLogged = false;
+  final _analytics = AnalyticsService();
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     // Check if feature is enabled - if not, redirect to overview
@@ -48,6 +59,12 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final scoreAsync = ref.watch(portfolioHealthProvider);
+
+    // Log analytics when score loads successfully (only once per screen instance)
+    if (!_analyticsLogged && scoreAsync.hasValue && scoreAsync.value != null) {
+      _analyticsLogged = true;
+      _logDetailsOpened(scoreAsync.value!);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -479,6 +496,12 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
 
     final l10n = AppLocalizations.of(context);
 
+    // Log analytics - share button tapped
+    await _analytics.logHealthScoreShared(
+      scoreTier: getScoreTier(score.overallScore),
+      shareMethod: 'clipboard',
+    );
+
     // TODO(@ravitejakamalapuram, 2026-04-06, #322): Generate score card image and share
     // For now, share text using localized template
     final text = l10n.shareScoreText(
@@ -501,6 +524,14 @@ class PortfolioHealthDetailsScreen extends ConsumerWidget {
         content: Text(AppLocalizations.of(context).scoreCopiedToClipboard),
         duration: const Duration(seconds: 2),
       ),
+    );
+  }
+
+  /// Log analytics when details screen is opened
+  Future<void> _logDetailsOpened(PortfolioHealthScore score) async {
+    await _analytics.logPortfolioHealthDetailsOpened(
+      scoreTier: getScoreTier(score.overallScore),
+      scoreRange: getScoreRange(score.overallScore),
     );
   }
 }

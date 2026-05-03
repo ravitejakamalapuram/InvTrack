@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -150,9 +151,20 @@ class PortfolioHealthDashboardCard extends ConsumerWidget {
     final color = _getTierColor(tier, isDark);
 
     return GlassCard(
-      onTap: () {
+      onTap: () async {
         HapticFeedback.lightImpact();
-        context.push('/portfolio-health');
+
+        // Log analytics - dashboard card viewed (non-blocking)
+        final analytics = AnalyticsService();
+        analytics.logPortfolioHealthViewed(
+          scoreTier: getScoreTier(score.overallScore),
+          scoreRange: getScoreRange(score.overallScore),
+        );
+
+        // Navigate immediately without waiting for analytics
+        if (context.mounted) {
+          context.push('/portfolio-health');
+        }
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

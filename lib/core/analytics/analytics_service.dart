@@ -184,6 +184,13 @@ class AnalyticsEvents {
   static const String reportExported = 'report_exported';
   static const String historicalReportAccessed = 'historical_report_accessed';
   static const String reportMetricTooltipViewed = 'report_metric_tooltip_viewed';
+
+  // Portfolio Health Score events
+  static const String portfolioHealthViewed = 'portfolio_health_viewed';
+  static const String portfolioHealthDetailsOpened = 'portfolio_health_details_opened';
+  static const String healthScoreCalculated = 'health_score_calculated';
+  static const String healthComponentExpanded = 'health_component_expanded';
+  static const String healthScoreShared = 'health_score_shared';
 }
 
 /// Analytics service that wraps Firebase Analytics.
@@ -971,6 +978,170 @@ class AnalyticsService {
     );
   }
 
+  // ============ Portfolio Health Score Events ============
+
+  /// Log portfolio health viewed (dashboard card)
+  ///
+  /// Tracks when users view the Portfolio Health dashboard card.
+  ///
+  /// ## Parameters
+  ///
+  /// - [scoreTier]: Score tier ("excellent", "good", "fair", "poor", "critical")
+  /// - [scoreRange]: Score range bucket ("80_100", "60_80", "40_60", "20_40", "0_20")
+  ///
+  /// ## Privacy
+  ///
+  /// **NEVER log exact scores** - always use tiers and ranges per Rule 9.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// // For score = 72 (Good tier)
+  /// await analyticsService.logPortfolioHealthViewed(
+  ///   scoreTier: 'good',
+  ///   scoreRange: '60_80',
+  /// );
+  /// ```
+  Future<void> logPortfolioHealthViewed({
+    required String scoreTier,
+    required String scoreRange,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.portfolioHealthViewed,
+      parameters: {
+        'score_tier': scoreTier,
+        'score_range': scoreRange,
+      },
+    );
+  }
+
+  /// Log portfolio health details opened
+  ///
+  /// Tracks when users navigate to the full Portfolio Health details screen.
+  ///
+  /// ## Parameters
+  ///
+  /// - [scoreTier]: Score tier ("excellent", "good", "fair", "poor", "critical")
+  /// - [scoreRange]: Score range bucket ("80_100", "60_80", "40_60", "20_40", "0_20")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logPortfolioHealthDetailsOpened(
+  ///   scoreTier: 'good',
+  ///   scoreRange: '60_80',
+  /// );
+  /// ```
+  Future<void> logPortfolioHealthDetailsOpened({
+    required String scoreTier,
+    required String scoreRange,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.portfolioHealthDetailsOpened,
+      parameters: {
+        'score_tier': scoreTier,
+        'score_range': scoreRange,
+      },
+    );
+  }
+
+  /// Log health score calculated
+  ///
+  /// Tracks when a health score is successfully calculated.
+  /// Helps identify calculation patterns and tier distribution.
+  ///
+  /// ## Parameters
+  ///
+  /// - [scoreTier]: Score tier ("excellent", "good", "fair", "poor", "critical")
+  /// - [investmentCount]: Number of investments included in calculation
+  /// - [hasGoals]: Whether user has active goals
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logHealthScoreCalculated(
+  ///   scoreTier: 'good',
+  ///   investmentCount: 8,
+  ///   hasGoals: true,
+  /// );
+  /// ```
+  Future<void> logHealthScoreCalculated({
+    required String scoreTier,
+    required int investmentCount,
+    required bool hasGoals,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.healthScoreCalculated,
+      parameters: {
+        'score_tier': scoreTier,
+        'investment_count': investmentCount,
+        'has_goals': hasGoals ? 1 : 0,
+      },
+    );
+  }
+
+  /// Log health component expanded
+  ///
+  /// Tracks which health components users drill into for details.
+  /// Identifies which metrics are most interesting to users.
+  ///
+  /// ## Parameters
+  ///
+  /// - [componentName]: Component name ("returns", "diversification", "liquidity", "goals", "actions")
+  /// - [componentScore]: Component score range ("80_100", "60_80", "40_60", "20_40", "0_20")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logHealthComponentExpanded(
+  ///   componentName: 'diversification',
+  ///   componentScore: '40_60',
+  /// );
+  /// ```
+  Future<void> logHealthComponentExpanded({
+    required String componentName,
+    required String componentScore,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.healthComponentExpanded,
+      parameters: {
+        'component_name': componentName,
+        'component_score': componentScore,
+      },
+    );
+  }
+
+  /// Log health score shared
+  ///
+  /// Tracks when users share their portfolio health score.
+  /// Indicates viral potential and user satisfaction with feature.
+  ///
+  /// ## Parameters
+  ///
+  /// - [scoreTier]: Score tier being shared
+  /// - [shareMethod]: Share method ("clipboard", "social", "other")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logHealthScoreShared(
+  ///   scoreTier: 'excellent',
+  ///   shareMethod: 'clipboard',
+  /// );
+  /// ```
+  Future<void> logHealthScoreShared({
+    required String scoreTier,
+    required String shareMethod,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.healthScoreShared,
+      parameters: {
+        'score_tier': scoreTier,
+        'share_method': shareMethod,
+      },
+    );
+  }
+
   // ============ Helper Methods ============
 
   /// Get rate range bucket for analytics (avoid logging exact rates)
@@ -981,4 +1152,49 @@ class AnalyticsService {
     if (rate < 15) return '12_to_15';
     return 'over_15';
   }
+}
+
+// ============ Public Helper Functions ============
+
+/// Get score range bucket for analytics (avoid logging exact scores)
+///
+/// Converts exact scores (0-100) into privacy-safe range buckets.
+///
+/// **Privacy Compliance:**
+/// - ✅ Complies with Rule 9 (Analytics Privacy)
+/// - ✅ Never exposes exact health scores
+/// - ✅ Provides sufficient granularity for insights
+///
+/// ## Range Buckets
+///
+/// - `80_100`: Excellent (80-100)
+/// - `60_80`: Good (60-79)
+/// - `40_60`: Fair (40-59)
+/// - `20_40`: Poor (20-39)
+/// - `0_20`: Critical (0-19)
+String getScoreRange(double score) {
+  if (score >= 80) return '80_100';
+  if (score >= 60) return '60_80';
+  if (score >= 40) return '40_60';
+  if (score >= 20) return '20_40';
+  return '0_20';
+}
+
+/// Get score tier name for analytics
+///
+/// Maps exact score to user-friendly tier name.
+///
+/// ## Tier Mapping
+///
+/// - `excellent`: 80-100
+/// - `good`: 60-79
+/// - `fair`: 40-59
+/// - `poor`: 20-39
+/// - `critical`: 0-19
+String getScoreTier(double score) {
+  if (score >= 80) return 'excellent';
+  if (score >= 60) return 'good';
+  if (score >= 40) return 'fair';
+  if (score >= 20) return 'poor';
+  return 'critical';
 }
