@@ -48,10 +48,12 @@ class GoalCard extends ConsumerWidget {
         data: (progress) {
           final progressText = isPrivacyMode
               ? 'Hidden amount'
-              : progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
+              : progress?.getProgressMessage(currencySymbol, locale) ??
+                    'Calculating...';
           final statusName = progress?.status.displayName ?? 'Not started';
           final statusMessage = progress?.statusMessage ?? '';
-          final semanticLabel = '${goal.name}, Progress: $progressText, Status: $statusName. $statusMessage';
+          final semanticLabel =
+              '${goal.name}, Progress: $progressText, Status: $statusName. $statusMessage';
 
           return GlassCard(
             semanticLabel: semanticLabel,
@@ -120,85 +122,85 @@ class GoalCard extends ConsumerWidget {
           );
         },
         loading: () => GlassCard(
-            semanticLabel: '${goal.name}, Loading progress',
-            selected: isSelected,
-            onTap: isSelectionMode
-                ? () => onCheckboxChanged?.call(!isSelected)
-                : onTap,
-            onLongPress: onLongPress != null
-                ? () {
-                    HapticFeedback.mediumImpact();
-                    onLongPress!();
-                  }
-                : null,
-            padding: EdgeInsets.zero,
-            child: SizedBox(
-              height: 120,
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: isDark ? Colors.white54 : AppColors.neutral400Light,
-                ),
+          semanticLabel: '${goal.name}, Loading progress',
+          selected: isSelected,
+          onTap: isSelectionMode
+              ? () => onCheckboxChanged?.call(!isSelected)
+              : onTap,
+          onLongPress: onLongPress != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onLongPress!();
+                }
+              : null,
+          padding: EdgeInsets.zero,
+          child: SizedBox(
+            height: 120,
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDark ? Colors.white54 : AppColors.neutral400Light,
               ),
             ),
+          ),
         ),
         error: (error, _) => GlassCard(
-            semanticLabel: '${goal.name}, Error loading progress',
-            selected: isSelected,
-            onTap: isSelectionMode
-                ? () => onCheckboxChanged?.call(!isSelected)
-                : onTap,
-            onLongPress: onLongPress != null
-                ? () {
-                    HapticFeedback.mediumImpact();
-                    onLongPress!();
-                  }
-                : null,
-            padding: EdgeInsets.zero,
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  if (isSelectionMode) ...[
-                    Checkbox(
-                      value: isSelected,
-                      onChanged: onCheckboxChanged,
-                      activeColor: goal.color,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.xs),
-                  ],
-                  _buildGoalIcon(goal),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          goal.name,
-                          style: AppTypography.h4.copyWith(
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.neutral900Light,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          'Error loading progress',
-                          style: AppTypography.small.copyWith(
-                            color: AppColors.errorLight,
-                          ),
-                        ),
-                      ],
+          semanticLabel: '${goal.name}, Error loading progress',
+          selected: isSelected,
+          onTap: isSelectionMode
+              ? () => onCheckboxChanged?.call(!isSelected)
+              : onTap,
+          onLongPress: onLongPress != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onLongPress!();
+                }
+              : null,
+          padding: EdgeInsets.zero,
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                if (isSelectionMode) ...[
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: onCheckboxChanged,
+                    activeColor: goal.color,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
+                  SizedBox(width: AppSpacing.xs),
                 ],
-              ),
+                _buildGoalIcon(goal),
+                SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        goal.name,
+                        style: AppTypography.h4.copyWith(
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        'Error loading progress',
+                        style: AppTypography.small.copyWith(
+                          color: AppColors.errorLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
         ),
       ),
     );
