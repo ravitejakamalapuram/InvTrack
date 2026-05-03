@@ -45,17 +45,26 @@ class GoalCard extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: progressAsync.when(
-        data: (progress) => GestureDetector(
-          onLongPress: onLongPress != null
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  onLongPress!();
-                }
-              : null,
-          child: GlassCard(
+        data: (progress) {
+          final progressText = isPrivacyMode
+              ? 'Hidden amount'
+              : progress?.getProgressMessage(currencySymbol, locale) ?? 'Calculating...';
+          final statusName = progress?.status.displayName ?? 'Not started';
+          final statusMessage = progress?.statusMessage ?? '';
+          final semanticLabel = '${goal.name}, Progress: $progressText, Status: $statusName. $statusMessage';
+
+          return GlassCard(
+            semanticLabel: semanticLabel,
+            selected: isSelected,
             onTap: isSelectionMode
                 ? () => onCheckboxChanged?.call(!isSelected)
                 : onTap,
+            onLongPress: onLongPress != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  }
+                : null,
             padding: EdgeInsets.zero,
             child: Column(
               children: [
@@ -108,19 +117,20 @@ class GoalCard extends ConsumerWidget {
                 _buildBottomStrip(context, isDark, progress),
               ],
             ),
-          ),
-        ),
-        loading: () => GestureDetector(
-          onLongPress: onLongPress != null
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  onLongPress!();
-                }
-              : null,
-          child: GlassCard(
+          );
+        },
+        loading: () => GlassCard(
+            semanticLabel: '${goal.name}, Loading progress',
+            selected: isSelected,
             onTap: isSelectionMode
                 ? () => onCheckboxChanged?.call(!isSelected)
                 : onTap,
+            onLongPress: onLongPress != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  }
+                : null,
             padding: EdgeInsets.zero,
             child: SizedBox(
               height: 120,
@@ -131,19 +141,19 @@ class GoalCard extends ConsumerWidget {
                 ),
               ),
             ),
-          ),
         ),
-        error: (error, _) => GestureDetector(
-          onLongPress: onLongPress != null
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  onLongPress!();
-                }
-              : null,
-          child: GlassCard(
+        error: (error, _) => GlassCard(
+            semanticLabel: '${goal.name}, Error loading progress',
+            selected: isSelected,
             onTap: isSelectionMode
                 ? () => onCheckboxChanged?.call(!isSelected)
                 : onTap,
+            onLongPress: onLongPress != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  }
+                : null,
             padding: EdgeInsets.zero,
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.md),
@@ -189,7 +199,6 @@ class GoalCard extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
         ),
       ),
     );
