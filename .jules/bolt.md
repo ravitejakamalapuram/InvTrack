@@ -72,3 +72,8 @@
 ## 2024-05-25 - Single Pass Multiple Metric Extraction in Merge Dialog
 **Learning:** When calculating `investmentTypes` to pass to a dialog, combining multiple iterations over `toMerge` (like finding the most common type via `.fold()`/`reduce()` or counting and making `.map().toSet().toList()`) causes multiple list and closure allocations.
 **Action:** Replace multiple sequential operations (like `.where().toList()` and `.map().toSet().toList()`) with a single `O(N)` pass `for` loop to build the required lists/sets simultaneously and eliminate overhead.
+
+## 2024-05-25 - Replace multiple .where() and .fold() with single-pass standard loops
+
+**Learning:** When extracting multiple metrics (e.g., counting different statuses or summing different values) from the same collection, using multiple sequential `.where()` and `.fold()` calls causes the application to iterate over the entire collection multiple times unnecessarily, creating intermediate closures and negatively impacting performance. Further, having date boundary calculations (e.g. `.subtract(const Duration(...))`) inside the callback evaluates them on every single item.
+**Action:** Replace sequential aggregations with a single `O(N)` `for` loop that calculates all necessary metrics simultaneously. Hoist invariant bounds calculations outside the loop. This eliminates redundant iterations and allocations, vastly improving execution time for large collections.
