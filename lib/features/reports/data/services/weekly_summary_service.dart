@@ -19,13 +19,11 @@ final weeklySummaryServiceProvider = Provider<WeeklySummaryService>((ref) {
   );
 });
 
-/// Weekly summary generation service
 class WeeklySummaryService {
   final ReportCacheService cacheService;
 
   WeeklySummaryService({required this.cacheService});
 
-  /// Generate weekly summary for the given period
   Future<WeeklySummary> generateSummary({
     required DateTime periodStart,
     required DateTime periodEnd,
@@ -33,7 +31,6 @@ class WeeklySummaryService {
     required List<InvestmentEntity> allInvestments,
     required Map<String, double> xirrMap,
   }) async {
-    // Check cache first
     final cached = cacheService.get<WeeklySummary>(
       ReportType.weeklySummary,
       periodStart,
@@ -46,11 +43,9 @@ class WeeklySummaryService {
       metadata: {'start': periodStart.toString(), 'end': periodEnd.toString()},
     );
 
-    // Filter cashflows for this week
     final startBound = periodStart.subtract(const Duration(days: 1));
     final endBound = periodEnd.add(const Duration(days: 1));
 
-    // Optimization: Single pass loop for week cashflows and multiple metrics replacing sequential .where().toList() calls
     double invested = 0;
     double returned = 0;
     double income = 0;
@@ -70,10 +65,8 @@ class WeeklySummaryService {
       }
     }
 
-    // Calculate totals
     final netPosition = (returned + income) - invested;
 
-    // Optimization: Single pass loop for investments and multiple metrics replacing sequential .where().toList() calls
     final newInvestments = <InvestmentEntity>[];
     final upcomingMaturities = <InvestmentEntity>[];
     InvestmentEntity? topPerformer;
@@ -83,21 +76,18 @@ class WeeklySummaryService {
     final nextWeekEndBound = nextWeekEnd.add(const Duration(days: 1));
 
     for (final inv in allInvestments) {
-      // Find new investments created this week
       if (inv.createdAt.isAfter(startBound) &&
           inv.createdAt.isBefore(endBound)) {
         newInvestments.add(inv);
       }
 
       if (inv.isOpen) {
-        // Find upcoming maturities (next 7 days)
         if (inv.maturityDate != null &&
             inv.maturityDate!.isAfter(periodEnd) &&
             inv.maturityDate!.isBefore(nextWeekEndBound)) {
           upcomingMaturities.add(inv);
         }
 
-        // Find top performer by XIRR
         final xirr = xirrMap[inv.id];
         if (xirr != null && (topXirr == null || xirr > topXirr)) {
           topXirr = xirr;
@@ -106,20 +96,17 @@ class WeeklySummaryService {
       }
     }
 
-    // Generate daily cashflows for chart
     final dailyCashFlows = _generateDailyCashFlows(
       periodStart,
       periodEnd,
       weekCashFlows,
     );
 
-    // Calculate previous week's net position (optional)
     final prevWeekStart = periodStart.subtract(const Duration(days: 7));
     final prevWeekEnd = periodStart.subtract(const Duration(days: 1));
     final prevWeekStartBound = prevWeekStart.subtract(const Duration(days: 1));
     final prevWeekEndBound = prevWeekEnd.add(const Duration(days: 1));
 
-    // Optimization: Replace .where().toList() with standard loop and calculate net position simultaneously
     double prevInvested = 0;
     double prevReturned = 0;
     double prevIncome = 0;
@@ -154,13 +141,11 @@ class WeeklySummaryService {
       previousWeekNet: prevWeekNet,
     );
 
-    // Cache the result
     cacheService.set(ReportType.weeklySummary, periodStart, periodEnd, summary);
 
     return summary;
   }
 
-  /// Generate daily cashflow breakdown for chart
   List<DailyCashFlow> _generateDailyCashFlows(
     DateTime start,
     DateTime end,
@@ -172,7 +157,6 @@ class WeeklySummaryService {
     final endBound = end.add(const Duration(days: 1));
 
     while (current.isBefore(endBound)) {
-      // Optimization: Replace multiple sequential .where() and .fold() calls with standard loop
       double outflows = 0;
       double inflows = 0;
 
@@ -191,7 +175,7 @@ class WeeklySummaryService {
 
       dailyFlows.add(
         DailyCashFlow(
-          dayOfWeek: current.weekday - 1, // 0=Monday
+          dayOfWeek: current.weekday - 1,
           date: current,
           outflows: outflows,
           inflows: inflows,
