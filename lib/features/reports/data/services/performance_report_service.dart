@@ -57,7 +57,8 @@ class PerformanceReportService {
       ..sort((a, b) => b.xirr.compareTo(a.xirr));
 
     final topPerformers = sortedByXIRR.take(5).toList();
-    final bottomPerformers = sortedByXIRR.reversed.take(5).toList().reversed.toList();
+    // Fix: Remove second .reversed - we want worst performers (lowest XIRR)
+    final bottomPerformers = sortedByXIRR.reversed.take(5).toList();
 
     // Calculate recent milestones (last 30 days)
     final recentMilestones = _calculateMilestones(performances);
