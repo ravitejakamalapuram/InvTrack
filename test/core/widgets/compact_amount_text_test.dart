@@ -97,4 +97,87 @@ void main() {
       semanticsHandle.dispose();
     });
   });
+
+  group('CompactAmountText Copy Button Tooltip', () {
+    testWidgets(
+      'Snackbar copy button should have tooltip "Copy amount"',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          const CompactAmountText(amount: 105000000, compactText: '₹1.05Cr'),
+          privacyModeEnabled: false,
+        );
+
+        // Long press to reveal the full-amount snackbar
+        await tester.longPress(find.byType(CompactAmountText));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SnackBar), findsOneWidget);
+
+        // The copy IconButton must carry the updated tooltip 'Copy amount'
+        expect(find.byTooltip('Copy amount'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Snackbar copy button should NOT have the old tooltip "Copy"',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          const CompactAmountText(amount: 105000000, compactText: '₹1.05Cr'),
+          privacyModeEnabled: false,
+        );
+
+        await tester.longPress(find.byType(CompactAmountText));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SnackBar), findsOneWidget);
+
+        // Regression: the previous tooltip 'Copy' must no longer exist
+        expect(find.byTooltip('Copy'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Copy button with "Copy amount" tooltip is tappable and shows copied snackbar',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          const CompactAmountText(amount: 150000, compactText: '₹1.5L'),
+          privacyModeEnabled: false,
+        );
+
+        // Show the full-amount snackbar via long press
+        await tester.longPress(find.byType(CompactAmountText));
+        await tester.pumpAndSettle();
+
+        expect(find.byTooltip('Copy amount'), findsOneWidget);
+
+        // Tap the copy button
+        await tester.tap(find.byTooltip('Copy amount'));
+        await tester.pumpAndSettle();
+
+        // A confirmation snackbar should appear after copying
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Copy button tooltip is "Copy amount" regardless of amount value',
+      (tester) async {
+        // Boundary / negative case: zero amount
+        await pumpWidget(
+          tester,
+          const CompactAmountText(amount: 0, compactText: '₹0'),
+          privacyModeEnabled: false,
+        );
+
+        await tester.longPress(find.byType(CompactAmountText));
+        await tester.pumpAndSettle();
+
+        expect(find.byTooltip('Copy amount'), findsOneWidget);
+        expect(find.byTooltip('Copy'), findsNothing);
+      },
+    );
+  });
 }
