@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- Update REPORTS_FEATURE_TODO - Privacy mode export already implemented
+
+## [3.58.6] - 2026-05-02
+
 ### 🐛 Bug Fixes
 
 - Complete localization for Reports feature
