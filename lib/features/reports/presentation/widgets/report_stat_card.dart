@@ -119,11 +119,13 @@ class ReportStatCard extends ConsumerWidget {
               // Currency badge (only if currency differs from base)
               if (currencyCode != null && currencyCode != baseCurrency) ...[
                 const SizedBox(width: 8),
-                CurrencyBadge(
-                  currencyCode: currencyCode!,
-                  exchangeRate: exchangeRate,
-                  targetCurrency: baseCurrency,
-                  compact: exchangeRate == null,
+                PrivacyMask(
+                  child: CurrencyBadge(
+                    currencyCode: currencyCode!,
+                    exchangeRate: exchangeRate,
+                    targetCurrency: baseCurrency,
+                    compact: exchangeRate == null,
+                  ),
                 ),
               ],
             ],
