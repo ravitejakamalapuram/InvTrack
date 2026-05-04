@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Prevent critical Crashlytics crashes with defensive coding patterns (#374)
+
 ## [3.58.7] - 2026-05-04
 
 ### 📚 Documentation
