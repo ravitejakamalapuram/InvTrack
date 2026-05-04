@@ -43,10 +43,7 @@ class WeeklySummaryService {
 
     LoggerService.info(
       'Generating weekly summary',
-      metadata: {
-        'start': periodStart.toString(),
-        'end': periodEnd.toString(),
-      },
+      metadata: {'start': periodStart.toString(), 'end': periodEnd.toString()},
     );
 
     // Filter cashflows for this week
@@ -56,23 +53,28 @@ class WeeklySummaryService {
     }).toList();
 
     // Calculate totals
-    final invested = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.invest)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    final returned = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.returnFlow)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    final income = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.income)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
+    // Optimization: Single pass loop over weekCashFlows replaces multiple sequential
+    // .where().fold() calls to eliminate redundant O(N) iterations and intermediate allocations.
+    double invested = 0;
+    double returned = 0;
+    double income = 0;
+    for (final cf in weekCashFlows) {
+      if (cf.type == CashFlowType.invest) {
+        invested += cf.amount;
+      } else if (cf.type == CashFlowType.returnFlow) {
+        returned += cf.amount;
+      } else if (cf.type == CashFlowType.income) {
+        income += cf.amount;
+      }
+    }
 
     final netPosition = (returned + income) - invested;
 
     // Find new investments created this week
     final newInvestments = allInvestments.where((inv) {
-      return inv.createdAt.isAfter(periodStart.subtract(const Duration(days: 1))) &&
+      return inv.createdAt.isAfter(
+            periodStart.subtract(const Duration(days: 1)),
+          ) &&
           inv.createdAt.isBefore(periodEnd.add(const Duration(days: 1)));
     }).toList();
 
@@ -149,20 +151,27 @@ class WeeklySummaryService {
             cf.date.day == current.day;
       }).toList();
 
-      final outflows = dayFlows
-          .where((cf) => cf.type == CashFlowType.invest || cf.type == CashFlowType.fee)
-          .fold<double>(0, (sum, cf) => sum + cf.amount);
+      // Optimization: Single pass loop calculates outflows and inflows simultaneously,
+      // avoiding multiple passes over the dayFlows list.
+      double outflows = 0;
+      double inflows = 0;
+      for (final cf in dayFlows) {
+        if (cf.type == CashFlowType.invest || cf.type == CashFlowType.fee) {
+          outflows += cf.amount;
+        } else if (cf.type == CashFlowType.returnFlow ||
+            cf.type == CashFlowType.income) {
+          inflows += cf.amount;
+        }
+      }
 
-      final inflows = dayFlows
-          .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
-          .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-      dailyFlows.add(DailyCashFlow(
-        dayOfWeek: current.weekday - 1, // 0=Monday
-        date: current,
-        outflows: outflows,
-        inflows: inflows,
-      ));
+      dailyFlows.add(
+        DailyCashFlow(
+          dayOfWeek: current.weekday - 1, // 0=Monday
+          date: current,
+          outflows: outflows,
+          inflows: inflows,
+        ),
+      );
 
       current = current.add(const Duration(days: 1));
     }
@@ -172,13 +181,18 @@ class WeeklySummaryService {
 
   /// Calculate net position from cashflows
   double _calculateNetPosition(List<CashFlowEntity> cashFlows) {
-    final invested = cashFlows
-        .where((cf) => cf.type == CashFlowType.invest)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    final returned = cashFlows
-        .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
+    // Optimization: Replaced sequential aggregations with a single pass loop
+    // to calculate invested and returned simultaneously.
+    double invested = 0;
+    double returned = 0;
+    for (final cf in cashFlows) {
+      if (cf.type == CashFlowType.invest) {
+        invested += cf.amount;
+      } else if (cf.type == CashFlowType.returnFlow ||
+          cf.type == CashFlowType.income) {
+        returned += cf.amount;
+      }
+    }
 
     return returned - invested;
   }

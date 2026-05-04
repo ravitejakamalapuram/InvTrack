@@ -72,3 +72,6 @@
 ## 2024-05-25 - Single Pass Multiple Metric Extraction in Merge Dialog
 **Learning:** When calculating `investmentTypes` to pass to a dialog, combining multiple iterations over `toMerge` (like finding the most common type via `.fold()`/`reduce()` or counting and making `.map().toSet().toList()`) causes multiple list and closure allocations.
 **Action:** Replace multiple sequential operations (like `.where().toList()` and `.map().toSet().toList()`) with a single `O(N)` pass `for` loop to build the required lists/sets simultaneously and eliminate overhead.
+## 2024-05-25 - Single Pass Multiple Metric Extraction in Weekly Summary
+**Learning:** When generating a weekly summary, combining multiple `.where().fold()` operations on `weekCashFlows` or `dayFlows` to sum different types of cash flows (e.g. invested, returns, income) causes unnecessary multiple iterations over the list and allocation of intermediate closures.
+**Action:** Replace multiple sequential `.where().fold()` aggregations with a single `O(N)` pass `for` loop over the collection to compute all metrics simultaneously and improve performance.
