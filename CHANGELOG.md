@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.58.7] - 2026-05-04
 
 ### 📚 Documentation
 
