@@ -1,13 +1,15 @@
-/// Unit tests for Health Score Repository
-///
-/// Tests Firestore operations:
-/// - Save snapshot (with auto-generated ID)
-/// - Get latest snapshot
-/// - Get historical snapshots
-/// - Watch historical snapshots (stream)
-/// - Delete all snapshots (paginated)
-/// - Authentication requirement
-/// - Error handling and exceptions
+// Unit tests for Health Score Repository
+//
+// Tests Firestore operations:
+// - Save snapshot (with auto-generated ID)
+// - Get latest snapshot
+// - Get historical snapshots
+// - Watch historical snapshots (stream)
+// - Delete all snapshots (paginated)
+// - Authentication requirement
+// - Error handling and exceptions
+
+// ignore_for_file: subtype_of_sealed_class
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,7 +18,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
-import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 
@@ -273,8 +274,8 @@ void main() {
         when(() => mockDoc1.reference).thenReturn(mockDocRef1);
         when(() => mockDoc2.reference).thenReturn(mockDocRef2);
         when(() => mockFirestore.batch()).thenReturn(mockBatch);
-        when(() => mockBatch.delete(any())).thenReturn(mockBatch);
-        when(() => mockBatch.commit()).thenAnswer((_) async => Future.value());
+        when(() => mockBatch.delete(any())).thenReturn(null);
+        when(() => mockBatch.commit()).thenAnswer((_) async {});
 
         await repository.deleteAllSnapshots();
 

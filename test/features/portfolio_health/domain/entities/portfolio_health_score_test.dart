@@ -1,11 +1,11 @@
-/// Unit tests for Portfolio Health Score entities
-///
-/// Tests ComponentScore and PortfolioHealthScore:
-/// - Equality and hashCode
-/// - Weighted score calculation
-/// - Top suggestions algorithm
-/// - Score tier mapping
-/// - Validation and edge cases
+// Unit tests for Portfolio Health Score entities
+//
+// Tests ComponentScore and PortfolioHealthScore:
+// - Equality and hashCode
+// - Weighted score calculation
+// - Top suggestions algorithm
+// - Score tier mapping
+// - Validation and edge cases
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 

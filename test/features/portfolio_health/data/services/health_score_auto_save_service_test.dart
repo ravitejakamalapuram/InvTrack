@@ -1,15 +1,14 @@
-/// Unit tests for Health Score Auto-Save Service
-///
-/// Tests timer-based auto-save logic:
-/// - Start/stop timer lifecycle
-/// - Score update tracking
-/// - Debounced save logic (5-minute intervals)
-/// - Force save functionality
-/// - Save conditions (score change >1pt OR >24h old)
-/// - Concurrent save prevention
+// Unit tests for Health Score Auto-Save Service
+//
+// Tests timer-based auto-save logic:
+// - Start/stop timer lifecycle
+// - Score update tracking
+// - Debounced save logic (5-minute intervals)
+// - Force save functionality
+// - Save conditions (score change >1pt OR >24h old)
+// - Concurrent save prevention
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';

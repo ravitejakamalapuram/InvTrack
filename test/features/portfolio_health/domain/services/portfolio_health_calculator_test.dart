@@ -1,17 +1,14 @@
-/// Unit tests for Portfolio Health Calculator
-///
-/// Tests the core calculation logic for all 5 components:
-/// - Returns Performance (XIRR vs inflation)
-/// - Diversification (Herfindahl index)
-/// - Liquidity (% maturing in 90 days)
-/// - Goal Alignment (% goals on track)
-/// - Action Readiness (overdue renewals, stale investments)
+// Unit tests for Portfolio Health Calculator
+//
+// Tests the core calculation logic for all 5 components:
+// - Returns Performance (XIRR vs inflation)
+// - Diversification (Herfindahl index)
+// - Liquidity (% maturing in 90 days)
+// - Goal Alignment (% goals on track)
+// - Action Readiness (overdue renewals, stale investments)
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
-import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
 
 void main() {
