@@ -591,6 +591,24 @@ final multiCurrencyGoalProgressProvider =
       );
 
       final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+      // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+      if (batchConverter == null) {
+        return GoalProgress(
+          goal: goal,
+          currentAmount: 0,
+          progressPercent: 0,
+          monthlyVelocity: 0,
+          monthlyIncome: 0,
+          projectedCompletionDate: null,
+          status: GoalStatus.notStarted,
+          currentMilestone: GoalMilestone.start,
+          achievedMilestones: const [],
+          linkedInvestmentCount: 0,
+          calculatedAt: DateTime.now(),
+        );
+      }
+
       final baseCurrency = ref.watch(currencyCodeProvider);
 
       return GoalProgressCalculator.calculateMultiCurrency(
@@ -636,6 +654,24 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   );
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) {
+    return goals.map((g) => GoalProgress(
+      goal: g,
+      currentAmount: 0,
+      progressPercent: 0,
+      monthlyVelocity: 0,
+      monthlyIncome: 0,
+      projectedCompletionDate: null,
+      status: GoalStatus.notStarted,
+      currentMilestone: GoalMilestone.start,
+      achievedMilestones: const [],
+      linkedInvestmentCount: 0,
+      calculatedAt: DateTime.now(),
+    )).toList();
+  }
+
   final baseCurrency = ref.watch(currencyCodeProvider);
 
   // Calculate progress for each goal with currency conversion

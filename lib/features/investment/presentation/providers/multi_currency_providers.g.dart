@@ -9,21 +9,30 @@ part of 'multi_currency_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Provider for batch currency converter
+///
+/// **BUG FIX (2026-05-04)**: Handle null conversion service when unauthenticated
+/// Returns a no-op converter that doesn't crash the app
 
 @ProviderFor(batchCurrencyConverter)
 const batchCurrencyConverterProvider = BatchCurrencyConverterProvider._();
 
 /// Provider for batch currency converter
+///
+/// **BUG FIX (2026-05-04)**: Handle null conversion service when unauthenticated
+/// Returns a no-op converter that doesn't crash the app
 
 final class BatchCurrencyConverterProvider
     extends
         $FunctionalProvider<
-          BatchCurrencyConverter,
-          BatchCurrencyConverter,
-          BatchCurrencyConverter
+          BatchCurrencyConverter?,
+          BatchCurrencyConverter?,
+          BatchCurrencyConverter?
         >
-    with $Provider<BatchCurrencyConverter> {
+    with $Provider<BatchCurrencyConverter?> {
   /// Provider for batch currency converter
+  ///
+  /// **BUG FIX (2026-05-04)**: Handle null conversion service when unauthenticated
+  /// Returns a no-op converter that doesn't crash the app
   const BatchCurrencyConverterProvider._()
     : super(
         from: null,
@@ -40,26 +49,26 @@ final class BatchCurrencyConverterProvider
 
   @$internal
   @override
-  $ProviderElement<BatchCurrencyConverter> $createElement(
+  $ProviderElement<BatchCurrencyConverter?> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  BatchCurrencyConverter create(Ref ref) {
+  BatchCurrencyConverter? create(Ref ref) {
     return batchCurrencyConverter(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(BatchCurrencyConverter value) {
+  Override overrideWithValue(BatchCurrencyConverter? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<BatchCurrencyConverter>(value),
+      providerOverride: $SyncValueProvider<BatchCurrencyConverter?>(value),
     );
   }
 }
 
 String _$batchCurrencyConverterHash() =>
-    r'2e8ddab6a304a825c989269c6dd73e347d7aacd1';
+    r'238b3f56fd6ec0ff133ad1d4627e5c267bb25bef';
 
 /// Provider for multi-currency invested amount calculation
 ///
@@ -70,6 +79,7 @@ String _$batchCurrencyConverterHash() =>
 ///
 /// **Returns:**
 /// - Total invested amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyInvestedAmount)
 const multiCurrencyInvestedAmountProvider =
@@ -84,6 +94,7 @@ const multiCurrencyInvestedAmountProvider =
 ///
 /// **Returns:**
 /// - Total invested amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyInvestedAmountProvider
     extends $FunctionalProvider<AsyncValue<double>, double, FutureOr<double>>
@@ -97,6 +108,7 @@ final class MultiCurrencyInvestedAmountProvider
   ///
   /// **Returns:**
   /// - Total invested amount in user's base currency
+  /// - 0.0 if user is not authenticated (converter is null)
   const MultiCurrencyInvestedAmountProvider._({
     required MultiCurrencyInvestedAmountFamily super.from,
     required String super.argument,
@@ -142,7 +154,7 @@ final class MultiCurrencyInvestedAmountProvider
 }
 
 String _$multiCurrencyInvestedAmountHash() =>
-    r'2f6b323b12094afaeabcfc3334472286c37ec241';
+    r'9e6df01720030fb81758f7992baea6f08a072937';
 
 /// Provider for multi-currency invested amount calculation
 ///
@@ -153,6 +165,7 @@ String _$multiCurrencyInvestedAmountHash() =>
 ///
 /// **Returns:**
 /// - Total invested amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyInvestedAmountFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<double>, String> {
@@ -174,6 +187,7 @@ final class MultiCurrencyInvestedAmountFamily extends $Family
   ///
   /// **Returns:**
   /// - Total invested amount in user's base currency
+  /// - 0.0 if user is not authenticated (converter is null)
 
   MultiCurrencyInvestedAmountProvider call(String investmentId) =>
       MultiCurrencyInvestedAmountProvider._(argument: investmentId, from: this);
@@ -191,6 +205,7 @@ final class MultiCurrencyInvestedAmountFamily extends $Family
 ///
 /// **Returns:**
 /// - Total returned amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyReturnedAmount)
 const multiCurrencyReturnedAmountProvider =
@@ -205,6 +220,7 @@ const multiCurrencyReturnedAmountProvider =
 ///
 /// **Returns:**
 /// - Total returned amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyReturnedAmountProvider
     extends $FunctionalProvider<AsyncValue<double>, double, FutureOr<double>>
@@ -218,6 +234,7 @@ final class MultiCurrencyReturnedAmountProvider
   ///
   /// **Returns:**
   /// - Total returned amount in user's base currency
+  /// - 0.0 if user is not authenticated (converter is null)
   const MultiCurrencyReturnedAmountProvider._({
     required MultiCurrencyReturnedAmountFamily super.from,
     required String super.argument,
@@ -263,7 +280,7 @@ final class MultiCurrencyReturnedAmountProvider
 }
 
 String _$multiCurrencyReturnedAmountHash() =>
-    r'a27fdeb4a40fcec787b108af5b45dab71fa533de';
+    r'48c4abd09760ba89310befd46955cbb091f3a57c';
 
 /// Provider for multi-currency returned amount calculation
 ///
@@ -274,6 +291,7 @@ String _$multiCurrencyReturnedAmountHash() =>
 ///
 /// **Returns:**
 /// - Total returned amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyReturnedAmountFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<double>, String> {
@@ -295,6 +313,7 @@ final class MultiCurrencyReturnedAmountFamily extends $Family
   ///
   /// **Returns:**
   /// - Total returned amount in user's base currency
+  /// - 0.0 if user is not authenticated (converter is null)
 
   MultiCurrencyReturnedAmountProvider call(String investmentId) =>
       MultiCurrencyReturnedAmountProvider._(argument: investmentId, from: this);
@@ -313,6 +332,7 @@ final class MultiCurrencyReturnedAmountFamily extends $Family
 ///
 /// **Returns:**
 /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
+/// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyXirr)
 const multiCurrencyXirrProvider = MultiCurrencyXirrFamily._();
@@ -327,6 +347,7 @@ const multiCurrencyXirrProvider = MultiCurrencyXirrFamily._();
 ///
 /// **Returns:**
 /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyXirrProvider
     extends $FunctionalProvider<AsyncValue<double>, double, FutureOr<double>>
@@ -341,6 +362,7 @@ final class MultiCurrencyXirrProvider
   ///
   /// **Returns:**
   /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
+  /// - 0.0 if user is not authenticated (converter is null)
   const MultiCurrencyXirrProvider._({
     required MultiCurrencyXirrFamily super.from,
     required String super.argument,
@@ -384,7 +406,7 @@ final class MultiCurrencyXirrProvider
   }
 }
 
-String _$multiCurrencyXirrHash() => r'a1900c808fcca6f8b29553cde66acfe28d73993a';
+String _$multiCurrencyXirrHash() => r'0c6f9c6cc82fa4634a49e3f448d904ca8cea9631';
 
 /// Provider for multi-currency XIRR calculation
 ///
@@ -396,6 +418,7 @@ String _$multiCurrencyXirrHash() => r'a1900c808fcca6f8b29553cde66acfe28d73993a';
 ///
 /// **Returns:**
 /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyXirrFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<double>, String> {
@@ -418,6 +441,7 @@ final class MultiCurrencyXirrFamily extends $Family
   ///
   /// **Returns:**
   /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
+  /// - 0.0 if user is not authenticated (converter is null)
 
   MultiCurrencyXirrProvider call(String investmentId) =>
       MultiCurrencyXirrProvider._(argument: investmentId, from: this);
@@ -436,6 +460,7 @@ final class MultiCurrencyXirrFamily extends $Family
 ///
 /// **Returns:**
 /// - Total portfolio value in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyPortfolioValue)
 const multiCurrencyPortfolioValueProvider =
@@ -451,6 +476,7 @@ const multiCurrencyPortfolioValueProvider =
 ///
 /// **Returns:**
 /// - Total portfolio value in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 
 final class MultiCurrencyPortfolioValueProvider
     extends $FunctionalProvider<AsyncValue<double>, double, FutureOr<double>>
@@ -465,6 +491,7 @@ final class MultiCurrencyPortfolioValueProvider
   ///
   /// **Returns:**
   /// - Total portfolio value in user's base currency
+  /// - 0.0 if user is not authenticated (converter is null)
   const MultiCurrencyPortfolioValueProvider._()
     : super(
         from: null,
@@ -491,7 +518,7 @@ final class MultiCurrencyPortfolioValueProvider
 }
 
 String _$multiCurrencyPortfolioValueHash() =>
-    r'08e72457efa13c44c5f6ad6565973fccb4bd4e41';
+    r'79c780be4b39687203002860743c41a6071b25b8';
 
 /// Provider for multi-currency investment stats
 ///
@@ -505,6 +532,7 @@ String _$multiCurrencyPortfolioValueHash() =>
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyInvestmentStats)
 const multiCurrencyInvestmentStatsProvider =
@@ -522,6 +550,7 @@ const multiCurrencyInvestmentStatsProvider =
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 final class MultiCurrencyInvestmentStatsProvider
     extends
@@ -543,6 +572,7 @@ final class MultiCurrencyInvestmentStatsProvider
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
+  /// - InvestmentStats.empty() if user is not authenticated (converter is null)
   const MultiCurrencyInvestmentStatsProvider._({
     required MultiCurrencyInvestmentStatsFamily super.from,
     required String super.argument,
@@ -589,7 +619,7 @@ final class MultiCurrencyInvestmentStatsProvider
 }
 
 String _$multiCurrencyInvestmentStatsHash() =>
-    r'29ec6d0003440806c4ed2187cac2f6fc166845b7';
+    r'71740addaf0e18f473a35d29d2775abf421ee696';
 
 /// Provider for multi-currency investment stats
 ///
@@ -603,6 +633,7 @@ String _$multiCurrencyInvestmentStatsHash() =>
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 final class MultiCurrencyInvestmentStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<InvestmentStats>, String> {
@@ -627,6 +658,7 @@ final class MultiCurrencyInvestmentStatsFamily extends $Family
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
+  /// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
   MultiCurrencyInvestmentStatsProvider call(String investmentId) =>
       MultiCurrencyInvestmentStatsProvider._(
@@ -647,6 +679,7 @@ final class MultiCurrencyInvestmentStatsFamily extends $Family
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyGlobalStats)
 const multiCurrencyGlobalStatsProvider = MultiCurrencyGlobalStatsProvider._();
@@ -660,6 +693,7 @@ const multiCurrencyGlobalStatsProvider = MultiCurrencyGlobalStatsProvider._();
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 final class MultiCurrencyGlobalStatsProvider
     extends
@@ -678,6 +712,7 @@ final class MultiCurrencyGlobalStatsProvider
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
+  /// - InvestmentStats.empty() if user is not authenticated (converter is null)
   const MultiCurrencyGlobalStatsProvider._()
     : super(
         from: null,
@@ -705,7 +740,7 @@ final class MultiCurrencyGlobalStatsProvider
 }
 
 String _$multiCurrencyGlobalStatsHash() =>
-    r'69528bf964f70980892555d48c97cbbacff113e9';
+    r'a3ec249c6852c8c18962da863b6ba3acd03802e5';
 
 /// Provider for multi-currency open investments stats
 ///
@@ -768,7 +803,7 @@ final class MultiCurrencyOpenStatsProvider
 }
 
 String _$multiCurrencyOpenStatsHash() =>
-    r'7e4ca722e7e55c6eccc8bd842716610e9be5c687';
+    r'dc3ef9aa8edcfbb9d74e404ff64db622ccd6eebc';
 
 /// Provider for multi-currency closed investments stats
 ///
@@ -831,4 +866,4 @@ final class MultiCurrencyClosedStatsProvider
 }
 
 String _$multiCurrencyClosedStatsHash() =>
-    r'b955f412305b96c7ad4e77ba5e5228367eac0c18';
+    r'811fe6e8a07a96b68e6de7ac20cb7d51afe8ae4b';

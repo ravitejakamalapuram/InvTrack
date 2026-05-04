@@ -44,7 +44,7 @@ final class CurrencySwitchProvider
   }
 }
 
-String _$currencySwitchHash() => r'260cba3e48a66c3d45b439ad4b67ff4920f4409e';
+String _$currencySwitchHash() => r'c5892b2d29b49616a5340e6d1a06e0ed09d7ade7';
 
 /// Provider for currency switch status
 

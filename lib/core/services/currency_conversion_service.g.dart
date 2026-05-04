@@ -11,6 +11,14 @@ part of 'currency_conversion_service.dart';
 /// Provider for CurrencyConversionService
 ///
 /// Provides access to currency conversion with three-tier caching
+///
+/// **CRITICAL FIX (2026-05-04)**: Never throw in provider - throws AuthException instead
+/// Provider exceptions cause ProviderException which crashes the app.
+/// Instead, return null when user is not authenticated - call sites should check.
+///
+/// Fixes Crashlytics issues:
+/// - #50a389e45315ab4cb1393f56b731f6ff (ProviderException crashes)
+/// - #fa5a52c906efdb348d26233a9c94744a (currency service auth errors)
 
 @ProviderFor(currencyConversionService)
 const currencyConversionServiceProvider = CurrencyConversionServiceProvider._();
@@ -18,18 +26,34 @@ const currencyConversionServiceProvider = CurrencyConversionServiceProvider._();
 /// Provider for CurrencyConversionService
 ///
 /// Provides access to currency conversion with three-tier caching
+///
+/// **CRITICAL FIX (2026-05-04)**: Never throw in provider - throws AuthException instead
+/// Provider exceptions cause ProviderException which crashes the app.
+/// Instead, return null when user is not authenticated - call sites should check.
+///
+/// Fixes Crashlytics issues:
+/// - #50a389e45315ab4cb1393f56b731f6ff (ProviderException crashes)
+/// - #fa5a52c906efdb348d26233a9c94744a (currency service auth errors)
 
 final class CurrencyConversionServiceProvider
     extends
         $FunctionalProvider<
-          CurrencyConversionService,
-          CurrencyConversionService,
-          CurrencyConversionService
+          CurrencyConversionService?,
+          CurrencyConversionService?,
+          CurrencyConversionService?
         >
-    with $Provider<CurrencyConversionService> {
+    with $Provider<CurrencyConversionService?> {
   /// Provider for CurrencyConversionService
   ///
   /// Provides access to currency conversion with three-tier caching
+  ///
+  /// **CRITICAL FIX (2026-05-04)**: Never throw in provider - throws AuthException instead
+  /// Provider exceptions cause ProviderException which crashes the app.
+  /// Instead, return null when user is not authenticated - call sites should check.
+  ///
+  /// Fixes Crashlytics issues:
+  /// - #50a389e45315ab4cb1393f56b731f6ff (ProviderException crashes)
+  /// - #fa5a52c906efdb348d26233a9c94744a (currency service auth errors)
   const CurrencyConversionServiceProvider._()
     : super(
         from: null,
@@ -46,23 +70,23 @@ final class CurrencyConversionServiceProvider
 
   @$internal
   @override
-  $ProviderElement<CurrencyConversionService> $createElement(
+  $ProviderElement<CurrencyConversionService?> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  CurrencyConversionService create(Ref ref) {
+  CurrencyConversionService? create(Ref ref) {
     return currencyConversionService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(CurrencyConversionService value) {
+  Override overrideWithValue(CurrencyConversionService? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<CurrencyConversionService>(value),
+      providerOverride: $SyncValueProvider<CurrencyConversionService?>(value),
     );
   }
 }
 
 String _$currencyConversionServiceHash() =>
-    r'87764de20d006b3e8346ecd5223f5e9592c4fd15';
+    r'4ff3db1191bf4155c346bc382061fd2b9e472f84';

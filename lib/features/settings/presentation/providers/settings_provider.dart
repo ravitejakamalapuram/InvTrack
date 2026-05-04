@@ -118,7 +118,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
     // - Circuit breaker state (prevents unnecessary API failures)
     // - Performance metrics (preserves monitoring data)
     // - In-flight requests (prevents duplicate API calls)
-    await ref.read(currencyConversionServiceProvider).clearCache();
+    // BUG FIX (2026-05-04): Handle null service when user is not authenticated
+    await ref.read(currencyConversionServiceProvider)?.clearCache();
 
     // Track analytics
     ref

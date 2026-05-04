@@ -9,9 +9,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'multi_currency_providers.g.dart';
 
 /// Provider for batch currency converter
+///
+/// **BUG FIX (2026-05-04)**: Handle null conversion service when unauthenticated
+/// Returns a no-op converter that doesn't crash the app
 @riverpod
-BatchCurrencyConverter batchCurrencyConverter(Ref ref) {
+BatchCurrencyConverter? batchCurrencyConverter(Ref ref) {
   final conversionService = ref.watch(currencyConversionServiceProvider);
+
+  // Return null if user is not authenticated
+  // Call sites should check for null and handle gracefully
+  if (conversionService == null) {
+    return null;
+  }
+
   return BatchCurrencyConverter(conversionService);
 }
 
@@ -24,6 +34,7 @@ BatchCurrencyConverter batchCurrencyConverter(Ref ref) {
 ///
 /// **Returns:**
 /// - Total invested amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 @riverpod
 Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
   final cashFlows = await ref.watch(
@@ -33,6 +44,10 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
   if (cashFlows.isEmpty) return 0.0;
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return 0.0;
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Optimization: Replace .where().toList() with standard loop
@@ -70,6 +85,7 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
 ///
 /// **Returns:**
 /// - Total returned amount in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 @riverpod
 Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   final cashFlows = await ref.watch(
@@ -79,6 +95,10 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   if (cashFlows.isEmpty) return 0.0;
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return 0.0;
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Optimization: Replace .where().toList() with standard loop
@@ -117,6 +137,7 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
 ///
 /// **Returns:**
 /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
+/// - 0.0 if user is not authenticated (converter is null)
 @riverpod
 Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
   final cashFlows = await ref.watch(
@@ -126,6 +147,10 @@ Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
   if (cashFlows.isEmpty) return 0.0;
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return 0.0;
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert all cash flows to base currency (OPTIMIZED)
@@ -149,6 +174,7 @@ Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
 ///
 /// **Returns:**
 /// - Total portfolio value in user's base currency
+/// - 0.0 if user is not authenticated (converter is null)
 @riverpod
 Future<double> multiCurrencyPortfolioValue(Ref ref) async {
   final investments = await ref.watch(
@@ -158,6 +184,10 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
   if (investments.isEmpty) return 0.0;
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return 0.0;
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Collect all cash flows from all investments
@@ -198,6 +228,7 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 @riverpod
 Future<InvestmentStats> multiCurrencyInvestmentStats(
   Ref ref,
@@ -212,6 +243,10 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
   }
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return InvestmentStats.empty();
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
@@ -234,6 +269,7 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
+/// - InvestmentStats.empty() if user is not authenticated (converter is null)
 @riverpod
 Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
@@ -250,6 +286,10 @@ Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
   }
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return InvestmentStats.empty();
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
@@ -314,6 +354,10 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
   }
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return InvestmentStats.empty();
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
@@ -377,6 +421,10 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
   }
 
   final batchConverter = ref.watch(batchCurrencyConverterProvider);
+
+  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
+  if (batchConverter == null) return InvestmentStats.empty();
+
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)

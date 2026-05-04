@@ -939,21 +939,27 @@ class CurrencyConversionService {
 ///
 /// Provides access to currency conversion with three-tier caching
 ///
-/// **CRITICAL FIX (2026-05-02)**: Watch authStateProvider to avoid race condition
-/// Previous implementation used FirebaseAuth.instance.currentUser?.uid which
-/// caused crashes during onboarding when auth state wasn't fully initialized yet.
-/// Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff (368 events, 124 users)
+/// **CRITICAL FIX (2026-05-04)**: Never throw in provider - throws AuthException instead
+/// Provider exceptions cause ProviderException which crashes the app.
+/// Instead, return null when user is not authenticated - call sites should check.
+///
+/// Fixes Crashlytics issues:
+/// - #50a389e45315ab4cb1393f56b731f6ff (ProviderException crashes)
+/// - #fa5a52c906efdb348d26233a9c94744a (currency service auth errors)
 @riverpod
-CurrencyConversionService currencyConversionService(Ref ref) {
+CurrencyConversionService? currencyConversionService(Ref ref) {
   final firestore = FirebaseFirestore.instance;
 
-  // BUG FIX: Watch auth state instead of checking currentUser synchronously
-  // This ensures we react to auth state changes and avoid race conditions
+  // BUG FIX (2026-05-04): Return null instead of throwing when unauthenticated
+  // This prevents ProviderException crashes during app initialization
+  // Call sites should check for null and handle gracefully
   final authState = ref.watch(authStateProvider);
   final userId = authState.value?.id;
 
   if (userId == null) {
-    throw Exception('User must be authenticated to use currency conversion');
+    // Don't throw - return null and let call sites handle
+    // Throwing creates ProviderException which crashes the app
+    return null;
   }
 
   final service = CurrencyConversionService(
