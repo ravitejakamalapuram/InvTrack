@@ -308,4 +308,53 @@ class FakeAnalyticsService implements AnalyticsService {
     'metric_name': metricName,
     'report_type': reportType,
   });
+
+  // ============ Portfolio Health Score Events ============
+
+  @override
+  Future<void> logPortfolioHealthViewed({
+    required String scoreTier,
+    required String scoreRange,
+  }) async => _log('portfolio_health_viewed', {
+    'score_tier': scoreTier,
+    'score_range': scoreRange,
+  });
+
+  @override
+  Future<void> logPortfolioHealthDetailsOpened({
+    required String scoreTier,
+    required String scoreRange,
+  }) async => _log('portfolio_health_details_opened', {
+    'score_tier': scoreTier,
+    'score_range': scoreRange,
+  });
+
+  @override
+  Future<void> logHealthScoreCalculated({
+    required String scoreTier,
+    required int investmentCount,
+    required bool hasGoals,
+  }) async => _log('health_score_calculated', {
+    'score_tier': scoreTier,
+    'investment_count': investmentCount,
+    'has_goals': hasGoals,
+  });
+
+  @override
+  Future<void> logHealthComponentExpanded({
+    required String componentName,
+    required String componentScore,
+  }) async => _log('health_component_expanded', {
+    'component_name': componentName,
+    'component_score': componentScore,
+  });
+
+  @override
+  Future<void> logHealthScoreShared({
+    required String scoreTier,
+    required String shareMethod,
+  }) async => _log('health_score_shared', {
+    'score_tier': scoreTier,
+    'share_method': shareMethod,
+  });
 }

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/widgets/currency_badge.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 
@@ -25,6 +26,11 @@ class ReportStatCard extends ConsumerWidget {
   final bool? isTrendPositive;
   final String? tooltip; // Optional tooltip explanation
 
+  /// Multi-currency support (Rule 21.9)
+  final String? currencyCode; // Original currency (if different from base)
+  final double? exchangeRate; // Exchange rate to base currency
+  final String? baseCurrency; // Base currency for exchange rate display
+
   const ReportStatCard({
     super.key,
     required this.icon,
@@ -35,6 +41,9 @@ class ReportStatCard extends ConsumerWidget {
     this.trendValue,
     this.isTrendPositive,
     this.tooltip,
+    this.currencyCode,
+    this.exchangeRate,
+    this.baseCurrency,
   });
 
   @override
@@ -86,22 +95,41 @@ class ReportStatCard extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
 
-          // Value
-          isPrivacySensitive
-              ? PrivacyMask(
-                  child: Text(
-                    value,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+          // Value + optional currency badge
+          Row(
+            children: [
+              Expanded(
+                child: isPrivacySensitive
+                    ? PrivacyMask(
+                        child: Text(
+                          value,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
-                  ),
-                )
-              : Text(
-                  value,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      )
+                    : Text(
+                        value,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
+              ),
+
+              // Currency badge (only if currency differs from base)
+              if (currencyCode != null && currencyCode != baseCurrency) ...[
+                const SizedBox(width: 8),
+                PrivacyMask(
+                  child: CurrencyBadge(
+                    currencyCode: currencyCode!,
+                    exchangeRate: exchangeRate,
+                    targetCurrency: baseCurrency,
+                    compact: exchangeRate == null,
+                  ),
                 ),
+              ],
+            ],
+          ),
 
           // Trend indicator (optional)
           if (trendValue != null && isTrendPositive != null) ...[

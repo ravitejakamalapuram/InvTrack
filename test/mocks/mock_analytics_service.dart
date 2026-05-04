@@ -451,4 +451,78 @@ class FakeAnalyticsService implements AnalyticsService {
       },
     );
   }
+
+  // ============ Portfolio Health Score Events ============
+
+  @override
+  Future<void> logPortfolioHealthViewed({
+    required String scoreTier,
+    required String scoreRange,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.portfolioHealthViewed,
+      parameters: {
+        'score_tier': scoreTier,
+        'score_range': scoreRange,
+      },
+    );
+  }
+
+  @override
+  Future<void> logPortfolioHealthDetailsOpened({
+    required String scoreTier,
+    required String scoreRange,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.portfolioHealthDetailsOpened,
+      parameters: {
+        'score_tier': scoreTier,
+        'score_range': scoreRange,
+      },
+    );
+  }
+
+  @override
+  Future<void> logHealthScoreCalculated({
+    required String scoreTier,
+    required int investmentCount,
+    required bool hasGoals,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.healthScoreCalculated,
+      parameters: {
+        'score_tier': scoreTier,
+        'investment_count': investmentCount,
+        'has_goals': hasGoals ? 1 : 0,
+      },
+    );
+  }
+
+  @override
+  Future<void> logHealthComponentExpanded({
+    required String componentName,
+    required String componentScore,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.healthComponentExpanded,
+      parameters: {
+        'component_name': componentName,
+        'component_score': componentScore,
+      },
+    );
+  }
+
+  @override
+  Future<void> logHealthScoreShared({
+    required String scoreTier,
+    required String shareMethod,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.healthScoreShared,
+      parameters: {
+        'score_tier': scoreTier,
+        'share_method': shareMethod,
+      },
+    );
+  }
 }
