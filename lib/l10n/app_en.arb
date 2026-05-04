@@ -1460,6 +1460,11 @@
     "description": "Button text to add a document"
   },
 
+  "addTransaction": "Add Transaction",
+  "@addTransaction": {
+    "description": "Button text to add a transaction"
+  },
+
   "templateReadyToShare": "Template ready to share/save",
   "@templateReadyToShare": {
     "description": "Success message when CSV template is ready"

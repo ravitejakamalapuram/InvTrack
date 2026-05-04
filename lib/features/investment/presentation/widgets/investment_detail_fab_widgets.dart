@@ -18,6 +18,8 @@ class TransactionFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     void handleTap() {
       HapticFeedback.selectionClick();
       onTap();
@@ -25,7 +27,7 @@ class TransactionFab extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Add Transaction',
+      label: l10n.addTransaction,
       excludeSemantics: true,
       onTap: handleTap,
       child: InkWell(
@@ -50,7 +52,7 @@ class TransactionFab extends StatelessWidget {
               const Icon(Icons.add_rounded, color: Colors.white),
               const SizedBox(width: 8),
               Text(
-                'Add Transaction',
+                l10n.addTransaction,
                 style: AppTypography.button.copyWith(color: Colors.white),
               ),
             ],
