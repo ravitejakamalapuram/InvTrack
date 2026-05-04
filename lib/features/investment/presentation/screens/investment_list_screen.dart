@@ -120,9 +120,10 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           : AppColors.backgroundLight,
       body: RefreshIndicator(
         onRefresh: () async {
-          // Refresh live exchange rate cache
+          // Refresh live exchange rate cache (if service is available)
+          // BUG FIX (2026-05-04): Handle null service when user is not authenticated
           final conversionService = ref.read(currencyConversionServiceProvider);
-          await conversionService.refreshLiveCacheIfStale();
+          await conversionService?.refreshLiveCacheIfStale();
 
           // Invalidate providers to trigger re-fetch
           ref.invalidate(allInvestmentsProvider);

@@ -276,6 +276,12 @@ class CurrencySwitch extends _$CurrencySwitch {
       // - Leverages request coalescing in CurrencyConversionService
       // - Fails fast if any rate fetch fails (better error handling)
       final conversionService = ref.read(currencyConversionServiceProvider);
+
+      // BUG FIX (2026-05-04): Handle null service when user is not authenticated
+      if (conversionService == null) {
+        throw Exception('Currency conversion service unavailable. Please sign in.');
+      }
+
       int fetchedCount = 0;
 
       // Create all rate fetch futures (starts parallel execution)

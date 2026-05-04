@@ -75,14 +75,42 @@ class FirebaseAuthRepository implements AuthRepository {
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on GoogleSignInException catch (e) {
-      // BUG FIX (2026-05-01): Don't report user cancellations to Crashlytics
-      // Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff variant
+      // BUG FIX (2026-05-04): Never crash on GoogleSignInException
+      // User actions (canceled) and config errors should NOT crash the app
+      // Fixes Crashlytics issues:
+      // - #50a389e45315ab4cb1393f56b731f6ff (user canceled)
+      // - #9dfdf1143e4d5e88cbfe9a9d91440e44 (config error)
+
       if (e.code == GoogleSignInExceptionCode.canceled) {
         LoggerService.info('User cancelled Google Sign-In');
         return null;
       }
 
-      // Log other GoogleSignInExceptions (config errors, etc.)
+      // Configuration errors should NOT crash the app
+      // These are environmental issues, not user errors
+      if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
+          e.code == GoogleSignInExceptionCode.providerConfigurationError) {
+        LoggerService.error(
+          'GoogleSignInException: Configuration error (non-fatal)',
+          error: e,
+          metadata: {
+            'code': e.code.name,
+            'description': e.description,
+            'details': e.details.toString(),
+          },
+        );
+
+        // Return DataException instead of crashing
+        // User sees friendly message, developers see Crashlytics report
+        throw DataException(
+          userMessage: _mapGoogleSignInException(e),
+          technicalMessage: 'GoogleSignInException: ${e.code.name}',
+          cause: e,
+          shouldReport: true, // Report to Crashlytics for investigation
+        );
+      }
+
+      // Other GoogleSignInExceptions (interrupted, userMismatch, etc.)
       LoggerService.error(
         'GoogleSignInException during sign-in',
         error: e,
@@ -93,8 +121,13 @@ class FirebaseAuthRepository implements AuthRepository {
         },
       );
 
-      // Map exception to user-friendly message
-      throw Exception(_mapGoogleSignInException(e));
+      // Throw DataException instead of generic Exception
+      throw DataException(
+        userMessage: _mapGoogleSignInException(e),
+        technicalMessage: 'GoogleSignInException: ${e.code.name}',
+        cause: e,
+        shouldReport: false, // Don't spam Crashlytics with user errors
+      );
     } catch (e, stackTrace) {
       LoggerService.error(
         'Google Sign-In failed',
@@ -167,14 +200,27 @@ class FirebaseAuthRepository implements AuthRepository {
       );
       return true;
     } on GoogleSignInException catch (e) {
-      // BUGFIX (2026-05-01): Check for cancellation BEFORE logging to avoid Crashlytics noise
-      // Fixes CodeRabbit review comment
+      // BUG FIX (2026-05-04): Never crash on GoogleSignInException
       if (e.code == GoogleSignInExceptionCode.canceled) {
         LoggerService.info('User cancelled re-authentication');
         return false;
       }
 
-      // Only log non-cancellation errors
+      // Configuration errors should NOT crash the app - return false instead
+      if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
+          e.code == GoogleSignInExceptionCode.providerConfigurationError) {
+        LoggerService.error(
+          'GoogleSignInException: Configuration error during re-auth (non-fatal)',
+          error: e,
+          metadata: {
+            'code': e.code.name,
+            'description': e.description,
+          },
+        );
+        return false; // Re-auth failed, but don't crash
+      }
+
+      // Other GoogleSignInExceptions
       LoggerService.error(
         'GoogleSignInException during re-authentication',
         error: e,
@@ -184,7 +230,7 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      throw Exception(_mapGoogleSignInException(e));
+      return false; // Don't crash on sign-in errors
     } catch (e, stackTrace) {
       LoggerService.error(
         'Re-authentication failed',
@@ -378,14 +424,41 @@ class FirebaseAuthRepository implements AuthRepository {
         shouldReport: !_isTransientAuthError(e.code),
       );
     } on GoogleSignInException catch (e, stackTrace) {
-      // BUGFIX (2026-05-01): Check for cancellation BEFORE logging to avoid Crashlytics noise
-      // Fixes CodeRabbit review comment
+      // BUG FIX (2026-05-04): Never crash on GoogleSignInException
+      // Fixes Crashlytics issues:
+      // - #330446834f8252710746c3a9fae30314 (user canceled)
+      // - #9dfdf1143e4d5e88cbfe9a9d91440e44 (config error)
+
       if (e.code == GoogleSignInExceptionCode.canceled) {
         LoggerService.info('User cancelled account linking');
         throw AuthException.signInCancelled();
       }
 
-      // Only log non-cancellation errors
+      // Configuration errors should NOT crash the app
+      // These are environmental issues, not user errors
+      if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
+          e.code == GoogleSignInExceptionCode.providerConfigurationError) {
+        LoggerService.error(
+          'GoogleSignInException: Configuration error during linking (non-fatal)',
+          error: e,
+          stackTrace: stackTrace,
+          metadata: {
+            'code': e.code.name,
+            'description': e.description,
+          },
+        );
+
+        // Throw AuthException instead of crashing
+        throw AuthException(
+          userMessage: _mapGoogleSignInException(e),
+          technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: true, // Report to Crashlytics for investigation
+        );
+      }
+
+      // Other GoogleSignInExceptions
       LoggerService.error(
         'GoogleSignInException during account linking',
         error: e,
@@ -398,10 +471,10 @@ class FirebaseAuthRepository implements AuthRepository {
 
       throw AuthException(
         userMessage: _mapGoogleSignInException(e),
-        technicalMessage: 'Google Sign-In failed during linking',
+        technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
         cause: e,
         stackTrace: stackTrace,
-        shouldReport: true,
+        shouldReport: false, // Don't spam Crashlytics with user errors
       );
     } catch (e, stackTrace) {
       LoggerService.error(

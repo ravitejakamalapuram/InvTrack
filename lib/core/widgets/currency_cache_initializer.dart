@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 
 /// Widget that initializes currency conversion cache on app start.
@@ -43,18 +42,18 @@ class _CurrencyCacheInitializerState
     if (_initialized) return;
 
     try {
-      // BUG FIX (2026-05-01): Check auth state before accessing currencyConversionServiceProvider
+      // BUG FIX (2026-05-04): Provider now returns null when unauthenticated
+      // Check for null service instead of checking auth state separately
       // Fixes Crashlytics issue #50a389e45315ab4cb1393f56b731f6ff variant
-      // The provider requires authenticated user, so skip if user is not logged in
-      final authState = await ref.read(authStateProvider.future);
-      if (authState == null) {
+      final service = ref.read(currencyConversionServiceProvider);
+
+      if (service == null) {
         LoggerService.debug(
           'Skipping currency cache initialization - user not authenticated',
         );
         return;
       }
 
-      final service = ref.read(currencyConversionServiceProvider);
       final baseCurrency = ref.read(currencyCodeProvider);
 
       // 1. Refresh live cache if stale (>1 hour old)

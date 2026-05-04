@@ -106,6 +106,7 @@ class LoggerService {
     StackTrace? stackTrace,
   }) {
     // In debug mode: print structured logs
+    // ALWAYS log to console first - never let Crashlytics failure prevent logging
     if (kDebugMode) {
       final buffer = StringBuffer();
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -143,20 +144,36 @@ class LoggerService {
       }
 
       if (shouldReport) {
-        final reason = metadata != null
-            ? '$message | Metadata: ${metadata.entries.map((e) => '${e.key}=${e.value}').join(', ')}'
-            : message;
+        // CRITICAL: Wrap Crashlytics reporting in try-catch to prevent crash loops
+        // If Crashlytics fails, we must NOT throw or call LoggerService.error again
+        try {
+          final reason = metadata != null
+              ? '$message | Metadata: ${metadata.entries.map((e) => '${e.key}=${e.value}').join(', ')}'
+              : message;
 
-        // Initialize Crashlytics service lazily to avoid provider errors
-        _crashlyticsService ??= CrashlyticsService(
-          debugModeEnabled: CrashlyticsService.enableInDebugMode,
-        );
-        _crashlyticsService!.recordError(
-          error ?? Exception(message),
-          stackTrace,
-          reason: reason,
-          fatal: level == LogLevel.error,
-        );
+          // Initialize Crashlytics service lazily to avoid provider errors
+          _crashlyticsService ??= CrashlyticsService(
+            debugModeEnabled: CrashlyticsService.enableInDebugMode,
+          );
+          _crashlyticsService!.recordError(
+            error ?? Exception(message),
+            stackTrace,
+            reason: reason,
+            fatal: level == LogLevel.error,
+          );
+        } catch (crashlyticsError, crashlyticsStack) {
+          // CRITICAL: Do NOT call LoggerService.error here - it would create infinite loop
+          // Just print to console and silently fail - logging is not worth crashing the app
+          if (kDebugMode) {
+            debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            debugPrint('⚠️ LoggerService: Failed to report to Crashlytics');
+            debugPrint('Original error: $error');
+            debugPrint('Crashlytics error: $crashlyticsError');
+            debugPrint('Crashlytics stack: $crashlyticsStack');
+            debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          }
+          // In production: fail silently - better to lose one crash report than crash the app
+        }
       }
     }
   }

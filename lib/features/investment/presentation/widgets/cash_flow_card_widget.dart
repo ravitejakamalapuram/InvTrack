@@ -206,6 +206,11 @@ class CashFlowCardWidget extends ConsumerWidget {
   Widget _buildExchangeRateInfo(WidgetRef ref, String baseCurrency) {
     final conversionService = ref.watch(currencyConversionServiceProvider);
 
+    // BUG FIX (2026-05-04): Handle null service when user is not authenticated
+    if (conversionService == null) {
+      return const SizedBox.shrink();
+    }
+
     return FutureBuilder<double>(
       future: conversionService.getRate(
         from: cashFlow.currency,
