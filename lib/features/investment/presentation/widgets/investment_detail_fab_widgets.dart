@@ -28,9 +28,10 @@ class TransactionFab extends StatelessWidget {
       label: 'Add Transaction',
       excludeSemantics: true,
       onTap: handleTap,
-      child: GestureDetector(
+      child: InkWell(
         onTap: handleTap,
-        child: Container(
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
           decoration: BoxDecoration(
             gradient: AppColors.heroGradient,
             borderRadius: BorderRadius.circular(16),
