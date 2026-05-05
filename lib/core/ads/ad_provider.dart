@@ -84,19 +84,36 @@ final shouldShowAdsProvider = Provider<bool>((ref) {
   }
 
   // Check grace period using user profile creation date
+  // FAIL-CLOSED: Return false (no ads) if loading, error, or no profile
   final profileAsync = ref.watch(userProfileNotifierProvider);
-  final userProfile = profileAsync.value;
 
-  if (userProfile != null) {
-    final now = DateTime.now();
-    final daysSinceCreation = now.difference(userProfile.createdAt).inDays;
-    const gracePeriodDays = 7;
+  return profileAsync.when(
+    data: (userProfile) {
+      // No profile data? Fail-closed (no ads)
+      if (userProfile == null) {
+        return false;
+      }
 
-    if (daysSinceCreation < gracePeriodDays) {
-      // User is in grace period - don't show ads
+      // User profile loaded successfully - check grace period
+      final now = DateTime.now();
+      final daysSinceCreation = now.difference(userProfile.createdAt).inDays;
+      const gracePeriodDays = 7;
+
+      if (daysSinceCreation < gracePeriodDays) {
+        // User is in grace period - don't show ads
+        return false;
+      }
+
+      // Grace period expired - show ads
+      return true;
+    },
+    loading: () {
+      // Profile loading - fail-closed (no ads until verified)
       return false;
-    }
-  }
-
-  return true;
+    },
+    error: (error, stackTrace) {
+      // Profile error - fail-closed (no ads on error)
+      return false;
+    },
+  );
 });

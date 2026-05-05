@@ -205,8 +205,15 @@ class AdService {
   Future<NativeAd?> loadNativeAd({
     required AdPlacement placement,
   }) async {
+    // Lazy initialization: Initialize if needed
     if (!_isInitialized) {
-      LoggerService.warn('AdService not initialized, skipping ad load');
+      LoggerService.debug('Lazy-initializing AdService before ad load');
+      await initialize();
+    }
+
+    // Still not initialized after attempt? Fail gracefully
+    if (!_isInitialized) {
+      LoggerService.warn('AdService initialization failed, skipping ad load');
       return null;
     }
 
