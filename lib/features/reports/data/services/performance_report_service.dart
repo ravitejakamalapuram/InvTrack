@@ -26,12 +26,16 @@ class PerformanceReportService {
     // Build performance data for each investment
     final performances = <InvestmentPerformance>[];
 
-    for (final investment in allInvestments) {
-      final investmentCFs = allCashFlows
-          .where((cf) => cf.investmentId == investment.id)
-          .toList();
+    // Optimization: Group cash flows by investment id to avoid O(N * M) nested loops
+    final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in allCashFlows) {
+      cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
 
-      if (investmentCFs.isEmpty) continue;
+    for (final investment in allInvestments) {
+      final investmentCFs = cashFlowsByInvestment[investment.id];
+
+      if (investmentCFs == null || investmentCFs.isEmpty) continue;
 
       // Calculate stats for this investment
       final stats = calculateStats(investmentCFs);

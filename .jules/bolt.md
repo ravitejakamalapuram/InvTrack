@@ -76,3 +76,6 @@
 ## 2026-05-02 - Single Pass Multiple Metric Extraction in WeeklySummaryService
 **Learning:** Chaining multiple `.where().fold()` operations to compute multiple metrics across a collection results in excessive iteration and closure allocation overhead, operating essentially at O(K*N) complexity.
 **Action:** Replace multiple chained operations with a single, standard `for` loop to process all items in a single O(N) pass, accumulating required metrics concurrently to optimize processing speed.
+## 2026-05-05 - Optimize O(N^2) Nested Loops
+**Learning:** Pre-grouping data in a `Map` or `HashMap` before nested iterations eliminates O(N*M) bottlenecks. Grouping data in Dart is simple with operations like `putIfAbsent()` and dictionary comprehensions (e.g. `{for (final item in items) item.id: item}`).
+**Action:** Always replace `.where(...).toList()` operations inside a loop with a single `Map` lookup by pre-computing mappings outside the loop.

@@ -219,10 +219,13 @@ class FYReportService {
     // Only consider RETURN cashflows for capital gains
     final returns = fyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow);
 
+    // Optimization: Pre-map investments by id for O(1) lookup
+    final investmentsMap = {for (final inv in allInvestments) inv.id: inv};
+
     for (final returnCF in returns) {
       try {
-        final investment = allInvestments
-            .firstWhere((inv) => inv.id == returnCF.investmentId);
+        final investment = investmentsMap[returnCF.investmentId];
+        if (investment == null) continue;
 
         // Calculate holding period (from first investment to return)
         final investmentDate = investment.startDate ?? investment.createdAt;
@@ -254,13 +257,17 @@ class FYReportService {
   ) {
     final performers = <InvestmentWithReturns>[];
 
+    // Optimization: Group cash flows by investment id to avoid O(N * M) nested loops
+    final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in fyCashFlows) {
+      cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
+
     for (final investment in allInvestments) {
       // Get cashflows for this investment
-      final investmentCFs = fyCashFlows
-          .where((cf) => cf.investmentId == investment.id)
-          .toList();
+      final investmentCFs = cashFlowsByInvestment[investment.id];
 
-      if (investmentCFs.isEmpty) continue;
+      if (investmentCFs == null || investmentCFs.isEmpty) continue;
 
       // Calculate stats
       final stats = calculateStats(investmentCFs);
