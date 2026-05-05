@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inv_tracker/core/ads/ad_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
 
 /// State for a single native ad
 class NativeAdState {
@@ -76,17 +77,26 @@ final adConsentStatusProvider = Provider<AdConsentStatus>((ref) {
 /// - User is in grace period (first 7 days)
 final shouldShowAdsProvider = Provider<bool>((ref) {
   final consentStatus = ref.watch(adConsentStatusProvider);
-  
+
   // Don't show ads if consent denied
   if (consentStatus == AdConsentStatus.denied) {
     return false;
   }
 
-  // TODO: Add grace period check when user repository is available
-  // final user = ref.watch(currentUserProvider);
-  // if (user != null && _isInGracePeriod(user.signupDate)) {
-  //   return false;
-  // }
+  // Check grace period using user profile creation date
+  final profileAsync = ref.watch(userProfileNotifierProvider);
+  final userProfile = profileAsync.value;
+
+  if (userProfile != null) {
+    final now = DateTime.now();
+    final daysSinceCreation = now.difference(userProfile.createdAt).inDays;
+    const gracePeriodDays = 7;
+
+    if (daysSinceCreation < gracePeriodDays) {
+      // User is in grace period - don't show ads
+      return false;
+    }
+  }
 
   return true;
 });
