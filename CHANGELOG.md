@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Priority bug fixes and quality improvements (#375)
+
 ## [3.58.9] - 2026-05-04
 
 ### 🐛 Bug Fixes
