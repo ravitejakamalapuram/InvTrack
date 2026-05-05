@@ -24,6 +24,12 @@ class MockReportCacheService implements ReportCacheService {
 
   @override
   Map<String, dynamic> getStats() => {};
+
+  @override
+  void startPeriodicCleanup() {}
+
+  @override
+  void dispose() {}
 }
 
 void main() {

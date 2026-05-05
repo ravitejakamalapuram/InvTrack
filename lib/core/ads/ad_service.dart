@@ -47,13 +47,19 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider for the ad service
 final adServiceProvider = Provider<AdService>((ref) {
+  // Watch user profile to access createdAt for grace period
+  final profileAsync = ref.watch(userProfileNotifierProvider);
+  final userProfile = profileAsync.value;
+
   return AdService(
     prefs: ref.watch(sharedPreferencesProvider),
     analytics: ref.watch(analyticsServiceProvider),
+    userCreatedAt: userProfile?.createdAt,
   );
 });
 
@@ -76,16 +82,20 @@ enum AdConsentStatus {
 class AdService {
   final SharedPreferences _prefs;
   final AnalyticsService _analytics;
+  final DateTime? _userCreatedAt;
   bool _isInitialized = false;
 
   static const String _consentKey = 'ad_consent_status';
   static const String _consentTimestampKey = 'ad_consent_timestamp';
+  static const int _gracePeriodDays = 7;
 
   AdService({
     required SharedPreferences prefs,
     required AnalyticsService analytics,
+    DateTime? userCreatedAt,
   })  : _prefs = prefs,
-        _analytics = analytics;
+        _analytics = analytics,
+        _userCreatedAt = userCreatedAt;
 
   /// Initialize the Mobile Ads SDK
   ///
@@ -195,8 +205,15 @@ class AdService {
   Future<NativeAd?> loadNativeAd({
     required AdPlacement placement,
   }) async {
+    // Lazy initialization: Initialize if needed
     if (!_isInitialized) {
-      LoggerService.warn('AdService not initialized, skipping ad load');
+      LoggerService.debug('Lazy-initializing AdService before ad load');
+      await initialize();
+    }
+
+    // Still not initialized after attempt? Fail gracefully
+    if (!_isInitialized) {
+      LoggerService.warn('AdService initialization failed, skipping ad load');
       return null;
     }
 
@@ -281,14 +298,33 @@ class AdService {
   }
 
   /// Check if user is in ad-free grace period (first 7 days after signup)
+  ///
+  /// Returns true if the user's account was created within the last [_gracePeriodDays] days.
+  /// Returns false if:
+  /// - User creation date is unknown
+  /// - Grace period has expired
   bool _isInGracePeriod() {
-    // TODO: Implement grace period check
-    // Read user signup date from UserRepository/FirebaseAuth
-    // Compare with current date
-    // Return true if within 7 days
-    //
-    // For MVP, return false (show ads immediately)
-    return false;
+    if (_userCreatedAt == null) {
+      // No user profile data available - assume grace period expired
+      return false;
+    }
+
+    final now = DateTime.now();
+    final daysSinceCreation = now.difference(_userCreatedAt).inDays;
+
+    final isInGrace = daysSinceCreation < _gracePeriodDays;
+
+    if (isInGrace) {
+      LoggerService.debug(
+        'User in ad-free grace period',
+        metadata: {
+          'daysSinceCreation': daysSinceCreation,
+          'gracePeriodDays': _gracePeriodDays,
+        },
+      );
+    }
+
+    return isInGrace;
   }
 
   /// Get ad unit ID for placement

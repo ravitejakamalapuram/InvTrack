@@ -3,15 +3,32 @@
 /// Caches expensive report calculations (e.g., XIRR, aggregations) in memory
 /// with automatic expiration after 5 minutes. Prevents redundant calculations
 /// when users view reports multiple times in a session.
+///
+/// **Automatic Cleanup**: Expired entries are removed every 5 minutes via a
+/// periodic timer to prevent memory leaks from stale cached reports.
 library;
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
 
 /// Provider for report cache service
+///
+/// The service automatically starts periodic cleanup when created.
+/// Cleanup runs every 5 minutes to remove expired cache entries.
 final reportCacheServiceProvider = Provider<ReportCacheService>((ref) {
-  return ReportCacheService();
+  final service = ReportCacheService();
+  // Start periodic cleanup when service is created
+  service.startPeriodicCleanup();
+
+  // Stop cleanup when provider is disposed
+  ref.onDispose(() {
+    service.dispose();
+  });
+
+  return service;
 });
 
 /// Cache entry with TTL
@@ -29,8 +46,14 @@ class ReportCacheService {
   /// Cache duration (5 minutes)
   static const _cacheDuration = Duration(minutes: 5);
 
+  /// Cleanup interval (5 minutes)
+  static const _cleanupInterval = Duration(minutes: 5);
+
   /// In-memory cache storage
   final Map<String, _CacheEntry<Object>> _cache = {};
+
+  /// Periodic cleanup timer
+  Timer? _cleanupTimer;
 
   /// Get cached report
   T? get<T>(ReportType type, DateTime periodStart, DateTime periodEnd) {
@@ -115,5 +138,35 @@ class ReportCacheService {
     if (removed > 0) {
       LoggerService.debug('Cleaned up $removed expired cache entries');
     }
+  }
+
+  /// Start periodic cleanup timer
+  ///
+  /// Automatically removes expired cache entries every [_cleanupInterval].
+  /// This prevents memory leaks from stale cached reports that were never
+  /// explicitly accessed after expiration.
+  void startPeriodicCleanup() {
+    // Cancel existing timer if any
+    _cleanupTimer?.cancel();
+
+    // Start new periodic timer
+    _cleanupTimer = Timer.periodic(_cleanupInterval, (_) {
+      cleanupExpired();
+    });
+
+    LoggerService.debug(
+      'Started periodic cache cleanup',
+      metadata: {'interval_minutes': _cleanupInterval.inMinutes},
+    );
+  }
+
+  /// Stop periodic cleanup timer
+  ///
+  /// Called automatically when the service is disposed via provider.onDispose.
+  void dispose() {
+    _cleanupTimer?.cancel();
+    _cleanupTimer = null;
+
+    LoggerService.debug('Stopped periodic cache cleanup');
   }
 }

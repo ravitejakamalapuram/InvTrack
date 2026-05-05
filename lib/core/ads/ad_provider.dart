@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inv_tracker/core/ads/ad_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
 
 /// State for a single native ad
 class NativeAdState {
@@ -76,17 +77,43 @@ final adConsentStatusProvider = Provider<AdConsentStatus>((ref) {
 /// - User is in grace period (first 7 days)
 final shouldShowAdsProvider = Provider<bool>((ref) {
   final consentStatus = ref.watch(adConsentStatusProvider);
-  
+
   // Don't show ads if consent denied
   if (consentStatus == AdConsentStatus.denied) {
     return false;
   }
 
-  // TODO: Add grace period check when user repository is available
-  // final user = ref.watch(currentUserProvider);
-  // if (user != null && _isInGracePeriod(user.signupDate)) {
-  //   return false;
-  // }
+  // Check grace period using user profile creation date
+  // FAIL-CLOSED: Return false (no ads) if loading, error, or no profile
+  final profileAsync = ref.watch(userProfileNotifierProvider);
 
-  return true;
+  return profileAsync.when(
+    data: (userProfile) {
+      // No profile data? Fail-closed (no ads)
+      if (userProfile == null) {
+        return false;
+      }
+
+      // User profile loaded successfully - check grace period
+      final now = DateTime.now();
+      final daysSinceCreation = now.difference(userProfile.createdAt).inDays;
+      const gracePeriodDays = 7;
+
+      if (daysSinceCreation < gracePeriodDays) {
+        // User is in grace period - don't show ads
+        return false;
+      }
+
+      // Grace period expired - show ads
+      return true;
+    },
+    loading: () {
+      // Profile loading - fail-closed (no ads until verified)
+      return false;
+    },
+    error: (error, stackTrace) {
+      // Profile error - fail-closed (no ads on error)
+      return false;
+    },
+  );
 });
