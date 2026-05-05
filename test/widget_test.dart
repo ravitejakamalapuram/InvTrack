@@ -159,4 +159,10 @@ class _FakeVersionCheckNotifier extends VersionCheckNotifier {
 
 /// Mock CurrencyConversionService that doesn't access Firestore
 class _MockCurrencyConversionService extends Mock
-    implements CurrencyConversionService {}
+    implements CurrencyConversionService {
+  @override
+  Future<void> refreshLiveCacheIfStale() async {}
+
+  @override
+  Future<void> preloadRates(Set<String> fromCurrencies, String toCurrency) async {}
+}
