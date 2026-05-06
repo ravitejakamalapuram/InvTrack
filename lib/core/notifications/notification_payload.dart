@@ -205,11 +205,16 @@ class NotificationPayload {
 
       case 'performance':
         // New: Navigate to dynamic performance report
-        // Rejoin parts after 'performance' to reconstruct colon-delimited params
-        // e.g., ['investment', 'inv1', 'goal', 'g1'] → 'investment:inv1:goal:g1'
+        // Reconstruct colon-delimited params from pre-split parts
+        // e.g., ['investment', 'inv1', 'goal', 'g1'] → ['investment:inv1', 'goal:g1']
         final remainingParts = parts.skip(1).toList();
-        final rejoined = remainingParts.isNotEmpty ? remainingParts.join(':') : '';
-        final paramMap = _parseColonParams(rejoined.isNotEmpty ? [rejoined] : []);
+        final paramPairs = <String>[];
+        for (var i = 0; i < remainingParts.length; i += 2) {
+          if (i + 1 < remainingParts.length) {
+            paramPairs.add('${remainingParts[i]}:${remainingParts[i + 1]}');
+          }
+        }
+        final paramMap = _parseColonParams(paramPairs);
         return NotificationPayload(
           type: NotificationPayloadType.dynamicReport,
           reportParams: {
@@ -237,11 +242,16 @@ class NotificationPayload {
 
       case 'maturity_calendar':
         // New: Navigate to dynamic maturity calendar report
-        // Rejoin parts after 'maturity_calendar' to reconstruct colon-delimited params
-        // e.g., ['investment', 'inv1', 'days', '7'] → 'investment:inv1:days:7'
+        // Reconstruct colon-delimited params from pre-split parts
+        // e.g., ['investment', 'inv1', 'days', '7'] → ['investment:inv1', 'days:7']
         final remainingParts = parts.skip(1).toList();
-        final rejoined = remainingParts.isNotEmpty ? remainingParts.join(':') : '';
-        final paramMap = _parseColonParams(rejoined.isNotEmpty ? [rejoined] : []);
+        final paramPairs = <String>[];
+        for (var i = 0; i < remainingParts.length; i += 2) {
+          if (i + 1 < remainingParts.length) {
+            paramPairs.add('${remainingParts[i]}:${remainingParts[i + 1]}');
+          }
+        }
+        final paramMap = _parseColonParams(paramPairs);
         return NotificationPayload(
           type: NotificationPayloadType.dynamicReport,
           reportParams: {

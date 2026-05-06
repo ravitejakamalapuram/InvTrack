@@ -240,5 +240,33 @@ void main() {
       expect(parsed.goalId, 'test-goal');
       expect(parsed.params['milestonePercent'], '25');
     });
+
+    test('performanceReport should round-trip correctly', () {
+      final payloadString = NotificationPayload.performanceReport(
+        investmentId: 'inv-123',
+        goalId: 'goal-456',
+      );
+      final parsed = NotificationPayload.parse(payloadString);
+
+      expect(parsed.type, NotificationPayloadType.dynamicReport);
+      expect(parsed.reportParams['reportType'], 'performance');
+      expect(parsed.reportParams['investmentId'], 'inv-123');
+      expect(parsed.reportParams['goalId'], 'goal-456');
+      expect(parsed.reportParams['notificationContext'], 'true');
+    });
+
+    test('maturityCalendarReport should round-trip correctly', () {
+      final payloadString = NotificationPayload.maturityCalendarReport(
+        investmentId: 'inv-789',
+        daysAhead: 30,
+      );
+      final parsed = NotificationPayload.parse(payloadString);
+
+      expect(parsed.type, NotificationPayloadType.dynamicReport);
+      expect(parsed.reportParams['reportType'], 'maturity_calendar');
+      expect(parsed.reportParams['investmentId'], 'inv-789');
+      expect(parsed.reportParams['daysToMaturity'], '30');
+      expect(parsed.reportParams['notificationContext'], 'true');
+    });
   });
 }
