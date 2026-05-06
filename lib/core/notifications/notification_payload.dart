@@ -205,7 +205,11 @@ class NotificationPayload {
 
       case 'performance':
         // New: Navigate to dynamic performance report
-        final paramMap = _parseColonParams(parts.skip(1).toList());
+        // Rejoin parts after 'performance' to reconstruct colon-delimited params
+        // e.g., ['investment', 'inv1', 'goal', 'g1'] → 'investment:inv1:goal:g1'
+        final remainingParts = parts.skip(1).toList();
+        final rejoined = remainingParts.isNotEmpty ? remainingParts.join(':') : '';
+        final paramMap = _parseColonParams(rejoined.isNotEmpty ? [rejoined] : []);
         return NotificationPayload(
           type: NotificationPayloadType.dynamicReport,
           reportParams: {
@@ -233,7 +237,11 @@ class NotificationPayload {
 
       case 'maturity_calendar':
         // New: Navigate to dynamic maturity calendar report
-        final paramMap = _parseColonParams(parts.skip(1).toList());
+        // Rejoin parts after 'maturity_calendar' to reconstruct colon-delimited params
+        // e.g., ['investment', 'inv1', 'days', '7'] → 'investment:inv1:days:7'
+        final remainingParts = parts.skip(1).toList();
+        final rejoined = remainingParts.isNotEmpty ? remainingParts.join(':') : '';
+        final paramMap = _parseColonParams(rejoined.isNotEmpty ? [rejoined] : []);
         return NotificationPayload(
           type: NotificationPayloadType.dynamicReport,
           reportParams: {
