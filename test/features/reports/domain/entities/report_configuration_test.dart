@@ -45,7 +45,8 @@ void main() {
 
         expect(config.reportType, ReportType.monthlyIncome);
         expect(config.dateRange!.start, DateTime(2024, 3, 1));
-        expect(config.dateRange!.end, DateTime(2024, 3, 31));
+        // Month end should be last day at 23:59:59.999
+        expect(config.dateRange!.end, DateTime(2024, 3, 31, 23, 59, 59, 999));
       });
 
       test('fyReport creates correct configuration', () {
@@ -53,7 +54,8 @@ void main() {
 
         expect(config.reportType, ReportType.fyReport);
         expect(config.dateRange!.start, DateTime(2023, 4, 1));
-        expect(config.dateRange!.end, DateTime(2024, 3, 31));
+        // FY end should be March 31 at 23:59:59.999
+        expect(config.dateRange!.end, DateTime(2024, 3, 31, 23, 59, 59, 999));
         expect(config.parameters['fyYear'], 2023);
       });
 

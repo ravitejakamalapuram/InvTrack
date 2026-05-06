@@ -71,8 +71,11 @@ class ReportConfiguration {
     NotificationContext? notificationContext,
   }) {
     final period = month ?? DateTime.now();
+    // Start of month: 1st day at 00:00:00
     final start = DateTime(period.year, period.month, 1);
-    final end = DateTime(period.year, period.month + 1, 0);
+    // End of month: last day at 23:59:59.999
+    final lastDay = DateTime(period.year, period.month + 1, 0).day;
+    final end = DateTime(period.year, period.month, lastDay, 23, 59, 59, 999);
 
     return ReportConfiguration(
       reportType: ReportType.monthlyIncome,
@@ -82,15 +85,20 @@ class ReportConfiguration {
     );
   }
 
-  /// Create an FY report configuration
+  /// Create an FY report configuration (Indian FY: April 1 - March 31)
   factory ReportConfiguration.fyReport({
     int? fyYear,
     NotificationContext? notificationContext,
   }) {
     final now = DateTime.now();
+    // FY year is the year in which FY starts (April)
+    // e.g., FY 2024-25 starts on April 1, 2024
     final year = fyYear ?? (now.month >= 4 ? now.year : now.year - 1);
+
+    // Start of FY: April 1 at 00:00:00
     final start = DateTime(year, 4, 1);
-    final end = DateTime(year + 1, 3, 31);
+    // End of FY: March 31 at 23:59:59.999
+    final end = DateTime(year + 1, 3, 31, 23, 59, 59, 999);
 
     return ReportConfiguration(
       reportType: ReportType.fyReport,
@@ -277,14 +285,25 @@ class ReportConfiguration {
       'goalId: $goalId, dateRange: $dateRange, fromNotification: $fromNotification)';
 
   // Helper methods
+
+  /// Get the start of the week (Monday 00:00:00)
+  /// Uses ISO 8601 week date system where Monday is day 1
   static DateTime _getWeekStart(DateTime date) {
-    final weekday = date.weekday;
-    return date.subtract(Duration(days: weekday - 1));
+    final weekday = date.weekday; // 1 = Monday, 7 = Sunday
+    final daysToSubtract = weekday - 1; // 0 for Monday, 6 for Sunday
+    final monday = date.subtract(Duration(days: daysToSubtract));
+    // Normalize to start of day (00:00:00)
+    return DateTime(monday.year, monday.month, monday.day);
   }
 
+  /// Get the end of the week (Sunday 23:59:59.999)
+  /// Uses ISO 8601 week date system where Sunday is day 7
   static DateTime _getWeekEnd(DateTime date) {
-    final weekday = date.weekday;
-    return date.add(Duration(days: 7 - weekday));
+    final weekday = date.weekday; // 1 = Monday, 7 = Sunday
+    final daysToAdd = 7 - weekday; // 6 for Monday, 0 for Sunday
+    final sunday = date.add(Duration(days: daysToAdd));
+    // Normalize to end of day (23:59:59.999)
+    return DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59, 999);
   }
 }
 
@@ -301,10 +320,10 @@ class DateRangeFilter {
   /// Duration between start and end
   Duration get duration => end.difference(start);
 
-  /// Check if a date is within this range
+  /// Check if a date is within this range (inclusive on both ends)
   bool contains(DateTime date) {
-    return date.isAfter(start.subtract(const Duration(days: 1))) &&
-        date.isBefore(end.add(const Duration(days: 1)));
+    return (date.isAfter(start) || date.isAtSameMomentAs(start)) &&
+        (date.isBefore(end) || date.isAtSameMomentAs(end));
   }
 
   @override
