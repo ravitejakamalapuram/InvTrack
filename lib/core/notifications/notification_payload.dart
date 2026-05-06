@@ -33,6 +33,9 @@ enum NotificationPayloadType {
   /// Navigate to goal detail screen
   goalDetail,
 
+  /// Navigate to dynamic report screen with filters
+  dynamicReport,
+
   /// Snooze notification (reschedule for later)
   snooze,
 
@@ -47,11 +50,16 @@ class NotificationPayload {
   final String? goalId;
   final Map<String, String> params;
 
+  /// Report configuration parameters (for dynamicReport type)
+  /// Format: reportType, investmentId, goalId, startDate, endDate
+  final Map<String, String> reportParams;
+
   const NotificationPayload({
     required this.type,
     this.investmentId,
     this.goalId,
     this.params = const {},
+    this.reportParams = const {},
   });
 
   /// Parse a payload string into a structured payload
@@ -89,9 +97,24 @@ class NotificationPayload {
         );
 
       case 'weekly_summary':
+        // New: Navigate to dynamic weekly summary report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'weekly_summary',
+            'notificationContext': 'true',
+          },
+        );
+
       case 'monthly_summary':
-        return const NotificationPayload(
-          type: NotificationPayloadType.overview,
+      case 'monthly_income':
+        // New: Navigate to dynamic monthly income report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'monthly_income',
+            'notificationContext': 'true',
+          },
         );
 
       case 'milestone':
@@ -129,8 +152,14 @@ class NotificationPayload {
         );
 
       case 'fy_summary':
-        return const NotificationPayload(
-          type: NotificationPayloadType.overview,
+      case 'fy_report':
+        // New: Navigate to dynamic FY report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'fy_report',
+            'notificationContext': 'true',
+          },
         );
 
       case 'goal_milestone':
@@ -244,7 +273,41 @@ class NotificationPayload {
   /// Create a payload string for Day 14 activation (social proof)
   static String get activationDay14 => 'activation_day_14';
 
+  // ============ Dynamic Report Payloads ============
+
+  /// Create a payload string for weekly summary report
+  static String get weeklySummaryReport => 'weekly_summary';
+
+  /// Create a payload string for monthly income report
+  static String get monthlyIncomeReport => 'monthly_income';
+
+  /// Create a payload string for FY report
+  static String get fyReportPayload => 'fy_report';
+
+  /// Create a payload string for performance report
+  static String performanceReport({String? investmentId, String? goalId}) {
+    final parts = ['performance'];
+    if (investmentId != null) parts.add('investment:$investmentId');
+    if (goalId != null) parts.add('goal:$goalId');
+    return parts.join(':');
+  }
+
+  /// Create a payload string for goal progress report
+  static String goalProgressReport(String goalId, {int? milestonePercent}) {
+    final parts = ['goal_progress', goalId];
+    if (milestonePercent != null) parts.add(milestonePercent.toString());
+    return parts.join(':');
+  }
+
+  /// Create a payload string for maturity calendar report
+  static String maturityCalendarReport({String? investmentId, int? daysAhead}) {
+    final parts = ['maturity_calendar'];
+    if (investmentId != null) parts.add('investment:$investmentId');
+    if (daysAhead != null) parts.add('days:$daysAhead');
+    return parts.join(':');
+  }
+
   @override
   String toString() =>
-      'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params)';
+      'NotificationPayload(type: $type, investmentId: $investmentId, goalId: $goalId, params: $params, reportParams: $reportParams)';
 }
