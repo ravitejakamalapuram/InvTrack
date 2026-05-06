@@ -5,12 +5,13 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/dynamic_report_data.dart';
 import 'package:inv_tracker/features/reports/data/services/report_builder_service.dart';
 
 /// Provider for building dynamic reports
-/// 
+///
 /// Usage:
 /// ```dart
 /// final config = ReportConfiguration.weeklySummary();
@@ -20,11 +21,17 @@ final dynamicReportProvider = FutureProvider.autoDispose.family<
     DynamicReportData,
     ReportConfiguration
 >((ref, config) async {
-  final service = ref.watch(reportBuilderServiceProvider);
-  
-  // Build the report using the service
-  // The service reads from other providers and aggregates data
-  return service.buildReport(config, ref.container);
+  try {
+    final service = ref.watch(reportBuilderServiceProvider);
+
+    // Build the report using the service
+    // The service reads from other providers and aggregates data
+    return await service.buildReport(config);
+  } catch (e, stackTrace) {
+    // Use ErrorHandler for user-friendly error messages
+    ErrorHandler.handle(e, stackTrace, showFeedback: false);
+    rethrow; // Re-throw for FutureProvider to handle
+  }
 });
 
 /// Provider for checking if a report has loaded successfully
@@ -45,6 +52,10 @@ final reportErrorProvider = Provider.autoDispose.family<String?, ReportConfigura
   return reportAsync.when(
     data: (data) => data.hasData ? null : data.emptyStateMessage,
     loading: () => null,
-    error: (e, st) => e.toString(),
+    error: (e, st) {
+      // Map to AppException and get user-friendly error message
+      final appException = ErrorHandler.mapException(e, st);
+      return appException.userMessage;
+    },
   );
 });

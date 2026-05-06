@@ -10,8 +10,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
-import 'package:inv_tracker/core/error/crashlytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
@@ -233,7 +233,9 @@ class NotificationNavigator {
 
       // Report non-validation errors to Crashlytics
       if (e is! ValidationException) {
-        await CrashlyticsService().recordError(
+        await CrashlyticsService(
+          debugModeEnabled: CrashlyticsService.enableInDebugMode,
+        ).recordError(
           e,
           stack,
           reason: 'notification_navigator._navigateToDynamicReport',

@@ -11,7 +11,6 @@ import 'package:inv_tracker/features/investment/presentation/screens/investment_
 import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
-import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
@@ -141,7 +140,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         return DynamicReportScreen(configuration: config);
                       } catch (e, stackTrace) {
                         // Log parsing errors and show error screen
-                        LoggerService().error(
+                        LoggerService.error(
                           'Failed to parse report configuration from query params',
                           error: e,
                           stackTrace: stackTrace,

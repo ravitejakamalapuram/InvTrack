@@ -13,51 +13,50 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 
 /// Provider for ReportBuilderService
 final reportBuilderServiceProvider = Provider<ReportBuilderService>((ref) {
-  return ReportBuilderService();
+  return ReportBuilderService(ref);
 });
 
 /// Service for building dynamic reports
 class ReportBuilderService {
+  final Ref _ref;
+
+  ReportBuilderService(this._ref);
+
   /// Build a report from configuration
-  Future<DynamicReportData> buildReport(
-    ReportConfiguration config,
-    ProviderContainer container,
-  ) async {
+  Future<DynamicReportData> buildReport(ReportConfiguration config) async {
     switch (config.reportType) {
       case ReportType.weeklySummary:
-        return _buildWeeklySummary(config, container);
+        return _buildWeeklySummary(config);
 
       case ReportType.monthlyIncome:
-        return _buildMonthlyIncome(config, container);
+        return _buildMonthlyIncome(config);
 
       case ReportType.fyReport:
-        return _buildFyReport(config, container);
+        return _buildFyReport(config);
 
       case ReportType.performance:
-        return _buildPerformance(config, container);
+        return _buildPerformance(config);
 
       case ReportType.goalProgress:
-        return _buildGoalProgress(config, container);
+        return _buildGoalProgress(config);
 
       case ReportType.maturityCalendar:
-        return _buildMaturityCalendar(config, container);
+        return _buildMaturityCalendar(config);
 
       case ReportType.actionRequired:
-        return _buildActionRequired(config, container);
+        return _buildActionRequired(config);
 
       case ReportType.portfolioHealth:
-        return _buildPortfolioHealth(config, container);
+        return _buildPortfolioHealth(config);
     }
   }
 
   /// Build weekly summary report
   Future<DynamicReportData> _buildWeeklySummary(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
-    // Get data from providers
-    // Read the AsyncValue and extract data properly
-    final cashFlowsAsync = container.read(validCashFlowsProvider);
+    // Get data from providers using ref instead of container
+    final cashFlowsAsync = _ref.read(validCashFlowsProvider);
 
     final cashFlows = await cashFlowsAsync.when(
       data: (data) => Future.value(data),
@@ -129,7 +128,6 @@ class ReportBuilderService {
   /// Build monthly income report
   Future<DynamicReportData> _buildMonthlyIncome(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     // Delegate to existing MonthlyIncomeService for now
     // This will be refactored to use DynamicReportData format
@@ -145,7 +143,6 @@ class ReportBuilderService {
   /// Build FY report
   Future<DynamicReportData> _buildFyReport(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     return DynamicReportData(
       reportType: ReportType.fyReport,
@@ -159,7 +156,6 @@ class ReportBuilderService {
   // Placeholder implementations for other report types
   Future<DynamicReportData> _buildPerformance(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     return DynamicReportData(
       reportType: ReportType.performance,
@@ -171,7 +167,6 @@ class ReportBuilderService {
 
   Future<DynamicReportData> _buildGoalProgress(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     return DynamicReportData(
       reportType: ReportType.goalProgress,
@@ -184,7 +179,6 @@ class ReportBuilderService {
 
   Future<DynamicReportData> _buildMaturityCalendar(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     return DynamicReportData(
       reportType: ReportType.maturityCalendar,
@@ -197,7 +191,6 @@ class ReportBuilderService {
 
   Future<DynamicReportData> _buildActionRequired(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     return DynamicReportData(
       reportType: ReportType.actionRequired,
@@ -209,7 +202,6 @@ class ReportBuilderService {
 
   Future<DynamicReportData> _buildPortfolioHealth(
     ReportConfiguration config,
-    ProviderContainer container,
   ) async {
     return DynamicReportData(
       reportType: ReportType.portfolioHealth,

@@ -80,7 +80,7 @@ void main() {
           endDate: DateTime(2024, 1, 7),
         );
 
-        final report = await service.buildReport(config, container);
+        final report = await service.buildReport(config);
 
         expect(report, isA<DynamicReportData>());
         expect(report.reportType, ReportType.weeklySummary);
@@ -93,7 +93,7 @@ void main() {
           month: DateTime(2024, 1, 15),
         );
 
-        final report = await service.buildReport(config, container);
+        final report = await service.buildReport(config);
 
         expect(report.reportType, ReportType.monthlyIncome);
         expect(report.dateRange, isNotNull);
@@ -102,7 +102,7 @@ void main() {
       test('builds maturity calendar report', () async {
         final config = ReportConfiguration.maturityCalendar();
 
-        final report = await service.buildReport(config, container);
+        final report = await service.buildReport(config);
 
         expect(report.reportType, ReportType.maturityCalendar);
       });
@@ -112,7 +112,7 @@ void main() {
           investmentId: 'inv1',
         );
 
-        final report = await service.buildReport(config, container);
+        final report = await service.buildReport(config);
 
         expect(report.filteredInvestmentId, 'inv1');
       });
@@ -122,7 +122,7 @@ void main() {
           goalId: 'goal1',
         );
 
-        final report = await service.buildReport(config, container);
+        final report = await service.buildReport(config);
 
         expect(report.filteredGoalId, 'goal1');
       });
