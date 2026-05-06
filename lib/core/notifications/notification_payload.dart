@@ -107,6 +107,15 @@ class NotificationPayload {
         );
 
       case 'monthly_summary':
+        // New: Navigate to dynamic monthly summary report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'monthly_summary',
+            'notificationContext': 'true',
+          },
+        );
+
       case 'monthly_income':
         // New: Navigate to dynamic monthly income report
         return NotificationPayload(
@@ -152,6 +161,15 @@ class NotificationPayload {
         );
 
       case 'fy_summary':
+        // New: Navigate to dynamic FY summary report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'fy_summary',
+            'notificationContext': 'true',
+          },
+        );
+
       case 'fy_report':
         // New: Navigate to dynamic FY report
         return NotificationPayload(
