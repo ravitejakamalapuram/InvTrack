@@ -2,6 +2,29 @@
 ///
 /// Payloads are encoded as strings in the format: `type:param1:param2`
 /// This allows the app to navigate to specific screens when notifications are tapped.
+///
+/// ## Supported Payload Types
+///
+/// ### Legacy Navigation (Phase 1)
+/// - `income_reminder:investmentId` - Add cash flow screen
+/// - `maturity_reminder:investmentId:days` - Investment detail with maturity context
+/// - `milestone:investmentId:moic` - Investment detail with celebration
+///
+/// ### Dynamic Reports (Phase 2 - Current)
+/// - `weekly_summary` - Weekly summary report
+/// - `monthly_summary` - Monthly summary report
+/// - `monthly_income` - Monthly income report
+/// - `fy_summary` / `fy_report` - Financial year report
+/// - `performance:investment:id` / `performance:goal:id` - Performance report
+/// - `goal_progress:goalId:milestone%` - Goal progress report
+/// - `maturity_calendar:investment:id:days:N` - Maturity calendar report
+/// - `action_required` - Action items report
+/// - `portfolio_health` - Portfolio health report
+///
+/// ### Future Notifications (Phase 3+)
+/// - `tax_reminder`, `risk_alert`, `weekly_check_in`, `idle_alert`
+/// - `goal_milestone`, `goal_at_risk`, `goal_stale`
+/// - Activation campaigns (day_0, day_1, day_3, day_7, day_14)
 library;
 
 /// Notification action IDs for Android action buttons
@@ -180,6 +203,69 @@ class NotificationPayload {
           },
         );
 
+      case 'performance':
+        // New: Navigate to dynamic performance report
+        final paramMap = _parseColonParams(parts.skip(1).toList());
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'performance',
+            'notificationContext': 'true',
+            if (paramMap['investment'] != null)
+              'investmentId': paramMap['investment']!,
+            if (paramMap['goal'] != null)
+              'goalId': paramMap['goal']!,
+          },
+        );
+
+      case 'goal_progress':
+        // New: Navigate to dynamic goal progress report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          goalId: parts.length > 1 ? parts[1] : null,
+          reportParams: {
+            'reportType': 'goal_progress',
+            'notificationContext': 'true',
+            if (parts.length > 1) 'goalId': parts[1],
+            if (parts.length > 2) 'milestonePercent': parts[2],
+          },
+        );
+
+      case 'maturity_calendar':
+        // New: Navigate to dynamic maturity calendar report
+        final paramMap = _parseColonParams(parts.skip(1).toList());
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'maturity_calendar',
+            'notificationContext': 'true',
+            if (paramMap['investment'] != null)
+              'investmentId': paramMap['investment']!,
+            if (paramMap['days'] != null)
+              'daysToMaturity': paramMap['days']!,
+          },
+        );
+
+      case 'action_required':
+        // New: Navigate to dynamic action required report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'action_required',
+            'notificationContext': 'true',
+          },
+        );
+
+      case 'portfolio_health':
+        // New: Navigate to dynamic portfolio health report
+        return NotificationPayload(
+          type: NotificationPayloadType.dynamicReport,
+          reportParams: {
+            'reportType': 'portfolio_health',
+            'notificationContext': 'true',
+          },
+        );
+
       case 'goal_milestone':
         return NotificationPayload(
           type: NotificationPayloadType.goalDetail,
@@ -231,6 +317,20 @@ class NotificationPayload {
     }
   }
 
+  /// Parse colon-separated key:value pairs into a map.
+  ///
+  /// Example: ['investment:inv123', 'days:7'] → {'investment': 'inv123', 'days': '7'}
+  static Map<String, String> _parseColonParams(List<String> parts) {
+    final result = <String, String>{};
+    for (final part in parts) {
+      final keyValue = part.split(':');
+      if (keyValue.length == 2) {
+        result[keyValue[0]] = keyValue[1];
+      }
+    }
+    return result;
+  }
+
   /// Create a payload string for income reminder
   static String incomeReminder(String investmentId) =>
       'income_reminder:$investmentId';
@@ -239,11 +339,50 @@ class NotificationPayload {
   static String maturityReminder(String investmentId, int daysToMaturity) =>
       'maturity_reminder:$investmentId:$daysToMaturity';
 
-  /// Create a payload string for weekly summary
+  // ============ Report Notification Payloads ============
+
+  /// Create a payload string for weekly summary report
   static String get weeklySummary => 'weekly_summary';
 
-  /// Create a payload string for monthly summary
+  /// Create a payload string for monthly summary report
   static String get monthlySummary => 'monthly_summary';
+
+  /// Create a payload string for monthly income report
+  static String get monthlyIncome => 'monthly_income';
+
+  /// Create a payload string for FY summary report
+  static String get fySummary => 'fy_summary';
+
+  /// Create a payload string for performance report
+  static String performanceReport({String? investmentId, String? goalId}) {
+    final parts = ['performance'];
+    if (investmentId != null) parts.add('investment:$investmentId');
+    if (goalId != null) parts.add('goal:$goalId');
+    return parts.join(':');
+  }
+
+  /// Create a payload string for goal progress report
+  static String goalProgressReport(String goalId, {int? milestonePercent}) {
+    final parts = ['goal_progress', goalId];
+    if (milestonePercent != null) parts.add(milestonePercent.toString());
+    return parts.join(':');
+  }
+
+  /// Create a payload string for maturity calendar report
+  static String maturityCalendarReport({String? investmentId, int? daysAhead}) {
+    final parts = ['maturity_calendar'];
+    if (investmentId != null) parts.add('investment:$investmentId');
+    if (daysAhead != null) parts.add('days:$daysAhead');
+    return parts.join(':');
+  }
+
+  /// Create a payload string for action required report
+  static String get actionRequired => 'action_required';
+
+  /// Create a payload string for portfolio health report
+  static String get portfolioHealth => 'portfolio_health';
+
+  // ============ Legacy/Phase 3 Notification Payloads ============
 
   /// Create a payload string for milestone celebration
   static String milestone(String investmentId, double moic) =>
@@ -260,9 +399,6 @@ class NotificationPayload {
 
   /// Create a payload string for idle investment alert
   static String idleAlert(String investmentId) => 'idle_alert:$investmentId';
-
-  /// Create a payload string for FY summary
-  static String get fySummary => 'fy_summary';
 
   /// Create a payload string for goal milestone celebration
   static String goalMilestone(String goalId, int milestonePercent) =>
@@ -290,40 +426,6 @@ class NotificationPayload {
 
   /// Create a payload string for Day 14 activation (social proof)
   static String get activationDay14 => 'activation_day_14';
-
-  // ============ Dynamic Report Payloads ============
-
-  /// Create a payload string for weekly summary report
-  static String get weeklySummaryReport => 'weekly_summary';
-
-  /// Create a payload string for monthly income report
-  static String get monthlyIncomeReport => 'monthly_income';
-
-  /// Create a payload string for FY report
-  static String get fyReportPayload => 'fy_report';
-
-  /// Create a payload string for performance report
-  static String performanceReport({String? investmentId, String? goalId}) {
-    final parts = ['performance'];
-    if (investmentId != null) parts.add('investment:$investmentId');
-    if (goalId != null) parts.add('goal:$goalId');
-    return parts.join(':');
-  }
-
-  /// Create a payload string for goal progress report
-  static String goalProgressReport(String goalId, {int? milestonePercent}) {
-    final parts = ['goal_progress', goalId];
-    if (milestonePercent != null) parts.add(milestonePercent.toString());
-    return parts.join(':');
-  }
-
-  /// Create a payload string for maturity calendar report
-  static String maturityCalendarReport({String? investmentId, int? daysAhead}) {
-    final parts = ['maturity_calendar'];
-    if (investmentId != null) parts.add('investment:$investmentId');
-    if (daysAhead != null) parts.add('days:$daysAhead');
-    return parts.join(':');
-  }
 
   @override
   String toString() =>

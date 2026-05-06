@@ -10,6 +10,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/error/crashlytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
@@ -186,6 +188,14 @@ class NotificationNavigator {
     return true;
   }
 
+  /// Navigate to a dynamic report based on notification parameters.
+  ///
+  /// Parses the report type from [reportParams] and creates the appropriate
+  /// [ReportConfiguration] to display in [DynamicReportScreen].
+  ///
+  /// Returns `true` if navigation was successful, `false` otherwise.
+  ///
+  /// Throws [ValidationException] if the report type is unknown or invalid.
   Future<bool> _navigateToDynamicReport(Map<String, String> reportParams) async {
     final navigatorState = rootNavigatorKey.currentState;
     if (navigatorState == null) return false;
@@ -215,11 +225,20 @@ class NotificationNavigator {
         metadata: {'reportType': reportTypeId, 'params': reportParams},
       );
       return true;
-    } catch (e) {
+    } catch (e, stack) {
       LoggerService.warn(
         'Failed to navigate to dynamic report',
         metadata: {'error': e.toString(), 'reportType': reportTypeId},
       );
+
+      // Report non-validation errors to Crashlytics
+      if (e is! ValidationException) {
+        await CrashlyticsService().recordError(
+          e,
+          stack,
+          reason: 'notification_navigator._navigateToDynamicReport',
+        );
+      }
       return false;
     }
   }
@@ -228,8 +247,12 @@ class NotificationNavigator {
     switch (reportTypeId) {
       case 'weekly_summary':
         return ReportType.weeklySummary;
+      case 'monthly_summary':
+        return ReportType.weeklySummary; // Re-use for now
       case 'monthly_income':
         return ReportType.monthlyIncome;
+      case 'fy_summary':
+        return ReportType.fyReport;
       case 'fy_report':
         return ReportType.fyReport;
       case 'performance':
@@ -243,7 +266,10 @@ class NotificationNavigator {
       case 'portfolio_health':
         return ReportType.portfolioHealth;
       default:
-        throw ArgumentError('Unknown report type: $reportTypeId');
+        throw ValidationException(
+          userMessage: 'Unknown report type in notification',
+          technicalMessage: 'Unknown report type: $reportTypeId',
+        );
     }
   }
 
@@ -294,8 +320,10 @@ class NotificationNavigator {
 
       case ReportType.maturityCalendar:
         final investmentId = params['investmentId'];
+        final daysParam = params['daysToMaturity'] ?? params['daysAhead'];
         return ReportConfiguration.maturityCalendar(
           investmentId: investmentId,
+          daysToMaturity: daysParam != null ? int.tryParse(daysParam) : null,
           notificationContext: notificationContext,
         );
 
