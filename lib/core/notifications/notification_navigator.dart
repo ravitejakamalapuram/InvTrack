@@ -250,7 +250,8 @@ class NotificationNavigator {
       case 'weekly_summary':
         return ReportType.weeklySummary;
       case 'monthly_summary':
-        return ReportType.weeklySummary; // Re-use for now
+        // Map to monthlyIncome (not weeklySummary) for monthly activity summary
+        return ReportType.monthlyIncome;
       case 'monthly_income':
         return ReportType.monthlyIncome;
       case 'fy_summary':
