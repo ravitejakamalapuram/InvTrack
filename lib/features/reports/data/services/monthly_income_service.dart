@@ -32,6 +32,9 @@ class MonthlyIncomeService {
           cf.date.isBefore(monthEnd.add(const Duration(days: 1)));
     }).toList();
 
+    // Optimization: Pre-compute dictionary comprehension to avoid O(N*M) nested iterations
+    final investmentMap = {for (final inv in allInvestments) inv.id: inv};
+
     // Calculate totals by type
     double totalIncome = 0;
     double totalInvested = 0;
@@ -49,8 +52,9 @@ class MonthlyIncomeService {
           incomeByType[type] = (incomeByType[type] ?? 0) + cf.amount;
 
           // Find investment name
-          final investment =
-              allInvestments.firstWhere((inv) => inv.id == cf.investmentId);
+          final investment = investmentMap[cf.investmentId];
+          if (investment == null) continue; // Fallback for invalid references
+
           transactions.add(
             IncomeTransaction(
               id: cf.id,
@@ -88,14 +92,16 @@ class MonthlyIncomeService {
 
     final topEarners = investmentIncomeMap.entries
         .map((e) {
-          final investment =
-              allInvestments.firstWhere((inv) => inv.id == e.key);
+          final investment = investmentMap[e.key];
+          if (investment == null) return null;
+
           return InvestmentWithIncome(
             investment: investment,
             income: e.value,
             incomeType: investmentTypeMap[e.key] ?? 'Other',
           );
         })
+        .whereType<InvestmentWithIncome>()
         .toList()
       ..sort((a, b) => b.income.compareTo(a.income));
 
