@@ -47,9 +47,6 @@ class ReportBuilderService {
 
       case ReportType.portfolioHealth:
         return _buildPortfolioHealth(config, container);
-
-      default:
-        throw UnsupportedError('Report type ${config.reportType} not supported');
     }
   }
 
@@ -60,14 +57,7 @@ class ReportBuilderService {
   ) async {
     // Get data from providers
     // Read the AsyncValue and extract data properly
-    final investmentsAsync = container.read(activeInvestmentsProvider);
     final cashFlowsAsync = container.read(validCashFlowsProvider);
-
-    final investments = await investmentsAsync.when(
-      data: (data) => Future.value(data),
-      loading: () => Future.value(<InvestmentEntity>[]),
-      error: (e, st) => throw e,
-    );
 
     final cashFlows = await cashFlowsAsync.when(
       data: (data) => Future.value(data),

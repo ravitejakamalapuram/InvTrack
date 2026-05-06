@@ -4,8 +4,6 @@ import 'package:inv_tracker/features/reports/data/services/report_builder_servic
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
 import 'package:inv_tracker/features/reports/domain/entities/dynamic_report_data.dart';
-import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
 void main() {
