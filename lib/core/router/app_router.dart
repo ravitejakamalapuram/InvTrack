@@ -11,6 +11,8 @@ import 'package:inv_tracker/features/investment/presentation/screens/investment_
 import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
@@ -128,15 +130,27 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/reports',
                 builder: (context, state) => const ReportsHomeScreen(),
                 routes: [
-                  // Dynamic report builder route
                   // Dynamic report builder - replaces all 8 static report screens
                   GoRoute(
                     path: 'builder',
                     builder: (context, state) {
-                      // Parse query parameters into ReportConfiguration
-                      final params = state.uri.queryParameters;
-                      final config = ReportConfiguration.fromQueryParams(params);
-                      return DynamicReportScreen(configuration: config);
+                      try {
+                        // Parse query parameters into ReportConfiguration
+                        final params = state.uri.queryParameters;
+                        final config = ReportConfiguration.fromQueryParams(params);
+                        return DynamicReportScreen(configuration: config);
+                      } catch (e, stackTrace) {
+                        // Log parsing errors and show error screen
+                        LoggerService().error(
+                          'Failed to parse report configuration from query params',
+                          error: e,
+                          stackTrace: stackTrace,
+                        );
+                        // Return error state with fallback configuration
+                        return DynamicReportScreen(
+                          configuration: ReportConfiguration.weeklySummary(),
+                        );
+                      }
                     },
                   ),
                 ],
