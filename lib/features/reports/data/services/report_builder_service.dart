@@ -5,6 +5,8 @@
 /// This is the heart of the builder pattern.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/dynamic_report_data.dart';
@@ -58,11 +60,19 @@ class ReportBuilderService {
     // Get data from providers using ref instead of container
     final cashFlowsAsync = _ref.read(validCashFlowsProvider);
 
-    final cashFlows = await cashFlowsAsync.when(
-      data: (data) => Future.value(data),
-      loading: () => Future.value(<CashFlowEntity>[]),
-      error: (e, st) => throw e,
-    );
+    // FIX: Properly handle AsyncValue states - don't collapse loading to empty list
+    // If still loading, the FutureProvider will keep waiting
+    if (cashFlowsAsync.isLoading) {
+      // Return a never-completing future to signal "still loading"
+      // The FutureProvider wrapper will show loading state to UI
+      return Completer<DynamicReportData>().future;
+    }
+
+    if (cashFlowsAsync.hasError) {
+      throw cashFlowsAsync.error!;
+    }
+
+    final cashFlows = cashFlowsAsync.value ?? [];
 
     // Apply date range filter
     final filteredCashFlows = config.dateRange != null
