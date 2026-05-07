@@ -101,7 +101,7 @@ void main() {
           }),
           // Override currency conversion service to avoid Firestore dependency
           currencyConversionServiceProvider.overrideWith((ref) {
-            return _MockCurrencyConversionService();
+            return _FakeCurrencyConversionService();
           }),
         ],
         child: const InvTrackerApp(),
@@ -157,6 +157,18 @@ class _FakeVersionCheckNotifier extends VersionCheckNotifier {
   }
 }
 
-/// Mock CurrencyConversionService that doesn't access Firestore
-class _MockCurrencyConversionService extends Mock
-    implements CurrencyConversionService {}
+/// Fake CurrencyConversionService that doesn't access Firestore
+/// Uses Fake instead of Mock since it only provides no-op implementations
+/// without using when()/verify(), mirroring the pattern of _FakeFirebaseAnalytics
+class _FakeCurrencyConversionService extends Fake
+    implements CurrencyConversionService {
+  @override
+  Future<void> preloadRates(Set<String> currencies, String baseCurrency) async {
+    // No-op in tests
+  }
+
+  @override
+  Future<void> refreshLiveCacheIfStale() async {
+    // No-op in tests
+  }
+}

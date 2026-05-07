@@ -26,6 +26,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Verify visual presence
     expect(find.text('Add Transaction'), findsOneWidget);
