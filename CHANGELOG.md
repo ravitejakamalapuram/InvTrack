@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Use GoRouter navigation for notification deep links (#379)
+
 ## [3.58.12] - 2026-05-07
 
 ### ♻️ Refactoring
@@ -11,6 +17,12 @@
 ### 🐛 Bug Fixes
 
 - Priority bug fixes and quality improvements (#375)
+- Update _MockCurrencyConversionService to Fake with correct method signatures
+- Add pumpAndSettle() to transaction_fab_test for proper localization loading
+
+### 🔧 Miscellaneous
+
+- Update pubspec.lock after running tests
 
 ## [3.58.9] - 2026-05-04
 
