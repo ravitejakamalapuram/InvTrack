@@ -46,14 +46,14 @@ class MonthlyIncomeService {
     for (final cf in monthCashFlows) {
       switch (cf.type) {
         case CashFlowType.income:
+          // Find investment name
+          final investment = investmentMap[cf.investmentId];
+          if (investment == null) continue; // Fallback for invalid references
+
           totalIncome += cf.amount;
           // Group by notes (type) if available
           final type = (cf.notes == null || cf.notes!.isEmpty) ? 'Other' : cf.notes!;
           incomeByType[type] = (incomeByType[type] ?? 0) + cf.amount;
-
-          // Find investment name
-          final investment = investmentMap[cf.investmentId];
-          if (investment == null) continue; // Fallback for invalid references
 
           transactions.add(
             IncomeTransaction(

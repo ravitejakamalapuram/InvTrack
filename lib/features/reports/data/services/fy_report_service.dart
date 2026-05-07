@@ -252,11 +252,15 @@ class FYReportService {
   ) {
     final performers = <InvestmentWithReturns>[];
 
+    // Optimization: Pre-group cashflows by investmentId for O(1) lookup
+    final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in fyCashFlows) {
+      (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
+    }
+
     for (final investment in allInvestments) {
       // Get cashflows for this investment
-      final investmentCFs = fyCashFlows
-          .where((cf) => cf.investmentId == investment.id)
-          .toList();
+      final investmentCFs = cashFlowsByInvestment[investment.id] ?? [];
 
       if (investmentCFs.isEmpty) continue;
 
