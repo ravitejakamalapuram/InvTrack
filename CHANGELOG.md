@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ♻️ Refactoring
+
+- **reports**: Dynamic Report Builder - Replace 8 static screens (#377)
+
+## [3.58.11] - 2026-05-05
+
 ### 🐛 Bug Fixes
 
 - Priority bug fixes and quality improvements (#375)
