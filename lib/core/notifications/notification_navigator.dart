@@ -9,6 +9,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
@@ -120,8 +121,8 @@ class NotificationNavigator {
     // Navigate to investments tab first, then push detail screen
     context.go('/investments');
 
-    // Wait a bit for tab navigation to complete
-    await Future.delayed(const Duration(milliseconds: 200));
+    // Wait for frame to complete using deterministic frame-sync
+    await SchedulerBinding.instance.endOfFrame;
 
     if (!context.mounted) return false;
 
@@ -129,13 +130,26 @@ class NotificationNavigator {
     // Since we don't have a route defined for investment detail in GoRouter,
     // we need to use the root navigator to push it imperatively
     final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    if (navigatorState == null) {
+      LoggerService.warn('Navigator state unavailable after tab navigation');
+      return false;
+    }
 
-    navigatorState.push(
-      MaterialPageRoute(
-        builder: (ctx) => InvestmentDetailScreen(investment: investment),
-      ),
-    );
+    try {
+      navigatorState.push(
+        MaterialPageRoute(
+          builder: (ctx) => InvestmentDetailScreen(investment: investment),
+        ),
+      );
+    } catch (e, stack) {
+      LoggerService.error(
+        'Failed to push investment detail screen',
+        metadata: {'investmentId': investmentId},
+        error: e,
+        stackTrace: stack,
+      );
+      return false;
+    }
 
     LoggerService.debug(
       'Navigated to investment detail',
@@ -165,20 +179,33 @@ class NotificationNavigator {
     if (!context.mounted) return false;
     context.go('/investments');
 
-    // Wait a bit for tab navigation to complete
-    await Future.delayed(const Duration(milliseconds: 200));
+    // Wait for frame to complete using deterministic frame-sync
+    await SchedulerBinding.instance.endOfFrame;
 
     if (!context.mounted) return false;
 
     // Push add transaction screen
     final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    if (navigatorState == null) {
+      LoggerService.warn('Navigator state unavailable after tab navigation');
+      return false;
+    }
 
-    navigatorState.push(
-      MaterialPageRoute(
-        builder: (ctx) => AddTransactionScreen(investmentId: investmentId),
-      ),
-    );
+    try {
+      navigatorState.push(
+        MaterialPageRoute(
+          builder: (ctx) => AddTransactionScreen(investmentId: investmentId),
+        ),
+      );
+    } catch (e, stack) {
+      LoggerService.error(
+        'Failed to push add transaction screen',
+        metadata: {'investmentId': investmentId},
+        error: e,
+        stackTrace: stack,
+      );
+      return false;
+    }
 
     LoggerService.debug(
       'Navigated to add cash flow',
@@ -281,7 +308,7 @@ class NotificationNavigator {
 
       LoggerService.debug(
         'Navigated to dynamic report',
-        metadata: {'reportType': reportTypeId, 'params': reportParams, 'uri': uri.toString()},
+        metadata: {'reportType': reportTypeId, 'navigation': 'success'},
       );
       return true;
     } catch (e, stack) {
