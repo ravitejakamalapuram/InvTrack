@@ -79,11 +79,17 @@ class CrashlyticsService {
   // Track whether handlers have been installed to make installation idempotent
   static bool _handlersInstalled = false;
 
-  /// Static flag for backward compatibility with direct instantiation
-  /// This allows CrashlyticsService(debugModeEnabled: CrashlyticsService._enableInDebugMode)
-  /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
-  /// Enable Crashlytics in debug mode
-  /// TODO(@ravitejakamalapuram, 2026-05-01, #350): Remove once all call sites migrate to crashlyticsDebugModeProvider
+  /// Static flag for debug mode state synchronization.
+  ///
+  /// This field is kept in sync with [crashlyticsDebugModeProvider] and is used
+  /// by static/non-provider contexts (ErrorHandler, LoggerService) that cannot
+  /// access Riverpod providers.
+  ///
+  /// **Architecture Note**: This is intentionally static to support error handling
+  /// in contexts without provider access. The provider ([crashlyticsDebugModeProvider])
+  /// is the source of truth and updates this static field via [setEnabled].
+  ///
+  /// **Do NOT modify this directly** - use [crashlyticsDebugModeProvider] instead.
   static bool enableInDebugMode = false;
 
   /// Single source of truth for debug mode checks

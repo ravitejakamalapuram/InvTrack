@@ -11,19 +11,14 @@ import 'package:inv_tracker/features/investment/presentation/screens/investment_
 import 'package:inv_tracker/features/goals/presentation/screens/goals_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/create_goal_screen.dart';
 import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_setup_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_settings_screen.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart';
+import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/weekly_summary_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/monthly_income_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/fy_report_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/performance_report_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/goal_progress_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/maturity_calendar_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/action_required_screen.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/portfolio_health_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -134,57 +129,28 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/reports',
                 builder: (context, state) => const ReportsHomeScreen(),
                 routes: [
+                  // Dynamic report builder - replaces all 8 static report screens
                   GoRoute(
-                    path: 'weekly',
-                    builder: (context, state) => const WeeklySummaryScreen(),
-                  ),
-                  GoRoute(
-                    path: 'monthly',
-                    builder: (context, state) => const MonthlyIncomeScreen(),
-                  ),
-                  // Monthly report with date parameter (YYYY-MM)
-                  GoRoute(
-                    path: 'monthly/:yearMonth',
+                    path: 'builder',
                     builder: (context, state) {
-                      final yearMonth = state.pathParameters['yearMonth']!;
-                      final parts = yearMonth.split('-');
-                      final year = int.parse(parts[0]);
-                      final month = int.parse(parts[1]);
-                      final period = DateTime(year, month, 1);
-                      return MonthlyIncomeScreen(period: period);
+                      try {
+                        // Parse query parameters into ReportConfiguration
+                        final params = state.uri.queryParameters;
+                        final config = ReportConfiguration.fromQueryParams(params);
+                        return DynamicReportScreen(configuration: config);
+                      } catch (e, stackTrace) {
+                        // Log parsing errors and show error screen
+                        LoggerService.error(
+                          'Failed to parse report configuration from query params',
+                          error: e,
+                          stackTrace: stackTrace,
+                        );
+                        // Return error state with fallback configuration
+                        return DynamicReportScreen(
+                          configuration: ReportConfiguration.weeklySummary(),
+                        );
+                      }
                     },
-                  ),
-                  GoRoute(
-                    path: 'fy',
-                    builder: (context, state) => const FYReportScreen(),
-                  ),
-                  // FY report with year parameter
-                  GoRoute(
-                    path: 'fy/:year',
-                    builder: (context, state) {
-                      final year = int.parse(state.pathParameters['year']!);
-                      return FYReportScreen(fyYear: year);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'performance',
-                    builder: (context, state) => const PerformanceReportScreen(),
-                  ),
-                  GoRoute(
-                    path: 'goals',
-                    builder: (context, state) => const GoalProgressScreen(),
-                  ),
-                  GoRoute(
-                    path: 'maturity',
-                    builder: (context, state) => const MaturityCalendarScreen(),
-                  ),
-                  GoRoute(
-                    path: 'actions',
-                    builder: (context, state) => const ActionRequiredScreen(),
-                  ),
-                  GoRoute(
-                    path: 'health',
-                    builder: (context, state) => const PortfolioHealthScreen(),
                   ),
                 ],
               ),

@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/action_required_provider.dart';
 import 'package:inv_tracker/features/reports/presentation/widgets/historical_reports_list.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
@@ -77,7 +78,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.calendar_view_week_rounded,
                   title: l10n.weeklySummary,
                   subtitle: l10n.thisWeek,
-                  onTap: () => context.push('/reports/weekly'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.weeklySummary(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -85,7 +89,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.calendar_month_rounded,
                   title: l10n.monthlyIncome,
                   subtitle: l10n.thisMonth,
-                  onTap: () => context.push('/reports/monthly'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.monthlyIncome(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -93,7 +100,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.calendar_today_rounded,
                   title: l10n.fyReport,
                   subtitle: l10n.currentFY('2023', '24'),
-                  onTap: () => context.push('/reports/fy'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.fyReport(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -101,7 +111,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.trending_up_rounded,
                   title: l10n.performance,
                   subtitle: l10n.topPerformers,
-                  onTap: () => context.push('/reports/performance'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.performance(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -109,7 +122,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.flag_rounded,
                   title: l10n.goals,
                   subtitle: l10n.activeGoalsCount(activeGoalsCount),
-                  onTap: () => context.push('/reports/goals'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.goalProgress(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -117,7 +133,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.event_available_rounded,
                   title: l10n.maturity,
                   subtitle: l10n.upcoming,
-                  onTap: () => context.push('/reports/maturity'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.maturityCalendar(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -125,7 +144,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.notification_important_rounded,
                   title: l10n.actionRequired,
                   subtitle: l10n.actionItemsCount(actionItemsCount),
-                  onTap: () => context.push('/reports/actions'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.actionRequired(),
+                  ),
                 ),
                 _buildReportCard(
                   context,
@@ -133,7 +155,10 @@ class ReportsHomeScreen extends ConsumerWidget {
                   icon: Icons.health_and_safety_rounded,
                   title: l10n.portfolioHealth,
                   subtitle: l10n.healthScore(healthScore),
-                  onTap: () => context.push('/reports/health'),
+                  onTap: () => _navigateToReport(
+                    context,
+                    ReportConfiguration.portfolioHealth(),
+                  ),
                 ),
               ],
             ),
@@ -153,6 +178,13 @@ class ReportsHomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Navigate to dynamic report screen with configuration
+  void _navigateToReport(BuildContext context, ReportConfiguration config) {
+    final queryParams = config.toQueryParams();
+    final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
+    context.push(uri.toString());
   }
 
   Widget _buildReportCard(
