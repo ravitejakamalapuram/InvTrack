@@ -40,7 +40,7 @@ void queueNotificationNavigation(String payload) {
   _pendingNavigationController.add(payload);
   LoggerService.debug(
     'Queued notification navigation',
-    metadata: {'payload': payload},
+    metadata: {'payloadLength': payload.length},
   );
 }
 
@@ -59,7 +59,7 @@ class NotificationNavigator {
     final payload = NotificationPayload.parse(payloadString);
     LoggerService.debug(
       'Handling notification',
-      metadata: {'payload': payload.toString()},
+      metadata: {'type': payload.type.name},
     );
 
     switch (payload.type) {
@@ -430,8 +430,35 @@ class NotificationNavigator {
 
   Future<InvestmentEntity?> _findInvestment(String investmentId) async {
     try {
+      // Wait for provider to finish loading (up to 10s for cold start)
       final investmentsAsync = _ref.read(allInvestmentsProvider);
-      final investments = investmentsAsync.value;
+
+      // If still loading, wait for data
+      List<InvestmentEntity>? investments;
+      if (investmentsAsync.isLoading) {
+        // Cold start scenario - wait for data to load
+        final completer = Completer<List<InvestmentEntity>?>();
+        final subscription = _ref.listen(
+          allInvestmentsProvider,
+          (_, next) {
+            if (!next.isLoading && !completer.isCompleted) {
+              completer.complete(next.value);
+            }
+          },
+        );
+
+        try {
+          investments = await completer.future.timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => null,
+          );
+        } finally {
+          subscription.close();
+        }
+      } else {
+        investments = investmentsAsync.value;
+      }
+
       if (investments == null) return null;
 
       return investments.cast<InvestmentEntity?>().firstWhere(
