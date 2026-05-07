@@ -3,27 +3,25 @@
 /// This class is responsible for:
 /// - Parsing notification payloads
 /// - Looking up investments by ID
-/// - Navigating to the appropriate screen
+/// - Navigating to the appropriate screen using GoRouter
 library;
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
-import 'package:inv_tracker/features/goals/presentation/screens/goal_details_screen.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
-import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
-
-/// Global navigator key for notification navigation
-final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Provider for the notification navigator
 final notificationNavigatorProvider = Provider<NotificationNavigator>((ref) {
@@ -42,7 +40,7 @@ void queueNotificationNavigation(String payload) {
   _pendingNavigationController.add(payload);
   LoggerService.debug(
     'Queued notification navigation',
-    metadata: {'payload': payload},
+    metadata: {'payloadLength': payload.length},
   );
 }
 
@@ -61,7 +59,7 @@ class NotificationNavigator {
     final payload = NotificationPayload.parse(payloadString);
     LoggerService.debug(
       'Handling notification',
-      metadata: {'payload': payload.toString()},
+      metadata: {'type': payload.type.name},
     );
 
     switch (payload.type) {
@@ -101,9 +99,12 @@ class NotificationNavigator {
   ) async {
     if (investmentId == null) return false;
 
-    // Capture navigator state before async operation
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    // Get BuildContext from navigator key
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      LoggerService.warn('No context available for navigation');
+      return false;
+    }
 
     final investment = await _findInvestment(investmentId);
     if (investment == null) {
@@ -114,10 +115,45 @@ class NotificationNavigator {
       return false;
     }
 
-    navigatorState.push(
-      MaterialPageRoute(
-        builder: (context) => InvestmentDetailScreen(investment: investment),
-      ),
+    // Use GoRouter's navigation with investment entity passed via extra
+    if (!context.mounted) return false;
+
+    // Navigate to investments tab first, then push detail screen
+    context.go('/investments');
+
+    // Wait for frame to complete using deterministic frame-sync
+    await SchedulerBinding.instance.endOfFrame;
+
+    if (!context.mounted) return false;
+
+    // Push investment detail using GoRouter's imperative navigation
+    // Since we don't have a route defined for investment detail in GoRouter,
+    // we need to use the root navigator to push it imperatively
+    final navigatorState = rootNavigatorKey.currentState;
+    if (navigatorState == null) {
+      LoggerService.warn('Navigator state unavailable after tab navigation');
+      return false;
+    }
+
+    try {
+      navigatorState.push(
+        MaterialPageRoute(
+          builder: (ctx) => InvestmentDetailScreen(investment: investment),
+        ),
+      );
+    } catch (e, stack) {
+      LoggerService.error(
+        'Failed to push investment detail screen',
+        metadata: {'investmentId': investmentId},
+        error: e,
+        stackTrace: stack,
+      );
+      return false;
+    }
+
+    LoggerService.debug(
+      'Navigated to investment detail',
+      metadata: {'investmentId': investmentId},
     );
     return true;
   }
@@ -128,41 +164,83 @@ class NotificationNavigator {
   ) async {
     if (investmentId == null) return false;
 
-    // Capture navigator state before async operation
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    // Get BuildContext from navigator key
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      LoggerService.warn('No context available for navigation');
+      return false;
+    }
 
     // Verify investment exists
     final investment = await _findInvestment(investmentId);
     if (investment == null) return false;
 
-    navigatorState.push(
-      MaterialPageRoute(
-        builder: (context) => AddTransactionScreen(investmentId: investmentId),
-      ),
+    // Navigate to investments tab first
+    if (!context.mounted) return false;
+    context.go('/investments');
+
+    // Wait for frame to complete using deterministic frame-sync
+    await SchedulerBinding.instance.endOfFrame;
+
+    if (!context.mounted) return false;
+
+    // Push add transaction screen
+    final navigatorState = rootNavigatorKey.currentState;
+    if (navigatorState == null) {
+      LoggerService.warn('Navigator state unavailable after tab navigation');
+      return false;
+    }
+
+    try {
+      navigatorState.push(
+        MaterialPageRoute(
+          builder: (ctx) => AddTransactionScreen(investmentId: investmentId),
+        ),
+      );
+    } catch (e, stack) {
+      LoggerService.error(
+        'Failed to push add transaction screen',
+        metadata: {'investmentId': investmentId},
+        error: e,
+        stackTrace: stack,
+      );
+      return false;
+    }
+
+    LoggerService.debug(
+      'Navigated to add cash flow',
+      metadata: {'investmentId': investmentId},
     );
     return true;
   }
 
   Future<bool> _navigateToOverview() async {
-    // Overview is the home screen, so we just need to ensure we're there
-    // For now, just return true - the app opens to overview by default
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      LoggerService.warn('No context available for navigation');
+      return false;
+    }
+
+    // Navigate to overview tab (home screen)
+    if (!context.mounted) return false;
+    context.go('/');
+
+    LoggerService.debug('Navigated to overview');
     return true;
   }
 
   Future<bool> _navigateToInvestmentList() async {
-    // Navigate to investments tab (tab index 1 in HomeShellScreen)
-    // Since we use StatefulShellRoute, we can use GoRouter to navigate
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      LoggerService.warn('No context available for navigation');
+      return false;
+    }
 
-    // Pop to root first, then the shell will handle showing the investments tab
-    navigatorState.popUntil((route) => route.isFirst);
+    // Navigate to investments tab
+    if (!context.mounted) return false;
+    context.go('/investments');
 
-    // Note: The user will be on the home screen. For deep tab navigation,
-    // GoRouter's StatefulShellRoute requires context access. The user can
-    // tap the Investments tab manually after landing on the app.
-    // Full implementation would require passing a GoRouter context here.
+    LoggerService.debug('Navigated to investment list');
     return true;
   }
 
@@ -172,14 +250,15 @@ class NotificationNavigator {
   ) async {
     if (goalId == null) return false;
 
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      LoggerService.warn('No context available for navigation');
+      return false;
+    }
 
-    navigatorState.push(
-      MaterialPageRoute(
-        builder: (context) => GoalDetailsScreen(goalId: goalId),
-      ),
-    );
+    // Navigate to goal detail using GoRouter path
+    if (!context.mounted) return false;
+    context.go('/goals/$goalId');
 
     LoggerService.debug(
       'Navigated to goal detail',
@@ -197,8 +276,11 @@ class NotificationNavigator {
   ///
   /// Throws [ValidationException] if the report type is unknown or invalid.
   Future<bool> _navigateToDynamicReport(Map<String, String> reportParams) async {
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) return false;
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) {
+      LoggerService.warn('No context available for navigation');
+      return false;
+    }
 
     // Parse report type from params
     final reportTypeId = reportParams['reportType'];
@@ -214,15 +296,19 @@ class NotificationNavigator {
       // Create configuration from report params
       final config = _buildReportConfiguration(reportType, reportParams);
 
-      navigatorState.push(
-        MaterialPageRoute(
-          builder: (context) => DynamicReportScreen(configuration: config),
-        ),
-      );
+      // Convert configuration to query parameters
+      final queryParams = config.toQueryParams();
+
+      // Build the URI for the report
+      final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
+
+      // Navigate using GoRouter
+      if (!context.mounted) return false;
+      context.push(uri.toString());
 
       LoggerService.debug(
         'Navigated to dynamic report',
-        metadata: {'reportType': reportTypeId, 'params': reportParams},
+        metadata: {'reportType': reportTypeId, 'navigation': 'success'},
       );
       return true;
     } catch (e, stack) {
@@ -344,8 +430,35 @@ class NotificationNavigator {
 
   Future<InvestmentEntity?> _findInvestment(String investmentId) async {
     try {
+      // Wait for provider to finish loading (up to 10s for cold start)
       final investmentsAsync = _ref.read(allInvestmentsProvider);
-      final investments = investmentsAsync.value;
+
+      // If still loading, wait for data
+      List<InvestmentEntity>? investments;
+      if (investmentsAsync.isLoading) {
+        // Cold start scenario - wait for data to load
+        final completer = Completer<List<InvestmentEntity>?>();
+        final subscription = _ref.listen(
+          allInvestmentsProvider,
+          (_, next) {
+            if (!next.isLoading && !completer.isCompleted) {
+              completer.complete(next.value);
+            }
+          },
+        );
+
+        try {
+          investments = await completer.future.timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => null,
+          );
+        } finally {
+          subscription.close();
+        }
+      } else {
+        investments = investmentsAsync.value;
+      }
+
       if (investments == null) return null;
 
       return investments.cast<InvestmentEntity?>().firstWhere(
