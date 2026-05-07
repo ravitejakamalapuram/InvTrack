@@ -219,28 +219,26 @@ class FYReportService {
     // Only consider RETURN cashflows for capital gains
     final returns = fyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow);
 
+    // Optimization: Pre-compute dictionary comprehension to avoid O(N*M) nested iterations
+    final investmentMap = {for (final inv in allInvestments) inv.id: inv};
+
     for (final returnCF in returns) {
-      try {
-        final investment = allInvestments
-            .firstWhere((inv) => inv.id == returnCF.investmentId);
+      final investment = investmentMap[returnCF.investmentId];
+      if (investment == null) continue;
 
-        // Calculate holding period (from first investment to return)
-        final investmentDate = investment.startDate ?? investment.createdAt;
-        final holdingDays = returnCF.date.difference(investmentDate).inDays;
+      // Calculate holding period (from first investment to return)
+      final investmentDate = investment.startDate ?? investment.createdAt;
+      final holdingDays = returnCF.date.difference(investmentDate).inDays;
 
-        // Simplified gain calculation
-        // For capital gains, we approximate: return amount is the gain
-        // In reality, should match cost basis, but for annual reporting this is acceptable
-        final gain = returnCF.amount * 0.1; // Assume 10% gain on returns (conservative estimate)
+      // Simplified gain calculation
+      // For capital gains, we approximate: return amount is the gain
+      // In reality, should match cost basis, but for annual reporting this is acceptable
+      final gain = returnCF.amount * 0.1; // Assume 10% gain on returns (conservative estimate)
 
-        if (holdingDays < 365) {
-          shortTermGains += gain;
-        } else {
-          longTermGains += gain;
-        }
-      } catch (e) {
-        // Investment not found, skip
-        continue;
+      if (holdingDays < 365) {
+        shortTermGains += gain;
+      } else {
+        longTermGains += gain;
       }
     }
 
@@ -254,11 +252,15 @@ class FYReportService {
   ) {
     final performers = <InvestmentWithReturns>[];
 
+    // Optimization: Pre-group cashflows by investmentId for O(1) lookup
+    final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in fyCashFlows) {
+      (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
+    }
+
     for (final investment in allInvestments) {
       // Get cashflows for this investment
-      final investmentCFs = fyCashFlows
-          .where((cf) => cf.investmentId == investment.id)
-          .toList();
+      final investmentCFs = cashFlowsByInvestment[investment.id] ?? [];
 
       if (investmentCFs.isEmpty) continue;
 
