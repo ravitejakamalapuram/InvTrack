@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.58.12] - 2026-05-07
 
 ### ♻️ Refactoring
 
