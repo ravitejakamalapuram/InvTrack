@@ -49,47 +49,70 @@ class WeeklySummaryService {
       },
     );
 
-    // Filter cashflows for this week
-    final weekCashFlows = allCashFlows.where((cf) {
-      return cf.date.isAfter(periodStart.subtract(const Duration(days: 1))) &&
-          cf.date.isBefore(periodEnd.add(const Duration(days: 1)));
-    }).toList();
+    // Boundaries for date filtering hoisted out of loop
+    final weekStartBoundary = periodStart.subtract(const Duration(days: 1));
+    final weekEndBoundary = periodEnd.add(const Duration(days: 1));
 
-    // Calculate totals
+    final prevWeekStart = periodStart.subtract(const Duration(days: 7));
+    final prevWeekEnd = periodStart.subtract(const Duration(days: 1));
+    final prevWeekStartBoundary = prevWeekStart.subtract(const Duration(days: 1));
+    final prevWeekEndBoundary = prevWeekEnd.add(const Duration(days: 1));
+
+    // Calculate totals, weekCashFlows and prevWeekFlows concurrently in single pass
     double invested = 0;
     double returned = 0;
     double income = 0;
 
-    for (final cf in weekCashFlows) {
-      if (cf.type == CashFlowType.invest) {
-        invested += cf.amount;
-      } else if (cf.type == CashFlowType.returnFlow) {
-        returned += cf.amount;
-      } else if (cf.type == CashFlowType.income) {
-        income += cf.amount;
+    final weekCashFlows = <CashFlowEntity>[];
+    final prevWeekFlows = <CashFlowEntity>[];
+
+    for (final cf in allCashFlows) {
+      // Current week cashflows
+      if (cf.date.isAfter(weekStartBoundary) && cf.date.isBefore(weekEndBoundary)) {
+        weekCashFlows.add(cf);
+        if (cf.type == CashFlowType.invest) {
+          invested += cf.amount;
+        } else if (cf.type == CashFlowType.returnFlow) {
+          returned += cf.amount;
+        } else if (cf.type == CashFlowType.income) {
+          income += cf.amount;
+        }
+      }
+
+      // Previous week cashflows
+      if (cf.date.isAfter(prevWeekStartBoundary) && cf.date.isBefore(prevWeekEndBoundary)) {
+        prevWeekFlows.add(cf);
       }
     }
 
     final netPosition = (returned + income) - invested;
 
-    // Find new investments created this week
-    final newInvestments = allInvestments.where((inv) {
-      return inv.createdAt.isAfter(periodStart.subtract(const Duration(days: 1))) &&
-          inv.createdAt.isBefore(periodEnd.add(const Duration(days: 1)));
-    }).toList();
+    // Single pass loop for investments replacing multiple sequential .where().toList() calls
+    final newInvestments = <InvestmentEntity>[];
+    final upcomingMaturities = <InvestmentEntity>[];
 
-    // Find upcoming maturities (next 7 days)
     final nextWeekEnd = periodEnd.add(const Duration(days: 7));
-    final upcomingMaturities = allInvestments.where((inv) {
-      if (inv.maturityDate == null || !inv.isOpen) return false;
-      return inv.maturityDate!.isAfter(periodEnd) &&
-          inv.maturityDate!.isBefore(nextWeekEnd.add(const Duration(days: 1)));
-    }).toList();
+    final nextWeekEndBoundary = nextWeekEnd.add(const Duration(days: 1));
 
-    // Find top performer by XIRR
     InvestmentEntity? topPerformer;
     double? topXirr;
-    for (final inv in allInvestments.where((i) => i.isOpen)) {
+
+    for (final inv in allInvestments) {
+      // Find new investments created this week
+      if (inv.createdAt.isAfter(weekStartBoundary) && inv.createdAt.isBefore(weekEndBoundary)) {
+        newInvestments.add(inv);
+      }
+
+      if (!inv.isOpen) continue;
+
+      // Find upcoming maturities (next 7 days)
+      if (inv.maturityDate != null &&
+          inv.maturityDate!.isAfter(periodEnd) &&
+          inv.maturityDate!.isBefore(nextWeekEndBoundary)) {
+        upcomingMaturities.add(inv);
+      }
+
+      // Find top performer by XIRR
       final xirr = xirrMap[inv.id];
       if (xirr != null && (topXirr == null || xirr > topXirr)) {
         topXirr = xirr;
@@ -104,14 +127,7 @@ class WeeklySummaryService {
       weekCashFlows,
     );
 
-    // Calculate previous week's net position (optional)
-    final prevWeekStart = periodStart.subtract(const Duration(days: 7));
-    final prevWeekEnd = periodStart.subtract(const Duration(days: 1));
-    final prevWeekFlows = allCashFlows.where((cf) {
-      return cf.date.isAfter(prevWeekStart.subtract(const Duration(days: 1))) &&
-          cf.date.isBefore(prevWeekEnd.add(const Duration(days: 1)));
-    }).toList();
-
+    // Calculate previous week's net position
     final prevWeekNet = _calculateNetPosition(prevWeekFlows);
 
     final summary = WeeklySummary(
@@ -142,14 +158,20 @@ class WeeklySummaryService {
     List<CashFlowEntity> cashFlows,
   ) {
     final dailyFlows = <DailyCashFlow>[];
-    var current = start;
 
-    while (current.isBefore(end.add(const Duration(days: 1)))) {
-      final dayFlows = cashFlows.where((cf) {
-        return cf.date.year == current.year &&
-            cf.date.month == current.month &&
-            cf.date.day == current.day;
-      }).toList();
+    // Group cash flows by date string to avoid O(days * N) lookups
+    final Map<String, List<CashFlowEntity>> flowsByDate = {};
+    for (final cf in cashFlows) {
+      final dateKey = '${cf.date.year}-${cf.date.month}-${cf.date.day}';
+      flowsByDate.putIfAbsent(dateKey, () => []).add(cf);
+    }
+
+    var current = start;
+    final endBoundary = end.add(const Duration(days: 1));
+
+    while (current.isBefore(endBoundary)) {
+      final dateKey = '${current.year}-${current.month}-${current.day}';
+      final dayFlows = flowsByDate[dateKey] ?? [];
 
       double outflows = 0;
       double inflows = 0;
