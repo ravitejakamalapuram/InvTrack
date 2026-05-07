@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_fab_widgets.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('TransactionFab has correct semantics', (
@@ -13,6 +14,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TransactionFab(
             hasTransactions: true,
@@ -23,6 +26,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     // Verify visual presence
     expect(find.text('Add Transaction'), findsOneWidget);
