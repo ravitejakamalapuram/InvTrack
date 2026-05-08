@@ -49,18 +49,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
+          working-directory: android
+
       - name: Promote Alpha to Production
         id: promote
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
-          packageName: com.invtracker.inv_tracker
-          track: alpha
-          promoteTrack: production
-          releaseFiles: ''  # No new files, just promoting
-          status: ${{ inputs.rollout_percentage == '100' && 'completed' || 'inProgress' }}
-          userFraction: ${{ inputs.rollout_percentage == '100' && '' || format('0.{0}', inputs.rollout_percentage) }}
-          inAppUpdatePriority: ${{ inputs.update_priority }}
+        run: |
+          cd android
+
+          # Calculate user fraction for gradual rollout
+          ROLLOUT_PERCENT=${{ inputs.rollout_percentage }}
+          if [ "$ROLLOUT_PERCENT" = "100" ]; then
+            ROLLOUT_ARG=""
+          else
+            # Convert percentage to decimal (e.g., 20 -> 0.2)
+            FRACTION=$(echo "scale=2; $ROLLOUT_PERCENT / 100" | bc)
+            ROLLOUT_ARG="--rollout $FRACTION"
+          fi
+
+          echo "🚀 Promoting alpha track to production..."
+          echo "   Rollout: ${ROLLOUT_PERCENT}%"
+          echo "   Update Priority: ${{ inputs.update_priority }}"
+
+          bundle exec fastlane supply \
+            --track alpha \
+            --track_promote_to production \
+            --skip_upload_aab true \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true \
+            --in_app_update_priority ${{ inputs.update_priority }} \
+            $ROLLOUT_ARG
+        env:
+          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           
       - name: Setup Node.js for Firestore update
         if: success()
