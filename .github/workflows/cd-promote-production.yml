@@ -49,13 +49,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.0'
-          bundler-cache: true
-          working-directory: android
-
       - name: Promote Alpha to Production
         id: promote
         run: |
@@ -149,7 +142,7 @@ jobs:
           echo "build=$BUILD" >> $GITHUB_OUTPUT
 
       - name: Notify Slack - Success
-        if: success()
+        if: success() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: |
@@ -185,7 +178,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
       - name: Notify Slack - Failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: |
