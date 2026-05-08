@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Use correct SLACK_WEBHOOK_URL secret name
+
+## [3.59.5] - 2026-05-08
+
+### 🐛 Bug Fixes
+
 - Use correct FIREBASE_CREDENTIALS secret name
 
 ## [3.59.4] - 2026-05-08
