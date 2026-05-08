@@ -157,8 +157,7 @@ jobs:
           UPDATE_PRIORITY: ${{ inputs.update_priority }}
 
       - name: Update Firestore - Mark as Released
-        if: success() && env.FIREBASE_ADMIN_CREDENTIALS != ''
-        continue-on-error: true  # Optional step - don't fail if Firestore update fails
+        if: success()
         run: |
           npm install firebase-admin
           
@@ -201,8 +200,7 @@ jobs:
           })();
           EOF
         env:
-          FIREBASE_ADMIN_CREDENTIALS: ${{ secrets.FIREBASE_ADMIN_CREDENTIALS }}
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_ADMIN_CREDENTIALS }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
 
       - name: Get version info for notification
