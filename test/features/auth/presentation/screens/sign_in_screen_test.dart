@@ -11,32 +11,44 @@ import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.da
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:inv_tracker/core/notifications/notification_service.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockAnalyticsService extends Mock implements AnalyticsService {}
 
 class MockCrashlyticsService extends Mock implements CrashlyticsService {}
+class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
   late MockAuthRepository mockAuthRepository;
   late MockAnalyticsService mockAnalyticsService;
   late MockCrashlyticsService mockCrashlyticsService;
+  late MockNotificationService mockNotificationService;
+  late SharedPreferences mockPrefs;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    mockPrefs = await SharedPreferences.getInstance();
     mockAuthRepository = MockAuthRepository();
     mockAnalyticsService = MockAnalyticsService();
     mockCrashlyticsService = MockCrashlyticsService();
+    mockNotificationService = MockNotificationService();
 
     // Default stubbing
     when(
       () => mockAnalyticsService.logSignIn(method: any(named: 'method')),
     ).thenAnswer((_) async {});
+    when(() => mockNotificationService.requestPermissions()).thenAnswer((_) async => true);
     when(() => mockAnalyticsService.setUserId(any())).thenAnswer((_) async {});
+    when(() => mockNotificationService.requestPermissions()).thenAnswer((_) async => true);
     when(
       () => mockCrashlyticsService.setUserIdentifier(any()),
     ).thenAnswer((_) async {});
+    when(() => mockNotificationService.requestPermissions()).thenAnswer((_) async => true);
   });
 
   testWidgets('Google Sign-In button shows correct semantics during loading', (
@@ -53,7 +65,9 @@ void main() {
       ProviderScope(
         overrides: [
           authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
           analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
+          notificationServiceProvider.overrideWithValue(mockNotificationService),
           crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
           googleSignInInitializedProvider.overrideWith((ref) async {}),
         ],
