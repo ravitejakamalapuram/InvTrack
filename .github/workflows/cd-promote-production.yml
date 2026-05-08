@@ -49,42 +49,112 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Promote Alpha to Production
-        id: promote
-        run: |
-          cd android
-
-          # Calculate user fraction for gradual rollout
-          ROLLOUT_PERCENT=${{ inputs.rollout_percentage }}
-          if [ "$ROLLOUT_PERCENT" = "100" ]; then
-            ROLLOUT_ARG=""
-          else
-            # Convert percentage to decimal (e.g., 20 -> 0.2)
-            FRACTION=$(echo "scale=2; $ROLLOUT_PERCENT / 100" | bc)
-            ROLLOUT_ARG="--rollout $FRACTION"
-          fi
-
-          echo "🚀 Promoting alpha track to production..."
-          echo "   Rollout: ${ROLLOUT_PERCENT}%"
-          echo "   Update Priority: ${{ inputs.update_priority }}"
-
-          bundle exec fastlane supply \
-            --track alpha \
-            --track_promote_to production \
-            --skip_upload_aab true \
-            --skip_upload_metadata true \
-            --skip_upload_images true \
-            --skip_upload_screenshots true \
-            --in_app_update_priority ${{ inputs.update_priority }} \
-            $ROLLOUT_ARG
-        env:
-          SUPPLY_JSON_KEY_DATA: ${{ secrets.PLAY_STORE_CREDENTIALS }}
-          
-      - name: Setup Node.js for Firestore update
-        if: success()
+      - name: Setup Node.js for Google Play API
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
+      - name: Promote Alpha to Production
+        id: promote
+        run: |
+          npm install googleapis@140
+
+          node << 'EOF'
+          const { google } = require('googleapis');
+
+          (async () => {
+            try {
+              // Authenticate with service account
+              const serviceAccount = JSON.parse(process.env.PLAY_STORE_CREDENTIALS);
+              const auth = new google.auth.GoogleAuth({
+                credentials: serviceAccount,
+                scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+              });
+
+              const androidPublisher = google.androidpublisher({
+                version: 'v3',
+                auth: auth,
+              });
+
+              const packageName = 'com.invtracker.inv_tracker';
+              const rolloutPercent = parseInt(process.env.ROLLOUT_PERCENTAGE);
+              const updatePriority = parseInt(process.env.UPDATE_PRIORITY);
+
+              console.log('🚀 Promoting alpha track to production...');
+              console.log('   Package:', packageName);
+              console.log('   Rollout:', rolloutPercent + '%');
+              console.log('   Update Priority:', updatePriority);
+
+              // Create edit
+              const editResponse = await androidPublisher.edits.insert({
+                packageName: packageName,
+              });
+
+              const editId = editResponse.data.id;
+              console.log('✓ Created edit:', editId);
+
+              // Get the latest release from alpha track
+              const alphaTrack = await androidPublisher.edits.tracks.get({
+                packageName: packageName,
+                editId: editId,
+                track: 'alpha',
+              });
+
+              const latestAlphaRelease = alphaTrack.data.releases?.[0];
+              if (!latestAlphaRelease) {
+                throw new Error('No releases found in alpha track');
+              }
+
+              console.log('✓ Found alpha release:');
+              console.log('   Version codes:', latestAlphaRelease.versionCodes);
+              console.log('   Name:', latestAlphaRelease.name);
+
+              // Create production release
+              const productionRelease = {
+                versionCodes: latestAlphaRelease.versionCodes,
+                status: rolloutPercent === 100 ? 'completed' : 'inProgress',
+                inAppUpdatePriority: updatePriority,
+              };
+
+              // Add user fraction for gradual rollout
+              if (rolloutPercent < 100) {
+                productionRelease.userFraction = rolloutPercent / 100;
+              }
+
+              // Update production track
+              await androidPublisher.edits.tracks.update({
+                packageName: packageName,
+                editId: editId,
+                track: 'production',
+                requestBody: {
+                  track: 'production',
+                  releases: [productionRelease],
+                },
+              });
+
+              console.log('✓ Updated production track');
+
+              // Commit the edit
+              await androidPublisher.edits.commit({
+                packageName: packageName,
+                editId: editId,
+              });
+
+              console.log('✅ Successfully promoted to production!');
+
+            } catch (error) {
+              console.error('❌ Promotion failed:', error.message);
+              if (error.response?.data) {
+                console.error('API Error:', JSON.stringify(error.response.data, null, 2));
+              }
+              process.exit(1);
+            }
+          })();
+          EOF
+        env:
+          PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+          ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
+          UPDATE_PRIORITY: ${{ inputs.update_priority }}
 
       - name: Update Firestore - Mark as Released
         if: success()
