@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Remove Ruby setup step and make Slack notifications optional
+
+## [3.59.1] - 2026-05-08
+
+### 🐛 Bug Fixes
+
 - Use fastlane for alpha to production promotion
 
 ## [3.59.0] - 2026-05-08
