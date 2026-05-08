@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Add GitHub Action to promote alpha to production
+
+## [3.58.15] - 2026-05-07
+
 ### 🐛 Bug Fixes
 
 - Use GoRouter navigation for notification deep links (#379)

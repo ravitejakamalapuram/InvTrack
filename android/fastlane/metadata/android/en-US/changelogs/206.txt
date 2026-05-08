@@ -1,0 +1,4 @@
+🐛 Bug Fixes & Improvements
+• Use GoRouter navigation for notification deep links (#379)
+• Update _MockCurrencyConversionService to Fake with correct method signatures
+• Add pumpAndSettle() to transaction_fab_test for proper localization loading
