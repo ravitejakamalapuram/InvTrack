@@ -17,12 +17,14 @@ import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/crashlytics_settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 /// Debug settings screen with developer tools.
 class DebugSettingsScreen extends ConsumerWidget {
@@ -114,6 +116,9 @@ class DebugSettingsScreen extends ConsumerWidget {
 
           // Crashlytics Testing Section
           const CrashlyticsSettingsSection(),
+
+          // Version Check Testing Section (BUG FIX: Added to test version popup)
+          _buildVersionCheckTestSection(context, ref),
 
           // Diagnostics
           SettingsSection(
@@ -390,6 +395,127 @@ class DebugSettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// BUG FIX: Build version check testing section
+  /// Helps test and initialize version update popup functionality
+  Widget _buildVersionCheckTestSection(BuildContext context, WidgetRef ref) {
+    final versionState = ref.watch(versionCheckProvider);
+
+    return SettingsSection(
+      title: 'Version Check Testing',
+      children: [
+        SettingsNavTile(
+          icon: Icons.cloud_sync,
+          iconColor: Colors.blue,
+          title: 'Check for Updates',
+          subtitle: versionState.isLoading
+              ? 'Checking...'
+              : versionState.hasChecked
+                  ? 'Last checked: ${versionState.lastCheckedAt?.toString() ?? "Never"}'
+                  : 'Tap to check for updates',
+          trailing: versionState.isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : null,
+          onTap: () async {
+            await ref.read(versionCheckProvider.notifier).checkForUpdates();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    versionState.hasUpdate
+                        ? 'Update available!'
+                        : 'App is up to date',
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        SettingsNavTile(
+          icon: Icons.settings_system_daydream,
+          iconColor: Colors.orange,
+          title: 'Initialize Version Document',
+          subtitle: 'Create app_config/version_info in Firestore',
+          onTap: () => _handleInitializeVersionDocument(context, ref),
+        ),
+      ],
+    );
+  }
+
+  /// Handle version document initialization
+  Future<void> _handleInitializeVersionDocument(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    // Get current version info
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+    final currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
+
+    // Create a test version that's higher than current
+    final testBuild = currentBuild + 10;
+
+    if (!context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Initialize Version Document'),
+        content: Text(
+          'This will create app_config/version_info in Firestore with:\n\n'
+          'Current: v$currentVersion (build $currentBuild)\n'
+          'Test: v$currentVersion (build $testBuild)\n\n'
+          'This will trigger an update dialog on next app start.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Initialize'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final versionCheckService = ref.read(versionCheckServiceProvider);
+        await versionCheckService.initializeVersionDocument(
+          latestVersion: currentVersion,
+          latestBuildNumber: testBuild,
+          minimumVersion: currentVersion,
+          minimumBuildNumber: currentBuild,
+          forceUpdate: false,
+          updateMessage: 'Test update message',
+          whatsNew: '- Bug fixes\n- Performance improvements\n- New features',
+          downloadUrl:
+              'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+          releaseDate: null, // Show immediately
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Version document initialized! Restart app to see update dialog.'),
+              backgroundColor: AppColors.successLight,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e, st) {
+        if (context.mounted) {
+          ErrorHandler.handle(e, st, context: context, showFeedback: true);
+        }
+      }
+    }
   }
 
 }

@@ -33,18 +33,51 @@ class VersionCheckState {
     this.updateDismissed = false,
   });
 
-  bool get hasUpdate =>
-      latestVersion != null &&
-      latestVersion!.isOutdated(currentVersion, currentBuildNumber) &&
-      latestVersion!.isReleased(); // Only show if released on Play Store
+  /// BUG FIX: Check if update is available
+  /// Added detailed logging to help diagnose why popup doesn't show
+  bool get hasUpdate {
+    if (latestVersion == null) {
+      LoggerService.debug('No update available: latestVersion is null');
+      return false;
+    }
 
-  bool get requiresForceUpdate =>
-      latestVersion != null &&
-      latestVersion!.requiresForceUpdate(currentVersion, currentBuildNumber) &&
-      latestVersion!.isReleased(); // Only force if released on Play Store
+    final isOutdated = latestVersion!.isOutdated(currentVersion, currentBuildNumber);
+    final isReleased = latestVersion!.isReleased();
 
-  bool get shouldShowUpdateDialog =>
-      hasUpdate && !updateDismissed && !requiresForceUpdate;
+    LoggerService.debug(
+      'Version check details',
+      metadata: {
+        'currentVersion': currentVersion,
+        'currentBuildNumber': currentBuildNumber,
+        'latestVersion': latestVersion!.latestVersion,
+        'latestBuildNumber': latestVersion!.latestBuildNumber,
+        'isOutdated': isOutdated,
+        'isReleased': isReleased,
+        'releaseDate': latestVersion!.releaseDate?.toIso8601String(),
+      },
+    );
+
+    return isOutdated && isReleased;
+  }
+
+  bool get requiresForceUpdate {
+    if (latestVersion == null) return false;
+    return latestVersion!.requiresForceUpdate(currentVersion, currentBuildNumber) &&
+        latestVersion!.isReleased();
+  }
+
+  bool get shouldShowUpdateDialog {
+    final result = hasUpdate && !updateDismissed && !requiresForceUpdate;
+    LoggerService.debug(
+      'Should show update dialog: $result',
+      metadata: {
+        'hasUpdate': hasUpdate,
+        'updateDismissed': updateDismissed,
+        'requiresForceUpdate': requiresForceUpdate,
+      },
+    );
+    return result;
+  }
 
   VersionCheckState copyWith({
     AppVersionEntity? latestVersion,

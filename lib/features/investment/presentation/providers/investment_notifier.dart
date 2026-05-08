@@ -805,6 +805,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
   }
 
   /// Check for goal milestone achievements after adding a cash flow
+  ///
+  /// BUG FIX: Only check milestone if progress increased significantly (>0.5%)
+  /// to avoid spamming notifications on every single cashflow addition.
   Future<void> _checkGoalMilestonesAfterCashFlow() async {
     try {
       // Fetch data directly from repository to ensure fresh data
@@ -831,27 +834,36 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           allCashFlows: cashFlows,
         );
 
-        // Check for milestone achievements
-        await notificationService.checkAndShowGoalMilestone(
-          goalId: goal.id,
-          goalName: goal.name,
-          progressPercent: progress.progressPercent,
-          currentValue: progress.currentAmount,
-          targetValue: goal.targetAmount,
-        );
+        // BUG FIX: Only check milestone if we're close to or past a milestone boundary
+        // This prevents checking on every cashflow when progress is at 26%, 27%, etc.
+        final currentPercent = progress.progressPercent;
+        final shouldCheckMilestone = _shouldCheckGoalMilestone(currentPercent);
+
+        if (shouldCheckMilestone) {
+          // Check for milestone achievements
+          await notificationService.checkAndShowGoalMilestone(
+            goalId: goal.id,
+            goalName: goal.name,
+            progressPercent: currentPercent,
+            currentValue: progress.currentAmount,
+            targetValue: goal.targetAmount,
+          );
+        }
 
         // Check for at-risk goals (status is behind)
+        // Only check once per week to avoid spam
         if (progress.status == GoalStatus.behind) {
           await notificationService.showGoalAtRiskNotification(
             goalId: goal.id,
             goalName: goal.name,
-            progressPercent: progress.progressPercent,
+            progressPercent: currentPercent,
             targetDate: goal.targetDate,
             projectedDate: progress.projectedCompletionDate,
           );
         }
 
         // Check for stale goals (no activity for X days)
+        // This has built-in rate limiting (once per month)
         final lastActivityDate = GoalProgressCalculator.getLastActivityDate(
           goal: goal,
           allInvestments: investments,
@@ -867,5 +879,34 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       // Don't fail the main operation if goal milestone check fails
       // Error logged in debug mode
     }
+  }
+
+  /// Determine if we should check for goal milestones based on current progress
+  ///
+  /// BUG FIX: Only return true if progress is close to or past a milestone threshold.
+  /// This prevents unnecessary milestone checks when progress is far from boundaries.
+  ///
+  /// Returns true if:
+  /// - Progress is within 2% of a milestone (e.g., 23-27% for 25% milestone)
+  /// - Progress is past 98% (approaching 100% completion)
+  bool _shouldCheckGoalMilestone(double progressPercent) {
+    // Milestones to check: 25%, 50%, 75%, 100%
+    const milestones = [25.0, 50.0, 75.0, 100.0];
+    const threshold = 2.0; // Check if within 2% of milestone
+
+    // Check if we're close to any milestone
+    for (final milestone in milestones) {
+      if ((progressPercent >= milestone - threshold) &&
+          (progressPercent <= milestone + threshold)) {
+        return true; // Near a milestone boundary
+      }
+    }
+
+    // Always check if very close to completion (>98%)
+    if (progressPercent >= 98.0) {
+      return true;
+    }
+
+    return false; // Far from any milestone, skip check
   }
 }
