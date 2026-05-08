@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Use correct FIREBASE_CREDENTIALS secret name
+
+## [3.59.4] - 2026-05-08
+
+### 🐛 Bug Fixes
+
 - Make Firestore update optional with proper credentials
 
 ## [3.59.3] - 2026-05-08
