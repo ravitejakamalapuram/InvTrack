@@ -203,7 +203,7 @@ jobs:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
 
-      - name: Get version info for notification
+      - name: Get version info and changelog for notification
         id: version
         run: |
           VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
@@ -211,7 +211,27 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "build=$BUILD" >> $GITHUB_OUTPUT
 
-      - name: Notify Slack - Success
+          # Get changelog from whatsnew file
+          if [ -f "whatsnew/whatsnew-en-US" ]; then
+            CHANGELOG=$(cat whatsnew/whatsnew-en-US | head -10)
+          else
+            CHANGELOG="• Bug fixes and performance improvements"
+          fi
+
+          # Create JSON-escaped version for Slack
+          SLACK_CHANGELOG=$(echo "$CHANGELOG" | sed 's/"/\\"/g' | tr '\n' '␤' | sed 's/␤/\\n/g')
+          echo "slack_changelog=$SLACK_CHANGELOG" >> $GITHUB_OUTPUT
+
+          # Determine rollout status message
+          if [ "${{ inputs.rollout_percentage }}" = "100" ]; then
+            echo "rollout_status=✅ Full rollout to all users" >> $GITHUB_OUTPUT
+            echo "next_steps=📱 Users will see update dialog\\n📊 Monitor reviews and crash reports\\n🔔 Firestore will be updated automatically" >> $GITHUB_OUTPUT
+          else
+            echo "rollout_status=⚠️ Staged rollout active - monitoring for crashes and feedback" >> $GITHUB_OUTPUT
+            echo "next_steps=📊 Monitor metrics in Play Console\\n✅ Increase to 50% if stable (Day 2-3)\\n✅ Increase to 100% if stable (Day 4-5)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Slack - Promotion Success
         if: success()
         uses: slackapi/slack-github-action@v1.27.0
         with:
@@ -222,25 +242,53 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "🚀 Production Release: v${{ steps.version.outputs.version }} Live!",
+                    "text": "${{ inputs.rollout_percentage == '100' && '✅' || '📤' }} InvTrack ${{ inputs.rollout_percentage == '100' && 'v' || 'Promoted to Production (v' }}${{ steps.version.outputs.version }}${{ inputs.rollout_percentage == '100' && ' LIVE Worldwide!' || ')' }}",
                     "emoji": true
                   }
                 },
                 {
                   "type": "section",
                   "fields": [
-                    {"type": "mrkdwn", "text": "*Track:*\nProduction"},
-                    {"type": "mrkdwn", "text": "*Rollout:*\n${{ inputs.rollout_percentage }}%"},
                     {"type": "mrkdwn", "text": "*Version:*\nv${{ steps.version.outputs.version }} (build ${{ steps.version.outputs.build }})"},
-                    {"type": "mrkdwn", "text": "*Update Priority:*\n${{ inputs.update_priority }}/5"}
+                    {"type": "mrkdwn", "text": "*Rollout:*\n${{ inputs.rollout_percentage }}% of users"},
+                    {"type": "mrkdwn", "text": "*Priority:*\n${{ inputs.update_priority }}/5 ${{ inputs.update_priority >= '4' && '(High)' || inputs.update_priority >= '2' && '(Standard)' || '(Low)' }}"},
+                    {"type": "mrkdwn", "text": "*Track:*\nProduction (from Alpha)"}
                   ]
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "📊 Monitor rollout in <https://play.google.com/console|Play Console>"
+                    "text": "${{ steps.version.outputs.rollout_status }}\n\n*What's New:*\n${{ steps.version.outputs.slack_changelog }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Next Steps:*\n${{ steps.version.outputs.next_steps }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "📊 Play Console"},
+                      "url": "https://play.google.com/console",
+                      "style": "primary"
+                    },
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "📋 Workflow Logs"},
+                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "📝 Release Notes"},
+                      "url": "https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}"
+                    }
+                  ]
                 }
               ]
             }
@@ -248,7 +296,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
-      - name: Notify Slack - Failure
+      - name: Notify Slack - Promotion Failed
         if: failure()
         uses: slackapi/slack-github-action@v1.27.0
         with:
@@ -265,10 +313,35 @@ jobs:
                 },
                 {
                   "type": "section",
+                  "fields": [
+                    {"type": "mrkdwn", "text": "*Version:*\nv${{ steps.version.outputs.version }} (build ${{ steps.version.outputs.build }})"},
+                    {"type": "mrkdwn", "text": "*Status:*\nFailed to promote"},
+                    {"type": "mrkdwn", "text": "*Target Rollout:*\n${{ inputs.rollout_percentage }}%"},
+                    {"type": "mrkdwn", "text": "*Track:*\nAlpha → Production"}
+                  ]
+                },
+                {
+                  "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Failed to promote alpha to production. Check <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow logs>."
+                    "text": "⚠️ *Alpha build was NOT promoted to production.* Manual intervention needed.\n\n🔍 Check workflow logs for error details\n🔄 Retry promotion after fixing the issue"
                   }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "🔍 View Logs"},
+                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                      "style": "danger"
+                    },
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "📊 Play Console"},
+                      "url": "https://play.google.com/console"
+                    }
+                  ]
                 }
               ]
             }

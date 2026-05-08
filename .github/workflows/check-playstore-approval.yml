@@ -303,8 +303,8 @@ jobs:
           checkPlayStoreStatus();
           EOF
       
-      # Notify Slack if Firestore was updated
-      - name: Notify Slack - Version Updated
+      # Notify Slack if Firestore was updated - Enhanced notification
+      - name: Notify Slack - Production Live Worldwide
         if: steps.check_status.outputs.updated == 'true'
         uses: slackapi/slack-github-action@v1.27.0
         with:
@@ -315,23 +315,48 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "🎉 Firestore Version Updated!",
+                    "text": "✅ InvTrack v${{ steps.check_status.outputs.version }} LIVE Worldwide!",
                     "emoji": true
                   }
                 },
                 {
                   "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "_100% Rollout Complete_"
+                  }
+                },
+                {
+                  "type": "section",
                   "fields": [
-                    {"type": "mrkdwn", "text": "*Version:*\n${{ steps.check_status.outputs.version }}"},
-                    {"type": "mrkdwn", "text": "*Build:*\n${{ steps.check_status.outputs.build }}"}
+                    {"type": "mrkdwn", "text": "*Version:*\nv${{ steps.check_status.outputs.version }} (build ${{ steps.check_status.outputs.build }})"},
+                    {"type": "mrkdwn", "text": "*Rollout:*\n100% of users"},
+                    {"type": "mrkdwn", "text": "*Status:*\nFully Deployed"},
+                    {"type": "mrkdwn", "text": "*Live Since:*\n${{ steps.check_status.outputs.live_time || 'Just now' }}"}
                   ]
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Play Store version was approved and Firestore has been automatically updated. Users will now see the update dialog!"
+                    "text": "🎉 *Production release is now live for all users worldwide!*\n\n📱 Users will see update dialog\n📊 Monitor reviews and crash reports\n🔔 Firestore updated automatically"
                   }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "📊 Play Console"},
+                      "url": "https://play.google.com/console",
+                      "style": "primary"
+                    },
+                    {
+                      "type": "button",
+                      "text": {"type": "plain_text", "text": "📝 View Release"},
+                      "url": "https://github.com/${{ github.repository }}/releases/tag/v${{ steps.check_status.outputs.version }}"
+                    }
+                  ]
                 }
               ]
             }
