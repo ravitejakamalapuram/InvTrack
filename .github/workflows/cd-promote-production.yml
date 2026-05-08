@@ -1,0 +1,187 @@
+name: "CD: Promote to Production"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'Version code to promote (leave empty for latest alpha release)'
+        required: false
+        type: string
+      rollout_percentage:
+        description: 'Initial rollout percentage (10, 20, 50, 100)'
+        required: true
+        type: choice
+        default: '20'
+        options:
+          - '10'
+          - '20'
+          - '50'
+          - '100'
+      update_priority:
+        description: 'In-app update priority (0-5, higher = more urgent)'
+        required: true
+        type: choice
+        default: '2'
+        options:
+          - '0'
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false  # Don't cancel production promotions
+
+jobs:
+  promote-to-production:
+    runs-on: self-hosted
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Promote Alpha to Production
+        id: promote
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+          packageName: com.invtracker.inv_tracker
+          track: alpha
+          promoteTrack: production
+          releaseFiles: ''  # No new files, just promoting
+          status: ${{ inputs.rollout_percentage == '100' && 'completed' || 'inProgress' }}
+          userFraction: ${{ inputs.rollout_percentage == '100' && '' || format('0.{0}', inputs.rollout_percentage) }}
+          inAppUpdatePriority: ${{ inputs.update_priority }}
+          
+      - name: Setup Node.js for Firestore update
+        if: success()
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Update Firestore - Mark as Released
+        if: success()
+        run: |
+          npm install firebase-admin
+          
+          node << 'EOF'
+          const admin = require('firebase-admin');
+          
+          // Initialize Firebase Admin
+          const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+          });
+          
+          const db = admin.firestore();
+          
+          (async () => {
+            try {
+              // Get current version info
+              const versionDoc = await db.collection('app_config').doc('version_info').get();
+              const versionData = versionDoc.data();
+              
+              console.log('📦 Current version info:', versionData);
+              
+              // Update to mark as released to production
+              await db.collection('app_config').doc('version_info').update({
+                pendingRelease: false,
+                releaseDate: admin.firestore.Timestamp.now(),
+                rolloutPercentage: parseInt(process.env.ROLLOUT_PERCENTAGE),
+                lastPromotedVersion: versionData.pendingVersion,
+                lastPromotedBuildNumber: versionData.pendingBuildNumber,
+              });
+              
+              console.log('✅ Firestore updated successfully!');
+              console.log('   Release Date:', new Date().toISOString());
+              console.log('   Rollout:', process.env.ROLLOUT_PERCENTAGE + '%');
+              
+            } catch (error) {
+              console.error('❌ Firestore update failed:', error);
+              process.exit(1);
+            }
+          })();
+          EOF
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+          ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
+
+      - name: Get version info for notification
+        id: version
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          BUILD=$(grep 'version:' pubspec.yaml | sed 's/.*+//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack - Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 Production Release: v${{ steps.version.outputs.version }} Live!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {"type": "mrkdwn", "text": "*Track:*\nProduction"},
+                    {"type": "mrkdwn", "text": "*Rollout:*\n${{ inputs.rollout_percentage }}%"},
+                    {"type": "mrkdwn", "text": "*Version:*\nv${{ steps.version.outputs.version }} (build ${{ steps.version.outputs.build }})"},
+                    {"type": "mrkdwn", "text": "*Update Priority:*\n${{ inputs.update_priority }}/5"}
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📊 Monitor rollout in <https://play.google.com/console|Play Console>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify Slack - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ Production Promotion Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Failed to promote alpha to production. Check <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow logs>."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
