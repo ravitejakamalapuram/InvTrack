@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Replace fastlane with Google Play API for promotion
+
+## [3.59.2] - 2026-05-08
+
+### 🐛 Bug Fixes
+
 - Remove Ruby setup step and make Slack notifications optional
 
 ## [3.59.1] - 2026-05-08
