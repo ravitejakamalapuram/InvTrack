@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Make Firestore update optional with proper credentials
+
+## [3.59.3] - 2026-05-08
+
+### 🐛 Bug Fixes
+
 - Replace fastlane with Google Play API for promotion
 
 ## [3.59.2] - 2026-05-08

@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Replace fastlane with Google Play API for promotion
