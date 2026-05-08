@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Enhanced Slack notifications with visual hierarchy
+
+## [3.59.6] - 2026-05-08
+
 ### 🐛 Bug Fixes
 
 - Use correct SLACK_WEBHOOK_URL secret name
