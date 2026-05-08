@@ -1,0 +1,2 @@
+🆕 What's New
+• Add GitHub Action to promote alpha to production

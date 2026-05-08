@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Use fastlane for alpha to production promotion
+
+## [3.59.0] - 2026-05-08
+
 ### ✨ Features
 
 - Add GitHub Action to promote alpha to production
