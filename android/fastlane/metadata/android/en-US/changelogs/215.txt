@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Resolve goal notification spam, crashlytics UX, and version popup issues
