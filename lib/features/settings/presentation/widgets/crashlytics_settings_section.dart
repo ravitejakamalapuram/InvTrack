@@ -257,8 +257,8 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
               children: [
                 Text(
                   isEnabled
-                      ? 'Crashlytics Active in Debug Mode'
-                      : 'Crashlytics Inactive in Debug Mode',
+                      ? l10n.crashlyticsActiveInDebugTitle
+                      : l10n.crashlyticsInactiveInDebugTitle,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: textColor,
@@ -268,10 +268,8 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
                 SizedBox(height: AppSpacing.xs),
                 Text(
                   isEnabled
-                      ? 'Crash reports are being sent to Firebase. '
-                          'You can test by clicking "Test Fatal Crash" below.'
-                      : 'Crash reports are NOT being sent (debug mode default). '
-                          'Enable toggle above to test crash reporting.',
+                      ? l10n.crashlyticsActiveInDebugMessage
+                      : l10n.crashlyticsInactiveInDebugMessage,
                   style: TextStyle(
                     color: textColor.withValues(alpha: 0.9),
                     fontSize: 12,
@@ -280,7 +278,7 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
                 if (!isEnabled) ...[
                   SizedBox(height: AppSpacing.xs),
                   Text(
-                    '\u2713 Crashlytics works automatically in release builds',
+                    l10n.crashlyticsWorksInReleaseNote,
                     style: TextStyle(
                       color: textColor.withValues(alpha: 0.8),
                       fontSize: 11,

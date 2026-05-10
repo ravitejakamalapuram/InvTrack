@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
@@ -18,12 +19,12 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/crashlytics_settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
-import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 /// Debug settings screen with developer tools.
@@ -402,18 +403,23 @@ class DebugSettingsScreen extends ConsumerWidget {
   Widget _buildVersionCheckTestSection(BuildContext context, WidgetRef ref) {
     final versionState = ref.watch(versionCheckProvider);
 
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+
     return SettingsSection(
-      title: 'Version Check Testing',
+      title: l10n.versionCheckTestingTitle,
       children: [
         SettingsNavTile(
           icon: Icons.cloud_sync,
           iconColor: Colors.blue,
-          title: 'Check for Updates',
+          title: l10n.checkForUpdatesTitle,
           subtitle: versionState.isLoading
-              ? 'Checking...'
+              ? l10n.checkingForUpdates
               : versionState.hasChecked
-                  ? 'Last checked: ${versionState.lastCheckedAt?.toString() ?? "Never"}'
-                  : 'Tap to check for updates',
+                  ? l10n.lastChecked(versionState.lastCheckedAt != null
+                      ? DateFormat.yMd(locale).add_jm().format(versionState.lastCheckedAt!)
+                      : l10n.never)
+                  : l10n.tapToCheckForUpdates,
           trailing: versionState.isLoading
               ? const SizedBox(
                   width: 20,
@@ -430,8 +436,8 @@ class DebugSettingsScreen extends ConsumerWidget {
                 SnackBar(
                   content: Text(
                     updatedState.hasUpdate
-                        ? 'Update available!'
-                        : 'App is up to date',
+                        ? l10n.updateAvailable
+                        : l10n.appIsUpToDate,
                   ),
                 ),
               );
@@ -441,8 +447,8 @@ class DebugSettingsScreen extends ConsumerWidget {
         SettingsNavTile(
           icon: Icons.settings_system_daydream,
           iconColor: Colors.orange,
-          title: 'Initialize Version Document',
-          subtitle: 'Create app_config/version_info in Firestore',
+          title: l10n.initializeVersionDocumentTitle,
+          subtitle: l10n.initializeVersionDocumentSubtitle,
           onTap: () => _handleInitializeVersionDocument(context, ref),
         ),
       ],
@@ -454,6 +460,8 @@ class DebugSettingsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final l10n = AppLocalizations.of(context);
+
     // Get current version info
     final packageInfo = await PackageInfo.fromPlatform();
     final currentVersion = packageInfo.version;
@@ -467,21 +475,23 @@ class DebugSettingsScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Initialize Version Document'),
+        title: Text(l10n.initializeVersionDialogTitle),
         content: Text(
-          'This will create app_config/version_info in Firestore with:\n\n'
-          'Current: v$currentVersion (build $currentBuild)\n'
-          'Test: v$currentVersion (build $testBuild)\n\n'
-          'This will trigger an update dialog on next app start.',
+          l10n.initializeVersionDialogMessage(
+            currentVersion,
+            currentBuild.toString(),
+            currentVersion,
+            testBuild.toString(),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Initialize'),
+            child: Text(l10n.initialize),
           ),
         ],
       ),
@@ -505,10 +515,10 @@ class DebugSettingsScreen extends ConsumerWidget {
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Version document initialized! Restart app to see update dialog.'),
+            SnackBar(
+              content: Text(l10n.versionDocumentInitializedSuccess),
               backgroundColor: AppColors.successLight,
-              duration: Duration(seconds: 5),
+              duration: const Duration(seconds: 5),
             ),
           );
         }
