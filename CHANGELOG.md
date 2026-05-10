@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Replace deprecated hasFlag() with ignore comments
+
+## [3.60.3] - 2026-05-10
+
+### 🐛 Bug Fixes
+
 - Resolve semantics issues in glass_card tests
 
 ### 🔧 Miscellaneous
