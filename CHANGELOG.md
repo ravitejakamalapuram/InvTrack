@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Resolve goal notification spam, crashlytics UX, and version popup issues
+
+## [3.60.0] - 2026-05-08
+
 ### ✨ Features
 
 - Enhanced Slack notifications with visual hierarchy
