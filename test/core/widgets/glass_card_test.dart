@@ -17,9 +17,11 @@ void main() {
       final handle = tester.ensureSemantics();
       // Verify button semantics (InkWell may add focus action - we don't check for it)
       final semanticsData = tester.getSemantics(find.byType(GlassCard));
-      expect(semanticsData.getSemanticsData().label, 'Content');
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isButton), isTrue);
-      expect(semanticsData.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      final data = semanticsData.getSemanticsData();
+      expect(data.label, 'Content');
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
       handle.dispose();
     });
 
@@ -56,9 +58,11 @@ void main() {
 
       // Should match the custom label exactly, implying child text is excluded/overridden
       final semanticsData = tester.getSemantics(find.byType(GlassCard));
-      expect(semanticsData.getSemanticsData().label, 'Custom Label');
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isButton), isTrue);
-      expect(semanticsData.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      final data = semanticsData.getSemanticsData();
+      expect(data.label, 'Custom Label');
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
       handle.dispose();
     });
 
@@ -120,11 +124,15 @@ void main() {
       final handle = tester.ensureSemantics();
       // Verify button semantics with selected state
       final semanticsData = tester.getSemantics(find.byType(GlassCard));
-      expect(semanticsData.getSemanticsData().label, 'Content');
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isButton), isTrue);
-      expect(semanticsData.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isTrue);
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.hasSelectedState), isTrue);
+      final data = semanticsData.getSemanticsData();
+      expect(data.label, 'Content');
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isSelected), isTrue);
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.hasSelectedState), isTrue);
       handle.dispose();
     });
   });
@@ -145,9 +153,11 @@ void main() {
       final handle = tester.ensureSemantics();
       // This verifies that the card identifies itself as a button to accessibility services
       final semanticsData = tester.getSemantics(find.byType(GlassHeroCard));
-      expect(semanticsData.getSemanticsData().label, 'Hero Content');
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isButton), isTrue);
-      expect(semanticsData.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      final data = semanticsData.getSemanticsData();
+      expect(data.label, 'Hero Content');
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
       handle.dispose();
     });
 
@@ -196,11 +206,15 @@ void main() {
       final handle = tester.ensureSemantics();
       // Verify button semantics with selected state
       final semanticsData = tester.getSemantics(find.byType(GlassHeroCard));
-      expect(semanticsData.getSemanticsData().label, 'Hero Content');
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isButton), isTrue);
-      expect(semanticsData.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isTrue);
-      expect(semanticsData.getSemanticsData().hasFlag(SemanticsFlag.hasSelectedState), isTrue);
+      final data = semanticsData.getSemanticsData();
+      expect(data.label, 'Hero Content');
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isButton), isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.isSelected), isTrue);
+      // ignore: deprecated_member_use
+      expect(data.hasFlag(SemanticsFlag.hasSelectedState), isTrue);
       handle.dispose();
     });
   });
