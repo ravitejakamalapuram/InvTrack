@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Resolve semantics issues in glass_card tests
+
+### 🔧 Miscellaneous
+
+- Remove test artifacts from version control (Rule 10.4)
+
 ## [3.60.1] - 2026-05-10
 
 ### 🐛 Bug Fixes
