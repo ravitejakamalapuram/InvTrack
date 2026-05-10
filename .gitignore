@@ -74,3 +74,8 @@ android/.bundle/
 
 # Patrol CLI generated files
 patrol_test/
+
+# Test artifacts - DO NOT COMMIT (Rule 10.4)
+test_output.txt
+**/failures/
+test/golden/**/failures/
