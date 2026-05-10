@@ -33,6 +33,8 @@ class VersionCheckState {
     this.updateDismissed = false,
   });
 
+  /// CodeRabbit fix: Pure getter without side effects (no logging)
+  /// Check if update is available
   bool get hasUpdate =>
       latestVersion != null &&
       latestVersion!.isOutdated(currentVersion, currentBuildNumber) &&
@@ -41,10 +43,15 @@ class VersionCheckState {
   bool get requiresForceUpdate =>
       latestVersion != null &&
       latestVersion!.requiresForceUpdate(currentVersion, currentBuildNumber) &&
-      latestVersion!.isReleased(); // Only force if released on Play Store
+      latestVersion!.isReleased();
 
-  bool get shouldShowUpdateDialog =>
-      hasUpdate && !updateDismissed && !requiresForceUpdate;
+  /// CodeRabbit fix: Read each getter once to avoid duplicate logging
+  bool get shouldShowUpdateDialog {
+    final hasUpdateVal = hasUpdate;
+    final requiresForceVal = requiresForceUpdate;
+    final dismissed = updateDismissed;
+    return hasUpdateVal && !dismissed && !requiresForceVal;
+  }
 
   VersionCheckState copyWith({
     AppVersionEntity? latestVersion,
@@ -140,6 +147,26 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
         hasChecked: true,
         lastCheckedAt: now,
       );
+
+      // CodeRabbit fix: Moved logging from getters to here (single execution point)
+      if (latestVersion != null) {
+        final isOutdated = latestVersion.isOutdated(state.currentVersion, state.currentBuildNumber);
+        final isReleased = latestVersion.isReleased();
+
+        LoggerService.debug(
+          'Version check details',
+          metadata: {
+            'currentVersion': state.currentVersion,
+            'currentBuildNumber': state.currentBuildNumber,
+            'latestVersion': latestVersion.latestVersion,
+            'latestBuildNumber': latestVersion.latestBuildNumber,
+            'isOutdated': isOutdated,
+            'isReleased': isReleased,
+            'releaseDate': latestVersion.releaseDate?.toIso8601String(),
+            'shouldShowDialog': state.shouldShowUpdateDialog,
+          },
+        );
+      }
 
       LoggerService.info(
         'Version check complete',

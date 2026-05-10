@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
@@ -17,12 +18,14 @@ import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/seed_data_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/crashlytics_settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
-import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 /// Debug settings screen with developer tools.
 class DebugSettingsScreen extends ConsumerWidget {
@@ -114,6 +117,9 @@ class DebugSettingsScreen extends ConsumerWidget {
 
           // Crashlytics Testing Section
           const CrashlyticsSettingsSection(),
+
+          // Version Check Testing Section (BUG FIX: Added to test version popup)
+          _buildVersionCheckTestSection(context, ref),
 
           // Diagnostics
           SettingsSection(
@@ -390,6 +396,138 @@ class DebugSettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// BUG FIX: Build version check testing section
+  /// Helps test and initialize version update popup functionality
+  Widget _buildVersionCheckTestSection(BuildContext context, WidgetRef ref) {
+    final versionState = ref.watch(versionCheckProvider);
+
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+
+    return SettingsSection(
+      title: l10n.versionCheckTestingTitle,
+      children: [
+        SettingsNavTile(
+          icon: Icons.cloud_sync,
+          iconColor: Colors.blue,
+          title: l10n.checkForUpdatesTitle,
+          subtitle: versionState.isLoading
+              ? l10n.checkingForUpdates
+              : versionState.hasChecked
+                  ? l10n.lastChecked(versionState.lastCheckedAt != null
+                      ? DateFormat.yMd(locale).add_jm().format(versionState.lastCheckedAt!)
+                      : l10n.never)
+                  : l10n.tapToCheckForUpdates,
+          trailing: versionState.isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : null,
+          onTap: () async {
+            await ref.read(versionCheckProvider.notifier).checkForUpdates();
+            if (context.mounted) {
+              // CodeRabbit fix: Re-read provider after update to get fresh state
+              final updatedState = ref.read(versionCheckProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    updatedState.hasUpdate
+                        ? l10n.updateAvailable
+                        : l10n.appIsUpToDate,
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        SettingsNavTile(
+          icon: Icons.settings_system_daydream,
+          iconColor: Colors.orange,
+          title: l10n.initializeVersionDocumentTitle,
+          subtitle: l10n.initializeVersionDocumentSubtitle,
+          onTap: () => _handleInitializeVersionDocument(context, ref),
+        ),
+      ],
+    );
+  }
+
+  /// Handle version document initialization
+  Future<void> _handleInitializeVersionDocument(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+
+    // Get current version info
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+    final currentBuild = int.tryParse(packageInfo.buildNumber) ?? 1;
+
+    // Create a test version that's higher than current
+    final testBuild = currentBuild + 10;
+
+    if (!context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.initializeVersionDialogTitle),
+        content: Text(
+          l10n.initializeVersionDialogMessage(
+            currentVersion,
+            currentBuild.toString(),
+            currentVersion,
+            testBuild.toString(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.initialize),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final versionCheckService = ref.read(versionCheckServiceProvider);
+        await versionCheckService.initializeVersionDocument(
+          latestVersion: currentVersion,
+          latestBuildNumber: testBuild,
+          minimumVersion: currentVersion,
+          minimumBuildNumber: currentBuild,
+          forceUpdate: false,
+          updateMessage: 'Test update message',
+          whatsNew: '- Bug fixes\n- Performance improvements\n- New features',
+          downloadUrl:
+              'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+          releaseDate: null, // Show immediately
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.versionDocumentInitializedSuccess),
+              backgroundColor: AppColors.successLight,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e, st) {
+        if (context.mounted) {
+          ErrorHandler.handle(e, st, context: context, showFeedback: true);
+        }
+      }
+    }
   }
 
 }

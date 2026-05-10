@@ -2577,6 +2577,120 @@
     "description": "Warning message when Crashlytics is disabled"
   },
 
+  "crashlyticsActiveInDebugTitle": "Crashlytics Active in Debug Mode",
+  "@crashlyticsActiveInDebugTitle": {
+    "description": "Banner title when Crashlytics is enabled in debug mode"
+  },
+
+  "crashlyticsInactiveInDebugTitle": "Crashlytics Inactive in Debug Mode",
+  "@crashlyticsInactiveInDebugTitle": {
+    "description": "Banner title when Crashlytics is disabled in debug mode"
+  },
+
+  "crashlyticsActiveInDebugMessage": "Crash reports are being sent to Firebase. You can test by clicking \"Test Fatal Crash\" below.",
+  "@crashlyticsActiveInDebugMessage": {
+    "description": "Banner message when Crashlytics is enabled in debug mode"
+  },
+
+  "crashlyticsInactiveInDebugMessage": "Crash reports are NOT being sent (debug mode default). Enable toggle above to test crash reporting.",
+  "@crashlyticsInactiveInDebugMessage": {
+    "description": "Banner message when Crashlytics is disabled in debug mode"
+  },
+
+  "crashlyticsWorksInReleaseNote": "\u2713 Crashlytics works automatically in release builds",
+  "@crashlyticsWorksInReleaseNote": {
+    "description": "Note that Crashlytics works in release builds regardless of debug mode setting"
+  },
+
+  "versionCheckTestingTitle": "Version Check Testing",
+  "@versionCheckTestingTitle": {
+    "description": "Version check testing section title"
+  },
+
+  "checkForUpdatesTitle": "Check for Updates",
+  "@checkForUpdatesTitle": {
+    "description": "Button title to manually check for app updates"
+  },
+
+  "checkingForUpdates": "Checking...",
+  "@checkingForUpdates": {
+    "description": "Loading text when checking for updates"
+  },
+
+  "lastChecked": "Last checked: {timestamp}",
+  "@lastChecked": {
+    "description": "Shows when version check was last performed",
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
+
+  "tapToCheckForUpdates": "Tap to check for updates",
+  "@tapToCheckForUpdates": {
+    "description": "Subtitle prompting user to check for updates"
+  },
+
+  "updateAvailable": "Update available!",
+  "@updateAvailable": {
+    "description": "Message shown when an app update is available"
+  },
+
+  "appIsUpToDate": "App is up to date",
+  "@appIsUpToDate": {
+    "description": "Message shown when app is on the latest version"
+  },
+
+  "initializeVersionDocumentTitle": "Initialize Version Document",
+  "@initializeVersionDocumentTitle": {
+    "description": "Button title to initialize Firestore version document"
+  },
+
+  "initializeVersionDocumentSubtitle": "Create app_config/version_info in Firestore",
+  "@initializeVersionDocumentSubtitle": {
+    "description": "Subtitle explaining version document initialization"
+  },
+
+  "initializeVersionDialogTitle": "Initialize Version Document",
+  "@initializeVersionDialogTitle": {
+    "description": "Dialog title for version document initialization"
+  },
+
+  "initializeVersionDialogMessage": "This will create app_config/version_info in Firestore with:\n\nCurrent: v{currentVersion} (build {currentBuild})\nTest: v{testVersion} (build {testBuild})\n\nThis will trigger an update dialog on next app start.",
+  "@initializeVersionDialogMessage": {
+    "description": "Dialog message explaining version document initialization",
+    "placeholders": {
+      "currentVersion": {
+        "type": "String"
+      },
+      "currentBuild": {
+        "type": "String"
+      },
+      "testVersion": {
+        "type": "String"
+      },
+      "testBuild": {
+        "type": "String"
+      }
+    }
+  },
+
+  "initialize": "Initialize",
+  "@initialize": {
+    "description": "Button text to initialize something"
+  },
+
+  "versionDocumentInitializedSuccess": "Version document initialized! Restart app to see update dialog.",
+  "@versionDocumentInitializedSuccess": {
+    "description": "Success message after version document is created"
+  },
+
+  "never": "Never",
+  "@never": {
+    "description": "Text indicating something has never occurred"
+  },
+
   "reports": "Reports",
   "@reports": {
     "description": "Reports tab/screen title"

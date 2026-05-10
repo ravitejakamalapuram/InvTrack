@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -26,10 +27,14 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
     final crashlyticsService = ref.watch(crashlyticsServiceProvider);
     final isEnabled = crashlyticsService.isCrashlyticsCollectionEnabled;
     final debugModeEnabled = ref.watch(crashlyticsDebugModeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SettingsSection(
       title: l10n.crashlyticsTestingTitle,
       children: [
+        // BUG FIX: Info banner explaining Crashlytics status
+        if (kDebugMode) _buildInfoBanner(context, l10n, isEnabled, isDark),
+
         // Toggle Crashlytics in debug mode
         SettingsToggleTile(
           icon: Icons.bug_report,
@@ -201,5 +206,91 @@ class CrashlyticsSettingsSection extends ConsumerWidget {
       await Future.delayed(const Duration(seconds: 1));
       crashlyticsService.testCrash();
     }
+  }
+
+  /// Build info banner explaining Crashlytics status
+  ///
+  /// BUG FIX: Added to make it obvious that Crashlytics is working in production
+  /// but disabled in debug mode by default (which is expected behavior).
+  Widget _buildInfoBanner(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isEnabled,
+    bool isDark,
+  ) {
+    final backgroundColor = isDark
+        ? (isEnabled ? Colors.green.shade900 : Colors.orange.shade900)
+        : (isEnabled ? Colors.green.shade50 : Colors.orange.shade50);
+    final textColor = isDark
+        ? (isEnabled ? Colors.green.shade200 : Colors.orange.shade200)
+        : (isEnabled ? Colors.green.shade800 : Colors.orange.shade800);
+    final iconColor = isDark
+        ? (isEnabled ? Colors.green.shade300 : Colors.orange.shade300)
+        : (isEnabled ? Colors.green.shade700 : Colors.orange.shade700);
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      padding: EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: iconColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isEnabled ? Icons.check_circle : Icons.info_outline,
+            color: iconColor,
+            size: 24,
+          ),
+          SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isEnabled
+                      ? l10n.crashlyticsActiveInDebugTitle
+                      : l10n.crashlyticsInactiveInDebugTitle,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  isEnabled
+                      ? l10n.crashlyticsActiveInDebugMessage
+                      : l10n.crashlyticsInactiveInDebugMessage,
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.9),
+                    fontSize: 12,
+                  ),
+                ),
+                if (!isEnabled) ...[
+                  SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.crashlyticsWorksInReleaseNote,
+                    style: TextStyle(
+                      color: textColor.withValues(alpha: 0.8),
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
