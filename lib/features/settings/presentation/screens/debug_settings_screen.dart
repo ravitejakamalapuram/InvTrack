@@ -424,10 +424,12 @@ class DebugSettingsScreen extends ConsumerWidget {
           onTap: () async {
             await ref.read(versionCheckProvider.notifier).checkForUpdates();
             if (context.mounted) {
+              // CodeRabbit fix: Re-read provider after update to get fresh state
+              final updatedState = ref.read(versionCheckProvider);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    versionState.hasUpdate
+                    updatedState.hasUpdate
                         ? 'Update available!'
                         : 'App is up to date',
                   ),

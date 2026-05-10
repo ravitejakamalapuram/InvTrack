@@ -117,19 +117,22 @@ class VersionCheckService {
     DateTime? releaseDate,
   }) async {
     try {
-      final data = {
+      // CodeRabbit fix: Build map without null values to preserve existing fields
+      final data = <String, dynamic>{
         'latestVersion': latestVersion,
         'latestBuildNumber': latestBuildNumber,
         'minimumVersion': minimumVersion,
         'minimumBuildNumber': minimumBuildNumber,
         'forceUpdate': forceUpdate,
-        'updateMessage': updateMessage,
-        'whatsNew': whatsNew,
-        'downloadUrl': downloadUrl,
-        'releaseDate': releaseDate != null
-            ? Timestamp.fromDate(releaseDate)
-            : null,
       };
+
+      // Only add optional fields if non-null
+      if (updateMessage != null) data['updateMessage'] = updateMessage;
+      if (whatsNew != null) data['whatsNew'] = whatsNew;
+      if (downloadUrl != null) data['downloadUrl'] = downloadUrl;
+      if (releaseDate != null) {
+        data['releaseDate'] = Timestamp.fromDate(releaseDate);
+      }
 
       await _firestore
           .collection('app_config')

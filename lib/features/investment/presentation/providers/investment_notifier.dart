@@ -24,6 +24,10 @@ final investmentNotifierProvider =
     );
 
 class InvestmentNotifier extends Notifier<AsyncValue<void>> {
+  /// Track last progress percentage for each goal to detect milestone crossings
+  /// CodeRabbit fix: Prevents missing milestones when jumping past boundaries (e.g., 22% → 30%)
+  final Map<String, double> _lastGoalProgressPercent = {};
+
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
 
@@ -834,10 +838,19 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           allCashFlows: cashFlows,
         );
 
-        // BUG FIX: Only check milestone if we're close to or past a milestone boundary
-        // This prevents checking on every cashflow when progress is at 26%, 27%, etc.
+        // CodeRabbit fix: Track previous progress to detect milestone crossings
         final currentPercent = progress.progressPercent;
-        final shouldCheckMilestone = _shouldCheckGoalMilestone(currentPercent);
+        final previousPercent = _lastGoalProgressPercent[goal.id];
+
+        // Check if we should notify about milestone achievements
+        // This handles both boundary proximity AND crossed milestones
+        final shouldCheckMilestone = _shouldCheckGoalMilestone(
+          currentPercent: currentPercent,
+          previousPercent: previousPercent,
+        );
+
+        // Update tracked progress for next time
+        _lastGoalProgressPercent[goal.id] = currentPercent;
 
         if (shouldCheckMilestone) {
           // Check for milestone achievements
@@ -883,30 +896,45 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
   /// Determine if we should check for goal milestones based on current progress
   ///
-  /// BUG FIX: Only return true if progress is close to or past a milestone threshold.
-  /// This prevents unnecessary milestone checks when progress is far from boundaries.
+  /// CodeRabbit fix: Detects both boundary proximity AND milestone crossings.
+  /// This prevents both:
+  /// 1. Unnecessary checks when far from milestones (anti-spam)
+  /// 2. Missing milestones when jumping past them (e.g., 22% → 30% should trigger 25%)
   ///
   /// Returns true if:
   /// - Progress is within 2% of a milestone (e.g., 23-27% for 25% milestone)
+  /// - Progress crossed a milestone since last check (e.g., was 22%, now 30%)
   /// - Progress is past 98% (approaching 100% completion)
-  bool _shouldCheckGoalMilestone(double progressPercent) {
+  bool _shouldCheckGoalMilestone({
+    required double currentPercent,
+    double? previousPercent,
+  }) {
     // Milestones to check: 25%, 50%, 75%, 100%
     const milestones = [25.0, 50.0, 75.0, 100.0];
     const threshold = 2.0; // Check if within 2% of milestone
 
-    // Check if we're close to any milestone
+    // Check if we're close to any milestone OR crossed one
     for (final milestone in milestones) {
-      if ((progressPercent >= milestone - threshold) &&
-          (progressPercent <= milestone + threshold)) {
-        return true; // Near a milestone boundary
+      // Near boundary check (original logic)
+      final isNearBoundary = currentPercent >= milestone - threshold &&
+          currentPercent <= milestone + threshold;
+
+      // CodeRabbit fix: Detect milestone crossing even when jumping past
+      // Example: was 22%, now 30% → should trigger 25% notification
+      final crossedSinceLast = previousPercent != null &&
+          previousPercent < milestone &&
+          currentPercent >= milestone;
+
+      if (isNearBoundary || crossedSinceLast) {
+        return true; // Either near milestone or crossed it
       }
     }
 
     // Always check if very close to completion (>98%)
-    if (progressPercent >= 98.0) {
+    if (currentPercent >= 98.0) {
       return true;
     }
 
-    return false; // Far from any milestone, skip check
+    return false; // Far from any milestone and didn't cross any, skip check
   }
 }
