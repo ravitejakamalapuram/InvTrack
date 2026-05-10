@@ -400,51 +400,56 @@ class _QuickStartButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          if (onTap != null) {
-            HapticFeedback.lightImpact();
-            onTap!();
-          }
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
+    return Semantics(
+      button: true,
+      label: '$label, $sublabel',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (onTap != null) {
+              HapticFeedback.lightImpact();
+              onTap!();
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 24),
                 ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              SizedBox(height: AppSpacing.sm),
-              Text(
-                label,
-                style: AppTypography.label.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral900Light,
-                  fontWeight: FontWeight.w600,
+                SizedBox(height: AppSpacing.sm),
+                Text(
+                  label,
+                  style: AppTypography.label.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral900Light,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                sublabel,
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral400Dark
-                      : AppColors.neutral500Light,
+                SizedBox(height: 2),
+                Text(
+                  sublabel,
+                  style: AppTypography.small.copyWith(
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -519,37 +524,42 @@ class _TemplateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            color: template.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: template.color.withValues(alpha: 0.3),
-              width: 1,
+    return Semantics(
+      button: true,
+      label: 'Template: ${template.name}',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(template.emoji, style: const TextStyle(fontSize: 16)),
-              SizedBox(width: AppSpacing.xs),
-              Text(
-                template.name,
-                style: AppTypography.label.copyWith(
-                  color: isDark ? Colors.white : AppColors.neutral800Light,
-                  fontWeight: FontWeight.w500,
-                ),
+            decoration: BoxDecoration(
+              color: template.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: template.color.withValues(alpha: 0.3),
+                width: 1,
               ),
-            ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(template.emoji, style: const TextStyle(fontSize: 16)),
+                SizedBox(width: AppSpacing.xs),
+                Text(
+                  template.name,
+                  style: AppTypography.label.copyWith(
+                    color: isDark ? Colors.white : AppColors.neutral800Light,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
