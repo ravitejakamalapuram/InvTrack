@@ -108,7 +108,9 @@ class _GlassCardState extends State<GlassCard> {
 
     if (widget.onTap != null || widget.onLongPress != null) {
       final bool hasCustomLabel = widget.semanticLabel != null;
-      return Focus(
+
+      // Build the tappable widget
+      final tappableWidget = Focus(
         onFocusChange: (value) => setState(() => _isFocused = value),
         onKeyEvent: (node, event) {
           if (event is KeyDownEvent &&
@@ -122,21 +124,36 @@ class _GlassCardState extends State<GlassCard> {
           }
           return KeyEventResult.ignored;
         },
-        child: Semantics(
+        child: InkWell(
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          child: Ink(child: cardContent),
+        ),
+      );
+
+      // Wrap with Semantics
+      if (hasCustomLabel) {
+        // Custom label provided - exclude child semantics
+        return Semantics(
           button: true,
           label: widget.semanticLabel,
           selected: widget.selected,
-          excludeSemantics: hasCustomLabel,
-          onTap: hasCustomLabel ? widget.onTap : null,
-          onLongPress: hasCustomLabel ? widget.onLongPress : null,
-          child: InkWell(
-            onTap: widget.onTap,
-            onLongPress: widget.onLongPress,
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            child: Ink(child: cardContent),
+          excludeSemantics: true,
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          child: tappableWidget,
+        );
+      } else {
+        // No custom label - merge with child semantics
+        return MergeSemantics(
+          child: Semantics(
+            button: true,
+            selected: widget.selected,
+            child: tappableWidget,
           ),
-        ),
-      );
+        );
+      }
     }
 
     return cardContent;
