@@ -39,9 +39,10 @@ class MetricTile extends StatelessWidget {
       label: semanticLabel,
       excludeSemantics: true,
       onTap: onTap,
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
-        child: Container(
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isDark ? AppColors.cardDark : AppColors.cardLight,

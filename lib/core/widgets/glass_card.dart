@@ -129,10 +129,11 @@ class _GlassCardState extends State<GlassCard> {
           excludeSemantics: hasCustomLabel,
           onTap: hasCustomLabel ? widget.onTap : null,
           onLongPress: hasCustomLabel ? widget.onLongPress : null,
-          child: GestureDetector(
+          child: InkWell(
             onTap: widget.onTap,
             onLongPress: widget.onLongPress,
-            child: cardContent,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            child: Ink(child: cardContent),
           ),
         ),
       );
@@ -206,7 +207,11 @@ class GlassHeroCard extends StatelessWidget {
         selected: selected,
         excludeSemantics: hasCustomLabel,
         onTap: hasCustomLabel ? onTap : null,
-        child: GestureDetector(onTap: onTap, child: cardContent),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Ink(child: cardContent)
+        ),
       );
     }
 
