@@ -82,3 +82,6 @@
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
+## 2026-05-12 - Optimize Multiple Statistical Metrics Calculation
+**Learning:** Chaining multiple functional array passes like `.map().toList()`, `.reduce()`, and `.where().length` inside Dart logic functions results in redundant O(N) iterative passes and unnecessary closure allocations. In cases where data needs to be aggregated and conditionally counted simultaneously, this incurs noticeable overhead.
+**Action:** Replace sequential list manipulations with a single standard `for` loop to compute metrics (like cumulative totals and conditional counts) simultaneously in an O(N) single pass. Additionally, leverage pre-existing sorted lists available within the function scope to compute medians in O(1) time without triggering new sorting overhead.

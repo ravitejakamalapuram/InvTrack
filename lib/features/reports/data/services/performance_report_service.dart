@@ -13,7 +13,9 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 import 'package:inv_tracker/features/reports/domain/entities/performance_report.dart';
 
 /// Provider for performance report service
-final performanceReportServiceProvider = Provider<PerformanceReportService>((ref) {
+final performanceReportServiceProvider = Provider<PerformanceReportService>((
+  ref,
+) {
   return PerformanceReportService();
 });
 
@@ -68,20 +70,30 @@ class PerformanceReportService {
     final recentMilestones = _calculateMilestones(performances);
 
     // Calculate average and median XIRR
-    final xirrValues = performances.map((p) => p.xirr).toList();
-    final averageXIRR = xirrValues.isEmpty
-        ? 0.0
-        : xirrValues.reduce((a, b) => a + b) / xirrValues.length;
+    double totalXIRR = 0;
+    int profitableCount = 0;
 
-    xirrValues.sort();
-    final medianXIRR = xirrValues.isEmpty
+    for (final p in performances) {
+      totalXIRR += p.xirr;
+      if (p.isProfitable) {
+        profitableCount++;
+      }
+    }
+
+    final averageXIRR = performances.isEmpty
         ? 0.0
-        : xirrValues.length.isOdd
-            ? xirrValues[xirrValues.length ~/ 2]
-            : (xirrValues[xirrValues.length ~/ 2 - 1] + xirrValues[xirrValues.length ~/ 2]) / 2;
+        : totalXIRR / performances.length;
+
+    // Calculate median XIRR in O(1) time using the already sorted list
+    final medianXIRR = sortedByXIRR.isEmpty
+        ? 0.0
+        : sortedByXIRR.length.isOdd
+        ? sortedByXIRR[sortedByXIRR.length ~/ 2].xirr
+        : (sortedByXIRR[sortedByXIRR.length ~/ 2 - 1].xirr +
+                  sortedByXIRR[sortedByXIRR.length ~/ 2].xirr) /
+              2;
 
     // Count profitable vs loss-making
-    final profitableCount = performances.where((p) => p.isProfitable).length;
     final lossCount = performances.length - profitableCount;
 
     return PerformanceReport(
@@ -108,7 +120,7 @@ class PerformanceReportService {
     for (final perf in performances) {
       // Check if percentage return crossed a milestone threshold
       final percentageGain = perf.percentageReturn;
-      
+
       // Determine which milestones were achieved
       final achievedMilestones = <double>[];
       if (percentageGain >= 10) achievedMilestones.add(10);
