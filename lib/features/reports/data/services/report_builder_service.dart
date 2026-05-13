@@ -151,9 +151,7 @@ class ReportBuilderService {
   }
 
   /// Build FY report
-  Future<DynamicReportData> _buildFyReport(
-    ReportConfiguration config,
-  ) async {
+  Future<DynamicReportData> _buildFyReport(ReportConfiguration config) async {
     return DynamicReportData(
       reportType: ReportType.fyReport,
       title: 'Financial Year Report',
@@ -228,9 +226,7 @@ class ReportBuilderService {
     List<CashFlowEntity> cashFlows,
     DateRangeFilter dateRange,
   ) {
-    return cashFlows
-        .where((cf) => dateRange.contains(cf.date))
-        .toList();
+    return cashFlows.where((cf) => dateRange.contains(cf.date)).toList();
   }
 
   /// Filter investments by ID
@@ -238,9 +234,7 @@ class ReportBuilderService {
     List<InvestmentEntity> investments,
     String investmentId,
   ) {
-    return investments
-        .where((inv) => inv.id == investmentId)
-        .toList();
+    return investments.where((inv) => inv.id == investmentId).toList();
   }
 
   /// Calculate total amount for specific cashflow type
@@ -248,9 +242,13 @@ class ReportBuilderService {
     List<CashFlowEntity> cashFlows,
     CashFlowType type,
   ) {
-    return cashFlows
-        .where((cf) => cf.type == type)
-        .fold(0.0, (sum, cf) => sum + cf.amount);
+    // Optimization: Replace .where().fold() with standard loop to avoid closure overhead
+    double sum = 0.0;
+    for (final cf in cashFlows) {
+      if (cf.type == type) {
+        sum += cf.amount;
+      }
+    }
+    return sum;
   }
 }
-
