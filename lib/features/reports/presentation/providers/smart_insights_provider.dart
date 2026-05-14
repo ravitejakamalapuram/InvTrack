@@ -4,6 +4,7 @@
 library;
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -25,7 +26,11 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
   final goalsAsync = ref.watch(activeGoalsProvider);
-  
+
+  // Watch currency and locale for proper formatting
+  final currencySymbol = ref.watch(currencySymbolProvider);
+  final currencyLocale = ref.watch(currencyLocaleProvider);
+
   // Wait for all data to load
   final investments = await investmentsAsync.when(
     data: (data) => Future.value(data.toList()),
@@ -45,14 +50,16 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
     error: (e, st) => Future.value(<GoalEntity>[]),
   );
 
-  // Generate insights
+  // Generate insights with currency and locale
   final service = ref.read(smartInsightsServiceProvider);
   final insights = service.generateInsights(
     investments: investments,
     cashFlows: cashFlows,
     goals: goals,
+    currencySymbol: currencySymbol,
+    locale: currencyLocale,
   );
-  
+
   // Filter out expired insights
   return insights.where((insight) => !insight.isExpired).toList();
 }

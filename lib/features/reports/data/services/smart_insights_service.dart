@@ -3,6 +3,7 @@
 /// Generates auto-insights based on user's investment data
 library;
 
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -15,16 +16,18 @@ class SmartInsightsService {
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
     required List<GoalEntity> goals,
+    required String currencySymbol,
+    required String locale,
   }) {
     final insights = <SmartInsight>[];
     final now = DateTime.now();
-    
+
     // 1. Weekly Summary
-    final weeklyInsight = _generateWeeklySummary(cashFlows, now);
+    final weeklyInsight = _generateWeeklySummary(cashFlows, now, currencySymbol, locale);
     if (weeklyInsight != null) insights.add(weeklyInsight);
-    
+
     // 2. Monthly Summary
-    final monthlyInsight = _generateMonthlySummary(cashFlows, now);
+    final monthlyInsight = _generateMonthlySummary(cashFlows, now, currencySymbol, locale);
     if (monthlyInsight != null) insights.add(monthlyInsight);
     
     // 3. Upcoming Maturities
@@ -43,63 +46,82 @@ class SmartInsightsService {
   }
   
   /// Generate weekly summary insight
-  SmartInsight? _generateWeeklySummary(List<CashFlowEntity> cashFlows, DateTime now) {
+  SmartInsight? _generateWeeklySummary(
+    List<CashFlowEntity> cashFlows,
+    DateTime now,
+    String currencySymbol,
+    String locale,
+  ) {
     final weekStart = _getWeekStart(now);
     final weekEnd = _getWeekEnd(now);
-    
-    final weekCashFlows = cashFlows.where((cf) => 
+
+    final weekCashFlows = cashFlows.where((cf) =>
       cf.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
       cf.date.isBefore(weekEnd.add(const Duration(days: 1)))
     ).toList();
-    
+
     if (weekCashFlows.isEmpty) return null;
-    
+
     final netInvested = weekCashFlows
         .where((cf) => cf.type == CashFlowType.invest)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
-    
+
     final returns = weekCashFlows
         .where((cf) => cf.type == CashFlowType.returnFlow)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
-    
+
     if (netInvested == 0 && returns == 0) return null;
-    
+
+    // Format amounts using locale-aware currency formatting
+    final netInvestedStr = formatCompactCurrency(netInvested, symbol: currencySymbol, locale: locale);
+    final returnsStr = returns > 0
+        ? '+${formatCompactCurrency(returns, symbol: currencySymbol, locale: locale)}'
+        : formatCompactCurrency(0, symbol: currencySymbol, locale: locale);
+
     return SmartInsight(
       type: InsightType.weeklySummary,
       priority: InsightPriority.info,
-      title: 'This Week',
-      subtitle: 'Net invested: ₹${(netInvested / 1000).toStringAsFixed(1)}K',
-      value: returns > 0 ? '+₹${(returns / 1000).toStringAsFixed(1)}K' : '₹0',
+      title: 'This Week', // TODO: Localize using AppLocalizations
+      subtitle: 'Net invested: $netInvestedStr', // TODO: Localize using AppLocalizations
+      value: returnsStr,
       icon: 'calendar_today',
       generatedAt: now,
     );
   }
   
   /// Generate monthly summary insight
-  SmartInsight? _generateMonthlySummary(List<CashFlowEntity> cashFlows, DateTime now) {
+  SmartInsight? _generateMonthlySummary(
+    List<CashFlowEntity> cashFlows,
+    DateTime now,
+    String currencySymbol,
+    String locale,
+  ) {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-    
-    final monthCashFlows = cashFlows.where((cf) => 
+
+    final monthCashFlows = cashFlows.where((cf) =>
       cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
       cf.date.isBefore(monthEnd.add(const Duration(days: 1)))
     ).toList();
-    
+
     if (monthCashFlows.isEmpty) return null;
-    
+
     final income = monthCashFlows
         .where((cf) => cf.type == CashFlowType.income)
         .fold<double>(0, (sum, cf) => sum + cf.amount);
 
     if (income == 0) return null;
 
+    // Format income using locale-aware currency formatting
+    final incomeStr = formatCompactCurrency(income, symbol: currencySymbol, locale: locale);
+
     return SmartInsight(
       type: InsightType.monthlySummary,
       priority: InsightPriority.info,
-      title: 'This Month',
-      subtitle: 'Income received',
-      value: '₹${(income / 1000).toStringAsFixed(1)}K',
-      secondaryValue: '${monthCashFlows.length} sources',
+      title: 'This Month', // TODO: Localize using AppLocalizations
+      subtitle: 'Income received', // TODO: Localize using AppLocalizations
+      value: incomeStr,
+      secondaryValue: '${monthCashFlows.length} sources', // TODO: Localize using AppLocalizations
       icon: 'trending_up',
       generatedAt: now,
     );
