@@ -185,8 +185,8 @@ class FakeFlutterLocalNotificationsPlugin
   }
 
   @override
-  Future<bool?> initialize(
-    InitializationSettings initializationSettings, {
+  Future<bool?> initialize({
+    required InitializationSettings settings,
     void Function(NotificationResponse)? onDidReceiveNotificationResponse,
     void Function(NotificationResponse)?
     onDidReceiveBackgroundNotificationResponse,
@@ -199,11 +199,11 @@ class FakeFlutterLocalNotificationsPlugin
   }
 
   @override
-  Future<void> show(
-    int id,
+  Future<void> show({
+    required int id,
     String? title,
     String? body,
-    NotificationDetails? notificationDetails, {
+    NotificationDetails? notificationDetails,
     String? payload,
   }) async {
     shownNotifications.add(
@@ -221,12 +221,12 @@ class FakeFlutterLocalNotificationsPlugin
   }
 
   @override
-  Future<void> zonedSchedule(
-    int id,
+  Future<void> zonedSchedule({
+    required int id,
     String? title,
     String? body,
-    tz.TZDateTime scheduledDate,
-    NotificationDetails notificationDetails, {
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
     required AndroidScheduleMode androidScheduleMode,
     String? payload,
     DateTimeComponents? matchDateTimeComponents,
@@ -249,7 +249,7 @@ class FakeFlutterLocalNotificationsPlugin
   }
 
   @override
-  Future<void> cancel(int id, {String? tag}) async {
+  Future<void> cancel({required int id, String? tag}) async {
     cancelledNotificationIds.add(id);
     scheduledNotifications.removeWhere((n) => n.id == id);
     if (kDebugMode) {

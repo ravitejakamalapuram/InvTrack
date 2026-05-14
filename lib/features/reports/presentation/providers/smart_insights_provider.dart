@@ -10,6 +10,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/reports/data/services/smart_insights_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 part 'smart_insights_provider.g.dart';
 
@@ -20,8 +21,9 @@ SmartInsightsService smartInsightsService(Ref ref) {
 }
 
 /// Provider for smart insights (auto-generated from user data)
+/// Requires AppLocalizations for localized strings
 @riverpod
-Future<List<SmartInsight>> smartInsights(Ref ref) async {
+Future<List<SmartInsight>> smartInsights(Ref ref, AppLocalizations l10n) async {
   // Watch all required data
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
@@ -50,7 +52,7 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
     error: (e, st) => Future.value(<GoalEntity>[]),
   );
 
-  // Generate insights with currency and locale
+  // Generate insights with currency, locale, and localization
   final service = ref.read(smartInsightsServiceProvider);
   final insights = service.generateInsights(
     investments: investments,
@@ -58,6 +60,7 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
     goals: goals,
     currencySymbol: currencySymbol,
     locale: currencyLocale,
+    l10n: l10n,
   );
 
   // Filter out expired insights
@@ -65,9 +68,10 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
 }
 
 /// Provider for high-priority insights (urgent/warning only)
+/// Requires AppLocalizations for localized strings
 @riverpod
-Future<List<SmartInsight>> priorityInsights(Ref ref) async {
-  final allInsights = await ref.watch(smartInsightsProvider.future);
+Future<List<SmartInsight>> priorityInsights(Ref ref, AppLocalizations l10n) async {
+  final allInsights = await ref.watch(smartInsightsProvider(l10n).future);
 
   return allInsights
       .where((insight) =>

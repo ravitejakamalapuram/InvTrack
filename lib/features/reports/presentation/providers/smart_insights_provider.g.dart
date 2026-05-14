@@ -62,11 +62,13 @@ String _$smartInsightsServiceHash() =>
     r'e90bbc3de9c61f875447384ca897bb7af8e0d89a';
 
 /// Provider for smart insights (auto-generated from user data)
+/// Requires AppLocalizations for localized strings
 
 @ProviderFor(smartInsights)
-const smartInsightsProvider = SmartInsightsProvider._();
+const smartInsightsProvider = SmartInsightsFamily._();
 
 /// Provider for smart insights (auto-generated from user data)
+/// Requires AppLocalizations for localized strings
 
 final class SmartInsightsProvider
     extends
@@ -79,19 +81,27 @@ final class SmartInsightsProvider
         $FutureModifier<List<SmartInsight>>,
         $FutureProvider<List<SmartInsight>> {
   /// Provider for smart insights (auto-generated from user data)
-  const SmartInsightsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'smartInsightsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  /// Requires AppLocalizations for localized strings
+  const SmartInsightsProvider._({
+    required SmartInsightsFamily super.from,
+    required AppLocalizations super.argument,
+  }) : super(
+         retry: null,
+         name: r'smartInsightsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$smartInsightsHash();
+
+  @override
+  String toString() {
+    return r'smartInsightsProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -101,18 +111,59 @@ final class SmartInsightsProvider
 
   @override
   FutureOr<List<SmartInsight>> create(Ref ref) {
-    return smartInsights(ref);
+    final argument = this.argument as AppLocalizations;
+    return smartInsights(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SmartInsightsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
   }
 }
 
-String _$smartInsightsHash() => r'8caec92fff6b5cf86a4b92e2f8edee918b30d91b';
+String _$smartInsightsHash() => r'93305b894480c53d19a8393e58b62220a5d23337';
+
+/// Provider for smart insights (auto-generated from user data)
+/// Requires AppLocalizations for localized strings
+
+final class SmartInsightsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<SmartInsight>>,
+          AppLocalizations
+        > {
+  const SmartInsightsFamily._()
+    : super(
+        retry: null,
+        name: r'smartInsightsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Provider for smart insights (auto-generated from user data)
+  /// Requires AppLocalizations for localized strings
+
+  SmartInsightsProvider call(AppLocalizations l10n) =>
+      SmartInsightsProvider._(argument: l10n, from: this);
+
+  @override
+  String toString() => r'smartInsightsProvider';
+}
 
 /// Provider for high-priority insights (urgent/warning only)
+/// Requires AppLocalizations for localized strings
 
 @ProviderFor(priorityInsights)
-const priorityInsightsProvider = PriorityInsightsProvider._();
+const priorityInsightsProvider = PriorityInsightsFamily._();
 
 /// Provider for high-priority insights (urgent/warning only)
+/// Requires AppLocalizations for localized strings
 
 final class PriorityInsightsProvider
     extends
@@ -125,19 +176,27 @@ final class PriorityInsightsProvider
         $FutureModifier<List<SmartInsight>>,
         $FutureProvider<List<SmartInsight>> {
   /// Provider for high-priority insights (urgent/warning only)
-  const PriorityInsightsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'priorityInsightsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  /// Requires AppLocalizations for localized strings
+  const PriorityInsightsProvider._({
+    required PriorityInsightsFamily super.from,
+    required AppLocalizations super.argument,
+  }) : super(
+         retry: null,
+         name: r'priorityInsightsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$priorityInsightsHash();
+
+  @override
+  String toString() {
+    return r'priorityInsightsProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -147,8 +206,47 @@ final class PriorityInsightsProvider
 
   @override
   FutureOr<List<SmartInsight>> create(Ref ref) {
-    return priorityInsights(ref);
+    final argument = this.argument as AppLocalizations;
+    return priorityInsights(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PriorityInsightsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
   }
 }
 
-String _$priorityInsightsHash() => r'8a20f4bfb63b56c7f7072153cb9b6e5a38c839cf';
+String _$priorityInsightsHash() => r'c05a6ca19279f09d17d27092ee30fbdf11568fc6';
+
+/// Provider for high-priority insights (urgent/warning only)
+/// Requires AppLocalizations for localized strings
+
+final class PriorityInsightsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<SmartInsight>>,
+          AppLocalizations
+        > {
+  const PriorityInsightsFamily._()
+    : super(
+        retry: null,
+        name: r'priorityInsightsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Provider for high-priority insights (urgent/warning only)
+  /// Requires AppLocalizations for localized strings
+
+  PriorityInsightsProvider call(AppLocalizations l10n) =>
+      PriorityInsightsProvider._(argument: l10n, from: this);
+
+  @override
+  String toString() => r'priorityInsightsProvider';
+}

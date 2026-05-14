@@ -283,7 +283,7 @@ class DataExportService {
       ]);
     }
 
-    return const ListToCsvConverter().convert(rows);
+    return Csv().encoder.convert(rows);
   }
 
   /// Generate CSV for goals
@@ -336,7 +336,7 @@ class DataExportService {
       ]);
     }
 
-    return const ListToCsvConverter().convert(rows);
+    return Csv().encoder.convert(rows);
   }
 
   /// Converts CashFlowType to export string (reused from ExportService)

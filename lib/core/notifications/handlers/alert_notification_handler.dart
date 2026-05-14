@@ -57,10 +57,10 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.show(
-      NotificationIds.riskAlert(alertType),
-      '⚠️ $title',
-      body,
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.riskAlert(alertType),
+      title: '⚠️ $title',
+      body: body,
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.riskAlert(alertType),
     );
 
@@ -128,10 +128,10 @@ class AlertNotificationHandler with NotificationPreferencesMixin {
       );
 
       await _plugin.show(
-        NotificationIds.idleAlert(inv.id),
-        '💤 Investment Review Needed',
-        body,
-        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        id: NotificationIds.idleAlert(inv.id),
+        title: '💤 Investment Review Needed',
+        body: body,
+        notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
         payload: NotificationPayload.idleAlert(inv.id),
       );
 

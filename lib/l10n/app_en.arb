@@ -3794,6 +3794,16 @@
     "description": "Label for income received"
   },
 
+  "sourcesCount": "{count, plural, =1{1 source} other{{count} sources}}",
+  "@sourcesCount": {
+    "description": "Number of income sources (plural-aware)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
   "ytdPerformance": "YTD Performance",
   "@ytdPerformance": {
     "description": "Year-to-date performance label"
