@@ -330,6 +330,68 @@ class DateRangeFilter {
   String toString() => 'DateRangeFilter(${start.toIso8601String()} - ${end.toIso8601String()})';
 }
 
+/// Preset date ranges for report builder
+enum DateRangePreset {
+  thisWeek,
+  thisMonth,
+  thisQuarter,
+  thisYear,
+  last3Months,
+  last6Months,
+  lastYear,
+  allTime;
+
+  /// Convert preset to actual DateRangeFilter
+  DateRangeFilter toFilter() {
+    final now = DateTime.now();
+
+    switch (this) {
+      case DateRangePreset.thisWeek:
+        return DateRangeFilter(
+          start: ReportConfiguration._getWeekStart(now),
+          end: ReportConfiguration._getWeekEnd(now),
+        );
+
+      case DateRangePreset.thisMonth:
+        return DateRangeFilter(
+          start: DateTime(now.year, now.month, 1),
+          end: DateTime(now.year, now.month + 1, 0, 23, 59, 59, 999),
+        );
+
+      case DateRangePreset.thisQuarter:
+        final quarterMonth = ((now.month - 1) ~/ 3) * 3 + 1;
+        return DateRangeFilter(
+          start: DateTime(now.year, quarterMonth, 1),
+          end: DateTime(now.year, quarterMonth + 3, 0, 23, 59, 59, 999),
+        );
+
+      case DateRangePreset.thisYear:
+        return DateRangeFilter(
+          start: DateTime(now.year, 1, 1),
+          end: DateTime(now.year, 12, 31, 23, 59, 59, 999),
+        );
+
+      case DateRangePreset.last3Months:
+        final start = DateTime(now.year, now.month - 3, now.day);
+        return DateRangeFilter(start: start, end: now);
+
+      case DateRangePreset.last6Months:
+        final start = DateTime(now.year, now.month - 6, now.day);
+        return DateRangeFilter(start: start, end: now);
+
+      case DateRangePreset.lastYear:
+        final start = DateTime(now.year - 1, now.month, now.day);
+        return DateRangeFilter(start: start, end: now);
+
+      case DateRangePreset.allTime:
+        return DateRangeFilter(
+          start: DateTime(2000, 1, 1),
+          end: DateTime(2100, 12, 31, 23, 59, 59, 999),
+        );
+    }
+  }
+}
+
 /// Notification context for reports triggered by notifications
 class NotificationContext {
   /// Type of notification that triggered this report
