@@ -19,6 +19,7 @@ import 'package:inv_tracker/features/portfolio_health/presentation/screens/portf
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/dynamic_report_screen.dart';
 import 'package:inv_tracker/features/reports/presentation/screens/reports_home_screen.dart';
+import 'package:inv_tracker/features/reports/presentation/screens/report_builder_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
@@ -129,13 +130,19 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/reports',
                 builder: (context, state) => const ReportsHomeScreen(),
                 routes: [
-                  // Dynamic report builder - replaces all 8 static report screens
+                  // Dynamic report builder - handles both wizard and generated reports
                   GoRoute(
                     path: 'builder',
                     builder: (context, state) {
+                      final params = state.uri.queryParameters;
+
+                      // If no query params, show the wizard
+                      if (params.isEmpty) {
+                        return const ReportBuilderScreen();
+                      }
+
+                      // Otherwise, parse params and show the generated report
                       try {
-                        // Parse query parameters into ReportConfiguration
-                        final params = state.uri.queryParameters;
                         final config = ReportConfiguration.fromQueryParams(params);
                         return DynamicReportScreen(configuration: config);
                       } catch (e, stackTrace) {

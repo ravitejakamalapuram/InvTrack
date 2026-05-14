@@ -1,0 +1,78 @@
+/// Smart Insights Provider
+///
+/// Provides auto-generated insights based on user data
+library;
+
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
+import 'package:inv_tracker/features/reports/data/services/smart_insights_service.dart';
+import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
+
+part 'smart_insights_provider.g.dart';
+
+/// Service provider for smart insights generation
+@riverpod
+SmartInsightsService smartInsightsService(Ref ref) {
+  return SmartInsightsService();
+}
+
+/// Provider for smart insights (auto-generated from user data)
+@riverpod
+Future<List<SmartInsight>> smartInsights(Ref ref) async {
+  // Watch all required data
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
+  final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
+  final goalsAsync = ref.watch(activeGoalsProvider);
+
+  // Watch currency and locale for proper formatting
+  final currencySymbol = ref.watch(currencySymbolProvider);
+  final currencyLocale = ref.watch(currencyLocaleProvider);
+
+  // Wait for all data to load
+  final investments = await investmentsAsync.when(
+    data: (data) => Future.value(data.toList()),
+    loading: () => Future.value(<InvestmentEntity>[]),
+    error: (e, st) => Future.value(<InvestmentEntity>[]),
+  );
+
+  final cashFlows = await cashFlowsAsync.when(
+    data: (data) => Future.value(data.toList()),
+    loading: () => Future.value(<CashFlowEntity>[]),
+    error: (e, st) => Future.value(<CashFlowEntity>[]),
+  );
+
+  final goals = await goalsAsync.when(
+    data: (data) => Future.value(data.toList()),
+    loading: () => Future.value(<GoalEntity>[]),
+    error: (e, st) => Future.value(<GoalEntity>[]),
+  );
+
+  // Generate insights with currency and locale
+  final service = ref.read(smartInsightsServiceProvider);
+  final insights = service.generateInsights(
+    investments: investments,
+    cashFlows: cashFlows,
+    goals: goals,
+    currencySymbol: currencySymbol,
+    locale: currencyLocale,
+  );
+
+  // Filter out expired insights
+  return insights.where((insight) => !insight.isExpired).toList();
+}
+
+/// Provider for high-priority insights (urgent/warning only)
+@riverpod
+Future<List<SmartInsight>> priorityInsights(Ref ref) async {
+  final allInsights = await ref.watch(smartInsightsProvider.future);
+
+  return allInsights
+      .where((insight) =>
+        insight.priority == InsightPriority.urgent ||
+        insight.priority == InsightPriority.warning
+      )
+      .toList();
+}

@@ -2726,6 +2726,21 @@
     "description": "Performance analysis report title"
   },
 
+  "performanceReport": "Performance Report",
+  "@performanceReport": {
+    "description": "Full title for performance report"
+  },
+
+  "goalsReport": "Goals Report",
+  "@goalsReport": {
+    "description": "Full title for goals report"
+  },
+
+  "maturityCalendar": "Maturity Calendar",
+  "@maturityCalendar": {
+    "description": "Full title for maturity calendar"
+  },
+
   "topPerformers": "Top Performers",
   "@topPerformers": {
     "description": "Subtitle for performance report"
@@ -3676,6 +3691,197 @@
     "description": "PDF report section header for diversification analysis"
   },
 
+  "noDataForReport": "No data available for this report",
+  "@noDataForReport": {
+    "description": "Empty state message when report has no data"
+  },
+
+  "startTrackingToSeeReports": "Start tracking investments to see reports",
+  "@startTrackingToSeeReports": {
+    "description": "Empty state hint for reports screen"
+  },
+
+  "addYourFirstInvestment": "Add Your First Investment",
+  "@addYourFirstInvestment": {
+    "description": "CTA button text to add first investment"
+  },
+
+  "smartInsights": "Smart Insights",
+  "@smartInsights": {
+    "description": "Section title for auto-generated insights"
+  },
+
+  "reportBuilder": "Report Builder",
+  "@reportBuilder": {
+    "description": "Title for DIY report builder"
+  },
+
+  "createCustomReport": "Create Custom Report",
+  "@createCustomReport": {
+    "description": "Button text to create custom report"
+  },
+
+  "createReport": "Create Report",
+  "@createReport": {
+    "description": "Short button text to create report"
+  },
+
+  "viewPastReports": "View Past Reports",
+  "@viewPastReports": {
+    "description": "Button to expand historical reports"
+  },
+
+  "needsAttention": "Needs Attention",
+  "@needsAttention": {
+    "description": "Section title for action-required items"
+  },
+
+  "investmentsDown": "{count} investments down >10%",
+  "@investmentsDown": {
+    "description": "Warning message for declining investments",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "upcomingMaturityWarning": "₹{amount} maturing in {days} days",
+  "@upcomingMaturityWarning": {
+    "description": "Warning for upcoming investment maturity",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "goalsBehindSchedule": "{count} goals behind schedule",
+  "@goalsBehindSchedule": {
+    "description": "Warning for goals not on track",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "netInvestedThisWeek": "Net invested this week",
+  "@netInvestedThisWeek": {
+    "description": "Label for weekly investment summary"
+  },
+
+  "netInvestedThisMonth": "Net invested this month",
+  "@netInvestedThisMonth": {
+    "description": "Label for monthly investment summary"
+  },
+
+  "returnsThisWeek": "Returns this week",
+  "@returnsThisWeek": {
+    "description": "Label for weekly returns"
+  },
+
+  "returnsThisMonth": "Returns this month",
+  "@returnsThisMonth": {
+    "description": "Label for monthly returns"
+  },
+
+  "incomeReceived": "Income received",
+  "@incomeReceived": {
+    "description": "Label for income received"
+  },
+
+  "ytdPerformance": "YTD Performance",
+  "@ytdPerformance": {
+    "description": "Year-to-date performance label"
+  },
+
+  "portfolioUpVsGoal": "Portfolio up {actual}% vs goal of {target}%",
+  "@portfolioUpVsGoal": {
+    "description": "Performance comparison message",
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+
+  "recentlyViewed": "Recently Viewed",
+  "@recentlyViewed": {
+    "description": "Section title for recently viewed reports"
+  },
+
+  "reportTemplates": "Templates",
+  "@reportTemplates": {
+    "description": "Section title for report templates"
+  },
+
+  "investmentPerformance": "Investment Performance",
+  "@investmentPerformance": {
+    "description": "Report template name"
+  },
+
+  "taxPlanning": "Tax Planning",
+  "@taxPlanning": {
+    "description": "Report template name"
+  },
+
+  "cashFlowAnalysis": "Cash Flow Analysis",
+  "@cashFlowAnalysis": {
+    "description": "Report template name"
+  },
+
+  "whatToAnalyze": "What do you want to analyze?",
+  "@whatToAnalyze": {
+    "description": "Report builder question"
+  },
+
+  "timePeriod": "Time Period",
+  "@timePeriod": {
+    "description": "Report builder section title"
+  },
+
+  "filterBy": "Filter By (Optional)",
+  "@filterBy": {
+    "description": "Report builder section title"
+  },
+
+  "generateReport": "Generate Report",
+  "@generateReport": {
+    "description": "Button to generate custom report"
+  },
+
+  "customDateRange": "Custom",
+  "@customDateRange": {
+    "description": "Option for custom date range"
+  },
+
+  "investmentType": "Investment Type",
+  "@investmentType": {
+    "description": "Filter label for investment type"
+  },
+
+  "category": "Category",
+  "@category": {
+    "description": "Filter label for category"
+  },
+
+  "minAmount": "Min Amount",
+  "@minAmount": {
+    "description": "Filter label for minimum amount"
+  },
+
+  "allTypes": "All",
+  "@allTypes": {
+    "description": "Dropdown option for all types"
+  },
+
   "calculateYourFireNumber": "Calculate Your FIRE Number",
   "@calculateYourFireNumber": {
     "description": "Call-to-action title for FIRE calculator card"
@@ -3709,5 +3915,226 @@
   "fireProgressTitle": "FIRE Progress",
   "@fireProgressTitle": {
     "description": "Title for FIRE progress card showing progress towards financial independence"
+  },
+
+  "selectReportType": "Select Report Type",
+  "@selectReportType": {
+    "description": "Step title for selecting report type in builder"
+  },
+
+  "selectDateRange": "Select Date Range",
+  "@selectDateRange": {
+    "description": "Step title for selecting date range in builder"
+  },
+
+  "selectFilters": "Select Filters",
+  "@selectFilters": {
+    "description": "Step title for selecting filters in builder"
+  },
+
+  "chooseReportType": "Choose the type of report you want to generate",
+  "@chooseReportType": {
+    "description": "Instruction text for report type selection"
+  },
+
+  "weeklySummaryDesc": "View activity and cashflows for the selected week",
+  "@weeklySummaryDesc": {
+    "description": "Description of weekly summary report"
+  },
+
+  "monthlyIncomeDesc": "Track income from investments for the month",
+  "@monthlyIncomeDesc": {
+    "description": "Description of monthly income report"
+  },
+
+  "fyReportDesc": "Comprehensive financial year analysis",
+  "@fyReportDesc": {
+    "description": "Description of FY report"
+  },
+
+  "performanceReportDesc": "Analyze top and bottom performing investments",
+  "@performanceReportDesc": {
+    "description": "Description of performance report"
+  },
+
+  "goalsReportDesc": "Track progress towards your financial goals",
+  "@goalsReportDesc": {
+    "description": "Description of goals report"
+  },
+
+  "maturityCalendarDesc": "View upcoming investment maturities",
+  "@maturityCalendarDesc": {
+    "description": "Description of maturity calendar report"
+  },
+
+  "selectTimeframe": "Select the time period for your report",
+  "@selectTimeframe": {
+    "description": "Instruction text for date range selection"
+  },
+
+  "thisQuarter": "This Quarter",
+  "@thisQuarter": {
+    "description": "Date range filter option"
+  },
+
+  "thisYear": "This Year",
+  "@thisYear": {
+    "description": "Date range filter option"
+  },
+
+  "lastThreeMonths": "Last 3 Months",
+  "@lastThreeMonths": {
+    "description": "Date range filter option"
+  },
+
+  "lastSixMonths": "Last 6 Months",
+  "@lastSixMonths": {
+    "description": "Date range filter option"
+  },
+
+  "lastYear": "Last Year",
+  "@lastYear": {
+    "description": "Date range filter option"
+  },
+
+  "allTime": "All Time",
+  "@allTime": {
+    "description": "Date range filter option"
+  },
+
+  "optionalFilters": "Apply optional filters to narrow down your report",
+  "@optionalFilters": {
+    "description": "Instruction text for filter selection"
+  },
+
+  "filterByInvestment": "Filter by Investment",
+  "@filterByInvestment": {
+    "description": "Label for investment filter dropdown"
+  },
+
+  "filterByGoal": "Filter by Goal",
+  "@filterByGoal": {
+    "description": "Label for goal filter dropdown"
+  },
+
+  "allInvestments": "All Investments",
+  "@allInvestments": {
+    "description": "Dropdown option to show all investments"
+  },
+
+  "allGoals": "All Goals",
+  "@allGoals": {
+    "description": "Dropdown option to show all goals"
+  },
+
+  "errorLoadingInvestments": "Error loading investments",
+  "@errorLoadingInvestments": {
+    "description": "Error message when investments fail to load"
+  },
+
+  "errorLoadingGoals": "Error loading goals",
+  "@errorLoadingGoals": {
+    "description": "Error message when goals fail to load"
+  },
+
+  "noFiltersNeeded": "No filters available for this report type",
+  "@noFiltersNeeded": {
+    "description": "Message when selected report type doesn't support filters"
+  },
+
+  "noFiltersNeededDesc": "This report does not require any additional filters. Proceed to generate the report.",
+  "@noFiltersNeededDesc": {
+    "description": "Description when no filters are needed"
+  },
+
+  "pleaseSelectReportType": "Please select a report type to continue",
+  "@pleaseSelectReportType": {
+    "description": "Validation message when no report type is selected"
+  },
+
+  "continueStep": "Continue",
+  "@continueStep": {
+    "description": "Button text to continue to next step in wizard"
+  },
+
+  "back": "Back",
+  "@back": {
+    "description": "Button text to go back to previous step"
+  },
+
+  "smartInsights": "Smart Insights",
+  "@smartInsights": {
+    "description": "Section title for AI-generated insights"
+  },
+
+  "needsAttention": "Needs Attention",
+  "@needsAttention": {
+    "description": "Section title for items requiring user action"
+  },
+
+  "upcomingMaturityInsight": "Upcoming Maturity",
+  "@upcomingMaturityInsight": {
+    "description": "Title for upcoming maturity insight card"
+  },
+
+  "upcomingMaturityDescription": "{count, plural, =1{1 investment} other{{count} investments}} maturing in next 30 days",
+  "@upcomingMaturityDescription": {
+    "description": "Description for upcoming maturity insight",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "monthlyIncomeInsight": "Monthly Income",
+  "@monthlyIncomeInsight": {
+    "description": "Title for monthly income insight card"
+  },
+
+  "monthlyIncomeDescription": "{amount} in passive income this month",
+  "@monthlyIncomeDescription": {
+    "description": "Description for monthly income insight",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+
+  "goalProgressInsight": "Goal Progress",
+  "@goalProgressInsight": {
+    "description": "Title for goal progress insight card"
+  },
+
+  "goalProgressDescription": "{goalName} is {percent}% complete",
+  "@goalProgressDescription": {
+    "description": "Description for goal progress insight",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "topPerformerInsight": "Top Performer",
+  "@topPerformerInsight": {
+    "description": "Title for top performer insight card"
+  },
+
+  "topPerformerDescription": "{investmentName} returned {returnValue}%",
+  "@topPerformerDescription": {
+    "description": "Description for top performer insight",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      },
+      "returnValue": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Widget that displays a list of available historical reports
@@ -67,8 +68,11 @@ class HistoricalReportsList extends StatelessWidget {
               subtitle: Text(isCurrent ? l10n.currentYear : l10n.tapToView),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // Navigate to FY report screen with year parameter
-                context.push('/reports/fy/$fyYear');
+                // Navigate to FY report using dynamic report builder
+                final config = ReportConfiguration.fyReport(fyYear: fyYear);
+                final queryParams = config.toQueryParams();
+                final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
+                context.push(uri.toString());
               },
             ),
           ),
@@ -101,9 +105,11 @@ class HistoricalReportsList extends StatelessWidget {
               subtitle: Text(isCurrent ? l10n.currentMonth : l10n.tapToView),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // Navigate to monthly income screen with month parameter
-                final yearMonth = '${month.year}-${month.month.toString().padLeft(2, '0')}';
-                context.push('/reports/monthly/$yearMonth');
+                // Navigate to monthly income report using dynamic report builder
+                final config = ReportConfiguration.monthlyIncome(month: month);
+                final queryParams = config.toQueryParams();
+                final uri = Uri(path: '/reports/builder', queryParameters: queryParams);
+                context.push(uri.toString());
               },
             ),
           ),

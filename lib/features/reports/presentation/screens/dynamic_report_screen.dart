@@ -2,7 +2,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
+import 'package:inv_tracker/features/reports/domain/entities/dynamic_report_data.dart';
 import 'package:inv_tracker/features/reports/presentation/providers/dynamic_report_provider.dart';
 
 /// Dynamic Report Screen - Unified view for all report types
@@ -77,42 +80,194 @@ class DynamicReportScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 section.subtitle!,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                ),
               ),
             ],
-            const SizedBox(height: 12),
-            // Section data (placeholder for now)
-            Text('Section Type: ${section.type}'),
-            Text('Data: ${section.data.toString()}'),
+            const SizedBox(height: 16),
+            // Render section content based on type
+            _buildSectionContent(context, section),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, String? message) {
-    return Center(
+  Widget _buildSectionContent(BuildContext context, dynamic section) {
+    // Import the section type enum
+    final sectionType = section.type.toString();
+
+    // Handle different section types
+    if (sectionType.contains('kpiGrid')) {
+      return _buildKpiGrid(context, section.data as List);
+    } else if (sectionType.contains('kpiCard')) {
+      return _buildKpiCard(context, section.data);
+    } else if (sectionType.contains('itemList')) {
+      return _buildItemList(context, section.data as List);
+    } else if (sectionType.contains('textSummary')) {
+      return _buildTextSummary(context, section.data as String);
+    } else {
+      // Fallback for unimplemented types
+      return Text(
+        'Content type not yet implemented: $sectionType',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Widget _buildKpiGrid(BuildContext context, List kpiDataList) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: kpiDataList.map((kpiData) {
+        return SizedBox(
+          width: (MediaQuery.of(context).size.width - 80) / 2,
+          child: _buildKpiCard(context, kpiData),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildKpiCard(BuildContext context, dynamic kpiData) {
+    // Cast to proper type
+    final kpi = kpiData as KpiData;
+    final label = kpi.label;
+    final value = kpi.value;
+    final trend = kpi.trend;
+    final isTrendPositive = kpi.isTrendPositive;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.analytics_outlined,
-            size: 64,
-            color: Theme.of(context).disabledColor,
-          ),
-          const SizedBox(height: 16),
           Text(
-            message ?? 'No data available for this report',
-            style: Theme.of(context).textTheme.titleMedium,
-            textAlign: TextAlign.center,
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Try adjusting the date range or filters',
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
+          if (trend != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  isTrendPositive == true
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
+                  size: 16,
+                  color: isTrendPositive == true
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  trend,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isTrendPositive == true
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildItemList(BuildContext context, List items) {
+    if (items.isEmpty) {
+      return Text(
+        'No items to display',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+        ),
+      );
+    }
+
+    return Column(
+      children: items.map((item) {
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(item.toString()),
+          dense: true,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTextSummary(BuildContext context, String text) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodyMedium,
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, String? message) {
+    final l10n = AppLocalizations.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 80,
+              color: Theme.of(context).disabledColor,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              message ?? l10n.noDataForReport,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.startTrackingToSeeReports,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: () {
+                // Navigate to add investment screen
+                context.push('/investments/add');
+              },
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addYourFirstInvestment),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                // Navigate back to reports home
+                context.pop();
+              },
+              child: Text(l10n.viewPastReports),
+            ),
+          ],
+        ),
       ),
     );
   }
