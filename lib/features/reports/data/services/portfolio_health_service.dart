@@ -22,15 +22,24 @@ class PortfolioHealthService {
     required Map<String, InvestmentStats> statsMap,
     required List<CashFlowEntity> cashFlows,
   }) {
-    final activeInvestments =
-        investments.where((i) => i.status == InvestmentStatus.open).toList();
+    final activeInvestments = investments
+        .where((i) => i.status == InvestmentStatus.open)
+        .toList();
 
     // 1. Calculate diversification
-    final diversification = _calculateDiversification(activeInvestments, statsMap);
-    final diversificationScore = _calculateDiversificationScore(diversification);
+    final diversification = _calculateDiversification(
+      activeInvestments,
+      statsMap,
+    );
+    final diversificationScore = _calculateDiversificationScore(
+      diversification,
+    );
 
     // 2. Calculate risk distribution
-    final riskDistribution = _calculateRiskDistribution(activeInvestments, statsMap);
+    final riskDistribution = _calculateRiskDistribution(
+      activeInvestments,
+      statsMap,
+    );
 
     // 3. Calculate performance score
     final performanceScore = _calculatePerformanceScore(statsMap);
@@ -39,14 +48,15 @@ class PortfolioHealthService {
     final idleCount = _calculateIdleInvestments(activeInvestments, cashFlows);
     final activityScore = activeInvestments.isEmpty
         ? 0.0
-        : ((activeInvestments.length - idleCount) / activeInvestments.length) * 100;
+        : ((activeInvestments.length - idleCount) / activeInvestments.length) *
+              100;
 
     // 5. Calculate overall score (weighted average)
-    final overallScoreValue = (
-      (diversificationScore * 0.3) +
-      (performanceScore * 0.4) +
-      (activityScore * 0.3)
-    ).round();
+    final overallScoreValue =
+        ((diversificationScore * 0.3) +
+                (performanceScore * 0.4) +
+                (activityScore * 0.3))
+            .round();
 
     final overallScore = _getHealthScore(overallScoreValue);
 
@@ -78,7 +88,7 @@ class PortfolioHealthService {
     Map<String, InvestmentStats> statsMap,
   ) {
     final typeMap = <InvestmentType, List<InvestmentEntity>>{};
-    
+
     for (final investment in investments) {
       typeMap.putIfAbsent(investment.type, () => []).add(investment);
     }
@@ -107,7 +117,9 @@ class PortfolioHealthService {
     }).toList()..sort((a, b) => b.percentage.compareTo(a.percentage));
   }
 
-  double _calculateDiversificationScore(List<DiversificationBreakdown> breakdown) {
+  double _calculateDiversificationScore(
+    List<DiversificationBreakdown> breakdown,
+  ) {
     if (breakdown.isEmpty) return 0;
     if (breakdown.length == 1) return 20; // Poor diversification
 
@@ -192,7 +204,7 @@ class PortfolioHealthService {
   ) {
     final now = DateTime.now();
     final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
-    
+
     for (final cf in cashFlows) {
       cashFlowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
     }
@@ -202,8 +214,14 @@ class PortfolioHealthService {
       final flows = cashFlowsByInvestment[investment.id] ?? [];
       if (flows.isEmpty) continue;
 
-      flows.sort((a, b) => b.date.compareTo(a.date));
-      final daysSinceLastActivity = now.difference(flows.first.date).inDays;
+      // Optimization: Get most recent cash flow without sorting to avoid O(N log N) overhead
+      var mostRecentDate = flows[0].date;
+      for (var i = 1; i < flows.length; i++) {
+        if (flows[i].date.isAfter(mostRecentDate)) {
+          mostRecentDate = flows[i].date;
+        }
+      }
+      final daysSinceLastActivity = now.difference(mostRecentDate).inDays;
 
       if (daysSinceLastActivity >= 90) {
         idleCount++;
@@ -230,44 +248,58 @@ class PortfolioHealthService {
 
     // Diversification recommendations
     if (diversification.length < 3) {
-      recommendations.add(const HealthRecommendation(
-        title: 'Improve Diversification',
-        description: 'Consider adding more investment types to reduce risk.',
-        priority: RecommendationPriority.high,
-      ));
+      recommendations.add(
+        const HealthRecommendation(
+          title: 'Improve Diversification',
+          description: 'Consider adding more investment types to reduce risk.',
+          priority: RecommendationPriority.high,
+        ),
+      );
     } else if (diversification.any((d) => d.percentage > 50)) {
-      recommendations.add(const HealthRecommendation(
-        title: 'Reduce Concentration',
-        description: 'One investment type dominates your portfolio. Consider rebalancing.',
-        priority: RecommendationPriority.medium,
-      ));
+      recommendations.add(
+        const HealthRecommendation(
+          title: 'Reduce Concentration',
+          description:
+              'One investment type dominates your portfolio. Consider rebalancing.',
+          priority: RecommendationPriority.medium,
+        ),
+      );
     }
 
     // Risk recommendations
     if (!riskDistribution.isBalanced) {
-      recommendations.add(const HealthRecommendation(
-        title: 'Balance Risk',
-        description: 'Your portfolio is heavily weighted in one risk category.',
-        priority: RecommendationPriority.medium,
-      ));
+      recommendations.add(
+        const HealthRecommendation(
+          title: 'Balance Risk',
+          description:
+              'Your portfolio is heavily weighted in one risk category.',
+          priority: RecommendationPriority.medium,
+        ),
+      );
     }
 
     // Idle investment recommendations
     if (idleCount > 0) {
-      recommendations.add(HealthRecommendation(
-        title: 'Review Idle Investments',
-        description: '$idleCount investments have had no activity in 90+ days.',
-        priority: RecommendationPriority.high,
-      ));
+      recommendations.add(
+        HealthRecommendation(
+          title: 'Review Idle Investments',
+          description:
+              '$idleCount investments have had no activity in 90+ days.',
+          priority: RecommendationPriority.high,
+        ),
+      );
     }
 
     // Performance recommendations
     if (performanceScore < 40) {
-      recommendations.add(const HealthRecommendation(
-        title: 'Review Performance',
-        description: 'Many investments are underperforming. Consider rebalancing.',
-        priority: RecommendationPriority.high,
-      ));
+      recommendations.add(
+        const HealthRecommendation(
+          title: 'Review Performance',
+          description:
+              'Many investments are underperforming. Consider rebalancing.',
+          priority: RecommendationPriority.high,
+        ),
+      );
     }
 
     return recommendations;

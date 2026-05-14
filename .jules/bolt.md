@@ -82,3 +82,6 @@
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
+## 2024-05-26 - Fast Recent Activity Calculation
+**Learning:** Using `flows.sort((a, b) => b.date.compareTo(a.date));` to find the most recent cash flow date is extremely inefficient (O(N log N)) when all you need is the maximum date.
+**Action:** Replace `flows.sort()` with a simple linear scan (`for` loop) to find the most recent date in O(N) time. This avoids array mutation and expensive date comparison operations during sorting when evaluating idle investments.
