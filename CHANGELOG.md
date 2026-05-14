@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- Complete Reports screen redesign with Smart Insights and DIY Report Builder
+
+### 🐛 Bug Fixes
+
+- Remove hardcoded currency symbols and strings from SmartInsightsService
+- Remove unnecessary underscores in error handlers
+- Render KPI cards properly in DynamicReportScreen instead of raw toString() debug data
+
+## [3.60.4] - 2026-05-10
+
 ### 🐛 Bug Fixes
 
 - Replace deprecated hasFlag() with ignore comments

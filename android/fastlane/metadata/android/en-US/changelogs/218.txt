@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Replace deprecated hasFlag() with ignore comments
