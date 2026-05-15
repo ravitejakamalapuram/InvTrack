@@ -37,7 +37,7 @@ class SmartInsightsService {
     insights.addAll(maturityInsights);
     
     // 4. Declining Investments
-    final decliningInsights = _generateDecliningAlerts(investments, cashFlows);
+    final decliningInsights = _generateDecliningAlerts(investments, cashFlows, l10n);
     insights.addAll(decliningInsights);
     
     // 5. Goal Progress
@@ -165,6 +165,7 @@ class SmartInsightsService {
   List<SmartInsight> _generateDecliningAlerts(
     List<InvestmentEntity> investments,
     List<CashFlowEntity> cashFlows,
+    AppLocalizations l10n,
   ) {
     final insights = <SmartInsight>[];
     final now = DateTime.now();
@@ -217,7 +218,7 @@ class SmartInsightsService {
           type: InsightType.decliningInvestment,
           priority: decline < -20 ? InsightPriority.urgent : InsightPriority.warning,
           title: investment.name,
-          subtitle: 'Declining in value',
+          subtitle: l10n.decliningInValue,
           value: '${decline.toStringAsFixed(1)}%',
           icon: 'trending_down',
           generatedAt: now,

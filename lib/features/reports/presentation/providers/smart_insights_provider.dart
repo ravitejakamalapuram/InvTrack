@@ -6,7 +6,6 @@ library;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/reports/data/services/smart_insights_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
@@ -33,23 +32,23 @@ Future<List<SmartInsight>> smartInsights(Ref ref, AppLocalizations l10n) async {
   final currencySymbol = ref.watch(currencySymbolProvider);
   final currencyLocale = ref.watch(currencyLocaleProvider);
 
-  // Wait for all data to load
-  final investments = await investmentsAsync.when(
-    data: (data) => Future.value(data.toList()),
-    loading: () => Future.value(<InvestmentEntity>[]),
-    error: (e, st) => Future.value(<InvestmentEntity>[]),
+  // Wait for all data to load - errors propagate to UI for proper handling
+  final investments = investmentsAsync.when(
+    data: (data) => data.toList(),
+    loading: () => throw StateError('Investments data is still loading'),
+    error: (e, st) => throw e,
   );
 
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) => Future.value(data.toList()),
-    loading: () => Future.value(<CashFlowEntity>[]),
-    error: (e, st) => Future.value(<CashFlowEntity>[]),
+  final cashFlows = cashFlowsAsync.when(
+    data: (data) => data.toList(),
+    loading: () => throw StateError('Cash flows data is still loading'),
+    error: (e, st) => throw e,
   );
 
-  final goals = await goalsAsync.when(
-    data: (data) => Future.value(data.toList()),
-    loading: () => Future.value(<GoalEntity>[]),
-    error: (e, st) => Future.value(<GoalEntity>[]),
+  final goals = goalsAsync.when(
+    data: (data) => data.toList(),
+    loading: () => throw StateError('Goals data is still loading'),
+    error: (e, st) => throw e,
   );
 
   // Generate insights with currency, locale, and localization

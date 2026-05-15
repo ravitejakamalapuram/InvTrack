@@ -4146,5 +4146,134 @@
         "type": "String"
       }
     }
+  },
+  "idleInvestmentReviewTitle": "💤 Investment Review Needed",
+  "@idleInvestmentReviewTitle": {
+    "description": "Notification title for idle investment review"
+  },
+  "idleInvestmentReviewBody": "{investmentName} has had no activity for {daysSinceActivity} days. Review this investment?",
+  "@idleInvestmentReviewBody": {
+    "description": "Notification body for idle investment with activity",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      },
+      "daysSinceActivity": {
+        "type": "int"
+      }
+    }
+  },
+  "idleInvestmentNoActivityBody": "{investmentName} has no recorded activity. Consider adding cash flows.",
+  "@idleInvestmentNoActivityBody": {
+    "description": "Notification body for idle investment without activity",
+    "placeholders": {
+      "investmentName": {
+        "type": "String"
+      }
+    }
+  },
+  "decliningInValue": "Declining in value",
+  "@decliningInValue": {
+    "description": "Subtitle for declining investment insight"
+  },
+  "dataManagementExportSection": "Export",
+  "@dataManagementExportSection": {
+    "description": "Export section title in data management"
+  },
+  "dataManagementImportSection": "Import",
+  "@dataManagementImportSection": {
+    "description": "Import section title in data management"
+  },
+  "dataManagementDangerZoneSection": "Danger Zone",
+  "@dataManagementDangerZoneSection": {
+    "description": "Danger zone section title in data management"
+  },
+  "exportAsCsv": "Export as CSV",
+  "@exportAsCsv": {
+    "description": "Export as CSV option title"
+  },
+  "exportAsCsvSubtitle": "Spreadsheet format",
+  "@exportAsCsvSubtitle": {
+    "description": "Export as CSV option subtitle"
+  },
+  "exportAsZip": "Export as ZIP",
+  "@exportAsZip": {
+    "description": "Export as ZIP option title"
+  },
+  "exportAsZipSubtitle": "Full backup with documents",
+  "@exportAsZipSubtitle": {
+    "description": "Export as ZIP option subtitle"
+  },
+  "importFromCsv": "Import from CSV",
+  "@importFromCsv": {
+    "description": "Import from CSV option title"
+  },
+  "importFromCsvSubtitle": "Add investments from file",
+  "@importFromCsvSubtitle": {
+    "description": "Import from CSV option subtitle"
+  },
+  "importFromZip": "Import from ZIP",
+  "@importFromZip": {
+    "description": "Import from ZIP option title"
+  },
+  "importFromZipSubtitle": "Restore from backup",
+  "@importFromZipSubtitle": {
+    "description": "Import from ZIP option subtitle"
+  },
+  "deleteAccount": "Delete Account",
+  "@deleteAccount": {
+    "description": "Delete account option title"
+  },
+  "deleteAccountSubtitle": "Permanently delete all data",
+  "@deleteAccountSubtitle": {
+    "description": "Delete account option subtitle"
+  },
+  "deletingStatus": "Deleting...",
+  "@deletingStatus": {
+    "description": "Status text shown when deletion is in progress"
+  },
+  "dataManagementWarning": "⚠️ Warning: Deleting your account is permanent and cannot be undone. All your data will be lost.",
+  "@dataManagementWarning": {
+    "description": "Warning message for account deletion"
+  },
+  "importDataHandlingTitle": "How should we handle existing data?",
+  "@importDataHandlingTitle": {
+    "description": "Title for import data handling dialog"
+  },
+  "importMergeOption": "Merge",
+  "@importMergeOption": {
+    "description": "Merge option in import dialog"
+  },
+  "importMergeSubtitle": "Add new data, skip duplicates",
+  "@importMergeSubtitle": {
+    "description": "Merge option subtitle"
+  },
+  "importReplaceOption": "Replace",
+  "@importReplaceOption": {
+    "description": "Replace option in import dialog"
+  },
+  "importReplaceSubtitle": "Delete existing data first",
+  "@importReplaceSubtitle": {
+    "description": "Replace option subtitle"
+  },
+  "exportSuccessMessage": "Data exported successfully!",
+  "@exportSuccessMessage": {
+    "description": "Success message for data export"
+  },
+  "exportFailureMessage": "Failed to export data",
+  "@exportFailureMessage": {
+    "description": "Failure message for data export"
+  },
+  "importSuccessMessage": "Data imported successfully!",
+  "@importSuccessMessage": {
+    "description": "Success message for data import"
+  },
+  "importFailureMessage": "Failed to import data",
+  "@importFailureMessage": {
+    "description": "Failure message for data import"
+  },
+  "importCancelledMessage": "Import cancelled",
+  "@importCancelledMessage": {
+    "description": "Message when import is cancelled"
   }
 }
