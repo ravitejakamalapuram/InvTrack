@@ -2358,6 +2358,26 @@
     "description": "Message when feature is disabled"
   },
 
+  "reportsTabFeature": "Reports Tab",
+  "@reportsTabFeature": {
+    "description": "Reports tab feature toggle title"
+  },
+
+  "reportsTabSubtitle": "Smart Insights and DIY Report Builder",
+  "@reportsTabSubtitle": {
+    "description": "Reports tab feature description"
+  },
+
+  "reportsTabEnabled": "Reports tab enabled - restart app to see changes",
+  "@reportsTabEnabled": {
+    "description": "Message when Reports tab is enabled"
+  },
+
+  "reportsTabDisabled": "Reports tab disabled - restart app to see changes",
+  "@reportsTabDisabled": {
+    "description": "Message when Reports tab is disabled"
+  },
+
   "healthScoreImproved": "Score improved",
   "@healthScoreImproved": {
     "description": "Accessibility label for positive score change"
