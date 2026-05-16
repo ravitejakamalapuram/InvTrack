@@ -54,23 +54,26 @@ class SmartInsightsService {
   ) {
     final weekStart = _getWeekStart(now);
     final weekEnd = _getWeekEnd(now);
+    final weekStartBound = weekStart.subtract(const Duration(days: 1));
+    final weekEndBound = weekEnd.add(const Duration(days: 1));
 
-    final weekCashFlows = cashFlows.where((cf) =>
-      cf.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-      cf.date.isBefore(weekEnd.add(const Duration(days: 1)))
-    ).toList();
+    // Optimization: Single pass loop for metrics replacing sequential .where().toList() and .fold() calls
+    double netInvested = 0;
+    double returns = 0;
+    bool hasCashFlows = false;
 
-    if (weekCashFlows.isEmpty) return null;
+    for (final cf in cashFlows) {
+      if (cf.date.isAfter(weekStartBound) && cf.date.isBefore(weekEndBound)) {
+        hasCashFlows = true;
+        if (cf.type == CashFlowType.invest) {
+          netInvested += cf.amount;
+        } else if (cf.type == CashFlowType.returnFlow) {
+          returns += cf.amount;
+        }
+      }
+    }
 
-    final netInvested = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.invest)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    final returns = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.returnFlow)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    if (netInvested == 0 && returns == 0) return null;
+    if (!hasCashFlows || (netInvested == 0 && returns == 0)) return null;
 
     // Format amounts using locale-aware currency formatting
     final netInvestedStr = formatCompactCurrency(netInvested, symbol: currencySymbol, locale: locale);
@@ -98,19 +101,25 @@ class SmartInsightsService {
   ) {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    final monthStartBound = monthStart.subtract(const Duration(days: 1));
+    final monthEndBound = monthEnd.add(const Duration(days: 1));
 
-    final monthCashFlows = cashFlows.where((cf) =>
-      cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-      cf.date.isBefore(monthEnd.add(const Duration(days: 1)))
-    ).toList();
+    // Optimization: Single pass loop for metrics replacing sequential .where().toList() and .fold() calls
+    double income = 0;
+    int sourcesCount = 0;
+    bool hasCashFlows = false;
 
-    if (monthCashFlows.isEmpty) return null;
+    for (final cf in cashFlows) {
+      if (cf.date.isAfter(monthStartBound) && cf.date.isBefore(monthEndBound)) {
+        hasCashFlows = true;
+        sourcesCount++;
+        if (cf.type == CashFlowType.income) {
+          income += cf.amount;
+        }
+      }
+    }
 
-    final income = monthCashFlows
-        .where((cf) => cf.type == CashFlowType.income)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-    if (income == 0) return null;
+    if (!hasCashFlows || income == 0) return null;
 
     // Format income using locale-aware currency formatting
     final incomeStr = formatCompactCurrency(income, symbol: currencySymbol, locale: locale);
@@ -121,7 +130,7 @@ class SmartInsightsService {
       title: 'This Month', // TODO: Localize using AppLocalizations
       subtitle: 'Income received', // TODO: Localize using AppLocalizations
       value: incomeStr,
-      secondaryValue: '${monthCashFlows.length} sources', // TODO: Localize using AppLocalizations
+      secondaryValue: '$sourcesCount sources', // TODO: Localize using AppLocalizations
       icon: 'trending_up',
       generatedAt: now,
     );
@@ -132,17 +141,26 @@ class SmartInsightsService {
     final insights = <SmartInsight>[];
     final next30Days = now.add(const Duration(days: 30));
 
-    final maturingSoon = investments.where((inv) {
-      return inv.maturityDate != null &&
-          inv.maturityDate!.isAfter(now) &&
-          inv.maturityDate!.isBefore(next30Days);
-    }).toList();
+    // Optimization: Single pass loop replacing .where().toList() to avoid closure and intermediate list allocation
+    int count = 0;
+    DateTime? firstMaturityDate;
 
-    if (maturingSoon.isEmpty) return insights;
+    for (final inv in investments) {
+      if (inv.maturityDate != null &&
+          inv.maturityDate!.isAfter(now) &&
+          inv.maturityDate!.isBefore(next30Days)) {
+        count++;
+        // Keep track of the nearest maturity date found for display
+        if (firstMaturityDate == null || inv.maturityDate!.isBefore(firstMaturityDate)) {
+          firstMaturityDate = inv.maturityDate;
+        }
+      }
+    }
+
+    if (count == 0 || firstMaturityDate == null) return insights;
 
     // Use count for now (accurate amount would require cash flow aggregation)
-    final count = maturingSoon.length;
-    final days = maturingSoon.first.maturityDate!.difference(now).inDays;
+    final days = firstMaturityDate.difference(now).inDays;
 
     insights.add(SmartInsight(
       type: InsightType.upcomingMaturity,

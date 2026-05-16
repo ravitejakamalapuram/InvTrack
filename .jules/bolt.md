@@ -82,3 +82,7 @@
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
+
+## 2024-05-25 - Prevent Output Truncation when Reading Files via Bash
+**Learning:** In Dart/Flutter project setups, bash output from commands like `cat` or `sed` can often be truncated by the environment buffer (typically to around 1000 characters). This causes essential portions of large files to be cut off, leading to "guesswork" edits when replacing code.
+**Action:** When inspecting code via `sed -n 'START,ENDp' <filepath>` to fulfill the "Exploration Rule" before a plan is created or an edit is made, keep line ranges small (e.g., 20-30 lines) per command to avoid truncation and ensure you are viewing the exact file contents.
