@@ -54,7 +54,7 @@ final class CurrencyConversionServiceProvider
   /// Fixes Crashlytics issues:
   /// - #50a389e45315ab4cb1393f56b731f6ff (ProviderException crashes)
   /// - #fa5a52c906efdb348d26233a9c94744a (currency service auth errors)
-  const CurrencyConversionServiceProvider._()
+  CurrencyConversionServiceProvider._()
     : super(
         from: null,
         argument: null,
