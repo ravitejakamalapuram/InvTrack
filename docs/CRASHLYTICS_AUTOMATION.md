@@ -1,215 +1,165 @@
-# Crashlytics Automation
+# Crashlytics Monitoring
 
-**Automated crash monitoring and PR generation via GitHub Actions**
+**Manual crash monitoring via Firebase Console or Firebase MCP Tools**
 
 ---
 
 ## Overview
 
-The InvTrack project includes an automated Crashlytics monitoring system that:
-- ✅ Checks Firebase Crashlytics **every 6 hours**
-- ✅ Detects new crashes automatically
-- ✅ Creates PR with crash report when issues found
-- ✅ Provides actionable insights for debugging
+InvTrack uses Firebase Crashlytics for crash reporting and monitoring. As of 2026-05-17, the automated GitHub Actions workflow has been removed in favor of manual monitoring.
+
+### Manual Monitoring Options:
+
+1. **Firebase Console** (Recommended)
+   - Visit [Firebase Crashlytics Console](https://console.firebase.google.com/project/invtracker-b19d1/crashlytics)
+   - View real-time crash reports, stack traces, and affected users
+   - Set up email alerts for critical crashes
+
+2. **Firebase MCP Tools** (For automated scripts)
+   - Use Firebase CLI with MCP (Model Context Protocol)
+   - Query crash data programmatically
+   - See `docs/FIREBASE_CRASHLYTICS_MCP_SETUP.md` for details
 
 ---
 
-## How It Works
+## Why Manual Monitoring?
 
-### 1. **Scheduled Monitoring**
-GitHub Actions workflow runs every 6 hours:
-- **Schedule**: `0 */6 * * *` (00:00, 06:00, 12:00, 18:00 UTC)
-- **Manual trigger**: Can also be run on-demand via GitHub UI
+The automated GitHub Actions workflow (`crashlytics-monitor.yml`) was removed because:
+- ❌ Firebase Crashlytics REST API requires OAuth2 authentication (complex setup)
+- ❌ Firebase MCP tools require manual Firebase CLI authentication
+- ✅ Firebase Console provides better real-time crash insights
+- ✅ Email alerts from Firebase Console are more reliable
+- ✅ Reduces CI/CD complexity and maintenance overhead
 
-### 2. **Crash Detection**
-Script checks Firebase Crashlytics for:
-- New crashes in the last 6 hours
-- Crash frequency and user impact
-- Stack traces and error messages
+## Monitoring Crashes
 
-### 3. **Automated PR Creation**
-If crashes detected:
-- Creates branch: `crashlytics/auto-report-YYYYMMDD-HHMMSS`
-- Generates crash report in `docs/crashlytics-reports/`
-- Opens PR with:
-  - Summary of crashes
-  - Link to Firebase Console
-  - Action items checklist
+### Firebase Console (Recommended)
 
-### 4. **No Crashes**
-If no crashes found:
-- Logs success message
-- No PR created
-- Workflow completes silently
+1. **Navigate to Crashlytics**
+   - Go to [Firebase Console](https://console.firebase.google.com/project/invtracker-b19d1/crashlytics)
+   - Select your app: `InvTrack (Android)`
 
----
+2. **View Crash Reports**
+   - See crashes grouped by issue
+   - View stack traces and device info
+   - Check affected user count
 
-## Setup Requirements
+3. **Set Up Email Alerts**
+   - Go to Project Settings → Integrations
+   - Enable Crashlytics alerts
+   - Configure alert thresholds
 
-### 1. **Firebase Token** (Required)
+### Firebase MCP Tools (Advanced)
 
-The workflow needs a Firebase CI token to authenticate with Firebase.
+For programmatic access to Crashlytics data:
 
-**Generate token:**
 ```bash
-firebase login:ci
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Authenticate
+firebase login
+
+# Use MCP tools (see FIREBASE_CRASHLYTICS_MCP_SETUP.md for details)
+npx firebase-tools mcp crashlytics:get-report --app-id=... --report=topIssues
 ```
 
-This will output a token like: `1//abcd1234...`
+---
 
-**Add to GitHub Secrets:**
-1. Go to: `Settings` → `Secrets and variables` → `Actions`
-2. Click `New repository secret`
-3. Name: `FIREBASE_TOKEN`
-4. Value: `<paste token from above>`
-5. Click `Add secret`
+## Crash Investigation Process
 
-### 2. **GitHub Token** (Auto-configured)
+When crashes are detected:
 
-The `${{ github.token }}` is automatically provided by GitHub Actions.
-No manual setup required.
+1. **Prioritize by Impact**
+   - Check affected user count
+   - Review crash-free user percentage
+   - Identify critical vs. minor issues
+
+2. **Analyze Stack Traces**
+   - Review the full stack trace
+   - Identify the root cause
+   - Check affected app versions
+
+3. **Create Bug Fix**
+   - Create GitHub issue or JIRA ticket
+   - Link to Crashlytics issue
+   - Implement fix and add regression tests
+
+4. **Update Crashlytics**
+   - Mark issue as resolved in Firebase Console
+   - Add notes for future reference
 
 ---
 
-## Usage
-
-### Automatic Monitoring
-
-The workflow runs automatically every 6 hours. No action required.
-
-### Manual Trigger
-
-To run the workflow manually:
-
-1. Go to: `Actions` → `Crashlytics Monitor`
-2. Click `Run workflow`
-3. Select branch (usually `main`)
-4. Click `Run workflow` button
-
----
-
-## Workflow Files
+## Related Documentation
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/crashlytics-monitor.yml` | Main GitHub Action workflow |
-| `.github/scripts/check-crashlytics.sh` | Crash detection script |
 | `docs/CRASHLYTICS_AUTOMATION.md` | This documentation |
+| `docs/FIREBASE_CRASHLYTICS_MCP_SETUP.md` | Firebase MCP tools setup |
+| `docs/CRASHLYTICS_MCP_QUICKSTART.md` | Quick start guide for MCP tools |
 
 ---
 
-## Example PR
+## Example Crash Issue
 
-When crashes are detected, the automation creates a PR like this:
+When viewing crashes in Firebase Console, you'll see details like:
 
-**Title**: 🚨 Crashlytics: New Crashes Detected
+**Issue Title**: `NullPointerException in LoginScreen.dart:142`
 
-**Body**:
-```markdown
-## Automated Crash Report
+**Details**:
+- **Users affected**: 8 users
+- **First seen**: 2026-05-17 08:30:00 UTC
+- **App version**: 3.62.0
+- **Device types**: Samsung Galaxy S21, Pixel 6, etc.
 
-**Period**: Last 6 hours  
-**Crashes Found**: 3 issues affecting 12 users
-
-### Summary
-
-1. NullPointerException in LoginScreen.dart:142 (8 users)
-2. StateError in InvestmentProvider:89 (3 users)  
-3. FormatException in CurrencyUtils:56 (1 user)
-
-### Firebase Console
-
-View detailed reports: [Firebase Crashlytics Console](https://console.firebase.google.com/project/invtracker-b19d1/crashlytics)
-
-### Action Items
-
-- [ ] Review crash stack traces
-- [ ] Identify root causes
-- [ ] Create bug fix PRs
-- [ ] Add regression tests
+**Stack Trace**:
+```
+NullPointerException: Null check operator used on a null value
+    at LoginScreen.build (LoginScreen.dart:142)
+    at StatefulElement.build (element.dart:4893)
+    ...
 ```
 
----
-
-## Crash Report Format
-
-Generated reports are stored in `docs/crashlytics-reports/CRASH_REPORT_YYYYMMDD.md`:
-
-```markdown
-# Crashlytics Automated Report
-
-**Generated**: 2026-03-30 12:00:00 UTC
-**Period**: Last 6 hours
-**Project**: invtracker-b19d1
-
-## Summary
-
-- Total crashes: 3
-- Affected users: 12
-- App versions: 3.54.11
-
-## Top Issues
-
-### 1. NullPointerException in LoginScreen.dart
-- **Users affected**: 8
-- **First seen**: 2026-03-30 08:30:00 UTC
-- **Stack trace**: [View in Firebase](...)
-
-## Action Required
-
-1. Review crash details in Firebase Console
-2. Prioritize critical crashes (high user impact)
-3. Create bug fix PRs for top issues
-4. Add investigation notes to Crashlytics
-```
+**Action Items**:
+1. Review the stack trace
+2. Identify the null value
+3. Add null safety checks
+4. Create regression test
+5. Mark issue as resolved in Firebase Console
 
 ---
 
-## Troubleshooting
+## Firebase Console Features
 
-| Problem | Solution |
-|---------|----------|
-| **Workflow fails: "Authentication failed"** | Regenerate `FIREBASE_TOKEN` secret |
-| **No PR created despite crashes** | Check Firebase Console manually |
-| **Script permission denied** | Workflow includes `chmod +x` step |
-| **MCP unavailable** | Script falls back to manual check instructions |
+### Available Reports
 
----
+- **Crash-free users**: Percentage of users not experiencing crashes
+- **Crashes over time**: Trend graph showing crash frequency
+- **Affected devices**: Device models and OS versions impacted
+- **Breadcrumbs**: User actions leading up to crash
+- **Custom keys**: Custom debug data logged via Crashlytics
 
-## Limitations & Future Enhancements
+### Email Alerts
 
-### Current Limitations
-- ⚠️ Requires manual FIREBASE_TOKEN rotation (tokens can expire)
-- ⚠️ Basic crash detection (placeholder implementation)
-- ⚠️ Relies on Firebase MCP availability
-
-### Planned Enhancements
-1. **Smart Filtering**: Ignore known/resolved crashes
-2. **Severity Classification**: Auto-prioritize critical crashes
-3. **Slack/Email Notifications**: Alert team immediately
-4. **Auto-linking to Jira**: Create bug tickets automatically
-5. **Historical Trending**: Compare crash rates week-over-week
+Set up alerts to notify you when:
+- New crash issues are detected
+- Crash-free users drops below threshold
+- Specific app versions have high crash rates
 
 ---
 
-## Firebase Console
+## Best Practices
 
-**Manual check**: https://console.firebase.google.com/project/invtracker-b19d1/crashlytics
-
-**MCP Integration**: See [CRASHLYTICS_MCP_QUICKSTART.md](./CRASHLYTICS_MCP_QUICKSTART.md)
-
----
-
-## Security Notes
-
-- ✅ FIREBASE_TOKEN stored as GitHub Secret (encrypted)
-- ✅ Token only has Crashlytics read permissions
-- ✅ PRs created by `github-actions[bot]` (auditable)
-- ✅ No sensitive crash data exposed in PR (links to Firebase Console)
+1. **Monitor Daily**: Check Crashlytics dashboard daily for new issues
+2. **Prioritize by Impact**: Focus on crashes affecting the most users
+3. **Add Context**: Log custom keys and breadcrumbs for better debugging
+4. **Track Versions**: Monitor crash rates across different app versions
+5. **Test Fixes**: Add regression tests for all crash fixes
+6. **Document Resolutions**: Add notes in Crashlytics when marking issues resolved
 
 ---
 
-**Workflow Status**: ✅ Active (runs every 6 hours)  
-**Last Updated**: 2026-03-30  
+**Last Updated**: 2026-05-17
 **Maintainer**: InvTrack DevOps
 
