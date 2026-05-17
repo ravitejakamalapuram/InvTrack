@@ -517,6 +517,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                                 button: true,
                                 label:
                                     'Change document type: ${file.selectedType.displayName}',
+                                excludeSemantics: true,
                                 child: GestureDetector(
                                   onTap: _isLoading
                                       ? null

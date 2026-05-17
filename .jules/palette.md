@@ -58,3 +58,6 @@
 ## 2026-04-25 - Replaced GestureDetector with InkWell for better visual feedback
 **Learning:** In Flutter, placing an opaque `Container` directly inside an `InkWell` obscures the Material ripple effect. When building custom interactive elements, prefer `InkWell` coupled with an inner `Ink` widget over `GestureDetector` + `Container` to ensure users get immediate visual feedback (ripple effect) upon interaction.
 **Action:** Always use `InkWell` + `Ink` for interactive components that require a background color to preserve the Material splash/ripple effect.
+## 2026-05-17 - Added excludeSemantics to custom interactive components
+**Learning:** Found that custom interactive components using `GestureDetector` wrapped in `Semantics` in `create_goal_screen.dart` and `add_document_sheet.dart` lacked `excludeSemantics: true`. Screen readers would announce the button label, but then also redundantly read out the internal children (like text icons).
+**Action:** Always add `excludeSemantics: true` to `Semantics` wrappers around `GestureDetector`s when the `Semantics` widget provides a complete and descriptive `label` for the interaction.
