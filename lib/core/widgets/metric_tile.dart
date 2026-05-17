@@ -184,10 +184,10 @@ class HeroMetric extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) trailing!,
+              ...?trailing != null ? [trailing!] : null,
             ],
           ),
-          if (subtitle != null) ...[
+          ...?subtitle != null ? [
             const SizedBox(height: 8),
             ExcludeSemantics(
               child: Text(
@@ -197,7 +197,7 @@ class HeroMetric extends StatelessWidget {
                 ),
               ),
             ),
-          ],
+          ] : null,
         ],
       ),
     );

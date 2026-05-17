@@ -40,7 +40,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     debugLogDiagnostics: true,
-    observers: [if (analyticsObserver != null) analyticsObserver],
+    observers: [...?analyticsObserver != null ? [analyticsObserver] : null],
     redirect: (context, state) {
       // If auth or onboarding state is loading, we don't redirect yet
       if (authState.isLoading || authState.hasError) return null;
