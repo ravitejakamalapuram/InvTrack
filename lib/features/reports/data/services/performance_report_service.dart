@@ -67,21 +67,26 @@ class PerformanceReportService {
     // Calculate recent milestones (last 30 days)
     final recentMilestones = _calculateMilestones(performances);
 
-    // Calculate average and median XIRR
-    final xirrValues = performances.map((p) => p.xirr).toList();
-    final averageXIRR = xirrValues.isEmpty
-        ? 0.0
-        : xirrValues.reduce((a, b) => a + b) / xirrValues.length;
+    // Optimization: Calculate stats in a single pass instead of multiple
+    // .map().toList(), .reduce(), and .where().length calls
+    double sumXirr = 0.0;
+    int profitableCount = 0;
 
-    xirrValues.sort();
-    final medianXIRR = xirrValues.isEmpty
-        ? 0.0
-        : xirrValues.length.isOdd
-            ? xirrValues[xirrValues.length ~/ 2]
-            : (xirrValues[xirrValues.length ~/ 2 - 1] + xirrValues[xirrValues.length ~/ 2]) / 2;
+    for (final p in performances) {
+      sumXirr += p.xirr;
+      if (p.isProfitable) profitableCount++;
+    }
 
-    // Count profitable vs loss-making
-    final profitableCount = performances.where((p) => p.isProfitable).length;
+    final averageXIRR = performances.isEmpty ? 0.0 : sumXirr / performances.length;
+
+    // Calculate median using the already sorted sortedByXIRR array (O(1))
+    // instead of allocating and sorting a new xirrValues list
+    final medianXIRR = sortedByXIRR.isEmpty
+        ? 0.0
+        : sortedByXIRR.length.isOdd
+            ? sortedByXIRR[sortedByXIRR.length ~/ 2].xirr
+            : (sortedByXIRR[sortedByXIRR.length ~/ 2 - 1].xirr + sortedByXIRR[sortedByXIRR.length ~/ 2].xirr) / 2;
+
     final lossCount = performances.length - profitableCount;
 
     return PerformanceReport(
