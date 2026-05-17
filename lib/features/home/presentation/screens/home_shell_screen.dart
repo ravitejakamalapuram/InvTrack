@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class HomeShellScreen extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -30,34 +31,35 @@ class HomeShellScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
+    final l10n = AppLocalizations.of(context);
 
     // Build navigation destinations conditionally
     final destinations = [
-      const NavigationDestination(
-        icon: Icon(Icons.pie_chart_outline),
-        selectedIcon: Icon(Icons.pie_chart),
-        label: 'Overview',
+      NavigationDestination(
+        icon: const Icon(Icons.pie_chart_outline),
+        selectedIcon: const Icon(Icons.pie_chart),
+        label: l10n.overview,
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.account_balance_wallet_outlined),
-        selectedIcon: Icon(Icons.account_balance_wallet),
-        label: 'Investments',
+      NavigationDestination(
+        icon: const Icon(Icons.account_balance_wallet_outlined),
+        selectedIcon: const Icon(Icons.account_balance_wallet),
+        label: l10n.investments,
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.flag_outlined),
-        selectedIcon: Icon(Icons.flag),
-        label: 'Goals',
+      NavigationDestination(
+        icon: const Icon(Icons.flag_outlined),
+        selectedIcon: const Icon(Icons.flag),
+        label: l10n.goals,
       ),
       if (isReportsEnabled)
-        const NavigationDestination(
-          icon: Icon(Icons.assessment_outlined),
-          selectedIcon: Icon(Icons.assessment),
-          label: 'Reports',
+        NavigationDestination(
+          icon: const Icon(Icons.assessment_outlined),
+          selectedIcon: const Icon(Icons.assessment),
+          label: l10n.reports,
         ),
-      const NavigationDestination(
-        icon: Icon(Icons.settings_outlined),
-        selectedIcon: Icon(Icons.settings),
-        label: 'Settings',
+      NavigationDestination(
+        icon: const Icon(Icons.settings_outlined),
+        selectedIcon: const Icon(Icons.settings),
+        label: l10n.settings,
       ),
     ];
 
