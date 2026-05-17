@@ -169,7 +169,7 @@ String _$multiCurrencyInvestedAmountHash() =>
 
 final class MultiCurrencyInvestedAmountFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<double>, String> {
-  const MultiCurrencyInvestedAmountFamily._()
+  MultiCurrencyInvestedAmountFamily._()
     : super(
         retry: null,
         name: r'multiCurrencyInvestedAmountProvider',
@@ -295,7 +295,7 @@ String _$multiCurrencyReturnedAmountHash() =>
 
 final class MultiCurrencyReturnedAmountFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<double>, String> {
-  const MultiCurrencyReturnedAmountFamily._()
+  MultiCurrencyReturnedAmountFamily._()
     : super(
         retry: null,
         name: r'multiCurrencyReturnedAmountProvider',
@@ -422,7 +422,7 @@ String _$multiCurrencyXirrHash() => r'0c6f9c6cc82fa4634a49e3f448d904ca8cea9631';
 
 final class MultiCurrencyXirrFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<double>, String> {
-  const MultiCurrencyXirrFamily._()
+  MultiCurrencyXirrFamily._()
     : super(
         retry: null,
         name: r'multiCurrencyXirrProvider',
@@ -637,7 +637,7 @@ String _$multiCurrencyInvestmentStatsHash() =>
 
 final class MultiCurrencyInvestmentStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<InvestmentStats>, String> {
-  const MultiCurrencyInvestmentStatsFamily._()
+  MultiCurrencyInvestmentStatsFamily._()
     : super(
         retry: null,
         name: r'multiCurrencyInvestmentStatsProvider',

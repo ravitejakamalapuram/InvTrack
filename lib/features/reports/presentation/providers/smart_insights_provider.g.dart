@@ -137,7 +137,7 @@ final class SmartInsightsFamily extends $Family
           FutureOr<List<SmartInsight>>,
           AppLocalizations
         > {
-  const SmartInsightsFamily._()
+  SmartInsightsFamily._()
     : super(
         retry: null,
         name: r'smartInsightsProvider',
@@ -232,7 +232,7 @@ final class PriorityInsightsFamily extends $Family
           FutureOr<List<SmartInsight>>,
           AppLocalizations
         > {
-  const PriorityInsightsFamily._()
+  PriorityInsightsFamily._()
     : super(
         retry: null,
         name: r'priorityInsightsProvider',
