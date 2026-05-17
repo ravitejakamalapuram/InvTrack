@@ -63,8 +63,6 @@ abstract class _$CurrencySwitch extends $Notifier<CurrencySwitchStatus> {
               Object?,
               Object?
             >;
-    // FIXME: Riverpod v4 migration - handleValue method removed
-    // element.handleValue(ref, created);
-    element.notify();
+    element.handleValue(ref, created);
   }
 }
