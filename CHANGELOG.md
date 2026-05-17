@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+
+- Add Gradle and Flutter package caching to CI/CD workflows
+
+## [3.61.2] - 2026-05-17
+
 ### 🐛 Bug Fixes
 
 - Update cash_flow_card_widget tests to use SharedPreferences override
