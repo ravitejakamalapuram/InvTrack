@@ -1,0 +1,7 @@
+🆕 What's New
+• Complete Reports screen redesign with Smart Insights and DIY Report Builder
+
+🐛 Bug Fixes & Improvements
+• Remove hardcoded currency symbols and strings from SmartInsightsService
+• Remove unnecessary underscores in error handlers
+• Render KPI cards properly in DynamicReportScreen instead of raw toString() debug data

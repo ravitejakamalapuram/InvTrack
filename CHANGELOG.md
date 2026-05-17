@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Complete localization and privacy protection coverage
+
+### 📚 Documentation
+
+- Update crashlytics documentation for manual monitoring
+
+### 🔧 Miscellaneous
+
+- Remove crashlytics-monitor workflow and script
+- Major Package Upgrades (v3.62.0) - 100 Dependencies Upgraded (#391)
+
+## [3.61.0] - 2026-05-14
+
 ### ✨ Features
 
 - Complete Reports screen redesign with Smart Insights and DIY Report Builder
