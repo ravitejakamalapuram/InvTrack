@@ -273,6 +273,8 @@ class DynamicReportScreen extends ConsumerWidget {
   }
 
   Widget _buildErrorState(BuildContext context, WidgetRef ref, Object error) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -303,7 +305,7 @@ class DynamicReportScreen extends ConsumerWidget {
               ref.invalidate(dynamicReportProvider(configuration));
             },
             icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
+            label: Text(l10n.retry),
           ),
         ],
       ),

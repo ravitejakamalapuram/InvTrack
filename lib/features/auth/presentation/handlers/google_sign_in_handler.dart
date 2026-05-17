@@ -77,9 +77,10 @@ class GoogleSignInHandler {
       );
 
       if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign-in failed: ${e.toString()}'),
+            content: Text(l10n.signInFailed(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -96,9 +97,10 @@ class GoogleSignInHandler {
     );
 
     if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account linked successfully!'),
+        SnackBar(
+          content: Text(l10n.accountLinkedSuccessfully),
           backgroundColor: Colors.green,
         ),
       );
@@ -133,9 +135,10 @@ class GoogleSignInHandler {
     LoggerService.error('Account linking failed', error: result.message);
 
     if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Linking failed: ${result.message}'),
+          content: Text(l10n.linkingFailed(result.message)),
           backgroundColor: Colors.red,
         ),
       );

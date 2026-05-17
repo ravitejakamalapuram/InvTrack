@@ -792,6 +792,31 @@
     "description": "Retry button label"
   },
 
+  "signInFailed": "Sign-in failed: {error}",
+  "@signInFailed": {
+    "description": "Error message when Google sign-in fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "accountLinkedSuccessfully": "Account linked successfully!",
+  "@accountLinkedSuccessfully": {
+    "description": "Success message when anonymous account is linked to Google"
+  },
+
+  "linkingFailed": "Linking failed: {error}",
+  "@linkingFailed": {
+    "description": "Error message when account linking fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
   "debugModeActivationFailed": "Failed to toggle debug mode",
   "@debugModeActivationFailed": {
     "description": "Error message when debug mode toggle fails"
