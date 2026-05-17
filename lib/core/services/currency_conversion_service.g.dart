@@ -21,7 +21,7 @@ part of 'currency_conversion_service.dart';
 /// - #fa5a52c906efdb348d26233a9c94744a (currency service auth errors)
 
 @ProviderFor(currencyConversionService)
-const currencyConversionServiceProvider = CurrencyConversionServiceProvider._();
+final currencyConversionServiceProvider = CurrencyConversionServiceProvider._();
 
 /// Provider for CurrencyConversionService
 ///

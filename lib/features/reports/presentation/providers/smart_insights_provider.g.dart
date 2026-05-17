@@ -11,7 +11,7 @@ part of 'smart_insights_provider.dart';
 /// Service provider for smart insights generation
 
 @ProviderFor(smartInsightsService)
-const smartInsightsServiceProvider = SmartInsightsServiceProvider._();
+final smartInsightsServiceProvider = SmartInsightsServiceProvider._();
 
 /// Service provider for smart insights generation
 
@@ -24,7 +24,7 @@ final class SmartInsightsServiceProvider
         >
     with $Provider<SmartInsightsService> {
   /// Service provider for smart insights generation
-  const SmartInsightsServiceProvider._()
+  SmartInsightsServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -65,7 +65,7 @@ String _$smartInsightsServiceHash() =>
 /// Requires AppLocalizations for localized strings
 
 @ProviderFor(smartInsights)
-const smartInsightsProvider = SmartInsightsFamily._();
+final smartInsightsProvider = SmartInsightsFamily._();
 
 /// Provider for smart insights (auto-generated from user data)
 /// Requires AppLocalizations for localized strings
@@ -82,7 +82,7 @@ final class SmartInsightsProvider
         $FutureProvider<List<SmartInsight>> {
   /// Provider for smart insights (auto-generated from user data)
   /// Requires AppLocalizations for localized strings
-  const SmartInsightsProvider._({
+  SmartInsightsProvider._({
     required SmartInsightsFamily super.from,
     required AppLocalizations super.argument,
   }) : super(
@@ -160,7 +160,7 @@ final class SmartInsightsFamily extends $Family
 /// Requires AppLocalizations for localized strings
 
 @ProviderFor(priorityInsights)
-const priorityInsightsProvider = PriorityInsightsFamily._();
+final priorityInsightsProvider = PriorityInsightsFamily._();
 
 /// Provider for high-priority insights (urgent/warning only)
 /// Requires AppLocalizations for localized strings
@@ -177,7 +177,7 @@ final class PriorityInsightsProvider
         $FutureProvider<List<SmartInsight>> {
   /// Provider for high-priority insights (urgent/warning only)
   /// Requires AppLocalizations for localized strings
-  const PriorityInsightsProvider._({
+  PriorityInsightsProvider._({
     required PriorityInsightsFamily super.from,
     required AppLocalizations super.argument,
   }) : super(

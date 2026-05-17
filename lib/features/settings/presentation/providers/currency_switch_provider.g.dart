@@ -11,13 +11,13 @@ part of 'currency_switch_provider.dart';
 /// Provider for currency switch status
 
 @ProviderFor(CurrencySwitch)
-const currencySwitchProvider = CurrencySwitchProvider._();
+final currencySwitchProvider = CurrencySwitchProvider._();
 
 /// Provider for currency switch status
 final class CurrencySwitchProvider
     extends $NotifierProvider<CurrencySwitch, CurrencySwitchStatus> {
   /// Provider for currency switch status
-  const CurrencySwitchProvider._()
+  CurrencySwitchProvider._()
     : super(
         from: null,
         argument: null,

@@ -14,7 +14,7 @@ part of 'multi_currency_providers.dart';
 /// Returns a no-op converter that doesn't crash the app
 
 @ProviderFor(batchCurrencyConverter)
-const batchCurrencyConverterProvider = BatchCurrencyConverterProvider._();
+final batchCurrencyConverterProvider = BatchCurrencyConverterProvider._();
 
 /// Provider for batch currency converter
 ///
@@ -33,7 +33,7 @@ final class BatchCurrencyConverterProvider
   ///
   /// **BUG FIX (2026-05-04)**: Handle null conversion service when unauthenticated
   /// Returns a no-op converter that doesn't crash the app
-  const BatchCurrencyConverterProvider._()
+  BatchCurrencyConverterProvider._()
     : super(
         from: null,
         argument: null,
@@ -82,7 +82,7 @@ String _$batchCurrencyConverterHash() =>
 /// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyInvestedAmount)
-const multiCurrencyInvestedAmountProvider =
+final multiCurrencyInvestedAmountProvider =
     MultiCurrencyInvestedAmountFamily._();
 
 /// Provider for multi-currency invested amount calculation
@@ -109,7 +109,7 @@ final class MultiCurrencyInvestedAmountProvider
   /// **Returns:**
   /// - Total invested amount in user's base currency
   /// - 0.0 if user is not authenticated (converter is null)
-  const MultiCurrencyInvestedAmountProvider._({
+  MultiCurrencyInvestedAmountProvider._({
     required MultiCurrencyInvestedAmountFamily super.from,
     required String super.argument,
   }) : super(
@@ -208,7 +208,7 @@ final class MultiCurrencyInvestedAmountFamily extends $Family
 /// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyReturnedAmount)
-const multiCurrencyReturnedAmountProvider =
+final multiCurrencyReturnedAmountProvider =
     MultiCurrencyReturnedAmountFamily._();
 
 /// Provider for multi-currency returned amount calculation
@@ -235,7 +235,7 @@ final class MultiCurrencyReturnedAmountProvider
   /// **Returns:**
   /// - Total returned amount in user's base currency
   /// - 0.0 if user is not authenticated (converter is null)
-  const MultiCurrencyReturnedAmountProvider._({
+  MultiCurrencyReturnedAmountProvider._({
     required MultiCurrencyReturnedAmountFamily super.from,
     required String super.argument,
   }) : super(
@@ -335,7 +335,7 @@ final class MultiCurrencyReturnedAmountFamily extends $Family
 /// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyXirr)
-const multiCurrencyXirrProvider = MultiCurrencyXirrFamily._();
+final multiCurrencyXirrProvider = MultiCurrencyXirrFamily._();
 
 /// Provider for multi-currency XIRR calculation
 ///
@@ -363,7 +363,7 @@ final class MultiCurrencyXirrProvider
   /// **Returns:**
   /// - XIRR as decimal (e.g., 0.15 = 15% annual return)
   /// - 0.0 if user is not authenticated (converter is null)
-  const MultiCurrencyXirrProvider._({
+  MultiCurrencyXirrProvider._({
     required MultiCurrencyXirrFamily super.from,
     required String super.argument,
   }) : super(
@@ -463,7 +463,7 @@ final class MultiCurrencyXirrFamily extends $Family
 /// - 0.0 if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyPortfolioValue)
-const multiCurrencyPortfolioValueProvider =
+final multiCurrencyPortfolioValueProvider =
     MultiCurrencyPortfolioValueProvider._();
 
 /// Provider for multi-currency portfolio value
@@ -492,7 +492,7 @@ final class MultiCurrencyPortfolioValueProvider
   /// **Returns:**
   /// - Total portfolio value in user's base currency
   /// - 0.0 if user is not authenticated (converter is null)
-  const MultiCurrencyPortfolioValueProvider._()
+  MultiCurrencyPortfolioValueProvider._()
     : super(
         from: null,
         argument: null,
@@ -535,7 +535,7 @@ String _$multiCurrencyPortfolioValueHash() =>
 /// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyInvestmentStats)
-const multiCurrencyInvestmentStatsProvider =
+final multiCurrencyInvestmentStatsProvider =
     MultiCurrencyInvestmentStatsFamily._();
 
 /// Provider for multi-currency investment stats
@@ -573,7 +573,7 @@ final class MultiCurrencyInvestmentStatsProvider
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
   /// - InvestmentStats.empty() if user is not authenticated (converter is null)
-  const MultiCurrencyInvestmentStatsProvider._({
+  MultiCurrencyInvestmentStatsProvider._({
     required MultiCurrencyInvestmentStatsFamily super.from,
     required String super.argument,
   }) : super(
@@ -682,7 +682,7 @@ final class MultiCurrencyInvestmentStatsFamily extends $Family
 /// - InvestmentStats.empty() if user is not authenticated (converter is null)
 
 @ProviderFor(multiCurrencyGlobalStats)
-const multiCurrencyGlobalStatsProvider = MultiCurrencyGlobalStatsProvider._();
+final multiCurrencyGlobalStatsProvider = MultiCurrencyGlobalStatsProvider._();
 
 /// Provider for multi-currency global stats
 ///
@@ -713,7 +713,7 @@ final class MultiCurrencyGlobalStatsProvider
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
   /// - InvestmentStats.empty() if user is not authenticated (converter is null)
-  const MultiCurrencyGlobalStatsProvider._()
+  MultiCurrencyGlobalStatsProvider._()
     : super(
         from: null,
         argument: null,
@@ -751,7 +751,7 @@ String _$multiCurrencyGlobalStatsHash() =>
 /// - InvestmentStats with amounts in user's base currency
 
 @ProviderFor(multiCurrencyOpenStats)
-const multiCurrencyOpenStatsProvider = MultiCurrencyOpenStatsProvider._();
+final multiCurrencyOpenStatsProvider = MultiCurrencyOpenStatsProvider._();
 
 /// Provider for multi-currency open investments stats
 ///
@@ -776,7 +776,7 @@ final class MultiCurrencyOpenStatsProvider
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
-  const MultiCurrencyOpenStatsProvider._()
+  MultiCurrencyOpenStatsProvider._()
     : super(
         from: null,
         argument: null,
@@ -814,7 +814,7 @@ String _$multiCurrencyOpenStatsHash() =>
 /// - InvestmentStats with amounts in user's base currency
 
 @ProviderFor(multiCurrencyClosedStats)
-const multiCurrencyClosedStatsProvider = MultiCurrencyClosedStatsProvider._();
+final multiCurrencyClosedStatsProvider = MultiCurrencyClosedStatsProvider._();
 
 /// Provider for multi-currency closed investments stats
 ///
@@ -839,7 +839,7 @@ final class MultiCurrencyClosedStatsProvider
   ///
   /// **Returns:**
   /// - InvestmentStats with amounts in user's base currency
-  const MultiCurrencyClosedStatsProvider._()
+  MultiCurrencyClosedStatsProvider._()
     : super(
         from: null,
         argument: null,
