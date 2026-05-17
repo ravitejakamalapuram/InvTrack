@@ -178,7 +178,7 @@ void main() {
       expect(cashflowsFile, isNotNull);
 
       final csvContent = utf8.decode(cashflowsFile!.content as List<int>);
-      final csvRows = const CsvToListConverter().convert(csvContent);
+      final csvRows = Csv().decoder.convert(csvContent);
 
       // Verify header includes Currency column
       expect(csvRows[0], contains('Currency'));

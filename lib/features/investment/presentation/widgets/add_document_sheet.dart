@@ -351,7 +351,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
     final lastDirectory = ref.read(lastFilePickerDirectoryProvider);
 
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'],
         allowMultiple: true,

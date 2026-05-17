@@ -48,7 +48,7 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
     late final PlatformFile selectedFile;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
         withData: true,

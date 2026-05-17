@@ -30,7 +30,7 @@ class ReportCsvExporter {
     final rows = _generateCsvRows(reportData, reportType, currencySymbol, locale, isPrivacyMode);
 
     // Convert to CSV string
-    final csvData = const ListToCsvConverter().convert(rows);
+    final csvData = Csv().encoder.convert(rows);
 
     // Save to file
     final directory = await getTemporaryDirectory();

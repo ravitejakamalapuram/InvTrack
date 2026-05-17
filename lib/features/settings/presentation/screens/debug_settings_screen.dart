@@ -185,6 +185,42 @@ class DebugSettingsScreen extends ConsumerWidget {
           },
         ),
 
+        // Reports Tab feature flag
+        SettingsToggleTile(
+          icon: Icons.assessment,
+          iconColor: Colors.purple,
+          title: l10n.reportsTabFeature,
+          subtitle: l10n.reportsTabSubtitle,
+          value: featureFlags[FeatureFlag.reportsTab] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.reportsTab);
+
+              // Verify the toggle succeeded
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.reportsTab] ?? false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.reportsTabEnabled
+                          : l10n.reportsTabDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Future features (disabled - coming soon)
         Opacity(
           opacity: 0.5,
