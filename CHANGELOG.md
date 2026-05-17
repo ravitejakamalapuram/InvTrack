@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Update cash_flow_card_widget tests to use SharedPreferences override
+
+## [3.61.1] - 2026-05-17
+
+### 🐛 Bug Fixes
+
 - Complete localization and privacy protection coverage
 
 ### 📚 Documentation

@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Complete localization and privacy protection coverage
