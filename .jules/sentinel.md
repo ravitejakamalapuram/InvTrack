@@ -21,3 +21,8 @@
 **Vulnerability:** The application was correctly validating file signatures (magic numbers) during individual document uploads but failed to validate them during ZIP-based bulk data imports. This allowed an attacker to bypass the security check by constructing a malicious ZIP file containing spoofed or unsupported files, which were then saved directly to local storage.
 **Learning:** Security validation logic must be applied consistently across all entry points, especially in bulk import or batch processing features which often bypass standard UI-level validation.
 **Prevention:** Whenever importing or deserializing files from an archive, ensure the same file signature validation (e.g., `FileSignatureUtils.validateFileSignature`) is applied as if the file were being uploaded individually.
+
+## 2026-05-01 - [XSS] Implement Content-Security-Policy for Flutter Web
+**Vulnerability:** The Flutter Web build lacked a `Content-Security-Policy` header in `web/index.html`, leaving the application vulnerable to Cross-Site Scripting (XSS) and code injection attacks if malicious content were somehow executed or loaded.
+**Learning:** Adding a CSP to a Flutter Web app requires carefully allowing essential Google and Firebase services (like `https://firestore.googleapis.com`, `https://fonts.gstatic.com` for Material Icons, and `https://unpkg.com` for CanvasKit/WebAssembly) in addition to `'unsafe-inline'` and `'unsafe-eval'` which are required for standard Flutter Web bootstrap and rendering.
+**Prevention:** Always verify that `web/index.html` contains a well-configured `Content-Security-Policy` `<meta>` tag that restricts `script-src`, `connect-src`, and `font-src` to known safe origins while accommodating Flutter Web's inherent requirements.
