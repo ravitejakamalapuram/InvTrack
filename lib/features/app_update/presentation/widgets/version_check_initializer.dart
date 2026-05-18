@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -24,6 +26,7 @@ class VersionCheckInitializer extends ConsumerStatefulWidget {
 class _VersionCheckInitializerState
     extends ConsumerState<VersionCheckInitializer> {
   bool _hasShownDialog = false;
+  Timer? _versionCheckTimer;
 
   @override
   void initState() {
@@ -33,8 +36,15 @@ class _VersionCheckInitializerState
     });
   }
 
+  @override
+  void dispose() {
+    _versionCheckTimer?.cancel();
+    _versionCheckTimer = null;
+    super.dispose();
+  }
+
   void _scheduleVersionCheck() {
-    Future.delayed(const Duration(seconds: 3), () {
+    _versionCheckTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
       _performVersionCheck();
     });

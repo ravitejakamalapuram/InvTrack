@@ -141,14 +141,25 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         if (versionInfo != null && mounted) {
           showDialog(
             context: context,
+            barrierDismissible: !state.requiresForceUpdate, // Fix 6: Prevent dismissing force updates
             builder: (_) => UpdateDialog(
               versionInfo: versionInfo,
               forceUpdate: state.requiresForceUpdate,
             ),
           );
         }
+      } else if (state.latestVersion == null) {
+        // Fix 4: Error case - version check failed but didn't throw
+        if (mounted) {
+          ErrorHandler.handle(
+            Exception('Failed to fetch version information'),
+            StackTrace.current,
+            context: context,
+            showFeedback: true,
+          );
+        }
       } else {
-        // No update available
+        // No update available - version check succeeded
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -162,17 +173,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     } catch (e, st) {
       if (!mounted) return;
 
+      // Fix 5: ErrorHandler already shows feedback, don't duplicate with SnackBar
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.errorOccurred),
-            duration: const Duration(seconds: 2),
-            backgroundColor: AppColors.errorLight,
-          ),
-        );
-      }
     }
   }
 

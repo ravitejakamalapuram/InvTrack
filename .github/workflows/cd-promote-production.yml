@@ -177,6 +177,15 @@ jobs:
             try {
               // Get current version info
               const versionDoc = await db.collection('app_config').doc('version_info').get();
+
+              // Check if document exists
+              if (!versionDoc.exists) {
+                console.error('❌ ERROR: version_info document does not exist!');
+                console.error('   Please create app_config/version_info document in Firestore first');
+                console.error('   See docs/TWO_TRACK_VERSION_SYSTEM.md for document structure');
+                throw new Error('version_info document not found in Firestore');
+              }
+
               const versionData = versionDoc.data();
 
               console.log('📦 Current production version info:', versionData);
@@ -216,11 +225,11 @@ jobs:
                 console.log('   Update version_info ONLY after 100% rollout completes');
                 console.log('');
 
-                await db.collection('app_config').doc('version_info').update({
+                await db.collection('app_config').doc('version_info').set({
                   rolloutPercentage: rolloutPercent,
                   pendingRelease: true, // Still pending full rollout
                   updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                });
+                }, { merge: true });
 
                 console.log('✅ Rollout tracking updated');
               }

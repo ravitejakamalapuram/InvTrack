@@ -111,9 +111,16 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
     state = state.copyWith(isLoading: true);
 
     try {
-      // Detect if this is a beta build
+      // Detect if this is a beta build and update state with current version info
       final packageInfo = await PackageInfo.fromPlatform();
       final isBetaUser = _isBetaBuild(packageInfo);
+
+      // Update state with real build number from package info
+      final currentBuildNumber = int.tryParse(packageInfo.buildNumber) ?? 0;
+      state = state.copyWith(
+        currentVersion: packageInfo.version,
+        currentBuildNumber: currentBuildNumber,
+      );
 
       // Fetch appropriate version document
       final latestVersion = await _service.fetchLatestVersion(isBetaUser: isBetaUser);
