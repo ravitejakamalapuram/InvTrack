@@ -7,7 +7,8 @@ InvTrack uses a **two-track version management system** to prevent production us
 ## Problem Solved
 
 **Before (Single Track):**
-```
+
+```text
 Beta release v2.0.0 build 50 → Update Firestore
 ↓
 Production users (v1.9.0) see "Update Available" popup
@@ -18,7 +19,8 @@ Confused/frustrated users
 ```
 
 **After (Two-Track):**
-```
+
+```text
 Beta release v2.0.0 → Update version_info_beta
 Production release v1.9.0 → Update version_info
 
@@ -30,6 +32,7 @@ No confusion!
 ## Firestore Structure
 
 ### Production Document: `app_config/version_info`
+
 ```json
 {
   "latestVersion": "1.9.0",
@@ -98,7 +101,7 @@ final latestVersion = await _service.fetchLatestVersion(
 
 ## Release Timeline
 
-```
+```text
 Day 1:  Submit to Play Console → Beta Testing
 Day 3:  Approved → Deploy to Closed Testing → Update version_info_beta
 Day 5:  Beta testing complete → Promote to Production (20% rollout)
@@ -124,6 +127,7 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 ## GitHub Actions Integration
 
 ### Beta Deployment Workflow
+
 `cd-deploy-android.yml` deploys to Closed Testing and updates `version_info_beta`:
 
 ```yaml
@@ -137,6 +141,7 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 ```
 
 ### Production Deployment Workflow
+
 `cd-promote-production.yml` promotes to Production and updates `version_info`:
 
 ```yaml

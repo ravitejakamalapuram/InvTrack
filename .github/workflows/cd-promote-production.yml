@@ -159,7 +159,7 @@ jobs:
       - name: Update Firestore - Production Version Info (Two-Track System)
         if: success()
         run: |
-          npm install firebase-admin
+          npm install firebase-admin@13.0.1
 
           node << 'EOF'
           const admin = require('firebase-admin');

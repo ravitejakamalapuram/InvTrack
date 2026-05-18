@@ -450,7 +450,7 @@ class DebugSettingsScreen extends ConsumerWidget {
           subtitle: versionState.isLoading
               ? l10n.checkingForUpdates
               : versionState.hasChecked
-                  ? 'Version checked'
+                  ? l10n.versionChecked
                   : l10n.tapToCheckForUpdates,
           trailing: versionState.isLoading
               ? const SizedBox(

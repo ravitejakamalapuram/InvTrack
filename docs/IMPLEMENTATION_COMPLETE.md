@@ -140,7 +140,8 @@ flutter build appbundle --release
 ## Release Process
 
 ### Beta Release (Closed Testing)
-```
+
+```text
 1. Commit changes → Push tag (e.g., v2.0.0)
 2. GitHub Actions deploys to Closed Testing
 3. Workflow updates app_config/version_info_beta
@@ -149,7 +150,8 @@ flutter build appbundle --release
 ```
 
 ### Production Release
-```
+
+```text
 1. Promote to Production from Play Console
 2. Start phased rollout (20%)
 3. Wait for 100% rollout (2-3 days)
@@ -158,7 +160,8 @@ flutter build appbundle --release
 ```
 
 ### Critical Bug Fix (Force Update)
-```
+
+```text
 1. Deploy immediately to production
 2. Manually set forceUpdate: true in both documents
 3. All users get non-dismissible update dialog
@@ -191,9 +194,11 @@ All documentation is available in `docs/`:
 ## Verification Results
 
 ### Flutter Analyze - App Update Feature
+
 ```bash
 flutter analyze lib/features/app_update/ --no-fatal-infos
 ```
+
 **Result:** ✅ **No issues found!** (ran in 5.3s)
 
 ### File Status
