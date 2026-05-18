@@ -77,7 +77,7 @@ class ExportService {
     }
 
     // 3. Generate CSV String
-    final csvData = const ListToCsvConverter().convert(rows);
+    final csvData = Csv().encoder.convert(rows);
 
     // 4. Save to Temp File
     final directory = await getTemporaryDirectory();

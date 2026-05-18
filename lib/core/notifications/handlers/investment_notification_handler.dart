@@ -52,7 +52,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     await ensureInitialized();
     if (!incomeRemindersEnabled) return;
 
-    await _plugin.cancel(NotificationIds.incomeReminder(investmentId));
+    await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
 
     final now = DateTime.now();
     DateTime nextIncomeDate;
@@ -94,11 +94,11 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.zonedSchedule(
-      NotificationIds.incomeReminder(investmentId),
-      '💰 Income Expected',
-      'Income from $investmentName may be due today. Check your account!',
-      tz.TZDateTime.from(nextIncomeDate, tz.local),
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.incomeReminder(investmentId),
+      title: '💰 Income Expected',
+      body: 'Income from $investmentName may be due today. Check your account!',
+      scheduledDate: tz.TZDateTime.from(nextIncomeDate, tz.local),
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: NotificationPayload.incomeReminder(investmentId),
     );
@@ -115,7 +115,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
   /// Cancel income reminder for a specific investment.
   Future<void> cancelIncomeReminder(String investmentId) async {
-    await _plugin.cancel(NotificationIds.incomeReminder(investmentId));
+    await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
     LoggerService.info(
       'Income reminder cancelled',
       metadata: {'investmentId': investmentId},
@@ -190,9 +190,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       );
 
       await _plugin.zonedSchedule(
-        NotificationIds.maturityReminder7Days(investmentId),
-        '📅 Investment Maturing Soon',
-        _buildMaturityNotificationBody(
+        id: NotificationIds.maturityReminder7Days(investmentId),
+        title: '📅 Investment Maturing Soon',
+        body: _buildMaturityNotificationBody(
           investmentName: investmentName,
           maturityDate: maturityDate,
           daysRemaining: 7,
@@ -201,8 +201,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
           returnPercent: returnPercent,
           currency: currency,
         ),
-        tz.TZDateTime.from(scheduledDate, tz.local),
-        details,
+        scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.maturityReminder(investmentId, 7),
       );
@@ -228,9 +228,9 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       );
 
       await _plugin.zonedSchedule(
-        NotificationIds.maturityReminder1Day(investmentId),
-        '⏰ Maturity Tomorrow!',
-        _buildMaturityNotificationBody(
+        id: NotificationIds.maturityReminder1Day(investmentId),
+        title: '⏰ Maturity Tomorrow!',
+        body: _buildMaturityNotificationBody(
           investmentName: investmentName,
           maturityDate: maturityDate,
           daysRemaining: 1,
@@ -239,8 +239,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
           returnPercent: returnPercent,
           currency: currency,
         ),
-        tz.TZDateTime.from(scheduledDate, tz.local),
-        details,
+        scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.maturityReminder(investmentId, 1),
       );
@@ -258,8 +258,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
   /// Cancel maturity reminders for a specific investment.
   Future<void> cancelMaturityReminders(String investmentId) async {
-    await _plugin.cancel(NotificationIds.maturityReminder7Days(investmentId));
-    await _plugin.cancel(NotificationIds.maturityReminder1Day(investmentId));
+    await _plugin.cancel(id: NotificationIds.maturityReminder7Days(investmentId));
+    await _plugin.cancel(id: NotificationIds.maturityReminder1Day(investmentId));
     LoggerService.info(
       'Maturity reminders cancelled',
       metadata: {'investmentId': investmentId},
@@ -381,10 +381,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.show(
-      NotificationIds.incomeRemindersSummary,
-      title,
-      body,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.incomeRemindersSummary,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
     );
   }
 
@@ -426,10 +426,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.show(
-      NotificationIds.maturityRemindersSummary,
-      title,
-      body,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.maturityRemindersSummary,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
     );
   }
 
@@ -493,10 +493,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.show(
-      NotificationIds.milestone(investmentId, reachedMilestone),
-      title,
-      body,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.milestone(investmentId, reachedMilestone),
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.milestone(investmentId, reachedMilestone),
     );
 

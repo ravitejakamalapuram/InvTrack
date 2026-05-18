@@ -6,10 +6,10 @@ library;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/reports/data/services/smart_insights_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 part 'smart_insights_provider.g.dart';
 
@@ -20,8 +20,9 @@ SmartInsightsService smartInsightsService(Ref ref) {
 }
 
 /// Provider for smart insights (auto-generated from user data)
+/// Requires AppLocalizations for localized strings
 @riverpod
-Future<List<SmartInsight>> smartInsights(Ref ref) async {
+Future<List<SmartInsight>> smartInsights(Ref ref, AppLocalizations l10n) async {
   // Watch all required data
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
@@ -31,26 +32,26 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
   final currencySymbol = ref.watch(currencySymbolProvider);
   final currencyLocale = ref.watch(currencyLocaleProvider);
 
-  // Wait for all data to load
-  final investments = await investmentsAsync.when(
-    data: (data) => Future.value(data.toList()),
-    loading: () => Future.value(<InvestmentEntity>[]),
-    error: (e, st) => Future.value(<InvestmentEntity>[]),
+  // Wait for all data to load - errors propagate to UI for proper handling
+  final investments = investmentsAsync.when(
+    data: (data) => data.toList(),
+    loading: () => throw StateError('Investments data is still loading'),
+    error: (e, st) => throw e,
   );
 
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) => Future.value(data.toList()),
-    loading: () => Future.value(<CashFlowEntity>[]),
-    error: (e, st) => Future.value(<CashFlowEntity>[]),
+  final cashFlows = cashFlowsAsync.when(
+    data: (data) => data.toList(),
+    loading: () => throw StateError('Cash flows data is still loading'),
+    error: (e, st) => throw e,
   );
 
-  final goals = await goalsAsync.when(
-    data: (data) => Future.value(data.toList()),
-    loading: () => Future.value(<GoalEntity>[]),
-    error: (e, st) => Future.value(<GoalEntity>[]),
+  final goals = goalsAsync.when(
+    data: (data) => data.toList(),
+    loading: () => throw StateError('Goals data is still loading'),
+    error: (e, st) => throw e,
   );
 
-  // Generate insights with currency and locale
+  // Generate insights with currency, locale, and localization
   final service = ref.read(smartInsightsServiceProvider);
   final insights = service.generateInsights(
     investments: investments,
@@ -58,6 +59,7 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
     goals: goals,
     currencySymbol: currencySymbol,
     locale: currencyLocale,
+    l10n: l10n,
   );
 
   // Filter out expired insights
@@ -65,9 +67,10 @@ Future<List<SmartInsight>> smartInsights(Ref ref) async {
 }
 
 /// Provider for high-priority insights (urgent/warning only)
+/// Requires AppLocalizations for localized strings
 @riverpod
-Future<List<SmartInsight>> priorityInsights(Ref ref) async {
-  final allInsights = await ref.watch(smartInsightsProvider.future);
+Future<List<SmartInsight>> priorityInsights(Ref ref, AppLocalizations l10n) async {
+  final allInsights = await ref.watch(smartInsightsProvider(l10n).future);
 
   return allInsights
       .where((insight) =>

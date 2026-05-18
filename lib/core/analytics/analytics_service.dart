@@ -507,7 +507,7 @@ class AnalyticsService {
       name: AnalyticsEvents.errorOccurred,
       parameters: {
         'error_type': errorType,
-        if (screen != null) 'screen': screen,
+        ...?screen != null ? {'screen': screen} : null,
       },
     );
   }
@@ -714,7 +714,7 @@ class AnalyticsService {
         'investment_type': investmentType,
         'expected_rate_range': _getRateRange(expectedRate),
         'tenure_months': tenureMonths,
-        if (compounding != null) 'compounding': compounding,
+        ...?compounding != null ? {'compounding': compounding} : null,
       },
     );
   }
@@ -872,7 +872,7 @@ class AnalyticsService {
       parameters: {
         'report_type': reportType,
         'is_historical': isHistorical ? 1 : 0,
-        if (period != null) 'period': period,
+        ...?period != null ? {'period': period} : null,
       },
     );
   }
@@ -907,7 +907,7 @@ class AnalyticsService {
       parameters: {
         'report_type': reportType,
         'format': format,
-        if (recordCount != null) 'record_count': recordCount,
+        ...?recordCount != null ? {'record_count': recordCount} : null,
       },
     );
   }

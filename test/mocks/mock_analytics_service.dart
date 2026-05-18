@@ -115,7 +115,7 @@ class FakeAnalyticsService implements AnalyticsService {
       name: AnalyticsEvents.errorOccurred,
       parameters: {
         'error_type': errorType,
-        if (screen != null) 'screen': screen,
+        ...?screen != null ? {'screen': screen} : null,
       },
     );
   }
@@ -314,7 +314,7 @@ class FakeAnalyticsService implements AnalyticsService {
         'investment_type': investmentType,
         'expected_rate': expectedRate,
         'tenure_months': tenureMonths,
-        if (compounding != null) 'compounding': compounding,
+        ...?compounding != null ? {'compounding': compounding} : null,
       },
     );
   }
@@ -401,7 +401,7 @@ class FakeAnalyticsService implements AnalyticsService {
       parameters: {
         'report_type': reportType,
         'is_historical': isHistorical ? 1 : 0,
-        if (period != null) 'period': period,
+        ...?period != null ? {'period': period} : null,
       },
     );
   }
@@ -417,7 +417,7 @@ class FakeAnalyticsService implements AnalyticsService {
       parameters: {
         'report_type': reportType,
         'format': format,
-        if (recordCount != null) 'record_count': recordCount,
+        ...?recordCount != null ? {'record_count': recordCount} : null,
       },
     );
   }

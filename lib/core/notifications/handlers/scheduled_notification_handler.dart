@@ -40,7 +40,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await ensureInitialized();
     if (!weeklySummaryEnabled) return;
 
-    await _plugin.cancel(NotificationIds.weeklySummary);
+    await _plugin.cancel(id: NotificationIds.weeklySummary);
 
     const androidDetails = AndroidNotificationDetails(
       NotificationChannels.weeklySummary,
@@ -73,11 +73,11 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     }
 
     await _plugin.zonedSchedule(
-      NotificationIds.weeklySummary,
-      '📊 Weekly Investment Summary',
-      'Check your investment activity for this week',
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      details,
+      id: NotificationIds.weeklySummary,
+      title: '📊 Weekly Investment Summary',
+      body: 'Check your investment activity for this week',
+      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: NotificationPayload.weeklySummary,
@@ -94,7 +94,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await ensureInitialized();
     if (!monthlySummaryEnabled) return;
 
-    await _plugin.cancel(NotificationIds.monthlySummary);
+    await _plugin.cancel(id: NotificationIds.monthlySummary);
 
     const androidDetails = AndroidNotificationDetails(
       NotificationChannels.monthlySummary,
@@ -127,11 +127,11 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     }
 
     await _plugin.zonedSchedule(
-      NotificationIds.monthlySummary,
-      '📈 Monthly Income Summary',
-      'Review your investment income for this month',
-      tz.TZDateTime.from(lastDayOfMonth, tz.local),
-      details,
+      id: NotificationIds.monthlySummary,
+      title: '📈 Monthly Income Summary',
+      body: 'Review your investment income for this month',
+      scheduledDate: tz.TZDateTime.from(lastDayOfMonth, tz.local),
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfMonthAndTime,
       payload: NotificationPayload.monthlySummary,
@@ -233,11 +233,11 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     for (final reminder in reminders) {
       if (reminder.date.isAfter(now)) {
         await _plugin.zonedSchedule(
-          reminder.id,
-          reminder.title,
-          reminder.body,
-          tz.TZDateTime.from(reminder.date, tz.local),
-          details,
+          id: reminder.id,
+          title: reminder.title,
+          body: reminder.body,
+          scheduledDate: tz.TZDateTime.from(reminder.date, tz.local),
+          notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           payload: NotificationPayload.taxReminder(reminder.id.toString()),
         );
@@ -252,12 +252,12 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
 
   /// Cancel all tax reminder notifications
   Future<void> cancelTaxReminders() async {
-    await _plugin.cancel(NotificationIds.taxReminder80C);
-    await _plugin.cancel(NotificationIds.taxReminderAdvanceQ1);
-    await _plugin.cancel(NotificationIds.taxReminderAdvanceQ2);
-    await _plugin.cancel(NotificationIds.taxReminderAdvanceQ3);
-    await _plugin.cancel(NotificationIds.taxReminderAdvanceQ4);
-    await _plugin.cancel(NotificationIds.taxReminderITR);
+    await _plugin.cancel(id: NotificationIds.taxReminder80C);
+    await _plugin.cancel(id: NotificationIds.taxReminderAdvanceQ1);
+    await _plugin.cancel(id: NotificationIds.taxReminderAdvanceQ2);
+    await _plugin.cancel(id: NotificationIds.taxReminderAdvanceQ3);
+    await _plugin.cancel(id: NotificationIds.taxReminderAdvanceQ4);
+    await _plugin.cancel(id: NotificationIds.taxReminderITR);
   }
 
   // ============ Weekly Check-In Notifications ============
@@ -267,7 +267,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await ensureInitialized();
     if (!weeklyCheckInEnabled) return;
 
-    await _plugin.cancel(NotificationIds.weeklyCheckIn);
+    await _plugin.cancel(id: NotificationIds.weeklyCheckIn);
 
     var nextSunday = DateTime.now();
     while (nextSunday.weekday != DateTime.sunday) {
@@ -302,11 +302,11 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.zonedSchedule(
-      NotificationIds.weeklyCheckIn,
-      '📊 Weekly Check-In',
-      'Did you receive any investment income this week? Tap to log it now.',
-      tz.TZDateTime.from(nextSunday, tz.local),
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.weeklyCheckIn,
+      title: '📊 Weekly Check-In',
+      body: 'Did you receive any investment income this week? Tap to log it now.',
+      scheduledDate: tz.TZDateTime.from(nextSunday, tz.local),
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       payload: NotificationPayload.weeklyCheckIn,
@@ -325,7 +325,7 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     await ensureInitialized();
     if (!fySummaryEnabled) return;
 
-    await _plugin.cancel(NotificationIds.fySummary);
+    await _plugin.cancel(id: NotificationIds.fySummary);
 
     final now = DateTime.now();
     var nextApril1 = DateTime(now.year, 4, 1, 10, 0);
@@ -351,11 +351,11 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.zonedSchedule(
-      NotificationIds.fySummary,
-      '📅 FY Summary Ready',
-      'Your financial year summary is ready!',
-      tz.TZDateTime.from(nextApril1, tz.local),
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.fySummary,
+      title: '📅 FY Summary Ready',
+      body: 'Your financial year summary is ready!',
+      scheduledDate: tz.TZDateTime.from(nextApril1, tz.local),
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: NotificationPayload.fySummary,
     );
@@ -403,10 +403,10 @@ class ScheduledNotificationHandler with NotificationPreferencesMixin {
     );
 
     await _plugin.show(
-      NotificationIds.fySummary,
-      '📊 FY$previousFY-$nextFY Summary',
-      buffer.toString(),
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: NotificationIds.fySummary,
+      title: '📊 FY$previousFY-$nextFY Summary',
+      body: buffer.toString(),
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: NotificationPayload.fySummary,
     );
 

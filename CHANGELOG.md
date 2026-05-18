@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+### ⚡ Performance
+
+- Add Gradle and Flutter package caching to CI/CD workflows
+
+## [3.61.2] - 2026-05-17
+
+### 🐛 Bug Fixes
+
+- Update cash_flow_card_widget tests to use SharedPreferences override
+
+## [3.61.1] - 2026-05-17
+
+### 🐛 Bug Fixes
+
+- Complete localization and privacy protection coverage
+
+### 📚 Documentation
+
+- Update crashlytics documentation for manual monitoring
+
+### 🔧 Miscellaneous
+
+- Remove crashlytics-monitor workflow and script
+- Major Package Upgrades (v3.62.0) - 100 Dependencies Upgraded (#391)
+
+## [3.61.0] - 2026-05-14
+
 ### ✨ Features
 
 - Complete Reports screen redesign with Smart Insights and DIY Report Builder

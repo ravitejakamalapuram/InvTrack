@@ -11,7 +11,7 @@ part of 'portfolio_health_provider.dart';
 /// Provider for Health Score Repository
 
 @ProviderFor(healthScoreRepository)
-const healthScoreRepositoryProvider = HealthScoreRepositoryProvider._();
+final healthScoreRepositoryProvider = HealthScoreRepositoryProvider._();
 
 /// Provider for Health Score Repository
 
@@ -24,7 +24,7 @@ final class HealthScoreRepositoryProvider
         >
     with $Provider<HealthScoreRepository> {
   /// Provider for Health Score Repository
-  const HealthScoreRepositoryProvider._()
+  HealthScoreRepositoryProvider._()
     : super(
         from: null,
         argument: null,
@@ -64,7 +64,7 @@ String _$healthScoreRepositoryHash() =>
 /// Provider for auto-save service
 
 @ProviderFor(healthScoreAutoSaveService)
-const healthScoreAutoSaveServiceProvider =
+final healthScoreAutoSaveServiceProvider =
     HealthScoreAutoSaveServiceProvider._();
 
 /// Provider for auto-save service
@@ -78,7 +78,7 @@ final class HealthScoreAutoSaveServiceProvider
         >
     with $Provider<HealthScoreAutoSaveService> {
   /// Provider for auto-save service
-  const HealthScoreAutoSaveServiceProvider._()
+  HealthScoreAutoSaveServiceProvider._()
     : super(
         from: null,
         argument: null,
@@ -125,7 +125,7 @@ String _$healthScoreAutoSaveServiceHash() =>
 /// - Action Readiness (10%): Overdue renewals, stale investments
 
 @ProviderFor(PortfolioHealth)
-const portfolioHealthProvider = PortfolioHealthProvider._();
+final portfolioHealthProvider = PortfolioHealthProvider._();
 
 /// Provider for Portfolio Health Score
 ///
@@ -145,7 +145,7 @@ final class PortfolioHealthProvider
   /// - Liquidity (20%): % maturing in 90 days
   /// - Goal Alignment (15%): % goals on-track
   /// - Action Readiness (10%): Overdue renewals, stale investments
-  const PortfolioHealthProvider._()
+  PortfolioHealthProvider._()
     : super(
         from: null,
         argument: null,
@@ -202,7 +202,7 @@ abstract class _$PortfolioHealth extends $AsyncNotifier<PortfolioHealthScore?> {
 /// Provider for historical health score snapshots (last 12 weeks)
 
 @ProviderFor(historicalHealthScores)
-const historicalHealthScoresProvider = HistoricalHealthScoresProvider._();
+final historicalHealthScoresProvider = HistoricalHealthScoresProvider._();
 
 /// Provider for historical health score snapshots (last 12 weeks)
 
@@ -217,7 +217,7 @@ final class HistoricalHealthScoresProvider
         $FutureModifier<List<HealthScoreSnapshotModel>>,
         $StreamProvider<List<HealthScoreSnapshotModel>> {
   /// Provider for historical health score snapshots (last 12 weeks)
-  const HistoricalHealthScoresProvider._()
+  HistoricalHealthScoresProvider._()
     : super(
         from: null,
         argument: null,
@@ -249,7 +249,7 @@ String _$historicalHealthScoresHash() =>
 /// Provider for chart data (simplified for trend visualization)
 
 @ProviderFor(healthScoreChartData)
-const healthScoreChartDataProvider = HealthScoreChartDataProvider._();
+final healthScoreChartDataProvider = HealthScoreChartDataProvider._();
 
 /// Provider for chart data (simplified for trend visualization)
 
@@ -264,7 +264,7 @@ final class HealthScoreChartDataProvider
         $FutureModifier<List<Map<String, dynamic>>>,
         $StreamProvider<List<Map<String, dynamic>>> {
   /// Provider for chart data (simplified for trend visualization)
-  const HealthScoreChartDataProvider._()
+  HealthScoreChartDataProvider._()
     : super(
         from: null,
         argument: null,
@@ -296,7 +296,7 @@ String _$healthScoreChartDataHash() =>
 /// Provider for latest health score value (for quick access)
 
 @ProviderFor(latestHealthScoreValue)
-const latestHealthScoreValueProvider = LatestHealthScoreValueProvider._();
+final latestHealthScoreValueProvider = LatestHealthScoreValueProvider._();
 
 /// Provider for latest health score value (for quick access)
 
@@ -304,7 +304,7 @@ final class LatestHealthScoreValueProvider
     extends $FunctionalProvider<double?, double?, double?>
     with $Provider<double?> {
   /// Provider for latest health score value (for quick access)
-  const LatestHealthScoreValueProvider._()
+  LatestHealthScoreValueProvider._()
     : super(
         from: null,
         argument: null,
@@ -343,7 +343,7 @@ String _$latestHealthScoreValueHash() =>
 /// Provider for latest health score tier (for color coding)
 
 @ProviderFor(latestHealthScoreTier)
-const latestHealthScoreTierProvider = LatestHealthScoreTierProvider._();
+final latestHealthScoreTierProvider = LatestHealthScoreTierProvider._();
 
 /// Provider for latest health score tier (for color coding)
 
@@ -351,7 +351,7 @@ final class LatestHealthScoreTierProvider
     extends $FunctionalProvider<ScoreTier?, ScoreTier?, ScoreTier?>
     with $Provider<ScoreTier?> {
   /// Provider for latest health score tier (for color coding)
-  const LatestHealthScoreTierProvider._()
+  LatestHealthScoreTierProvider._()
     : super(
         from: null,
         argument: null,

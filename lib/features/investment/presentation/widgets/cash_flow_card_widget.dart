@@ -9,6 +9,8 @@ import 'package:flutter/semantics.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 
 /// A card widget displaying a single cash flow transaction.
 /// Supports swipe-to-edit (right) and swipe-to-delete (left) gestures.
@@ -236,16 +238,35 @@ class CashFlowCardWidget extends ConsumerWidget {
             ),
             const SizedBox(width: 3),
             Expanded(
-              child: Text(
-                '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}',
-                style: AppTypography.small.copyWith(
-                  color: isDark
-                      ? AppColors.neutral500Dark
-                      : AppColors.neutral400Light,
-                  fontSize: 10,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final isPrivacyMode = ref.watch(privacyModeProvider);
+                  final exchangeText = '1 ${cashFlow.currency} = ${rate.toStringAsFixed(4)} $baseCurrency • ${currencyFormat.formatSmart(convertedAmount)}';
+
+                  return isPrivacyMode
+                      ? MaskedAmountText(
+                          text: exchangeText,
+                          style: AppTypography.small.copyWith(
+                            color: isDark
+                                ? AppColors.neutral500Dark
+                                : AppColors.neutral400Light,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : Text(
+                          exchangeText,
+                          style: AppTypography.small.copyWith(
+                            color: isDark
+                                ? AppColors.neutral500Dark
+                                : AppColors.neutral400Light,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                },
               ),
             ),
           ],
@@ -255,12 +276,27 @@ class CashFlowCardWidget extends ConsumerWidget {
   }
 
   Widget _buildAmount(Color color, bool isOutflow) {
-    return Text(
-      '${isOutflow ? '-' : '+'}${currencyFormat.formatSmart(cashFlow.amount)}',
-      style: AppTypography.bodyLarge.copyWith(
-        color: color,
-        fontWeight: FontWeight.w700,
-      ),
+    return Consumer(
+      builder: (context, ref, child) {
+        final isPrivacyMode = ref.watch(privacyModeProvider);
+        final amountText = '${isOutflow ? '-' : '+'}${currencyFormat.formatSmart(cashFlow.amount)}';
+
+        return isPrivacyMode
+            ? MaskedAmountText(
+                text: amountText,
+                style: AppTypography.bodyLarge.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              )
+            : Text(
+                amountText,
+                style: AppTypography.bodyLarge.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+      },
     );
   }
 }

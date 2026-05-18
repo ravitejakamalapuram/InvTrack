@@ -340,7 +340,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Pick ZIP file
     PlatformFile? selectedFile;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['zip'],
         withData: true,

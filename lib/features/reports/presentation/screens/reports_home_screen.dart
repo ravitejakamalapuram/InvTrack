@@ -28,9 +28,9 @@ class ReportsHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
-    // Watch smart insights
-    final smartInsightsAsync = ref.watch(smartInsightsProvider);
-    final priorityInsightsAsync = ref.watch(priorityInsightsProvider);
+    // Watch smart insights (pass l10n for localization)
+    final smartInsightsAsync = ref.watch(smartInsightsProvider(l10n));
+    final priorityInsightsAsync = ref.watch(priorityInsightsProvider(l10n));
 
     // Watch dynamic counts for report cards
     final activeGoalsAsync = ref.watch(activeGoalsProvider);
