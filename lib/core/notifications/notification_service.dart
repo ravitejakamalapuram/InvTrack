@@ -297,7 +297,7 @@ class NotificationService with NotificationPreferencesMixin {
     );
 
     await _plugin.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
@@ -496,7 +496,7 @@ class NotificationService with NotificationPreferencesMixin {
     if (enabled) {
       await scheduleWeeklySummary();
     } else {
-      await _plugin.cancel(NotificationIds.weeklySummary);
+      await _plugin.cancel(id: NotificationIds.weeklySummary);
     }
   }
 
@@ -507,7 +507,7 @@ class NotificationService with NotificationPreferencesMixin {
     if (enabled) {
       await scheduleMonthlySummary();
     } else {
-      await _plugin.cancel(NotificationIds.monthlySummary);
+      await _plugin.cancel(id: NotificationIds.monthlySummary);
     }
   }
 
@@ -529,7 +529,7 @@ class NotificationService with NotificationPreferencesMixin {
     if (enabled) {
       await scheduleWeeklyCheckIn();
     } else {
-      await _plugin.cancel(NotificationIds.weeklyCheckIn);
+      await _plugin.cancel(id: NotificationIds.weeklyCheckIn);
     }
   }
 
@@ -540,7 +540,7 @@ class NotificationService with NotificationPreferencesMixin {
     if (enabled) {
       await scheduleFYSummary();
     } else {
-      await _plugin.cancel(NotificationIds.fySummary);
+      await _plugin.cancel(id: NotificationIds.fySummary);
     }
   }
 
@@ -645,10 +645,10 @@ class NotificationService with NotificationPreferencesMixin {
     );
 
     await _plugin.show(
-      99999, // Fixed ID for test notification
-      '🔔 Test Notification',
-      'If you see this, notifications are working!',
-      details,
+      id: 99999, // Fixed ID for test notification
+      title: '🔔 Test Notification',
+      body: 'If you see this, notifications are working!',
+      notificationDetails: details,
       payload: 'test_notification',
     );
 
@@ -694,11 +694,11 @@ class NotificationService with NotificationPreferencesMixin {
     final scheduledTime = DateTime.now().add(Duration(seconds: delaySeconds));
 
     await _plugin.zonedSchedule(
-      99998, // Fixed ID for scheduled test notification
-      '⏰ Scheduled Test Notification',
-      'This notification was scheduled $delaySeconds seconds ago!',
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      details,
+      id: 99998, // Fixed ID for scheduled test notification
+      title: '⏰ Scheduled Test Notification',
+      body: 'This notification was scheduled $delaySeconds seconds ago!',
+      scheduledDate: tz.TZDateTime.from(scheduledTime, tz.local),
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: 'test_scheduled_notification',
     );
@@ -953,11 +953,11 @@ class NotificationService with NotificationPreferencesMixin {
     final day0Time = signupDate.add(const Duration(hours: 1));
     if (day0Time.isAfter(now) && !_isActivationDaySent(0)) {
       await _plugin.zonedSchedule(
-        NotificationIds.activationDay0,
-        '🎉 Welcome to InvTrack!',
-        'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
-        tz.TZDateTime.from(day0Time, tz.local),
-        details,
+        id: NotificationIds.activationDay0,
+        title: '🎉 Welcome to InvTrack!',
+        body: 'Start tracking your investments and discover your real returns (XIRR). Add your first investment now!',
+        scheduledDate: tz.TZDateTime.from(day0Time, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.activationDay0,
       );
@@ -973,11 +973,11 @@ class NotificationService with NotificationPreferencesMixin {
     final day1Time = DateTime(day1Date.year, day1Date.month, day1Date.day, 10);
     if (day1Time.isAfter(now) && !_isActivationDaySent(1)) {
       await _plugin.zonedSchedule(
-        NotificationIds.activationDay1,
-        '📊 Add Your First Investment',
-        'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
-        tz.TZDateTime.from(day1Time, tz.local),
-        details,
+        id: NotificationIds.activationDay1,
+        title: '📊 Add Your First Investment',
+        body: 'Take 30 seconds to add an FD, mutual fund, or any investment. See how your returns really stack up!',
+        scheduledDate: tz.TZDateTime.from(day1Time, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.activationDay1,
       );
@@ -993,11 +993,11 @@ class NotificationService with NotificationPreferencesMixin {
     final day3Time = DateTime(day3Date.year, day3Date.month, day3Date.day, 18);
     if (day3Time.isAfter(now) && !_isActivationDaySent(3)) {
       await _plugin.zonedSchedule(
-        NotificationIds.activationDay3,
-        '📥 Import Your Investments',
-        'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
-        tz.TZDateTime.from(day3Time, tz.local),
-        details,
+        id: NotificationIds.activationDay3,
+        title: '📥 Import Your Investments',
+        body: 'Have a spreadsheet? Import your investments from CSV in seconds. No manual entry needed!',
+        scheduledDate: tz.TZDateTime.from(day3Time, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.activationDay3,
       );
@@ -1013,11 +1013,11 @@ class NotificationService with NotificationPreferencesMixin {
     final day7Time = DateTime(day7Date.year, day7Date.month, day7Date.day, 11);
     if (day7Time.isAfter(now) && !_isActivationDaySent(7)) {
       await _plugin.zonedSchedule(
-        NotificationIds.activationDay7,
-        '💡 Did You Know?',
-        'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
-        tz.TZDateTime.from(day7Time, tz.local),
-        details,
+        id: NotificationIds.activationDay7,
+        title: '💡 Did You Know?',
+        body: 'InvTrack shows your real XIRR returns - often different from advertised rates. Start tracking to see the difference!',
+        scheduledDate: tz.TZDateTime.from(day7Time, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.activationDay7,
       );
@@ -1038,11 +1038,11 @@ class NotificationService with NotificationPreferencesMixin {
     );
     if (day14Time.isAfter(now) && !_isActivationDaySent(14)) {
       await _plugin.zonedSchedule(
-        NotificationIds.activationDay14,
-        '📈 Join Smart Investors',
-        'Thousands of investors track their real returns with InvTrack. Add your first investment and join them!',
-        tz.TZDateTime.from(day14Time, tz.local),
-        details,
+        id: NotificationIds.activationDay14,
+        title: '📈 Join Smart Investors',
+        body: 'Thousands of investors track their real returns with InvTrack. Add your first investment and join them!',
+        scheduledDate: tz.TZDateTime.from(day14Time, tz.local),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         payload: NotificationPayload.activationDay14,
       );
@@ -1058,11 +1058,11 @@ class NotificationService with NotificationPreferencesMixin {
   ///
   /// Call this when user adds their first investment to stop sending nudges.
   Future<void> cancelActivationSequence() async {
-    await _plugin.cancel(NotificationIds.activationDay0);
-    await _plugin.cancel(NotificationIds.activationDay1);
-    await _plugin.cancel(NotificationIds.activationDay3);
-    await _plugin.cancel(NotificationIds.activationDay7);
-    await _plugin.cancel(NotificationIds.activationDay14);
+    await _plugin.cancel(id: NotificationIds.activationDay0);
+    await _plugin.cancel(id: NotificationIds.activationDay1);
+    await _plugin.cancel(id: NotificationIds.activationDay3);
+    await _plugin.cancel(id: NotificationIds.activationDay7);
+    await _plugin.cancel(id: NotificationIds.activationDay14);
 
     LoggerService.info('Activation sequence cancelled');
   }

@@ -119,7 +119,7 @@ class ReportConfiguration {
       reportType: ReportType.maturityCalendar,
       investmentId: investmentId,
       parameters: {
-        if (daysToMaturity != null) 'daysToMaturity': daysToMaturity,
+        ...?daysToMaturity != null ? {'daysToMaturity': daysToMaturity} : null,
       },
       fromNotification: notificationContext != null,
       notificationContext: notificationContext,
@@ -136,7 +136,7 @@ class ReportConfiguration {
       reportType: ReportType.goalProgress,
       goalId: goalId,
       parameters: {
-        if (milestonePercent != null) 'milestonePercent': milestonePercent,
+        ...?milestonePercent != null ? {'milestonePercent': milestonePercent} : null,
       },
       fromNotification: notificationContext != null,
       notificationContext: notificationContext,
