@@ -156,43 +156,80 @@ jobs:
           ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
           UPDATE_PRIORITY: ${{ inputs.update_priority }}
 
-      - name: Update Firestore - Mark as Released
+      - name: Update Firestore - Production Version Info (Two-Track System)
         if: success()
         run: |
           npm install firebase-admin
-          
+
           node << 'EOF'
           const admin = require('firebase-admin');
-          
+
           // Initialize Firebase Admin
           const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
           });
-          
+
           const db = admin.firestore();
-          
+          const rolloutPercent = parseInt(process.env.ROLLOUT_PERCENTAGE);
+
           (async () => {
             try {
               // Get current version info
               const versionDoc = await db.collection('app_config').doc('version_info').get();
               const versionData = versionDoc.data();
-              
-              console.log('📦 Current version info:', versionData);
-              
-              // Update to mark as released to production
-              await db.collection('app_config').doc('version_info').update({
-                pendingRelease: false,
-                releaseDate: admin.firestore.Timestamp.now(),
-                rolloutPercentage: parseInt(process.env.ROLLOUT_PERCENTAGE),
-                lastPromotedVersion: versionData.pendingVersion,
-                lastPromotedBuildNumber: versionData.pendingBuildNumber,
-              });
-              
-              console.log('✅ Firestore updated successfully!');
-              console.log('   Release Date:', new Date().toISOString());
-              console.log('   Rollout:', process.env.ROLLOUT_PERCENTAGE + '%');
-              
+
+              console.log('📦 Current production version info:', versionData);
+              console.log('   Rollout Percentage:', rolloutPercent + '%');
+              console.log('');
+
+              if (rolloutPercent === 100) {
+                // ONLY update production version info at 100% rollout
+                // This prevents "Update Available" popup for users who haven't received Play Store update yet
+                console.log('🎯 100% Rollout - Updating production version info (app_config/version_info)');
+                console.log('   This will trigger update popups for all production users');
+                console.log('');
+
+                await db.collection('app_config').doc('version_info').set({
+                  latestVersion: versionData.pendingVersion,
+                  latestBuildNumber: versionData.pendingBuildNumber,
+                  minimumVersion: versionData.pendingVersion, // For now, minimum = latest
+                  minimumBuildNumber: versionData.pendingBuildNumber,
+                  forceUpdate: false,
+                  updateMessage: 'New version available!',
+                  whatsNew: '• New features\n• Bug fixes and improvements',
+                  downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+                  pendingRelease: false,
+                  releaseDate: admin.firestore.Timestamp.now(),
+                  rolloutPercentage: 100,
+                  lastPromotedVersion: versionData.pendingVersion,
+                  lastPromotedBuildNumber: versionData.pendingBuildNumber,
+                  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                }, { merge: true });
+
+                console.log('✅ Production version info updated!');
+                console.log('   Users will now see update dialog');
+              } else {
+                // Partial rollout - just update tracking metadata
+                console.log('⏳ Partial Rollout (' + rolloutPercent + '%) - NOT updating production version yet');
+                console.log('   Production users will NOT see update popup yet');
+                console.log('   Update version_info ONLY after 100% rollout completes');
+                console.log('');
+
+                await db.collection('app_config').doc('version_info').update({
+                  rolloutPercentage: rolloutPercent,
+                  pendingRelease: true, // Still pending full rollout
+                  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+
+                console.log('✅ Rollout tracking updated');
+              }
+
+              console.log('');
+              console.log('📋 Two-Track System Status:');
+              console.log('   ✓ Beta version (version_info_beta): Already updated');
+              console.log('   ' + (rolloutPercent === 100 ? '✓' : '⏳') + ' Production version (version_info): ' + (rolloutPercent === 100 ? 'Updated' : 'Pending 100% rollout'));
+
             } catch (error) {
               console.error('❌ Firestore update failed:', error);
               process.exit(1);
