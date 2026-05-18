@@ -144,16 +144,32 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 
 `cd-promote-production.yml` promotes to Production and updates `version_info`:
 
+**Behavior:**
+- **All rollout percentages (20%, 50%, 100%):** Updates rollout tracking metadata (`rolloutPercentage`, `updatedAt`)
+- **Only at 100% rollout:** Promotes production fields (`latestVersion`, `latestBuildNumber`) from pending fields
+
 ```yaml
 - name: Update Production Version Info in Firestore
-  # Only run when rollout reaches 100%
-  if: inputs.rollout_percentage == '100'
   run: |
+    # Always update rollout tracking
     await db.collection('app_config').doc('version_info').set({
-      latestVersion: version,
-      latestBuildNumber: buildNumber,
-      # ... other fields
+      rolloutPercentage: rolloutPercent,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
+
+    # Only promote production fields at 100%
+    if (rolloutPercent === 100) {
+      // Guard: Verify pending fields exist
+      if (!versionData.pendingVersion || !versionData.pendingBuildNumber) {
+        throw new Error('Missing pending fields');
+      }
+
+      await db.collection('app_config').doc('version_info').set({
+        latestVersion: versionData.pendingVersion,
+        latestBuildNumber: versionData.pendingBuildNumber,
+        // ... other production fields
+      }, { merge: true });
+    }
 ```
 
 ## Testing

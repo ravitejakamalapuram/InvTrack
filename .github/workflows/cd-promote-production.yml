@@ -195,6 +195,15 @@ jobs:
               if (rolloutPercent === 100) {
                 // ONLY update production version info at 100% rollout
                 // This prevents "Update Available" popup for users who haven't received Play Store update yet
+
+                // Guard: Verify pending fields exist before promotion
+                if (!versionData.pendingVersion || !versionData.pendingBuildNumber) {
+                  throw new Error(
+                    'Missing pendingVersion/pendingBuildNumber in app_config/version_info. ' +
+                    'Run beta deploy flow to populate pending release fields before 100% promotion.'
+                  );
+                }
+
                 console.log('🎯 100% Rollout - Updating production version info (app_config/version_info)');
                 console.log('   This will trigger update popups for all production users');
                 console.log('');
