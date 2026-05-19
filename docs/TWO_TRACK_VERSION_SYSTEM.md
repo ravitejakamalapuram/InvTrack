@@ -47,6 +47,7 @@ No confusion!
 ```
 
 ### Beta Document: `app_config/version_info_beta`
+
 ```json
 {
   "latestVersion": "2.0.0",
@@ -112,14 +113,17 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 ## Critical: When to Update Firestore
 
 ### ❌ DON'T Update Immediately After Release Start
+
 - Some users won't have received the Play Store update yet
 - They'll see "Update Available" but Play Store shows "No Update"
 
 ### ✅ DO Update After 100% Rollout Complete
+
 - All eligible users have received the Play Store update
 - Update popup now matches Play Store availability
 
 ### Exception: Force Update (Critical Bug Fix)
+
 - Update Firestore IMMEDIATELY
 - Set `forceUpdate: true`
 - Users MUST update for security/data integrity
@@ -177,6 +181,7 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 ## Testing
 
 ### Manual Testing Checklist
+
 - [ ] Create both Firestore documents (`version_info` and `version_info_beta`)
 - [ ] Test beta build with higher `version_info_beta` version
 - [ ] Test production build with lower `version_info` version
