@@ -130,7 +130,8 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 
 `cd-deploy-android.yml` deploys to Closed Testing and updates `version_info_beta`:
 
-```yaml
+```text
+# Pseudo-code (illustrative)
 - name: Update Beta Version Info in Firestore
   run: |
     await db.collection('app_config').doc('version_info_beta').set({
@@ -148,7 +149,8 @@ Day 7:  100% rollout → Update version_info (production users see popup)
 - **All rollout percentages (20%, 50%, 100%):** Updates rollout tracking metadata (`rolloutPercentage`, `updatedAt`)
 - **Only at 100% rollout:** Promotes production fields (`latestVersion`, `latestBuildNumber`) from pending fields
 
-```yaml
+```text
+# Pseudo-code (illustrative)
 - name: Update Production Version Info in Firestore
   run: |
     # Always update rollout tracking
