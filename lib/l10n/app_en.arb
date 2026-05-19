@@ -2662,6 +2662,11 @@
     "description": "Loading text when checking for updates"
   },
 
+  "versionChecked": "Version checked",
+  "@versionChecked": {
+    "description": "Status text after version check completes"
+  },
+
   "lastChecked": "Last checked: {timestamp}",
   "@lastChecked": {
     "description": "Shows when version check was last performed",

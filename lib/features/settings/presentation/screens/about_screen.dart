@@ -12,6 +12,8 @@ import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
+import 'package:inv_tracker/features/app_update/presentation/widgets/update_dialog.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -107,6 +109,72 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           ),
         );
       }
+    }
+  }
+
+  /// Check for app updates manually
+  Future<void> _checkForUpdates(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+
+    try {
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.checkingForUpdates),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Trigger version check
+      await ref.read(versionCheckProvider.notifier).checkForUpdates();
+
+      if (!mounted) return;
+
+      final state = ref.read(versionCheckProvider);
+
+      // Show result
+      if (state.hasUpdate) {
+        // Show update dialog
+        final versionInfo = state.latestVersion;
+        if (versionInfo != null && mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: !state.requiresForceUpdate, // Fix 6: Prevent dismissing force updates
+            builder: (_) => UpdateDialog(
+              versionInfo: versionInfo,
+              forceUpdate: state.requiresForceUpdate,
+            ),
+          );
+        }
+      } else if (state.latestVersion == null) {
+        // Fix 4: Error case - version check failed but didn't throw
+        if (mounted) {
+          ErrorHandler.handle(
+            Exception('Failed to fetch version information'),
+            StackTrace.current,
+            context: context,
+            showFeedback: true,
+          );
+        }
+      } else {
+        // No update available - version check succeeded
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.appIsUpToDate),
+              duration: const Duration(seconds: 2),
+              backgroundColor: AppColors.successLight,
+            ),
+          );
+        }
+      }
+    } catch (e, st) {
+      if (!mounted) return;
+
+      // Fix 5: ErrorHandler already shows feedback, don't duplicate with SnackBar
+      ErrorHandler.handle(e, st, context: context, showFeedback: true);
     }
   }
 
@@ -233,6 +301,13 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   title: l10n.contactSupport,
                   subtitle: l10n.supportEmail,
                   onTap: () => _openSupportEmail(context, packageInfo.version),
+                ),
+                SettingsNavTile(
+                  icon: Icons.system_update,
+                  iconColor: Colors.green,
+                  title: l10n.checkForUpdatesTitle,
+                  showChevron: false,
+                  onTap: () => _checkForUpdates(context),
                 ),
               ],
             ),
