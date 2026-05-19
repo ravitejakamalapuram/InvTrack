@@ -4320,5 +4320,15 @@
   "importCancelledMessage": "Import cancelled",
   "@importCancelledMessage": {
     "description": "Message when import is cancelled"
+  },
+
+  "selectTransactionDateA11y": "Select transaction date, currently {date}",
+  "@selectTransactionDateA11y": {
+    "description": "Accessibility label for transaction date selector showing current date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   }
 }
