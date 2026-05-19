@@ -253,9 +253,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               SizedBox(height: AppSpacing.xs),
               Semantics(
                 button: true,
-                label:
-                    'Select transaction date, currently ${AppDateUtils.formatLong(_selectedDate)}',
-                excludeSemantics: true,
+                label: 'Select transaction date',
                 child: GestureDetector(
                   onTap: () => _selectDate(context, isDark),
                   child: GlassCard(
