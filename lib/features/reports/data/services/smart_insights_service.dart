@@ -45,7 +45,7 @@ class SmartInsightsService {
     if (monthlyInsight != null) insights.add(monthlyInsight);
 
     // 3. Upcoming Maturities
-    final maturityInsights = _generateMaturityAlerts(investments, now);
+    final maturityInsights = _generateMaturityAlerts(investments, now, l10n);
     insights.addAll(maturityInsights);
 
     // 4. Declining Investments
@@ -160,6 +160,7 @@ class SmartInsightsService {
   List<SmartInsight> _generateMaturityAlerts(
     List<InvestmentEntity> investments,
     DateTime now,
+    AppLocalizations l10n,
   ) {
     final insights = <SmartInsight>[];
     final next30Days = now.add(const Duration(days: 30));
@@ -180,9 +181,9 @@ class SmartInsightsService {
       SmartInsight(
         type: InsightType.upcomingMaturity,
         priority: days <= 7 ? InsightPriority.urgent : InsightPriority.warning,
-        title: 'Upcoming Maturity',
-        subtitle: '$count investment${count > 1 ? 's' : ''} maturing',
-        value: 'in $days days',
+        title: l10n.upcomingMaturityInsight,
+        subtitle: l10n.upcomingMaturitySubtitle(count),
+        value: l10n.inDays(days),
         icon: 'schedule',
         generatedAt: now,
       ),

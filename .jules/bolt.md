@@ -83,6 +83,7 @@
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
 
-## 2024-05-18 - Combine multiple metrics and pre-group by ID
-**Learning:** In Dart, when extracting multiple different aggregated metrics (e.g., sums based on different conditions) from the same collection for each item in an outer loop, avoid executing multiple separate `.where().fold()` chains and a `.where().toList()` filter inside the loop. This causes $O(N \times M)$ iteration overhead where N is the outer list size and M is the inner list size.
-**Action:** Use a pre-computed `Map` to group the inner list values by the join key outside the loop, reducing the complexity to $O(N+M)$. Inside the loop, use a single-pass `for` loop to accumulate all required totals simultaneously, eliminating redundant iterations and closure allocations.
+## 2026-05-18 - Combine multiple metrics and pre-group by ID
+
+**Learning:** Chaining multiple `.where().fold()` operations inside a loop to calculate different metrics across the same collection results in O(N*M) complexity and excessive intermediate iterable/closure allocations.
+**Action:** Pre-group the collection by the join key (e.g., `investmentId`) into a `Map` outside the loop, then accumulate all required metrics in a single `for` loop pass. This changes complexity from O(N*M) to O(N+M) and eliminates redundant iterations.

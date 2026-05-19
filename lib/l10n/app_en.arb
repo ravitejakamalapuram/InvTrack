@@ -4142,6 +4142,26 @@
     }
   },
 
+  "upcomingMaturitySubtitle": "{count, plural, =1{1 investment maturing} other{{count} investments maturing}}",
+  "@upcomingMaturitySubtitle": {
+    "description": "Subtitle for upcoming maturity insight showing count of maturing investments",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "inDays": "in {days} days",
+  "@inDays": {
+    "description": "Time remaining format in days",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
   "monthlyIncomeInsight": "Monthly Income",
   "@monthlyIncomeInsight": {
     "description": "Title for monthly income insight card"
