@@ -1,7 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Entity representing app version information from remote config
-///
-/// Simplified version - no beta mode filtering, no release dates.
-/// Industry-standard approach: if a version exists in Firestore, show it to everyone.
 class AppVersionEntity {
   final String latestVersion;
   final int latestBuildNumber;
@@ -11,6 +10,8 @@ class AppVersionEntity {
   final String? updateMessage;
   final String? whatsNew;
   final String? downloadUrl;
+  final DateTime?
+  releaseDate; // When the update becomes available on Play Store
 
   const AppVersionEntity({
     required this.latestVersion,
@@ -21,19 +22,44 @@ class AppVersionEntity {
     this.updateMessage,
     this.whatsNew,
     this.downloadUrl,
+    this.releaseDate,
   });
 
-  /// Check if current version is outdated (simple build number comparison)
-  bool isOutdated(int currentBuildNumber) {
+  /// Check if current version is outdated
+  bool isOutdated(String currentVersion, int currentBuildNumber) {
     return currentBuildNumber < latestBuildNumber;
   }
 
   /// Check if current version requires force update
-  bool requiresForceUpdate(int currentBuildNumber) {
+  bool requiresForceUpdate(String currentVersion, int currentBuildNumber) {
     return forceUpdate && currentBuildNumber < minimumBuildNumber;
   }
 
+  /// Check if the update is available on Play Store yet
+  /// Returns true if releaseDate is null (backward compatibility) or if release date has passed
+  bool isReleased() {
+    if (releaseDate == null) return true; // No release date = show immediately
+    return DateTime.now().isAfter(releaseDate!);
+  }
+
   factory AppVersionEntity.fromMap(Map<String, dynamic> map) {
+    DateTime? releaseDate;
+    if (map['releaseDate'] != null) {
+      final releaseDateValue = map['releaseDate'];
+
+      // Support Firestore Timestamp, String, and int formats
+      if (releaseDateValue is Timestamp) {
+        // Firestore Timestamp object (most common in production)
+        releaseDate = releaseDateValue.toDate();
+      } else if (releaseDateValue is String) {
+        // String ISO 8601 format
+        releaseDate = DateTime.tryParse(releaseDateValue);
+      } else if (releaseDateValue is int) {
+        // Milliseconds since epoch
+        releaseDate = DateTime.fromMillisecondsSinceEpoch(releaseDateValue);
+      }
+    }
+
     return AppVersionEntity(
       latestVersion: map['latestVersion'] as String,
       latestBuildNumber: (map['latestBuildNumber'] as num).toInt(),
@@ -43,6 +69,7 @@ class AppVersionEntity {
       updateMessage: map['updateMessage'] as String?,
       whatsNew: map['whatsNew'] as String?,
       downloadUrl: map['downloadUrl'] as String?,
+      releaseDate: releaseDate,
     );
   }
 
@@ -56,6 +83,7 @@ class AppVersionEntity {
       'updateMessage': updateMessage,
       'whatsNew': whatsNew,
       'downloadUrl': downloadUrl,
+      'releaseDate': releaseDate?.toIso8601String(),
     };
   }
 }

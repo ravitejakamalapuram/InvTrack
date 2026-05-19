@@ -1,2 +1,0 @@
-⚡ Performance Improvements
-• Add Gradle and Flutter package caching to CI/CD workflows

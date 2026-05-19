@@ -4,6 +4,8 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/app_update/data/services/version_check_service.dart';
 import 'package:inv_tracker/features/app_update/domain/entities/app_version_entity.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 
 /// Provider for version check service
 final versionCheckServiceProvider = Provider<VersionCheckService>((ref) {
@@ -12,16 +14,14 @@ final versionCheckServiceProvider = Provider<VersionCheckService>((ref) {
 });
 
 /// State for version check
-///
-/// Simplified: no persistent dismissal, only session-based.
-/// If user dismisses dialog, it won't show again until app restarts.
 class VersionCheckState {
   final AppVersionEntity? latestVersion;
   final String currentVersion;
   final int currentBuildNumber;
   final bool isLoading;
   final bool hasChecked;
-  final bool dismissedThisSession; // Session-based, resets on app restart
+  final DateTime? lastCheckedAt;
+  final bool updateDismissed;
 
   const VersionCheckState({
     this.latestVersion,
@@ -29,22 +29,28 @@ class VersionCheckState {
     required this.currentBuildNumber,
     this.isLoading = false,
     this.hasChecked = false,
-    this.dismissedThisSession = false,
+    this.lastCheckedAt,
+    this.updateDismissed = false,
   });
 
-  /// Check if update is available (simple build number check)
+  /// CodeRabbit fix: Pure getter without side effects (no logging)
+  /// Check if update is available
   bool get hasUpdate =>
       latestVersion != null &&
-      latestVersion!.isOutdated(currentBuildNumber);
+      latestVersion!.isOutdated(currentVersion, currentBuildNumber) &&
+      latestVersion!.isReleased(); // Only show if released on Play Store
 
-  /// Check if force update required
   bool get requiresForceUpdate =>
       latestVersion != null &&
-      latestVersion!.requiresForceUpdate(currentBuildNumber);
+      latestVersion!.requiresForceUpdate(currentVersion, currentBuildNumber) &&
+      latestVersion!.isReleased();
 
-  /// Should show dialog? (not dismissed this session + update available)
+  /// CodeRabbit fix: Read each getter once to avoid duplicate logging
   bool get shouldShowUpdateDialog {
-    return hasUpdate && !dismissedThisSession && !requiresForceUpdate;
+    final hasUpdateVal = hasUpdate;
+    final requiresForceVal = requiresForceUpdate;
+    final dismissed = updateDismissed;
+    return hasUpdateVal && !dismissed && !requiresForceVal;
   }
 
   VersionCheckState copyWith({
@@ -53,7 +59,8 @@ class VersionCheckState {
     int? currentBuildNumber,
     bool? isLoading,
     bool? hasChecked,
-    bool? dismissedThisSession,
+    DateTime? lastCheckedAt,
+    bool? updateDismissed,
   }) {
     return VersionCheckState(
       latestVersion: latestVersion ?? this.latestVersion,
@@ -61,7 +68,8 @@ class VersionCheckState {
       currentBuildNumber: currentBuildNumber ?? this.currentBuildNumber,
       isLoading: isLoading ?? this.isLoading,
       hasChecked: hasChecked ?? this.hasChecked,
-      dismissedThisSession: dismissedThisSession ?? this.dismissedThisSession,
+      lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
+      updateDismissed: updateDismissed ?? this.updateDismissed,
     );
   }
 }
@@ -74,10 +82,15 @@ final versionCheckProvider =
 
 class VersionCheckNotifier extends Notifier<VersionCheckState> {
   late final VersionCheckService _service;
+  late final SharedPreferences _prefs;
+
+  static const String _lastCheckedKey = 'version_last_checked';
+  static const String _dismissedVersionKey = 'version_dismissed';
 
   @override
   VersionCheckState build() {
     _service = ref.watch(versionCheckServiceProvider);
+    _prefs = ref.watch(sharedPreferencesProvider);
 
     _initialize();
 
@@ -87,87 +100,93 @@ class VersionCheckNotifier extends Notifier<VersionCheckState> {
   Future<void> _initialize() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
+      final lastChecked = _prefs.getString(_lastCheckedKey);
+      final dismissedVersion = _prefs.getString(_dismissedVersionKey);
 
       state = state.copyWith(
         currentVersion: packageInfo.version,
         currentBuildNumber: int.tryParse(packageInfo.buildNumber) ?? 0,
+        lastCheckedAt: lastChecked != null
+            ? DateTime.tryParse(lastChecked)
+            : null,
+        updateDismissed: dismissedVersion == packageInfo.version,
       );
+
+      // Auto-check on initialization if not checked in last 24 hours
+      if (_shouldAutoCheck()) {
+        await checkForUpdates();
+      }
     } catch (e) {
       LoggerService.error('Error initializing version check', error: e);
     }
   }
 
+  bool _shouldAutoCheck() {
+    if (state.lastCheckedAt == null) return true;
+    final hoursSinceCheck = DateTime.now()
+        .difference(state.lastCheckedAt!)
+        .inHours;
+    return hoursSinceCheck >= 24;
+  }
+
   /// Check for updates from remote
-  /// This is called:
-  /// 1. On app start (via VersionCheckInitializer)
-  /// 2. Manually from Settings screen
-  ///
-  /// Uses two-track system:
-  /// - Beta users check version_info_beta
-  /// - Production users check version_info
   Future<void> checkForUpdates() async {
     if (state.isLoading) return;
 
     state = state.copyWith(isLoading: true);
 
     try {
-      // Detect if this is a beta build and update state with current version info
-      final packageInfo = await PackageInfo.fromPlatform();
-      final isBetaUser = _isBetaBuild(packageInfo);
+      final latestVersion = await _service.fetchLatestVersion();
+      final now = DateTime.now();
 
-      // Update state with real build number from package info
-      final currentBuildNumber = int.tryParse(packageInfo.buildNumber) ?? 0;
-      state = state.copyWith(
-        currentVersion: packageInfo.version,
-        currentBuildNumber: currentBuildNumber,
-      );
-
-      // Fetch appropriate version document
-      final latestVersion = await _service.fetchLatestVersion(isBetaUser: isBetaUser);
+      await _prefs.setString(_lastCheckedKey, now.toIso8601String());
 
       state = state.copyWith(
         latestVersion: latestVersion,
         isLoading: false,
         hasChecked: true,
+        lastCheckedAt: now,
       );
 
+      // CodeRabbit fix: Moved logging from getters to here (single execution point)
       if (latestVersion != null) {
-        final isOutdated = latestVersion.isOutdated(state.currentBuildNumber);
+        final isOutdated = latestVersion.isOutdated(state.currentVersion, state.currentBuildNumber);
+        final isReleased = latestVersion.isReleased();
 
-        LoggerService.info(
-          'Version check complete',
+        LoggerService.debug(
+          'Version check details',
           metadata: {
-            'isBetaUser': isBetaUser,
             'currentVersion': state.currentVersion,
             'currentBuildNumber': state.currentBuildNumber,
             'latestVersion': latestVersion.latestVersion,
             'latestBuildNumber': latestVersion.latestBuildNumber,
             'isOutdated': isOutdated,
+            'isReleased': isReleased,
+            'releaseDate': latestVersion.releaseDate?.toIso8601String(),
             'shouldShowDialog': state.shouldShowUpdateDialog,
           },
         );
-      } else {
-        LoggerService.debug('No version info available from Firestore');
       }
-    } catch (e, st) {
-      LoggerService.error('Error checking for updates', error: e, stackTrace: st);
+
+      LoggerService.info(
+        'Version check complete',
+        metadata: {'latestVersion': latestVersion?.latestVersion},
+      );
+    } catch (e) {
+      LoggerService.error('Error checking for updates', error: e);
       state = state.copyWith(isLoading: false, hasChecked: true);
     }
   }
 
-  /// Detect if user is running a beta build
-  ///
-  /// Beta builds have different package name:
-  /// - Production: com.invtracker.inv_tracker
-  /// - Beta: com.invtracker.inv_tracker.beta
-  bool _isBetaBuild(PackageInfo packageInfo) {
-    return packageInfo.packageName.endsWith('.beta');
+  /// Dismiss update notification for current version
+  Future<void> dismissUpdate() async {
+    await _prefs.setString(_dismissedVersionKey, state.currentVersion);
+    state = state.copyWith(updateDismissed: true);
   }
 
-  /// Dismiss update notification for this session only
-  /// Dialog will show again on next app restart
-  void dismissUpdate() {
-    state = state.copyWith(dismissedThisSession: true);
-    LoggerService.debug('Update dismissed for this session');
+  /// Reset dismissed state (for testing or manual check)
+  Future<void> resetDismissed() async {
+    await _prefs.remove(_dismissedVersionKey);
+    state = state.copyWith(updateDismissed: false);
   }
 }

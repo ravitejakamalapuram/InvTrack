@@ -2,12 +2,6 @@
 
 ## [Unreleased]
 
-### ✨ Features
-
-- Implement Two-Track Version System for Beta/Production Separation (#399)
-
-## [3.61.3] - 2026-05-17
-
 ### ⚡ Performance
 
 - Add Gradle and Flutter package caching to CI/CD workflows

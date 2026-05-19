@@ -237,7 +237,7 @@ jobs:
           echo "💡 This is a one-time setup. The package will be reused for all future runs."
           exit 1
 
-      - name: Update Beta Version Info in Firestore (Two-Track System)
+      - name: Set pending release flag in Firestore
         if: success()
         env:
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
@@ -247,7 +247,7 @@ jobs:
           node << 'EOF'
           const admin = require('firebase-admin');
 
-          async function updateBetaVersion() {
+          async function setPendingFlag() {
             try {
               // Initialize Firebase Admin
               const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
@@ -260,76 +260,68 @@ jobs:
               const buildNumber = parseInt(process.env.BUILD_NUMBER);
               const uploadedAt = new Date().toISOString();
 
-              console.log('📝 Updating Beta Version Info in Firestore (Two-Track System)...');
+              console.log('📝 Setting pending release flag in Firestore...');
               console.log('   Version:', version);
               console.log('   Build Number:', buildNumber);
-              console.log('   Document: app_config/version_info_beta');
-              console.log('');
+              console.log('   Uploaded At:', uploadedAt);
 
-              // Update version_info_beta document for beta users
-              // This prevents production users from seeing beta-only updates
-              await db.collection('app_config').doc('version_info_beta').set({
-                latestVersion: version,
-                latestBuildNumber: buildNumber,
-                minimumVersion: version, // For now, minimum = latest
-                minimumBuildNumber: buildNumber,
-                forceUpdate: false,
-                updateMessage: `Beta ${version} - Available for testing`,
-                whatsNew: '• Latest beta features\n• Bug fixes and improvements',
-                downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
-                uploadedAt: uploadedAt,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              }, { merge: true });
+              // First, verify document exists
+              const versionDoc = await db.collection('app_config').doc('version_info').get();
 
-              console.log('✅ Beta version info updated successfully!');
-              console.log('');
-              console.log('📋 Two-Track System:');
-              console.log('   ✓ Beta users (*.beta package) will see this update');
-              console.log('   ✓ Production users will NOT see this update');
-              console.log('   ✓ Production version (app_config/version_info) remains unchanged');
-              console.log('');
-              console.log('📋 Next steps:');
-              console.log('   1. Beta testing in Closed Testing');
-              console.log('   2. Promote to Production when ready');
-              console.log('   3. Update version_info after 100% production rollout');
-              console.log('');
-              console.log('🔗 Play Console: https://play.google.com/console/u/0/developers/7885006060068362419/app/4975815827002913060/tracks/alpha');
+              if (!versionDoc.exists) {
+                console.warn('⚠️  WARNING: Firestore document app_config/version_info does not exist!');
+                console.log('📝 Creating document with pending release info...');
+                console.log('');
+                console.log('ℹ️  Note: After manual promotion, you should run the init workflow to set proper defaults.');
 
-              // Also set pending flag in production document for tracking
-              const prodDoc = await db.collection('app_config').doc('version_info').get();
-
-              if (!prodDoc.exists) {
-                console.warn('⚠️  WARNING: Production document does not exist, creating it...');
+                // Create minimal document with pending info
                 await db.collection('app_config').doc('version_info').set({
+                  pendingRelease: true,
+                  pendingVersion: version,
+                  pendingBuildNumber: buildNumber,
+                  uploadedAt: uploadedAt,
+                  // Temporary defaults - should be updated by init workflow
                   latestVersion: '1.0.0',
                   latestBuildNumber: 1,
                   minimumVersion: '1.0.0',
                   minimumBuildNumber: 1,
                   forceUpdate: false,
+                  // Additional fields to match init workflow schema
                   updateMessage: '',
                   whatsNew: '',
-                  downloadUrl: 'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
-                  pendingRelease: true,
-                  pendingVersion: version,
-                  pendingBuildNumber: buildNumber,
-                  uploadedAt: uploadedAt,
+                  downloadUrl: '',
+                  releaseDate: null,
+                  lastApprovedAt: null,
                   createdAt: uploadedAt,
                   updatedAt: uploadedAt,
                 });
-              } else {
-                await db.collection('app_config').doc('version_info').set({
-                  pendingRelease: true,
-                  pendingVersion: version,
-                  pendingBuildNumber: buildNumber,
-                  uploadedAt: uploadedAt,
-                  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                }, { merge: true });
+
+                console.log('✅ Temporary document created');
+                console.log('🔧 Recommended: Run "Init: Firestore Version Info" workflow to set proper defaults');
+                return;
               }
 
-              console.log('✅ Production document tracking updated');
+              // Set pending release flag (use merge to avoid overwriting other fields)
+              await db.collection('app_config').doc('version_info').set({
+                pendingRelease: true,
+                pendingVersion: version,
+                pendingBuildNumber: buildNumber,
+                uploadedAt: uploadedAt,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(), // Always refresh timestamp
+              }, { merge: true });
+
+              console.log('✅ Pending release flag set successfully!');
+              console.log('');
+              console.log('📋 Next steps:');
+              console.log('   1. Manually promote from alpha → production in Play Console');
+              console.log('   2. Automated checker will detect promotion (runs hourly)');
+              console.log('   3. Firestore will be updated automatically');
+              console.log('   4. Users will see update notification');
+              console.log('');
+              console.log('🔗 Play Console: https://play.google.com/console/u/0/developers/7885006060068362419/app/4975815827002913060/tracks/alpha');
 
             } catch (error) {
-              console.error('❌ Error updating Firestore:', error.message);
+              console.error('❌ Error setting pending flag:', error.message);
               if (error.stack) {
                 console.error(error.stack);
               }
@@ -358,7 +350,7 @@ jobs:
             }
           }
 
-          updateBetaVersion();
+          setPendingFlag();
           EOF
 
       - name: Get changelog for notifications

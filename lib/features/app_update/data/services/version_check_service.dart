@@ -11,33 +11,26 @@ class VersionCheckService {
 
   /// Fetch latest version info from Firestore
   ///
-  /// Two-Track Version System:
-  /// - Production users: app_config/version_info
-  /// - Beta users: app_config/version_info_beta
-  ///
-  /// This prevents production users from seeing update popups for
-  /// beta-only releases that aren't available to them on Play Store.
-  ///
   /// Document structure in Firestore:
   /// Collection: app_config
-  /// Document: version_info (production) OR version_info_beta (beta)
+  /// Document: version_info
   /// Fields:
   ///   - latestVersion: "3.23.0"
   ///   - latestBuildNumber: 55
   ///   - minimumVersion: "3.20.0"
   ///   - minimumBuildNumber: 50
-  ///   - forceUpdate: false (optional, default false)
-  ///   - updateMessage: "New features available!" (optional)
-  ///   - whatsNew: "- Feature 1\n- Feature 2" (optional)
-  ///   - downloadUrl: "https://play.google.com/store/apps/details?id=..." (optional)
-  Future<AppVersionEntity?> fetchLatestVersion({bool isBetaUser = false}) async {
+  ///   - forceUpdate: false
+  ///   - updateMessage: "New features available!"
+  ///   - whatsNew: "- Feature 1\n- Feature 2"
+  ///   - downloadUrl: "https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker"
+  ///   - releaseDate: Timestamp (optional - if null, shows immediately)
+  ///
+  /// BUG FIX: Added better logging to diagnose why popup doesn't show
+  Future<AppVersionEntity?> fetchLatestVersion() async {
     try {
-      // Select document based on user type
-      final docName = isBetaUser ? 'version_info_beta' : 'version_info';
-
       final doc = await _firestore
           .collection('app_config')
-          .doc(docName)
+          .doc('version_info')
           .get()
           .timeout(
             const Duration(seconds: 10),
@@ -48,7 +41,7 @@ class VersionCheckService {
         // BUG FIX: More helpful log message for missing document
         LoggerService.warn(
           'Version info document does not exist in Firestore. '
-          'Create document at: app_config/$docName with required fields. '
+          'Create document at: app_config/version_info with required fields. '
           'See version_check_service.dart for document structure.',
         );
         return null;
@@ -64,10 +57,9 @@ class VersionCheckService {
       LoggerService.debug(
         'Version info fetched from Firestore',
         metadata: {
-          'docName': docName,
-          'isBetaUser': isBetaUser,
           'latestVersion': data['latestVersion'],
           'latestBuildNumber': data['latestBuildNumber'],
+          'releaseDate': data['releaseDate']?.toString(),
         },
       );
 
@@ -111,6 +103,7 @@ class VersionCheckService {
   ///   updateMessage (string): "New features available!"
   ///   whatsNew (string): "- Portfolio Health Score\n- Multi-currency support"
   ///   downloadUrl (string): "https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker"
+  ///   releaseDate (timestamp): null (or set to future date if not yet released)
   /// ```
   Future<void> initializeVersionDocument({
     required String latestVersion,
@@ -121,8 +114,10 @@ class VersionCheckService {
     String? updateMessage,
     String? whatsNew,
     String? downloadUrl,
+    DateTime? releaseDate,
   }) async {
     try {
+      // CodeRabbit fix: Build map without null values to preserve existing fields
       final data = <String, dynamic>{
         'latestVersion': latestVersion,
         'latestBuildNumber': latestBuildNumber,
@@ -135,6 +130,9 @@ class VersionCheckService {
       if (updateMessage != null) data['updateMessage'] = updateMessage;
       if (whatsNew != null) data['whatsNew'] = whatsNew;
       if (downloadUrl != null) data['downloadUrl'] = downloadUrl;
+      if (releaseDate != null) {
+        data['releaseDate'] = Timestamp.fromDate(releaseDate);
+      }
 
       await _firestore
           .collection('app_config')

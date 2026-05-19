@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
@@ -439,6 +440,7 @@ class DebugSettingsScreen extends ConsumerWidget {
     final versionState = ref.watch(versionCheckProvider);
 
     final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
 
     return SettingsSection(
       title: l10n.versionCheckTestingTitle,
@@ -450,7 +452,9 @@ class DebugSettingsScreen extends ConsumerWidget {
           subtitle: versionState.isLoading
               ? l10n.checkingForUpdates
               : versionState.hasChecked
-                  ? l10n.versionChecked
+                  ? l10n.lastChecked(versionState.lastCheckedAt != null
+                      ? DateFormat.yMd(locale).add_jm().format(versionState.lastCheckedAt!)
+                      : l10n.never)
                   : l10n.tapToCheckForUpdates,
           trailing: versionState.isLoading
               ? const SizedBox(
@@ -542,6 +546,7 @@ class DebugSettingsScreen extends ConsumerWidget {
           whatsNew: '- Bug fixes\n- Performance improvements\n- New features',
           downloadUrl:
               'https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker',
+          releaseDate: null, // Show immediately
         );
 
         if (context.mounted) {
