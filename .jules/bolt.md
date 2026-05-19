@@ -76,12 +76,14 @@
 ## 2026-05-02 - Single Pass Multiple Metric Extraction in WeeklySummaryService
 **Learning:** Chaining multiple `.where().fold()` operations to compute multiple metrics across a collection results in excessive iteration and closure allocation overhead, operating essentially at O(K*N) complexity.
 **Action:** Replace multiple chained operations with a single, standard `for` loop to process all items in a single O(N) pass, accumulating required metrics concurrently to optimize processing speed.
+
 ## 2026-05-06 - Optimize O(N*M) nested iterations in Dart
 **Learning:** The `.firstWhere()` lookup inside loops is an anti-pattern when finding matches between two arrays, resulting in O(N*M) time complexity. Using unhandled `.firstWhere()` (without `orElse`) can also lead to `StateError` exceptions that crash processing when matching records are missing. Pre-grouping data in a `Map` or `HashMap` before nested iterations eliminates O(N*M) bottlenecks. Grouping data in Dart is simple with operations like `putIfAbsent()` and dictionary comprehensions (e.g. `{for (final item in items) item.id: item}`).
 **Action:** Use a pre-computed dictionary comprehension (e.g. `final map = {for (final item in items) item.id: item};`) before the loop. This converts performance from O(N*M) to O(N+M) while enabling safe null-checks (`if (item == null) continue;`) to avoid crashes on missing data. Always replace `.where(...).toList()` operations inside a loop with a single `Map` lookup by pre-computing mappings outside the loop.
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
+
 ## 2024-05-18 - Avoid O(N) functional list chain calculations
 **Learning:** Chaining `.map().toList()`, `.reduce()`, and `.where().length` loops redundantly causes severe iteration and garbage collector pressure overhead. Relying on pre-existing locally scoped sorted lists makes extremum and median lookups O(1).
 **Action:** Always combine totals into a single `for` loop pass over collections and recycle pre-sorted arrays already in local memory to derive statistically useful metrics.
