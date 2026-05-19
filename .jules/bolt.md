@@ -82,3 +82,6 @@
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
+## 2024-05-18 - Avoid O(N) functional list chain calculations
+**Learning:** Chaining `.map().toList()`, `.reduce()`, and `.where().length` loops redundantly causes severe iteration and garbage collector pressure overhead. Relying on pre-existing locally scoped sorted lists makes extremum and median lookups O(1).
+**Action:** Always combine totals into a single `for` loop pass over collections and recycle pre-sorted arrays already in local memory to derive statistically useful metrics.
