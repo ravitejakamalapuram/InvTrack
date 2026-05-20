@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Add cache invalidation to CI/CD workflows
+
+## [3.62.0] - 2026-05-19
+
 ### ✨ Features
 
 - Implement Two-Track Version System for Beta/Production Separation (#399)
