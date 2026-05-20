@@ -80,7 +80,21 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Get dependencies
-        run: flutter pub get
+        id: get_deps
+        run: |
+          flutter clean
+          flutter pub get
+
+      # If flutter pub get fails, clear corrupted pub cache and retry
+      - name: Clear corrupted pub cache and retry
+        if: failure() && steps.get_deps.outcome == 'failure'
+        run: |
+          echo "⚠️ Detected pub cache corruption. Clearing and retrying..."
+          rm -rf ~/.pub-cache/hosted/pub.dev/win32*
+          rm -rf ~/.pub-cache/hosted/pub.dev/intl*
+          rm -rf ~/.pub-cache/hosted/pub.dev/ffi_leak_tracker*
+          flutter clean
+          flutter pub get
 
       - name: Copy signing files from persistent location
         run: |

@@ -47,8 +47,21 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Flutter Setup
+        id: flutter_setup
         run: |
           flutter --version
+          flutter clean
+          flutter pub get
+          flutter gen-l10n
+
+      # If flutter pub get fails, clear corrupted pub cache and retry
+      - name: Clear corrupted pub cache and retry
+        if: failure() && steps.flutter_setup.outcome == 'failure'
+        run: |
+          echo "⚠️ Detected pub cache corruption. Clearing and retrying..."
+          rm -rf ~/.pub-cache/hosted/pub.dev/win32*
+          rm -rf ~/.pub-cache/hosted/pub.dev/intl*
+          rm -rf ~/.pub-cache/hosted/pub.dev/ffi_leak_tracker*
           flutter clean
           flutter pub get
           flutter gen-l10n

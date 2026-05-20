@@ -31,11 +31,25 @@ jobs:
           clean: true
 
       - name: Flutter Setup
+        id: flutter_setup
         run: |
           flutter --version
           flutter clean
-          # Clear pub cache to prevent Riverpod v4/v3 mismatch from previous runs
+          # Clear pub cache to prevent Riverpod v4/v3 mismatch and other corrupted packages
           rm -rf ~/.pub-cache/hosted/pub.dev/riverpod* || true
+          rm -rf ~/.pub-cache/hosted/pub.dev/win32* || true
+          rm -rf ~/.pub-cache/hosted/pub.dev/intl* || true
+          rm -rf ~/.pub-cache/hosted/pub.dev/ffi_leak_tracker* || true
+          flutter pub get
+          flutter gen-l10n
+
+      # If flutter pub get fails, clear entire pub cache and retry
+      - name: Clear corrupted pub cache and retry
+        if: failure() && steps.flutter_setup.outcome == 'failure'
+        run: |
+          echo "⚠️ Detected pub cache corruption. Clearing entire cache and retrying..."
+          rm -rf ~/.pub-cache
+          flutter clean
           flutter pub get
           flutter gen-l10n
 
