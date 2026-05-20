@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Make cache operations non-blocking in CD Deploy workflow
+
+## [3.62.3] - 2026-05-20
+
 ### 🧪 Testing
 
 - Trigger CI workflow verification
