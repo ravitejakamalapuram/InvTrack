@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🧪 Testing
+
+- Verify CI/CD cache invalidation fixes
+
+## [3.62.1] - 2026-05-20
+
 ### 🐛 Bug Fixes
 
 - Add cache invalidation to CI/CD workflows
