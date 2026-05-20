@@ -56,9 +56,11 @@ jobs:
           echo "Java: $(java -version 2>&1 | head -1)"
           echo "Dart: $(dart --version)"
 
-      # Cache Flutter packages
+      # Cache Flutter packages (non-blocking - continues on Azure auth failures)
       - name: Cache Flutter packages
+        id: cache-pub
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.pub-cache
@@ -67,9 +69,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # Cache Gradle dependencies
+      # Cache Gradle dependencies (non-blocking - continues on Azure auth failures)
       - name: Cache Gradle
+        id: cache-gradle
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.gradle/caches
