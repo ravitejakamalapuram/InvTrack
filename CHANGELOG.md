@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Prevent CD deploy cancellation loop [skip-release]
+
+## [3.62.4] - 2026-05-20
+
+### 🐛 Bug Fixes
+
 - Make cache operations non-blocking in CD Deploy workflow
 
 ## [3.62.3] - 2026-05-20
