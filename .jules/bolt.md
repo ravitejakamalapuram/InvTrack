@@ -82,3 +82,6 @@
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
+## 2024-06-25 - Avoid nested iterable lookups in loop optimizations
+**Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
+**Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.

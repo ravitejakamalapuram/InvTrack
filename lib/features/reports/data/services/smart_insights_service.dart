@@ -25,28 +25,44 @@ class SmartInsightsService {
     final now = DateTime.now();
 
     // 1. Weekly Summary
-    final weeklyInsight = _generateWeeklySummary(cashFlows, now, currencySymbol, locale, l10n);
+    final weeklyInsight = _generateWeeklySummary(
+      cashFlows,
+      now,
+      currencySymbol,
+      locale,
+      l10n,
+    );
     if (weeklyInsight != null) insights.add(weeklyInsight);
 
     // 2. Monthly Summary
-    final monthlyInsight = _generateMonthlySummary(cashFlows, now, currencySymbol, locale, l10n);
+    final monthlyInsight = _generateMonthlySummary(
+      cashFlows,
+      now,
+      currencySymbol,
+      locale,
+      l10n,
+    );
     if (monthlyInsight != null) insights.add(monthlyInsight);
-    
+
     // 3. Upcoming Maturities
     final maturityInsights = _generateMaturityAlerts(investments, now);
     insights.addAll(maturityInsights);
-    
+
     // 4. Declining Investments
-    final decliningInsights = _generateDecliningAlerts(investments, cashFlows, l10n);
+    final decliningInsights = _generateDecliningAlerts(
+      investments,
+      cashFlows,
+      l10n,
+    );
     insights.addAll(decliningInsights);
-    
+
     // 5. Goal Progress
     final goalInsights = _generateGoalProgressInsights(goals);
     insights.addAll(goalInsights);
-    
+
     return insights;
   }
-  
+
   /// Generate weekly summary insight
   SmartInsight? _generateWeeklySummary(
     List<CashFlowEntity> cashFlows,
@@ -58,10 +74,13 @@ class SmartInsightsService {
     final weekStart = _getWeekStart(now);
     final weekEnd = _getWeekEnd(now);
 
-    final weekCashFlows = cashFlows.where((cf) =>
-      cf.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-      cf.date.isBefore(weekEnd.add(const Duration(days: 1)))
-    ).toList();
+    final weekCashFlows = cashFlows
+        .where(
+          (cf) =>
+              cf.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
+              cf.date.isBefore(weekEnd.add(const Duration(days: 1))),
+        )
+        .toList();
 
     if (weekCashFlows.isEmpty) return null;
 
@@ -90,7 +109,7 @@ class SmartInsightsService {
       generatedAt: now,
     );
   }
-  
+
   /// Generate monthly summary insight
   SmartInsight? _generateMonthlySummary(
     List<CashFlowEntity> cashFlows,
@@ -102,10 +121,13 @@ class SmartInsightsService {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
-    final monthCashFlows = cashFlows.where((cf) =>
-      cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-      cf.date.isBefore(monthEnd.add(const Duration(days: 1)))
-    ).toList();
+    final monthCashFlows = cashFlows
+        .where(
+          (cf) =>
+              cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+              cf.date.isBefore(monthEnd.add(const Duration(days: 1))),
+        )
+        .toList();
 
     if (monthCashFlows.isEmpty) return null;
 
@@ -116,7 +138,11 @@ class SmartInsightsService {
     if (income == 0) return null;
 
     // Format income using locale-aware currency formatting
-    final incomeStr = formatCompactCurrency(income, symbol: currencySymbol, locale: locale);
+    final incomeStr = formatCompactCurrency(
+      income,
+      symbol: currencySymbol,
+      locale: locale,
+    );
 
     return SmartInsight(
       type: InsightType.monthlySummary,
@@ -131,7 +157,10 @@ class SmartInsightsService {
   }
 
   /// Generate maturity alerts
-  List<SmartInsight> _generateMaturityAlerts(List<InvestmentEntity> investments, DateTime now) {
+  List<SmartInsight> _generateMaturityAlerts(
+    List<InvestmentEntity> investments,
+    DateTime now,
+  ) {
     final insights = <SmartInsight>[];
     final next30Days = now.add(const Duration(days: 30));
 
@@ -147,19 +176,21 @@ class SmartInsightsService {
     final count = maturingSoon.length;
     final days = maturingSoon.first.maturityDate!.difference(now).inDays;
 
-    insights.add(SmartInsight(
-      type: InsightType.upcomingMaturity,
-      priority: days <= 7 ? InsightPriority.urgent : InsightPriority.warning,
-      title: 'Upcoming Maturity',
-      subtitle: '$count investment${count > 1 ? 's' : ''} maturing',
-      value: 'in $days days',
-      icon: 'schedule',
-      generatedAt: now,
-    ));
+    insights.add(
+      SmartInsight(
+        type: InsightType.upcomingMaturity,
+        priority: days <= 7 ? InsightPriority.urgent : InsightPriority.warning,
+        title: 'Upcoming Maturity',
+        subtitle: '$count investment${count > 1 ? 's' : ''} maturing',
+        value: 'in $days days',
+        icon: 'schedule',
+        generatedAt: now,
+      ),
+    );
 
     return insights;
   }
-  
+
   /// Generate declining investment alerts
   /// Detects investments with significant value decline over the past month
   List<SmartInsight> _generateDecliningAlerts(
@@ -168,44 +199,52 @@ class SmartInsightsService {
     AppLocalizations l10n,
   ) {
     final insights = <SmartInsight>[];
+    if (investments.isEmpty || cashFlows.isEmpty) return insights;
+
     final now = DateTime.now();
     final monthAgo = now.subtract(const Duration(days: 30));
 
+    // Optimization: Group cashflows by investmentId in a single pass (O(N))
+    final Map<String, List<CashFlowEntity>> cashFlowsByInvestment = {};
+    for (final cf in cashFlows) {
+      (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
+    }
+
     for (final investment in investments) {
-      // Get all cash flows for this investment
-      final investmentCashFlows = cashFlows
-          .where((cf) => cf.investmentId == investment.id)
-          .toList();
+      // O(1) map lookup instead of O(N) .where() scan
+      final investmentCashFlows = cashFlowsByInvestment[investment.id];
+      if (investmentCashFlows == null || investmentCashFlows.isEmpty) continue;
 
-      if (investmentCashFlows.isEmpty) continue;
+      // Optimization: Single pass loop replacing multiple sequential .where() and .fold() calls
+      double totalInvested = 0;
+      double totalReturned = 0;
+      double oldInvested = 0;
+      double oldReturned = 0;
 
-      // Calculate current value (net cash flow)
-      final totalInvested = investmentCashFlows
-          .where((cf) => cf.type == CashFlowType.invest || cf.type == CashFlowType.fee)
-          .fold<double>(0, (sum, cf) => sum + cf.amount);
+      for (final cf in investmentCashFlows) {
+        final isInvestOrFee =
+            cf.type == CashFlowType.invest || cf.type == CashFlowType.fee;
+        final isReturnOrIncome =
+            cf.type == CashFlowType.returnFlow ||
+            cf.type == CashFlowType.income;
 
-      final totalReturned = investmentCashFlows
-          .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
-          .fold<double>(0, (sum, cf) => sum + cf.amount);
+        if (isInvestOrFee) {
+          totalInvested += cf.amount;
+          if (cf.date.isBefore(monthAgo)) {
+            oldInvested += cf.amount;
+          }
+        } else if (isReturnOrIncome) {
+          totalReturned += cf.amount;
+          if (cf.date.isBefore(monthAgo)) {
+            oldReturned += cf.amount;
+          }
+        }
+      }
+
+      if (totalInvested == 0 || oldInvested == 0) continue;
 
       final currentValue = totalReturned - totalInvested;
-      if (totalInvested == 0) continue;
-
-      // Calculate value a month ago
-      final oldCashFlows = investmentCashFlows
-          .where((cf) => cf.date.isBefore(monthAgo))
-          .toList();
-
-      final oldInvested = oldCashFlows
-          .where((cf) => cf.type == CashFlowType.invest || cf.type == CashFlowType.fee)
-          .fold<double>(0, (sum, cf) => sum + cf.amount);
-
-      final oldReturned = oldCashFlows
-          .where((cf) => cf.type == CashFlowType.returnFlow || cf.type == CashFlowType.income)
-          .fold<double>(0, (sum, cf) => sum + cf.amount);
-
       final oldValue = oldReturned - oldInvested;
-      if (oldInvested == 0) continue;
 
       // Calculate decline as change in return percentage
       final oldReturnPct = (oldValue / oldInvested) * 100;
@@ -214,15 +253,19 @@ class SmartInsightsService {
 
       // Alert if decline > 10% (significant drop in returns)
       if (decline < -10) {
-        insights.add(SmartInsight(
-          type: InsightType.decliningInvestment,
-          priority: decline < -20 ? InsightPriority.urgent : InsightPriority.warning,
-          title: investment.name,
-          subtitle: l10n.decliningInValue,
-          value: '${decline.toStringAsFixed(1)}%',
-          icon: 'trending_down',
-          generatedAt: now,
-        ));
+        insights.add(
+          SmartInsight(
+            type: InsightType.decliningInvestment,
+            priority: decline < -20
+                ? InsightPriority.urgent
+                : InsightPriority.warning,
+            title: investment.name,
+            subtitle: l10n.decliningInValue,
+            value: '${decline.toStringAsFixed(1)}%',
+            icon: 'trending_down',
+            generatedAt: now,
+          ),
+        );
       }
     }
 
@@ -235,7 +278,7 @@ class SmartInsightsService {
 
     return insights.take(3).toList();
   }
-  
+
   /// Generate goal progress insights
   /// Highlights goals nearing completion or significant milestones
   ///
@@ -253,7 +296,7 @@ class SmartInsightsService {
     // For now, return empty list to avoid compilation errors
     return [];
   }
-  
+
   // Helper methods
   static DateTime _getWeekStart(DateTime date) {
     final weekday = date.weekday;
@@ -261,7 +304,7 @@ class SmartInsightsService {
     final monday = date.subtract(Duration(days: daysToSubtract));
     return DateTime(monday.year, monday.month, monday.day);
   }
-  
+
   static DateTime _getWeekEnd(DateTime date) {
     final weekday = date.weekday;
     final daysToAdd = 7 - weekday;
