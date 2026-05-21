@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### ✨ Features
+
+- Add Jules AI automated crash fix integration
+
+### 🐛 Bug Fixes
+
+- Update Jules automation to run every 2 hours and fix Crashlytics API
+
+## [3.62.6] - 2026-05-21
+
+### 🐛 Bug Fixes
+
+- Address 14 Crashlytics issues (235 events affecting 76+ users)
+
 ## [3.62.5] - 2026-05-21
 
 ### 🐛 Bug Fixes
