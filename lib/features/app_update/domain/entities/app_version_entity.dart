@@ -34,11 +34,13 @@ class AppVersionEntity {
   }
 
   factory AppVersionEntity.fromMap(Map<String, dynamic> map) {
+    // BUG FIX: Add null safety to prevent type cast errors
+    // Fixes Crashlytics issue #bb7c3c13ee4b93cf38267bcd7d60ffb7 (16 events)
     return AppVersionEntity(
-      latestVersion: map['latestVersion'] as String,
-      latestBuildNumber: (map['latestBuildNumber'] as num).toInt(),
-      minimumVersion: map['minimumVersion'] as String,
-      minimumBuildNumber: (map['minimumBuildNumber'] as num).toInt(),
+      latestVersion: map['latestVersion'] as String? ?? '1.0.0',
+      latestBuildNumber: (map['latestBuildNumber'] as num?)?.toInt() ?? 1,
+      minimumVersion: map['minimumVersion'] as String? ?? '1.0.0',
+      minimumBuildNumber: (map['minimumBuildNumber'] as num?)?.toInt() ?? 1,
       forceUpdate: map['forceUpdate'] as bool? ?? false,
       updateMessage: map['updateMessage'] as String?,
       whatsNew: map['whatsNew'] as String?,

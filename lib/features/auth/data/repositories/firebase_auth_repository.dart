@@ -90,7 +90,7 @@ class FirebaseAuthRepository implements AuthRepository {
       // These are environmental issues, not user errors
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
-        LoggerService.error(
+        LoggerService.warn(
           'GoogleSignInException: Configuration error (non-fatal)',
           error: e,
           metadata: {
@@ -100,13 +100,13 @@ class FirebaseAuthRepository implements AuthRepository {
           },
         );
 
-        // Return DataException instead of crashing
-        // User sees friendly message, developers see Crashlytics report
+        // BUG FIX: Don't report config errors to Crashlytics (environmental issue, not app bug)
+        // Fixes Crashlytics issue #9dfdf1143e4d5e88cbfe9a9d91440e44 (104 events)
         throw DataException(
           userMessage: _mapGoogleSignInException(e),
           technicalMessage: 'GoogleSignInException: ${e.code.name}',
           cause: e,
-          shouldReport: true, // Report to Crashlytics for investigation
+          shouldReport: false, // Environmental config issue, not app bug
         );
       }
 
@@ -286,13 +286,8 @@ class FirebaseAuthRepository implements AuthRepository {
           ? _mapFirebaseUserToEntity(userCredential.user!)
           : null;
     } on FirebaseAuthException catch (e, stackTrace) {
-      LoggerService.error(
-        'Anonymous Sign-In failed',
-        error: e,
-        stackTrace: stackTrace,
-      );
-
       // Handle admin-restricted-operation error
+      // BUG FIX: Don't log here - let ErrorHandler log the AuthException to avoid double-reporting
       if (e.code == 'admin-restricted-operation') {
         throw AuthException(
           userMessage:
@@ -308,6 +303,14 @@ class FirebaseAuthRepository implements AuthRepository {
       // Determine if error should be reported based on error code
       // Transient errors (network, rate limiting) should not spam Crashlytics
       final shouldReport = !_isTransientAuthError(e.code);
+
+      // Log before throwing to help with debugging
+      LoggerService.warn(
+        'Anonymous Sign-In failed',
+        error: e,
+        stackTrace: stackTrace,
+        metadata: {'shouldReport': shouldReport, 'code': e.code},
+      );
 
       throw AuthException.signInFailed(
         cause: e,
@@ -438,7 +441,7 @@ class FirebaseAuthRepository implements AuthRepository {
       // These are environmental issues, not user errors
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
-        LoggerService.error(
+        LoggerService.warn(
           'GoogleSignInException: Configuration error during linking (non-fatal)',
           error: e,
           stackTrace: stackTrace,
@@ -448,13 +451,14 @@ class FirebaseAuthRepository implements AuthRepository {
           },
         );
 
-        // Throw AuthException instead of crashing
+        // BUG FIX: Don't report config errors to Crashlytics (environmental issue, not app bug)
+        // Fixes Crashlytics issue #9dfdf1143e4d5e88cbfe9a9d91440e44 (104 events)
         throw AuthException(
           userMessage: _mapGoogleSignInException(e),
           technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
           cause: e,
           stackTrace: stackTrace,
-          shouldReport: true, // Report to Crashlytics for investigation
+          shouldReport: false, // Environmental config issue, not app bug
         );
       }
 

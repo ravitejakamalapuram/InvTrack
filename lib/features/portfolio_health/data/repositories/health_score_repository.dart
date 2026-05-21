@@ -65,7 +65,11 @@ class HealthScoreRepository {
           : _collection.doc(snapshot.id).set(snapshot.toFirestore());
 
       // 5-second timeout for offline-first behavior
-      await saveOperation.timeout(const Duration(seconds: 5));
+      // BUG FIX: Explicit onTimeout callback to fix Crashlytics issue #b83d7a2e28fc6f77de5de22b3d9aa4d1
+      await saveOperation.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('Health score save timed out'),
+      );
     } on TimeoutException catch (e, stackTrace) {
       // Timeout is expected offline - snapshot cached locally
       _crashlytics.recordError(
