@@ -45,17 +45,17 @@ class GoalCard extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: progressAsync.when(
-        data: (progress) => GestureDetector(
-          onLongPress: onLongPress != null
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  onLongPress!();
-                }
-              : null,
-          child: GlassCard(
+        data: (progress) => GlassCard(
+            semanticLabel: isSelectionMode ? 'Select ${goal.name}' : 'View details for ${goal.name}',
             onTap: isSelectionMode
                 ? () => onCheckboxChanged?.call(!isSelected)
                 : onTap,
+            onLongPress: onLongPress != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  }
+                : null,
             padding: EdgeInsets.zero,
             child: Column(
               children: [
@@ -109,18 +109,17 @@ class GoalCard extends ConsumerWidget {
               ],
             ),
           ),
-        ),
-        loading: () => GestureDetector(
-          onLongPress: onLongPress != null
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  onLongPress!();
-                }
-              : null,
-          child: GlassCard(
+        loading: () => GlassCard(
+            semanticLabel: isSelectionMode ? 'Select ${goal.name}' : 'View details for ${goal.name}',
             onTap: isSelectionMode
                 ? () => onCheckboxChanged?.call(!isSelected)
                 : onTap,
+            onLongPress: onLongPress != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  }
+                : null,
             padding: EdgeInsets.zero,
             child: SizedBox(
               height: 120,
@@ -132,18 +131,17 @@ class GoalCard extends ConsumerWidget {
               ),
             ),
           ),
-        ),
-        error: (error, _) => GestureDetector(
-          onLongPress: onLongPress != null
-              ? () {
-                  HapticFeedback.mediumImpact();
-                  onLongPress!();
-                }
-              : null,
-          child: GlassCard(
+        error: (error, _) => GlassCard(
+            semanticLabel: isSelectionMode ? 'Select ${goal.name}' : 'View details for ${goal.name}',
             onTap: isSelectionMode
                 ? () => onCheckboxChanged?.call(!isSelected)
                 : onTap,
+            onLongPress: onLongPress != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  }
+                : null,
             padding: EdgeInsets.zero,
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.md),
@@ -190,7 +188,6 @@ class GoalCard extends ConsumerWidget {
               ),
             ),
           ),
-        ),
       ),
     );
   }
