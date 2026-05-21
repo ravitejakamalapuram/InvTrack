@@ -1,0 +1,125 @@
+name: Jules AI Crash Fix Automation
+
+# Automatically fetch crashes from Firebase Crashlytics and create Jules AI sessions to fix them
+# Jules will analyze crashes, implement fixes, and create PRs automatically
+
+on:
+  # Run daily at 9 AM UTC to check for new crashes
+  schedule:
+    - cron: '0 9 * * *'
+  
+  # Manual trigger with customizable parameters
+  workflow_dispatch:
+    inputs:
+      crash_limit:
+        description: 'Number of top crashes to analyze (1-10)'
+        required: false
+        default: '5'
+        type: choice
+        options:
+          - '1'
+          - '3'
+          - '5'
+          - '10'
+      min_affected_users:
+        description: 'Minimum affected users to process crash'
+        required: false
+        default: '5'
+        type: number
+      report_type:
+        description: 'Crashlytics report type'
+        required: false
+        default: 'topIssues'
+        type: choice
+        options:
+          - 'topIssues'
+          - 'topVersions'
+
+env:
+  FIREBASE_PROJECT_ID: invtracker-b19d1
+  # Jules source name should be in format: sources/github-owner-repo
+  # Get this by running: curl -H "x-goog-api-key: $JULES_API_KEY" https://jules.googleapis.com/v1alpha/sources
+
+jobs:
+  fetch-and-fix-crashes:
+    name: Fetch Crashes and Create Jules Sessions
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      issues: write  # To create tracking issues
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js for Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Firebase CLI
+        run: |
+          npm install -g firebase-tools@latest
+          firebase --version
+      
+      - name: Authenticate Firebase CLI
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          # Use Firebase CI token for authentication
+          # Generate token via: firebase login:ci
+          echo "Authenticating with Firebase..."
+          firebase projects:list --token "$FIREBASE_TOKEN"
+      
+      - name: Fetch Crashlytics Top Issues
+        id: fetch_crashes
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          CRASH_LIMIT: ${{ github.event.inputs.crash_limit || '5' }}
+          MIN_USERS: ${{ github.event.inputs.min_affected_users || '5' }}
+          REPORT_TYPE: ${{ github.event.inputs.report_type || 'topIssues' }}
+        run: |
+          # Fetch crashes using Firebase CLI
+          bash .github/scripts/fetch-crashlytics-data.sh
+      
+      - name: Create Jules Sessions for Crashes
+        id: create_sessions
+        if: steps.fetch_crashes.outputs.crash_count > 0
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_SOURCE_NAME: ${{ secrets.JULES_SOURCE_NAME }}
+          CRASHES_FILE: crashlytics_data.json
+        run: |
+          # Create Jules AI sessions for each crash
+          bash .github/scripts/create-jules-sessions.sh
+      
+      - name: Monitor Jules Sessions
+        id: monitor_sessions
+        if: steps.create_sessions.outputs.session_count > 0
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          MAX_WAIT_MINUTES: 30
+        run: |
+          # Poll Jules sessions until completion or timeout
+          bash .github/scripts/monitor-jules-sessions.sh
+      
+      - name: Create Summary Issue
+        if: always() && steps.create_sessions.outputs.session_count > 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Create GitHub issue with summary of Jules sessions
+          bash .github/scripts/create-summary-issue.sh
+      
+      - name: Upload Session Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jules-crash-fix-logs
+          path: |
+            crashlytics_data.json
+            jules_sessions.json
+            session_summary.md
+          retention-days: 30
