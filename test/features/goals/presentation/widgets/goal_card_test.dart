@@ -7,6 +7,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_card.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -56,6 +57,8 @@ void main() {
             ).overrideWith((ref) => Future.value(testProgress)),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: GoalCard(goal: testGoal, onTap: () {}),
             ),
@@ -87,6 +90,8 @@ void main() {
             ).overrideWith((ref) => Future.value(testProgress)),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: GoalCard(goal: testGoal, onTap: () {}),
             ),
@@ -118,6 +123,8 @@ void main() {
               ).overrideWith((ref) => Future.value(testProgress)),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: GoalCard(goal: testGoal, onTap: () {}),
               ),
@@ -152,6 +159,8 @@ void main() {
             ).overrideWith((ref) => Future.value(testProgress)),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: GoalCard(goal: testGoal, onTap: () {}),
             ),
@@ -199,6 +208,8 @@ void main() {
             ).overrideWith((ref) => Future.value(incomeProgress)),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: GoalCard(goal: incomeGoal, onTap: () {}),
             ),
