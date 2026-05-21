@@ -81,12 +81,12 @@ class VersionCheckService {
       if (appException.shouldReport) {
         LoggerService.error(
           'Error fetching version info',
-          error: e,
+          error: appException, // BUG FIX: Pass AppException instead of raw exception
           stackTrace: st,
         );
       } else {
         // Just log as warning for transient errors (no Crashlytics spam)
-        LoggerService.warn('Version check failed (transient)', error: e);
+        LoggerService.warn('Version check failed (transient)', error: appException);
       }
 
       return null;
