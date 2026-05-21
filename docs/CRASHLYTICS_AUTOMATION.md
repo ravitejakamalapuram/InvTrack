@@ -1,35 +1,45 @@
 # Crashlytics Monitoring
 
-**Manual crash monitoring via Firebase Console or Firebase MCP Tools**
+**Automated AI-powered crash fixing with Jules AI + Manual monitoring via Firebase Console**
 
 ---
 
 ## Overview
 
-InvTrack uses Firebase Crashlytics for crash reporting and monitoring. As of 2026-05-17, the automated GitHub Actions workflow has been removed in favor of manual monitoring.
+InvTrack uses Firebase Crashlytics for crash reporting and monitoring with two approaches:
 
-### Manual Monitoring Options:
+### 🤖 Automated Crash Fixing (Recommended)
 
-1. **Firebase Console** (Recommended)
+**New:** Jules AI integration automatically detects, analyzes, and fixes crashes!
+
+✅ **How it works:**
+1. Daily GitHub Actions workflow fetches top crashes from Crashlytics
+2. Jules AI (Google's coding agent) analyzes each crash
+3. Generates comprehensive fixes with tests
+4. Creates pull requests automatically
+5. You review and merge the PRs
+
+📖 **Full Guide:** See [JULES_CRASH_FIX_AUTOMATION.md](./JULES_CRASH_FIX_AUTOMATION.md)
+
+**Benefits:**
+- Proactive fixing without manual intervention
+- AI-generated fixes following InvTrack standards
+- Comprehensive test coverage
+- Faster time from crash detection to deployment
+
+### 📊 Manual Monitoring Options
+
+For monitoring crashes directly:
+
+1. **Firebase Console** (Real-time monitoring)
    - Visit [Firebase Crashlytics Console](https://console.firebase.google.com/project/invtracker-b19d1/crashlytics)
    - View real-time crash reports, stack traces, and affected users
    - Set up email alerts for critical crashes
 
-2. **Firebase MCP Tools** (For automated scripts)
+2. **Firebase MCP Tools** (AI-assisted debugging)
    - Use Firebase CLI with MCP (Model Context Protocol)
-   - Query crash data programmatically
+   - Query crash data conversationally with AI
    - See `docs/FIREBASE_CRASHLYTICS_MCP_SETUP.md` for details
-
----
-
-## Why Manual Monitoring?
-
-The automated GitHub Actions workflow (`crashlytics-monitor.yml`) was removed because:
-- ❌ Firebase Crashlytics REST API requires OAuth2 authentication (complex setup)
-- ❌ Firebase MCP tools require manual Firebase CLI authentication
-- ✅ Firebase Console provides better real-time crash insights
-- ✅ Email alerts from Firebase Console are more reliable
-- ✅ Reduces CI/CD complexity and maintenance overhead
 
 ## Monitoring Crashes
 
@@ -96,6 +106,7 @@ When crashes are detected:
 | File | Purpose |
 |------|---------|
 | `docs/CRASHLYTICS_AUTOMATION.md` | This documentation |
+| `docs/JULES_CRASH_FIX_AUTOMATION.md` | **NEW:** Jules AI automated crash fixing |
 | `docs/FIREBASE_CRASHLYTICS_MCP_SETUP.md` | Firebase MCP tools setup |
 | `docs/CRASHLYTICS_MCP_QUICKSTART.md` | Quick start guide for MCP tools |
 
@@ -160,6 +171,20 @@ Set up alerts to notify you when:
 
 ---
 
-**Last Updated**: 2026-05-17
+## 🚀 Quick Start with Jules AI
+
+Want automated crash fixing? Follow these steps:
+
+1. **Read the full guide:** [JULES_CRASH_FIX_AUTOMATION.md](./JULES_CRASH_FIX_AUTOMATION.md)
+2. **Generate Jules API key:** https://jules.google.com/settings
+3. **Connect your repository:** https://jules.google.com
+4. **Configure GitHub secrets** (see guide for details)
+5. **Trigger the workflow:** Actions tab → Jules AI Crash Fix Automation
+
+That's it! Jules will automatically create PRs to fix crashes.
+
+---
+
+**Last Updated**: 2026-05-21
 **Maintainer**: InvTrack DevOps
 

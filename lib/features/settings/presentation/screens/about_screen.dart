@@ -140,6 +140,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         final versionInfo = state.latestVersion;
         if (versionInfo != null && mounted) {
           showDialog(
+            // ignore: use_build_context_synchronously
             context: context,
             barrierDismissible: !state.requiresForceUpdate, // Fix 6: Prevent dismissing force updates
             builder: (_) => UpdateDialog(
@@ -154,6 +155,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           ErrorHandler.handle(
             Exception('Failed to fetch version information'),
             StackTrace.current,
+            // ignore: use_build_context_synchronously
             context: context,
             showFeedback: true,
           );
@@ -161,6 +163,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       } else {
         // No update available - version check succeeded
         if (mounted) {
+          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.appIsUpToDate),
@@ -174,6 +177,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       if (!mounted) return;
 
       // Fix 5: ErrorHandler already shows feedback, don't duplicate with SnackBar
+      // ignore: use_build_context_synchronously
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
     }
   }

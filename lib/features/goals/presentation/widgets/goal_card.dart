@@ -37,6 +37,7 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    // ignore: unnecessary_non_null_assertion
     final l10n = AppLocalizations.of(context)!;
     // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
     final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));

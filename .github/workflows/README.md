@@ -100,6 +100,39 @@ Simple, focused workflows with CodeRabbit handling detailed code reviews.
 
 ---
 
+### 6. **Jules AI Crash Fix Automation** (`jules-crash-fix.yml`) 🆕
+**Trigger:** Daily at 9 AM UTC or manual
+
+**What it does:**
+- 🔍 Fetches top crashes from Firebase Crashlytics
+- 🤖 Creates Jules AI sessions to analyze crashes
+- 🛠️ Jules generates fixes with comprehensive tests
+- 📝 Automatically creates pull requests
+- 📊 Posts summary GitHub issue
+
+**How it works:**
+1. Fetches crashes using Firebase CLI MCP
+2. Filters by impact (min affected users)
+3. Creates Jules session for each crash
+4. Jules analyzes root cause and generates fix
+5. Creates PR with fix + tests (AUTO_CREATE_PR mode)
+6. Monitors sessions and reports results
+
+**Parameters (manual trigger):**
+- `crash_limit`: Number of crashes to analyze (1-10)
+- `min_affected_users`: Minimum users affected (default: 5)
+- `report_type`: `topIssues` or `topVersions`
+
+**Required Secrets:**
+- `JULES_API_KEY` - Jules AI API key
+- `JULES_SOURCE_NAME` - Jules source name (e.g., `sources/github-owner-invtrack`)
+- `FIREBASE_TOKEN` - Firebase CI token
+- `FIREBASE_APP_ID` - Firebase app ID
+
+**Setup Guide:** See [JULES_CRASH_FIX_AUTOMATION.md](../../docs/JULES_CRASH_FIX_AUTOMATION.md)
+
+---
+
 ## 🎯 Design Philosophy
 
 ### **Simple & Focused**
