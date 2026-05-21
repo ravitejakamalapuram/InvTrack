@@ -13,6 +13,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Card widget displaying a goal with its progress
 class GoalCard extends ConsumerWidget {
@@ -36,26 +37,24 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
     final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
+    final handlers = _buildInteractionHandlers();
+
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: progressAsync.when(
         data: (progress) => GlassCard(
-            semanticLabel: isSelectionMode ? 'Select ${goal.name}' : 'View details for ${goal.name}',
-            onTap: isSelectionMode
-                ? () => onCheckboxChanged?.call(!isSelected)
-                : onTap,
-            onLongPress: onLongPress != null
-                ? () {
-                    HapticFeedback.mediumImpact();
-                    onLongPress!();
-                  }
-                : null,
+            semanticLabel: isSelectionMode
+                ? l10n.selectGoalSemanticLabel(goal.name)
+                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+            onTap: handlers.onTap,
+            onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
             child: Column(
               children: [
@@ -110,16 +109,11 @@ class GoalCard extends ConsumerWidget {
             ),
           ),
         loading: () => GlassCard(
-            semanticLabel: isSelectionMode ? 'Select ${goal.name}' : 'View details for ${goal.name}',
-            onTap: isSelectionMode
-                ? () => onCheckboxChanged?.call(!isSelected)
-                : onTap,
-            onLongPress: onLongPress != null
-                ? () {
-                    HapticFeedback.mediumImpact();
-                    onLongPress!();
-                  }
-                : null,
+            semanticLabel: isSelectionMode
+                ? l10n.selectGoalSemanticLabel(goal.name)
+                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+            onTap: handlers.onTap,
+            onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
             child: SizedBox(
               height: 120,
@@ -132,16 +126,11 @@ class GoalCard extends ConsumerWidget {
             ),
           ),
         error: (error, _) => GlassCard(
-            semanticLabel: isSelectionMode ? 'Select ${goal.name}' : 'View details for ${goal.name}',
-            onTap: isSelectionMode
-                ? () => onCheckboxChanged?.call(!isSelected)
-                : onTap,
-            onLongPress: onLongPress != null
-                ? () {
-                    HapticFeedback.mediumImpact();
-                    onLongPress!();
-                  }
-                : null,
+            semanticLabel: isSelectionMode
+                ? l10n.selectGoalSemanticLabel(goal.name)
+                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+            onTap: handlers.onTap,
+            onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.md),
@@ -190,6 +179,23 @@ class GoalCard extends ConsumerWidget {
           ),
       ),
     );
+  }
+
+  /// Build interaction handlers for tap and long press
+  /// Consolidates duplicate logic across data/loading/error states
+  ({VoidCallback? onTap, VoidCallback? onLongPress}) _buildInteractionHandlers() {
+    final tapHandler = isSelectionMode
+        ? () => onCheckboxChanged?.call(!isSelected)
+        : onTap;
+
+    final longPressHandler = onLongPress != null
+        ? () {
+            HapticFeedback.mediumImpact();
+            onLongPress!();
+          }
+        : null;
+
+    return (onTap: tapHandler, onLongPress: longPressHandler);
   }
 
   Widget _buildGoalIcon(GoalEntity goal) {

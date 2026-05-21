@@ -1656,6 +1656,26 @@
     "description": "Tooltip for add goal button"
   },
 
+  "selectGoalSemanticLabel": "Select {goalName}",
+  "@selectGoalSemanticLabel": {
+    "description": "Accessibility label for selecting a goal card in selection mode",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
+  "viewGoalDetailsSemanticLabel": "View details for {goalName}",
+  "@viewGoalDetailsSemanticLabel": {
+    "description": "Accessibility label for viewing goal card details",
+    "placeholders": {
+      "goalName": {
+        "type": "String"
+      }
+    }
+  },
+
   "tooltipMoreOptions": "More options",
   "@tooltipMoreOptions": {
     "description": "Tooltip for more options button"
