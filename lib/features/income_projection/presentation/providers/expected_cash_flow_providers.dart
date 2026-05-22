@@ -13,6 +13,30 @@ export 'package:inv_tracker/features/income_projection/domain/entities/expected_
 export 'package:inv_tracker/core/di/database_module.dart'
     show isAuthenticatedProvider;
 
+// ============ INCOME CALENDAR STATE PROVIDERS ============
+
+/// Filter options for income calendar
+enum IncomeCalendarFilter {
+  all,
+  pending,
+  overdue,
+}
+
+// Export for use in other files
+export 'expected_cash_flow_providers.dart' show IncomeCalendarFilter;
+
+/// Provider for current calendar filter
+/// Returns the current filter state for the income calendar
+final incomeCalendarFilterProvider = Provider.autoDispose<IncomeCalendarFilter>((ref) {
+  return IncomeCalendarFilter.all;
+});
+
+/// Provider for current month offset (0 = current month, -1 = last month, +1 = next month)
+/// Returns the current month offset
+final incomeCalendarMonthOffsetProvider = Provider.autoDispose<int>((ref) {
+  return 0;
+});
+
 // ============ EXPECTED CASH FLOW STREAM PROVIDERS ============
 
 /// Watch all expected cash flows (reactive).

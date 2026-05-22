@@ -4450,5 +4450,9 @@
   "keyInsights": "Key Insights",
   "@keyInsights": {
     "description": "Section title for auto-generated insights"
+  },
+  "incomeCalendar": "Income Calendar",
+  "@incomeCalendar": {
+    "description": "Title for income calendar screen"
   }
 }
