@@ -55,33 +55,15 @@ jobs:
           echo "Flutter: $(flutter --version | head -1)"
           echo "Java: $(java -version 2>&1 | head -1)"
           echo "Dart: $(dart --version)"
+          echo ""
+          echo "📦 Cache locations (self-hosted persistent storage):"
+          echo "  ~/.pub-cache: $(du -sh ~/.pub-cache 2>/dev/null || echo 'not found')"
+          echo "  ~/.gradle: $(du -sh ~/.gradle 2>/dev/null || echo 'not found')"
+          echo ""
+          echo "ℹ️  Caching disabled - self-hosted runners have persistent storage"
 
-      # Restore Flutter cache only (don't save - self-hosted has persistent storage)
-      - name: Restore Flutter cache
-        id: cache-pub
-        uses: actions/cache/restore@v4
-        continue-on-error: true
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      # Restore Gradle cache only (don't save - self-hosted has persistent storage)
-      - name: Restore Gradle cache
-        id: cache-gradle
-        uses: actions/cache/restore@v4
-        continue-on-error: true
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            android/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      # No cache steps needed - self-hosted runners persist ~/.pub-cache and ~/.gradle between runs
+      # This eliminates 20-40 minute cache save/restore operations that caused timeouts
 
       - name: Get dependencies
         id: get_deps
