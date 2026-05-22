@@ -222,5 +222,36 @@ void main() {
       // Verify monthly income format
       expect(find.textContaining('\$2.5K/mo of \$10K/mo'), findsOneWidget);
     });
+
+    testWidgets('renders safely without localization delegates (prevents test-crash-1)', (tester) async {
+      // Mock SharedPreferences for privacy mode
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
+          ],
+          child: MaterialApp(
+            // Intentionally omit localizationsDelegates and supportedLocales
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify that the widget renders without crashing
+      expect(find.byType(GoalCard), findsOneWidget);
+      expect(find.text('Retirement Fund'), findsOneWidget);
+    });
   });
 }
