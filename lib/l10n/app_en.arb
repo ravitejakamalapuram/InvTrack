@@ -664,6 +664,71 @@
     "description": "Help contact message"
   },
 
+  "incomeGuardianSection": "Income Guardian",
+  "@incomeGuardianSection": {
+    "description": "Income Guardian section title in Help & FAQ"
+  },
+
+  "whatIsIncomeGuardian": "What is Income Guardian?",
+  "@whatIsIncomeGuardian": {
+    "description": "FAQ question about Income Guardian feature"
+  },
+
+  "whatIsIncomeGuardianAnswer": "Income Guardian is an AI-powered income monitoring system that predicts when you should receive payments from your investments, tracks platform reliability, and alerts you to missed or delayed income. It transforms InvTrack from passive tracking to active wealth protection.",
+  "@whatIsIncomeGuardianAnswer": {
+    "description": "FAQ answer about Income Guardian feature"
+  },
+
+  "howDoesIncomeProjectionWork": "How does income projection work?",
+  "@howDoesIncomeProjectionWork": {
+    "description": "FAQ question about income projection mechanism"
+  },
+
+  "howDoesIncomeProjectionWorkAnswer": "Income Guardian uses Weighted Moving Average (WMA) machine learning to predict your next payment amount based on your last 6 payments. It learns platform-specific payment delays (e.g., LenDenClub pays 2 days late) and adjusts expectations automatically. For stable payments, it applies ±8% tolerance; for volatile payments, tolerance expands to match historical variance.",
+  "@howDoesIncomeProjectionWorkAnswer": {
+    "description": "FAQ answer about income projection mechanism"
+  },
+
+  "whatIsIncomeTrendAnalysis": "What is Income Trend Analysis?",
+  "@whatIsIncomeTrendAnalysis": {
+    "description": "FAQ question about income trend analysis"
+  },
+
+  "whatIsIncomeTrendAnalysisAnswer": "Income Trend Analysis provides month-over-month (MoM) and quarter-over-quarter (QoQ) growth metrics, platform reliability scores, and auto-generated insights. It helps you track income growth, identify unreliable platforms, and optimize your portfolio for consistent cash flow.",
+  "@whatIsIncomeTrendAnalysisAnswer": {
+    "description": "FAQ answer about income trend analysis"
+  },
+
+  "whatIsHHIScore": "What is the HHI (Herfindahl-Hirschman Index) score?",
+  "@whatIsHHIScore": {
+    "description": "FAQ question about HHI score"
+  },
+
+  "whatIsHHIScoreAnswer": "HHI measures income concentration risk. A score of 1.0 means all income comes from one platform (maximum risk). A score of 0.33 means income is evenly distributed across 3+ platforms (well-diversified). Lower scores indicate better diversification and reduced risk of income loss from a single platform failure.",
+  "@whatIsHHIScoreAnswer": {
+    "description": "FAQ answer about HHI score"
+  },
+
+  "whatIsPlatformReliability": "What is Platform Reliability Score?",
+  "@whatIsPlatformReliability": {
+    "description": "FAQ question about platform reliability"
+  },
+
+  "whatIsPlatformReliabilityAnswer": "Platform Reliability Score (0-100%) measures how consistently a platform pays on time and with the expected amount. Scores ≥80% are excellent (green), 60-80% are acceptable (yellow), and <60% indicate frequent delays or payment issues (red). This helps you identify which platforms are most reliable for your income.",
+  "@whatIsPlatformReliabilityAnswer": {
+    "description": "FAQ answer about platform reliability score"
+  },
+
+  "howToAccessIncomeReports": "How do I access Income Guardian reports?",
+  "@howToAccessIncomeReports": {
+    "description": "FAQ question about accessing income reports"
+  },
+
+  "howToAccessIncomeReportsAnswer": "Income Trend reports are available in the Reports section. Navigate to Reports → Income Trend Analysis to see your monthly income trends, platform reliability scores, HHI diversification metrics, and auto-generated insights. Expected payment tracking will be available in the Dashboard (coming in Phase 2).",
+  "@howToAccessIncomeReportsAnswer": {
+    "description": "FAQ answer about accessing income reports"
+  },
+
   "advancedFeatures": "Advanced Features",
   "@advancedFeatures": {
     "description": "Advanced features section title in Help & FAQ"

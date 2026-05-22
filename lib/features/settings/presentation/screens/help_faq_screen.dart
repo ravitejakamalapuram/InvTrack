@@ -133,6 +133,38 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
+          _buildSection(l10n.incomeGuardianSection, [
+            _buildFaqItem(
+              l10n.whatIsIncomeGuardian,
+              l10n.whatIsIncomeGuardianAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howDoesIncomeProjectionWork,
+              l10n.howDoesIncomeProjectionWorkAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatIsIncomeTrendAnalysis,
+              l10n.whatIsIncomeTrendAnalysisAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatIsHHIScore,
+              l10n.whatIsHHIScoreAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.whatIsPlatformReliability,
+              l10n.whatIsPlatformReliabilityAnswer,
+              isDark,
+            ),
+            _buildFaqItem(
+              l10n.howToAccessIncomeReports,
+              l10n.howToAccessIncomeReportsAnswer,
+              isDark,
+            ),
+          ]),
           _buildSection(l10n.advancedFeatures, [
             _buildFaqItem(
               l10n.howToEnableDebugMode,
