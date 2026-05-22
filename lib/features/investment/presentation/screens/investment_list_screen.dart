@@ -23,6 +23,7 @@ import 'package:inv_tracker/features/investment/presentation/widgets/investment_
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_states.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/sort_options_sheet.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Main investment list screen with search, filter, sort, and multi-select capabilities.
 /// State is managed via [investmentListStateProvider] and [filteredInvestmentsProvider].
@@ -393,6 +394,17 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
+              // DEFENSIVE FIX: Prevent IndexOutOfBoundsException (Crash test-crash-2)
+              // During state transitions (e.g., filtering), childCount might be temporarily
+              // out of sync with the actual list length. Returning null signals the end of the list.
+              if (index < 0 || index >= filteredInvestments.length) {
+                LoggerService.error(
+                  'IndexOutOfBoundsException prevented in InvestmentList',
+                  error: StateError('Attempted to build index $index for list of length ${filteredInvestments.length}'),
+                  metadata: {'index': index, 'listLength': filteredInvestments.length},
+                );
+                return null;
+              }
               final investment = filteredInvestments[index];
               final isArchived = investment.isArchived;
               return StaggeredFadeIn(
