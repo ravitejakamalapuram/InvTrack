@@ -4,6 +4,16 @@
 
 ### 🐛 Bug Fixes
 
+- Switch CI to GitHub-hosted runners with Flutter setup
+
+### 🧪 Testing
+
+- Trigger CI after runner restart
+
+## [3.63.1] - 2026-05-22
+
+### 🐛 Bug Fixes
+
 - Use console.error for logs to keep JSON output clean
 
 ## [3.63.0] - 2026-05-21

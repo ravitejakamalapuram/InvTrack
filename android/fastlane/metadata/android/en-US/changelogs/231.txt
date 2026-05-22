@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Use console.error for logs to keep JSON output clean
