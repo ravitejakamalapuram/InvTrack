@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Switch CI to GitHub-hosted runners with Flutter setup

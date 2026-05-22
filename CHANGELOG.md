@@ -4,6 +4,12 @@
 
 ### 🐛 Bug Fixes
 
+- Improve Jules automation error handling and summary creation
+
+## [3.63.2] - 2026-05-22
+
+### 🐛 Bug Fixes
+
 - Switch CI to GitHub-hosted runners with Flutter setup
 
 ### 🧪 Testing
