@@ -136,8 +136,22 @@ async function monitorSession(sessionInfo) {
           url: session.url,
           elapsed: Math.round(elapsed / 1000)
         };
+      } else if (status.state === 'AWAITING_USER_FEEDBACK') {
+        // Treat awaiting feedback as timeout if we've been waiting too long
+        const timeoutReached = elapsed >= (maxWaitMinutes * 60 * 1000);
+        if (timeoutReached) {
+          console.log(`👤 Session awaiting user feedback - treating as timeout`);
+          return {
+            crash,
+            sessionId,
+            status: 'AWAITING_USER_FEEDBACK',
+            url: session.url,
+            elapsed: Math.round(elapsed / 1000),
+            note: 'Session requires manual approval in Jules dashboard'
+          };
+        }
       }
-      
+
       // Still in progress - wait before next check
       await new Promise(resolve => setTimeout(resolve, checkIntervalSeconds * 1000));
       
@@ -156,25 +170,32 @@ async function monitorAllSessions() {
     results.push(result);
   }
   
-  // Save results
-  fs.writeFileSync('session_results.json', JSON.stringify({ results }, null, 2));
-  
+  // Save results - always save even on error
+  try {
+    fs.writeFileSync('session_results.json', JSON.stringify({ results }, null, 2));
+    console.log('\n✅ Results saved to session_results.json');
+  } catch (err) {
+    console.error('⚠️  Warning: Failed to save results:', err.message);
+  }
+
   // Print summary
   console.log('\n' + '='.repeat(50));
   console.log('📊 Monitoring Summary');
   console.log('='.repeat(50));
-  
+
   const completed = results.filter(r => r.status === 'COMPLETED').length;
   const completedNoPr = results.filter(r => r.status === 'COMPLETED_NO_PR').length;
   const failed = results.filter(r => r.status === 'FAILED').length;
   const timeout = results.filter(r => r.status === 'TIMEOUT').length;
-  
+  const awaitingFeedback = results.filter(r => r.status === 'AWAITING_USER_FEEDBACK').length;
+
   console.log(`✅ PRs Created: ${completed}`);
   console.log(`✓  Completed (no PR): ${completedNoPr}`);
   console.log(`❌ Failed: ${failed}`);
   console.log(`⏱️  Timed Out: ${timeout}`);
+  console.log(`👤 Awaiting Feedback: ${awaitingFeedback}`);
   console.log('');
-  
+
   if (completed > 0) {
     console.log('Pull Requests Created:');
     results
@@ -184,9 +205,26 @@ async function monitorAllSessions() {
         console.log(`    ${r.crash.title}`);
       });
   }
+
+  // Exit successfully even if no PRs were created
+  // Timeouts and awaiting feedback are not errors
 }
 
-monitorAllSessions().catch(console.error);
+monitorAllSessions()
+  .then(() => {
+    console.log('\n✅ Monitoring completed successfully');
+    process.exit(0);
+  })
+  .catch(err => {
+    console.error('\n❌ Monitoring failed:', err.message);
+    // Still try to save results before exiting
+    try {
+      fs.writeFileSync('session_results.json', JSON.stringify({ results }, null, 2));
+    } catch (e) {
+      // Ignore save errors on failure path
+    }
+    process.exit(1);
+  });
 SCRIPT_EOF
 
 # Execute monitoring script

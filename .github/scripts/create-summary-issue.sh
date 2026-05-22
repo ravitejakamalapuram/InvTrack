@@ -10,12 +10,29 @@ echo "=================================================="
 
 # Check if we have results to summarize
 if [ ! -f "session_results.json" ]; then
-  echo "ℹ️  No session results found - skipping summary"
-  exit 0
+  echo "⚠️  Warning: session_results.json not found"
+
+  # Check if we have session data to create a minimal summary
+  if [ ! -f "jules_sessions.json" ]; then
+    echo "ℹ️  No session data found - skipping summary"
+    exit 0
+  fi
+
+  echo "ℹ️  Creating summary from session data only..."
+
+  # Create a minimal results file indicating sessions were created but not monitored
+  cat > session_results.json << 'EOF'
+{
+  "results": [],
+  "note": "Sessions were created but monitoring data is unavailable"
+}
+EOF
 fi
 
 RESULT_COUNT=$(jq -r '.results | length' session_results.json)
-if [ "$RESULT_COUNT" -eq 0 ]; then
+SESSION_COUNT=$(jq -r '.sessions | length' jules_sessions.json 2>/dev/null || echo "0")
+
+if [ "$RESULT_COUNT" -eq 0 ] && [ "$SESSION_COUNT" -eq 0 ]; then
   echo "ℹ️  No results to summarize"
   exit 0
 fi
@@ -37,19 +54,24 @@ SUMMARY_EOF
 # Insert statistics
 node << 'STATS_EOF'
 const fs = require('fs');
-const results = JSON.parse(fs.readFileSync('session_results.json', 'utf8')).results;
+const results = JSON.parse(fs.readFileSync('session_results.json', 'utf8')).results || [];
+const sessions = JSON.parse(fs.readFileSync('jules_sessions.json', 'utf8')).sessions || [];
 
 const completed = results.filter(r => r.status === 'COMPLETED');
 const completedNoPr = results.filter(r => r.status === 'COMPLETED_NO_PR');
 const failed = results.filter(r => r.status === 'FAILED');
 const timeout = results.filter(r => r.status === 'TIMEOUT');
+const awaitingFeedback = results.filter(r => r.status === 'AWAITING_USER_FEEDBACK');
+
+const totalAnalyzed = results.length > 0 ? results.length : sessions.length;
 
 const summary = `
-- **Total Crashes Analyzed:** ${results.length}
+- **Total Crashes Analyzed:** ${totalAnalyzed}
 - **✅ PRs Created:** ${completed.length}
 - **✓ Completed (No PR):** ${completedNoPr.length}
 - **❌ Failed:** ${failed.length}
 - **⏱️ Timed Out:** ${timeout.length}
+- **👤 Awaiting User Feedback:** ${awaitingFeedback.length}
 
 ---
 
@@ -102,6 +124,18 @@ ${timeout.length > 0 ? timeout.map(r => `
   - Status: Timed out after ${r.elapsed}s
   - Session: ${r.url}
   - Note: Session may still complete - check Jules dashboard
+`).join('\n') : '_None_'}
+
+---
+
+## 👤 Awaiting User Feedback
+
+${awaitingFeedback.length > 0 ? awaitingFeedback.map(r => `
+- **${r.crash.title}**
+  - Status: Awaiting user feedback
+  - Session: ${r.url}
+  - Action Required: Review and approve/reject in Jules dashboard
+  - Note: ${r.note || 'Manual approval needed'}
 `).join('\n') : '_None_'}
 
 ---
