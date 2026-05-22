@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.9.2] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Remove cache operations entirely for self-hosted runners
+
 ## [3.9.1] - 2026-05-22
 
 ### 🐛 Bug Fixes
