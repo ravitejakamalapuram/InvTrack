@@ -16,12 +16,21 @@ concurrency:
 jobs:
   ci:
     name: CI
-    runs-on: self-hosted
+    runs-on: ubuntu-latest  # Temporarily using GitHub-hosted runners
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
         with:
           clean: true
+
+      # Set up Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.4'
+          channel: 'stable'
+          cache: true
 
       # Cache Flutter packages
       - name: Cache Flutter packages
