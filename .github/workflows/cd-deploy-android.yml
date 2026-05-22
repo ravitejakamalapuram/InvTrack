@@ -28,7 +28,7 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-    timeout-minutes: 60  # Prevent hanging deployments
+    timeout-minutes: 90  # Increased timeout for cache operations
 
     steps:
       - name: Checkout code
@@ -56,10 +56,10 @@ jobs:
           echo "Java: $(java -version 2>&1 | head -1)"
           echo "Dart: $(dart --version)"
 
-      # Cache Flutter packages (non-blocking - continues on Azure auth failures)
-      - name: Cache Flutter packages
+      # Restore Flutter cache only (don't save - self-hosted has persistent storage)
+      - name: Restore Flutter cache
         id: cache-pub
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         continue-on-error: true
         with:
           path: |
@@ -69,10 +69,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # Cache Gradle dependencies (non-blocking - continues on Azure auth failures)
-      - name: Cache Gradle
+      # Restore Gradle cache only (don't save - self-hosted has persistent storage)
+      - name: Restore Gradle cache
         id: cache-gradle
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         continue-on-error: true
         with:
           path: |
