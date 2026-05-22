@@ -222,5 +222,35 @@ void main() {
       // Verify monthly income format
       expect(find.textContaining('\$2.5K/mo of \$10K/mo'), findsOneWidget);
     });
+
+    testWidgets('renders safely without localizations delegates', (tester) async {
+      // Mock SharedPreferences for privacy mode
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+
+      // Mount GoalCard without any localizations delegates (e.g. no MaterialApp.localizationsDelegates)
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // It shouldn't crash, should find GoalCard
+      expect(find.byType(GoalCard), findsOneWidget);
+    });
   });
 }

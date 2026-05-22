@@ -37,8 +37,9 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // ignore: unnecessary_non_null_assertion
-    final l10n = AppLocalizations.of(context)!;
+    // Fix test-crash-1: Safely retrieve Localizations instead of AppLocalizations.of(context)!
+    // to prevent NullPointerException when localization delegates are missing (e.g. in tests)
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
     // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
     final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
@@ -52,8 +53,8 @@ class GoalCard extends ConsumerWidget {
       child: progressAsync.when(
         data: (progress) => GlassCard(
             semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+                ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
+                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -111,8 +112,8 @@ class GoalCard extends ConsumerWidget {
           ),
         loading: () => GlassCard(
             semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+                ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
+                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -128,8 +129,8 @@ class GoalCard extends ConsumerWidget {
           ),
         error: (error, _) => GlassCard(
             semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+                ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
+                : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
