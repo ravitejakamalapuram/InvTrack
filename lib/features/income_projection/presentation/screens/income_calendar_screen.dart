@@ -70,7 +70,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
                       isDark: isDark,
                       currentFilter: filter,
                       onFilterChanged: (newFilter) {
-                        ref.read(incomeCalendarFilterProvider.notifier).state = newFilter;
+                        ref.read(incomeCalendarFilterProvider.notifier).setFilter(newFilter);
                       },
                     ),
                   ),
@@ -82,7 +82,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
                     expectedCashFlows: filteredExpected,
                     monthOffset: monthOffset,
                     onMonthChanged: (newOffset) {
-                      ref.read(incomeCalendarMonthOffsetProvider.notifier).state = newOffset;
+                      ref.read(incomeCalendarMonthOffsetProvider.notifier).setOffset(newOffset);
                     },
                     isDark: isDark,
                   ),

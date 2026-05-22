@@ -88,6 +88,13 @@ class NotificationNavigator {
         // Snooze is handled directly in notification service
         return false;
 
+      case NotificationPayloadType.incomeGuardian:
+        // Navigate to investment detail with expected cash flow highlighted
+        return _navigateToInvestmentDetail(
+          payload.investmentId,
+          payload.params,
+        );
+
       case NotificationPayloadType.unknown:
         return false;
     }

@@ -22,20 +22,49 @@ enum IncomeCalendarFilter {
   overdue,
 }
 
-// Export for use in other files
-export 'expected_cash_flow_providers.dart' show IncomeCalendarFilter;
+/// Notifier for income calendar filter state
+class IncomeCalendarFilterNotifier extends Notifier<IncomeCalendarFilter> {
+  @override
+  IncomeCalendarFilter build() => IncomeCalendarFilter.all;
 
-/// Provider for current calendar filter
-/// Returns the current filter state for the income calendar
-final incomeCalendarFilterProvider = Provider.autoDispose<IncomeCalendarFilter>((ref) {
-  return IncomeCalendarFilter.all;
-});
+  void setFilter(IncomeCalendarFilter filter) {
+    state = filter;
+  }
+}
 
-/// Provider for current month offset (0 = current month, -1 = last month, +1 = next month)
-/// Returns the current month offset
-final incomeCalendarMonthOffsetProvider = Provider.autoDispose<int>((ref) {
-  return 0;
-});
+/// Provider for income calendar filter state
+/// Uses .autoDispose to prevent memory leaks when screen is disposed
+final incomeCalendarFilterProvider = NotifierProvider.autoDispose<
+    IncomeCalendarFilterNotifier,
+    IncomeCalendarFilter>(
+  IncomeCalendarFilterNotifier.new,
+);
+
+/// Notifier for income calendar month offset state
+class IncomeCalendarMonthOffsetNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setOffset(int offset) {
+    state = offset;
+  }
+
+  void nextMonth() {
+    state = state + 1;
+  }
+
+  void previousMonth() {
+    state = state - 1;
+  }
+}
+
+/// Provider for income calendar month offset state
+/// Uses .autoDispose to prevent memory leaks when screen is disposed
+final incomeCalendarMonthOffsetProvider = NotifierProvider.autoDispose<
+    IncomeCalendarMonthOffsetNotifier,
+    int>(
+  IncomeCalendarMonthOffsetNotifier.new,
+);
 
 // ============ EXPECTED CASH FLOW STREAM PROVIDERS ============
 

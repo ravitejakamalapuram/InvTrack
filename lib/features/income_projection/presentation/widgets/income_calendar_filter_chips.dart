@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
-import 'package:inv_tracker/features/income_projection/presentation/screens/income_calendar_screen.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 
 /// Filter chips for Income Calendar screen
 class IncomeCalendarFilterChips extends StatelessWidget {
