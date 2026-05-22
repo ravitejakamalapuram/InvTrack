@@ -4,9 +4,9 @@ name: Jules AI Crash Fix Automation
 # Jules will analyze crashes, implement fixes, and create PRs automatically
 
 on:
-  # Run every 2 hours to check for new crashes
+  # Run every hour to check for new crashes
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 * * * *'
   
   # Manual trigger with customizable parameters
   workflow_dispatch:

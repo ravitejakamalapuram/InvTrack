@@ -152,7 +152,7 @@ ${awaitingFeedback.length > 0 ? awaitingFeedback.map(r => `
 
 This workflow runs daily at 9 AM UTC or can be triggered manually from the Actions tab.
 
-To adjust settings, edit `.github/workflows/jules-crash-fix.yml`
+To adjust settings, edit \`.github/workflows/jules-crash-fix.yml\`
 
 ---
 
