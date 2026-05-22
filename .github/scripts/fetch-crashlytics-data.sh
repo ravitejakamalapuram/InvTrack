@@ -42,7 +42,7 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 
 async function fetchCrashData() {
   try {
-    console.log('Fetching Crashlytics data via Firebase CLI...');
+    console.error('Fetching Crashlytics data via Firebase CLI...');
 
     // Use Firebase CLI to get an access token
     const { stdout: accessToken } = await execPromise(
@@ -77,7 +77,7 @@ async function fetchCrashData() {
         result = JSON.parse(stdout);
       } catch (cliError) {
         // If both fail, create sample data for testing
-        console.warn('Both API and CLI approaches failed. Creating test data...');
+        console.error('Both API and CLI approaches failed. Creating test data...');
         result = {
           rows: [
             {
@@ -112,7 +112,7 @@ async function fetchCrashData() {
       return userCount >= minUsers;
     }) || [];
 
-    console.log(`Found ${filteredCrashes.length} crashes meeting criteria`);
+    console.error(`Found ${filteredCrashes.length} crashes meeting criteria`);
 
     // Format crashes for Jules with detailed context
     const crashes = filteredCrashes.map((row, index) => ({
@@ -126,13 +126,14 @@ async function fetchCrashData() {
       priority: parseInt(row.impactedDevicesCount || 0) > 50 ? 'high' : 'medium'
     }));
 
+    // Output ONLY JSON to stdout
     console.log(JSON.stringify({ crashes, total: crashes.length }, null, 2));
 
   } catch (error) {
     console.error('Error fetching crash data:', error.message);
     console.error('Stack:', error.stack);
 
-    // Fallback: Create empty crashes list
+    // Fallback: Create empty crashes list (output to stdout)
     console.log(JSON.stringify({ crashes: [], total: 0, error: error.message }, null, 2));
   }
 }
