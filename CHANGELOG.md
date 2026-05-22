@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Use console.error for logs to keep JSON output clean
+
+## [3.63.0] - 2026-05-21
+
 ### ✨ Features
 
 - Add Jules AI automated crash fix integration

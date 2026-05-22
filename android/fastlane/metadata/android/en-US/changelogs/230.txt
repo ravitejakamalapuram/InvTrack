@@ -1,0 +1,6 @@
+🆕 What's New
+• Add Jules AI automated crash fix integration
+
+🐛 Bug Fixes & Improvements
+• Update Jules automation to run every 2 hours and fix Crashlytics API
+• Address 14 Crashlytics issues (235 events affecting 76+ users)
