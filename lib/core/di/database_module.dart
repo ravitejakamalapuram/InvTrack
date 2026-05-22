@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_document_repository.dart';
 import 'package:inv_tracker/features/investment/data/repositories/firestore_investment_repository.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
@@ -70,4 +72,22 @@ final documentStorageServiceProvider = Provider<DocumentStorageService>((ref) {
   }
 
   return DocumentStorageService(userId: user.id);
+});
+
+/// Provider for the expected cash flow repository using Firestore
+/// Throws AuthException.notAuthenticated if user is not authenticated
+final expectedCashFlowRepositoryProvider =
+    Provider<ExpectedCashFlowRepository>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  final authState = ref.watch(authStateProvider);
+
+  final user = authState.value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+
+  return FirestoreExpectedCashFlowRepository(
+    firestore: firestore,
+    userId: user.id,
+  );
 });
