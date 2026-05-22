@@ -1,6 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [3.9.1] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Prevent CD timeout by using cache restore-only
+
+## [3.63.3] - 2026-05-22
 
 ### 🐛 Bug Fixes
 
