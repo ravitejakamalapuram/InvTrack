@@ -393,6 +393,9 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
+              if (index < 0 || index >= filteredInvestments.length) {
+                return null; // Defensive check for dynamic filtering (test-crash-2)
+              }
               final investment = filteredInvestments[index];
               final isArchived = investment.isArchived;
               return StaggeredFadeIn(
