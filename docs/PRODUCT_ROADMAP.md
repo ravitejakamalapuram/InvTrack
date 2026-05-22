@@ -278,16 +278,21 @@ User Flow:
 | Milestone | Achievement triggers | "🎉 Congratulations! Your portfolio crossed ₹50L invested" |
 | Performance Alert | XIRR change > 5% | "📈 Your overall XIRR improved to 14.2% (+2.1% this month)" |
 
-#### Feature 2.3: Recurring Income Projections (P1 - High)
+#### Feature 2.3: Recurring Income Projections (P1 - High) ⭐
+
+**📄 Design Documents:**
+- [Core Foundation: RECURRING_INCOME_PROJECTIONS_DESIGN.md](RECURRING_INCOME_PROJECTIONS_DESIGN.md)
+- [Advanced Intelligence: ADVANCED_INCOME_FEATURES_DESIGN.md](ADVANCED_INCOME_FEATURES_DESIGN.md)
 
 | Attribute | Details |
 |-----------|---------|
-| **Description** | Forecast future cash flows based on historical patterns and known schedules |
-| **User Story** | "As a user, I want to see projected income for the next 12 months" |
-| **Features** | • Pattern recognition for recurring income<br>• Manual recurring setup<br>• Calendar view of expected flows<br>• Cash flow forecast chart |
-| **Success Metrics** | • 85% forecast accuracy for recurring items |
-| **Effort** | 2-3 weeks |
-| **Status** | [ ] Not Started |
+| **Description** | Excel-killer feature: Forecast, track, and never miss recurring income payments |
+| **User Story** | "As an investor, I want to see expected income in a calendar view and get alerted when payments are delayed, so I can follow up without manual tracking" |
+| **Core Features** | • Auto-generate 12-month income projections from investment terms<br>• Calendar/grid view (Excel-like) with color-coded status<br>• Auto-match actual vs expected cash flows (±10% amt, ±3 days)<br>• Smart notifications: Due tomorrow, Received ✅, Missed ⚠️ (escalating)<br>• Income Health Dashboard widget<br>• Missed Income Follow-Up Guide |
+| **Advanced Features** | • **Smart Amount Prediction**: ML-based WMA for variable dividends<br>• **Income Trend Analysis**: Growth metrics, platform reliability, diversification (HHI)<br>• **Predictive Reinvestment**: Idle cash detection, opportunity matching, tax optimization |
+| **Success Metrics** | • 95% detection rate for delayed payments<br>• ≥95% prediction accuracy (Smart Amount Prediction)<br>• 70% users enable within 7 days<br>• ≥20% reinvestment conversion rate<br>• NPS > 50 ("I trust the app")<br>• 30 min/month time saved vs Excel |
+| **Effort** | 5 weeks total:<br>• Week 1-3: Core foundation<br>• Week 4-5: Advanced features (Smart Prediction + Trend Analysis + Reinvestment) |
+| **Status** | [/] Design Complete - Ready for Implementation (2 PRs planned) |
 
 #### Feature 2.4: Investment Insights & Suggestions (P2 - Medium)
 
@@ -1049,12 +1054,39 @@ lib/
   - [x] Goal at-risk alerts
   - [x] Goal stale reminders
 
-- [ ] **Recurring Income Projections**
-  - [ ] Pattern recognition algorithm
-  - [ ] Manual recurring setup
-  - [ ] Calendar view of expected flows
-  - [ ] 12-month projection chart
-  - [ ] Accuracy tracking
+- [ ] **Recurring Income Projections** (Core Foundation - PR #1)
+  - [ ] `ExpectedCashFlowEntity` data model
+  - [ ] `IncomeProjectionService` for auto-generation
+  - [ ] `IncomeMatchingService` for actual vs expected matching
+  - [ ] Calendar/grid view UI with color-coded status
+  - [ ] Escalating notification logic (Day -1, Day 4, Day 7, Day 14)
+  - [ ] Income Health Dashboard widget
+  - [ ] Missed Income Follow-Up Guide
+  - [ ] Manual recurring income setup
+  - [ ] Multi-currency compliance (Rule 21)
+  - [ ] Privacy mode integration (Rule 17)
+  - [ ] Localization (all strings in ARB files)
+
+- [ ] **Advanced Income Features** (Intelligence Layer - PR #2)
+  - [ ] **Smart Amount Prediction**
+    - [ ] Weighted Moving Average (WMA) algorithm
+    - [ ] Seasonal adjustment logic (Q4 bonus detection)
+    - [ ] Platform behavior learning (delay patterns)
+    - [ ] Dynamic tolerance calculation (variance-based)
+    - [ ] Integration with Income Matching Engine
+  - [ ] **Income Trend Analysis Report**
+    - [ ] Monthly income trend chart (last 12 months)
+    - [ ] Growth metrics (MoM, QoQ, 6-month average)
+    - [ ] Platform reliability scorer (on-time rate)
+    - [ ] Income diversification calculator (HHI)
+    - [ ] Auto-generated insights
+  - [ ] **Predictive Reinvestment**
+    - [ ] Idle cash detector
+    - [ ] Opportunity cost calculator
+    - [ ] Investment option matcher
+    - [ ] Reinvestment Planner screen
+    - [ ] Proactive notifications (3, 7, 14 days)
+    - [ ] Analytics events (privacy-safe ranges only)
 
 - [ ] **Investment Insights**
   - [ ] Cross-category comparison logic

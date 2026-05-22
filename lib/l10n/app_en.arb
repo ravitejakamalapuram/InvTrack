@@ -4345,5 +4345,45 @@
   "importCancelledMessage": "Import cancelled",
   "@importCancelledMessage": {
     "description": "Message when import is cancelled"
+  },
+  "incomeTrendReport": "Income Trend Report",
+  "@incomeTrendReport": {
+    "description": "Title for income trend report screen"
+  },
+  "totalIncomeLast12Months": "Total Income (Last 12 Months)",
+  "@totalIncomeLast12Months": {
+    "description": "Header for total income in trend report"
+  },
+  "averageMonthly": "Average Monthly",
+  "@averageMonthly": {
+    "description": "Average monthly income label"
+  },
+  "growthMetrics": "Growth Metrics",
+  "@growthMetrics": {
+    "description": "Section title for growth metrics"
+  },
+  "monthOverMonth": "Month-over-Month",
+  "@monthOverMonth": {
+    "description": "Month-over-month growth label"
+  },
+  "quarterOverQuarter": "Quarter-over-Quarter",
+  "@quarterOverQuarter": {
+    "description": "Quarter-over-quarter growth label"
+  },
+  "monthlyIncomeTrend": "Monthly Income Trend",
+  "@monthlyIncomeTrend": {
+    "description": "Chart title for monthly income trend"
+  },
+  "platformReliability": "Platform Reliability",
+  "@platformReliability": {
+    "description": "Section title for platform reliability scores"
+  },
+  "incomeDiversification": "Income Diversification",
+  "@incomeDiversification": {
+    "description": "Section title for income diversification analysis"
+  },
+  "keyInsights": "Key Insights",
+  "@keyInsights": {
+    "description": "Section title for auto-generated insights"
   }
 }
