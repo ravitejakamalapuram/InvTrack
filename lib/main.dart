@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_service_providers.dart';
 import 'package:inv_tracker/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -46,6 +47,7 @@ void main() async {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             notificationServiceProvider.overrideWithValue(notificationService),
+            flutterLocalNotificationsPluginProvider.overrideWithValue(notificationPlugin),
           ],
           child: const InvTrackerApp(),
         ),

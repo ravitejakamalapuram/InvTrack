@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/widgets/connectivity_listener.dart';
 import 'package:inv_tracker/core/widgets/currency_cache_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
+import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_service_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/features/app_update/presentation/widgets/version_check_initializer.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -22,22 +23,24 @@ class InvTrackerApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final settings = ref.watch(settingsProvider);
 
-    return NotificationSyncInitializer(
-      child: _NotificationNavigationHandler(
-        child: VersionCheckInitializer(
-          child: CurrencyCacheInitializer(
-            child: ConnectivityListener(
-              child: MaterialApp.router(
-                title: 'InvTracker',
-                theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: settings.themeMode,
-                routerConfig: router,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                builder: (context, child) {
-                  return PrivacyProtectionWrapper(child: child!);
-                },
+    return IncomeGuardianServiceInitializer(
+      child: NotificationSyncInitializer(
+        child: _NotificationNavigationHandler(
+          child: VersionCheckInitializer(
+            child: CurrencyCacheInitializer(
+              child: ConnectivityListener(
+                child: MaterialApp.router(
+                  title: 'InvTracker',
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: settings.themeMode,
+                  routerConfig: router,
+                  localizationsDelegates: AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  builder: (context, child) {
+                    return PrivacyProtectionWrapper(child: child!);
+                  },
+                ),
               ),
             ),
           ),
