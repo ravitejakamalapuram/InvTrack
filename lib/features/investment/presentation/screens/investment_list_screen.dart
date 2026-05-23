@@ -22,7 +22,8 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_selection_controls.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_states.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/sort_options_sheet.dart';
-import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/type_filter_sheet.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/active_type_filter_chip.dart';
 
 /// Main investment list screen with search, filter, sort, and multi-select capabilities.
 /// State is managed via [investmentListStateProvider] and [filteredInvestmentsProvider].
@@ -81,7 +82,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => _TypeFilterSheet(
+      builder: (context) => TypeFilterSheet(
         isDark: isDark,
         currentType: currentTypeFilter,
         onTypeSelected: (type) {
@@ -175,7 +176,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xs,
                   ),
-                  child: _ActiveTypeFilterChip(
+                  child: ActiveTypeFilterChip(
                     type: typeFilter!,
                     isDark: isDark,
                     onClear: () {
@@ -497,183 +498,6 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           onRetry: () => ref.invalidate(allInvestmentsProvider),
         ),
       ),
-    );
-  }
-}
-
-/// Bottom sheet for selecting investment type filter
-class _TypeFilterSheet extends StatelessWidget {
-  final bool isDark;
-  final InvestmentType? currentType;
-  final ValueChanged<InvestmentType?> onTypeSelected;
-
-  const _TypeFilterSheet({
-    required this.isDark,
-    required this.currentType,
-    required this.onTypeSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.neutral600Dark
-                    : AppColors.neutral300Light,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Text(
-                    'Filter by Type',
-                    style: AppTypography.h3.copyWith(
-                      color: isDark ? Colors.white : AppColors.neutral900Light,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (currentType != null)
-                    TextButton(
-                      onPressed: () => onTypeSelected(null),
-                      child: Text(
-                        'Clear',
-                        style: AppTypography.body.copyWith(
-                          color: AppColors.primaryLight,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // Type options
-            Flexible(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: InvestmentType.values.map((type) {
-                    final isSelected = currentType == type;
-                    return ListTile(
-                      selected: isSelected,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: type.color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(type.icon, color: type.color, size: 20),
-                      ),
-                      title: Text(
-                        type.displayName,
-                        style: AppTypography.body.copyWith(
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.neutral900Light,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_rounded,
-                              color: AppColors.primaryLight,
-                            )
-                          : null,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onTypeSelected(type);
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            SizedBox(height: AppSpacing.md),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Chip showing the active type filter with clear button
-class _ActiveTypeFilterChip extends StatelessWidget {
-  final InvestmentType type;
-  final bool isDark;
-  final VoidCallback onClear;
-
-  const _ActiveTypeFilterChip({
-    required this.type,
-    required this.isDark,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            color: type.color.withValues(alpha: 0.15),
-            borderRadius: AppSizes.borderRadiusMd,
-            border: Border.all(color: type.color.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(type.icon, color: type.color, size: 16),
-              SizedBox(width: AppSpacing.xs),
-              Text(
-                type.displayName,
-                style: AppTypography.caption.copyWith(
-                  color: type.color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(width: AppSpacing.xs),
-              Semantics(
-                button: true,
-                label: 'Clear ${type.displayName} filter',
-                onTap: onClear,
-                excludeSemantics: true,
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onClear();
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    padding: EdgeInsets.all(AppSpacing.xs),
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: type.color,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
