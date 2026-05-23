@@ -84,7 +84,8 @@ class SmartInsightsService {
 
     // Optimization: Single pass loop replacing multiple sequential .where() and .fold() calls
     for (final cf in cashFlows) {
-      if (cf.date.isAfter(minDate) && cf.date.isBefore(maxDate)) {
+      if ((cf.date.isAfter(minDate) || cf.date.isAtSameMomentAs(minDate)) &&
+          (cf.date.isBefore(maxDate) || cf.date.isAtSameMomentAs(maxDate))) {
         hasFlows = true;
         if (cf.type == CashFlowType.invest) {
           netInvested += cf.amount;
@@ -132,7 +133,8 @@ class SmartInsightsService {
 
     // Optimization: Single pass loop replacing multiple sequential .where() and .fold() calls
     for (final cf in cashFlows) {
-      if (cf.date.isAfter(minDate) && cf.date.isBefore(maxDate)) {
+      if ((cf.date.isAfter(minDate) || cf.date.isAtSameMomentAs(minDate)) &&
+          (cf.date.isBefore(maxDate) || cf.date.isAtSameMomentAs(maxDate))) {
         flowCount++;
         if (cf.type == CashFlowType.income) {
           income += cf.amount;
