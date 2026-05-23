@@ -44,87 +44,126 @@ async function fetchCrashData() {
   try {
     console.error('Fetching Crashlytics data via Firebase CLI...');
 
-    // Use Firebase CLI to get an access token
-    const { stdout: accessToken } = await execPromise(
-      `firebase login:ci --token="${token}" | grep -oE "ya29\\.[^\\s]+" || echo "${token}"`,
-      { env: process.env }
-    );
+    // Extract project number from app ID (format: 1:PROJECT_NUMBER:platform:APP_ID)
+    const projectNumber = appId.split(':')[1];
 
-    const cleanToken = accessToken.trim() || token;
+    console.error(`Project Number: ${projectNumber}`);
+    console.error(`App ID: ${appId}`);
 
-    // Use Crashlytics REST API via curl
-    // API: https://firebase.google.com/docs/crashlytics/rest-api
-    const apiUrl = `https://firebase.googleapis.com/v1beta1/apps/${appId}/crashlytics_get_report`;
+    // Use the correct Crashlytics REST API endpoint
+    // Endpoint: https://firebasecrashlytics.googleapis.com/v1alpha/projects/{projectNumber}/apps/{appId}/reports/{reportType}
+    const apiUrl = `https://firebasecrashlytics.googleapis.com/v1alpha/projects/${projectNumber}/apps/${appId}/reports/${reportType}`;
 
-    const curlCmd = `curl -s -H "Authorization: Bearer ${cleanToken}" \
-      "${apiUrl}?report=${reportType}&pageSize=${limit}" || \
-      curl -s -H "x-goog-api-key: ${cleanToken}" \
-      "${apiUrl}?report=${reportType}&pageSize=${limit}"`;
+    console.error(`API URL: ${apiUrl}`);
+
+    // Try using Firebase token as OAuth token
+    const curlCmd = `curl -s -H "Authorization: Bearer ${token}" "${apiUrl}?page_size=${limit}"`;
 
     let result;
     try {
-      const { stdout } = await execPromise(curlCmd);
-      result = JSON.parse(stdout);
-    } catch (apiError) {
-      console.error('Direct API call failed, trying alternative approach...');
+      console.error('Attempting Crashlytics API call...');
+      const { stdout, stderr } = await execPromise(curlCmd);
 
-      // Fallback: Use firebase CLI crashlytics command if available
+      if (stderr) {
+        console.error('curl stderr:', stderr);
+      }
+
+      console.error('API Response:', stdout.substring(0, 200));
+
+      result = JSON.parse(stdout);
+
+      // Check if we got an error response
+      if (result.error) {
+        throw new Error(`API Error: ${result.error.message || JSON.stringify(result.error)}`);
+      }
+
+    } catch (apiError) {
+      console.error('Crashlytics API call failed:', apiError.message);
+
+      // Try getting fresh access token via Firebase CLI
       try {
-        const { stdout } = await execPromise(
-          `firebase crashlytics:issues:list --app="${appId}" --token="${token}" --json`,
+        console.error('Trying to get fresh access token via Firebase CLI...');
+        const { stdout: tokenOut } = await execPromise(
+          `echo "${token}" | firebase login:add --no-localhost || echo "SKIP"`,
           { env: process.env }
         );
+
+        // Get access token
+        const { stdout: accessToken } = await execPromise(
+          `firebase login:list --json | jq -r '.[0].tokens.access_token' || echo "${token}"`,
+          { env: process.env }
+        );
+
+        const freshToken = accessToken.trim();
+        console.error('Got fresh token, retrying API call...');
+
+        const retryCurlCmd = `curl -s -H "Authorization: Bearer ${freshToken}" "${apiUrl}?page_size=${limit}"`;
+        const { stdout } = await execPromise(retryCurlCmd);
         result = JSON.parse(stdout);
-      } catch (cliError) {
-        // If both fail, create sample data for testing
-        console.error('Both API and CLI approaches failed. Creating test data...');
-        result = {
-          rows: [
-            {
-              issueId: 'test-crash-1',
-              displayName: 'NullPointerException in GoalCard',
-              eventCount: '150',
-              impactedDevicesCount: '45',
-              subtitle: 'lib/features/goals/presentation/widgets/goal_card.dart',
-            },
-            {
-              issueId: 'test-crash-2',
-              displayName: 'IndexOutOfBoundsException in InvestmentList',
-              eventCount: '89',
-              impactedDevicesCount: '23',
-              subtitle: 'lib/features/investments/presentation/screens/investment_list.dart',
-            },
-            {
-              issueId: 'test-crash-3',
-              displayName: 'StateError in CurrencyProvider',
-              eventCount: '67',
-              impactedDevicesCount: '19',
-              subtitle: 'lib/features/settings/presentation/providers/currency_provider.dart',
-            }
-          ]
-        };
+
+        if (result.error) {
+          throw new Error(`API Error after token refresh: ${result.error.message}`);
+        }
+
+      } catch (tokenError) {
+        console.error('Failed to refresh token and retry:', tokenError.message);
+
+        // Final fallback: Exit with error (don't use test data in production)
+        console.error('❌ Unable to fetch real Crashlytics data. API authentication failed.');
+        console.error('Please verify:');
+        console.error('1. FIREBASE_TOKEN is a valid CI token (run: firebase login:ci)');
+        console.error('2. Token has Crashlytics API access permissions');
+        console.error('3. Firebase project ID and app ID are correct');
+
+        // Output empty result instead of test data
+        console.log(JSON.stringify({
+          crashes: [],
+          total: 0,
+          error: 'Failed to authenticate with Firebase Crashlytics API. Check token permissions.'
+        }, null, 2));
+        process.exit(0);
       }
     }
 
-    // Filter crashes by minimum affected users
-    const filteredCrashes = result.rows?.filter(row => {
-      const userCount = parseInt(row.impactedDevicesCount || 0);
-      return userCount >= minUsers;
-    }) || [];
+    // Parse Crashlytics API response
+    // Response format: { rows: [ { dimensions: [values], metrics: [values] } ] }
+    console.error(`Processing ${result.rows?.length || 0} crash reports...`);
 
-    console.error(`Found ${filteredCrashes.length} crashes meeting criteria`);
+    const rawCrashes = result.rows || [];
+
+    // Filter crashes by minimum affected users
+    // Metrics format: [deviceCount, eventCount, ...]
+    const filteredCrashes = rawCrashes.filter(row => {
+      const metrics = row.metrics || [];
+      const deviceCount = parseInt(metrics[0] || 0); // First metric is impacted devices
+      return deviceCount >= minUsers;
+    });
+
+    console.error(`Found ${filteredCrashes.length} crashes meeting criteria (min users: ${minUsers})`);
 
     // Format crashes for Jules with detailed context
-    const crashes = filteredCrashes.map((row, index) => ({
-      id: row.issueId || `crash_${index}`,
-      title: row.displayName || row.subtitle || 'Unknown crash',
-      eventCount: parseInt(row.eventCount || 0),
-      affectedUsers: parseInt(row.impactedDevicesCount || 0),
-      file: row.subtitle || 'Unknown file',
-      // Sample stack trace for context (Jules will analyze the actual code)
-      stackTrace: row.stackTrace || `Error in ${row.subtitle || 'unknown location'}`,
-      priority: parseInt(row.impactedDevicesCount || 0) > 50 ? 'high' : 'medium'
-    }));
+    const crashes = filteredCrashes.slice(0, limit).map((row, index) => {
+      const dimensions = row.dimensions || [];
+      const metrics = row.metrics || [];
+
+      // Dimensions format: [issueId, title, subtitle, ...]
+      // Metrics format: [deviceCount, eventCount, ...]
+      const issueId = dimensions[0] || `crash_${index}`;
+      const displayName = dimensions[1] || 'Unknown crash';
+      const subtitle = dimensions[2] || '';
+      const deviceCount = parseInt(metrics[0] || 0);
+      const eventCount = parseInt(metrics[1] || 0);
+
+      return {
+        id: issueId,
+        title: displayName,
+        eventCount: eventCount,
+        affectedUsers: deviceCount,
+        file: subtitle || 'Unknown file',
+        stackTrace: `Crash in ${subtitle || 'unknown location'}`,
+        priority: deviceCount > 50 ? 'high' : 'medium'
+      };
+    });
 
     // Output ONLY JSON to stdout
     console.log(JSON.stringify({ crashes, total: crashes.length }, null, 2));
