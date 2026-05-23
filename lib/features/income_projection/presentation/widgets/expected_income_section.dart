@@ -6,8 +6,8 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
-import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
+import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Expected Income section for investment detail screen.
@@ -69,7 +69,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
             
             if (overduePayments.isNotEmpty) ...[
               SizedBox(height: AppSpacing.md),
-              _buildSectionHeader('Overdue Payments', AppColors.errorLight, isDark),
+              _buildSectionHeader(l10n.expectedIncomeOverduePayments, AppColors.errorLight, isDark),
               SizedBox(height: AppSpacing.sm),
               ...overduePayments.map((e) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -79,7 +79,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
 
             if (futurePayments.isNotEmpty) ...[
               SizedBox(height: AppSpacing.md),
-              _buildSectionHeader('Upcoming Payments', AppColors.successLight, isDark),
+              _buildSectionHeader(l10n.expectedIncomeUpcomingPayments, AppColors.successLight, isDark),
               SizedBox(height: AppSpacing.sm),
               ...futurePayments.take(5).map((e) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -89,7 +89,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
 
             if (pastPayments.isNotEmpty) ...[
               SizedBox(height: AppSpacing.md),
-              _buildSectionHeader('Payment History', AppColors.graphCyan, isDark),
+              _buildSectionHeader(l10n.expectedIncomePaymentHistory, AppColors.graphCyan, isDark),
               SizedBox(height: AppSpacing.sm),
               ...pastPayments.take(5).map((e) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -127,14 +127,14 @@ class ExpectedIncomeSection extends ConsumerWidget {
             ),
             SizedBox(height: AppSpacing.md),
             Text(
-              'No Expected Payments',
+              l10n.expectedIncomeNoPayments,
               style: AppTypography.h3.copyWith(
                 color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
               ),
             ),
             SizedBox(height: AppSpacing.xs),
             Text(
-              'This investment has no predicted income payments',
+              l10n.expectedIncomeNoPaymentsSubtitle,
               style: AppTypography.small.copyWith(
                 color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
               ),
@@ -151,7 +151,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'Failed to load expected payments',
+          l10n.expectedIncomeLoadFailed,
           style: AppTypography.body.copyWith(
             color: AppColors.errorLight,
           ),
@@ -190,7 +190,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Payment Reliability',
+                  l10n.expectedIncomePaymentReliability,
                   style: AppTypography.small.copyWith(
                     color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),
@@ -284,7 +284,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: PrivacyMask(
+                      child: PrivacyProtectionWrapper(
                         child: Text(
                           formatCompactCurrency(
                             payment.expectedAmount,
@@ -319,9 +319,9 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 ),
                 if (payment.actualAmount != null) ...[
                   SizedBox(height: 4),
-                  PrivacyMask(
+                  PrivacyProtectionWrapper(
                     child: Text(
-                      'Received: ${formatCompactCurrency(payment.actualAmount!, symbol: currencySymbol, locale: locale)}',
+                      l10n.expectedIncomeReceived(formatCompactCurrency(payment.actualAmount!, symbol: currencySymbol, locale: locale)),
                       style: AppTypography.small.copyWith(
                         color: AppColors.graphCyan,
                         fontSize: 10,

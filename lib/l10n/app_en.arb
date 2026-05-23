@@ -4822,5 +4822,42 @@
   "diversificationRisky": "Very high concentration - Risky",
   "@diversificationRisky": {
     "description": "Diversification label: HHI score >= 0.50"
+  },
+  "expectedIncomeOverduePayments": "Overdue Payments",
+  "@expectedIncomeOverduePayments": {
+    "description": "Section header for overdue payments"
+  },
+  "expectedIncomeUpcomingPayments": "Upcoming Payments",
+  "@expectedIncomeUpcomingPayments": {
+    "description": "Section header for upcoming payments"
+  },
+  "expectedIncomePaymentHistory": "Payment History",
+  "@expectedIncomePaymentHistory": {
+    "description": "Section header for payment history"
+  },
+  "expectedIncomeNoPayments": "No Expected Payments",
+  "@expectedIncomeNoPayments": {
+    "description": "Empty state title when no expected payments"
+  },
+  "expectedIncomeNoPaymentsSubtitle": "This investment has no predicted income payments",
+  "@expectedIncomeNoPaymentsSubtitle": {
+    "description": "Empty state subtitle when no expected payments"
+  },
+  "expectedIncomeLoadFailed": "Failed to load expected payments",
+  "@expectedIncomeLoadFailed": {
+    "description": "Error message when expected payments fail to load"
+  },
+  "expectedIncomePaymentReliability": "Payment Reliability",
+  "@expectedIncomePaymentReliability": {
+    "description": "Label for payment reliability score"
+  },
+  "expectedIncomeReceived": "Received: {amount}",
+  "@expectedIncomeReceived": {
+    "description": "Label for received payment amount",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   }
 }
