@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 
-/// Segmented control for switching between Transactions and Documents tabs.
+/// Segmented control for switching between Transactions, Documents, and Expected Income tabs.
 class InvestmentDetailSegmentControl extends StatelessWidget {
   final bool isDark;
   final int selectedSegment;
   final int transactionCount;
   final int documentCount;
+  final int expectedIncomeCount;
   final ValueChanged<int> onSegmentChanged;
 
   const InvestmentDetailSegmentControl({
@@ -16,6 +17,7 @@ class InvestmentDetailSegmentControl extends StatelessWidget {
     required this.selectedSegment,
     required this.transactionCount,
     required this.documentCount,
+    required this.expectedIncomeCount,
     required this.onSegmentChanged,
   });
 
@@ -40,15 +42,26 @@ class InvestmentDetailSegmentControl extends StatelessWidget {
               onTap: () => onSegmentChanged(0),
             ),
           ),
-          // Documents Tab
+          // Expected Income Tab
           Expanded(
             child: _SegmentTab(
               isDark: isDark,
               isSelected: selectedSegment == 1,
+              icon: Icons.schedule_rounded,
+              label: 'Expected',
+              count: expectedIncomeCount,
+              onTap: () => onSegmentChanged(1),
+            ),
+          ),
+          // Documents Tab
+          Expanded(
+            child: _SegmentTab(
+              isDark: isDark,
+              isSelected: selectedSegment == 2,
               icon: Icons.folder_outlined,
               label: 'Documents',
               count: documentCount,
-              onTap: () => onSegmentChanged(1),
+              onTap: () => onSegmentChanged(2),
             ),
           ),
         ],
