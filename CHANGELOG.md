@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- Add enterprise engineering review report (#412)
+
+## [3.63.6] - 2026-05-22
+
 ### 🐛 Bug Fixes
 
 - Update Jules schedule to hourly and fix summary script backtick escaping
