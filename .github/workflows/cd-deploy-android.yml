@@ -27,8 +27,8 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
-    timeout-minutes: 90  # Increased timeout for cache operations
+    runs-on: macos-latest  # Temporarily using GitHub-hosted macOS runners
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
@@ -36,6 +36,22 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
+
+      # Set up Flutter for GitHub-hosted runners
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.4'
+          channel: 'stable'
+          cache: true
+
+      # Set up Java for Android builds
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
 
       - name: Extract version from tag
         id: version
@@ -49,21 +65,12 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
-      - name: Verify local environment
+      - name: Verify environment
         run: |
-          echo "🔍 Checking local environment..."
-          echo "Flutter: $(flutter --version | head -1)"
-          echo "Java: $(java -version 2>&1 | head -1)"
-          echo "Dart: $(dart --version)"
-          echo ""
-          echo "📦 Cache locations (self-hosted persistent storage):"
-          echo "  ~/.pub-cache: $(du -sh ~/.pub-cache 2>/dev/null || echo 'not found')"
-          echo "  ~/.gradle: $(du -sh ~/.gradle 2>/dev/null || echo 'not found')"
-          echo ""
-          echo "ℹ️  Caching disabled - self-hosted runners have persistent storage"
-
-      # No cache steps needed - self-hosted runners persist ~/.pub-cache and ~/.gradle between runs
-      # This eliminates 20-40 minute cache save/restore operations that caused timeouts
+          echo "🔍 Checking environment..."
+          flutter --version
+          java -version
+          dart --version
 
       - name: Get dependencies
         id: get_deps
