@@ -7,33 +7,18 @@ library;
 enum ReinvestmentType {
   /// Fixed Deposit
   fixedDeposit,
-  
+
   /// P2P Lending
   p2pLending,
-  
+
   /// Top-up existing investment
   existingInvestment,
-  
+
   /// Tax-saving instrument (ELSS, PPF, etc.)
   taxSaving,
-  
+
   /// Other custom option
   other;
-
-  String get displayName {
-    switch (this) {
-      case ReinvestmentType.fixedDeposit:
-        return 'Fixed Deposit';
-      case ReinvestmentType.p2pLending:
-        return 'P2P Lending';
-      case ReinvestmentType.existingInvestment:
-        return 'Top-up Existing';
-      case ReinvestmentType.taxSaving:
-        return 'Tax Saving';
-      case ReinvestmentType.other:
-        return 'Other';
-    }
-  }
 }
 
 /// Investment suggestion for idle cash

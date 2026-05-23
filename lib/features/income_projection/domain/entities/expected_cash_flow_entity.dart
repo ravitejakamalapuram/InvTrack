@@ -8,61 +8,33 @@ library;
 enum ExpectedCashFlowStatus {
   /// Payment is expected in the future (not yet due)
   upcoming,
-  
+
   /// Payment is due within the next 24 hours
   dueSoon,
-  
+
   /// Payment is overdue by 1-3 days (grace period)
   gracePeriod,
-  
+
   /// Payment is overdue by 4+ days (escalation)
   overdue,
-  
+
   /// Payment was received and matched
   received,
-  
+
   /// Payment was manually marked as dismissed/not expected
   dismissed;
-
-  String get displayName {
-    switch (this) {
-      case ExpectedCashFlowStatus.upcoming:
-        return 'Upcoming';
-      case ExpectedCashFlowStatus.dueSoon:
-        return 'Due Soon';
-      case ExpectedCashFlowStatus.gracePeriod:
-        return 'Grace Period';
-      case ExpectedCashFlowStatus.overdue:
-        return 'Overdue';
-      case ExpectedCashFlowStatus.received:
-        return 'Received';
-      case ExpectedCashFlowStatus.dismissed:
-        return 'Dismissed';
-    }
-  }
 }
 
 /// Source of the expected amount prediction
 enum PredictionSource {
   /// Fixed amount from investment metadata (e.g., FD interest)
   fixed,
-  
+
   /// Predicted using Weighted Moving Average (WMA)
   wma,
-  
+
   /// Manually entered by user
   manual;
-
-  String get displayName {
-    switch (this) {
-      case PredictionSource.fixed:
-        return 'Fixed';
-      case PredictionSource.wma:
-        return 'Smart Prediction';
-      case PredictionSource.manual:
-        return 'Manual';
-    }
-  }
 }
 
 /// Expected Cash Flow Entity

@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
+import 'package:inv_tracker/features/income_projection/presentation/utils/status_display_helpers.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_cell.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -302,7 +303,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildDetailRow(l10n.calendarGridExpectedDate, DateFormat('MMM dd, yyyy').format(expected.expectedDate)),
             _buildDetailRow(l10n.calendarGridExpectedAmount, formatCompactCurrency(expected.expectedAmount, symbol: currencySymbol, locale: locale)),
-            _buildDetailRow(l10n.calendarGridStatus, expected.status.displayName),
+            _buildDetailRow(l10n.calendarGridStatus, getStatusDisplayName(l10n, expected.status)),
             if (expected.actualAmount != null)
               _buildDetailRow(l10n.calendarGridActualAmount, formatCompactCurrency(expected.actualAmount!, symbol: currencySymbol, locale: locale)),
             if (expected.actualDate != null)

@@ -4859,5 +4859,37 @@
         "type": "String"
       }
     }
+  },
+  "growthTrendStrong": "Strong Growth",
+  "@growthTrendStrong": {
+    "description": "Growth trend label: MoM > 5%"
+  },
+  "growthTrendPositive": "Positive Growth",
+  "@growthTrendPositive": {
+    "description": "Growth trend label: MoM 0-5%"
+  },
+  "growthTrendStable": "Stable",
+  "@growthTrendStable": {
+    "description": "Growth trend label: MoM -5% to 0%"
+  },
+  "growthTrendDeclining": "Declining",
+  "@growthTrendDeclining": {
+    "description": "Growth trend label: MoM < -5%"
+  },
+  "platformReliabilityExcellent": "Excellent",
+  "@platformReliabilityExcellent": {
+    "description": "Platform reliability grade: ≥95% on-time"
+  },
+  "platformReliabilityGood": "Good",
+  "@platformReliabilityGood": {
+    "description": "Platform reliability grade: 85-95% on-time"
+  },
+  "platformReliabilityFair": "Fair",
+  "@platformReliabilityFair": {
+    "description": "Platform reliability grade: 70-85% on-time"
+  },
+  "platformReliabilityPoor": "Poor",
+  "@platformReliabilityPoor": {
+    "description": "Platform reliability grade: <70% on-time"
   }
 }

@@ -135,7 +135,7 @@ class ReinvestmentAdvisor {
         id: _uuid.v4(),
         type: ReinvestmentType.existingInvestment,
         name: 'Top-up ${topPerformer.name}',
-        description: 'Add to your existing ${topPerformer.type.displayName} investment.',
+        description: 'Add to your existing ${topPerformer.type.name} investment.',
         suggestedAmount: availableAmount,
         expectedReturn: topPerformer.expectedRate ?? benchmarkRate,
         tenureMonths: topPerformer.tenureMonths ?? 12,

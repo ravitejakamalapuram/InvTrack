@@ -59,7 +59,7 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 title: l10n.upcomingPaymentAlert,
                 subtitle: l10n.upcomingPaymentAlertSubtitle(
                   settings.upcomingDaysBefore,
-                  settings.upcomingDaysBefore == 1 ? '' : 's',
+                  settings.upcomingDaysBefore != 1 ? 's' : '',
                 ),
                 value: settings.upcomingDaysBefore.toDouble(),
                 min: 0,
@@ -74,7 +74,7 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 title: l10n.overduePaymentAlert,
                 subtitle: l10n.overduePaymentAlertSubtitle(
                   settings.overdueDaysAfter,
-                  settings.overdueDaysAfter == 1 ? '' : 's',
+                  settings.overdueDaysAfter != 1 ? 's' : '',
                 ),
                 value: settings.overdueDaysAfter.toDouble(),
                 min: 0,
@@ -109,7 +109,7 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 title: l10n.dateWindow,
                 subtitle: l10n.dateWindowSubtitle(
                   settings.dateWindowDays,
-                  settings.dateWindowDays == 1 ? '' : 's',
+                  settings.dateWindowDays != 1 ? 's' : '',
                 ),
                 value: settings.dateWindowDays.toDouble(),
                 min: 7,

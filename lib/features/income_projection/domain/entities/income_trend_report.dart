@@ -38,13 +38,7 @@ class PlatformReliability {
     required this.onTimeRate,
   });
 
-  /// Reliability grade (excellent, good, fair, poor)
-  String get grade {
-    if (onTimeRate >= 0.95) return 'Excellent';
-    if (onTimeRate >= 0.85) return 'Good';
-    if (onTimeRate >= 0.70) return 'Fair';
-    return 'Poor';
-  }
+
 
   @override
   String toString() => 'PlatformReliability($platform: $onTimeRate)';
