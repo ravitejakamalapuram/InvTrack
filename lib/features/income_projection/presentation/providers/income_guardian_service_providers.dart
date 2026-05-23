@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/data/services/income_guardian_monitor_service.dart';
 import 'package:inv_tracker/features/income_projection/data/services/income_guardian_sync_service.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_settings_provider.dart';
 
 // ============ FLUTTER LOCAL NOTIFICATIONS PLUGIN ============
 
@@ -49,12 +50,14 @@ final incomeGuardianMonitorServiceProvider = Provider<IncomeGuardianMonitorServi
   final expectedCashFlowRepository = ref.watch(expectedCashFlowRepositoryProvider);
   final investmentRepository = ref.watch(investmentRepositoryProvider);
   final notificationHandler = ref.watch(incomeGuardianNotificationHandlerProvider);
+  final settings = ref.watch(incomeGuardianSettingsProvider);
   final locale = ref.watch(currencyLocaleProvider);
 
   return IncomeGuardianMonitorService(
     expectedCashFlowRepository: expectedCashFlowRepository,
     investmentRepository: investmentRepository,
     notificationHandler: notificationHandler,
+    settings: settings,
     locale: locale,
   );
 });
@@ -65,10 +68,12 @@ final incomeGuardianMonitorServiceProvider = Provider<IncomeGuardianMonitorServi
 final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((ref) {
   final expectedCashFlowRepository = ref.watch(expectedCashFlowRepositoryProvider);
   final investmentRepository = ref.watch(investmentRepositoryProvider);
+  final settings = ref.watch(incomeGuardianSettingsProvider);
 
   return IncomeGuardianSyncService(
     expectedCashFlowRepository: expectedCashFlowRepository,
     investmentRepository: investmentRepository,
+    settings: settings,
   );
 });
 

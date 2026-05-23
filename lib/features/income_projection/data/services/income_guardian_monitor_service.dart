@@ -4,6 +4,7 @@
 /// - Monitors expected cash flows in real-time
 /// - Triggers notifications for overdue and upcoming payments
 /// - Runs once per app session when user is authenticated
+/// - Respects user-configured notification timing preferences
 library;
 
 import 'dart:async';
@@ -12,6 +13,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/handlers/income_guardian_notification_handler.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_settings_provider.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 
 /// Income Guardian monitoring service
@@ -19,6 +21,7 @@ class IncomeGuardianMonitorService {
   final ExpectedCashFlowRepository _expectedCashFlowRepository;
   final InvestmentRepository _investmentRepository;
   final IncomeGuardianNotificationHandler _notificationHandler;
+  final IncomeGuardianSettings _settings;
   final String _locale;
 
   StreamSubscription<List<ExpectedCashFlowEntity>>? _overdueSubscription;
@@ -34,27 +37,41 @@ class IncomeGuardianMonitorService {
     required ExpectedCashFlowRepository expectedCashFlowRepository,
     required InvestmentRepository investmentRepository,
     required IncomeGuardianNotificationHandler notificationHandler,
+    required IncomeGuardianSettings settings,
     required String locale,
   })  : _expectedCashFlowRepository = expectedCashFlowRepository,
         _investmentRepository = investmentRepository,
         _notificationHandler = notificationHandler,
+        _settings = settings,
         _locale = locale;
 
   /// Start monitoring expected cash flows
   Future<void> startMonitoring() async {
     if (_isMonitoring) return;
 
-    LoggerService.info('Income Guardian monitoring started');
+    // Check if monitoring is enabled in settings
+    if (!_settings.enabled) {
+      LoggerService.info('Income Guardian monitoring disabled in settings');
+      return;
+    }
+
+    LoggerService.info(
+      'Income Guardian monitoring started',
+      metadata: {
+        'upcomingDaysBefore': _settings.upcomingDaysBefore,
+        'overdueDaysAfter': _settings.overdueDaysAfter,
+      },
+    );
     _isMonitoring = true;
 
-    // Monitor overdue payments
+    // Monitor overdue payments (using configured days after)
     _overdueSubscription = _expectedCashFlowRepository
         .watchOverdueExpectedCashFlows()
         .listen(_handleOverduePayments);
 
-    // Monitor upcoming payments (1 day before)
+    // Monitor upcoming payments (using configured days before)
     _upcomingSubscription = _expectedCashFlowRepository
-        .watchUpcomingExpectedCashFlows(days: 1)
+        .watchUpcomingExpectedCashFlows(days: _settings.upcomingDaysBefore)
         .listen(_handleUpcomingPayments);
   }
 

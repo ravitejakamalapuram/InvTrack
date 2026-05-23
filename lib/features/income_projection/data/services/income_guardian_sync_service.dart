@@ -6,6 +6,7 @@
 /// - Updates status from pending → received
 /// - Learns platform delays for better predictions
 /// - Tracks variance for confidence scoring
+/// - Respects user-configured matching tolerances
 library;
 
 import 'dart:async';
@@ -13,6 +14,7 @@ import 'dart:async';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_settings_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 
@@ -20,6 +22,7 @@ import 'package:inv_tracker/features/investment/domain/repositories/investment_r
 class IncomeGuardianSyncService {
   final ExpectedCashFlowRepository _expectedCashFlowRepository;
   final InvestmentRepository _investmentRepository;
+  final IncomeGuardianSettings _settings;
 
   StreamSubscription<List<CashFlowEntity>>? _cashFlowSubscription;
   bool _isSyncing = false;
@@ -30,14 +33,29 @@ class IncomeGuardianSyncService {
   IncomeGuardianSyncService({
     required ExpectedCashFlowRepository expectedCashFlowRepository,
     required InvestmentRepository investmentRepository,
+    required IncomeGuardianSettings settings,
   })  : _expectedCashFlowRepository = expectedCashFlowRepository,
-        _investmentRepository = investmentRepository;
+        _investmentRepository = investmentRepository,
+        _settings = settings;
 
   /// Start background sync
   Future<void> startSync() async {
     if (_isSyncing) return;
 
-    LoggerService.info('Income Guardian sync service started');
+    // Check if sync is enabled in settings
+    if (!_settings.enabled) {
+      LoggerService.info('Income Guardian sync service disabled in settings');
+      return;
+    }
+
+    LoggerService.info(
+      'Income Guardian sync service started',
+      metadata: {
+        'amountTolerancePercent': _settings.amountTolerancePercent,
+        'dateWindowDays': _settings.dateWindowDays,
+        'confidenceThresholdPercent': _settings.confidenceThresholdPercent,
+      },
+    );
     _isSyncing = true;
 
     // Monitor all cash flows (we'll filter for income in the handler)
@@ -130,11 +148,13 @@ class IncomeGuardianSyncService {
     ExpectedCashFlowEntity? bestMatch;
     double bestScore = 0.0;
 
+    // Use confidence threshold from settings
+    final minConfidence = _settings.confidenceThresholdPercent / 100.0;
+
     for (final candidate in candidates) {
       final score = _calculateMatchScore(cashFlow, candidate);
 
-      if (score > bestScore && score > 0.5) {
-        // Require at least 50% confidence
+      if (score > bestScore && score >= minConfidence) {
         bestScore = score;
         bestMatch = candidate;
       }
@@ -147,6 +167,7 @@ class IncomeGuardianSyncService {
           'cashFlowId': cashFlow.id,
           'expectedCashFlowId': bestMatch.id,
           'score': bestScore,
+          'confidenceThreshold': minConfidence,
         },
       );
     }
@@ -160,14 +181,20 @@ class IncomeGuardianSyncService {
     CashFlowEntity cashFlow,
     ExpectedCashFlowEntity expectedCashFlow,
   ) {
-    // Date proximity score (within 30 days = valid)
+    // Use date window from settings (in days)
+    final maxDateDifference = _settings.dateWindowDays;
     final daysDifference = cashFlow.date.difference(expectedCashFlow.expectedDate).inDays.abs();
-    final dateScore = daysDifference <= 30 ? (1.0 - (daysDifference / 30)) : 0.0;
+    final dateScore = daysDifference <= maxDateDifference
+        ? (1.0 - (daysDifference / maxDateDifference))
+        : 0.0;
 
-    // Amount similarity score (within 20% = valid)
+    // Use amount tolerance from settings (as decimal)
+    final maxAmountTolerance = _settings.amountTolerancePercent / 100.0;
     final amountDifference = (cashFlow.amount - expectedCashFlow.expectedAmount).abs();
     final amountPercentDiff = amountDifference / expectedCashFlow.expectedAmount;
-    final amountScore = amountPercentDiff <= 0.2 ? (1.0 - (amountPercentDiff / 0.2)) : 0.0;
+    final amountScore = amountPercentDiff <= maxAmountTolerance
+        ? (1.0 - (amountPercentDiff / maxAmountTolerance))
+        : 0.0;
 
     // Combined score (weighted: 60% date, 40% amount)
     return (dateScore * 0.6) + (amountScore * 0.4);
