@@ -393,6 +393,12 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
+              // Defensive bounds check to prevent IndexOutOfBoundsException during
+              // dynamic list filtering or rapid state transitions.
+              if (index < 0 || index >= filteredInvestments.length) {
+                return null; // Silently return null per Flutter Sliver documentation
+              }
+
               final investment = filteredInvestments[index];
               final isArchived = investment.isArchived;
               return StaggeredFadeIn(
