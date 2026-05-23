@@ -174,6 +174,74 @@ void main() {
       expect(find.text('25%'), findsOneWidget);
     });
 
+    testWidgets('gracefully handles missing localizations delegates', (tester) async {
+      // Intentionally omit AppLocalizations.localizationsDelegates
+      // This replicates the scenario where context doesn't have the delegates,
+      // which previously caused a NullPointerException.
+
+      // Mock SharedPreferences for privacy mode
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
+          ],
+          child: MaterialApp(
+            // Notice: localizationsDelegates and supportedLocales are omitted
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify the widget renders successfully without throwing an exception
+      expect(find.byType(GoalCard), findsOneWidget);
+      expect(find.text('Retirement Fund'), findsOneWidget);
+    });
+
+    testWidgets('renders error state correctly without throwing', (tester) async {
+      // Mock SharedPreferences for privacy mode
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.error(Exception('Failed to load'))),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify the error UI is rendered
+      expect(find.byType(GoalCard), findsOneWidget);
+      expect(find.text('Error loading progress'), findsOneWidget);
+      expect(find.text('Retirement Fund'), findsOneWidget);
+    });
+
     testWidgets('handles income goals with monthly amounts', (tester) async {
       final incomeGoal = testGoal.copyWith(
         type: GoalType.incomeTarget,

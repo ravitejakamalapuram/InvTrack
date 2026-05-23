@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -37,8 +38,16 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // ignore: unnecessary_non_null_assertion
-    final l10n = AppLocalizations.of(context)!;
+
+    // Safely retrieve localizations to prevent NullPointerException
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    if (l10n == null) {
+      LoggerService.warn(
+        'AppLocalizations not found in context. Using fallback strings.',
+        metadata: {'widget': 'GoalCard', 'goalId': goal.id},
+      );
+    }
+
     // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
     final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
     final currencySymbol = ref.watch(currencySymbolProvider);
@@ -52,8 +61,8 @@ class GoalCard extends ConsumerWidget {
       child: progressAsync.when(
         data: (progress) => GlassCard(
             semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+                ? l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}'
+                : l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}',
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -111,8 +120,8 @@ class GoalCard extends ConsumerWidget {
           ),
         loading: () => GlassCard(
             semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+                ? l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}'
+                : l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}',
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -126,10 +135,17 @@ class GoalCard extends ConsumerWidget {
               ),
             ),
           ),
-        error: (error, _) => GlassCard(
+        error: (error, stackTrace) {
+          LoggerService.error(
+            'Failed to load progress for goal',
+            error: error,
+            stackTrace: stackTrace,
+            metadata: {'widget': 'GoalCard', 'goalId': goal.id},
+          );
+          return GlassCard(
             semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+                ? l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}'
+                : l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}',
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -177,7 +193,8 @@ class GoalCard extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
+          );
+        },
       ),
     );
   }
