@@ -5,6 +5,7 @@
 /// - Setting changes persist to SharedPreferences
 /// - Settings trigger analytics events
 /// - Default values when no saved settings exist
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
