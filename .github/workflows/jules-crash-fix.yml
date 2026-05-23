@@ -24,7 +24,7 @@ on:
       min_affected_users:
         description: 'Minimum affected users to process crash'
         required: false
-        default: '5'
+        default: 5
         type: number
       report_type:
         description: 'Crashlytics report type'
@@ -60,7 +60,13 @@ jobs:
       
       - name: Install Firebase CLI
         run: |
-          npm install -g firebase-tools@latest
+          # Check if Firebase CLI is already installed on self-hosted runner
+          if command -v firebase &> /dev/null; then
+            echo "✅ Firebase CLI already installed: $(firebase --version)"
+          else
+            echo "Installing Firebase CLI..."
+            npm install -g firebase-tools@latest
+          fi
           firebase --version
       
       - name: Authenticate Firebase with Service Account
