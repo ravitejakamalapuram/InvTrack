@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Update Jules schedule to hourly and fix summary script backtick escaping

@@ -4,6 +4,18 @@
 
 ### 🐛 Bug Fixes
 
+- Use correct Crashlytics API endpoint and remove test data fallback
+
+## [3.63.7] - 2026-05-23
+
+### 📚 Documentation
+
+- Add enterprise engineering review report (#412)
+
+## [3.63.6] - 2026-05-22
+
+### 🐛 Bug Fixes
+
 - Update Jules schedule to hourly and fix summary script backtick escaping
 
 ## [3.9.2] - 2026-05-22
