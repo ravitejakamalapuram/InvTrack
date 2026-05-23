@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
 
 class IncomeCell extends StatelessWidget {
@@ -84,17 +85,19 @@ class IncomeCell extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: Text(
-                    formatCompactCurrency(
-                      expected!.expectedAmount,
-                      symbol: expected!.currency,
-                      locale: 'en_IN', // TODO: Get from settings
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.small.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
+                  child: PrivacyMask(
+                    child: Text(
+                      formatCompactCurrency(
+                        expected!.expectedAmount,
+                        symbol: expected!.currency,
+                        locale: 'en_IN', // TODO: Get from settings
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.small.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
                     ),
                   ),
                 ),
