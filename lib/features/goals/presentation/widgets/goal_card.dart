@@ -200,7 +200,8 @@ class GoalCard extends ConsumerWidget {
     final longPressHandler = onLongPress != null
         ? () {
             HapticFeedback.mediumImpact();
-            onLongPress!();
+            // Using safe call since type promotion doesn't apply to instance variables in closures
+            onLongPress?.call();
           }
         : null;
 
