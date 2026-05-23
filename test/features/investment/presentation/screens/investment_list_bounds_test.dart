@@ -7,7 +7,6 @@ import 'package:inv_tracker/features/investment/presentation/providers/providers
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/investment_list_screen.dart';
-import 'package:inv_tracker/features/investment/presentation/widgets/investment_list_enums.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
