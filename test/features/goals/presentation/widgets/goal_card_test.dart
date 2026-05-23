@@ -261,5 +261,78 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('executes onLongPress safely without crashing', (tester) async {
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+
+      bool longPressExecuted = false;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.value(testProgress)),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: GoalCard(
+                goal: testGoal,
+                onTap: () {},
+                onLongPress: () {
+                  longPressExecuted = true;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Perform a long press
+      await tester.longPress(find.byType(GoalCard));
+      await tester.pumpAndSettle();
+
+      expect(longPressExecuted, isTrue);
+    });
+
+    testWidgets('renders defensively when multiCurrencyGoalProgressProvider throws an error', (tester) async {
+      SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currencySymbolProvider.overrideWith((ref) => '\$'),
+            currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+            multiCurrencyGoalProgressProvider(
+              testGoal.id,
+            ).overrideWith((ref) => Future.error(Exception('Test Error'))),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: GoalCard(goal: testGoal, onTap: () {}),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump(); // Start building
+      await tester.pumpAndSettle(); // Settle with error state
+
+      // Verify the widget renders the error state without crashing
+      expect(find.byType(GoalCard), findsOneWidget);
+      expect(find.text('Error loading progress'), findsOneWidget);
+    });
   });
 }

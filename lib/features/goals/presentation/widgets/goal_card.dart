@@ -134,7 +134,15 @@ class GoalCard extends ConsumerWidget {
               ),
             ),
           ),
-        error: (error, _) => GlassCard(
+        error: (error, stackTrace) {
+          // Fix for test-crash-1: Log the async error to Crashlytics instead of swallowing it
+          LoggerService.error(
+            'Error loading goal progress in GoalCard',
+            error: error,
+            stackTrace: stackTrace,
+            metadata: {'goalId': goal.id},
+          );
+          return GlassCard(
             semanticLabel: isSelectionMode
                 ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
                 : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}'),
@@ -185,7 +193,8 @@ class GoalCard extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
+          );
+        },
       ),
     );
   }
@@ -200,7 +209,9 @@ class GoalCard extends ConsumerWidget {
     final longPressHandler = onLongPress != null
         ? () {
             HapticFeedback.mediumImpact();
-            onLongPress!();
+            // Fix for test-crash-1: Use safe invocation to prevent Null check operator exception
+            // since Dart type promotion doesn't apply to instance variables in closures
+            onLongPress?.call();
           }
         : null;
 
