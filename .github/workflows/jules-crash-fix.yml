@@ -83,11 +83,11 @@ jobs:
           # Set environment variable for Firebase SDK (Node.js will use this)
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-service-account.json
 
-          # Install Google Auth Library for OAuth2 token generation (no gcloud needed)
-          npm install -g google-auth-library
+          # Install Google Auth Library locally (for OAuth2 token generation)
+          npm install google-auth-library
 
           echo "✅ Firebase service account configured"
-          echo "✅ Google Auth Library installed for OAuth2 token generation"
+          echo "✅ Google Auth Library installed"
       
       - name: Fetch Crashlytics Top Issues
         id: fetch_crashes
