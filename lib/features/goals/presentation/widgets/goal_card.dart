@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -37,23 +38,39 @@ class GoalCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // ignore: unnecessary_non_null_assertion
-    final l10n = AppLocalizations.of(context)!;
+
+    // Safely retrieve localizations to prevent NullPointerException
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+
     // Use multi-currency provider for accurate progress with mixed currencies (Rule 21.3)
     final progressAsync = ref.watch(multiCurrencyGoalProgressProvider(goal.id));
+
+    ref.listen(multiCurrencyGoalProgressProvider(goal.id), (previous, next) {
+      if (!next.isLoading && next.hasError) {
+        LoggerService.warn(
+          'Failed to load goal progress',
+          error: next.error,
+          stackTrace: next.stackTrace,
+          metadata: {'goalId': goal.id},
+        );
+      }
+    });
+
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     final handlers = _buildInteractionHandlers();
 
+    final semanticLabel = isSelectionMode
+        ? (l10n?.selectGoalSemanticLabel(goal.name) ?? 'Select ${goal.name}')
+        : (l10n?.viewGoalDetailsSemanticLabel(goal.name) ?? 'View details for ${goal.name}');
+
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: progressAsync.when(
         data: (progress) => GlassCard(
-            semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+            semanticLabel: semanticLabel,
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -110,9 +127,7 @@ class GoalCard extends ConsumerWidget {
             ),
           ),
         loading: () => GlassCard(
-            semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+            semanticLabel: semanticLabel,
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -126,10 +141,9 @@ class GoalCard extends ConsumerWidget {
               ),
             ),
           ),
-        error: (error, _) => GlassCard(
-            semanticLabel: isSelectionMode
-                ? l10n.selectGoalSemanticLabel(goal.name)
-                : l10n.viewGoalDetailsSemanticLabel(goal.name),
+        error: (error, stackTrace) {
+          return GlassCard(
+            semanticLabel: semanticLabel,
             onTap: handlers.onTap,
             onLongPress: handlers.onLongPress,
             padding: EdgeInsets.zero,
@@ -177,7 +191,8 @@ class GoalCard extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
+          );
+        },
       ),
     );
   }
