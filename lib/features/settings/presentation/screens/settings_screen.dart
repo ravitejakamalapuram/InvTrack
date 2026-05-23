@@ -14,6 +14,7 @@ import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.d
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/income_projection/presentation/screens/income_guardian_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/about_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/data_management_screen.dart';
@@ -97,6 +98,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: l10n.remindersAndSummaries,
                 onTap: () =>
                     _navigateTo(context, const NotificationsSettingsScreen()),
+              ),
+            ],
+          ),
+
+          // Income Guardian
+          SettingsSection(
+            title: 'Income Guardian',
+            children: [
+              SettingsNavTile(
+                icon: Icons.security,
+                iconColor: AppColors.successLight,
+                title: 'Income Guardian',
+                subtitle: 'Automated income tracking and payment alerts',
+                onTap: () =>
+                    _navigateTo(context, const IncomeGuardianSettingsScreen()),
               ),
             ],
           ),
