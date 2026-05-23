@@ -1,101 +1,120 @@
-# InvTrack Enterprise Engineering Review
+# Enterprise Engineering Review Report - InvTrack
 
 ## Executive Summary
-* **Overall Repo Health Score:** 80/100
-* **Biggest Risks:**
-  * **UI God Classes:** Several screens (especially `add_investment_screen.dart` at 1500+ lines and `investment_detail_screen.dart` at 900+ lines) are oversized, mixing UI, form state, complex validation, and logic.
-  * **Duplication:** Common form layouts, list tiles, and empty state handlers are repeated across screens. Date formatting, amount formatting, and error state handling could be centralized.
-  * **Performance Anti-patterns:** Widespread use of `.where().toList()` when evaluating boolean conditions like `.isEmpty`.
-* **Highest ROI Improvements:**
-  * Adopt a declarative form builder to deduplicate form inputs and sections.
-  * Replace O(N) array allocation checks (`.where().toList().isEmpty`) with O(1) checks (`!any()`).
-  * Break down the major screens into smaller, composable, independently testable widgets.
+* **Overall Repo Health Score**: 75/100
+* **Biggest Risks**: High duplication of error handling patterns across screens (violating enterprise Rule 3.3.3), multiple UI screens directly handling `catch` blocks rather than using `ErrorHandler.handle()`, missing timeout constraints on some Firebase update operations, and massive "God Classes" exceeding 1,000 lines.
+* **Highest ROI Improvements**: Extracting `ScaffoldMessenger.of(context).showSnackBar` into a centralized `AppFeedback` or `NotificationService` call, migrating direct error handling to `ErrorHandler.handle()`, breaking down `AddInvestmentScreen` (1,502 lines) into smaller components.
+* **Architecture Concerns**: The repository structure generally adheres to the prescribed Clean Architecture (UI -> State -> Domain -> Data) using Riverpod and feature-first folders. However, there is UI-layer leakage of business logic in large screen widgets and direct Firebase/Auth handling in some UI blocks (e.g., in `data_management_screen.dart`).
 
 ## Critical Issues
-1. `lib/features/investment/presentation/screens/add_investment_screen.dart` is a massive "God Class" (1,502 lines). This file violates standard separation of concerns and maintainability principles.
-2. `lib/features/investment/presentation/screens/investment_detail_screen.dart` is another god class (937 lines). It handles routing, UI logic, document management, and transaction viewing simultaneously.
+1. **Error Handling & Rule 3.3.3 Violations**: There are 62 instances of raw `ScaffoldMessenger.of(context).showSnackBar` directly in UI code, frequently exposing raw exceptions or hardcoded strings to the user, directly violating Rule 3.3.3 which mandates `ErrorHandler.handle()`.
+2. **Missing Firestore Timeouts**: Direct `.set()` and `.update()` calls exist across several data repositories (e.g., `version_check_service.dart`, `firestore_goal_repository.dart`, `firestore_investment_repository.dart`) without `.timeout(Duration(seconds: 5))` wrappers. This violates Rule 4.2 (Offline-First Pattern).
+3. **God Classes & Oversized Files**:
+   - `add_investment_screen.dart` (1,502 lines)
+   - `analytics_service.dart` (1,199 lines)
+   - `notification_service.dart` (1,080 lines)
+   - `add_document_sheet.dart` (1,020 lines)
+   These violate the strict <500 lines rule (Rule 14).
+4. **Localization (Rule 16)**: Direct use of `Text('...')` instead of `AppLocalizations.of(context)!.key` was detected in PDF exporter and some UI areas (e.g., `report_pdf_exporter.dart`).
+5. **Hardcoded Currency (Rule 16.5)**: 5 instances of `formatCompactIndian` persist, violating the mandate to use locale-aware `formatCompactCurrency()`.
 
 ## Duplication Report
-1. **Forms:** Creating investments and creating transactions have duplicate UI form inputs (TextFields, date pickers, dropdowns).
-2. **List Items:** The codebase repeats similar metric tile and list layouts for displaying different types of data (Investments, CashFlows, Goals).
-3. **Currency Conversion/Privacy:** Multi-currency logic, while governed by rules, is sometimes repeated in the view layer rather than centralized in a unified `CurrencyAmountDisplay` widget.
+1. **Snackbar Spam**: `ScaffoldMessenger.of(context).showSnackBar(...)` is duplicated 62 times across multiple screens (`about_screen.dart`, `data_management_screen.dart`, `document_viewer_screen.dart`).
+   - *Fix*: Replace with `AppFeedback.showError(context, message)` or `ErrorHandler.handle()`.
+2. **Try/Catch Blocks in UI**: Components like `data_management_screen.dart` and `about_screen.dart` directly catch `FirebaseAuthException` and `catch (e)` and handle errors themselves rather than delegating to `ErrorHandler`.
+   - *Fix*: Create unified generic handlers inside `ErrorHandler`.
+3. **Firestore Repository Boilerplate**: Repeated manual serialization logic (`.set(_investmentToFirestore(investment))`) and transaction batching logic.
+   - *Fix*: Introduce a generic `BaseFirestoreRepository<T>` class with built-in timeouts and generic serialization.
+4. **Provider Initializations**: Repeated `try/catch` and `AnalyticsService` / `CrashlyticsService` extraction in UI events (e.g., `sign_in_screen.dart`).
+   - *Fix*: Move to a dedicated Controller/Notifier class instead of keeping it in `onPressed` callbacks of UI elements.
 
 ## Reusability Opportunities
-1. **Forms:** Implement a reusable Form Builder abstraction (`InvTrackFormBuilder`) to standardize validation, error handling, and visual layout of form fields.
-2. **UI Cards:** Extract generic list items that can display an icon, title, subtitle, and an action slot.
-3. **Empty/Error States:** Standardize error layout boundaries with reusable Error State Widgets across all `AsyncValue` consumers.
+1. **Base Error Handling Mixin**: Extract the error propagation logic in view models to a base `StateNotifier`/`AsyncNotifier`.
+2. **Firestore Generic Repository**: Create a `FirestoreRepository<T>` that enforces timeouts and offline-first paradigms across all collections (Users, Goals, Investments).
+3. **Generic CSV Parser**: `simple_csv_parser.dart` (815 lines) could be abstracted into strategy patterns to support various bank CSV formats without exploding the file size.
+4. **Shared Bottom Sheets**: `add_document_sheet.dart` (1,020 lines) has too much internal logic. Split UI definition from state/file selection logic.
+5. **AppFeedback Utility**: Centralize all Snackbars, Dialogs, and Toasts.
 
 ## Architecture Review
-1. **Feature Leakage:** Features occasionally reference each other directly instead of through domain events or shared core services.
-2. **State Management:** Screens have heavy local state `ConsumerStatefulWidget` instead of delegating form validation/state management to Riverpod Notifiers, creating bloated UI layers.
-3. **Rule 21 (Multi-Currency):** Strict compliance is required to ensure base currency references do not leak into source entity definitions.
+* **Scalability**: High. Feature-first structure makes it easy to add new modules. Riverpod provides good state isolation.
+* **Maintainability**: Degraded by "God Classes". `add_investment_screen.dart` handles too many responsibilities (validation, form state, calculation, UI).
+* **Layering**: Mostly good, but UI screens occasionally access repositories directly via `ref.read` (e.g., `sign_in_screen.dart` reading `authRepositoryProvider` directly). This should be mediated by a Presentation Controller.
+* **Testability**: Logic trapped in UI callbacks (`onPressed`) makes unit testing hard.
 
 ## Performance Findings
-1. Found numerous instances of the `where(...).toList()` anti-pattern in `lib/` (e.g. `BatchCurrencyConverter`, `GoalProgressProvider`, `InvestmentStatsProvider`, etc.). These create unnecessary heap allocations.
+1. **UI Renders**: Extremely large build methods in `add_investment_screen.dart` risk massive widget tree rebuilds. Ensure `ref.select` is used extensively and extract smaller widgets into separate files.
+2. **Heavy File Loading**: `simple_csv_parser.dart` is synchronous or block-heavy. Ensure Web Workers/Isolates are used for parsing large CSV files.
+3. **Firestore Caching**: Ensure `timeout` is applied consistently to prevent blocking UI on network timeouts.
 
 ## Security & Reliability Findings
-1. **Timeouts:** Per rule 19.5, ensure all Firestore write operations have a 5-second timeout `.timeout(Duration(seconds: 5))`.
-2. **Privacy:** The financial wrapper `PrivacyProtectionWrapper` is documented as mandatory, ensure it wraps every newly introduced component that handles real user amounts.
+1. **Raw Exception Exposure**: Showing raw exceptions (caught by raw `catch(e)`) in Snackbars leaks implementation details to users.
+2. **Direct Authentication Flow**: `sign_in_screen.dart` handles Auth exceptions directly. Move this to the Domain layer to prevent UI tampering risks and improve reliability.
 
 ## Testing Gaps
-1. **UI Tests:** The large god classes make granular widget testing impossible. Breaking these apart is a prerequisite for adding effective widget test coverage.
-2. **Multi-Currency Tests:** Ensure edge case testing exists for changing currencies where the user's base currency updates dynamically.
+1. **God Class Tests**: Testing `add_investment_screen.dart` (1,502 lines) is likely brittle due to its size and mixed concerns.
+2. **Missing Timeouts**: Lack of timeouts on `set`/`update` means offline tests might not be covering edge cases where data gets stuck pending.
 
 ## Rules Compliance Findings
-1. File lengths violate implicit standards for maintainable UI components (typically < 300 lines).
-2. Performance checks must be addressed to comply with rule 19.6 ("All screens MUST load within 2 seconds") by avoiding large, unmemoized build functions.
+* **Rule 3.3.3 (Centralized Error Handling)**: Violated in 62 locations using `ScaffoldMessenger`.
+* **Rule 4.2 (Offline-first pattern)**: Violated in multiple data repositories missing `.timeout(Duration(seconds: 5))`.
+* **Rule 14 (God Classes)**: 10+ files exceed the 500 lines threshold.
+* **Rule 16.1 (String Externalization)**: Some instances of raw strings in `report_pdf_exporter.dart`.
+* **Rule 16.5 (Currency Localization)**: Remaining `formatCompactIndian` usages found.
 
 ## Recommended Refactor Plan
-### Quick Wins
-1. Clean up `.where().toList()` allocations across `lib/` and replace them with `for` loops or `.any()` / `.every()` logic.
-2. Ensure Firestore writes use proper timeouts.
 
-### Medium Effort Improvements
-1. Break `add_investment_screen.dart` and `investment_detail_screen.dart` into smaller widgets (`InvestmentFormHeader`, `TransactionListSection`, etc.).
-2. Extract reusable form components (amount input, date picker, dropdown).
+### Quick Wins (Sprint 1)
+1. **Enforce Timeouts**: Audit and append `.timeout(Duration(seconds: 5))` to all `.set()` and `.update()` calls in Firestore repositories.
+2. **Replace ScaffoldMessenger**: Migrate all direct `ScaffoldMessenger` calls to `ErrorHandler.handle()` or a shared `AppFeedback` class.
+3. **Remove Hardcoded Strings/Currency**: Fix `report_pdf_exporter.dart` hardcoded strings and replace `formatCompactIndian`.
 
-### Long-term Architecture Improvements
-1. Adopt a more robust form state management system leveraging Riverpod to remove state from UI build methods.
-2. Enforce strict max line counts via linting.
+### Medium Effort (Sprint 2)
+1. **Componentize God Screens**: Break down `add_investment_screen.dart` (1,500+ lines), `data_management_screen.dart` (839 lines), and `investment_detail_screen.dart` (937 lines) into smaller, single-responsibility widgets.
+2. **Extract Form State**: Move form validation and state logic out of UI into Riverpod Notifiers.
 
-## Top 10 Priority Execution Items
-1. Replace `.where().toList()` anti-patterns.
-2. Decompose `add_investment_screen.dart` into sub-widgets.
-3. Decompose `investment_detail_screen.dart` into sub-widgets.
-4. Extract `CurrencyAmountText` widget.
-5. Create a shared `FormInputComponent` library.
-6. Enforce Firestore write timeouts.
-7. Centralize Riverpod `AsyncValue` error handling UI.
-8. Unify `EmptyStateWidget` usage.
-9. Centralize List Item UI for standard entries.
-10. Move form validation rules to the domain layer.
+### Long-Term Architecture (Sprint 3+)
+1. **Introduce Base Firestore Repository**: Unify CRUD operations into a generic class that enforces Rules 4.2 and 5.3 automatically.
+2. **Controller Pattern**: Ensure UI widgets never call repositories directly. Introduce Presentation Controllers (Notifiers) to bridge UI and Domain.
 
-## Top 10 Duplication-Removal Opportunities
-1. Consolidate Form Input widgets (Text, Date, Amount, Dropdown) across Add screens.
-2. Unify Empty State implementations.
-3. Consolidate currency conversion + display logic into a single `CurrencyAmountText` widget.
-4. Unify List Item UI for Investments, Goals, and History.
-5. Extract common validation rules (required, min value, max length) into a validator utility.
-6. Combine repeated Firestore query setups into base repository methods.
-7. Unify Error State / Retry UI components.
-8. Standardize Loading Skeletons for lists.
-9. Extract common date formatting logic used in lists and details.
-10. Consolidate repetitive Riverpod `ref.listen` logic for error handling into a custom hook/mixin.
+# Final Requirements
 
-## Top Reusable Abstractions Worth Introducing
-1. `InvTrackFormBuilder`: A declarative way to build forms.
-2. `CurrencyDisplayWidget`: Automatically handles base currency conversion and formatting.
-3. `PaginatedFirestoreListView`: A reusable list component for standardizing infinite scrolling.
-4. `BaseRepository`: Abstract common Firestore CRUD operations.
+### Top 10 Highest-Value Fixes
+1. Add 5-second timeouts to all Firestore writes.
+2. Replace all `ScaffoldMessenger` calls with `ErrorHandler.handle()`.
+3. Break down `add_investment_screen.dart` into smaller chunks.
+4. Move `catch(e)` blocks from UI into Riverpod Notifiers.
+5. Replace `formatCompactIndian` with `formatCompactCurrency`.
+6. Extract UI logic from `data_management_screen.dart`.
+7. Move direct repository calls in `sign_in_screen.dart` to an AuthController.
+8. Componentize `add_document_sheet.dart`.
+9. Ensure all `catch(e)` errors map to typed `AppException`s.
+10. Remove raw string texts from `report_pdf_exporter.dart`.
 
-## Files/Components with Highest Technical Debt
-1. `lib/features/investment/presentation/screens/add_investment_screen.dart` (1502 lines)
-2. `lib/features/investment/presentation/screens/investment_detail_screen.dart` (937 lines)
-3. `lib/features/investment/presentation/screens/investment_list_screen.dart` (673 lines)
-4. `lib/features/portfolio_health/presentation/screens/portfolio_health_details_screen.dart` (537 lines)
+### Top 10 Duplication-Removal Opportunities
+1. Shared `AppFeedback` for Snackbars.
+2. Shared generic `BaseFirestoreRepository<T>`.
+3. Abstracted CSV processing strategies.
+4. Shared `try/catch` wrapper inside Riverpod Notifiers for async actions.
+5. Reusable Confirmation Dialog widget.
+6. Reusable Bottom Sheet scaffolding.
+7. Reusable Empty State widget configuration.
+8. Shared date/time formatters avoiding inline `.toString().split(' ')`.
+9. Common Loading Overlay.
+10. Shared Google Sign In error handlers.
 
-## Suggested Engineering Standards Missing From the Repository
-1. Maximum File Length rule (e.g., 300 lines max for UI files).
-2. Requirement for UI components to have companion widget tests.
-3. Strict ban on business logic inside `build()` methods.
-4. Declarative UI Component library mandate (no raw Text/Containers for common elements).
+### Top Reusable Abstractions Worth Introducing
+* `AppFeedbackService` or utility for safe UI feedback.
+* `BaseFirestoreRepository<T>` enforcing timeouts and serialization.
+* `AsyncActionNotifier` to unify `loading`/`error` states for button clicks.
+* Form Field validation mixins.
+
+### Files/Components with Highest Technical Debt
+1. `add_investment_screen.dart` (Complexity, Size, Mixed logic)
+2. `analytics_service.dart` (Size, Boilerplate)
+3. `data_management_screen.dart` (Mixed presentation and direct repo access)
+4. `notification_service.dart` (High complexity and length)
+
+### Suggested Engineering Standards Missing
+* **Strict Presentation Controller Pattern**: Explicitly ban `ref.read(repositoryProvider)` in UI widgets. Require `ref.read(controllerProvider.notifier)`.
+* **Standardized Form Management**: Adopt a standard way to handle large forms (e.g., `flutter_form_builder` or custom Riverpod form states) to prevent 1500-line form files.
+* **Maximum Widget Depth**: Add a linter rule restricting widget tree depth to encourage componentization.
