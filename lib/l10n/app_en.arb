@@ -988,6 +988,81 @@
     "description": "Loading state text"
   },
 
+  "calendarScreenEmptyAll": "No Expected Payments",
+  "@calendarScreenEmptyAll": {
+    "description": "Empty state message when showing all payments"
+  },
+
+  "calendarScreenEmptyPending": "No Pending Payments",
+  "@calendarScreenEmptyPending": {
+    "description": "Empty state message when showing pending payments"
+  },
+
+  "calendarScreenEmptyOverdue": "No Overdue Payments",
+  "@calendarScreenEmptyOverdue": {
+    "description": "Empty state message when showing overdue payments"
+  },
+
+  "calendarGridPreviousMonth": "Previous month",
+  "@calendarGridPreviousMonth": {
+    "description": "Tooltip for previous month button"
+  },
+
+  "calendarGridNextMonth": "Next month",
+  "@calendarGridNextMonth": {
+    "description": "Tooltip for next month button"
+  },
+
+  "calendarGridInvestmentHeader": "Investment",
+  "@calendarGridInvestmentHeader": {
+    "description": "Header label for investment column"
+  },
+
+  "calendarGridUnknownInvestment": "Unknown",
+  "@calendarGridUnknownInvestment": {
+    "description": "Fallback text when investment name cannot be loaded"
+  },
+
+  "calendarGridExpectedCount": "{count} expected",
+  "@calendarGridExpectedCount": {
+    "description": "Label showing count of expected payments",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "calendarGridPaymentDetails": "Payment Details",
+  "@calendarGridPaymentDetails": {
+    "description": "Title for payment details bottom sheet"
+  },
+
+  "calendarGridExpectedDate": "Expected Date",
+  "@calendarGridExpectedDate": {
+    "description": "Label for expected payment date"
+  },
+
+  "calendarGridExpectedAmount": "Expected Amount",
+  "@calendarGridExpectedAmount": {
+    "description": "Label for expected payment amount"
+  },
+
+  "calendarGridStatus": "Status",
+  "@calendarGridStatus": {
+    "description": "Label for payment status"
+  },
+
+  "calendarGridActualAmount": "Actual Amount",
+  "@calendarGridActualAmount": {
+    "description": "Label for actual payment amount received"
+  },
+
+  "calendarGridActualDate": "Actual Date",
+  "@calendarGridActualDate": {
+    "description": "Label for actual payment date received"
+  },
+
   "howToAccessIncomeReports": "How do I access Income Guardian reports?",
   "@howToAccessIncomeReports": {
     "description": "FAQ question about accessing income reports"

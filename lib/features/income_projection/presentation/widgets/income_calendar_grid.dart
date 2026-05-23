@@ -9,13 +9,18 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_cell.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:intl/intl.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+// Currency providers from currency_utils.dart - imported for ref.watch
+export 'package:inv_tracker/core/utils/currency_utils.dart' show currencySymbolProvider, currencyLocaleProvider;
 
 class IncomeCalendarGrid extends ConsumerWidget {
   final List<ExpectedCashFlowEntity> expectedCashFlows;
@@ -33,6 +38,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
     final now = DateTime.now();
     final centerMonth = DateTime(now.year, now.month + monthOffset, 1);
     
@@ -56,8 +64,8 @@ class IncomeCalendarGrid extends ConsumerWidget {
     return Column(
       children: [
         // Month navigation header
-        _buildMonthNavigationHeader(context, centerMonth),
-        
+        _buildMonthNavigationHeader(context, centerMonth, l10n),
+
         const SizedBox(height: 8),
 
         // Horizontal scrollable table
@@ -67,13 +75,16 @@ class IncomeCalendarGrid extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header row (month names)
-              _buildHeaderRow(months),
+              _buildHeaderRow(months, l10n),
               
               // Investment rows
               ...groupedByInvestment.entries.map((entry) {
                 return _buildInvestmentRow(
                   context,
                   ref,
+                  l10n,
+                  currencySymbol,
+                  locale,
                   entry.key,
                   entry.value,
                   months,
@@ -86,7 +97,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthNavigationHeader(BuildContext context, DateTime centerMonth) {
+  Widget _buildMonthNavigationHeader(BuildContext context, DateTime centerMonth, AppLocalizations l10n) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
@@ -95,7 +106,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.chevron_left_rounded),
             onPressed: () => onMonthChanged(monthOffset - 1),
-            tooltip: 'Previous month',
+            tooltip: l10n.calendarGridPreviousMonth,
           ),
           Text(
             DateFormat('MMMM yyyy').format(centerMonth),
@@ -107,14 +118,14 @@ class IncomeCalendarGrid extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.chevron_right_rounded),
             onPressed: () => onMonthChanged(monthOffset + 1),
-            tooltip: 'Next month',
+            tooltip: l10n.calendarGridNextMonth,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderRow(List<DateTime> months) {
+  Widget _buildHeaderRow(List<DateTime> months, AppLocalizations l10n) {
     return Row(
       children: [
         // Investment name column header
@@ -129,7 +140,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
             ),
           ),
           child: Text(
-            'Investment',
+            l10n.calendarGridInvestmentHeader,
             style: AppTypography.small.copyWith(
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white : AppColors.neutral900Light,
@@ -171,6 +182,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
   Widget _buildInvestmentRow(
     BuildContext context,
     WidgetRef ref,
+    AppLocalizations l10n,
+    String currencySymbol,
+    String locale,
     String investmentId,
     List<ExpectedCashFlowEntity> expectedForInvestment,
     List<DateTime> months,
@@ -178,9 +192,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
     // Get investment name
     final investmentAsync = ref.watch(investmentByIdProvider(investmentId));
     final investmentName = investmentAsync.when(
-      data: (inv) => inv?.name ?? 'Unknown',
-      loading: () => 'Loading...',
-      error: (error, stackTrace) => 'Error',
+      data: (inv) => inv?.name ?? l10n.calendarGridUnknownInvestment,
+      loading: () => l10n.dashboardLoading,
+      error: (error, stackTrace) => l10n.dashboardUnknownInvestment,
     );
 
     return Row(
@@ -219,7 +233,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${expectedForInvestment.length} expected',
+                l10n.calendarGridExpectedCount(expectedForInvestment.length),
                 style: AppTypography.caption.copyWith(
                   color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                 ),
@@ -239,7 +253,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
             expected: expectedForMonth.isEmpty ? null : expectedForMonth.first,
             isDark: isDark,
             onTap: expectedForMonth.isEmpty ? null : () {
-              _showPaymentDetails(context, expectedForMonth.first, ref);
+              _showPaymentDetails(context, expectedForMonth.first, ref, l10n, currencySymbol, locale);
             },
           );
         }),
@@ -251,6 +265,9 @@ class IncomeCalendarGrid extends ConsumerWidget {
     BuildContext context,
     ExpectedCashFlowEntity expected,
     WidgetRef ref,
+    AppLocalizations l10n,
+    String currencySymbol,
+    String locale,
   ) {
     // Show bottom sheet with payment details
     showModalBottomSheet(
@@ -271,7 +288,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Payment Details',
+                  l10n.calendarGridPaymentDetails,
                   style: AppTypography.h3.copyWith(
                     color: isDark ? Colors.white : AppColors.neutral900Light,
                   ),
@@ -283,13 +300,13 @@ class IncomeCalendarGrid extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            _buildDetailRow('Expected Date', DateFormat('MMM dd, yyyy').format(expected.expectedDate)),
-            _buildDetailRow('Expected Amount', '₹${expected.expectedAmount.toStringAsFixed(2)}'),
-            _buildDetailRow('Status', expected.status.displayName),
+            _buildDetailRow(l10n.calendarGridExpectedDate, DateFormat('MMM dd, yyyy').format(expected.expectedDate)),
+            _buildDetailRow(l10n.calendarGridExpectedAmount, formatCompactCurrency(expected.expectedAmount, symbol: currencySymbol, locale: locale)),
+            _buildDetailRow(l10n.calendarGridStatus, expected.status.displayName),
             if (expected.actualAmount != null)
-              _buildDetailRow('Actual Amount', '₹${expected.actualAmount!.toStringAsFixed(2)}'),
+              _buildDetailRow(l10n.calendarGridActualAmount, formatCompactCurrency(expected.actualAmount!, symbol: currencySymbol, locale: locale)),
             if (expected.actualDate != null)
-              _buildDetailRow('Actual Date', DateFormat('MMM dd, yyyy').format(expected.actualDate!)),
+              _buildDetailRow(l10n.calendarGridActualDate, DateFormat('MMM dd, yyyy').format(expected.actualDate!)),
             const SizedBox(height: 24),
           ],
         ),

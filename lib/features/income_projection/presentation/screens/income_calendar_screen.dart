@@ -41,7 +41,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.invalidate(allExpectedCashFlowsProvider),
-            tooltip: 'Refresh',
+            tooltip: l10n.calendarRefresh,
           ),
         ],
       ),
@@ -94,7 +94,7 @@ class IncomeCalendarScreen extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => _buildErrorState(context, isDark, error),
+          error: (error, stack) => _buildErrorState(context, isDark, error, ref, l10n),
         ),
       ),
     );
@@ -137,10 +137,10 @@ class IncomeCalendarScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               filter == IncomeCalendarFilter.all
-                  ? 'No Expected Payments'
+                  ? l10n.calendarScreenEmptyAll
                   : filter == IncomeCalendarFilter.pending
-                      ? 'No Pending Payments'
-                      : 'No Overdue Payments',
+                      ? l10n.calendarScreenEmptyPending
+                      : l10n.calendarScreenEmptyOverdue,
               style: AppTypography.h3.copyWith(
                 color: isDark ? Colors.white : AppColors.neutral900Light,
               ),
@@ -151,22 +151,27 @@ class IncomeCalendarScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, bool isDark, Object error) {
+  Widget _buildErrorState(BuildContext context, bool isDark, Object error, WidgetRef ref, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.error_outline_rounded,
+            Icons.cloud_off_rounded,
             size: 64,
-            color: isDark ? AppColors.errorDark : AppColors.errorLight,
+            color: AppColors.errorLight,
           ),
           const SizedBox(height: 16),
           Text(
-            'Failed to load calendar',
+            l10n.calendarLoadFailed,
             style: AppTypography.h3.copyWith(
               color: isDark ? Colors.white : AppColors.neutral900Light,
             ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => ref.invalidate(allExpectedCashFlowsProvider),
+            child: Text(l10n.calendarRetry),
           ),
         ],
       ),
