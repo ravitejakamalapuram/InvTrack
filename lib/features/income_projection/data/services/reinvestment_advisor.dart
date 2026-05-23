@@ -4,16 +4,10 @@
 /// opportunity cost calculations and investment suggestions.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/reinvestment_opportunity.dart';
-
-/// Provider for Reinvestment Advisor service
-final reinvestmentAdvisorProvider = Provider<ReinvestmentAdvisor>((ref) {
-  return ReinvestmentAdvisor();
-});
 
 /// Reinvestment Advisor Service
 class ReinvestmentAdvisor {

@@ -4,14 +4,8 @@
 /// seasonal adjustments, and platform behavior learning.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
-
-/// Provider for Smart Amount Predictor service
-final smartAmountPredictorProvider = Provider<SmartAmountPredictor>((ref) {
-  return SmartAmountPredictor();
-});
 
 /// Result of amount prediction
 class PredictionResult {

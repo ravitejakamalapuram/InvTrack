@@ -7,16 +7,10 @@
 /// - Income diversification (HHI)
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/income_trend_report.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
-
-/// Provider for Income Trend Analyzer service
-final incomeTrendAnalyzerProvider = Provider<IncomeTrendAnalyzer>((ref) {
-  return IncomeTrendAnalyzer();
-});
 
 /// Income Trend Analyzer Service
 class IncomeTrendAnalyzer {

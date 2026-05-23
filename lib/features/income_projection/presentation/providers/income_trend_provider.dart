@@ -7,9 +7,9 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/income_projection/data/services/income_trend_analyzer.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/income_trend_report.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_provider.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/income_analysis_providers.dart';
 
 /// Provider for income trend report
 final incomeTrendReportProvider = FutureProvider.autoDispose<IncomeTrendReport>((ref) async {
