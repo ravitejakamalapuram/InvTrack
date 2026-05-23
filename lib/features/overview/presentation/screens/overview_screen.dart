@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goals_dashboard_card.dart';
+import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dart';
@@ -170,6 +171,11 @@ class OverviewScreen extends ConsumerWidget {
 
         // Portfolio Health Score Card
         const PortfolioHealthDashboardCard(),
+
+        SizedBox(height: AppSpacing.xl),
+
+        // Income Guardian Card
+        const IncomeGuardianDashboardCard(),
 
         SizedBox(height: AppSpacing.xl),
 
