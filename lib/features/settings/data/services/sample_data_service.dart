@@ -270,6 +270,202 @@ class SampleDataService {
     return (investmentIds: investmentIds, goalIds: goalIds);
   }
 
+  /// Creates income projection demo data showcasing ML features.
+  ///
+  /// Creates 3 P2P investments with:
+  /// - 12 months of historical income (for WMA training)
+  /// - Platform-specific delay patterns (LenDenClub +2 days, Grip -1 day)
+  /// - Variance patterns (5-15% variance for tolerance testing)
+  /// - Seasonal patterns (Q4 bonus in December)
+  ///
+  /// **Multi-Currency (Rule 21.6):** Uses user's base currency
+  Future<SampleDataResult> createIncomeProjectionData({required String baseCurrency}) async {
+    final now = DateTime.now();
+    final investments = <InvestmentEntity>[];
+    final cashFlows = <CashFlowEntity>[];
+    final investmentIds = <String>[];
+
+    // Helper to create investment
+    InvestmentEntity createInvestment({
+      required String name,
+      required InvestmentType type,
+      required String currency,
+      required DateTime createdAt,
+      required IncomeFrequency incomeFrequency,
+      required String platform,
+      String? notes,
+      double? expectedRate,
+    }) {
+      final id = _uuid.v4();
+      investmentIds.add(id);
+      final inv = InvestmentEntity(
+        id: id,
+        name: name,
+        type: type,
+        status: InvestmentStatus.open,
+        currency: currency,
+        createdAt: createdAt,
+        updatedAt: now,
+        incomeFrequency: incomeFrequency,
+        notes: notes,
+        expectedRate: expectedRate,
+        platform: platform,
+      );
+      investments.add(inv);
+      return inv;
+    }
+
+    // Helper to add cash flow with optional delay
+    void addCashFlow(
+      String investmentId,
+      DateTime date,
+      CashFlowType type,
+      double amount,
+      String currency, {
+      int delayDays = 0,
+    }) {
+      cashFlows.add(
+        CashFlowEntity(
+          id: _uuid.v4(),
+          investmentId: investmentId,
+          date: date.add(Duration(days: delayDays)),
+          type: type,
+          amount: amount,
+          currency: currency,
+          createdAt: now,
+        ),
+      );
+    }
+
+    // ============================================================
+    // INVESTMENT 1: LenDenClub (Consistent +2 day delay pattern)
+    // ============================================================
+    final lendenClub = createInvestment(
+      name: 'LenDenClub Portfolio',
+      type: InvestmentType.p2pLending,
+      currency: baseCurrency,
+      createdAt: now.subtract(const Duration(days: 365)),
+      incomeFrequency: IncomeFrequency.monthly,
+      platform: 'LenDenClub',
+      notes: '📊 SAMPLE: Notice the consistent +2 day delay pattern!',
+      expectedRate: 12.0,
+    );
+
+    // Initial investment
+    addCashFlow(
+      lendenClub.id,
+      now.subtract(const Duration(days: 365)),
+      CashFlowType.invest,
+      100000,
+      baseCurrency,
+    );
+
+    // 12 months of income with +2 day delay + 5-10% variance
+    final baseAmount = 1000.0; // ~12% annual
+    for (int i = 11; i >= 0; i--) {
+      final variance = (i % 2 == 0) ? 1.05 : 0.95; // 5% variance
+      final amount = baseAmount * variance;
+      final expectedDate = DateTime(now.year, now.month - i, 5); // 5th of month
+      addCashFlow(
+        lendenClub.id,
+        expectedDate,
+        CashFlowType.income,
+        amount,
+        baseCurrency,
+        delayDays: 2, // Consistent +2 day delay
+      );
+    }
+
+    // ============================================================
+    // INVESTMENT 2: Grip (Early payer: -1 day)
+    // ============================================================
+    final grip = createInvestment(
+      name: 'Grip Invest - Asset Leasing',
+      type: InvestmentType.p2pLending,
+      currency: baseCurrency,
+      createdAt: now.subtract(const Duration(days: 270)),
+      incomeFrequency: IncomeFrequency.monthly,
+      platform: 'Grip',
+      notes: '📊 SAMPLE: Grip pays 1 day early! Trust score: High',
+      expectedRate: 15.0,
+    );
+
+    // Initial investment
+    addCashFlow(
+      grip.id,
+      now.subtract(const Duration(days: 270)),
+      CashFlowType.invest,
+      50000,
+      baseCurrency,
+    );
+
+    // 9 months of income with -1 day (early) + 10-15% variance
+    for (int i = 8; i >= 0; i--) {
+      final variance = 1.0 + ((i % 3) * 0.05); // 0%, 5%, 10% variance
+      final amount = 625.0 * variance; // ~15% annual
+      final expectedDate = DateTime(now.year, now.month - i, 10); // 10th of month
+      addCashFlow(
+        grip.id,
+        expectedDate,
+        CashFlowType.income,
+        amount,
+        baseCurrency,
+        delayDays: -1, // Pays 1 day early
+      );
+    }
+
+    // ============================================================
+    // INVESTMENT 3: Alt Graaf (Seasonal bonus in Q4)
+    // ============================================================
+    final altGraaf = createInvestment(
+      name: 'AltGraaf - Corporate Bonds',
+      type: InvestmentType.bonds,
+      currency: baseCurrency,
+      createdAt: now.subtract(const Duration(days: 730)), // 2 years
+      incomeFrequency: IncomeFrequency.monthly,
+      platform: 'AltGraaf',
+      notes: '📊 SAMPLE: Notice the Q4 seasonal bonus pattern!',
+      expectedRate: 10.5,
+    );
+
+    // Initial investment
+    addCashFlow(
+      altGraaf.id,
+      now.subtract(const Duration(days: 730)),
+      CashFlowType.invest,
+      75000,
+      baseCurrency,
+    );
+
+    // 24 months of income with Q4 seasonal bonus (Dec has 150% payout)
+    for (int i = 23; i >= 0; i--) {
+      final month = now.month - i;
+      final year = now.year - (month <= 0 ? 1 : 0);
+      final adjustedMonth = month <= 0 ? month + 12 : month;
+
+      // Q4 bonus: December gets 150% payout
+      final seasonalMultiplier = (adjustedMonth == 12) ? 1.5 : 1.0;
+      final amount = 656.25 * seasonalMultiplier; // ~10.5% annual
+
+      final date = DateTime(year, adjustedMonth, 15); // 15th of month
+      addCashFlow(
+        altGraaf.id,
+        date,
+        CashFlowType.income,
+        amount,
+        baseCurrency,
+      );
+    }
+
+    // Bulk import investments
+    await _investmentRepository.bulkImport(
+      investments: investments,
+      cashFlows: cashFlows,
+    );
+
+    return (investmentIds: investmentIds, goalIds: <String>[]);
+  }
+
   /// Clears sample data by deleting specified investments and goals
   Future<void> clearSampleData({
     required List<String> investmentIds,

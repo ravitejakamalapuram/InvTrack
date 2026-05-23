@@ -664,6 +664,415 @@
     "description": "Help contact message"
   },
 
+  "incomeGuardianSection": "Income Guardian",
+  "@incomeGuardianSection": {
+    "description": "Income Guardian section title in Help & FAQ"
+  },
+
+  "whatIsIncomeGuardian": "What is Income Guardian?",
+  "@whatIsIncomeGuardian": {
+    "description": "FAQ question about Income Guardian feature"
+  },
+
+  "whatIsIncomeGuardianAnswer": "Income Guardian is an AI-powered income monitoring system that predicts when you should receive payments from your investments, tracks platform reliability, and alerts you to missed or delayed income. It transforms InvTrack from passive tracking to active wealth protection.",
+  "@whatIsIncomeGuardianAnswer": {
+    "description": "FAQ answer about Income Guardian feature"
+  },
+
+  "howDoesIncomeProjectionWork": "How does income projection work?",
+  "@howDoesIncomeProjectionWork": {
+    "description": "FAQ question about income projection mechanism"
+  },
+
+  "howDoesIncomeProjectionWorkAnswer": "Income Guardian uses Weighted Moving Average (WMA) machine learning to predict your next payment amount based on your last 6 payments. It learns platform-specific payment delays (e.g., LenDenClub pays 2 days late) and adjusts expectations automatically. For stable payments, it applies ±8% tolerance; for volatile payments, tolerance expands to match historical variance.",
+  "@howDoesIncomeProjectionWorkAnswer": {
+    "description": "FAQ answer about income projection mechanism"
+  },
+
+  "whatIsIncomeTrendAnalysis": "What is Income Trend Analysis?",
+  "@whatIsIncomeTrendAnalysis": {
+    "description": "FAQ question about income trend analysis"
+  },
+
+  "whatIsIncomeTrendAnalysisAnswer": "Income Trend Analysis provides month-over-month (MoM) and quarter-over-quarter (QoQ) growth metrics, platform reliability scores, and auto-generated insights. It helps you track income growth, identify unreliable platforms, and optimize your portfolio for consistent cash flow.",
+  "@whatIsIncomeTrendAnalysisAnswer": {
+    "description": "FAQ answer about income trend analysis"
+  },
+
+  "whatIsHHIScore": "What is the HHI (Herfindahl-Hirschman Index) score?",
+  "@whatIsHHIScore": {
+    "description": "FAQ question about HHI score"
+  },
+
+  "whatIsHHIScoreAnswer": "HHI measures income concentration risk. A score of 1.0 means all income comes from one platform (maximum risk). A score of 0.33 means income is evenly distributed across 3+ platforms (well-diversified). Lower scores indicate better diversification and reduced risk of income loss from a single platform failure.",
+  "@whatIsHHIScoreAnswer": {
+    "description": "FAQ answer about HHI score"
+  },
+
+  "whatIsPlatformReliability": "What is Platform Reliability Score?",
+  "@whatIsPlatformReliability": {
+    "description": "FAQ question about platform reliability"
+  },
+
+  "whatIsPlatformReliabilityAnswer": "Platform Reliability Score (0-100%) measures how consistently a platform pays on time and with the expected amount. Scores ≥80% are excellent (green), 60-80% are acceptable (yellow), and <60% indicate frequent delays or payment issues (red). This helps you identify which platforms are most reliable for your income.",
+  "@whatIsPlatformReliabilityAnswer": {
+    "description": "FAQ answer about platform reliability score"
+  },
+
+  "incomeGuardianSettings": "Income Guardian",
+  "@incomeGuardianSettings": {
+    "description": "Income Guardian settings screen title"
+  },
+
+  "incomeGuardianGeneral": "General",
+  "@incomeGuardianGeneral": {
+    "description": "Income Guardian general settings section title"
+  },
+
+  "enableIncomeGuardian": "Enable automated income tracking and payment notifications",
+  "@enableIncomeGuardian": {
+    "description": "Income Guardian enable toggle footer text"
+  },
+
+  "incomeGuardianEnabled": "Monitoring your expected payments",
+  "@incomeGuardianEnabled": {
+    "description": "Income Guardian enabled subtitle"
+  },
+
+  "incomeGuardianDisabled": "Tap to enable automated tracking",
+  "@incomeGuardianDisabled": {
+    "description": "Income Guardian disabled subtitle"
+  },
+
+  "notificationTiming": "Notification Timing",
+  "@notificationTiming": {
+    "description": "Notification timing settings section title"
+  },
+
+  "notificationTimingFooter": "Configure when you want to be notified about expected payments",
+  "@notificationTimingFooter": {
+    "description": "Notification timing settings section footer"
+  },
+
+  "upcomingPaymentAlert": "Upcoming Payment Alert",
+  "@upcomingPaymentAlert": {
+    "description": "Upcoming payment alert setting title"
+  },
+
+  "upcomingPaymentAlertSubtitle": "{days} day{plural} before expected date",
+  "@upcomingPaymentAlertSubtitle": {
+    "description": "Upcoming payment alert setting subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "overduePaymentAlert": "Overdue Payment Alert",
+  "@overduePaymentAlert": {
+    "description": "Overdue payment alert setting title"
+  },
+
+  "overduePaymentAlertSubtitle": "{days} day{plural} after expected date",
+  "@overduePaymentAlertSubtitle": {
+    "description": "Overdue payment alert setting subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "autoMatching": "Auto-Matching",
+  "@autoMatching": {
+    "description": "Auto-matching settings section title"
+  },
+
+  "autoMatchingFooter": "Fine-tune how the system matches actual payments to expected payments",
+  "@autoMatchingFooter": {
+    "description": "Auto-matching settings section footer"
+  },
+
+  "amountTolerance": "Amount Tolerance",
+  "@amountTolerance": {
+    "description": "Amount tolerance setting title"
+  },
+
+  "amountToleranceSubtitle": "±{percent}% variance allowed",
+  "@amountToleranceSubtitle": {
+    "description": "Amount tolerance setting subtitle",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "dateWindow": "Date Window",
+  "@dateWindow": {
+    "description": "Date window setting title"
+  },
+
+  "dateWindowSubtitle": "±{days} day{plural} from expected date",
+  "@dateWindowSubtitle": {
+    "description": "Date window setting subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "confidenceThreshold": "Confidence Threshold",
+  "@confidenceThreshold": {
+    "description": "Confidence threshold setting title"
+  },
+
+  "confidenceThresholdSubtitle": "{percent}% minimum match score",
+  "@confidenceThresholdSubtitle": {
+    "description": "Confidence threshold setting subtitle",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "platformDelays": "Platform Delays",
+  "@platformDelays": {
+    "description": "Platform delays settings section title"
+  },
+
+  "platformDelaysFooter": "Customize expected delays for specific platforms (e.g., LenDenClub +2 days)",
+  "@platformDelaysFooter": {
+    "description": "Platform delays settings section footer"
+  },
+
+  "comingSoon": "Coming Soon",
+  "@comingSoon": {
+    "description": "Coming soon label"
+  },
+
+  "platformDelaysComingSoon": "Platform-specific delay adjustments will be available in a future update",
+  "@platformDelaysComingSoon": {
+    "description": "Platform delays coming soon message"
+  },
+
+  "incomeStatusUpcoming": "Upcoming",
+  "@incomeStatusUpcoming": {
+    "description": "Expected cash flow status: upcoming payment"
+  },
+
+  "incomeStatusDueSoon": "Due Soon",
+  "@incomeStatusDueSoon": {
+    "description": "Expected cash flow status: due soon"
+  },
+
+  "incomeStatusGracePeriod": "Grace Period",
+  "@incomeStatusGracePeriod": {
+    "description": "Expected cash flow status: in grace period"
+  },
+
+  "incomeStatusOverdue": "Overdue",
+  "@incomeStatusOverdue": {
+    "description": "Expected cash flow status: overdue payment"
+  },
+
+  "incomeStatusReceived": "Received",
+  "@incomeStatusReceived": {
+    "description": "Expected cash flow status: payment received"
+  },
+
+  "incomeStatusDismissed": "Dismissed",
+  "@incomeStatusDismissed": {
+    "description": "Expected cash flow status: dismissed by user"
+  },
+
+  "calendarRefresh": "Refresh",
+  "@calendarRefresh": {
+    "description": "Refresh button tooltip in income calendar"
+  },
+
+  "calendarLoadFailed": "Failed to load calendar",
+  "@calendarLoadFailed": {
+    "description": "Error message when calendar fails to load"
+  },
+
+  "calendarEmptyMessage": "No expected payments this month",
+  "@calendarEmptyMessage": {
+    "description": "Empty state message in income calendar"
+  },
+
+  "calendarFilterAllPayments": "All Payments",
+  "@calendarFilterAllPayments": {
+    "description": "Calendar filter: show all payments"
+  },
+
+  "calendarFilterPending": "Pending",
+  "@calendarFilterPending": {
+    "description": "Calendar filter: show pending payments"
+  },
+
+  "calendarFilterOverdue": "Overdue",
+  "@calendarFilterOverdue": {
+    "description": "Calendar filter: show overdue payments"
+  },
+
+  "calendarPreviousMonth": "Previous month",
+  "@calendarPreviousMonth": {
+    "description": "Previous month button tooltip"
+  },
+
+  "calendarNextMonth": "Next month",
+  "@calendarNextMonth": {
+    "description": "Next month button tooltip"
+  },
+
+  "calendarRetry": "Retry",
+  "@calendarRetry": {
+    "description": "Retry button label"
+  },
+
+  "calendarNoInternet": "No internet connection",
+  "@calendarNoInternet": {
+    "description": "No internet error message"
+  },
+
+  "dashboardIncomeGuardian": "Income Guardian",
+  "@dashboardIncomeGuardian": {
+    "description": "Income Guardian dashboard card title"
+  },
+
+  "dashboardNextExpected": "Next Expected",
+  "@dashboardNextExpected": {
+    "description": "Next expected payment label on dashboard"
+  },
+
+  "dashboardAllCaughtUp": "All caught up!",
+  "@dashboardAllCaughtUp": {
+    "description": "Dashboard message when no pending payments"
+  },
+
+  "dashboardPending": "Pending",
+  "@dashboardPending": {
+    "description": "Pending payments count label"
+  },
+
+  "dashboardOverdue": "Overdue",
+  "@dashboardOverdue": {
+    "description": "Overdue payments count label"
+  },
+
+  "dashboardLoadFailed": "Failed to load income data",
+  "@dashboardLoadFailed": {
+    "description": "Error message when dashboard fails to load"
+  },
+
+  "dashboardUnknownInvestment": "Unknown",
+  "@dashboardUnknownInvestment": {
+    "description": "Unknown investment name placeholder"
+  },
+
+  "dashboardLoading": "Loading...",
+  "@dashboardLoading": {
+    "description": "Loading state text"
+  },
+
+  "calendarScreenEmptyAll": "No Expected Payments",
+  "@calendarScreenEmptyAll": {
+    "description": "Empty state message when showing all payments"
+  },
+
+  "calendarScreenEmptyPending": "No Pending Payments",
+  "@calendarScreenEmptyPending": {
+    "description": "Empty state message when showing pending payments"
+  },
+
+  "calendarScreenEmptyOverdue": "No Overdue Payments",
+  "@calendarScreenEmptyOverdue": {
+    "description": "Empty state message when showing overdue payments"
+  },
+
+  "calendarGridPreviousMonth": "Previous month",
+  "@calendarGridPreviousMonth": {
+    "description": "Tooltip for previous month button"
+  },
+
+  "calendarGridNextMonth": "Next month",
+  "@calendarGridNextMonth": {
+    "description": "Tooltip for next month button"
+  },
+
+  "calendarGridInvestmentHeader": "Investment",
+  "@calendarGridInvestmentHeader": {
+    "description": "Header label for investment column"
+  },
+
+  "calendarGridUnknownInvestment": "Unknown",
+  "@calendarGridUnknownInvestment": {
+    "description": "Fallback text when investment name cannot be loaded"
+  },
+
+  "calendarGridExpectedCount": "{count} expected",
+  "@calendarGridExpectedCount": {
+    "description": "Label showing count of expected payments",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "calendarGridPaymentDetails": "Payment Details",
+  "@calendarGridPaymentDetails": {
+    "description": "Title for payment details bottom sheet"
+  },
+
+  "calendarGridExpectedDate": "Expected Date",
+  "@calendarGridExpectedDate": {
+    "description": "Label for expected payment date"
+  },
+
+  "calendarGridExpectedAmount": "Expected Amount",
+  "@calendarGridExpectedAmount": {
+    "description": "Label for expected payment amount"
+  },
+
+  "calendarGridStatus": "Status",
+  "@calendarGridStatus": {
+    "description": "Label for payment status"
+  },
+
+  "calendarGridActualAmount": "Actual Amount",
+  "@calendarGridActualAmount": {
+    "description": "Label for actual payment amount received"
+  },
+
+  "calendarGridActualDate": "Actual Date",
+  "@calendarGridActualDate": {
+    "description": "Label for actual payment date received"
+  },
+
+  "howToAccessIncomeReports": "How do I access Income Guardian reports?",
+  "@howToAccessIncomeReports": {
+    "description": "FAQ question about accessing income reports"
+  },
+
+  "howToAccessIncomeReportsAnswer": "Income Trend reports are available in the Reports section. Navigate to Reports → Income Trend Analysis to see your monthly income trends, platform reliability scores, HHI diversification metrics, and auto-generated insights. Expected payment tracking will be available in the Dashboard (coming in Phase 2).",
+  "@howToAccessIncomeReportsAnswer": {
+    "description": "FAQ answer about accessing income reports"
+  },
+
   "advancedFeatures": "Advanced Features",
   "@advancedFeatures": {
     "description": "Advanced features section title in Help & FAQ"
@@ -4345,5 +4754,142 @@
   "importCancelledMessage": "Import cancelled",
   "@importCancelledMessage": {
     "description": "Message when import is cancelled"
+  },
+  "incomeTrendReport": "Income Trend Report",
+  "@incomeTrendReport": {
+    "description": "Title for income trend report screen"
+  },
+  "totalIncomeLast12Months": "Total Income (Last 12 Months)",
+  "@totalIncomeLast12Months": {
+    "description": "Header for total income in trend report"
+  },
+  "averageMonthly": "Average Monthly",
+  "@averageMonthly": {
+    "description": "Average monthly income label"
+  },
+  "growthMetrics": "Growth Metrics",
+  "@growthMetrics": {
+    "description": "Section title for growth metrics"
+  },
+  "monthOverMonth": "Month-over-Month",
+  "@monthOverMonth": {
+    "description": "Month-over-month growth label"
+  },
+  "quarterOverQuarter": "Quarter-over-Quarter",
+  "@quarterOverQuarter": {
+    "description": "Quarter-over-quarter growth label"
+  },
+  "monthlyIncomeTrend": "Monthly Income Trend",
+  "@monthlyIncomeTrend": {
+    "description": "Chart title for monthly income trend"
+  },
+  "platformReliability": "Platform Reliability",
+  "@platformReliability": {
+    "description": "Section title for platform reliability scores"
+  },
+  "incomeDiversification": "Income Diversification",
+  "@incomeDiversification": {
+    "description": "Section title for income diversification analysis"
+  },
+  "keyInsights": "Key Insights",
+  "@keyInsights": {
+    "description": "Section title for auto-generated insights"
+  },
+  "incomeCalendar": "Income Calendar",
+  "@incomeCalendar": {
+    "description": "Title for income calendar screen"
+  },
+  "trendReportLoadFailed": "Failed to load income trend report",
+  "@trendReportLoadFailed": {
+    "description": "Error message when income trend report fails to load"
+  },
+  "trendReportRetry": "Retry",
+  "@trendReportRetry": {
+    "description": "Retry button label for income trend report"
+  },
+  "diversificationExcellent": "Excellent diversification",
+  "@diversificationExcellent": {
+    "description": "Diversification label: HHI score < 0.15"
+  },
+  "diversificationModerate": "Moderate concentration",
+  "@diversificationModerate": {
+    "description": "Diversification label: HHI score 0.15-0.30"
+  },
+  "diversificationHigh": "High concentration",
+  "@diversificationHigh": {
+    "description": "Diversification label: HHI score 0.30-0.50"
+  },
+  "diversificationRisky": "Very high concentration - Risky",
+  "@diversificationRisky": {
+    "description": "Diversification label: HHI score >= 0.50"
+  },
+  "expectedIncomeOverduePayments": "Overdue Payments",
+  "@expectedIncomeOverduePayments": {
+    "description": "Section header for overdue payments"
+  },
+  "expectedIncomeUpcomingPayments": "Upcoming Payments",
+  "@expectedIncomeUpcomingPayments": {
+    "description": "Section header for upcoming payments"
+  },
+  "expectedIncomePaymentHistory": "Payment History",
+  "@expectedIncomePaymentHistory": {
+    "description": "Section header for payment history"
+  },
+  "expectedIncomeNoPayments": "No Expected Payments",
+  "@expectedIncomeNoPayments": {
+    "description": "Empty state title when no expected payments"
+  },
+  "expectedIncomeNoPaymentsSubtitle": "This investment has no predicted income payments",
+  "@expectedIncomeNoPaymentsSubtitle": {
+    "description": "Empty state subtitle when no expected payments"
+  },
+  "expectedIncomeLoadFailed": "Failed to load expected payments",
+  "@expectedIncomeLoadFailed": {
+    "description": "Error message when expected payments fail to load"
+  },
+  "expectedIncomePaymentReliability": "Payment Reliability",
+  "@expectedIncomePaymentReliability": {
+    "description": "Label for payment reliability score"
+  },
+  "expectedIncomeReceived": "Received: {amount}",
+  "@expectedIncomeReceived": {
+    "description": "Label for received payment amount",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "growthTrendStrong": "Strong Growth",
+  "@growthTrendStrong": {
+    "description": "Growth trend label: MoM > 5%"
+  },
+  "growthTrendPositive": "Positive Growth",
+  "@growthTrendPositive": {
+    "description": "Growth trend label: MoM 0-5%"
+  },
+  "growthTrendStable": "Stable",
+  "@growthTrendStable": {
+    "description": "Growth trend label: MoM -5% to 0%"
+  },
+  "growthTrendDeclining": "Declining",
+  "@growthTrendDeclining": {
+    "description": "Growth trend label: MoM < -5%"
+  },
+  "platformReliabilityExcellent": "Excellent",
+  "@platformReliabilityExcellent": {
+    "description": "Platform reliability grade: ≥95% on-time"
+  },
+  "platformReliabilityGood": "Good",
+  "@platformReliabilityGood": {
+    "description": "Platform reliability grade: 85-95% on-time"
+  },
+  "platformReliabilityFair": "Fair",
+  "@platformReliabilityFair": {
+    "description": "Platform reliability grade: 70-85% on-time"
+  },
+  "platformReliabilityPoor": "Poor",
+  "@platformReliabilityPoor": {
+    "description": "Platform reliability grade: <70% on-time"
   }
 }

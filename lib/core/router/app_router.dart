@@ -25,6 +25,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/settings_scre
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:inv_tracker/features/income_projection/presentation/screens/income_calendar_screen.dart';
 
 // Root navigator key - used for showing dialogs from anywhere in the app
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -222,6 +223,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/portfolio-health',
         builder: (context, state) => const PortfolioHealthDetailsScreen(),
+      ),
+      // Income Calendar route
+      GoRoute(
+        path: '/income-calendar',
+        builder: (context, state) => const IncomeCalendarScreen(),
       ),
     ],
   );

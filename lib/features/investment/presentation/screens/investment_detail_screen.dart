@@ -10,6 +10,8 @@ import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_investment_screen.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
+import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
+import 'package:inv_tracker/features/income_projection/presentation/widgets/expected_income_section.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/add_document_sheet.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_card_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
@@ -319,7 +321,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
             ),
           ),
 
-          // Segmented Control for Transactions / Documents
+          // Segmented Control for Transactions / Expected Income / Documents
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -327,6 +329,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 isDark: isDark,
                 selectedSegment: _selectedSegment,
                 transactionCount: cashFlowsAsync.value?.length ?? 0,
+                expectedIncomeCount:
+                    ref
+                        .watch(
+                          expectedCashFlowsByInvestmentProvider(widget.investment.id),
+                        )
+                        .value
+                        ?.length ??
+                    0,
                 documentCount:
                     ref
                         .watch(
@@ -343,7 +353,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
 
           // Content based on selected segment
           if (_selectedSegment == 0) ...[
-            // Cash Flows List
+            // Cash Flows List (Transactions)
             cashFlowsAsync.when(
               data: (cashFlows) {
                 if (cashFlows.isEmpty) {
@@ -396,6 +406,17 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 child: _buildErrorState(isDark, err.toString()),
               ),
             ),
+          ] else if (_selectedSegment == 1) ...[
+            // Expected Income Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ExpectedIncomeSection(
+                  investmentId: widget.investment.id,
+                  isDark: isDark,
+                ),
+              ),
+            ),
           ] else ...[
             // Documents Section
             SliverToBoxAdapter(
@@ -416,11 +437,13 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       floatingActionButton: isClosed
           ? null
           : _selectedSegment == 0
-          ? TransactionFab(
-              hasTransactions: cashFlowsAsync.value?.isNotEmpty ?? false,
-              onTap: () => _navigateToAddTransaction(cashFlowsAsync),
-            )
-          : DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark)),
+              ? TransactionFab(
+                  hasTransactions: cashFlowsAsync.value?.isNotEmpty ?? false,
+                  onTap: () => _navigateToAddTransaction(cashFlowsAsync),
+                )
+              : _selectedSegment == 2
+                  ? DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark))
+                  : null, // No FAB for Expected Income tab
     );
   }
 
