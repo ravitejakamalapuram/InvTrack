@@ -78,7 +78,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           ),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 
@@ -129,7 +129,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     final investmentName = investmentAsync.when(
       data: (inv) => inv?.platform ?? inv?.name ?? 'Unknown',
       loading: () => 'Loading...',
-      error: (_, __) => 'Unknown',
+      error: (error, stack) => 'Unknown',
     );
 
     return Column(
