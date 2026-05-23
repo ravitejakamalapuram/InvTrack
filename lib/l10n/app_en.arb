@@ -948,6 +948,46 @@
     "description": "No internet error message"
   },
 
+  "dashboardIncomeGuardian": "Income Guardian",
+  "@dashboardIncomeGuardian": {
+    "description": "Income Guardian dashboard card title"
+  },
+
+  "dashboardNextExpected": "Next Expected",
+  "@dashboardNextExpected": {
+    "description": "Next expected payment label on dashboard"
+  },
+
+  "dashboardAllCaughtUp": "All caught up!",
+  "@dashboardAllCaughtUp": {
+    "description": "Dashboard message when no pending payments"
+  },
+
+  "dashboardPending": "Pending",
+  "@dashboardPending": {
+    "description": "Pending payments count label"
+  },
+
+  "dashboardOverdue": "Overdue",
+  "@dashboardOverdue": {
+    "description": "Overdue payments count label"
+  },
+
+  "dashboardLoadFailed": "Failed to load income data",
+  "@dashboardLoadFailed": {
+    "description": "Error message when dashboard fails to load"
+  },
+
+  "dashboardUnknownInvestment": "Unknown",
+  "@dashboardUnknownInvestment": {
+    "description": "Unknown investment name placeholder"
+  },
+
+  "dashboardLoading": "Loading...",
+  "@dashboardLoading": {
+    "description": "Loading state text"
+  },
+
   "howToAccessIncomeReports": "How do I access Income Guardian reports?",
   "@howToAccessIncomeReports": {
     "description": "FAQ question about accessing income reports"

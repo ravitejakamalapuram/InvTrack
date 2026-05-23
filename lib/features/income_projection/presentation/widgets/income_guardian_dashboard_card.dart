@@ -9,21 +9,25 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
-import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Dashboard card showing Income Guardian summary
 class IncomeGuardianDashboardCard extends ConsumerWidget {
-  const IncomeGuardianDashboardCard({super.key});
+  final VoidCallback? onCalendarTap;
+
+  const IncomeGuardianDashboardCard({
+    super.key,
+    this.onCalendarTap,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,7 +56,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         final totalPending = upcoming.length;
 
         return GlassCard(
-          onTap: () => context.push('/income-calendar'),
+          onTap: onCalendarTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -60,7 +64,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
               SizedBox(height: AppSpacing.md),
               
               if (nextPayment != null)
-                _buildNextPayment(context, ref, nextPayment, currencySymbol, locale, isDark)
+                _buildNextPayment(context, ref, nextPayment, currencySymbol, locale, isDark, l10n)
               else
                 _buildEmptyState(isDark, l10n),
               
@@ -78,7 +82,17 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           ),
         ),
       ),
-      error: (error, stack) => const SizedBox.shrink(),
+      error: (error, stack) => GlassCard(
+        onTap: onCalendarTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(isDark, l10n),
+            SizedBox(height: AppSpacing.md),
+            _buildErrorState(isDark, l10n, ref),
+          ],
+        ),
+      ),
     );
   }
 
@@ -100,7 +114,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
-            'Income Guardian',
+            l10n.dashboardIncomeGuardian,
             style: AppTypography.h3,
           ),
         ),
@@ -120,6 +134,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     String currencySymbol,
     String locale,
     bool isDark,
+    AppLocalizations l10n,
   ) {
     final isOverdue = payment.status == ExpectedCashFlowStatus.overdue;
     final statusColor = isOverdue ? AppColors.errorLight : AppColors.successLight;
@@ -127,16 +142,16 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     // Get investment name asynchronously
     final investmentAsync = ref.watch(investmentByIdProvider(payment.investmentId));
     final investmentName = investmentAsync.when(
-      data: (inv) => inv?.platform ?? inv?.name ?? 'Unknown',
-      loading: () => 'Loading...',
-      error: (error, stack) => 'Unknown',
+      data: (inv) => inv?.platform ?? inv?.name ?? l10n.dashboardUnknownInvestment,
+      loading: () => l10n.dashboardLoading,
+      error: (error, stack) => l10n.dashboardUnknownInvestment,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Next Expected',
+          l10n.dashboardNextExpected,
           style: AppTypography.small.copyWith(
             color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
           ),
@@ -145,7 +160,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: PrivacyMask(
+              child: PrivacyProtectionWrapper(
                 child: Text(
                   formatCompactCurrency(
                     payment.expectedAmount,
@@ -181,7 +196,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         ),
         SizedBox(height: AppSpacing.sm),
         Text(
-          'All caught up!',
+          l10n.dashboardAllCaughtUp,
           style: AppTypography.body.copyWith(
             color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
           ),
@@ -202,7 +217,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         Expanded(
           child: _buildMetricItem(
             icon: Icons.pending_actions_rounded,
-            label: 'Pending',
+            label: l10n.dashboardPending,
             value: totalPending.toString(),
             color: AppColors.primaryLight,
             isDark: isDark,
@@ -212,7 +227,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         Expanded(
           child: _buildMetricItem(
             icon: Icons.error_outline_rounded,
-            label: 'Overdue',
+            label: l10n.dashboardOverdue,
             value: overdueCount.toString(),
             color: overdueCount > 0 ? AppColors.errorLight : AppColors.successLight,
             isDark: isDark,
@@ -255,6 +270,34 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isDark, AppLocalizations l10n, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: AppColors.errorLight,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.dashboardLoadFailed,
+            style: AppTypography.body.copyWith(
+              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          TextButton(
+            onPressed: () => ref.invalidate(allExpectedCashFlowsProvider),
+            child: Text(l10n.calendarRetry),
           ),
         ],
       ),
