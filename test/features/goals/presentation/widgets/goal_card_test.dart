@@ -266,10 +266,8 @@ void main() {
       SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
       final prefs = await SharedPreferences.getInstance();
 
-      bool longPressTriggered = false;
-
       StateSetter? setter;
-      VoidCallback? currentCallback = () { longPressTriggered = true; };
+      VoidCallback? currentCallback = () {};
 
       await tester.pumpWidget(
         ProviderScope(
