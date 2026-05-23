@@ -55,50 +55,70 @@ class ExpectedIncomeSection extends ConsumerWidget {
           e.status == ExpectedCashFlowStatus.gracePeriod
         ).toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Reliability summary
-            _buildReliabilitySummary(
-              context,
-              pastPayments.length,
-              expectedFlows.length,
-              isDark,
-              l10n,
-            ),
-            
-            if (overduePayments.isNotEmpty) ...[
-              SizedBox(height: AppSpacing.md),
-              _buildSectionHeader(l10n.expectedIncomeOverduePayments, AppColors.errorLight, isDark),
-              SizedBox(height: AppSpacing.sm),
-              ...overduePayments.map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _buildPaymentCard(e, currencySymbol, locale, isDark, l10n, isOverdue: true),
-              )),
-            ],
+        // Build all sections as a flat list
+        final allSections = <Widget>[
+          // Reliability summary
+          _buildReliabilitySummary(
+            context,
+            pastPayments.length,
+            expectedFlows.length,
+            isDark,
+            l10n,
+          ),
+        ];
 
-            if (futurePayments.isNotEmpty) ...[
-              SizedBox(height: AppSpacing.md),
-              _buildSectionHeader(l10n.expectedIncomeUpcomingPayments, AppColors.successLight, isDark),
-              SizedBox(height: AppSpacing.sm),
-              ...futurePayments.take(5).map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _buildPaymentCard(e, currencySymbol, locale, isDark, l10n),
-              )),
-            ],
+        // Overdue payments section
+        if (overduePayments.isNotEmpty) {
+          allSections.addAll([
+            SizedBox(height: AppSpacing.md),
+            _buildSectionHeader(l10n.expectedIncomeOverduePayments, AppColors.errorLight, isDark),
+            SizedBox(height: AppSpacing.sm),
+          ]);
+          for (final payment in overduePayments) {
+            allSections.add(Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildPaymentCard(payment, currencySymbol, locale, isDark, l10n, isOverdue: true),
+            ));
+          }
+        }
 
-            if (pastPayments.isNotEmpty) ...[
-              SizedBox(height: AppSpacing.md),
-              _buildSectionHeader(l10n.expectedIncomePaymentHistory, AppColors.graphCyan, isDark),
-              SizedBox(height: AppSpacing.sm),
-              ...pastPayments.take(5).map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _buildPaymentCard(e, currencySymbol, locale, isDark, l10n, isPast: true),
-              )),
-            ],
+        // Future payments section
+        if (futurePayments.isNotEmpty) {
+          allSections.addAll([
+            SizedBox(height: AppSpacing.md),
+            _buildSectionHeader(l10n.expectedIncomeUpcomingPayments, AppColors.successLight, isDark),
+            SizedBox(height: AppSpacing.sm),
+          ]);
+          for (final payment in futurePayments.take(5)) {
+            allSections.add(Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildPaymentCard(payment, currencySymbol, locale, isDark, l10n),
+            ));
+          }
+        }
 
-            SizedBox(height: AppSpacing.lg),
-          ],
+        // Past payments section
+        if (pastPayments.isNotEmpty) {
+          allSections.addAll([
+            SizedBox(height: AppSpacing.md),
+            _buildSectionHeader(l10n.expectedIncomePaymentHistory, AppColors.graphCyan, isDark),
+            SizedBox(height: AppSpacing.sm),
+          ]);
+          for (final payment in pastPayments.take(5)) {
+            allSections.add(Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildPaymentCard(payment, currencySymbol, locale, isDark, l10n, isPast: true),
+            ));
+          }
+        }
+
+        allSections.add(SizedBox(height: AppSpacing.lg));
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: allSections.length,
+          itemBuilder: (context, index) => allSections[index],
         );
       },
       loading: () => Center(
