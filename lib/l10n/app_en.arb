@@ -868,6 +868,86 @@
     "description": "Platform delays coming soon message"
   },
 
+  "incomeStatusUpcoming": "Upcoming",
+  "@incomeStatusUpcoming": {
+    "description": "Expected cash flow status: upcoming payment"
+  },
+
+  "incomeStatusDueSoon": "Due Soon",
+  "@incomeStatusDueSoon": {
+    "description": "Expected cash flow status: due soon"
+  },
+
+  "incomeStatusGracePeriod": "Grace Period",
+  "@incomeStatusGracePeriod": {
+    "description": "Expected cash flow status: in grace period"
+  },
+
+  "incomeStatusOverdue": "Overdue",
+  "@incomeStatusOverdue": {
+    "description": "Expected cash flow status: overdue payment"
+  },
+
+  "incomeStatusReceived": "Received",
+  "@incomeStatusReceived": {
+    "description": "Expected cash flow status: payment received"
+  },
+
+  "incomeStatusDismissed": "Dismissed",
+  "@incomeStatusDismissed": {
+    "description": "Expected cash flow status: dismissed by user"
+  },
+
+  "calendarRefresh": "Refresh",
+  "@calendarRefresh": {
+    "description": "Refresh button tooltip in income calendar"
+  },
+
+  "calendarLoadFailed": "Failed to load calendar",
+  "@calendarLoadFailed": {
+    "description": "Error message when calendar fails to load"
+  },
+
+  "calendarEmptyMessage": "No expected payments this month",
+  "@calendarEmptyMessage": {
+    "description": "Empty state message in income calendar"
+  },
+
+  "calendarFilterAllPayments": "All Payments",
+  "@calendarFilterAllPayments": {
+    "description": "Calendar filter: show all payments"
+  },
+
+  "calendarFilterPending": "Pending",
+  "@calendarFilterPending": {
+    "description": "Calendar filter: show pending payments"
+  },
+
+  "calendarFilterOverdue": "Overdue",
+  "@calendarFilterOverdue": {
+    "description": "Calendar filter: show overdue payments"
+  },
+
+  "calendarPreviousMonth": "Previous month",
+  "@calendarPreviousMonth": {
+    "description": "Previous month button tooltip"
+  },
+
+  "calendarNextMonth": "Next month",
+  "@calendarNextMonth": {
+    "description": "Next month button tooltip"
+  },
+
+  "calendarRetry": "Retry",
+  "@calendarRetry": {
+    "description": "Retry button label"
+  },
+
+  "calendarNoInternet": "No internet connection",
+  "@calendarNoInternet": {
+    "description": "No internet error message"
+  },
+
   "howToAccessIncomeReports": "How do I access Income Guardian reports?",
   "@howToAccessIncomeReports": {
     "description": "FAQ question about accessing income reports"

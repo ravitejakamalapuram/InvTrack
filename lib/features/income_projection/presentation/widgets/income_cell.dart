@@ -7,14 +7,16 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
+import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
-class IncomeCell extends StatelessWidget {
+class IncomeCell extends ConsumerWidget {
   final ExpectedCashFlowEntity? expected;
   final bool isDark;
   final VoidCallback? onTap;
@@ -27,7 +29,9 @@ class IncomeCell extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(currencyLocaleProvider);
+    final currencySymbol = ref.watch(currencySymbolProvider);
     if (expected == null) {
       // Empty cell
       return Container(
@@ -85,12 +89,12 @@ class IncomeCell extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: PrivacyMask(
+                  child: PrivacyProtectionWrapper(
                     child: Text(
                       formatCompactCurrency(
                         expected!.expectedAmount,
-                        symbol: expected!.currency,
-                        locale: 'en_IN', // TODO: Get from settings
+                        symbol: currencySymbol,
+                        locale: locale,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -105,7 +109,7 @@ class IncomeCell extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              status.displayName,
+              _getStatusDisplayName(context, status),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.caption.copyWith(
@@ -153,22 +157,21 @@ class IncomeCell extends StatelessWidget {
   }
 }
 
-/// Extension to get display names for status
-extension ExpectedCashFlowStatusDisplay on ExpectedCashFlowStatus {
-  String get displayName {
-    switch (this) {
-      case ExpectedCashFlowStatus.upcoming:
-        return 'Upcoming';
-      case ExpectedCashFlowStatus.dueSoon:
-        return 'Due Soon';
-      case ExpectedCashFlowStatus.gracePeriod:
-        return 'Grace Period';
-      case ExpectedCashFlowStatus.overdue:
-        return 'Overdue';
-      case ExpectedCashFlowStatus.received:
-        return 'Received';
-      case ExpectedCashFlowStatus.dismissed:
-        return 'Dismissed';
-    }
+/// Helper to get localized display names for status
+String _getStatusDisplayName(BuildContext context, ExpectedCashFlowStatus status) {
+  final l10n = AppLocalizations.of(context);
+  switch (status) {
+    case ExpectedCashFlowStatus.upcoming:
+      return l10n.incomeStatusUpcoming;
+    case ExpectedCashFlowStatus.dueSoon:
+      return l10n.incomeStatusDueSoon;
+    case ExpectedCashFlowStatus.gracePeriod:
+      return l10n.incomeStatusGracePeriod;
+    case ExpectedCashFlowStatus.overdue:
+      return l10n.incomeStatusOverdue;
+    case ExpectedCashFlowStatus.received:
+      return l10n.incomeStatusReceived;
+    case ExpectedCashFlowStatus.dismissed:
+      return l10n.incomeStatusDismissed;
   }
 }
