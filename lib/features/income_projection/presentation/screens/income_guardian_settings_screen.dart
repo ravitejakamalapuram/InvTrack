@@ -9,6 +9,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_guardian_settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Income Guardian settings screen
 class IncomeGuardianSettingsScreen extends ConsumerWidget {
@@ -19,10 +20,11 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
     final settings = ref.watch(incomeGuardianSettingsProvider);
     final notifier = ref.read(incomeGuardianSettingsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Income Guardian', style: AppTypography.h3),
+        title: Text(l10n.incomeGuardianSettings, style: AppTypography.h3),
       ),
       body: ListView(
         children: [
@@ -30,16 +32,16 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
 
           // Feature Toggle
           SettingsSection(
-            title: 'General',
-            footer: 'Enable automated income tracking and payment notifications',
+            title: l10n.incomeGuardianGeneral,
+            footer: l10n.enableIncomeGuardian,
             children: [
               SettingsToggleTile(
                 icon: Icons.security,
                 iconColor: AppColors.successLight,
-                title: 'Income Guardian',
+                title: l10n.incomeGuardianSettings,
                 subtitle: settings.enabled
-                    ? 'Monitoring your expected payments'
-                    : 'Tap to enable automated tracking',
+                    ? l10n.incomeGuardianEnabled
+                    : l10n.incomeGuardianDisabled,
                 value: settings.enabled,
                 onChanged: (value) => notifier.setEnabled(value),
               ),
@@ -48,14 +50,17 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
 
           // Notification Timing
           SettingsSection(
-            title: 'Notification Timing',
-            footer: 'Configure when you want to be notified about expected payments',
+            title: l10n.notificationTiming,
+            footer: l10n.notificationTimingFooter,
             children: [
               _SliderTile(
                 icon: Icons.notifications_active,
                 iconColor: Colors.orange,
-                title: 'Upcoming Payment Alert',
-                subtitle: '${settings.upcomingDaysBefore} day${settings.upcomingDaysBefore == 1 ? '' : 's'} before expected date',
+                title: l10n.upcomingPaymentAlert,
+                subtitle: l10n.upcomingPaymentAlertSubtitle(
+                  settings.upcomingDaysBefore,
+                  settings.upcomingDaysBefore == 1 ? '' : 's',
+                ),
                 value: settings.upcomingDaysBefore.toDouble(),
                 min: 0,
                 max: 7,
@@ -66,8 +71,11 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
               _SliderTile(
                 icon: Icons.warning_amber_rounded,
                 iconColor: AppColors.errorLight,
-                title: 'Overdue Payment Alert',
-                subtitle: '${settings.overdueDaysAfter} day${settings.overdueDaysAfter == 1 ? '' : 's'} after expected date',
+                title: l10n.overduePaymentAlert,
+                subtitle: l10n.overduePaymentAlertSubtitle(
+                  settings.overdueDaysAfter,
+                  settings.overdueDaysAfter == 1 ? '' : 's',
+                ),
                 value: settings.overdueDaysAfter.toDouble(),
                 min: 0,
                 max: 7,
@@ -80,14 +88,14 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
 
           // Auto-Matching Configuration
           SettingsSection(
-            title: 'Auto-Matching',
-            footer: 'Fine-tune how the system matches actual payments to expected payments',
+            title: l10n.autoMatching,
+            footer: l10n.autoMatchingFooter,
             children: [
               _SliderTile(
                 icon: Icons.percent,
                 iconColor: Colors.blue,
-                title: 'Amount Tolerance',
-                subtitle: '±${settings.amountTolerancePercent}% variance allowed',
+                title: l10n.amountTolerance,
+                subtitle: l10n.amountToleranceSubtitle(settings.amountTolerancePercent),
                 value: settings.amountTolerancePercent.toDouble(),
                 min: 5,
                 max: 30,
@@ -98,8 +106,11 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
               _SliderTile(
                 icon: Icons.calendar_month,
                 iconColor: Colors.purple,
-                title: 'Date Window',
-                subtitle: '±${settings.dateWindowDays} day${settings.dateWindowDays == 1 ? '' : 's'} from expected date',
+                title: l10n.dateWindow,
+                subtitle: l10n.dateWindowSubtitle(
+                  settings.dateWindowDays,
+                  settings.dateWindowDays == 1 ? '' : 's',
+                ),
                 value: settings.dateWindowDays.toDouble(),
                 min: 7,
                 max: 60,
@@ -114,8 +125,8 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
               _SliderTile(
                 icon: Icons.tune,
                 iconColor: AppColors.warningLight,
-                title: 'Confidence Threshold',
-                subtitle: '${settings.confidenceThresholdPercent}% minimum match score',
+                title: l10n.confidenceThreshold,
+                subtitle: l10n.confidenceThresholdSubtitle(settings.confidenceThresholdPercent),
                 value: settings.confidenceThresholdPercent.toDouble(),
                 min: 50,
                 max: 95,
@@ -128,8 +139,8 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
 
           // Platform Delays (Coming Soon)
           SettingsSection(
-            title: 'Platform Delays',
-            footer: 'Customize expected delays for specific platforms (e.g., LenDenClub +2 days)',
+            title: l10n.platformDelays,
+            footer: l10n.platformDelaysFooter,
             children: [
               ListTile(
                 contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -138,13 +149,13 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                   color: AppColors.neutral400Dark,
                 ),
                 title: Text(
-                  'Coming Soon',
+                  l10n.comingSoon,
                   style: AppTypography.bodyMedium.copyWith(
                     color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                   ),
                 ),
                 subtitle: Text(
-                  'Platform-specific delay adjustments will be available in a future update',
+                  l10n.platformDelaysComingSoon,
                   style: AppTypography.small.copyWith(
                     color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
                   ),

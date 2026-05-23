@@ -719,6 +719,155 @@
     "description": "FAQ answer about platform reliability score"
   },
 
+  "incomeGuardianSettings": "Income Guardian",
+  "@incomeGuardianSettings": {
+    "description": "Income Guardian settings screen title"
+  },
+
+  "incomeGuardianGeneral": "General",
+  "@incomeGuardianGeneral": {
+    "description": "Income Guardian general settings section title"
+  },
+
+  "enableIncomeGuardian": "Enable automated income tracking and payment notifications",
+  "@enableIncomeGuardian": {
+    "description": "Income Guardian enable toggle footer text"
+  },
+
+  "incomeGuardianEnabled": "Monitoring your expected payments",
+  "@incomeGuardianEnabled": {
+    "description": "Income Guardian enabled subtitle"
+  },
+
+  "incomeGuardianDisabled": "Tap to enable automated tracking",
+  "@incomeGuardianDisabled": {
+    "description": "Income Guardian disabled subtitle"
+  },
+
+  "notificationTiming": "Notification Timing",
+  "@notificationTiming": {
+    "description": "Notification timing settings section title"
+  },
+
+  "notificationTimingFooter": "Configure when you want to be notified about expected payments",
+  "@notificationTimingFooter": {
+    "description": "Notification timing settings section footer"
+  },
+
+  "upcomingPaymentAlert": "Upcoming Payment Alert",
+  "@upcomingPaymentAlert": {
+    "description": "Upcoming payment alert setting title"
+  },
+
+  "upcomingPaymentAlertSubtitle": "{days} day{plural} before expected date",
+  "@upcomingPaymentAlertSubtitle": {
+    "description": "Upcoming payment alert setting subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "overduePaymentAlert": "Overdue Payment Alert",
+  "@overduePaymentAlert": {
+    "description": "Overdue payment alert setting title"
+  },
+
+  "overduePaymentAlertSubtitle": "{days} day{plural} after expected date",
+  "@overduePaymentAlertSubtitle": {
+    "description": "Overdue payment alert setting subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "autoMatching": "Auto-Matching",
+  "@autoMatching": {
+    "description": "Auto-matching settings section title"
+  },
+
+  "autoMatchingFooter": "Fine-tune how the system matches actual payments to expected payments",
+  "@autoMatchingFooter": {
+    "description": "Auto-matching settings section footer"
+  },
+
+  "amountTolerance": "Amount Tolerance",
+  "@amountTolerance": {
+    "description": "Amount tolerance setting title"
+  },
+
+  "amountToleranceSubtitle": "±{percent}% variance allowed",
+  "@amountToleranceSubtitle": {
+    "description": "Amount tolerance setting subtitle",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "dateWindow": "Date Window",
+  "@dateWindow": {
+    "description": "Date window setting title"
+  },
+
+  "dateWindowSubtitle": "±{days} day{plural} from expected date",
+  "@dateWindowSubtitle": {
+    "description": "Date window setting subtitle",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+
+  "confidenceThreshold": "Confidence Threshold",
+  "@confidenceThreshold": {
+    "description": "Confidence threshold setting title"
+  },
+
+  "confidenceThresholdSubtitle": "{percent}% minimum match score",
+  "@confidenceThresholdSubtitle": {
+    "description": "Confidence threshold setting subtitle",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+
+  "platformDelays": "Platform Delays",
+  "@platformDelays": {
+    "description": "Platform delays settings section title"
+  },
+
+  "platformDelaysFooter": "Customize expected delays for specific platforms (e.g., LenDenClub +2 days)",
+  "@platformDelaysFooter": {
+    "description": "Platform delays settings section footer"
+  },
+
+  "comingSoon": "Coming Soon",
+  "@comingSoon": {
+    "description": "Coming soon label"
+  },
+
+  "platformDelaysComingSoon": "Platform-specific delay adjustments will be available in a future update",
+  "@platformDelaysComingSoon": {
+    "description": "Platform delays coming soon message"
+  },
+
   "howToAccessIncomeReports": "How do I access Income Guardian reports?",
   "@howToAccessIncomeReports": {
     "description": "FAQ question about accessing income reports"
