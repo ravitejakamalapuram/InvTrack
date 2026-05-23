@@ -200,7 +200,7 @@ class GoalCard extends ConsumerWidget {
     final longPressHandler = onLongPress != null
         ? () {
             HapticFeedback.mediumImpact();
-            onLongPress!();
+            onLongPress?.call();
           }
         : null;
 
