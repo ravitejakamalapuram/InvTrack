@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,35 +78,73 @@ class IncomeGuardianSettingsNotifier extends Notifier<IncomeGuardianSettings> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool(_keyEnabled, value);
     state = state.copyWith(enabled: value);
+
+    // Track analytics
+    final analytics = ref.read(analyticsServiceProvider);
+    if (value) {
+      await analytics.logIncomeGuardianEnabled();
+    } else {
+      await analytics.logIncomeGuardianDisabled();
+    }
   }
 
   Future<void> setUpcomingDaysBefore(int value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_keyUpcomingDaysBefore, value);
     state = state.copyWith(upcomingDaysBefore: value);
+
+    // Track analytics
+    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
+      settingName: 'upcoming_days_before',
+      newValue: value.toString(),
+    );
   }
 
   Future<void> setOverdueDaysAfter(int value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_keyOverdueDaysAfter, value);
     state = state.copyWith(overdueDaysAfter: value);
+
+    // Track analytics
+    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
+      settingName: 'overdue_days_after',
+      newValue: value.toString(),
+    );
   }
 
   Future<void> setAmountTolerancePercent(int value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_keyAmountTolerancePercent, value);
     state = state.copyWith(amountTolerancePercent: value);
+
+    // Track analytics
+    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
+      settingName: 'amount_tolerance_percent',
+      newValue: value.toString(),
+    );
   }
 
   Future<void> setDateWindowDays(int value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_keyDateWindowDays, value);
     state = state.copyWith(dateWindowDays: value);
+
+    // Track analytics
+    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
+      settingName: 'date_window_days',
+      newValue: value.toString(),
+    );
   }
 
   Future<void> setConfidenceThresholdPercent(int value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_keyConfidenceThresholdPercent, value);
     state = state.copyWith(confidenceThresholdPercent: value);
+
+    // Track analytics
+    await ref.read(analyticsServiceProvider).logIncomeGuardianSettingChanged(
+      settingName: 'confidence_threshold_percent',
+      newValue: value.toString(),
+    );
   }
 }

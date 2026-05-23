@@ -174,6 +174,16 @@ class AnalyticsEvents {
   // Enhanced Fields usage
   static const String enhancedFieldsUsed = 'enhanced_fields_used';
 
+  // Income Guardian events
+  static const String incomeGuardianEnabled = 'income_guardian_enabled';
+  static const String incomeGuardianDisabled = 'income_guardian_disabled';
+  static const String incomeGuardianSettingChanged = 'income_guardian_setting_changed';
+  static const String incomeGuardianNotificationShown = 'income_guardian_notification_shown';
+  static const String incomeGuardianPaymentMatched = 'income_guardian_payment_matched';
+  static const String incomeGuardianCalendarViewed = 'income_guardian_calendar_viewed';
+  static const String expectedCashFlowCreated = 'expected_cashflow_created';
+  static const String expectedCashFlowDismissed = 'expected_cashflow_dismissed';
+
   // Multi-Currency events
   static const String currencySelected = 'currency_selected';
   static const String currencyConversionFailed = 'currency_conversion_failed';
@@ -1197,4 +1207,234 @@ String getScoreTier(double score) {
   if (score >= 40) return 'fair';
   if (score >= 20) return 'poor';
   return 'critical';
+}
+
+// ============ Income Guardian Analytics Extensions ============
+
+extension IncomeGuardianAnalytics on AnalyticsService {
+  /// Log Income Guardian feature enabled
+  ///
+  /// Tracks when users enable the Income Guardian monitoring feature.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logIncomeGuardianEnabled();
+  /// ```
+  Future<void> logIncomeGuardianEnabled() async {
+    await logEvent(name: AnalyticsEvents.incomeGuardianEnabled);
+  }
+
+  /// Log Income Guardian feature disabled
+  ///
+  /// Tracks when users disable the Income Guardian monitoring feature.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logIncomeGuardianDisabled();
+  /// ```
+  Future<void> logIncomeGuardianDisabled() async {
+    await logEvent(name: AnalyticsEvents.incomeGuardianDisabled);
+  }
+
+  /// Log Income Guardian setting changed
+  ///
+  /// Tracks when users adjust Income Guardian settings.
+  ///
+  /// ## Parameters
+  ///
+  /// - [settingName]: Name of the setting changed
+  /// - [newValue]: New value (as string for analytics)
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logIncomeGuardianSettingChanged(
+  ///   settingName: 'upcoming_days_before',
+  ///   newValue: '3',
+  /// );
+  /// ```
+  Future<void> logIncomeGuardianSettingChanged({
+    required String settingName,
+    required String newValue,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.incomeGuardianSettingChanged,
+      parameters: {
+        'setting_name': settingName,
+        'new_value': newValue,
+      },
+    );
+  }
+
+  /// Log Income Guardian notification shown
+  ///
+  /// Tracks when payment notifications are displayed to users.
+  ///
+  /// ## Parameters
+  ///
+  /// - [notificationType]: Type of notification (e.g., "upcoming", "overdue")
+  /// - [investmentPlatform]: Platform name (e.g., "LenDenClub", "GrowW")
+  ///
+  /// ## Privacy
+  ///
+  /// **NEVER log exact amounts or investment names** - only platform types.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logIncomeGuardianNotificationShown(
+  ///   notificationType: 'upcoming',
+  ///   investmentPlatform: 'LenDenClub',
+  /// );
+  /// ```
+  Future<void> logIncomeGuardianNotificationShown({
+    required String notificationType,
+    required String investmentPlatform,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.incomeGuardianNotificationShown,
+      parameters: {
+        'notification_type': notificationType,
+        'investment_platform': investmentPlatform,
+      },
+    );
+  }
+
+  /// Log Income Guardian payment auto-matched
+  ///
+  /// Tracks when the sync service successfully matches a payment.
+  ///
+  /// ## Parameters
+  ///
+  /// - [matchConfidence]: Confidence score range (e.g., "50_70", "70_85", "85_100")
+  /// - [daysDifference]: Days between expected and actual (e.g., "0_7", "8_14", "15_30")
+  /// - [investmentPlatform]: Platform name for pattern tracking
+  ///
+  /// ## Privacy
+  ///
+  /// **NEVER log exact amounts** - only confidence ranges.
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logIncomeGuardianPaymentMatched(
+  ///   matchConfidence: '85_100',
+  ///   daysDifference: '0_7',
+  ///   investmentPlatform: 'LenDenClub',
+  /// );
+  /// ```
+  Future<void> logIncomeGuardianPaymentMatched({
+    required String matchConfidence,
+    required String daysDifference,
+    required String investmentPlatform,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.incomeGuardianPaymentMatched,
+      parameters: {
+        'match_confidence': matchConfidence,
+        'days_difference': daysDifference,
+        'investment_platform': investmentPlatform,
+      },
+    );
+  }
+
+  /// Log Income Guardian calendar viewed
+  ///
+  /// Tracks when users view the income calendar.
+  ///
+  /// ## Parameters
+  ///
+  /// - [month]: Month being viewed (1-12)
+  /// - [year]: Year being viewed
+  /// - [totalExpected]: Total expected payments count (not amount!)
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logIncomeGuardianCalendarViewed(
+  ///   month: 5,
+  ///   year: 2026,
+  ///   totalExpected: 8,
+  /// );
+  /// ```
+  Future<void> logIncomeGuardianCalendarViewed({
+    required int month,
+    required int year,
+    required int totalExpected,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.incomeGuardianCalendarViewed,
+      parameters: {
+        'month': month,
+        'year': year,
+        'total_expected': totalExpected,
+      },
+    );
+  }
+
+  /// Log expected cash flow created
+  ///
+  /// Tracks when ML prediction creates new expected cash flow.
+  ///
+  /// ## Parameters
+  ///
+  /// - [source]: Source of prediction (e.g., "ml_prediction", "manual", "pattern")
+  /// - [confidence]: Prediction confidence range (e.g., "70_85", "85_95", "95_100")
+  /// - [investmentPlatform]: Platform name
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logExpectedCashFlowCreated(
+  ///   source: 'ml_prediction',
+  ///   confidence: '85_95',
+  ///   investmentPlatform: 'LenDenClub',
+  /// );
+  /// ```
+  Future<void> logExpectedCashFlowCreated({
+    required String source,
+    required String confidence,
+    required String investmentPlatform,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.expectedCashFlowCreated,
+      parameters: {
+        'source': source,
+        'confidence': confidence,
+        'investment_platform': investmentPlatform,
+      },
+    );
+  }
+
+  /// Log expected cash flow dismissed
+  ///
+  /// Tracks when users manually dismiss expected payments.
+  ///
+  /// ## Parameters
+  ///
+  /// - [reason]: Dismissal reason (e.g., "incorrect", "duplicate", "unwanted")
+  /// - [status]: Status when dismissed (e.g., "pending", "overdue")
+  ///
+  /// ## Example
+  ///
+  /// ```dart
+  /// await analyticsService.logExpectedCashFlowDismissed(
+  ///   reason: 'incorrect',
+  ///   status: 'pending',
+  /// );
+  /// ```
+  Future<void> logExpectedCashFlowDismissed({
+    required String reason,
+    required String status,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.expectedCashFlowDismissed,
+      parameters: {
+        'reason': reason,
+        'status': status,
+      },
+    );
+  }
 }
