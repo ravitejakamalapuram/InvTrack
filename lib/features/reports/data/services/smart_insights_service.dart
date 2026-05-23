@@ -74,23 +74,27 @@ class SmartInsightsService {
     final weekStart = _getWeekStart(now);
     final weekEnd = _getWeekEnd(now);
 
-    final weekCashFlows = cashFlows
-        .where(
-          (cf) =>
-              cf.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-              cf.date.isBefore(weekEnd.add(const Duration(days: 1))),
-        )
-        .toList();
+    // Optimization: Hoist invariant date boundary calculations outside the loop
+    final startBoundary = weekStart.subtract(const Duration(days: 1));
+    final endBoundary = weekEnd.add(const Duration(days: 1));
 
-    if (weekCashFlows.isEmpty) return null;
+    // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
+    double netInvested = 0;
+    double returns = 0;
+    bool hasWeekCashFlows = false;
 
-    final netInvested = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.invest)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
+    for (final cf in cashFlows) {
+      if (cf.date.isAfter(startBoundary) && cf.date.isBefore(endBoundary)) {
+        hasWeekCashFlows = true;
+        if (cf.type == CashFlowType.invest) {
+          netInvested += cf.amount;
+        } else if (cf.type == CashFlowType.returnFlow) {
+          returns += cf.amount;
+        }
+      }
+    }
 
-    final returns = weekCashFlows
-        .where((cf) => cf.type == CashFlowType.returnFlow)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
+    if (!hasWeekCashFlows) return null;
 
     if (netInvested == 0 && returns == 0) return null;
 
@@ -121,19 +125,26 @@ class SmartInsightsService {
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
-    final monthCashFlows = cashFlows
-        .where(
-          (cf) =>
-              cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-              cf.date.isBefore(monthEnd.add(const Duration(days: 1))),
-        )
-        .toList();
+    // Optimization: Hoist invariant date boundary calculations outside the loop
+    final startBoundary = monthStart.subtract(const Duration(days: 1));
+    final endBoundary = monthEnd.add(const Duration(days: 1));
 
-    if (monthCashFlows.isEmpty) return null;
+    // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
+    double income = 0;
+    int sourcesCount = 0;
+    bool hasMonthCashFlows = false;
 
-    final income = monthCashFlows
-        .where((cf) => cf.type == CashFlowType.income)
-        .fold<double>(0, (sum, cf) => sum + cf.amount);
+    for (final cf in cashFlows) {
+      if (cf.date.isAfter(startBoundary) && cf.date.isBefore(endBoundary)) {
+        hasMonthCashFlows = true;
+        sourcesCount++;
+        if (cf.type == CashFlowType.income) {
+          income += cf.amount;
+        }
+      }
+    }
+
+    if (!hasMonthCashFlows) return null;
 
     if (income == 0) return null;
 
@@ -150,7 +161,7 @@ class SmartInsightsService {
       title: l10n.thisMonth,
       subtitle: l10n.incomeReceived,
       value: incomeStr,
-      secondaryValue: l10n.sourcesCount(monthCashFlows.length),
+      secondaryValue: l10n.sourcesCount(sourcesCount),
       icon: 'trending_up',
       generatedAt: now,
     );
