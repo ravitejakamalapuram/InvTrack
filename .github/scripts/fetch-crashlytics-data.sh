@@ -49,21 +49,31 @@ const minUsers = parseInt(process.env.MIN_USERS || '5');
 const projectId = process.env.FIREBASE_PROJECT_ID;
 
 async function getAccessToken() {
-  // Generate OAuth2 access token from service account using gcloud
-  // This requires gcloud CLI to be installed on self-hosted runner
+  // Generate OAuth2 access token from service account using Google Auth Library
+  // This does NOT require gcloud CLI - works with just Node.js
   try {
     console.error('Generating OAuth2 access token from service account...');
-    const { stdout } = await execPromise(`gcloud auth application-default print-access-token`);
-    return stdout.trim();
+
+    // Use google-auth-library to generate access token
+    const { GoogleAuth } = require('google-auth-library');
+    const auth = new GoogleAuth({
+      keyFile: serviceAccountPath,
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    });
+
+    const client = await auth.getClient();
+    const accessTokenResponse = await client.getAccessToken();
+
+    if (!accessTokenResponse.token) {
+      throw new Error('Failed to get access token from service account');
+    }
+
+    console.error('✅ Access token generated successfully');
+    return accessTokenResponse.token;
+
   } catch (error) {
-    console.error('Failed to get access token via gcloud, trying alternative method...');
-
-    // Alternative: use service account directly with Google Auth Library
-    // This requires reading the service account JSON and creating a JWT
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-
-    // For simplicity in a bash script, we'll use gcloud - it should be available on self-hosted runner
-    throw new Error('gcloud CLI required for service account authentication. Please ensure it is installed and configured.');
+    console.error('❌ Failed to get access token:', error.message);
+    throw error;
   }
 }
 
