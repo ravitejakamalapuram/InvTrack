@@ -15,9 +15,14 @@ echo "Min Affected Users: $MIN_USERS"
 echo ""
 
 # Validate required environment variables
-if [ -z "$FIREBASE_TOKEN" ]; then
-  echo "❌ Error: FIREBASE_TOKEN not set"
-  echo "Generate token with: firebase login:ci"
+if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+  echo "❌ Error: GOOGLE_APPLICATION_CREDENTIALS not set"
+  echo "Service account credentials file path required for Crashlytics API access"
+  exit 1
+fi
+
+if [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+  echo "❌ Error: Service account file not found at: $GOOGLE_APPLICATION_CREDENTIALS"
   exit 1
 fi
 
@@ -27,22 +32,44 @@ if [ -z "$FIREBASE_APP_ID" ]; then
   exit 1
 fi
 
-# Create Node.js script to fetch Crashlytics data using Firebase REST API
+echo "✅ Using service account: $GOOGLE_APPLICATION_CREDENTIALS"
+
+# Create Node.js script to fetch Crashlytics data using Firebase REST API with service account
 cat > fetch_crashes.js << 'SCRIPT_EOF'
 const { exec } = require('child_process');
 const util = require('util');
+const fs = require('fs');
 const execPromise = util.promisify(exec);
 
 const appId = process.env.FIREBASE_APP_ID;
-const token = process.env.FIREBASE_TOKEN;
+const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 const reportType = process.env.REPORT_TYPE || 'topIssues';
 const limit = parseInt(process.env.CRASH_LIMIT || '5');
 const minUsers = parseInt(process.env.MIN_USERS || '5');
 const projectId = process.env.FIREBASE_PROJECT_ID;
 
+async function getAccessToken() {
+  // Generate OAuth2 access token from service account using gcloud
+  // This requires gcloud CLI to be installed on self-hosted runner
+  try {
+    console.error('Generating OAuth2 access token from service account...');
+    const { stdout } = await execPromise(`gcloud auth application-default print-access-token`);
+    return stdout.trim();
+  } catch (error) {
+    console.error('Failed to get access token via gcloud, trying alternative method...');
+
+    // Alternative: use service account directly with Google Auth Library
+    // This requires reading the service account JSON and creating a JWT
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
+    // For simplicity in a bash script, we'll use gcloud - it should be available on self-hosted runner
+    throw new Error('gcloud CLI required for service account authentication. Please ensure it is installed and configured.');
+  }
+}
+
 async function fetchCrashData() {
   try {
-    console.error('Fetching Crashlytics data via Firebase CLI...');
+    console.error('Fetching Crashlytics data using service account...');
 
     // Extract project number from app ID (format: 1:PROJECT_NUMBER:platform:APP_ID)
     const projectNumber = appId.split(':')[1];
@@ -50,18 +77,21 @@ async function fetchCrashData() {
     console.error(`Project Number: ${projectNumber}`);
     console.error(`App ID: ${appId}`);
 
+    // Get OAuth2 access token from service account
+    const accessToken = await getAccessToken();
+    console.error('✅ Access token generated');
+
     // Use the correct Crashlytics REST API endpoint
-    // Endpoint: https://firebasecrashlytics.googleapis.com/v1alpha/projects/{projectNumber}/apps/{appId}/reports/{reportType}
     const apiUrl = `https://firebasecrashlytics.googleapis.com/v1alpha/projects/${projectNumber}/apps/${appId}/reports/${reportType}`;
 
     console.error(`API URL: ${apiUrl}`);
 
-    // Try using Firebase token as OAuth token
-    const curlCmd = `curl -s -H "Authorization: Bearer ${token}" "${apiUrl}?page_size=${limit}"`;
+    // Call API with service account OAuth2 token
+    const curlCmd = `curl -s -H "Authorization: Bearer ${accessToken}" "${apiUrl}?page_size=${limit}"`;
 
     let result;
     try {
-      console.error('Attempting Crashlytics API call...');
+      console.error('Calling Crashlytics API with service account...');
       const { stdout, stderr } = await execPromise(curlCmd);
 
       if (stderr) {

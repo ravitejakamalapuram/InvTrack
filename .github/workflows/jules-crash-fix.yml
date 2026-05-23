@@ -43,8 +43,8 @@ env:
 jobs:
   fetch-and-fix-crashes:
     name: Fetch Crashes and Create Jules Sessions
-    runs-on: ubuntu-latest
-    
+    runs-on: self-hosted  # Local runner needed for Firebase MCP access
+
     permissions:
       contents: read
       issues: write  # To create tracking issues
@@ -63,25 +63,42 @@ jobs:
           npm install -g firebase-tools@latest
           firebase --version
       
-      - name: Authenticate Firebase CLI
+      - name: Authenticate Firebase with Service Account
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
         run: |
-          # Use Firebase CI token for authentication
-          # Generate token via: firebase login:ci
-          echo "Authenticating with Firebase..."
-          firebase projects:list --token "$FIREBASE_TOKEN"
+          # Use Firebase service account for Crashlytics API access
+          # Service account has required permissions for Crashlytics REST API
+          echo "Setting up Firebase service account authentication..."
+
+          # Write service account credentials to temporary file
+          echo "$FIREBASE_CREDENTIALS" > /tmp/firebase-service-account.json
+
+          # Set environment variable for Firebase SDK and gcloud
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-service-account.json
+
+          # Authenticate gcloud with service account (for OAuth2 token generation)
+          gcloud auth activate-service-account --key-file=/tmp/firebase-service-account.json
+
+          # Set gcloud to use application default credentials
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-service-account.json
+          gcloud auth application-default login --no-launch-browser 2>/dev/null || true
+
+          # Verify authentication
+          firebase projects:list
+
+          echo "✅ Firebase service account authenticated with gcloud"
       
       - name: Fetch Crashlytics Top Issues
         id: fetch_crashes
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           CRASH_LIMIT: ${{ github.event.inputs.crash_limit || '5' }}
           MIN_USERS: ${{ github.event.inputs.min_affected_users || '5' }}
           REPORT_TYPE: ${{ github.event.inputs.report_type || 'topIssues' }}
         run: |
-          # Fetch crashes using Firebase CLI
+          # Fetch crashes using service account authenticated Crashlytics API
           bash .github/scripts/fetch-crashlytics-data.sh
       
       - name: Create Jules Sessions for Crashes
