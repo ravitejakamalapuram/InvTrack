@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
@@ -393,6 +394,14 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
           padding: EdgeInsets.all(AppSpacing.md),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
+              if (index < 0 || index >= filteredInvestments.length) {
+                // Return null silently for out-of-bounds indices.
+                // Since childCount is provided, reaching this usually indicates
+                // a dynamic list filtering edge case during state transitions.
+                // Do NOT log a warning here as Flutter internally calls builder
+                // beyond bounds during specific layout scenarios even with childCount.
+                return null;
+              }
               final investment = filteredInvestments[index];
               final isArchived = investment.isArchived;
               return StaggeredFadeIn(
