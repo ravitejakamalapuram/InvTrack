@@ -4798,5 +4798,29 @@
   "incomeCalendar": "Income Calendar",
   "@incomeCalendar": {
     "description": "Title for income calendar screen"
+  },
+  "trendReportLoadFailed": "Failed to load income trend report",
+  "@trendReportLoadFailed": {
+    "description": "Error message when income trend report fails to load"
+  },
+  "trendReportRetry": "Retry",
+  "@trendReportRetry": {
+    "description": "Retry button label for income trend report"
+  },
+  "diversificationExcellent": "Excellent diversification",
+  "@diversificationExcellent": {
+    "description": "Diversification label: HHI score < 0.15"
+  },
+  "diversificationModerate": "Moderate concentration",
+  "@diversificationModerate": {
+    "description": "Diversification label: HHI score 0.15-0.30"
+  },
+  "diversificationHigh": "High concentration",
+  "@diversificationHigh": {
+    "description": "Diversification label: HHI score 0.30-0.50"
+  },
+  "diversificationRisky": "Very high concentration - Risky",
+  "@diversificationRisky": {
+    "description": "Diversification label: HHI score >= 0.50"
   }
 }

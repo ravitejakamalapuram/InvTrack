@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/income_trend_provider.dart';
+import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
@@ -31,15 +32,17 @@ class IncomeTrendReportScreen extends ConsumerWidget {
         title: Text(l10n.incomeTrendReport),
       ),
       body: reportAsync.when(
-        data: (report) => _buildContent(context, ref, report),
+        data: (report) => _buildContent(context, ref, report, l10n),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(context, error),
+        error: (error, stack) => _buildErrorState(context, ref, l10n),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, dynamic report) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, dynamic report, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencySymbol = ref.watch(currencySymbolProvider);
+    final locale = ref.watch(currencyLocaleProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -47,7 +50,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Header with total income
-          _buildHeaderCard(context, report),
+          _buildHeaderCard(context, report, currencySymbol, locale, l10n),
           const SizedBox(height: AppSpacing.md),
 
           // 2. Growth Metrics
@@ -75,10 +78,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context, dynamic report) {
-    final l10n = AppLocalizations.of(context);
-    final locale = Localizations.localeOf(context).toString();
-
+  Widget _buildHeaderCard(BuildContext context, dynamic report, String currencySymbol, String locale, AppLocalizations l10n) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -90,21 +90,25 @@ class IncomeTrendReportScreen extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              formatCompactCurrency(
-                report.totalIncome,
-                symbol: '₹',
-                locale: locale,
-              ),
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            PrivacyProtectionWrapper(
+              child: Text(
+                formatCompactCurrency(
+                  report.totalIncome,
+                  symbol: currencySymbol,
+                  locale: locale,
+                ),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${l10n.averageMonthly}: ${formatCompactCurrency(report.averageMonthlyIncome, symbol: '₹', locale: locale)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+            PrivacyProtectionWrapper(
+              child: Text(
+                '${l10n.averageMonthly}: ${formatCompactCurrency(report.averageMonthlyIncome, symbol: currencySymbol, locale: locale)}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                ),
               ),
             ),
           ],
@@ -358,7 +362,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              _getDiversificationLabel(report.diversificationScore),
+              _getDiversificationLabel(context, report.diversificationScore),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: _getDiversificationColor(report.diversificationScore),
                 fontWeight: FontWeight.bold,
@@ -406,11 +410,12 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     );
   }
 
-  String _getDiversificationLabel(double score) {
-    if (score < 0.15) return 'Excellent diversification';
-    if (score < 0.30) return 'Moderate concentration';
-    if (score < 0.50) return 'High concentration';
-    return 'Very high concentration - Risky';
+  String _getDiversificationLabel(BuildContext context, double score) {
+    final l10n = AppLocalizations.of(context);
+    if (score < 0.15) return l10n.diversificationExcellent;
+    if (score < 0.30) return l10n.diversificationModerate;
+    if (score < 0.50) return l10n.diversificationHigh;
+    return l10n.diversificationRisky;
   }
 
   Color _getDiversificationColor(double score) {
@@ -458,7 +463,7 @@ class IncomeTrendReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, Object error) {
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -466,20 +471,19 @@ class IncomeTrendReportScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.error_outline,
+              Icons.cloud_off_rounded,
               size: 64,
-              color: Theme.of(context).colorScheme.error,
+              color: AppColors.errorLight,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Failed to load income trend report',
+              l10n.trendReportLoadFailed,
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              error.toString(),
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
+            const SizedBox(height: AppSpacing.md),
+            TextButton(
+              onPressed: () => ref.invalidate(incomeTrendReportProvider),
+              child: Text(l10n.trendReportRetry),
             ),
           ],
         ),
