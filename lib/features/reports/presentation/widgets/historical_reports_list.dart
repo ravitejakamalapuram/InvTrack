@@ -56,7 +56,10 @@ class HistoricalReportsList extends StatelessWidget {
     
     return Column(
       children: fyYears.map((fyYear) {
-        final fyLabel = 'FY $fyYear-${(fyYear + 1) % 100}';
+        final fyLabel = l10n.fyLabel(
+          fyYear.toString(),
+          ((fyYear + 1) % 100).toString().padLeft(2, '0'),
+        );
         final isCurrent = fyYear == currentFYYear;
         
         return Padding(

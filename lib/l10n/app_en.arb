@@ -2822,6 +2822,61 @@
     "description": "Message when Reports tab is disabled"
   },
 
+  "incomeGuardianFeature": "Income Guardian",
+  "@incomeGuardianFeature": {
+    "description": "Income Guardian feature toggle title"
+  },
+
+  "incomeGuardianFeatureSubtitle": "AI-powered income tracking with payment monitoring",
+  "@incomeGuardianFeatureSubtitle": {
+    "description": "Income Guardian feature description"
+  },
+
+  "incomeGuardianFeatureEnabled": "Income Guardian enabled",
+  "@incomeGuardianFeatureEnabled": {
+    "description": "Snackbar message when Income Guardian is enabled"
+  },
+
+  "incomeGuardianFeatureDisabled": "Income Guardian disabled",
+  "@incomeGuardianFeatureDisabled": {
+    "description": "Snackbar message when Income Guardian is disabled"
+  },
+
+  "dashboardIncomeGuardianBeta": "BETA",
+  "@dashboardIncomeGuardianBeta": {
+    "description": "Beta badge for Income Guardian feature"
+  },
+
+  "dashboardIncomeGuardianSubtitle": "AI-powered income tracking",
+  "@dashboardIncomeGuardianSubtitle": {
+    "description": "Income Guardian dashboard card subtitle"
+  },
+
+  "dashboardOverdueBadge": "OVERDUE",
+  "@dashboardOverdueBadge": {
+    "description": "Overdue payment badge label"
+  },
+
+  "dashboardDueDate": "Due Date",
+  "@dashboardDueDate": {
+    "description": "Due date label in payment card"
+  },
+
+  "dashboardSource": "Source",
+  "@dashboardSource": {
+    "description": "Source label in payment card"
+  },
+
+  "dashboardNoPendingPayments": "No pending income payments",
+  "@dashboardNoPendingPayments": {
+    "description": "Empty state message when no pending payments"
+  },
+
+  "dashboardAllIncomeOnTrack": "All income on track",
+  "@dashboardAllIncomeOnTrack": {
+    "description": "Empty state badge when all income is on track"
+  },
+
   "healthScoreImproved": "Score improved",
   "@healthScoreImproved": {
     "description": "Accessibility label for positive score change"
@@ -3202,6 +3257,92 @@
         "type": "String"
       }
     }
+  },
+
+  "fyLabel": "FY {startYear}-{endYear}",
+  "@fyLabel": {
+    "description": "Financial year label format (e.g., FY 2023-24)",
+    "placeholders": {
+      "startYear": {
+        "type": "String"
+      },
+      "endYear": {
+        "type": "String"
+      }
+    }
+  },
+
+  "paymentsReceived": "{receivedCount} of {totalCount} payments received",
+  "@paymentsReceived": {
+    "description": "Status showing how many payments have been received out of total expected",
+    "placeholders": {
+      "receivedCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
+    }
+  },
+
+  "invested": "Invested: ",
+  "@invested": {
+    "description": "Label prefix showing amount invested (e.g., 'Invested: ₹1L')"
+  },
+
+  "viewDetails": "View Details",
+  "@viewDetails": {
+    "description": "Button/link text to view more details"
+  },
+
+  "noItemsToDisplay": "No items to display",
+  "@noItemsToDisplay": {
+    "description": "Message shown when a list has no items to show"
+  },
+
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+
+  "closed": "CLOSED",
+  "@closed": {
+    "description": "Label for closed investments"
+  },
+
+  "cashFlowEntries": "{count, plural, =1{1 entry} other{{count} entries}}",
+  "@cashFlowEntries": {
+    "description": "Cash flow entries count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "addedRelative": "Added {relativeTime}",
+  "@addedRelative": {
+    "description": "Shows when investment was added relative to now (e.g., 'Added 2 days ago')",
+    "placeholders": {
+      "relativeTime": {
+        "type": "String"
+      }
+    }
+  },
+
+  "allPaymentsFilter": "All Payments",
+  "@allPaymentsFilter": {
+    "description": "Filter chip label for showing all payments"
+  },
+
+  "pendingFilter": "Pending",
+  "@pendingFilter": {
+    "description": "Filter chip label for showing pending payments"
+  },
+
+  "overdueFilter": "Overdue",
+  "@overdueFilter": {
+    "description": "Filter chip label for showing overdue payments"
   },
 
   "activeGoalsCount": "{count, plural, =0{No Active Goals} =1{1 Active Goal} other{{count} Active Goals}}",

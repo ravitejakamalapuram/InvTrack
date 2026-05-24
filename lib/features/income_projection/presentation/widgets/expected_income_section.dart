@@ -228,7 +228,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  '$receivedCount of $totalCount payments received',
+                  l10n.paymentsReceived(receivedCount, totalCount),
                   style: AppTypography.small.copyWith(
                     color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
                     fontSize: 11,

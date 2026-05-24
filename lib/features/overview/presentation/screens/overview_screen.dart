@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -174,10 +175,11 @@ class OverviewScreen extends ConsumerWidget {
 
         SizedBox(height: AppSpacing.xl),
 
-        // Income Guardian Card
-        const IncomeGuardianDashboardCard(),
-
-        SizedBox(height: AppSpacing.xl),
+        // Income Guardian Card (feature flag)
+        if (ref.watch(isIncomeGuardianEnabledProvider)) ...[
+          const IncomeGuardianDashboardCard(),
+          SizedBox(height: AppSpacing.xl),
+        ],
 
         // Goals Summary Card
         const GoalsDashboardCard(),

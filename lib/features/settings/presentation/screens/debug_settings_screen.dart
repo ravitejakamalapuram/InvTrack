@@ -215,6 +215,42 @@ class DebugSettingsScreen extends ConsumerWidget {
           },
         ),
 
+        // Income Guardian feature flag
+        SettingsToggleTile(
+          icon: Icons.shield_outlined,
+          iconColor: AppColors.successLight,
+          title: l10n.incomeGuardianFeature,
+          subtitle: l10n.incomeGuardianFeatureSubtitle,
+          value: featureFlags[FeatureFlag.incomeGuardian] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.incomeGuardian);
+
+              // Verify the toggle succeeded
+              final newState = ref.read(featureFlagsProvider)[FeatureFlag.incomeGuardian] ?? false;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      newState
+                          ? l10n.incomeGuardianFeatureEnabled
+                          : l10n.incomeGuardianFeatureDisabled,
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Future features (disabled - coming soon)
         Opacity(
           opacity: 0.5,

@@ -30,7 +30,15 @@ enum FeatureFlag {
   peerBenchmarking('peer_benchmarking', 'Peer Benchmarking'),
 
   /// Future: AI Assistant
-  aiAssistant('ai_assistant', 'AI Assistant');
+  aiAssistant('ai_assistant', 'AI Assistant'),
+
+  /// Income Guardian - AI-powered income tracking
+  /// - Expected payment monitoring with ML-based predictions
+  /// - Platform reliability scoring
+  /// - Automatic overdue payment detection
+  /// - Income trend analysis and forecasting
+  /// - Disabled by default, enable via Debug Settings
+  incomeGuardian('income_guardian', 'Income Guardian');
 
   const FeatureFlag(this.key, this.displayName);
 
@@ -152,6 +160,15 @@ final isReportsTabEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.reportsTab] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if Income Guardian is enabled
+final isIncomeGuardianEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.incomeGuardian] ?? false,
     ),
   );
 });
