@@ -1,6 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [3.66.2] - 2026-05-24
+
+### 🐛 Bug Fixes
+
+- Add AdMob Application ID to fix Play Store rejection
+
+## [3.66.1] - 2026-05-24
 
 ### 🐛 Bug Fixes
 
