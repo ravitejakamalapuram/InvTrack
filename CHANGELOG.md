@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Enhance Income Guardian dashboard card UI and add feature flag development rule (#435)
+
+## [3.65.0] - 2026-05-24
+
+### ✨ Features
+
 - Migrate to Google Play In-App Updates SDK (#436)
 
 ## [3.64.0] - 2026-05-24

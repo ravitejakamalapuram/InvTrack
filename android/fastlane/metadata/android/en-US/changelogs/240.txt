@@ -1,0 +1,2 @@
+🆕 What's New
+• Migrate to Google Play In-App Updates SDK (#436)
