@@ -21,3 +21,8 @@
 **Vulnerability:** The application was correctly validating file signatures (magic numbers) during individual document uploads but failed to validate them during ZIP-based bulk data imports. This allowed an attacker to bypass the security check by constructing a malicious ZIP file containing spoofed or unsupported files, which were then saved directly to local storage.
 **Learning:** Security validation logic must be applied consistently across all entry points, especially in bulk import or batch processing features which often bypass standard UI-level validation.
 **Prevention:** Whenever importing or deserializing files from an archive, ensure the same file signature validation (e.g., `FileSignatureUtils.validateFileSignature`) is applied as if the file were being uploaded individually.
+## 2024-05-24 - Missing CSP for Web
+
+**Vulnerability:** Flutter web was missing Content Security Policy (CSP) headers, a high priority defense in depth measure against Cross Site Scripting (XSS).
+**Learning:** Adding CSP for a Firebase/Flutter app is tricky. We need to specifically allow `https://unpkg.com` for CanvasKit, `https://fonts.gstatic.com` for Material Icons, and `https://firestore.googleapis.com`, `https://identitytoolkit.googleapis.com`, and `https://securetoken.googleapis.com` for Firebase connections.
+**Prevention:** Make sure `web/index.html` has CSP configured correctly right from the setup phase of any new web project.
