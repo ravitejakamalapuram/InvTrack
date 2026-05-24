@@ -208,6 +208,14 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                         duration: const Duration(seconds: 3),
                       ),
                     );
+                  } else {
+                    // Handle failed update start
+                    ErrorHandler.handle(
+                      Exception(updatedState.error),
+                      StackTrace.current,
+                      context: context,
+                      showFeedback: true,
+                    );
                   }
                 }
               }

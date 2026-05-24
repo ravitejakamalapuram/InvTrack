@@ -89,6 +89,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     } catch (e, st) {
       LoggerService.error('Update check failed', error: e, stackTrace: st);
       state = state.copyWith(
+        updateInfo: InAppUpdateState._sentinel,  // Clear stale update info
         isChecking: false,
         error: 'Failed to check for updates. Please try again later.',
       );

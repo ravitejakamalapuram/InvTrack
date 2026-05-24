@@ -3081,7 +3081,7 @@
     "description": "Message shown when app is on the latest version"
   },
 
-  "updatePromptMessage": "A new version of InvTracker is available. Would you like to update now?",
+  "updatePromptMessage": "A new version of InvTrack is available. Would you like to update now?",
   "@updatePromptMessage": {
     "description": "Message asking user if they want to update the app"
   },
@@ -3929,11 +3929,6 @@
   "importNowQuestion": "Would you like to import it now?",
   "@importNowQuestion": {
     "description": "Asks user if they want to import the backup immediately"
-  },
-
-  "later": "Later",
-  "@later": {
-    "description": "Button label to postpone action"
   },
 
   "importNow": "Import Now",
