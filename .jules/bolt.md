@@ -88,3 +88,7 @@
 ## 2024-05-25 - Single Pass Aggregate Calculations with Hoisted Date Boundaries
 **Learning:** In reporting services, calculating multiple aggregates sequentially using `where().fold()` across the same dataset creates an O(K*N) problem. Filtering by an invariant condition (like whether a date falls between two calculated boundaries) inside the loop results in redundant object allocation or computation per item.
 **Action:** Replace multiple chains of `where().fold()` with a single O(N) `for` loop that computes all required metrics simultaneously. Furthermore, calculate loop-invariant boundaries (e.g. `startDate` and `endDate`) outside the iteration entirely to prevent redundant date arithmetic during the aggregation.
+## 2024-06-11 - Replace O(N*M) nested `.firstWhere()` loops with O(1) map lookups
+
+**Learning:** Found multiple instances where `.firstWhere()` on the `investments` list was being called inside loops traversing `cashFlows` or grouped maps in income projection services (e.g. `IncomeTrendAnalyzer`, `ReinvestmentAdvisor`). This causes O(N*M) performance degradation, especially as `cashFlows` grow over time.
+**Action:** Always pre-compute a dictionary/hash map of related entities (`final map = {for (final item in items) item.id: item};`) before entering a loop to convert O(N*M) iterations into O(N+M) complexity with O(1) lookups.

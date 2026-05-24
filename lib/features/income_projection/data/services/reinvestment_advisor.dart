@@ -23,6 +23,9 @@ class ReinvestmentAdvisor {
   }) {
     final opportunities = <ReinvestmentOpportunity>[];
     final now = DateTime.now();
+    final Map<String, InvestmentEntity> investmentMap = {
+      for (final inv in investments) inv.id: inv,
+    };
 
     // Group income by investment
     final incomeByInvestment = <String, List<CashFlowEntity>>{};
@@ -34,7 +37,8 @@ class ReinvestmentAdvisor {
     // Check each investment for idle cash
     for (final entry in incomeByInvestment.entries) {
       final investmentId = entry.key;
-      final incomePayments = entry.value..sort((a, b) => b.date.compareTo(a.date));
+      final incomePayments = entry.value
+        ..sort((a, b) => b.date.compareTo(a.date));
 
       // Get most recent income payment
       if (incomePayments.isEmpty) continue;
@@ -45,10 +49,7 @@ class ReinvestmentAdvisor {
       if (daysIdle < minimumIdleDays) continue;
 
       // Get investment details
-      final investment = investments.firstWhere(
-        (inv) => inv.id == investmentId,
-        orElse: () => investments.first,
-      );
+      final investment = investmentMap[investmentId] ?? investments.first;
 
       // Calculate opportunity cost
       final dailyRate = (benchmarkRate - savingsRate) / 365 / 100;
@@ -65,21 +66,23 @@ class ReinvestmentAdvisor {
       );
 
       // Create opportunity
-      opportunities.add(ReinvestmentOpportunity(
-        id: _uuid.v4(),
-        cashFlowId: latestIncome.id,
-        investmentId: investmentId,
-        availableAmount: latestIncome.amount,
-        currency: latestIncome.currency,
-        daysIdle: daysIdle,
-        receivedDate: latestIncome.date,
-        savingsRate: savingsRate,
-        benchmarkRate: benchmarkRate,
-        opportunityCostDaily: opportunityCostDaily,
-        opportunityCostMonthly: opportunityCostMonthly,
-        suggestions: suggestions,
-        createdAt: now,
-      ));
+      opportunities.add(
+        ReinvestmentOpportunity(
+          id: _uuid.v4(),
+          cashFlowId: latestIncome.id,
+          investmentId: investmentId,
+          availableAmount: latestIncome.amount,
+          currency: latestIncome.currency,
+          daysIdle: daysIdle,
+          receivedDate: latestIncome.date,
+          savingsRate: savingsRate,
+          benchmarkRate: benchmarkRate,
+          opportunityCostDaily: opportunityCostDaily,
+          opportunityCostMonthly: opportunityCostMonthly,
+          suggestions: suggestions,
+          createdAt: now,
+        ),
+      );
     }
 
     // Sort by urgency (days idle descending)
@@ -99,55 +102,68 @@ class ReinvestmentAdvisor {
     final suggestions = <InvestmentSuggestion>[];
 
     // 1. Fixed Deposit suggestion (safe option)
-    suggestions.add(InvestmentSuggestion(
-      id: _uuid.v4(),
-      type: ReinvestmentType.fixedDeposit,
-      name: 'Fixed Deposit (${benchmarkRate.toStringAsFixed(1)}%)',
-      description: 'Safe, guaranteed returns. Lock-in for 1 year.',
-      suggestedAmount: availableAmount,
-      expectedReturn: benchmarkRate,
-      tenureMonths: 12,
-    ));
+    suggestions.add(
+      InvestmentSuggestion(
+        id: _uuid.v4(),
+        type: ReinvestmentType.fixedDeposit,
+        name: 'Fixed Deposit (${benchmarkRate.toStringAsFixed(1)}%)',
+        description: 'Safe, guaranteed returns. Lock-in for 1 year.',
+        suggestedAmount: availableAmount,
+        expectedReturn: benchmarkRate,
+        tenureMonths: 12,
+      ),
+    );
 
     // 2. P2P Lending suggestion (higher risk/return)
     if (availableAmount >= 10000) {
-      suggestions.add(InvestmentSuggestion(
-        id: _uuid.v4(),
-        type: ReinvestmentType.p2pLending,
-        name: 'P2P Lending (12-14%)',
-        description: 'Higher returns with moderate risk. Diversified across borrowers.',
-        suggestedAmount: availableAmount,
-        expectedReturn: 13.0,
-        tenureMonths: 12,
-      ));
+      suggestions.add(
+        InvestmentSuggestion(
+          id: _uuid.v4(),
+          type: ReinvestmentType.p2pLending,
+          name: 'P2P Lending (12-14%)',
+          description:
+              'Higher returns with moderate risk. Diversified across borrowers.',
+          suggestedAmount: availableAmount,
+          expectedReturn: 13.0,
+          tenureMonths: 12,
+        ),
+      );
     }
 
     // 3. Top-up existing investment (if applicable)
-    final activeInvestments = investments.where((inv) => 
-      inv.status == InvestmentStatus.open &&
-      inv.id != investment.id &&
-      inv.type != InvestmentType.realEstate // Can't top-up real estate
-    ).toList();
+    final activeInvestments = investments
+        .where(
+          (inv) =>
+              inv.status == InvestmentStatus.open &&
+              inv.id != investment.id &&
+              inv.type != InvestmentType.realEstate, // Can't top-up real estate
+        )
+        .toList();
 
     if (activeInvestments.isNotEmpty) {
       final topPerformer = activeInvestments.first;
-      suggestions.add(InvestmentSuggestion(
-        id: _uuid.v4(),
-        type: ReinvestmentType.existingInvestment,
-        name: 'Top-up ${topPerformer.name}',
-        description: 'Add to your existing ${topPerformer.type.name} investment.',
-        suggestedAmount: availableAmount,
-        expectedReturn: topPerformer.expectedRate ?? benchmarkRate,
-        tenureMonths: topPerformer.tenureMonths ?? 12,
-        existingInvestmentId: topPerformer.id,
-      ));
+      suggestions.add(
+        InvestmentSuggestion(
+          id: _uuid.v4(),
+          type: ReinvestmentType.existingInvestment,
+          name: 'Top-up ${topPerformer.name}',
+          description:
+              'Add to your existing ${topPerformer.type.name} investment.',
+          suggestedAmount: availableAmount,
+          expectedReturn: topPerformer.expectedRate ?? benchmarkRate,
+          tenureMonths: topPerformer.tenureMonths ?? 12,
+          existingInvestmentId: topPerformer.id,
+        ),
+      );
     }
 
     return suggestions.take(3).toList();
   }
 
   /// Calculate total opportunity cost for all idle cash
-  double calculateTotalOpportunityCost(List<ReinvestmentOpportunity> opportunities) {
+  double calculateTotalOpportunityCost(
+    List<ReinvestmentOpportunity> opportunities,
+  ) {
     return opportunities.fold<double>(
       0.0,
       (sum, opp) => sum + opp.totalOpportunityCostLost,
