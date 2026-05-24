@@ -192,9 +192,10 @@ class DynamicReportScreen extends ConsumerWidget {
   }
 
   Widget _buildItemList(BuildContext context, List items) {
+    final l10n = AppLocalizations.of(context);
     if (items.isEmpty) {
       return Text(
-        'No items to display',
+        l10n.noItemsToDisplay,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
           color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
         ),

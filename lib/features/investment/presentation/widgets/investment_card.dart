@@ -18,6 +18,7 @@ import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A card displaying an investment's summary information.
 class InvestmentCard extends ConsumerWidget {
@@ -266,7 +267,7 @@ class _InvestmentInfo extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'CLOSED',
+                  AppLocalizations.of(context).closed,
                   style: AppTypography.small.copyWith(
                     color: Colors.grey,
                     fontWeight: FontWeight.w600,
@@ -567,7 +568,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
               ),
               SizedBox(width: 4),
               Text(
-                '$cashFlowCount ${cashFlowCount == 1 ? 'entry' : 'entries'}',
+                AppLocalizations.of(context).cashFlowEntries(cashFlowCount),
                 style: subtleTextStyle,
               ),
               Spacer(),
@@ -577,7 +578,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Invested: ',
+                      AppLocalizations.of(context).invested,
                       style: subtleTextStyle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -605,7 +606,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                 ),
               ] else ...[
                 Text(
-                  'View Details',
+                  AppLocalizations.of(context).viewDetails,
                   style: AppTypography.small.copyWith(
                     color: AppColors.primaryLight,
                     fontWeight: FontWeight.w600,
@@ -619,7 +620,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Loading...',
+              AppLocalizations.of(context).loading,
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -632,7 +633,9 @@ class _InvestmentBottomStrip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Added ${AppDateUtils.formatRelative(investment.createdAt, relativeTo: referenceDate)}',
+              AppLocalizations.of(context).addedRelative(
+                AppDateUtils.formatRelative(investment.createdAt, relativeTo: referenceDate),
+              ),
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark
@@ -640,7 +643,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
               ),
             ),
             Text(
-              'View Details',
+              AppLocalizations.of(context).viewDetails,
               style: AppTypography.small.copyWith(
                 color: AppColors.primaryLight,
                 fontWeight: FontWeight.w600,
