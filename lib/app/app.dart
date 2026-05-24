@@ -12,7 +12,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/features/investment/presentation/widgets/notification_sync_initializer.dart';
 import 'package:inv_tracker/features/income_projection/presentation/widgets/income_guardian_service_initializer.dart';
 import 'package:inv_tracker/features/security/presentation/widgets/privacy_protection_wrapper.dart';
-import 'package:inv_tracker/features/app_update/presentation/widgets/version_check_initializer.dart';
+import 'package:inv_tracker/core/widgets/in_app_update_initializer.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class InvTrackerApp extends ConsumerWidget {
@@ -26,7 +26,7 @@ class InvTrackerApp extends ConsumerWidget {
     return IncomeGuardianServiceInitializer(
       child: NotificationSyncInitializer(
         child: _NotificationNavigationHandler(
-          child: VersionCheckInitializer(
+          child: InAppUpdateInitializer(
             child: CurrencyCacheInitializer(
               child: ConnectivityListener(
                 child: MaterialApp.router(
