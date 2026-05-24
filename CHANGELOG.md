@@ -4,6 +4,12 @@
 
 ### ✨ Features
 
+- Migrate to Google Play In-App Updates SDK (#436)
+
+## [3.64.0] - 2026-05-24
+
+### ✨ Features
+
 - **income-projection**: Add Advanced Income Features Phase 1 - ML predictions & trend analysis (#407)
 
 ### 🐛 Bug Fixes
