@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Add owner/date/issue to TODO comments (Rule 2.7 compliance)
+
 ## [3.66.2] - 2026-05-24
 
 ### 🐛 Bug Fixes
