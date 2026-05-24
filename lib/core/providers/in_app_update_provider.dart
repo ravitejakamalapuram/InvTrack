@@ -118,6 +118,12 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
   /// Start flexible update (background download)
   ///
   /// Use for non-critical updates
+  ///
+  /// NOTE: The `in_app_update` package does not provide install-state callbacks
+  /// to track download progress. The isDownloading flag indicates the download
+  /// request is in progress, not that the actual download is complete.
+  /// The download continues in background after this method returns.
+  /// Users must manually call completeFlexibleUpdate() when ready to install.
   Future<void> startFlexibleUpdate() async {
     if (state.isDownloading) return;
 
@@ -128,7 +134,8 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
 
       if (result == AppUpdateResult.success) {
         LoggerService.info('Flexible update download started');
-        // Clear downloading flag after successful download initiation
+        // Note: This means download request initiated successfully,
+        // NOT that download is complete. The actual download happens in background.
         state = state.copyWith(isDownloading: false);
       } else {
         LoggerService.warn('Flexible update result: ${result.name}');
