@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Restore self-hosted runner for CD Deploy to fix keystore access
+
+## [3.66.0] - 2026-05-24
+
 ### ✨ Features
 
 - Enhance Income Guardian dashboard card UI and add feature flag development rule (#435)
