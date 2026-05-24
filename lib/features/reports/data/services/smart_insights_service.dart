@@ -298,7 +298,7 @@ class SmartInsightsService {
   /// current vs target amounts using GoalProgressCalculator.
   /// For now, returns empty list - will be implemented in future iteration.
   List<SmartInsight> _generateGoalProgressInsights(List<GoalEntity> goals) {
-    // TODO: Implement full goal progress calculation
+    // TODO(@raviteja, 2026-05-24, #SmartInsights-GoalProgress): Implement full goal progress calculation
     // Requires:
     // 1. Investment and cash flow data to calculate current amount
     // 2. GoalProgressCalculator.calculate() to get actual progress

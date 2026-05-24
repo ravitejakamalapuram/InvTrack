@@ -145,7 +145,7 @@ class AdService {
   /// Shows consent dialog on first launch. Returns consent status.
   /// For non-EU users, returns [AdConsentStatus.notRequired].
   Future<AdConsentStatus> requestConsent() async {
-    // TODO: Implement GDPR consent dialog
+    // TODO(@raviteja, 2026-05-24, #AdMob-GDPR): Implement GDPR consent dialog
     // For MVP, we'll use a simple approach:
     // - EU users: Show consent dialog
     // - Non-EU users: Auto-consent (notRequired)
