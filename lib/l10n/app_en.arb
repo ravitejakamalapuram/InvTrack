@@ -1511,11 +1511,6 @@
     "description": "FIRE settings load failure message"
   },
 
-  "couldNotOpenUpdateLink": "Could not open update link. Please try again.",
-  "@couldNotOpenUpdateLink": {
-    "description": "Update link open failure message"
-  },
-
   "failedToLoadInvestments": "Failed to load investments",
   "@failedToLoadInvestments": {
     "description": "Investments load failure message"
@@ -1862,11 +1857,6 @@
         "type": "int"
       }
     }
-  },
-
-  "invalidUpdateLink": "Invalid update link format.",
-  "@invalidUpdateLink": {
-    "description": "Error message for invalid update URL"
   },
 
   "yearsFormat": "{age} years",
@@ -3131,11 +3121,6 @@
     "description": "Note that Crashlytics works in release builds regardless of debug mode setting"
   },
 
-  "versionCheckTestingTitle": "Version Check Testing",
-  "@versionCheckTestingTitle": {
-    "description": "Version check testing section title"
-  },
-
   "checkForUpdatesTitle": "Check for Updates",
   "@checkForUpdatesTitle": {
     "description": "Button title to manually check for app updates"
@@ -3146,78 +3131,34 @@
     "description": "Loading text when checking for updates"
   },
 
-  "versionChecked": "Version checked",
-  "@versionChecked": {
-    "description": "Status text after version check completes"
-  },
-
-  "lastChecked": "Last checked: {timestamp}",
-  "@lastChecked": {
-    "description": "Shows when version check was last performed",
-    "placeholders": {
-      "timestamp": {
-        "type": "String"
-      }
-    }
-  },
-
-  "tapToCheckForUpdates": "Tap to check for updates",
-  "@tapToCheckForUpdates": {
-    "description": "Subtitle prompting user to check for updates"
-  },
-
-  "updateAvailable": "Update available!",
-  "@updateAvailable": {
-    "description": "Message shown when an app update is available"
-  },
-
   "appIsUpToDate": "App is up to date",
   "@appIsUpToDate": {
     "description": "Message shown when app is on the latest version"
   },
 
-  "initializeVersionDocumentTitle": "Initialize Version Document",
-  "@initializeVersionDocumentTitle": {
-    "description": "Button title to initialize Firestore version document"
+  "updatePromptMessage": "A new version of InvTrack is available. Would you like to update now?",
+  "@updatePromptMessage": {
+    "description": "Message asking user if they want to update the app"
   },
 
-  "initializeVersionDocumentSubtitle": "Create app_config/version_info in Firestore",
-  "@initializeVersionDocumentSubtitle": {
-    "description": "Subtitle explaining version document initialization"
+  "later": "Later",
+  "@later": {
+    "description": "Button text to postpone an action"
   },
 
-  "initializeVersionDialogTitle": "Initialize Version Document",
-  "@initializeVersionDialogTitle": {
-    "description": "Dialog title for version document initialization"
+  "update": "Update",
+  "@update": {
+    "description": "Button text to start update"
   },
 
-  "initializeVersionDialogMessage": "This will create app_config/version_info in Firestore with:\n\nCurrent: v{currentVersion} (build {currentBuild})\nTest: v{testVersion} (build {testBuild})\n\nThis will trigger an update dialog on next app start.",
-  "@initializeVersionDialogMessage": {
-    "description": "Dialog message explaining version document initialization",
-    "placeholders": {
-      "currentVersion": {
-        "type": "String"
-      },
-      "currentBuild": {
-        "type": "String"
-      },
-      "testVersion": {
-        "type": "String"
-      },
-      "testBuild": {
-        "type": "String"
-      }
-    }
+  "downloadingUpdateBackground": "Downloading update in background...",
+  "@downloadingUpdateBackground": {
+    "description": "Message shown when update is downloading in background"
   },
 
-  "initialize": "Initialize",
-  "@initialize": {
-    "description": "Button text to initialize something"
-  },
-
-  "versionDocumentInitializedSuccess": "Version document initialized! Restart app to see update dialog.",
-  "@versionDocumentInitializedSuccess": {
-    "description": "Success message after version document is created"
+  "criticalUpdateMessage": "A critical update is available. Please update now.",
+  "@criticalUpdateMessage": {
+    "description": "Message for critical/mandatory updates"
   },
 
   "never": "Never",
@@ -4129,11 +4070,6 @@
   "importNowQuestion": "Would you like to import it now?",
   "@importNowQuestion": {
     "description": "Asks user if they want to import the backup immediately"
-  },
-
-  "later": "Later",
-  "@later": {
-    "description": "Button label to postpone action"
   },
 
   "importNow": "Import Now",

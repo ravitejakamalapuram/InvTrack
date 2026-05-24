@@ -12,8 +12,7 @@ import 'package:inv_tracker/core/providers/package_info_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
-import 'package:inv_tracker/features/app_update/presentation/providers/version_check_provider.dart';
-import 'package:inv_tracker/features/app_update/presentation/widgets/update_dialog.dart';
+import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -112,7 +111,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     }
   }
 
-  /// Check for app updates manually
+  /// Check for app updates manually using Google Play In-App Updates
   Future<void> _checkForUpdates(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
 
@@ -127,33 +126,22 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         );
       }
 
-      // Trigger version check
-      await ref.read(versionCheckProvider.notifier).checkForUpdates();
+      // Check for updates via Google Play
+      await ref.read(inAppUpdateProvider.notifier).checkForUpdate();
 
       if (!mounted) return;
 
-      final state = ref.read(versionCheckProvider);
+      final state = ref.read(inAppUpdateProvider);
 
       // Show result
       if (state.hasUpdate) {
-        // Show update dialog
-        final versionInfo = state.latestVersion;
-        if (versionInfo != null && mounted) {
-          showDialog(
-            // ignore: use_build_context_synchronously
-            context: context,
-            barrierDismissible: !state.requiresForceUpdate, // Fix 6: Prevent dismissing force updates
-            builder: (_) => UpdateDialog(
-              versionInfo: versionInfo,
-              forceUpdate: state.requiresForceUpdate,
-            ),
-          );
-        }
-      } else if (state.latestVersion == null) {
-        // Fix 4: Error case - version check failed but didn't throw
+        // Show update options dialog
+        _showUpdateOptionsDialog(context, state);
+      } else if (state.error != null) {
+        // Error case - update check failed
         if (mounted) {
           ErrorHandler.handle(
-            Exception('Failed to fetch version information'),
+            Exception('Failed to check for updates: ${state.error}'),
             StackTrace.current,
             // ignore: use_build_context_synchronously
             context: context,
@@ -161,7 +149,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           );
         }
       } else {
-        // No update available - version check succeeded
+        // No update available
         if (mounted) {
           // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
@@ -176,10 +164,67 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     } catch (e, st) {
       if (!mounted) return;
 
-      // Fix 5: ErrorHandler already shows feedback, don't duplicate with SnackBar
       // ignore: use_build_context_synchronously
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
     }
+  }
+
+  void _showUpdateOptionsDialog(BuildContext context, InAppUpdateState state) {
+    final l10n = AppLocalizations.of(context);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.updateAvailable),
+        content: Text(
+          state.isHighPriority
+              ? l10n.criticalUpdateMessage
+              : l10n.updatePromptMessage,
+        ),
+        actions: [
+          if (!state.isHighPriority)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.later),
+            ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+
+              if (state.isHighPriority && state.immediateUpdateAllowed) {
+                // Critical update: immediate (blocking)
+                await ref.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+              } else if (state.flexibleUpdateAllowed) {
+                // Non-critical: flexible (background)
+                await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+
+                if (mounted) {
+                  // Check if update started successfully
+                  final updatedState = ref.read(inAppUpdateProvider);
+                  if (updatedState.error == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.downloadingUpdateBackground),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  } else {
+                    // Handle failed update start
+                    ErrorHandler.handle(
+                      Exception(updatedState.error),
+                      StackTrace.current,
+                      context: context,
+                      showFeedback: true,
+                    );
+                  }
+                }
+              }
+            },
+            child: Text(l10n.update),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

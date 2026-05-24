@@ -1,0 +1,10 @@
+🆕 What's New
+• Add Advanced Income Features Phase 1 - ML predictions & trend analysis (#407)
+
+🐛 Bug Fixes & Improvements
+• Handle null callback on GoalCard long press safely (#423)
+• Install google-auth-library locally instead of globally
+• Use Google Auth Library instead of gcloud for OAuth2 tokens
+• Skip Firebase CLI reinstall if already present on self-hosted runner
+• Switch Jules AI to self-hosted runner with service account auth
+• Switch CD Deploy to GitHub-hosted macOS runners

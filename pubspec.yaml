@@ -18,7 +18,7 @@ repository: https://github.com/ravitejakamalapuram/InvTrack
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 3.64.0+238
+version: 3.65.0+239
 
 environment:
   sdk: ^3.10.1
@@ -82,6 +82,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   google_mobile_ads: ^8.0.0
   pdf: ^3.12.0
+  in_app_update: ^4.2.3
 
 
 dev_dependencies:
