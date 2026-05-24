@@ -3081,6 +3081,31 @@
     "description": "Message shown when app is on the latest version"
   },
 
+  "updatePromptMessage": "A new version of InvTracker is available. Would you like to update now?",
+  "@updatePromptMessage": {
+    "description": "Message asking user if they want to update the app"
+  },
+
+  "later": "Later",
+  "@later": {
+    "description": "Button text to postpone an action"
+  },
+
+  "update": "Update",
+  "@update": {
+    "description": "Button text to start update"
+  },
+
+  "downloadingUpdateBackground": "Downloading update in background...",
+  "@downloadingUpdateBackground": {
+    "description": "Message shown when update is downloading in background"
+  },
+
+  "criticalUpdateMessage": "A critical update is available. Please update now.",
+  "@criticalUpdateMessage": {
+    "description": "Message for critical/mandatory updates"
+  },
+
   "never": "Never",
   "@never": {
     "description": "Text indicating something has never occurred"

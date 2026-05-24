@@ -170,20 +170,22 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   void _showUpdateOptionsDialog(BuildContext context, InAppUpdateState state) {
+    final l10n = AppLocalizations.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Update Available'),
+        title: Text(l10n.updateAvailable),
         content: Text(
           state.isHighPriority
-              ? 'A critical update is available. Please update now.'
-              : 'A new version of InvTracker is available.',
+              ? l10n.criticalUpdateMessage
+              : l10n.updatePromptMessage,
         ),
         actions: [
           if (!state.isHighPriority)
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Later'),
+              child: Text(l10n.later),
             ),
           FilledButton(
             onPressed: () async {
@@ -197,16 +199,20 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Downloading update in background...'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
+                  // Check if update started successfully
+                  final updatedState = ref.read(inAppUpdateProvider);
+                  if (updatedState.error == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.downloadingUpdateBackground),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
                 }
               }
             },
-            child: const Text('Update'),
+            child: Text(l10n.update),
           ),
         ],
       ),

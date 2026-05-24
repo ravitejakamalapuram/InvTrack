@@ -106,7 +106,7 @@ void main() {
       final state = container.read(inAppUpdateProvider);
 
       expect(state.error, isNotNull);
-      expect(state.error, contains('Network error'));
+      expect(state.error, 'Failed to check for updates. Please try again later.');
       expect(state.isChecking, isFalse);
     });
 

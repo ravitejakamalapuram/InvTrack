@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Initializes in-app update check on app start
 ///
@@ -69,18 +70,18 @@ class _InAppUpdateInitializerState
   void _showFlexibleUpdateDialog() {
     if (!mounted) return;
 
+    final l10n = AppLocalizations.of(context);
+
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        title: const Text('Update Available'),
-        content: const Text(
-          'A new version of InvTracker is available. Would you like to update now?',
-        ),
+        title: Text(l10n.updateAvailable),
+        content: Text(l10n.updatePromptMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Later'),
+            child: Text(l10n.later),
           ),
           FilledButton(
             onPressed: () async {
@@ -89,15 +90,19 @@ class _InAppUpdateInitializerState
 
               if (!mounted) return;
 
-              // Show snackbar about background download
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Downloading update in background...'),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              // Check if update started successfully
+              final state = ref.read(inAppUpdateProvider);
+              if (state.error == null) {
+                // Show snackbar about background download only on success
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.downloadingUpdateBackground),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
             },
-            child: const Text('Update'),
+            child: Text(l10n.update),
           ),
         ],
       ),

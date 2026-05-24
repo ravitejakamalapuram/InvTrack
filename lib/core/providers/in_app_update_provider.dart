@@ -36,17 +36,22 @@ class InAppUpdateState {
   /// Priority 0-5: Google's update priority (5 = highest)
   bool get isHighPriority => (updateInfo?.updatePriority ?? 0) >= 4;
 
+  // Sentinel object to distinguish "not provided" from "explicit null"
+  static const _sentinel = Object();
+
   InAppUpdateState copyWith({
-    AppUpdateInfo? updateInfo,
-    bool? isChecking,
-    bool? isDownloading,
-    String? error,
+    Object? updateInfo = _sentinel,
+    Object? isChecking = _sentinel,
+    Object? isDownloading = _sentinel,
+    Object? error = _sentinel,
   }) {
     return InAppUpdateState(
-      updateInfo: updateInfo ?? this.updateInfo,
-      isChecking: isChecking ?? this.isChecking,
-      isDownloading: isDownloading ?? this.isDownloading,
-      error: error ?? this.error,
+      updateInfo:
+          identical(updateInfo, _sentinel) ? this.updateInfo : updateInfo as AppUpdateInfo?,
+      isChecking: identical(isChecking, _sentinel) ? this.isChecking : isChecking as bool,
+      isDownloading:
+          identical(isDownloading, _sentinel) ? this.isDownloading : isDownloading as bool,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
 }
@@ -85,7 +90,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       LoggerService.error('Update check failed', error: e, stackTrace: st);
       state = state.copyWith(
         isChecking: false,
-        error: e.toString(),
+        error: 'Failed to check for updates. Please try again later.',
       );
     }
   }
@@ -101,11 +106,11 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         LoggerService.info('Immediate update completed successfully');
       } else {
         LoggerService.warn('Immediate update result: ${result.name}');
-        state = state.copyWith(error: 'Update failed: ${result.name}');
+        state = state.copyWith(error: 'Update installation failed. Please try again.');
       }
     } catch (e, st) {
       LoggerService.error('Immediate update error', error: e, stackTrace: st);
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: 'Failed to start update. Please try again later.');
     }
   }
 
@@ -122,20 +127,20 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
 
       if (result == AppUpdateResult.success) {
         LoggerService.info('Flexible update download started');
-        // Note: Download progress should be monitored separately
-        // Call completeFlexibleUpdate() when download finishes
+        // Clear downloading flag after successful download initiation
+        state = state.copyWith(isDownloading: false);
       } else {
         LoggerService.warn('Flexible update result: ${result.name}');
         state = state.copyWith(
           isDownloading: false,
-          error: 'Update failed: ${result.name}',
+          error: 'Failed to download update. Please try again.',
         );
       }
     } catch (e, st) {
       LoggerService.error('Flexible update error', error: e, stackTrace: st);
       state = state.copyWith(
         isDownloading: false,
-        error: e.toString(),
+        error: 'Failed to start update download. Please try again later.',
       );
     }
   }
@@ -147,7 +152,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       // App will restart, no need to update state
     } catch (e, st) {
       LoggerService.error('Complete update error', error: e, stackTrace: st);
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: 'Failed to complete update. Please restart the app manually.');
     }
   }
 }
