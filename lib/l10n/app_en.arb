@@ -2852,6 +2852,41 @@
     "description": "Snackbar message when Income Guardian is disabled"
   },
 
+  "dashboardIncomeGuardianBeta": "BETA",
+  "@dashboardIncomeGuardianBeta": {
+    "description": "Beta badge for Income Guardian feature"
+  },
+
+  "dashboardIncomeGuardianSubtitle": "AI-powered income tracking",
+  "@dashboardIncomeGuardianSubtitle": {
+    "description": "Income Guardian dashboard card subtitle"
+  },
+
+  "dashboardOverdueBadge": "OVERDUE",
+  "@dashboardOverdueBadge": {
+    "description": "Overdue payment badge label"
+  },
+
+  "dashboardDueDate": "Due Date",
+  "@dashboardDueDate": {
+    "description": "Due date label in payment card"
+  },
+
+  "dashboardSource": "Source",
+  "@dashboardSource": {
+    "description": "Source label in payment card"
+  },
+
+  "dashboardNoPendingPayments": "No pending income payments",
+  "@dashboardNoPendingPayments": {
+    "description": "Empty state message when no pending payments"
+  },
+
+  "dashboardAllIncomeOnTrack": "All income on track",
+  "@dashboardAllIncomeOnTrack": {
+    "description": "Empty state badge when all income is on track"
+  },
+
   "healthScoreImproved": "Score improved",
   "@healthScoreImproved": {
     "description": "Accessibility label for positive score change"

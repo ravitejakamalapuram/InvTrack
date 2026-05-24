@@ -182,7 +182,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                       ),
                     ),
                     child: Text(
-                      'BETA',
+                      l10n.dashboardIncomeGuardianBeta,
                       style: AppTypography.small.copyWith(
                         color: AppColors.primaryLight,
                         fontSize: 9,
@@ -203,7 +203,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                   ),
                   SizedBox(width: 4),
                   Text(
-                    'AI-powered income tracking',
+                    l10n.dashboardIncomeGuardianSubtitle,
                     style: AppTypography.small.copyWith(
                       color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                       fontSize: 11,
@@ -217,7 +217,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
         ),
         // Enhanced Arrow with Hover Effect Styling
         Container(
-          padding: EdgeInsets.all(8),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -346,7 +346,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'OVERDUE',
+                    l10n.dashboardOverdueBadge,
                     style: AppTypography.small.copyWith(
                       color: AppColors.errorLight,
                       fontWeight: FontWeight.bold,
@@ -418,7 +418,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Due Date',
+                          l10n.dashboardDueDate,
                           style: AppTypography.small.copyWith(
                             color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                             fontSize: 10,
@@ -427,7 +427,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                         ),
                         SizedBox(height: 2),
                         Text(
-                          DateFormat.MMMd().format(payment.expectedDate),
+                          DateFormat.MMMd(locale).format(payment.expectedDate),
                           style: AppTypography.small.copyWith(
                             color: isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
                             fontWeight: FontWeight.bold,
@@ -462,7 +462,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Source',
+                      l10n.dashboardSource,
                       style: AppTypography.small.copyWith(
                         color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
                         fontSize: 10,
@@ -549,7 +549,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           SizedBox(height: AppSpacing.xs),
           // Subtitle
           Text(
-            'No pending income payments',
+            l10n.dashboardNoPendingPayments,
             style: AppTypography.small.copyWith(
               color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
             ),
@@ -580,7 +580,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                 ),
                 SizedBox(width: 6),
                 Text(
-                  'All income on track',
+                  l10n.dashboardAllIncomeOnTrack,
                   style: AppTypography.small.copyWith(
                     color: AppColors.successLight,
                     fontWeight: FontWeight.w600,
