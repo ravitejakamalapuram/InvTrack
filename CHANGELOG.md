@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **income-projection**: Add Advanced Income Features Phase 1 - ML predictions & trend analysis (#407)
+
+### 🐛 Bug Fixes
+
+- Handle null callback on GoalCard long press safely (#423)
+- Install google-auth-library locally instead of globally
+- Use Google Auth Library instead of gcloud for OAuth2 tokens
+- Skip Firebase CLI reinstall if already present on self-hosted runner
+- Switch Jules AI to self-hosted runner with service account auth
+- Switch CD Deploy to GitHub-hosted macOS runners
+
+## [3.63.8] - 2026-05-23
+
 ### 🐛 Bug Fixes
 
 - Use correct Crashlytics API endpoint and remove test data fallback

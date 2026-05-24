@@ -1,0 +1,2 @@
+🐛 Bug Fixes & Improvements
+• Use correct Crashlytics API endpoint and remove test data fallback
