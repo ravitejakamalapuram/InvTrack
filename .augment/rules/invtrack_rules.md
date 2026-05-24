@@ -27,6 +27,107 @@ type: "always_apply"
 - Complex logic should be extracted to separate functions/classes
 - High complexity indicates need for refactoring
 
+### 1.4 Feature Flag Development (MANDATORY)
+
+**All new features MUST be developed behind feature flags.**
+
+#### 1.4.1 Requirements
+- [ ] Add feature to `FeatureFlag` enum in `lib/core/providers/feature_flags_provider.dart`
+- [ ] Default state MUST be `false` (disabled)
+- [ ] Add toggle in Debug Settings screen (`lib/features/settings/presentation/screens/debug_settings_screen.dart`)
+- [ ] Guard feature UI with `isFeatureEnabledProvider` check
+- [ ] Add localization strings for feature name and description
+
+#### 1.4.2 Implementation Pattern
+
+**1. Add feature flag enum:**
+```dart
+// lib/core/providers/feature_flags_provider.dart
+enum FeatureFlag {
+  // ... existing flags
+
+  /// Your New Feature - Brief description
+  /// - Key functionality points
+  /// - Disabled by default, enable via Debug Settings
+  yourNewFeature('your_new_feature', 'Your New Feature'),
+}
+```
+
+**2. Create convenience provider:**
+```dart
+// lib/core/providers/feature_flags_provider.dart
+final isYourNewFeatureEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.yourNewFeature] ?? false,
+    ),
+  );
+});
+```
+
+**3. Add Debug Settings toggle:**
+```dart
+// lib/features/settings/presentation/screens/debug_settings_screen.dart
+SettingsToggleTile(
+  icon: Icons.your_icon,
+  iconColor: AppColors.primaryLight,
+  title: l10n.yourNewFeatureTitle,
+  subtitle: l10n.yourNewFeatureSubtitle,
+  value: featureFlags[FeatureFlag.yourNewFeature] ?? false,
+  onChanged: (value) async {
+    try {
+      await ref
+          .read(featureFlagsProvider.notifier)
+          .toggle(FeatureFlag.yourNewFeature);
+
+      final newState = ref.read(featureFlagsProvider)[FeatureFlag.yourNewFeature] ?? false;
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newState ? l10n.yourNewFeatureEnabled : l10n.yourNewFeatureDisabled,
+            ),
+          ),
+        );
+      }
+    } catch (e, st) {
+      if (context.mounted) {
+        ErrorHandler.handle(e, st, context: context);
+      }
+    }
+  },
+),
+```
+
+**4. Guard feature UI:**
+```dart
+// In your widget or screen
+final isFeatureEnabled = ref.watch(isYourNewFeatureEnabledProvider);
+
+if (isFeatureEnabled) {
+  return YourNewFeatureWidget();
+}
+return SizedBox.shrink(); // Or alternative UI
+```
+
+#### 1.4.3 Benefits
+- ✅ Safe incremental development and testing
+- ✅ Easy rollback without code changes
+- ✅ A/B testing capability
+- ✅ Gradual rollout control
+- ✅ Beta user testing
+- ✅ Feature isolation during debugging
+
+#### 1.4.4 Examples
+See existing implementations:
+- `FeatureFlag.portfolioHealthScore` - Dashboard health metrics
+- `FeatureFlag.reportsTab` - Smart insights and report builder
+- `FeatureFlag.incomeGuardian` - AI-powered income tracking
+
+**⚠️ VIOLATION = PR REJECTED**
+Any new feature without proper feature flag implementation will be rejected during code review.
+
 ---
 
 ## 2. CODE QUALITY
