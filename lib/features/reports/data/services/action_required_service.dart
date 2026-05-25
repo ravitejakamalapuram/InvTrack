@@ -80,8 +80,15 @@ class ActionRequiredService {
       if (flows.isEmpty) continue;
 
       // Get most recent cash flow
-      flows.sort((a, b) => b.date.compareTo(a.date));
-      final daysSinceLastActivity = now.difference(flows.first.date).inDays;
+      // ⚡ Bolt: Replaced O(N log N) sorting with O(N) linear scan to find extremum
+      DateTime? latestDate;
+      for (final flow in flows) {
+        if (latestDate == null || flow.date.isAfter(latestDate)) {
+          latestDate = flow.date;
+        }
+      }
+
+      final daysSinceLastActivity = now.difference(latestDate!).inDays;
 
       if (daysSinceLastActivity >= 180) {
         // Critical: No activity for 6+ months

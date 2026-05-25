@@ -34,11 +34,18 @@ class ReinvestmentAdvisor {
     // Check each investment for idle cash
     for (final entry in incomeByInvestment.entries) {
       final investmentId = entry.key;
-      final incomePayments = entry.value..sort((a, b) => b.date.compareTo(a.date));
+      final incomePayments = entry.value;
 
       // Get most recent income payment
       if (incomePayments.isEmpty) continue;
-      final latestIncome = incomePayments.first;
+
+      // ⚡ Bolt: Replaced O(N log N) sorting with O(N) linear scan to find extremum
+      CashFlowEntity latestIncome = incomePayments.first;
+      for (final payment in incomePayments) {
+        if (payment.date.isAfter(latestIncome.date)) {
+          latestIncome = payment;
+        }
+      }
 
       // Calculate days idle
       final daysIdle = now.difference(latestIncome.date).inDays;

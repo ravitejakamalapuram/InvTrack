@@ -88,3 +88,6 @@
 ## 2024-05-25 - Single Pass Aggregate Calculations with Hoisted Date Boundaries
 **Learning:** In reporting services, calculating multiple aggregates sequentially using `where().fold()` across the same dataset creates an O(K*N) problem. Filtering by an invariant condition (like whether a date falls between two calculated boundaries) inside the loop results in redundant object allocation or computation per item.
 **Action:** Replace multiple chains of `where().fold()` with a single O(N) `for` loop that computes all required metrics simultaneously. Furthermore, calculate loop-invariant boundaries (e.g. `startDate` and `endDate`) outside the iteration entirely to prevent redundant date arithmetic during the aggregation.
+## 2026-05-15 - Replace O(N log N) sorting with O(N) linear scan for extremum finding
+**Learning:** Using `array.sort()` followed by accessing `.first` or `.last` just to find the maximum or minimum element in a list (such as the most recent date) is an anti-pattern. It incurs an unnecessary O(N log N) time complexity and array mutation overhead.
+**Action:** Replace `.sort()` followed by extremum access with a simple O(N) linear scan using a `for` loop. This avoids sorting the entire array and finds the minimum or maximum element efficiently in a single pass.
