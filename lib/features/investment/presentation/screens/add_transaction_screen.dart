@@ -254,59 +254,55 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               Semantics(
                 button: true,
                 label: 'Select transaction date',
-                child: GestureDetector(
+                child: GlassCard(
                   onTap: () => _selectDate(context, isDark),
-                  child: GlassCard(
-                    padding: AppSpacing.cardPadding,
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withValues(
-                              alpha: 0.1,
+                  padding: AppSpacing.cardPadding,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withValues(alpha: 0.1),
+                          borderRadius: AppSizes.borderRadiusMd,
+                        ),
+                        child: Icon(
+                          Icons.calendar_today_rounded,
+                          color: AppColors.primaryLight,
+                          size: AppSizes.iconSm,
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.sm + 2),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppDateUtils.formatDayOfWeek(_selectedDate),
+                              style: AppTypography.small.copyWith(
+                                color: isDark
+                                    ? AppColors.neutral400Dark
+                                    : AppColors.neutral500Light,
+                              ),
                             ),
-                            borderRadius: AppSizes.borderRadiusMd,
-                          ),
-                          child: Icon(
-                            Icons.calendar_today_rounded,
-                            color: AppColors.primaryLight,
-                            size: AppSizes.iconSm,
-                          ),
-                        ),
-                        SizedBox(width: AppSpacing.sm + 2),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppDateUtils.formatDayOfWeek(_selectedDate),
-                                style: AppTypography.small.copyWith(
-                                  color: isDark
-                                      ? AppColors.neutral400Dark
-                                      : AppColors.neutral500Light,
-                                ),
+                            Text(
+                              AppDateUtils.formatLong(_selectedDate),
+                              style: AppTypography.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.neutral900Light,
                               ),
-                              Text(
-                                AppDateUtils.formatLong(_selectedDate),
-                                style: AppTypography.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.neutral900Light,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: isDark
-                              ? AppColors.neutral400Dark
-                              : AppColors.neutral400Light,
-                        ),
-                      ],
-                    ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
+                      ),
+                    ],
                   ),
                 ),
               ),
