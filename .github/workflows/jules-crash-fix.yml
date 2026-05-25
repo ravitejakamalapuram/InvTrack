@@ -34,6 +34,16 @@ on:
         options:
           - 'topIssues'
           - 'topVersions'
+      issue_error_types:
+        description: 'Filter crashes by fatality (comma-separated: FATAL, NON_FATAL, ANR)'
+        required: false
+        default: 'FATAL'
+        type: string
+      dry_run:
+        description: 'Run pipeline in Dry Run mode (does not create Jules sessions or PRs)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   FIREBASE_PROJECT_ID: invtracker-b19d1
@@ -43,7 +53,7 @@ env:
 jobs:
   fetch-and-fix-crashes:
     name: Fetch Crashes and Create Jules Sessions
-    runs-on: self-hosted  # Local runner needed for Firebase MCP access
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
@@ -93,10 +103,12 @@ jobs:
         id: fetch_crashes
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           CRASH_LIMIT: ${{ github.event.inputs.crash_limit || '5' }}
           MIN_USERS: ${{ github.event.inputs.min_affected_users || '5' }}
           REPORT_TYPE: ${{ github.event.inputs.report_type || 'topIssues' }}
+          ISSUE_ERROR_TYPES: ${{ github.event.inputs.issue_error_types || 'FATAL' }}
         run: |
           # Fetch crashes using service account authenticated Crashlytics API
           bash .github/scripts/fetch-crashlytics-data.sh
@@ -108,6 +120,11 @@ jobs:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           JULES_SOURCE_NAME: ${{ secrets.JULES_SOURCE_NAME }}
           CRASHES_FILE: crashlytics_data.json
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
           # Create Jules AI sessions for each crash
           bash .github/scripts/create-jules-sessions.sh
@@ -118,6 +135,9 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
           MAX_WAIT_MINUTES: 30
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
         run: |
           # Poll Jules sessions until completion or timeout
           bash .github/scripts/monitor-jules-sessions.sh

@@ -31,9 +31,11 @@ fi
 cat > monitor_sessions.js << 'SCRIPT_EOF'
 const https = require('https');
 const fs = require('fs');
+const { postCrashlyticsNote } = require('./.github/scripts/firebase-helper.js');
 
 const apiKey = process.env.JULES_API_KEY;
 const maxWaitMinutes = parseInt(process.env.MAX_WAIT_MINUTES || '30');
+const appId = process.env.FIREBASE_APP_ID;
 const checkIntervalSeconds = 60;
 
 // Read sessions data
@@ -81,10 +83,25 @@ async function monitorSession(sessionInfo) {
   const sessionId = session.id;
   const startTime = Date.now();
   const maxWaitMs = maxWaitMinutes * 60 * 1000;
+  const isMock = sessionId.startsWith('mock_session_');
   
   console.log(`\n📊 Monitoring: ${crash.title}`);
   console.log(`   Session: ${sessionId}`);
   
+  if (isMock) {
+    console.log(`   State: COMPLETED (Mocked)`);
+    console.log(`✅ [MOCK] PR Created: https://github.com/ravitejakamalapuram/InvTrack/pull/mock_${crash.id}`);
+    return {
+      crash,
+      sessionId,
+      status: 'COMPLETED',
+      prUrl: `https://github.com/ravitejakamalapuram/InvTrack/pull/mock_${crash.id}`,
+      prTitle: `Fix: ${crash.title.substring(0, 60)}...`,
+      url: session.url,
+      elapsed: 0
+    };
+  }
+
   while (true) {
     const elapsed = Date.now() - startTime;
     
@@ -107,12 +124,20 @@ async function monitorSession(sessionInfo) {
         // Check for PR output
         const prOutput = status.outputs?.find(o => o.pullRequest);
         if (prOutput) {
-          console.log(`✅ PR Created: ${prOutput.pullRequest.url}`);
+          const prUrl = prOutput.pullRequest.url;
+          console.log(`✅ PR Created: ${prUrl}`);
+          
+          // Post Note back to Firebase Console
+          if (appId) {
+            const noteText = `✅ Jules AI has successfully created a Pull Request to fix this crash.\nPR URL: ${prUrl}`;
+            await postCrashlyticsNote(appId, crash.id, noteText);
+          }
+
           return {
             crash,
             sessionId,
             status: 'COMPLETED',
-            prUrl: prOutput.pullRequest.url,
+            prUrl: prUrl,
             prTitle: prOutput.pullRequest.title,
             url: session.url,
             elapsed: Math.round(elapsed / 1000)
@@ -170,7 +195,7 @@ async function monitorAllSessions() {
     results.push(result);
   }
   
-  // Save results - always save even on error
+  // Save results
   try {
     fs.writeFileSync('session_results.json', JSON.stringify({ results }, null, 2));
     console.log('\n✅ Results saved to session_results.json');
@@ -205,9 +230,6 @@ async function monitorAllSessions() {
         console.log(`    ${r.crash.title}`);
       });
   }
-
-  // Exit successfully even if no PRs were created
-  // Timeouts and awaiting feedback are not errors
 }
 
 monitorAllSessions()
@@ -217,12 +239,6 @@ monitorAllSessions()
   })
   .catch(err => {
     console.error('\n❌ Monitoring failed:', err.message);
-    // Still try to save results before exiting
-    try {
-      fs.writeFileSync('session_results.json', JSON.stringify({ results }, null, 2));
-    } catch (e) {
-      // Ignore save errors on failure path
-    }
     process.exit(1);
   });
 SCRIPT_EOF

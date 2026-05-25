@@ -9,20 +9,22 @@ echo "Creating Jules AI Sessions for Crash Fixes"
 echo "=================================================="
 echo "Jules Source: $JULES_SOURCE_NAME"
 echo "Crashes File: $CRASHES_FILE"
+echo "Dry Run Mode: $DRY_RUN"
 echo ""
 
-# Validate required environment variables
-if [ -z "$JULES_API_KEY" ]; then
-  echo "❌ Error: JULES_API_KEY not set"
-  echo "Generate API key from: https://jules.google.com/settings"
-  exit 1
-fi
+# Validate required environment variables (in non-dry-run mode)
+if [ "$DRY_RUN" != "true" ]; then
+  if [ -z "$JULES_API_KEY" ]; then
+    echo "❌ Error: JULES_API_KEY not set"
+    echo "Generate API key from: https://jules.google.com/settings"
+    exit 1
+  fi
 
-if [ -z "$JULES_SOURCE_NAME" ]; then
-  echo "❌ Error: JULES_SOURCE_NAME not set"
-  echo "Get source name with: curl -H 'x-goog-api-key: \$JULES_API_KEY' https://jules.googleapis.com/v1alpha/sources"
-  echo "Format should be: sources/github-owner-repo"
-  exit 1
+  if [ -z "$JULES_SOURCE_NAME" ]; then
+    echo "❌ Error: JULES_SOURCE_NAME not set"
+    echo "Format should be: sources/github-owner-repo"
+    exit 1
+  fi
 fi
 
 if [ ! -f "$CRASHES_FILE" ]; then
@@ -34,7 +36,9 @@ fi
 CRASH_COUNT=$(jq -r '.total' "$CRASHES_FILE")
 if [ "$CRASH_COUNT" -eq 0 ]; then
   echo "ℹ️  No crashes to process"
-  echo "session_count=0" >> $GITHUB_OUTPUT
+  if [ -n "$GITHUB_OUTPUT" ]; then
+    echo "session_count=0" >> $GITHUB_OUTPUT
+  fi
   exit 0
 fi
 
@@ -42,10 +46,16 @@ fi
 cat > create_sessions.js << 'SCRIPT_EOF'
 const https = require('https');
 const fs = require('fs');
+const { exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
+const { postCrashlyticsNote } = require('./.github/scripts/firebase-helper.js');
 
 const apiKey = process.env.JULES_API_KEY;
 const sourceName = process.env.JULES_SOURCE_NAME;
 const crashesFile = process.env.CRASHES_FILE;
+const appId = process.env.FIREBASE_APP_ID;
+const dryRun = process.env.DRY_RUN === 'true';
 
 // Read crashes data
 const crashData = JSON.parse(fs.readFileSync(crashesFile, 'utf8'));
@@ -55,15 +65,36 @@ console.log(`Processing ${crashes.length} crashes...`);
 
 const sessions = [];
 
+async function getOpenPRs() {
+  try {
+    console.log('Retrieving open Pull Requests from GitHub to check for duplicate fixes...');
+    const { stdout } = await execPromise('gh pr list --state open --json title,body,headRefName');
+    return JSON.parse(stdout);
+  } catch (err) {
+    console.error('Warning: Failed to fetch open Pull Requests via GitHub CLI (check GH_TOKEN permissions):', err.message);
+    return [];
+  }
+}
+
 async function createJulesSession(crash) {
   return new Promise((resolve, reject) => {
     const prompt = `Fix critical crash in InvTrack Flutter app
 
 **Crash Details:**
-- Title: ${crash.title}
-- Event Count: ${crash.eventCount} occurrences
-- Affected Users: ${crash.affectedUsers} users
-- Crash ID: ${crash.id}
+- **Title:** ${crash.title}
+- **Subtitle:** ${crash.subtitle || ''}
+- **Crash ID:** ${crash.id}
+- **Occurrences:** ${crash.eventCount} events
+- **Impacted Users:** ${crash.affectedUsers} users
+- **App Version:** ${crash.appVersion || 'Unknown'}
+- **OS Version:** ${crash.osVersion || 'Unknown'}
+- **Device Model:** ${crash.deviceModel || 'Unknown'}
+${crash.blameFrame ? `- **Blamed Location:** ${crash.blameFrame.symbol || ''} (in ${crash.blameFrame.file || ''}:${crash.blameFrame.line || ''})` : ''}
+
+**Stack Trace:**
+\`\`\`
+${crash.stackTrace}
+\`\`\`
 
 **Task Requirements:**
 1. **Analyze Root Cause:**
@@ -116,6 +147,19 @@ async function createJulesSession(crash) {
       requirePlanApproval: false  // Auto-approve plans for automated workflow
     });
 
+    if (dryRun) {
+      console.log(`\n🧪 [DRY RUN] Would create session for: ${crash.title}`);
+      console.log(`🧪 [DRY RUN] Prompt preview:`);
+      console.log(prompt.substring(0, 300) + '...\n');
+      
+      const mockSession = {
+        id: `mock_session_${crash.id}`,
+        url: `https://jules.google.com/sessions/mock_${crash.id}`
+      };
+      
+      return resolve({ crash, session: mockSession });
+    }
+
     const options = {
       hostname: 'jules.googleapis.com',
       path: '/v1alpha/sessions',
@@ -161,10 +205,32 @@ async function createJulesSession(crash) {
 }
 
 async function createAllSessions() {
+  const openPRs = await getOpenPRs();
+  
   for (const crash of crashes) {
+    // smart deduplication
+    const hasDuplicatePR = openPRs.some(pr => {
+      const inTitle = pr.title && pr.title.includes(crash.id);
+      const inBody = pr.body && pr.body.includes(crash.id);
+      const inBranch = pr.headRefName && pr.headRefName.includes(crash.id);
+      return inTitle || inBody || inBranch;
+    });
+    
+    if (hasDuplicatePR) {
+      console.log(`\n⏭️  Skipping crash: ${crash.title} (Crash ID: ${crash.id})`);
+      console.log(`   Reason: An open Pull Request already references this Crash ID.`);
+      continue;
+    }
+    
     try {
       const result = await createJulesSession(crash);
       sessions.push(result);
+      
+      // Post Note to Firebase Crashlytics Issue Console (non-dry-run only)
+      if (!dryRun && appId && result.session.url) {
+        const noteText = `🤖 Jules AI has started an automated crash-fix session for this issue.\nJules Session: ${result.session.url}`;
+        await postCrashlyticsNote(appId, crash.id, noteText);
+      }
       
       // Rate limiting: wait 2 seconds between requests
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -175,7 +241,7 @@ async function createAllSessions() {
   
   // Save sessions data
   fs.writeFileSync('jules_sessions.json', JSON.stringify({ sessions }, null, 2));
-  console.log(`\n✅ Created ${sessions.length} Jules sessions`);
+  console.log(`\n✅ Processed ${sessions.length} Jules sessions`);
   console.log(`Sessions saved to: jules_sessions.json`);
 }
 
@@ -188,7 +254,10 @@ node create_sessions.js
 
 # Set output
 SESSION_COUNT=$(jq -r '.sessions | length' jules_sessions.json 2>/dev/null || echo "0")
-echo "session_count=$SESSION_COUNT" >> $GITHUB_OUTPUT
+
+if [ -n "$GITHUB_OUTPUT" ]; then
+  echo "session_count=$SESSION_COUNT" >> $GITHUB_OUTPUT
+fi
 
 echo ""
-echo "✅ Created $SESSION_COUNT Jules AI sessions"
+echo "✅ Finished processing $SESSION_COUNT Jules AI sessions"
