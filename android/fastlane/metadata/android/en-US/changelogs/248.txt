@@ -1,0 +1,2 @@
+🆕 What's New
+• Enforce fail-fast policies in fetch, create, and monitor scripts

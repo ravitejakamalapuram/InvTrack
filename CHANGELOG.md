@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+### Fix
+
+- Prevent Crashlytics spam on user denying in-app update (#446)
+
+### ⚡ Performance
+
+- Replace O(N log N) sorting with O(N) linear scan for extremum finding (#442)
+
+### 🐛 Bug Fixes
+
+- Allow CI workflow to run on manual workflow_dispatch
+- Replace remaining step-level github.event.inputs references with inputs
+- Guard head_commit message retrieval in cd.yml check_skip step
+- Update concurrency and step expressions to prevent null pointer evaluation in GitHub Actions
+- Guard github.event.inputs in cd.yml job-level if conditions
+- Restore github.event.inputs context for CD job-level compatibility
+- Make rollout_percentage and update_priority choice inputs required
+- Update workflow conditions to prevent null dereferencing and standardize inputs syntax
+- Prevent crash when AppLocalizations is null during in-app update initialization (#447)
+- Gracefully handle in-app update platform exceptions (#448)
+- **crash-fix**: Fail-fast on getOpenPRs error in create-jules-sessions
+
+### 🔧 Miscellaneous
+
+- Add workflow_dispatch to ci.yml
+- Update CI runner to self-hosted
+- Resolve crash 84c125f02489d6eb7e561feb3f5f1d55 as already fixed (#451)
+- Consolidate workflows into unified ci.yml and cd.yml, remove Firestore update steps
+- Remove check-playstore-approval and init-firestore-version workflows
+- Bypass Jules API key validation in dry-run mode and update gitignore
+- Remove Jules crash fix GitHub Actions workflow and migrate to local/scheduled runner
+- **crash-fix**: Increase MAX_WAIT_MINUTES to 60 for jules monitoring
+
+## [3.68.0] - 2026-05-26
+
 ### ✨ Features
 
 - **crash-fix**: Enforce fail-fast policies in fetch, create, and monitor scripts
