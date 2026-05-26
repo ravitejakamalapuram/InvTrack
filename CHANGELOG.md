@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased]
+
+### Debug
+
+- **crash-fix**: Log client email from service account
+- **crash-fix**: Log project ID from service account credentials
+
+### ✨ Features
+
+- **crash-fix**: Change default min_affected_users to 1 and error types to all
+- **crash-fix**: Pass and prioritize FIREBASE_TOKEN to resolve service account 404 bug
+- **crash-fix**: Implement smart deduplication, dry-run, fatality filtering, and console notes for auto crash-fix pipeline
+
+### 🐛 Bug Fixes
+
+- **crash-fix**: Remove non-existent labels from gh issue create
+- **crash-fix**: Update OAuth client ID and secret to official firebase-tools credentials
+- **crash-fix**: Sanitize quotes from FIREBASE_APP_ID
+- **crash-fix**: Trim FIREBASE_APP_ID to handle trailing newlines and whitespace safely
+
 ## [3.66.4] - 2026-05-24
 
 ### 🐛 Bug Fixes
