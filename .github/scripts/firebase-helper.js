@@ -13,6 +13,7 @@ async function getAccessToken() {
     try {
       const credentials = JSON.parse(process.env.FIREBASE_CREDENTIALS);
       console.error('Generating OAuth2 token from FIREBASE_CREDENTIALS env var for project: ' + credentials.project_id);
+      console.error('Client email: ' + credentials.client_email);
       const { GoogleAuth } = require('google-auth-library');
       const auth = new GoogleAuth({
         credentials,
