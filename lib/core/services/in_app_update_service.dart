@@ -1,4 +1,6 @@
+import 'package:flutter/services.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 
 /// Service for handling Google Play In-App Updates
@@ -28,6 +30,14 @@ class InAppUpdateService {
       );
       
       return updateInfo;
+    } on PlatformException catch (e, st) {
+      final ex = UpdateException.fromPlatformException(e, st);
+      if (ex.shouldReport) {
+        LoggerService.error('Failed to check for update', error: ex, stackTrace: st);
+      } else {
+        LoggerService.warn('Update check failed (environmental)', error: ex, stackTrace: st);
+      }
+      return null;
     } catch (e, st) {
       LoggerService.error('Failed to check for update', error: e, stackTrace: st);
       return null;
@@ -50,6 +60,14 @@ class InAppUpdateService {
       );
       
       return result;
+    } on PlatformException catch (e, st) {
+      final ex = UpdateException.fromPlatformException(e, st);
+      if (ex.shouldReport) {
+        LoggerService.error('Immediate update failed', error: ex, stackTrace: st);
+      } else {
+        LoggerService.warn('Immediate update failed (environmental)', error: ex, stackTrace: st);
+      }
+      return AppUpdateResult.inAppUpdateFailed;
     } catch (e, st) {
       LoggerService.error('Immediate update failed', error: e, stackTrace: st);
       return AppUpdateResult.inAppUpdateFailed;
@@ -72,6 +90,14 @@ class InAppUpdateService {
       );
       
       return result;
+    } on PlatformException catch (e, st) {
+      final ex = UpdateException.fromPlatformException(e, st);
+      if (ex.shouldReport) {
+        LoggerService.error('Flexible update failed', error: ex, stackTrace: st);
+      } else {
+        LoggerService.warn('Flexible update failed (environmental)', error: ex, stackTrace: st);
+      }
+      return AppUpdateResult.inAppUpdateFailed;
     } catch (e, st) {
       LoggerService.error('Flexible update failed', error: e, stackTrace: st);
       return AppUpdateResult.inAppUpdateFailed;
@@ -86,6 +112,13 @@ class InAppUpdateService {
     try {
       LoggerService.info('Completing flexible update');
       await InAppUpdate.completeFlexibleUpdate();
+    } on PlatformException catch (e, st) {
+      final ex = UpdateException.fromPlatformException(e, st);
+      if (ex.shouldReport) {
+        LoggerService.error('Failed to complete flexible update', error: ex, stackTrace: st);
+      } else {
+        LoggerService.warn('Failed to complete flexible update (environmental)', error: ex, stackTrace: st);
+      }
     } catch (e, st) {
       LoggerService.error('Failed to complete flexible update', error: e, stackTrace: st);
     }
