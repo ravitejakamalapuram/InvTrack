@@ -305,7 +305,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: ${{ inputs.tag }}
           fetch-depth: 0
 
       - name: Setup Flutter & Gradle
@@ -439,8 +439,8 @@ jobs:
           EOF
         env:
           PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
-          ROLLOUT_PERCENTAGE: ${{ github.event.inputs.rollout_percentage }}
-          UPDATE_PRIORITY: ${{ github.event.inputs.update_priority }}
+          ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
+          UPDATE_PRIORITY: ${{ inputs.update_priority }}
 
       - name: Notify Slack - Promotion Success
         if: success()
@@ -448,7 +448,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "📤 InvTrack promoted to Production at ${{ github.event.inputs.rollout_percentage }}% rollout!"
+              "text": "📤 InvTrack promoted to Production at ${{ inputs.rollout_percentage }}% rollout!"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
