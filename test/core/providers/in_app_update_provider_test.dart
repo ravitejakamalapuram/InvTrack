@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_update/in_app_update.dart';
@@ -188,6 +189,8 @@ void main() {
 
     setUp(() {
       mockService = MockInAppUpdateService();
+      when(() => mockService.installUpdateListener)
+          .thenAnswer((_) => const Stream.empty());
       container = ProviderContainer(
         overrides: [
           inAppUpdateServiceProvider.overrideWithValue(mockService),
@@ -214,6 +217,8 @@ void main() {
         final mockUpdateInfo = MockAppUpdateInfo();
         when(() => mockUpdateInfo.updateAvailability)
             .thenReturn(UpdateAvailability.updateAvailable);
+        when(() => mockUpdateInfo.installStatus)
+            .thenReturn(InstallStatus.unknown);
         when(() => mockService.checkForUpdate())
             .thenAnswer((_) async => mockUpdateInfo);
 
@@ -238,6 +243,8 @@ void main() {
         final mockUpdateInfo = MockAppUpdateInfo();
         when(() => mockUpdateInfo.updateAvailability)
             .thenReturn(UpdateAvailability.updateNotAvailable);
+        when(() => mockUpdateInfo.installStatus)
+            .thenReturn(InstallStatus.unknown);
         when(() => mockService.checkForUpdate())
             .thenAnswer((_) async => mockUpdateInfo);
 
@@ -250,6 +257,8 @@ void main() {
         final mockUpdateInfo = MockAppUpdateInfo();
         when(() => mockUpdateInfo.updateAvailability)
             .thenReturn(UpdateAvailability.updateNotAvailable);
+        when(() => mockUpdateInfo.installStatus)
+            .thenReturn(InstallStatus.unknown);
 
         // Simulate a slow check
         when(() => mockService.checkForUpdate()).thenAnswer((_) async {
@@ -276,6 +285,8 @@ void main() {
         when(() => mockUpdateInfo.immediateUpdateAllowed).thenReturn(true);
         when(() => mockUpdateInfo.flexibleUpdateAllowed).thenReturn(true);
         when(() => mockUpdateInfo.updatePriority).thenReturn(5);
+        when(() => mockUpdateInfo.installStatus)
+            .thenReturn(InstallStatus.unknown);
         when(() => mockService.checkForUpdate())
             .thenAnswer((_) async => mockUpdateInfo);
 
@@ -295,6 +306,8 @@ void main() {
         final mockUpdateInfo = MockAppUpdateInfo();
         when(() => mockUpdateInfo.updateAvailability)
             .thenReturn(UpdateAvailability.updateNotAvailable);
+        when(() => mockUpdateInfo.installStatus)
+            .thenReturn(InstallStatus.unknown);
         when(() => mockService.checkForUpdate())
             .thenAnswer((_) async => mockUpdateInfo);
 
@@ -305,6 +318,21 @@ void main() {
         expect(state.updateInfo, isNotNull);
         expect(state.hasUpdate, isFalse);
         expect(state.isChecking, isFalse);
+      });
+
+      test('sets isUpdateDownloaded to true when update is already downloaded', () async {
+        final mockUpdateInfo = MockAppUpdateInfo();
+        when(() => mockUpdateInfo.updateAvailability)
+            .thenReturn(UpdateAvailability.updateAvailable);
+        when(() => mockUpdateInfo.installStatus)
+            .thenReturn(InstallStatus.downloaded);
+        when(() => mockService.checkForUpdate())
+            .thenAnswer((_) async => mockUpdateInfo);
+
+        await container.read(inAppUpdateProvider.notifier).checkForUpdate();
+
+        final state = container.read(inAppUpdateProvider);
+        expect(state.isUpdateDownloaded, isTrue);
         expect(state.error, isNull);
       });
 
@@ -403,7 +431,7 @@ void main() {
         verify(() => mockService.startFlexibleUpdate()).called(1);
       });
 
-      test('sets isDownloading to true during download, false after', () async {
+      test('sets isDownloading to true during download, remains true after start completes', () async {
         when(() => mockService.startFlexibleUpdate()).thenAnswer((_) async {
           return AppUpdateResult.success;
         });
@@ -415,7 +443,38 @@ void main() {
 
         await future;
 
-        expect(container.read(inAppUpdateProvider).isDownloading, isFalse);
+        expect(container.read(inAppUpdateProvider).isDownloading, isTrue);
+      });
+
+      test('transitions state reactively based on installUpdateListener stream events', () async {
+        final controller = StreamController<InstallStatus>();
+        when(() => mockService.installUpdateListener).thenAnswer((_) => controller.stream);
+
+        // Re-create the container to re-trigger build() with the mocked stream
+        final testContainer = ProviderContainer(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+        addTearDown(testContainer.dispose);
+
+        // Initial state should be false/false
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isFalse);
+        expect(testContainer.read(inAppUpdateProvider).isUpdateDownloaded, isFalse);
+
+        // Emit downloading status
+        controller.add(InstallStatus.downloading);
+        await Future.delayed(Duration.zero); // yield to stream listener
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isTrue);
+        expect(testContainer.read(inAppUpdateProvider).isUpdateDownloaded, isFalse);
+
+        // Emit downloaded status
+        controller.add(InstallStatus.downloaded);
+        await Future.delayed(Duration.zero); // yield to stream listener
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isFalse);
+        expect(testContainer.read(inAppUpdateProvider).isUpdateDownloaded, isTrue);
+
+        await controller.close();
       });
 
       test('calls startFlexibleUpdate on the service', () async {

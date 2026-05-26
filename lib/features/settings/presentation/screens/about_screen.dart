@@ -31,6 +31,7 @@ class AboutScreen extends ConsumerStatefulWidget {
 class _AboutScreenState extends ConsumerState<AboutScreen> {
   int _tapCount = 0;
   Timer? _resetTimer;
+  bool _isInstallDialogShowing = false;
 
   static const _requiredTaps = 7;
   static const _tapWindow = Duration(seconds: 3);
@@ -134,7 +135,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       final state = ref.read(inAppUpdateProvider);
 
       // Show result
-      if (state.hasUpdate) {
+      if (state.isUpdateDownloaded) {
+        _showInstallDialog(context);
+      } else if (state.hasUpdate) {
         // Show update options dialog
         _showUpdateOptionsDialog(context, state);
       } else if (state.error != null) {
@@ -227,6 +230,39 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     );
   }
 
+  void _showInstallDialog(BuildContext context) {
+    if (_isInstallDialogShowing) return;
+    _isInstallDialogShowing = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must choose
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Update Ready'),
+        content: const Text(
+          'Update has been downloaded. Restart the app to install?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _isInstallDialogShowing = false;
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('Later'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              _isInstallDialogShowing = false;
+              Navigator.of(dialogContext).pop();
+              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+            },
+            child: const Text('Restart'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -236,8 +272,14 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about, style: AppTypography.h3)),
       body: packageInfoAsync.when(
-        data: (packageInfo) => ListView(
-          children: [
+        data: (packageInfo) {
+          final isBeta = packageInfo.packageName.endsWith('.beta') ||
+              packageInfo.version.toLowerCase().contains('beta') ||
+              packageInfo.version.toLowerCase().contains('alpha') ||
+              packageInfo.version.toLowerCase().contains('internal');
+
+          return ListView(
+            children: [
             SizedBox(height: AppSpacing.md),
 
             // App logo and name
@@ -275,7 +317,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   SizedBox(height: AppSpacing.xxs),
                   Semantics(
                     label:
-                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
+                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? ' Beta version' : ''}. ${l10n.tapVersionToEnable}',
                     button: true,
                     onTap: _handleVersionTap,
                     child: GestureDetector(
@@ -287,10 +329,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            l10n.version(
-                              packageInfo.version,
-                              packageInfo.buildNumber,
-                            ),
+                            '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? ' - Beta' : ''}',
                             style: AppTypography.small.copyWith(
                               color: isDark
                                   ? AppColors.neutral400Dark
@@ -378,8 +417,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
             SizedBox(height: AppSpacing.xl),
           ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Padding(
             padding: EdgeInsets.all(AppSpacing.lg),
