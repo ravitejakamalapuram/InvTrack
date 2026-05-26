@@ -177,7 +177,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.updateAvailable),
         content: Text(
           state.isHighPriority
@@ -187,12 +187,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         actions: [
           if (!state.isHighPriority)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(l10n.later),
             ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
 
               if (state.isHighPriority && state.immediateUpdateAllowed) {
                 // Critical update: immediate (blocking)
@@ -201,7 +201,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 // Non-critical: flexible (background)
                 await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
-                if (mounted) {
+                if (mounted && context.mounted) {
                   // Check if update started successfully
                   final updatedState = ref.read(inAppUpdateProvider);
                   if (updatedState.error == null) {
