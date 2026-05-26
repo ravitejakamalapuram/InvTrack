@@ -114,7 +114,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   /// Check for app updates manually using Google Play In-App Updates
-  Future<void> _checkForUpdates(BuildContext context) async {
+  Future<void> _checkForUpdates() async {
     final l10n = AppLocalizations.of(context);
 
     try {
@@ -147,7 +147,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           ErrorHandler.handle(
             Exception('Failed to check for updates: ${state.error}'),
             StackTrace.current,
-            // ignore: use_build_context_synchronously
             context: context,
             showFeedback: true,
           );
@@ -155,7 +154,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       } else {
         // No update available
         if (mounted) {
-          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.appIsUpToDate),
@@ -168,7 +166,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     } catch (e, st) {
       if (!mounted) return;
 
-      // ignore: use_build_context_synchronously
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
     }
   }
@@ -376,7 +373,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   iconColor: Colors.green,
                   title: l10n.checkForUpdatesTitle,
                   showChevron: false,
-                  onTap: () => _checkForUpdates(context),
+                  onTap: _checkForUpdates,
                 ),
               ],
             ),

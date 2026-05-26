@@ -134,7 +134,7 @@ class _InAppUpdateInitializerState
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
               final updatedNavContext = rootNavigatorKey.currentContext;
-              if (updatedNavContext == null || !mounted) return;
+              if (updatedNavContext == null || !updatedNavContext.mounted) return;
 
               // Check if update started successfully
               final state = ref.read(inAppUpdateProvider);

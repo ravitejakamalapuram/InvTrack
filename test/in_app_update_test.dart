@@ -44,7 +44,7 @@ void main() {
           navigatorKey: rootNavigatorKey,
           // Deliberately omit localizationsDelegates to force AppLocalizations.of(context) to return null
           home: const InAppUpdateInitializer(
-            child: const Scaffold(body: const Text('Home')),
+            child: Scaffold(body: Text('Home')),
           ),
         ),
       ),
@@ -70,7 +70,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           home: const InAppUpdateInitializer(
-            child: const Scaffold(body: const Text('Home')),
+            child: Scaffold(body: Text('Home')),
           ),
         ),
       ),
