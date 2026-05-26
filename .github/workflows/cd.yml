@@ -67,7 +67,7 @@ jobs:
     runs-on: self-hosted
     if: |
       github.event_name == 'push' || 
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'bump-and-deploy')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'bump-and-deploy')
     # Skip if commit message indicates skipping release or is a release bump commit
     # But do run if manual dispatch
     steps:
@@ -300,7 +300,7 @@ jobs:
   deploy-tag:
     name: Deploy Specific Tag
     runs-on: self-hosted
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy-tag'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'deploy-tag'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -361,7 +361,7 @@ jobs:
   promote-production:
     name: Promote Alpha Build to Production
     runs-on: self-hosted
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'promote-production'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'promote-production'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
