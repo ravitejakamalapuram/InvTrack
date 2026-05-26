@@ -187,9 +187,7 @@ async function fetchCrashData() {
   } catch (error) {
     console.error('Error fetching crash data:', error.message);
     console.error('Stack:', error.stack);
-
-    // Fallback: Output empty result
-    console.log(JSON.stringify({ crashes: [], total: 0, error: error.message }, null, 2));
+    process.exit(1);
   }
 }
 

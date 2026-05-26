@@ -230,6 +230,10 @@ async function monitorAllSessions() {
         console.log(`    ${r.crash.title}`);
       });
   }
+
+  if (failed > 0 || timeout > 0) {
+    throw new Error(`Monitoring completed with ${failed} failed sessions and ${timeout} timed out sessions.`);
+  }
 }
 
 monitorAllSessions()

@@ -236,6 +236,7 @@ async function createAllSessions() {
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
       console.error(`Failed to create session for crash ${crash.id}:`, error.message);
+      process.exit(1);
     }
   }
   
@@ -245,7 +246,10 @@ async function createAllSessions() {
   console.log(`Sessions saved to: jules_sessions.json`);
 }
 
-createAllSessions().catch(console.error);
+createAllSessions().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
 SCRIPT_EOF
 
 # Execute Node.js script
