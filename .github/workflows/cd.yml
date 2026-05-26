@@ -24,7 +24,7 @@ on:
         type: string
       rollout_percentage:
         description: 'Rollout percentage (for promote-production)'
-        required: false
+        required: true
         type: choice
         default: '20'
         options:
@@ -34,7 +34,7 @@ on:
           - '100'
       update_priority:
         description: 'In-app update priority (0-5, higher = more urgent, for promote-production)'
-        required: false
+        required: true
         type: choice
         default: '2'
         options:
