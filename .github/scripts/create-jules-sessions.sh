@@ -71,8 +71,8 @@ async function getOpenPRs() {
     const { stdout } = await execPromise('gh pr list --state open --json title,body,headRefName');
     return JSON.parse(stdout);
   } catch (err) {
-    console.error('Warning: Failed to fetch open Pull Requests via GitHub CLI (check GH_TOKEN permissions):', err.message);
-    return [];
+    console.error('Error: Failed to fetch open Pull Requests via GitHub CLI (check GH_TOKEN permissions):', err.message);
+    throw err;
   }
 }
 
