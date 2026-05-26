@@ -74,7 +74,7 @@ jobs:
       - name: Check Commit Message for Release Skip
         id: check_skip
         env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_MSG: ${{ github.event.head_commit && github.event.head_commit.message || '' }}
         run: |
           if [[ "$COMMIT_MSG" == *"[skip-release]"* || "$COMMIT_MSG" == *"chore(release)"* || "$COMMIT_MSG" == "chore:"* ]]; then
             if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
