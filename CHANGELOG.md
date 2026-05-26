@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **crash-fix**: Enforce fail-fast policies in fetch, create, and monitor scripts
+
+## [3.67.0] - 2026-05-26
+
 ### Debug
 
 - **crash-fix**: Log client email from service account

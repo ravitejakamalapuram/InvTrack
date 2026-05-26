@@ -1,0 +1,10 @@
+🆕 What's New
+• Change default min_affected_users to 1 and error types to all
+• Pass and prioritize FIREBASE_TOKEN to resolve service account 404 bug
+• Implement smart deduplication, dry-run, fatality filtering, and console notes for auto crash-fix pipeline
+
+🐛 Bug Fixes & Improvements
+• Remove non-existent labels from gh issue create
+• Update OAuth client ID and secret to official firebase-tools credentials
+• Sanitize quotes from FIREBASE_APP_ID
+• Trim FIREBASE_APP_ID to handle trailing newlin...
