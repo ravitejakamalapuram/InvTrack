@@ -105,6 +105,11 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
 
       if (result == AppUpdateResult.success) {
         LoggerService.info('Immediate update completed successfully');
+      } else if (result == AppUpdateResult.userDeniedUpdate) {
+        // BUG FIX: Don't report user denial to Crashlytics as a warning
+        // Fixes Crash ID: 330446834f8252710746c3a9fae30314
+        LoggerService.info('User denied immediate update');
+        state = state.copyWith(error: 'Update installation failed. Please try again.');
       } else {
         LoggerService.warn('Immediate update result: ${result.name}');
         state = state.copyWith(error: 'Update installation failed. Please try again.');
@@ -137,6 +142,14 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         // Note: This means download request initiated successfully,
         // NOT that download is complete. The actual download happens in background.
         state = state.copyWith(isDownloading: false);
+      } else if (result == AppUpdateResult.userDeniedUpdate) {
+        // BUG FIX: Don't report user denial to Crashlytics as a warning
+        // Fixes Crash ID: 330446834f8252710746c3a9fae30314
+        LoggerService.info('User denied flexible update');
+        state = state.copyWith(
+          isDownloading: false,
+          error: 'Failed to download update. Please try again.',
+        );
       } else {
         LoggerService.warn('Flexible update result: ${result.name}');
         state = state.copyWith(
