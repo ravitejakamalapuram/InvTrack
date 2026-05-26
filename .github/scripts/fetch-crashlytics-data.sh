@@ -26,7 +26,7 @@ cat > fetch_crashes.js << 'SCRIPT_EOF'
 const fs = require('fs');
 const { getAccessToken, httpRequest } = require('./.github/scripts/firebase-helper.js');
 
-const appId = process.env.FIREBASE_APP_ID;
+const appId = (process.env.FIREBASE_APP_ID || '').trim();
 const reportType = process.env.REPORT_TYPE || 'topIssues';
 const limit = parseInt(process.env.CRASH_LIMIT || '5');
 const minUsers = parseInt(process.env.MIN_USERS || '5');

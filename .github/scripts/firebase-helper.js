@@ -113,9 +113,10 @@ function httpRequest(url, method, body, token) {
 
 async function postCrashlyticsNote(appId, issueId, noteText) {
   try {
-    const projectNumber = appId.split(':')[1];
+    const cleanAppId = (appId || '').trim();
+    const projectNumber = cleanAppId.split(':')[1];
     const token = await getAccessToken();
-    const url = `https://firebasecrashlytics.googleapis.com/v1alpha/projects/${projectNumber}/apps/${appId}/issues/${issueId}/notes`;
+    const url = `https://firebasecrashlytics.googleapis.com/v1alpha/projects/${projectNumber}/apps/${cleanAppId}/issues/${issueId}/notes`;
     console.error(`Posting note to Crashlytics issue ${issueId}...`);
     await httpRequest(url, 'POST', { body: noteText }, token);
     console.error(`✅ Successfully posted note to Crashlytics`);
