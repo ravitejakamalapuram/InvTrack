@@ -11,8 +11,8 @@ async function getAccessToken() {
   // 1. Try to load from FIREBASE_CREDENTIALS environment variable directly if it is a JSON string
   if (process.env.FIREBASE_CREDENTIALS) {
     try {
-      console.error('Generating OAuth2 token from FIREBASE_CREDENTIALS env var...');
       const credentials = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+      console.error('Generating OAuth2 token from FIREBASE_CREDENTIALS env var for project: ' + credentials.project_id);
       const { GoogleAuth } = require('google-auth-library');
       const auth = new GoogleAuth({
         credentials,
