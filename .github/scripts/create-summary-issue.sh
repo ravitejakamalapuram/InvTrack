@@ -150,9 +150,7 @@ ${awaitingFeedback.length > 0 ? awaitingFeedback.map(r => `
 
 ## 🔄 Next Run
 
-This workflow runs daily at 9 AM UTC or can be triggered manually from the Actions tab.
-
-To adjust settings, edit \`.github/workflows/jules-crash-fix.yml\`
+To adjust settings, configure the environment variables or parameters in \`.github/scripts/\`.
 
 ---
 
@@ -162,18 +160,27 @@ _Automated by Jules AI Crash Fix workflow_
 fs.appendFileSync('session_summary.md', summary);
 STATS_EOF
 
+# Set default values for GitHub env variables if running locally
+GITHUB_RUN_NUMBER=${GITHUB_RUN_NUMBER:-$(date +"%Y%m%d%H%M%S")}
+GITHUB_ACTOR=${GITHUB_ACTOR:-"local-scheduled-task"}
+
 # Replace placeholders
 sed -i.bak "s/{WORKFLOW_RUN}/$GITHUB_RUN_NUMBER/g" session_summary.md
 sed -i.bak "s/{RUN_DATE}/$(date -u +"%Y-%m-%d %H:%M:%S UTC")/g" session_summary.md
 sed -i.bak "s/{TRIGGERED_BY}/$GITHUB_ACTOR/g" session_summary.md
+rm -f session_summary.md.bak
 
-# Create GitHub issue
+# Create GitHub issue if GitHub CLI is installed and authenticated
 ISSUE_TITLE="🤖 Jules AI Crash Fix - Run #$GITHUB_RUN_NUMBER"
 ISSUE_BODY=$(cat session_summary.md)
 
-echo "Creating GitHub issue..."
-gh issue create \
-  --title "$ISSUE_TITLE" \
-  --body "$ISSUE_BODY"
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  echo "Creating GitHub issue..."
+  gh issue create \
+    --title "$ISSUE_TITLE" \
+    --body "$ISSUE_BODY"
+  echo "✅ Summary issue created"
+else
+  echo "⚠️ GitHub CLI not installed or not authenticated. Skipping issue creation."
+fi
 
-echo "✅ Summary issue created"
