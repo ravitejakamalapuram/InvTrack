@@ -356,6 +356,16 @@ void main() {
         expect(state.error, 'Update installation failed. Please try again.');
       });
 
+      test('sets error when result is userDeniedUpdate for immediate update', () async {
+        when(() => mockService.startImmediateUpdate())
+            .thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
+
+        await container.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+
+        final state = container.read(inAppUpdateProvider);
+        expect(state.error, 'Update installation failed. Please try again.');
+      });
+
       test('sets error when result is userDeniedUpdate', () async {
         when(() => mockService.startImmediateUpdate())
             .thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
@@ -420,6 +430,17 @@ void main() {
       test('clears isDownloading and sets error on failed result', () async {
         when(() => mockService.startFlexibleUpdate())
             .thenAnswer((_) async => AppUpdateResult.inAppUpdateFailed);
+
+        await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+
+        final state = container.read(inAppUpdateProvider);
+        expect(state.isDownloading, isFalse);
+        expect(state.error, 'Failed to download update. Please try again.');
+      });
+
+      test('sets error when result is userDeniedUpdate for flexible update', () async {
+        when(() => mockService.startFlexibleUpdate())
+            .thenAnswer((_) async => AppUpdateResult.userDeniedUpdate);
 
         await container.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
