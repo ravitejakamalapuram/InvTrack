@@ -174,7 +174,6 @@ ISSUE_BODY=$(cat session_summary.md)
 echo "Creating GitHub issue..."
 gh issue create \
   --title "$ISSUE_TITLE" \
-  --body "$ISSUE_BODY" \
-  --label "automated,crashlytics,jules-ai"
+  --body "$ISSUE_BODY"
 
 echo "✅ Summary issue created"
