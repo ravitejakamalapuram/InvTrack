@@ -24,7 +24,7 @@ on:
       min_affected_users:
         description: 'Minimum affected users to process crash'
         required: false
-        default: 5
+        default: 1
         type: number
       report_type:
         description: 'Crashlytics report type'
@@ -37,7 +37,7 @@ on:
       issue_error_types:
         description: 'Filter crashes by fatality (comma-separated: FATAL, NON_FATAL, ANR)'
         required: false
-        default: 'FATAL'
+        default: 'FATAL,NON_FATAL,ANR'
         type: string
       dry_run:
         description: 'Run pipeline in Dry Run mode (does not create Jules sessions or PRs)'
@@ -107,9 +107,9 @@ jobs:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           CRASH_LIMIT: ${{ github.event.inputs.crash_limit || '5' }}
-          MIN_USERS: ${{ github.event.inputs.min_affected_users || '5' }}
+          MIN_USERS: ${{ github.event.inputs.min_affected_users || '1' }}
           REPORT_TYPE: ${{ github.event.inputs.report_type || 'topIssues' }}
-          ISSUE_ERROR_TYPES: ${{ github.event.inputs.issue_error_types || 'FATAL' }}
+          ISSUE_ERROR_TYPES: ${{ github.event.inputs.issue_error_types || 'FATAL,NON_FATAL,ANR' }}
         run: |
           # Fetch crashes using service account authenticated Crashlytics API
           bash .github/scripts/fetch-crashlytics-data.sh
