@@ -1,0 +1,10 @@
+⚡ Performance Improvements
+• Replace O(N log N) sorting with O(N) linear scan for extremum finding (#442)
+
+🐛 Bug Fixes & Improvements
+• Allow CI workflow to run on manual workflow_dispatch
+• Replace remaining step-level github.event.inputs references with inputs
+• Guard head_commit message retrieval in cd.yml check_skip step
+• Update concurrency and step expressions to prevent null pointer evaluation in GitHub Actions
+• Guard github.event.inputs in cd.yml job-level if conditions
+• Restore git...

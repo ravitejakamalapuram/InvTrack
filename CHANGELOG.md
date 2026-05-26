@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 🐛 Bug Fixes
+
+- Use pre-installed Flutter and remove caching from CI on self-hosted runner
+
+## [3.68.1] - 2026-05-26
+
 ### Fix
 
 - Prevent Crashlytics spam on user denying in-app update (#446)
