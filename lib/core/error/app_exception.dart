@@ -281,3 +281,55 @@ class ValidationException extends AppException {
     );
   }
 }
+
+/// In-App Update errors
+class UpdateException extends AppException {
+  @override
+  final String userMessage;
+
+  @override
+  final String technicalMessage;
+
+  @override
+  final Object? cause;
+
+  @override
+  final StackTrace? stackTrace;
+
+  @override
+  final bool shouldReport;
+
+  UpdateException({
+    this.userMessage = 'Failed to process app update.',
+    required this.technicalMessage,
+    this.cause,
+    this.stackTrace,
+    this.shouldReport = true,
+  });
+
+  factory UpdateException.fromPlatformException(dynamic e, StackTrace? st) {
+    // TASK_FAILURE with specific codes like -6 (low battery/storage) or -9 (no Play Store)
+    // are environmental, not app bugs. We shouldn't report them to Crashlytics.
+    bool isEnvironmental = false;
+    String message = e.toString();
+
+    // Check if it's a PlatformException without explicitly importing flutter/services.dart
+    // in this generic error file to avoid coupling.
+    try {
+      final code = (e as dynamic).code;
+      final msg = (e as dynamic).message as String?;
+      isEnvironmental = code == 'TASK_FAILURE' ||
+                        (msg != null && msg.contains('Install Error'));
+      message = msg ?? message;
+    } catch (_) {
+      // Not a PlatformException or missing properties
+    }
+
+    return UpdateException(
+      technicalMessage: 'In-app update platform error: $message',
+      cause: e,
+      stackTrace: st,
+      shouldReport: !isEnvironmental,
+    );
+  }
+}
