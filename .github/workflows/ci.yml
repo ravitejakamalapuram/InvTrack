@@ -29,38 +29,13 @@ jobs:
         with:
           clean: true
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.4'
-          channel: 'stable'
-          cache: true
-
-      - name: Cache Flutter packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            android/.gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
 
       - name: Flutter Setup
         id: flutter_setup
         run: |
-          flutter --version
           flutter clean
           flutter pub get
           flutter gen-l10n
