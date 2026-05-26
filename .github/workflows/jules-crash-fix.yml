@@ -105,6 +105,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           CRASH_LIMIT: ${{ github.event.inputs.crash_limit || '5' }}
           MIN_USERS: ${{ github.event.inputs.min_affected_users || '5' }}
           REPORT_TYPE: ${{ github.event.inputs.report_type || 'topIssues' }}
@@ -123,6 +124,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
@@ -138,6 +140,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/firebase-service-account.json
           FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           # Poll Jules sessions until completion or timeout
           bash .github/scripts/monitor-jules-sessions.sh

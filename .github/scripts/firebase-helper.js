@@ -8,12 +8,33 @@ const execPromise = util.promisify(exec);
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 async function getAccessToken() {
-  // 1. Try to load from FIREBASE_CREDENTIALS environment variable directly if it is a JSON string
+  // 1. Try FIREBASE_TOKEN (User/CI refresh token) first
+  if (process.env.FIREBASE_TOKEN) {
+    try {
+      console.error('Generating OAuth2 token from FIREBASE_TOKEN...');
+      const { OAuth2Client } = require('google-auth-library');
+      const oauth2Client = new OAuth2Client(
+        '407408718192.apps.googleusercontent.com',
+        'KoK139gG745V20z4wS3lS3S5'
+      );
+      oauth2Client.setCredentials({
+        refresh_token: process.env.FIREBASE_TOKEN
+      });
+      const tokenResponse = await oauth2Client.getAccessToken();
+      if (tokenResponse.token) {
+        console.error('✅ Access token generated successfully from FIREBASE_TOKEN');
+        return tokenResponse.token;
+      }
+    } catch (err) {
+      console.error('Warning: Failed to authenticate using FIREBASE_TOKEN:', err.message);
+    }
+  }
+
+  // 2. Try to load from FIREBASE_CREDENTIALS environment variable directly if it is a JSON string
   if (process.env.FIREBASE_CREDENTIALS) {
     try {
       const credentials = JSON.parse(process.env.FIREBASE_CREDENTIALS);
       console.error('Generating OAuth2 token from FIREBASE_CREDENTIALS env var for project: ' + credentials.project_id);
-      console.error('Client email: ' + credentials.client_email);
       const { GoogleAuth } = require('google-auth-library');
       const auth = new GoogleAuth({
         credentials,
@@ -30,7 +51,7 @@ async function getAccessToken() {
     }
   }
 
-  // 2. Try to load from GOOGLE_APPLICATION_CREDENTIALS file path
+  // 3. Try to load from GOOGLE_APPLICATION_CREDENTIALS file path
   const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
   if (serviceAccountPath && fs.existsSync(serviceAccountPath)) {
     try {
@@ -51,7 +72,7 @@ async function getAccessToken() {
     }
   }
 
-  // 3. Fallback to Firebase CLI authenticated user or FIREBASE_TOKEN
+  // 4. Fallback to Firebase CLI authenticated user
   try {
     console.error('Attempting token generation via Firebase CLI...');
     const { stdout } = await execPromise('npx -y firebase-tools@latest login:list --json');
@@ -66,13 +87,7 @@ async function getAccessToken() {
     console.error('Warning: Firebase CLI token retrieval failed:', err.message);
   }
 
-  // 4. Try FIREBASE_TOKEN directly if available
-  if (process.env.FIREBASE_TOKEN) {
-    console.error('Using FIREBASE_TOKEN directly...');
-    return process.env.FIREBASE_TOKEN;
-  }
-
-  throw new Error('All authentication methods failed. Please configure FIREBASE_CREDENTIALS, GOOGLE_APPLICATION_CREDENTIALS, or run firebase login.');
+  throw new Error('All authentication methods failed. Please configure FIREBASE_TOKEN, FIREBASE_CREDENTIALS, GOOGLE_APPLICATION_CREDENTIALS, or run firebase login.');
 }
 
 function httpRequest(url, method, body, token) {
