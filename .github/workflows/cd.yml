@@ -67,7 +67,7 @@ jobs:
     runs-on: self-hosted
     if: |
       github.event_name == 'push' || 
-      (github.event_name == 'workflow_dispatch' && inputs.action == 'bump-and-deploy')
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'bump-and-deploy')
     # Skip if commit message indicates skipping release or is a release bump commit
     # But do run if manual dispatch
     steps:
@@ -300,12 +300,12 @@ jobs:
   deploy-tag:
     name: Deploy Specific Tag
     runs-on: self-hosted
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'deploy-tag'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy-tag'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.event.inputs.tag }}
           fetch-depth: 0
 
       - name: Setup Flutter & Gradle
@@ -361,7 +361,7 @@ jobs:
   promote-production:
     name: Promote Alpha Build to Production
     runs-on: self-hosted
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'promote-production'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'promote-production'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -439,8 +439,8 @@ jobs:
           EOF
         env:
           PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
-          ROLLOUT_PERCENTAGE: ${{ inputs.rollout_percentage }}
-          UPDATE_PRIORITY: ${{ inputs.update_priority }}
+          ROLLOUT_PERCENTAGE: ${{ github.event.inputs.rollout_percentage }}
+          UPDATE_PRIORITY: ${{ github.event.inputs.update_priority }}
 
       - name: Notify Slack - Promotion Success
         if: success()
@@ -448,7 +448,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "📤 InvTrack promoted to Production at ${{ inputs.rollout_percentage }}% rollout!"
+              "text": "📤 InvTrack promoted to Production at ${{ github.event.inputs.rollout_percentage }}% rollout!"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
