@@ -70,18 +70,22 @@ class _InAppUpdateInitializerState
   void _showFlexibleUpdateDialog() {
     if (!mounted) return;
 
-    final l10n = AppLocalizations.of(context);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+
+    if (l10n == null) {
+      LoggerService.warn('AppLocalizations not found in context for InAppUpdateInitializer');
+    }
 
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        title: Text(l10n.updateAvailable),
-        content: Text(l10n.updatePromptMessage),
+        title: Text(l10n?.updateAvailable ?? 'Update Available'),
+        content: Text(l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.later),
+            child: Text(l10n?.later ?? 'Later'),
           ),
           FilledButton(
             onPressed: () async {
@@ -96,13 +100,13 @@ class _InAppUpdateInitializerState
                 // Show snackbar about background download only on success
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(l10n.downloadingUpdateBackground),
+                    content: Text(l10n?.downloadingUpdateBackground ?? 'Downloading update in background...'),
                     duration: const Duration(seconds: 3),
                   ),
                 );
               }
             },
-            child: Text(l10n.update),
+            child: Text(l10n?.update ?? 'Update'),
           ),
         ],
       ),
