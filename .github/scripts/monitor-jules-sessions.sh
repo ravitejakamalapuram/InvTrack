@@ -10,10 +10,12 @@ echo "=================================================="
 echo "Max Wait Time: $MAX_WAIT_MINUTES minutes"
 echo ""
 
-# Validate required environment variables
-if [ -z "$JULES_API_KEY" ]; then
-  echo "❌ Error: JULES_API_KEY not set"
-  exit 1
+# Validate required environment variables (in non-dry-run mode)
+if [ "$DRY_RUN" != "true" ]; then
+  if [ -z "$JULES_API_KEY" ]; then
+    echo "❌ Error: JULES_API_KEY not set"
+    exit 1
+  fi
 fi
 
 if [ ! -f "jules_sessions.json" ]; then

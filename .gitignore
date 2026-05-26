@@ -79,3 +79,13 @@ patrol_test/
 test_output.txt
 **/failures/
 test/golden/**/failures/
+
+# Jules AI Crash Fix intermediate files and Node.js dependencies
+node_modules/
+package.json
+package-lock.json
+crashlytics_data.json
+jules_sessions.json
+session_results.json
+session_summary.md
+
