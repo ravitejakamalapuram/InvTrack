@@ -54,7 +54,7 @@ const { postCrashlyticsNote } = require('./.github/scripts/firebase-helper.js');
 const apiKey = process.env.JULES_API_KEY;
 const sourceName = process.env.JULES_SOURCE_NAME;
 const crashesFile = process.env.CRASHES_FILE;
-const appId = (process.env.FIREBASE_APP_ID || '').trim();
+const appId = (process.env.FIREBASE_APP_ID || '').trim().replace(/['\"]/g, '');
 const dryRun = process.env.DRY_RUN === 'true';
 
 // Read crashes data

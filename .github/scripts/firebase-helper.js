@@ -113,7 +113,7 @@ function httpRequest(url, method, body, token) {
 
 async function postCrashlyticsNote(appId, issueId, noteText) {
   try {
-    const cleanAppId = (appId || '').trim();
+    const cleanAppId = (appId || '').trim().replace(/['\"]/g, '');
     const projectNumber = cleanAppId.split(':')[1];
     const token = await getAccessToken();
     const url = `https://firebasecrashlytics.googleapis.com/v1alpha/projects/${projectNumber}/apps/${cleanAppId}/issues/${issueId}/notes`;

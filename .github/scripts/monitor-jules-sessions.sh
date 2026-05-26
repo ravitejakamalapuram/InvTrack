@@ -35,7 +35,7 @@ const { postCrashlyticsNote } = require('./.github/scripts/firebase-helper.js');
 
 const apiKey = process.env.JULES_API_KEY;
 const maxWaitMinutes = parseInt(process.env.MAX_WAIT_MINUTES || '30');
-const appId = (process.env.FIREBASE_APP_ID || '').trim();
+const appId = (process.env.FIREBASE_APP_ID || '').trim().replace(/['\"]/g, '');
 const checkIntervalSeconds = 60;
 
 // Read sessions data
