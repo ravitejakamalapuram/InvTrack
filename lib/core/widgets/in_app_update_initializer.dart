@@ -17,6 +17,40 @@ class InAppUpdateInitializer extends ConsumerStatefulWidget {
 
   const InAppUpdateInitializer({required this.child, super.key});
 
+  /// Shows the update ready installation dialog
+  static void showUpdateReadyDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required VoidCallback onDismiss,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must choose
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.updateReady),
+        content: Text(l10n.updateReadyMessage),
+        actions: [
+          TextButton(
+            onPressed: () {
+              onDismiss();
+              Navigator.of(dialogContext).pop();
+            },
+            child: Text(l10n.later),
+          ),
+          FilledButton(
+            onPressed: () async {
+              onDismiss();
+              Navigator.of(dialogContext).pop();
+              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+            },
+            child: Text(l10n.restart),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   ConsumerState<InAppUpdateInitializer> createState() =>
       _InAppUpdateInitializerState();
@@ -138,38 +172,18 @@ class _InAppUpdateInitializerState
 
   void _showInstallDialog() {
     if (_isInstallDialogShowing) return;
-    _isInstallDialogShowing = true;
 
     final navContext = rootNavigatorKey.currentContext;
     if (navContext == null || !mounted) return;
 
-    showDialog(
-      context: navContext,
-      barrierDismissible: false, // User must choose
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Update Ready'),
-        content: const Text(
-          'Update has been downloaded. Restart the app to install?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _isInstallDialogShowing = false;
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Later'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              _isInstallDialogShowing = false;
-              Navigator.of(dialogContext).pop();
-              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
-              // App will restart
-            },
-            child: const Text('Restart'),
-          ),
-        ],
-      ),
+    _isInstallDialogShowing = true;
+
+    InAppUpdateInitializer.showUpdateReadyDialog(
+      navContext,
+      ref,
+      onDismiss: () {
+        _isInstallDialogShowing = false;
+      },
     );
   }
 }

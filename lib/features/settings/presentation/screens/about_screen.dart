@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
+import 'package:inv_tracker/core/widgets/in_app_update_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -234,32 +235,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     if (_isInstallDialogShowing) return;
     _isInstallDialogShowing = true;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false, // User must choose
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Update Ready'),
-        content: const Text(
-          'Update has been downloaded. Restart the app to install?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _isInstallDialogShowing = false;
-              Navigator.of(dialogContext).pop();
-            },
-            child: const Text('Later'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              _isInstallDialogShowing = false;
-              Navigator.of(dialogContext).pop();
-              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
-            },
-            child: const Text('Restart'),
-          ),
-        ],
-      ),
+    InAppUpdateInitializer.showUpdateReadyDialog(
+      context,
+      ref,
+      onDismiss: () {
+        _isInstallDialogShowing = false;
+      },
     );
   }
 
@@ -317,19 +298,19 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   SizedBox(height: AppSpacing.xxs),
                   Semantics(
                     label:
-                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? ' Beta version' : ''}. ${l10n.tapVersionToEnable}',
+                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? l10n.betaVersion : ''}. ${l10n.tapVersionToEnable}',
                     button: true,
                     onTap: _handleVersionTap,
                     child: GestureDetector(
                       onTap: _handleVersionTap,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
-                          minWidth: 44,
+                           minWidth: 44,
                           minHeight: 44,
                         ),
                         child: Center(
                           child: Text(
-                            '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? ' - Beta' : ''}',
+                            '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? l10n.betaSuffix : ''}',
                             style: AppTypography.small.copyWith(
                               color: isDark
                                   ? AppColors.neutral400Dark

@@ -77,33 +77,47 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     _service = ref.watch(inAppUpdateServiceProvider);
 
     // Listen to the update stream for flexible updates
-    _installSubscription = _service.installUpdateListener.listen((InstallStatus status) {
-      LoggerService.info('In-App Update status changed: ${status.name}');
-      if (status == InstallStatus.downloaded) {
+    _installSubscription = _service.installUpdateListener.listen(
+      (InstallStatus status) {
+        LoggerService.info('In-App Update status changed: ${status.name}');
+        if (status == InstallStatus.downloaded) {
+          state = state.copyWith(
+            isDownloading: false,
+            isUpdateDownloaded: true,
+            error: null,
+          );
+        } else if (status == InstallStatus.downloading) {
+          state = state.copyWith(
+            isDownloading: true,
+            isUpdateDownloaded: false,
+            error: null,
+          );
+        } else if (status == InstallStatus.failed) {
+          state = state.copyWith(
+            isDownloading: false,
+            isUpdateDownloaded: false,
+            error: 'Update download failed. Please try again.',
+          );
+        } else if (status == InstallStatus.canceled) {
+          state = state.copyWith(
+            isDownloading: false,
+            isUpdateDownloaded: false,
+          );
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        LoggerService.error(
+          'In-App Update stream error',
+          error: error,
+          stackTrace: stackTrace,
+        );
         state = state.copyWith(
           isDownloading: false,
-          isUpdateDownloaded: true,
-          error: null,
-        );
-      } else if (status == InstallStatus.downloading) {
-        state = state.copyWith(
-          isDownloading: true,
           isUpdateDownloaded: false,
-          error: null,
+          error: 'An error occurred during update: $error',
         );
-      } else if (status == InstallStatus.failed) {
-        state = state.copyWith(
-          isDownloading: false,
-          isUpdateDownloaded: false,
-          error: 'Update download failed. Please try again.',
-        );
-      } else if (status == InstallStatus.canceled) {
-        state = state.copyWith(
-          isDownloading: false,
-          isUpdateDownloaded: false,
-        );
-      }
-    });
+      },
+    );
 
     ref.onDispose(() {
       _installSubscription?.cancel();

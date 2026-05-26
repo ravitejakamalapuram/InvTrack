@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/services/in_app_update_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class MockUpdateService extends InAppUpdateService {
   final InstallStatus customInstallStatus;
@@ -42,8 +43,8 @@ void main() {
         child: MaterialApp(
           navigatorKey: rootNavigatorKey,
           // Deliberately omit localizationsDelegates to force AppLocalizations.of(context) to return null
-          home: InAppUpdateInitializer(
-            child: Scaffold(body: Text('Home')),
+          home: const InAppUpdateInitializer(
+            child: const Scaffold(body: const Text('Home')),
           ),
         ),
       ),
@@ -65,18 +66,24 @@ void main() {
         ],
         child: MaterialApp(
           navigatorKey: rootNavigatorKey,
-          home: InAppUpdateInitializer(
-            child: Scaffold(body: Text('Home')),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: const InAppUpdateInitializer(
+            child: const Scaffold(body: const Text('Home')),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Verify that the "Update Ready" / "Restart" dialog is shown
-    expect(find.text('Update Ready'), findsOneWidget);
-    expect(find.text('Update has been downloaded. Restart the app to install?'), findsOneWidget);
-    expect(find.text('Later'), findsOneWidget);
-    expect(find.text('Restart'), findsOneWidget);
+    // Verify that the "Update Ready" / "Restart" dialog is shown with localized strings
+    final BuildContext context = rootNavigatorKey.currentContext!;
+    final l10n = AppLocalizations.of(context);
+
+    expect(find.text(l10n.updateReady), findsOneWidget);
+    expect(find.text(l10n.updateReadyMessage), findsOneWidget);
+    expect(find.text(l10n.later), findsOneWidget);
+    expect(find.text(l10n.restart), findsOneWidget);
   });
 }

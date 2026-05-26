@@ -477,6 +477,90 @@ void main() {
         await controller.close();
       });
 
+      test('clears isDownloading and sets error on InstallStatus.failed stream event', () async {
+        final controller = StreamController<InstallStatus>();
+        when(() => mockService.installUpdateListener).thenAnswer((_) => controller.stream);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+        addTearDown(testContainer.dispose);
+
+        // Initialize Notifier so it subscribes to the stream
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isFalse);
+
+        controller.add(InstallStatus.downloading);
+        await Future.delayed(Duration.zero);
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isTrue);
+
+        controller.add(InstallStatus.failed);
+        await Future.delayed(Duration.zero);
+        final state = testContainer.read(inAppUpdateProvider);
+        expect(state.isDownloading, isFalse);
+        expect(state.isUpdateDownloaded, isFalse);
+        expect(state.error, 'Update download failed. Please try again.');
+
+        await controller.close();
+      });
+
+      test('clears isDownloading and leaves error null on InstallStatus.canceled stream event', () async {
+        final controller = StreamController<InstallStatus>();
+        when(() => mockService.installUpdateListener).thenAnswer((_) => controller.stream);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+        addTearDown(testContainer.dispose);
+
+        // Initialize Notifier so it subscribes to the stream
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isFalse);
+
+        controller.add(InstallStatus.downloading);
+        await Future.delayed(Duration.zero);
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isTrue);
+
+        controller.add(InstallStatus.canceled);
+        await Future.delayed(Duration.zero);
+        final state = testContainer.read(inAppUpdateProvider);
+        expect(state.isDownloading, isFalse);
+        expect(state.isUpdateDownloaded, isFalse);
+        expect(state.error, isNull);
+
+        await controller.close();
+      });
+
+      test('handles errors on the installUpdateListener stream', () async {
+        final controller = StreamController<InstallStatus>();
+        when(() => mockService.installUpdateListener).thenAnswer((_) => controller.stream);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            inAppUpdateServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+        addTearDown(testContainer.dispose);
+
+        // Initialize Notifier so it subscribes to the stream
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isFalse);
+
+        controller.add(InstallStatus.downloading);
+        await Future.delayed(Duration.zero);
+        expect(testContainer.read(inAppUpdateProvider).isDownloading, isTrue);
+
+        controller.addError(Exception('Platform stream error'));
+        await Future.delayed(Duration.zero);
+        final state = testContainer.read(inAppUpdateProvider);
+        expect(state.isDownloading, isFalse);
+        expect(state.isUpdateDownloaded, isFalse);
+        expect(state.error, contains('Exception: Platform stream error'));
+
+        await controller.close();
+      });
+
       test('calls startFlexibleUpdate on the service', () async {
         when(() => mockService.startFlexibleUpdate())
             .thenAnswer((_) async => AppUpdateResult.success);
