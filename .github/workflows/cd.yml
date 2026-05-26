@@ -342,7 +342,7 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: alpha
           status: completed
-          releaseName: ${{ github.event.inputs.tag }}
+          releaseName: ${{ inputs.tag }}
           whatsNewDirectory: android/fastlane/metadata/android/en-US/changelogs
 
       - name: Notify Slack - Success
@@ -351,7 +351,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "🚀 InvTrack ${{ github.event.inputs.tag }} Deployed to Google Play Alpha Track (Size: ${{ steps.app_size.outputs.size_mb }} MB)"
+              "text": "🚀 InvTrack ${{ inputs.tag }} Deployed to Google Play Alpha Track (Size: ${{ steps.app_size.outputs.size_mb }} MB)"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
