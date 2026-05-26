@@ -14,8 +14,8 @@ async function getAccessToken() {
       console.error('Generating OAuth2 token from FIREBASE_TOKEN...');
       const { OAuth2Client } = require('google-auth-library');
       const oauth2Client = new OAuth2Client(
-        '407408718192.apps.googleusercontent.com',
-        'KoK139gG745V20z4wS3lS3S5'
+        '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
+        'j9iVZfS8kkCEFUPaAeJV0sAi'
       );
       oauth2Client.setCredentials({
         refresh_token: process.env.FIREBASE_TOKEN
