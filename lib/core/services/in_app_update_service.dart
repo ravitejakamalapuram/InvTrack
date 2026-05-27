@@ -11,9 +11,6 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 ///
 /// Platform: Android only (Google Play)
 class InAppUpdateService {
-  /// Stream of install status changes for flexible updates
-  Stream<InstallStatus> get installUpdateListener => InAppUpdate.installUpdateListener;
-
   /// Check if an update is available from Google Play
   ///
   /// Returns update info if available, null otherwise
