@@ -82,7 +82,7 @@ jobs:
 
       - name: Checkout code
         if: steps.check_skip.outputs.skip != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
@@ -200,7 +200,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.example.invtrack
+          packageName: com.invtracker.inv_tracker
           releaseFiles: ${{ steps.build.outputs.artifact-path }}
           track: alpha
           status: completed
@@ -264,7 +264,7 @@ jobs:
           fi
 
       - name: Checkout specific tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.tag }}
           token: ${{ secrets.PAT_TOKEN }}
@@ -301,7 +301,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.example.invtrack
+          packageName: com.invtracker.inv_tracker
           releaseFiles: ${{ steps.build.outputs.artifact-path }}
           track: alpha
           status: completed
@@ -334,7 +334,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -360,7 +360,7 @@ jobs:
             const authClient = await auth.getClient();
             google.options({auth: authClient});
 
-            const packageName = 'com.example.invtrack';
+            const packageName = 'com.invtracker.inv_tracker';
             const rolloutPercentage = parseFloat(process.env.ROLLOUT_PERCENTAGE);
             const updatePriority = parseInt(process.env.UPDATE_PRIORITY);
 
