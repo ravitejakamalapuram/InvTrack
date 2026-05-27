@@ -236,13 +236,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ success() && '✅' || '❌' }} InvTrack v${{ steps.version_bump.outputs.new-version }} (Build ${{ steps.build_num.outputs.build_number }})",
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} InvTrack v${{ steps.version_bump.outputs.new-version }} (Build ${{ steps.build_num.outputs.build_number }})",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ success() && '✅ *Release Deployed*' || '❌ *Release Failed*' }}\n*InvTrack* v${{ steps.version_bump.outputs.new-version }} (Build ${{ steps.build_num.outputs.build_number }})\n*Track:* Alpha\n*Size:* ${{ steps.app_size.outputs.size_mb }} MB"
+                    "text": "${{ job.status == 'success' && '✅ *Release Deployed*' || '❌ *Release Failed*' }}\n*InvTrack* v${{ steps.version_bump.outputs.new-version }} (Build ${{ steps.build_num.outputs.build_number }})\n*Track:* Alpha\n*Size:* ${{ steps.app_size.outputs.size_mb }} MB"
                   }
                 }
               ]
@@ -313,13 +313,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ success() && '✅' || '❌' }} InvTrack ${{ github.event.inputs.tag }} deployed to Alpha",
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} InvTrack ${{ github.event.inputs.tag }} deployed to Alpha",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ success() && '✅ *Tag Deployed*' || '❌ *Deploy Failed*' }}\n*InvTrack* ${{ github.event.inputs.tag }}\n*Track:* Alpha"
+                    "text": "${{ job.status == 'success' && '✅ *Tag Deployed*' || '❌ *Deploy Failed*' }}\n*InvTrack* ${{ github.event.inputs.tag }}\n*Track:* Alpha"
                   }
                 }
               ]
@@ -437,13 +437,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ success() && '✅' || '❌' }} InvTrack promoted to Production",
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} InvTrack promoted to Production",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ success() && '✅ *Promoted to Production*' || '❌ *Promotion Failed*' }}\n*InvTrack* Alpha → Production\n*Rollout:* ${{ github.event.inputs.rollout_percentage }}%\n*Priority:* ${{ github.event.inputs.update_priority }}"
+                    "text": "${{ job.status == 'success' && '✅ *Promoted to Production*' || '❌ *Promotion Failed*' }}\n*InvTrack* Alpha → Production\n*Rollout:* ${{ github.event.inputs.rollout_percentage }}%\n*Priority:* ${{ github.event.inputs.update_priority }}"
                   }
                 }
               ]
