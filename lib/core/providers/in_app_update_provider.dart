@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:inv_tracker/core/services/in_app_update_service.dart';
@@ -13,12 +14,14 @@ class InAppUpdateState {
   final AppUpdateInfo? updateInfo;
   final bool isChecking;
   final bool isDownloading;
+  final bool isUpdateDownloaded;
   final String? error;
 
   const InAppUpdateState({
     this.updateInfo,
     this.isChecking = false,
     this.isDownloading = false,
+    this.isUpdateDownloaded = false,
     this.error,
   });
 
@@ -43,6 +46,7 @@ class InAppUpdateState {
     Object? updateInfo = _sentinel,
     Object? isChecking = _sentinel,
     Object? isDownloading = _sentinel,
+    Object? isUpdateDownloaded = _sentinel,
     Object? error = _sentinel,
   }) {
     return InAppUpdateState(
@@ -51,6 +55,8 @@ class InAppUpdateState {
       isChecking: identical(isChecking, _sentinel) ? this.isChecking : isChecking as bool,
       isDownloading:
           identical(isDownloading, _sentinel) ? this.isDownloading : isDownloading as bool,
+      isUpdateDownloaded:
+          identical(isUpdateDownloaded, _sentinel) ? this.isUpdateDownloaded : isUpdateDownloaded as bool,
       error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
@@ -64,10 +70,59 @@ final inAppUpdateProvider =
 
 class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
   late final InAppUpdateService _service;
+  StreamSubscription<InstallStatus>? _installSubscription;
 
   @override
   InAppUpdateState build() {
     _service = ref.watch(inAppUpdateServiceProvider);
+
+    // Listen to the update stream for flexible updates
+    _installSubscription = _service.installUpdateListener.listen(
+      (InstallStatus status) {
+        LoggerService.info('In-App Update status changed: ${status.name}');
+        if (status == InstallStatus.downloaded) {
+          state = state.copyWith(
+            isDownloading: false,
+            isUpdateDownloaded: true,
+            error: null,
+          );
+        } else if (status == InstallStatus.downloading) {
+          state = state.copyWith(
+            isDownloading: true,
+            isUpdateDownloaded: false,
+            error: null,
+          );
+        } else if (status == InstallStatus.failed) {
+          state = state.copyWith(
+            isDownloading: false,
+            isUpdateDownloaded: false,
+            error: 'Update download failed. Please try again.',
+          );
+        } else if (status == InstallStatus.canceled) {
+          state = state.copyWith(
+            isDownloading: false,
+            isUpdateDownloaded: false,
+          );
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        LoggerService.error(
+          'In-App Update stream error',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        state = state.copyWith(
+          isDownloading: false,
+          isUpdateDownloaded: false,
+          error: 'An error occurred during update: $error',
+        );
+      },
+    );
+
+    ref.onDispose(() {
+      _installSubscription?.cancel();
+    });
+
     return const InAppUpdateState();
   }
 
@@ -85,12 +140,14 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       state = state.copyWith(
         updateInfo: updateInfo,
         isChecking: false,
+        isUpdateDownloaded: updateInfo?.installStatus == InstallStatus.downloaded,
       );
     } catch (e, st) {
       LoggerService.error('Update check failed', error: e, stackTrace: st);
       state = state.copyWith(
         updateInfo: InAppUpdateState._sentinel,  // Clear stale update info
         isChecking: false,
+        isUpdateDownloaded: false,
         error: 'Failed to check for updates. Please try again later.',
       );
     }
@@ -123,25 +180,22 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
   /// Start flexible update (background download)
   ///
   /// Use for non-critical updates
-  ///
-  /// NOTE: The `in_app_update` package does not provide install-state callbacks
-  /// to track download progress. The isDownloading flag indicates the download
-  /// request is in progress, not that the actual download is complete.
-  /// The download continues in background after this method returns.
-  /// Users must manually call completeFlexibleUpdate() when ready to install.
   Future<void> startFlexibleUpdate() async {
     if (state.isDownloading) return;
 
-    state = state.copyWith(isDownloading: true, error: null);
+    state = state.copyWith(
+      isDownloading: true,
+      isUpdateDownloaded: false,
+      error: null,
+    );
 
     try {
       final result = await _service.startFlexibleUpdate();
 
       if (result == AppUpdateResult.success) {
         LoggerService.info('Flexible update download started');
-        // Note: This means download request initiated successfully,
-        // NOT that download is complete. The actual download happens in background.
-        state = state.copyWith(isDownloading: false);
+        // Note: The download continues in the background. The stream listener
+        // will update the state to downloaded when finished.
       } else if (result == AppUpdateResult.userDeniedUpdate) {
         // BUG FIX: Don't report user denial to Crashlytics as a warning
         // Fixes Crash ID: 330446834f8252710746c3a9fae30314

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Initializes in-app update check on app start
@@ -16,6 +17,40 @@ class InAppUpdateInitializer extends ConsumerStatefulWidget {
 
   const InAppUpdateInitializer({required this.child, super.key});
 
+  /// Shows the update ready installation dialog
+  static void showUpdateReadyDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required VoidCallback onDismiss,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must choose
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.updateReady),
+        content: Text(l10n.updateReadyMessage),
+        actions: [
+          TextButton(
+            onPressed: () {
+              onDismiss();
+              Navigator.of(dialogContext).pop();
+            },
+            child: Text(l10n.later),
+          ),
+          FilledButton(
+            onPressed: () async {
+              onDismiss();
+              Navigator.of(dialogContext).pop();
+              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+            },
+            child: Text(l10n.restart),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   ConsumerState<InAppUpdateInitializer> createState() =>
       _InAppUpdateInitializerState();
@@ -24,6 +59,7 @@ class InAppUpdateInitializer extends ConsumerStatefulWidget {
 class _InAppUpdateInitializerState
     extends ConsumerState<InAppUpdateInitializer> {
   bool _hasChecked = false;
+  bool _isInstallDialogShowing = false;
 
   @override
   void initState() {
@@ -44,6 +80,10 @@ class _InAppUpdateInitializerState
       if (!mounted) return;
 
       final state = ref.read(inAppUpdateProvider);
+
+      if (state.isUpdateDownloaded) {
+        return;
+      }
 
       if (!state.hasUpdate) {
         LoggerService.debug('No update available');
@@ -68,37 +108,39 @@ class _InAppUpdateInitializerState
   }
 
   void _showFlexibleUpdateDialog() {
-    if (!mounted) return;
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null || !mounted) return;
 
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final l10n = Localizations.of<AppLocalizations>(navContext, AppLocalizations);
 
     if (l10n == null) {
       LoggerService.warn('AppLocalizations not found in context for InAppUpdateInitializer');
     }
 
     showDialog(
-      context: context,
+      context: navContext,
       barrierDismissible: true,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n?.updateAvailable ?? 'Update Available'),
         content: Text(l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l10n?.later ?? 'Later'),
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
-              if (!mounted) return;
+              final updatedNavContext = rootNavigatorKey.currentContext;
+              if (updatedNavContext == null || !updatedNavContext.mounted) return;
 
               // Check if update started successfully
               final state = ref.read(inAppUpdateProvider);
               if (state.error == null) {
                 // Show snackbar about background download only on success
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(updatedNavContext).showSnackBar(
                   SnackBar(
                     content: Text(l10n?.downloadingUpdateBackground ?? 'Downloading update in background...'),
                     duration: const Duration(seconds: 3),
@@ -120,9 +162,7 @@ class _InAppUpdateInitializerState
       if (!mounted) return;
 
       // If flexible update finished downloading, prompt to install
-      if (previous?.isDownloading == true &&
-          next.isDownloading == false &&
-          next.error == null) {
+      if (next.isUpdateDownloaded && previous?.isUpdateDownloaded != true) {
         _showInstallDialog();
       }
     });
@@ -131,31 +171,19 @@ class _InAppUpdateInitializerState
   }
 
   void _showInstallDialog() {
-    if (!mounted) return;
+    if (_isInstallDialogShowing) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false, // User must choose
-      builder: (context) => AlertDialog(
-        title: const Text('Update Ready'),
-        content: const Text(
-          'Update has been downloaded. Restart the app to install?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Later'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
-              // App will restart
-            },
-            child: const Text('Restart'),
-          ),
-        ],
-      ),
+    final navContext = rootNavigatorKey.currentContext;
+    if (navContext == null || !mounted) return;
+
+    _isInstallDialogShowing = true;
+
+    InAppUpdateInitializer.showUpdateReadyDialog(
+      navContext,
+      ref,
+      onDismiss: () {
+        _isInstallDialogShowing = false;
+      },
     );
   }
 }
