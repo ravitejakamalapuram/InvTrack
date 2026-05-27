@@ -26,22 +26,22 @@ class InvTrackerApp extends ConsumerWidget {
     return IncomeGuardianServiceInitializer(
       child: NotificationSyncInitializer(
         child: _NotificationNavigationHandler(
-          child: InAppUpdateInitializer(
-            child: CurrencyCacheInitializer(
-              child: ConnectivityListener(
-                child: MaterialApp.router(
-                  title: 'InvTracker',
-                  theme: AppTheme.lightTheme,
-                  darkTheme: AppTheme.darkTheme,
-                  themeMode: settings.themeMode,
-                  routerConfig: router,
-                  localizationsDelegates: AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  builder: (context, child) {
-                    return PrivacyProtectionWrapper(child: child!);
-                  },
-                ),
-              ),
+          child: CurrencyCacheInitializer(
+            child: MaterialApp.router(
+              title: 'InvTracker',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: settings.themeMode,
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) {
+                return InAppUpdateInitializer(
+                  child: ConnectivityListener(
+                    child: PrivacyProtectionWrapper(child: child!),
+                  ),
+                );
+              },
             ),
           ),
         ),

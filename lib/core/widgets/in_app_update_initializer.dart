@@ -58,7 +58,7 @@ class _InAppUpdateInitializerState
       }
 
       // Low priority updates: Show flexible update dialog
-      if (state.flexibleUpdateAllowed) {
+      if (state.flexibleUpdateAllowed && !state.isDownloaded) {
         LoggerService.info('Showing flexible update dialog');
         _showFlexibleUpdateDialog();
       }
@@ -79,17 +79,17 @@ class _InAppUpdateInitializerState
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n?.updateAvailable ?? 'Update Available'),
         content: Text(l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l10n?.later ?? 'Later'),
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
               if (!mounted) return;
@@ -120,9 +120,7 @@ class _InAppUpdateInitializerState
       if (!mounted) return;
 
       // If flexible update finished downloading, prompt to install
-      if (previous?.isDownloading == true &&
-          next.isDownloading == false &&
-          next.error == null) {
+      if (next.isDownloaded && previous?.isDownloaded != true) {
         _showInstallDialog();
       }
     });
