@@ -48,10 +48,11 @@ android {
             if (keystoreFile.exists()) {
                 val props = Properties()
                 props.load(FileInputStream(keystoreFile))
-                
+
                 keyAlias = props.getProperty("keyAlias")
                 keyPassword = props.getProperty("keyPassword")
-                storeFile = file(props.getProperty("storeFile"))
+                // Resolve storeFile relative to android directory (parent of app module)
+                storeFile = file("../" + props.getProperty("storeFile"))
                 storePassword = props.getProperty("storePassword")
             } else {
                 // Fallback for CI/CD or initial setup where keys might be injected differently
