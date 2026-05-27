@@ -87,6 +87,9 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
   }
 
   void _listenToInstallUpdates() {
+    // Guard against duplicate subscriptions
+    if (_subscription != null) return;
+
     try {
       _subscription = InAppUpdate.installUpdateListener.listen((status) {
         LoggerService.info('Install status update received: ${status.name}');
@@ -144,7 +147,7 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
     } catch (e, st) {
       LoggerService.error('Update check failed', error: e, stackTrace: st);
       state = state.copyWith(
-        updateInfo: InAppUpdateState._sentinel,  // Clear stale update info
+        updateInfo: null,  // Clear stale update info
         isChecking: false,
         isDownloaded: false,
         error: 'Failed to check for updates. Please try again later.',

@@ -28,7 +28,7 @@ class InvTrackerApp extends ConsumerWidget {
         child: _NotificationNavigationHandler(
           child: CurrencyCacheInitializer(
             child: MaterialApp.router(
-              title: 'InvTracker',
+              onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
               themeMode: settings.themeMode,
@@ -38,7 +38,9 @@ class InvTrackerApp extends ConsumerWidget {
               builder: (context, child) {
                 return InAppUpdateInitializer(
                   child: ConnectivityListener(
-                    child: PrivacyProtectionWrapper(child: child!),
+                    child: PrivacyProtectionWrapper(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 );
               },

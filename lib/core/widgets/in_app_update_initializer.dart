@@ -131,26 +131,28 @@ class _InAppUpdateInitializerState
   void _showInstallDialog() {
     if (!mounted) return;
 
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+
     showDialog(
       context: context,
       barrierDismissible: false, // User must choose
-      builder: (context) => AlertDialog(
-        title: const Text('Update Ready'),
-        content: const Text(
-          'Update has been downloaded. Restart the app to install?',
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n?.inAppUpdateInstallTitle ?? 'Update Ready'),
+        content: Text(
+          l10n?.inAppUpdateInstallMessage ?? 'Update has been downloaded. Restart the app to install?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Later'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n?.later ?? 'Later'),
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
               // App will restart
             },
-            child: const Text('Restart'),
+            child: Text(l10n?.inAppUpdateInstallButton ?? 'Restart'),
           ),
         ],
       ),
