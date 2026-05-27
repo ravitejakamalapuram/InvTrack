@@ -25,62 +25,35 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           clean: true
 
-      - name: Verify Flutter installation
-        run: |
-          flutter --version
-
       - name: Flutter Setup
-        id: flutter_setup
-        run: |
-          flutter clean
-          flutter pub get
-          flutter gen-l10n
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@main
+        with:
+          flutter-channel: 'stable'
+          cache-pub: 'true'
+          auto-fix-corruption: 'true'
 
-      # If flutter pub get fails, clear corrupted pub cache and retry
-      - name: Clear corrupted pub cache and retry
-        if: failure() && steps.flutter_setup.outcome == 'failure'
-        run: |
-          echo "⚠️ Detected pub cache corruption. Clearing and retrying..."
-          rm -rf ~/.pub-cache/hosted/pub.dev/win32*
-          rm -rf ~/.pub-cache/hosted/pub.dev/intl*
-          rm -rf ~/.pub-cache/hosted/pub.dev/ffi_leak_tracker*
-          flutter clean
-          flutter pub get
-          flutter gen-l10n
+      - name: Generate Localizations
+        run: flutter gen-l10n
 
-      - name: Run Linter / Analyzer
-        run: flutter analyze --fatal-warnings --no-fatal-infos
+      - name: Run Analyzer with Security & Architecture Checks
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/analyze@main
+        with:
+          fatal-warnings: 'true'
+          fatal-infos: 'false'
+          architecture-checks: 'true'
+          check-api-in-widgets: 'true'
+          check-navigation-in-domain: 'true'
+          security-checks: 'true'
 
       - name: Run Tests
-        run: flutter test --exclude-tags=golden
-
-      - name: Security Check
-        run: |
-          # Critical security checks
-          if grep -rn "badCertificateCallback\|allowInsecure" lib/ 2>/dev/null; then
-            echo "::error::Found disabled SSL verification"
-            exit 1
-          fi
-          if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
-            echo "::error::Found print statements in production code"
-            exit 1
-          fi
-
-      - name: Architecture Check
-        run: |
-          # Critical architecture violations
-          if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
-            echo "::error::Found API calls in widgets"
-            exit 1
-          fi
-          if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
-            echo "::error::Found navigation in domain layer"
-            exit 1
-          fi
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/test@main
+        with:
+          exclude-tags: 'golden'
+          coverage: 'false'
 
       - name: Summary
         if: success()

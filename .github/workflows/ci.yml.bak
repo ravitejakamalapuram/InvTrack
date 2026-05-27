@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+  workflow_dispatch: {}
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-checks:
+    name: Code Quality and Tests
+    runs-on: self-hosted
+    if: |
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Verify Flutter installation
+        run: |
+          flutter --version
+
+      - name: Flutter Setup
+        id: flutter_setup
+        run: |
+          flutter clean
+          flutter pub get
+          flutter gen-l10n
+
+      # If flutter pub get fails, clear corrupted pub cache and retry
+      - name: Clear corrupted pub cache and retry
+        if: failure() && steps.flutter_setup.outcome == 'failure'
+        run: |
+          echo "⚠️ Detected pub cache corruption. Clearing and retrying..."
+          rm -rf ~/.pub-cache/hosted/pub.dev/win32*
+          rm -rf ~/.pub-cache/hosted/pub.dev/intl*
+          rm -rf ~/.pub-cache/hosted/pub.dev/ffi_leak_tracker*
+          flutter clean
+          flutter pub get
+          flutter gen-l10n
+
+      - name: Run Linter / Analyzer
+        run: flutter analyze --fatal-warnings --no-fatal-infos
+
+      - name: Run Tests
+        run: flutter test --exclude-tags=golden
+
+      - name: Security Check
+        run: |
+          # Critical security checks
+          if grep -rn "badCertificateCallback\|allowInsecure" lib/ 2>/dev/null; then
+            echo "::error::Found disabled SSL verification"
+            exit 1
+          fi
+          if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
+            echo "::error::Found print statements in production code"
+            exit 1
+          fi
+
+      - name: Architecture Check
+        run: |
+          # Critical architecture violations
+          if grep -rn "FirebaseFirestore\|http\.\|dio\." lib/features/*/presentation/widgets/ 2>/dev/null; then
+            echo "::error::Found API calls in widgets"
+            exit 1
+          fi
+          if grep -rn "Navigator\|GoRouter\|context\.go" lib/features/*/domain/ 2>/dev/null; then
+            echo "::error::Found navigation in domain layer"
+            exit 1
+          fi
+
+      - name: Summary
+        if: success()
+        run: echo "✅ All checks passed - ready for deployment"
