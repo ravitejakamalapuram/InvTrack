@@ -199,7 +199,7 @@ jobs:
         if: steps.check_skip.outputs.skip != 'true'
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           packageName: com.invtracker.inv_tracker
           releaseFiles: ${{ steps.build.outputs.artifact-path }}
           track: alpha
@@ -300,7 +300,7 @@ jobs:
       - name: Deploy to Google Play (Alpha)
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           packageName: com.invtracker.inv_tracker
           releaseFiles: ${{ steps.build.outputs.artifact-path }}
           track: alpha
@@ -427,7 +427,7 @@ jobs:
 
           node promote.js
         env:
-          SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           ROLLOUT_PERCENTAGE: ${{ github.event.inputs.rollout_percentage }}
           UPDATE_PRIORITY: ${{ github.event.inputs.update_priority }}
 
