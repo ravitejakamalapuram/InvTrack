@@ -56,6 +56,12 @@ jobs:
           exclude-tags: 'golden'
           coverage: 'false'
 
+      - name: Validate Android Build Configuration
+        run: |
+          echo "🔍 Validating Android Gradle configuration..."
+          flutter build apk --debug --no-pub --no-shrink
+        continue-on-error: false
+
       - name: Summary
         if: success()
         run: echo "✅ All checks passed - ready for deployment"
