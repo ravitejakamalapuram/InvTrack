@@ -121,7 +121,7 @@ jobs:
         if: steps.check_skip.outputs.skip != 'true'
         id: build_num
         run: |
-          BUILD_NUM=$(($${{ steps.current_version.outputs.build_number }} + 1))
+          BUILD_NUM=$((${{ steps.current_version.outputs.build_number }} + 1))
           echo "build_number=$BUILD_NUM" >> $GITHUB_OUTPUT
           echo "New build number: $BUILD_NUM"
 
