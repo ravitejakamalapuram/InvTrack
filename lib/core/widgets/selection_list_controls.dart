@@ -47,49 +47,55 @@ class SelectionListControls extends StatelessWidget {
             HapticFeedback.selectionClick();
             onToggleSelectAll();
           },
-          child: GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onToggleSelectAll();
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: allSelected
-                    ? AppColors.primaryLight
-                    : (isDark ? Colors.white : Colors.black).withValues(
-                        alpha: 0.05,
-                      ),
-                borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    allSelected
-                        ? Icons.check_box
-                        : Icons.check_box_outline_blank,
-                    size: 18,
-                    color: allSelected
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : AppColors.neutral700Light),
-                  ),
-                  SizedBox(width: AppSpacing.xs),
-                  Text(
-                    actionLabel,
-                    style: AppTypography.small.copyWith(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onToggleSelectAll();
+              },
+              borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+              child: Ink(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: allSelected
+                      ? AppColors.primaryLight
+                      : (isDark ? Colors.white : Colors.black).withValues(
+                          alpha: 0.05,
+                        ),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      allSelected
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      size: 18,
                       color: allSelected
                           ? Colors.white
                           : (isDark
                                 ? Colors.white70
                                 : AppColors.neutral700Light),
-                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
+                    SizedBox(width: AppSpacing.xs),
+                    Text(
+                      actionLabel,
+                      style: AppTypography.small.copyWith(
+                        color: allSelected
+                            ? Colors.white
+                            : (isDark
+                                  ? Colors.white70
+                                  : AppColors.neutral700Light),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
