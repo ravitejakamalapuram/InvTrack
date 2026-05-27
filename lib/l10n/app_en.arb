@@ -4968,25 +4968,5 @@
   "platformReliabilityPoor": "Poor",
   "@platformReliabilityPoor": {
     "description": "Platform reliability grade: <70% on-time"
-  },
-  "updateReady": "Update Ready",
-  "@updateReady": {
-    "description": "Title of the update ready dialog"
-  },
-  "updateReadyMessage": "Update has been downloaded. Restart the app to install?",
-  "@updateReadyMessage": {
-    "description": "Message of the update ready dialog"
-  },
-  "restart": "Restart",
-  "@restart": {
-    "description": "Button label to restart the app and install update"
-  },
-  "betaVersion": " Beta version",
-  "@betaVersion": {
-    "description": "Label appended to version in tooltip for beta builds"
-  },
-  "betaSuffix": " - Beta",
-  "@betaSuffix": {
-    "description": "Suffix appended to version name for beta builds"
   }
 }
