@@ -34,7 +34,7 @@ jobs:
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
-          fix-corrupted-cache: 'true'
+          auto-fix-corruption: 'true'
 
       - name: Generate Localizations
         run: flutter gen-l10n
