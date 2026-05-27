@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
+import 'package:inv_tracker/core/widgets/in_app_update_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -31,6 +32,7 @@ class AboutScreen extends ConsumerStatefulWidget {
 class _AboutScreenState extends ConsumerState<AboutScreen> {
   int _tapCount = 0;
   Timer? _resetTimer;
+  bool _isInstallDialogShowing = false;
 
   static const _requiredTaps = 7;
   static const _tapWindow = Duration(seconds: 3);
@@ -112,7 +114,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   /// Check for app updates manually using Google Play In-App Updates
-  Future<void> _checkForUpdates(BuildContext context) async {
+  Future<void> _checkForUpdates() async {
     final l10n = AppLocalizations.of(context);
 
     try {
@@ -134,7 +136,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       final state = ref.read(inAppUpdateProvider);
 
       // Show result
-      if (state.hasUpdate) {
+      if (state.isUpdateDownloaded) {
+        _showInstallDialog(context);
+      } else if (state.hasUpdate) {
         // Show update options dialog
         _showUpdateOptionsDialog(context, state);
       } else if (state.error != null) {
@@ -143,7 +147,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           ErrorHandler.handle(
             Exception('Failed to check for updates: ${state.error}'),
             StackTrace.current,
-            // ignore: use_build_context_synchronously
             context: context,
             showFeedback: true,
           );
@@ -151,7 +154,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       } else {
         // No update available
         if (mounted) {
-          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.appIsUpToDate),
@@ -164,7 +166,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     } catch (e, st) {
       if (!mounted) return;
 
-      // ignore: use_build_context_synchronously
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
     }
   }
@@ -174,7 +175,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.updateAvailable),
         content: Text(
           state.isHighPriority
@@ -184,12 +185,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         actions: [
           if (!state.isHighPriority)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(l10n.later),
             ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
 
               if (state.isHighPriority && state.immediateUpdateAllowed) {
                 // Critical update: immediate (blocking)
@@ -198,7 +199,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 // Non-critical: flexible (background)
                 await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
-                if (mounted) {
+                if (mounted && context.mounted) {
                   // Check if update started successfully
                   final updatedState = ref.read(inAppUpdateProvider);
                   if (updatedState.error == null) {
@@ -227,6 +228,19 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     );
   }
 
+  void _showInstallDialog(BuildContext context) {
+    if (_isInstallDialogShowing) return;
+    _isInstallDialogShowing = true;
+
+    InAppUpdateInitializer.showUpdateReadyDialog(
+      context,
+      ref,
+      onDismiss: () {
+        _isInstallDialogShowing = false;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -236,8 +250,14 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about, style: AppTypography.h3)),
       body: packageInfoAsync.when(
-        data: (packageInfo) => ListView(
-          children: [
+        data: (packageInfo) {
+          final isBeta = packageInfo.packageName.endsWith('.beta') ||
+              packageInfo.version.toLowerCase().contains('beta') ||
+              packageInfo.version.toLowerCase().contains('alpha') ||
+              packageInfo.version.toLowerCase().contains('internal');
+
+          return ListView(
+            children: [
             SizedBox(height: AppSpacing.md),
 
             // App logo and name
@@ -275,22 +295,19 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   SizedBox(height: AppSpacing.xxs),
                   Semantics(
                     label:
-                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
+                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? l10n.betaVersion : ''}. ${l10n.tapVersionToEnable}',
                     button: true,
                     onTap: _handleVersionTap,
                     child: GestureDetector(
                       onTap: _handleVersionTap,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
-                          minWidth: 44,
+                           minWidth: 44,
                           minHeight: 44,
                         ),
                         child: Center(
                           child: Text(
-                            l10n.version(
-                              packageInfo.version,
-                              packageInfo.buildNumber,
-                            ),
+                            '${l10n.version(packageInfo.version, packageInfo.buildNumber)}${isBeta ? l10n.betaSuffix : ''}',
                             style: AppTypography.small.copyWith(
                               color: isDark
                                   ? AppColors.neutral400Dark
@@ -356,7 +373,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   iconColor: Colors.green,
                   title: l10n.checkForUpdatesTitle,
                   showChevron: false,
-                  onTap: () => _checkForUpdates(context),
+                  onTap: _checkForUpdates,
                 ),
               ],
             ),
@@ -378,8 +395,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
             SizedBox(height: AppSpacing.xl),
           ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Padding(
             padding: EdgeInsets.all(AppSpacing.lg),
