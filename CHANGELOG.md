@@ -1,5 +1,22 @@
 # Changelog
 
+## [2026-05-27]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- Merge pull request #459 from ravitejakamalapuram/feature/complete-workflows-migration (fa6a6e203d) by raviteja kamalapuram
+- chore: address PR review feedback (9c02ccd702) by Raviteja Kamalapuram
+- refactor: simplify CD workflow using shared composite actions (056347e944) by Raviteja Kamalapuram
+
+
 ## [Unreleased]
 
 ### 🐛 Bug Fixes
