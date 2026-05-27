@@ -18,6 +18,7 @@ jobs:
   ci-checks:
     name: Code Quality and Tests
     runs-on: self-hosted
+    timeout-minutes: 30
     if: |
       github.event_name == 'push' || 
       github.event_name == 'workflow_dispatch' ||
@@ -30,7 +31,7 @@ jobs:
           clean: true
 
       - name: Flutter Setup
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.0.0
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
@@ -40,7 +41,7 @@ jobs:
         run: flutter gen-l10n
 
       - name: Run Analyzer with Security & Architecture Checks
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/analyze@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/analyze@v1.0.0
         with:
           fatal-warnings: 'true'
           fatal-infos: 'false'
@@ -50,7 +51,7 @@ jobs:
           security-checks: 'true'
 
       - name: Run Tests
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/test@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/test@v1.0.0
         with:
           exclude-tags: 'golden'
           coverage: 'false'

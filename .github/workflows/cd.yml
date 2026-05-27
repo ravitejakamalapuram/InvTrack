@@ -46,7 +46,6 @@ on:
           - '5'
 
 env:
-  MAX_APP_SIZE: 20971520
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
@@ -61,6 +60,7 @@ jobs:
   bump-and-deploy:
     name: Bump Version & Deploy to Play Store (Alpha)
     runs-on: self-hosted
+    timeout-minutes: 60
     if: |
       github.event_name == 'push' || 
       (github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'bump-and-deploy')
@@ -93,70 +93,28 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Get current version from pubspec.yaml
-        if: steps.check_skip.outputs.skip != 'true'
-        id: current_version
-        run: |
-          FULL_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //')
-          VERSION_NAME=${FULL_VERSION%%+*}
-          BUILD_NUM=${FULL_VERSION#*+}
-          if [ "$BUILD_NUM" = "$VERSION_NAME" ]; then
-            BUILD_NUM=0
-          fi
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "build_number=$BUILD_NUM" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION_NAME, Build: $BUILD_NUM"
-
-      - name: Bump Version
-        if: steps.check_skip.outputs.skip != 'true'
-        id: version_bump
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/version-bump@main
-        with:
-          bump-type: 'auto'
-          tag-prefix: 'v'
-          initial-version: ${{ steps.current_version.outputs.version_name }}
-          push-tag: 'false'
-
-      - name: Calculate build number
-        if: steps.check_skip.outputs.skip != 'true'
-        id: build_num
-        run: |
-          BUILD_NUM=$((${{ steps.current_version.outputs.build_number }} + 1))
-          echo "build_number=$BUILD_NUM" >> $GITHUB_OUTPUT
-          echo "New build number: $BUILD_NUM"
-
       - name: Generate Changelog
         if: steps.check_skip.outputs.skip != 'true'
         id: changelog
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/changelog@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/changelog@v1.0.0
         with:
           output-file: 'CHANGELOG.md'
           format: 'markdown'
           group-by: 'conventional-commits'
 
-      - name: Update files with new version
+      - name: Bump Flutter Version & Update Files
         if: steps.check_skip.outputs.skip != 'true'
-        run: |
-          NEW_VERSION="${{ steps.version_bump.outputs.new-version }}"
-          BUILD_NUM="${{ steps.build_num.outputs.build_number }}"
-          NEW_VERSION_FULL="${NEW_VERSION}+${BUILD_NUM}"
-          
-          # Update pubspec.yaml
-          sed -i '' "s/^version: .*/version: $NEW_VERSION_FULL/" pubspec.yaml
-          
-          # Update about_screen.dart
-          sed -i '' "s/const String _appVersion = '.*'/const String _appVersion = '$NEW_VERSION'/" \
-            lib/features/settings/presentation/screens/about_screen.dart
-          sed -i '' "s/const String _buildNumber = '.*'/const String _buildNumber = '$BUILD_NUM'/" \
-            lib/features/settings/presentation/screens/about_screen.dart
-
-          # Update fastlane changelog
-          mkdir -p fastlane/metadata/android/en-US/changelogs
-          echo "${{ steps.changelog.outputs.latest-changes }}" > fastlane/metadata/android/en-US/changelogs/${BUILD_NUM}.txt
+        id: version
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/version-bump@v1.0.0
+        with:
+          bump-type: 'auto'
+          update-dart-file: 'lib/features/settings/presentation/screens/about_screen.dart'
+          fastlane-changelog: 'true'
+          changelog-content: ${{ steps.changelog.outputs.latest-changes }}
 
       - name: Flutter Setup
         if: steps.check_skip.outputs.skip != 'true'
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.0.0
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
@@ -168,7 +126,7 @@ jobs:
       - name: Build Android App Bundle
         if: steps.check_skip.outputs.skip != 'true'
         id: build
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@v1.0.0
         with:
           build-type: 'appbundle'
           build-mode: 'release'
@@ -181,19 +139,10 @@ jobs:
       - name: Track App Size
         if: steps.check_skip.outputs.skip != 'true'
         id: app_size
-        run: |
-          AAB_PATH="${{ steps.build.outputs.artifact-path }}"
-          AAB_SIZE=$(stat -f%z "$AAB_PATH")
-          AAB_SIZE_MB=$(echo "scale=2; $AAB_SIZE / 1024 / 1024" | bc)
-
-          echo "size_bytes=$AAB_SIZE" >> $GITHUB_OUTPUT
-          echo "size_mb=$AAB_SIZE_MB" >> $GITHUB_OUTPUT
-
-          echo "📦 App Bundle Size: ${AAB_SIZE_MB} MB"
-
-          if [ $AAB_SIZE -gt $MAX_APP_SIZE ]; then
-            echo "::warning::⚠️ App size (${AAB_SIZE_MB}MB) exceeds recommended maximum (20MB)"
-          fi
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/size-check@v1.0.0
+        with:
+          file-path: ${{ steps.build.outputs.artifact-path }}
+          max-size-mb: '20'
 
       - name: Deploy to Google Play (Alpha)
         if: steps.check_skip.outputs.skip != 'true'
@@ -209,50 +158,42 @@ jobs:
       - name: Commit Version Bump
         if: steps.check_skip.outputs.skip != 'true'
         run: |
-          git add pubspec.yaml lib/features/settings/presentation/screens/about_screen.dart fastlane/
-          git commit -m "chore(release): bump version to ${{ steps.version_bump.outputs.new-version }}+${{ steps.build_num.outputs.build_number }} [skip-release]"
+          git add pubspec.yaml lib/features/settings/presentation/screens/about_screen.dart CHANGELOG.md fastlane/
+          git commit -m "chore(release): bump version to ${{ steps.version.outputs.new-version }}+${{ steps.version.outputs.new-build-number }} [skip-release]"
           git push origin main
 
       - name: Create GitHub Release
         if: steps.check_skip.outputs.skip != 'true'
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/create-release@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/create-release@v1.0.0
         with:
-          tag: v${{ steps.version_bump.outputs.new-version }}
-          release-name: 'Release v${{ steps.version_bump.outputs.new-version }}'
+          tag-name: v${{ steps.version.outputs.new-version }}
+          release-name: 'Release v${{ steps.version.outputs.new-version }}'
           body: |
-            ## 📱 InvTrack v${{ steps.version_bump.outputs.new-version }}
+            ## 📱 InvTrack v${{ steps.version.outputs.new-version }}
 
-            **Build Number:** ${{ steps.build_num.outputs.build_number }}
-            **App Size:** ${{ steps.app_size.outputs.size_mb }} MB
+            **Build Number:** ${{ steps.version.outputs.new-build-number }}
+            **App Size:** ${{ steps.app_size.outputs.size-mb }} MB
 
             ${{ steps.changelog.outputs.latest-changes }}
           draft: false
           prerelease: false
-          github-token: ${{ secrets.PAT_TOKEN }}
 
       - name: Slack Notification
         if: steps.check_skip.outputs.skip != 'true' && (success() || failure())
-        uses: slackapi/slack-github-action@v1
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.0
         with:
-          payload: |
-            {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} InvTrack v${{ steps.version_bump.outputs.new-version }} (Build ${{ steps.build_num.outputs.build_number }})",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ job.status == 'success' && '✅ *Release Deployed*' || '❌ *Release Failed*' }}\n*InvTrack* v${{ steps.version_bump.outputs.new-version }} (Build ${{ steps.build_num.outputs.build_number }})\n*Track:* Alpha\n*Size:* ${{ steps.app_size.outputs.size_mb }} MB"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          app-name: 'InvTrack'
+          version: ${{ steps.version.outputs.new-version }}
+          build-number: ${{ steps.version.outputs.new-build-number }}
+          track: 'Alpha'
+          size-mb: ${{ steps.app_size.outputs.size-mb }}
 
   deploy-tag:
     name: Deploy Specific Tag to Play Store (Alpha)
     runs-on: self-hosted
+    timeout-minutes: 60
     if: github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'deploy-tag'
 
     steps:
@@ -277,7 +218,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Flutter Setup
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.0.0
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
@@ -287,7 +228,7 @@ jobs:
 
       - name: Build Android App Bundle
         id: build
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@v1.0.0
         with:
           build-type: 'appbundle'
           build-mode: 'release'
@@ -296,6 +237,13 @@ jobs:
           keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
           key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Track App Size
+        id: app_size
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/size-check@v1.0.0
+        with:
+          file-path: ${{ steps.build.outputs.artifact-path }}
+          max-size-mb: '20'
 
       - name: Deploy to Google Play (Alpha)
         uses: r0adkll/upload-google-play@v1
@@ -309,144 +257,40 @@ jobs:
 
       - name: Slack Notification
         if: success() || failure()
-        uses: slackapi/slack-github-action@v1
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.0
         with:
-          payload: |
-            {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} InvTrack ${{ github.event.inputs.tag }} deployed to Alpha",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ job.status == 'success' && '✅ *Tag Deployed*' || '❌ *Deploy Failed*' }}\n*InvTrack* ${{ github.event.inputs.tag }}\n*Track:* Alpha"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          app-name: 'InvTrack'
+          version: ${{ steps.version.outputs.version }}
+          track: 'Alpha'
+          size-mb: ${{ steps.app_size.outputs.size-mb }}
 
   promote-production:
     name: Promote Alpha to Production
     runs-on: self-hosted
+    timeout-minutes: 30
     if: github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'promote-production'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Google Play API dependencies
-        run: npm install googleapis@105 --save
-
       - name: Promote Release to Production
-        id: promote
-        run: |
-          cat > promote.js << 'EOFJS'
-          const {google} = require('googleapis');
-          const androidpublisher = google.androidpublisher('v3');
-
-          async function promoteToProduction() {
-            const auth = new google.auth.GoogleAuth({
-              credentials: JSON.parse(process.env.SERVICE_ACCOUNT_JSON),
-              scopes: ['https://www.googleapis.com/auth/androidpublisher'],
-            });
-
-            const authClient = await auth.getClient();
-            google.options({auth: authClient});
-
-            const packageName = 'com.invtracker.inv_tracker';
-            const rolloutPercentage = parseFloat(process.env.ROLLOUT_PERCENTAGE);
-            const updatePriority = parseInt(process.env.UPDATE_PRIORITY);
-
-            // Create new edit
-            const editRes = await androidpublisher.edits.insert({
-              packageName: packageName,
-            });
-            const editId = editRes.data.id;
-
-            try {
-              // Get latest version from alpha track
-              const tracksRes = await androidpublisher.edits.tracks.get({
-                packageName: packageName,
-                editId: editId,
-                track: 'alpha',
-              });
-
-              const alphaRelease = tracksRes.data.releases.find(r => r.status === 'completed');
-              if (!alphaRelease) {
-                throw new Error('No completed release found in alpha track');
-              }
-
-              console.log(`Promoting version codes: ${alphaRelease.versionCodes.join(', ')}`);
-
-              // Promote to production with staged rollout
-              await androidpublisher.edits.tracks.update({
-                packageName: packageName,
-                editId: editId,
-                track: 'production',
-                requestBody: {
-                  releases: [{
-                    versionCodes: alphaRelease.versionCodes,
-                    userFraction: rolloutPercentage / 100,
-                    status: 'inProgress',
-                    inAppUpdatePriority: updatePriority,
-                    releaseNotes: alphaRelease.releaseNotes,
-                  }],
-                },
-              });
-
-              // Commit the edit
-              await androidpublisher.edits.commit({
-                packageName: packageName,
-                editId: editId,
-              });
-
-              console.log(`✅ Successfully promoted to production at ${rolloutPercentage}% rollout`);
-              console.log(`Update priority: ${updatePriority}`);
-            } catch (error) {
-              // Delete failed edit
-              await androidpublisher.edits.delete({
-                packageName: packageName,
-                editId: editId,
-              });
-              throw error;
-            }
-          }
-
-          promoteToProduction().catch(error => {
-            console.error('❌ Promotion failed:', error.message);
-            process.exit(1);
-          });
-          EOFJS
-
-          node promote.js
-        env:
-          SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_CREDENTIALS }}
-          ROLLOUT_PERCENTAGE: ${{ github.event.inputs.rollout_percentage }}
-          UPDATE_PRIORITY: ${{ github.event.inputs.update_priority }}
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/android/promote-play@v1.0.0
+        with:
+          service-account-json: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+          package-name: 'com.invtracker.inv_tracker'
+          source-track: 'alpha'
+          target-track: 'production'
+          rollout-percentage: ${{ github.event.inputs.rollout_percentage }}
+          update-priority: ${{ github.event.inputs.update_priority }}
 
       - name: Slack Notification
         if: success() || failure()
-        uses: slackapi/slack-github-action@v1
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.0
         with:
-          payload: |
-            {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} InvTrack promoted to Production",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ job.status == 'success' && '✅ *Promoted to Production*' || '❌ *Promotion Failed*' }}\n*InvTrack* Alpha → Production\n*Rollout:* ${{ github.event.inputs.rollout_percentage }}%\n*Priority:* ${{ github.event.inputs.update_priority }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          app-name: 'InvTrack (Alpha -> Production)'
+          track: 'Production'
