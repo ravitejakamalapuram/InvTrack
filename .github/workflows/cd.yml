@@ -60,6 +60,7 @@ jobs:
   bump-and-deploy:
     name: Bump Version & Deploy to Play Store (Alpha)
     runs-on: self-hosted
+    timeout-minutes: 60
     if: |
       github.event_name == 'push' || 
       (github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'bump-and-deploy')
@@ -95,7 +96,7 @@ jobs:
       - name: Generate Changelog
         if: steps.check_skip.outputs.skip != 'true'
         id: changelog
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/changelog@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/changelog@v1.0.0
         with:
           output-file: 'CHANGELOG.md'
           format: 'markdown'
@@ -104,7 +105,7 @@ jobs:
       - name: Bump Flutter Version & Update Files
         if: steps.check_skip.outputs.skip != 'true'
         id: version
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/version-bump@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/version-bump@v1.0.0
         with:
           bump-type: 'auto'
           update-dart-file: 'lib/features/settings/presentation/screens/about_screen.dart'
@@ -113,7 +114,7 @@ jobs:
 
       - name: Flutter Setup
         if: steps.check_skip.outputs.skip != 'true'
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.0.0
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
@@ -125,7 +126,7 @@ jobs:
       - name: Build Android App Bundle
         if: steps.check_skip.outputs.skip != 'true'
         id: build
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@v1.0.0
         with:
           build-type: 'appbundle'
           build-mode: 'release'
@@ -138,7 +139,7 @@ jobs:
       - name: Track App Size
         if: steps.check_skip.outputs.skip != 'true'
         id: app_size
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/size-check@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/size-check@v1.0.0
         with:
           file-path: ${{ steps.build.outputs.artifact-path }}
           max-size-mb: '20'
@@ -157,13 +158,13 @@ jobs:
       - name: Commit Version Bump
         if: steps.check_skip.outputs.skip != 'true'
         run: |
-          git add pubspec.yaml lib/features/settings/presentation/screens/about_screen.dart fastlane/
+          git add pubspec.yaml lib/features/settings/presentation/screens/about_screen.dart CHANGELOG.md fastlane/
           git commit -m "chore(release): bump version to ${{ steps.version.outputs.new-version }}+${{ steps.version.outputs.new-build-number }} [skip-release]"
           git push origin main
 
       - name: Create GitHub Release
         if: steps.check_skip.outputs.skip != 'true'
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/create-release@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/create-release@v1.0.0
         with:
           tag-name: v${{ steps.version.outputs.new-version }}
           release-name: 'Release v${{ steps.version.outputs.new-version }}'
@@ -179,7 +180,7 @@ jobs:
 
       - name: Slack Notification
         if: steps.check_skip.outputs.skip != 'true' && (success() || failure())
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.0
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           status: ${{ job.status }}
@@ -192,6 +193,7 @@ jobs:
   deploy-tag:
     name: Deploy Specific Tag to Play Store (Alpha)
     runs-on: self-hosted
+    timeout-minutes: 60
     if: github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'deploy-tag'
 
     steps:
@@ -216,7 +218,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Flutter Setup
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.0.0
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
@@ -226,7 +228,7 @@ jobs:
 
       - name: Build Android App Bundle
         id: build
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/build-android@v1.0.0
         with:
           build-type: 'appbundle'
           build-mode: 'release'
@@ -238,7 +240,7 @@ jobs:
 
       - name: Track App Size
         id: app_size
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/size-check@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/size-check@v1.0.0
         with:
           file-path: ${{ steps.build.outputs.artifact-path }}
           max-size-mb: '20'
@@ -255,7 +257,7 @@ jobs:
 
       - name: Slack Notification
         if: success() || failure()
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.0
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           status: ${{ job.status }}
@@ -267,6 +269,7 @@ jobs:
   promote-production:
     name: Promote Alpha to Production
     runs-on: self-hosted
+    timeout-minutes: 30
     if: github.event_name == 'workflow_dispatch' && github.event.inputs && github.event.inputs.action == 'promote-production'
 
     steps:
@@ -274,7 +277,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Promote Release to Production
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/android/promote-play@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/android/promote-play@v1.0.0
         with:
           service-account-json: ${{ secrets.PLAY_STORE_CREDENTIALS }}
           package-name: 'com.invtracker.inv_tracker'
@@ -285,7 +288,7 @@ jobs:
 
       - name: Slack Notification
         if: success() || failure()
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@main
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.0
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           status: ${{ job.status }}
