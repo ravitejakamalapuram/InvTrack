@@ -6,6 +6,21 @@
   _No new features_
 
 ## 🐛 Bug Fixes
+- fix: update shared workflow pinning to v1.0.2 (438111f33) by Raviteja Kamalapuram
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+  _No other changes_
+
+
+## [2026-05-27]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
 - fix: pin shared actions to v1.0.1 and use direct Slack webhook (6f1d48df4c) by Raviteja Kamalapuram
 
 ## 📝 Documentation
