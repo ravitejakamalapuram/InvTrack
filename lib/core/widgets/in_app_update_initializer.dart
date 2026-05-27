@@ -132,19 +132,21 @@ class _InAppUpdateInitializerState
     if (!mounted) return;
 
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    if (l10n == null) {
+      LoggerService.warn('AppLocalizations not found in context for install dialog');
+      return;
+    }
 
     showDialog(
       context: context,
       barrierDismissible: false, // User must choose
       builder: (dialogContext) => AlertDialog(
-        title: Text(l10n?.inAppUpdateInstallTitle ?? 'Update Ready'),
-        content: Text(
-          l10n?.inAppUpdateInstallMessage ?? 'Update has been downloaded. Restart the app to install?',
-        ),
+        title: Text(l10n.inAppUpdateInstallTitle),
+        content: Text(l10n.inAppUpdateInstallMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n?.later ?? 'Later'),
+            child: Text(l10n.later),
           ),
           FilledButton(
             onPressed: () async {
@@ -152,7 +154,7 @@ class _InAppUpdateInitializerState
               await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
               // App will restart
             },
-            child: Text(l10n?.inAppUpdateInstallButton ?? 'Restart'),
+            child: Text(l10n.inAppUpdateInstallButton),
           ),
         ],
       ),
