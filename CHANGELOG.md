@@ -1,5 +1,20 @@
 # Changelog
 
+## [2026-05-28]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+- fix(in-app-update): resolve Firebase Crashlytics crashes and user denial warnings (d80fd0fd90) by raviteja kamalapuram
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+  _No other changes_
+
+
 ## [2026-05-27]
 
 ## 🚀 Features
