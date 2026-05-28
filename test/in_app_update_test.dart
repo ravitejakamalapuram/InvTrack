@@ -14,7 +14,7 @@ class MockUpdateService extends InAppUpdateService {
       immediateUpdateAllowed: false,
       flexibleUpdateAllowed: true,
       availableVersionCode: 2,
-      installStatus: InstallStatus.downloaded,
+      installStatus: InstallStatus.unknown,
       packageName: 'com.example',
       clientVersionStalenessDays: 1,
       updatePriority: 1,

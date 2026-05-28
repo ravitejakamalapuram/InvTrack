@@ -3161,6 +3161,21 @@
     "description": "Message for critical/mandatory updates"
   },
 
+  "inAppUpdateInstallTitle": "Update Ready",
+  "@inAppUpdateInstallTitle": {
+    "description": "Title for in-app update install dialog"
+  },
+
+  "inAppUpdateInstallMessage": "Update has been downloaded. Restart the app to install?",
+  "@inAppUpdateInstallMessage": {
+    "description": "Message for in-app update install dialog"
+  },
+
+  "inAppUpdateInstallButton": "Restart",
+  "@inAppUpdateInstallButton": {
+    "description": "Button text to restart and install update"
+  },
+
   "never": "Never",
   "@never": {
     "description": "Text indicating something has never occurred"

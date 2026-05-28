@@ -129,7 +129,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       // Check for updates via Google Play
       await ref.read(inAppUpdateProvider.notifier).checkForUpdate();
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       final state = ref.read(inAppUpdateProvider);
 
@@ -139,7 +139,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         _showUpdateOptionsDialog(context, state);
       } else if (state.error != null) {
         // Error case - update check failed
-        if (mounted) {
+        if (context.mounted) {
           ErrorHandler.handle(
             Exception('Failed to check for updates: ${state.error}'),
             StackTrace.current,
@@ -174,7 +174,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.updateAvailable),
         content: Text(
           state.isHighPriority
@@ -184,12 +184,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         actions: [
           if (!state.isHighPriority)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(l10n.later),
             ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
 
               if (state.isHighPriority && state.immediateUpdateAllowed) {
                 // Critical update: immediate (blocking)
@@ -198,7 +198,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 // Non-critical: flexible (background)
                 await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
-                if (mounted) {
+                if (context.mounted) {
                   // Check if update started successfully
                   final updatedState = ref.read(inAppUpdateProvider);
                   if (updatedState.error == null) {
