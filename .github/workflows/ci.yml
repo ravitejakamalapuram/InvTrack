@@ -67,9 +67,11 @@ jobs:
 
       - name: Notify Slack of Failure
         if: failure()
+        continue-on-error: true
         uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.2
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           status: ${{ job.status }}
           app-name: 'InvTrack (PR Checks)'
+
 

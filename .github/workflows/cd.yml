@@ -180,6 +180,7 @@ jobs:
 
       - name: Slack Notification
         if: steps.check_skip.outputs.skip != 'true' && (success() || failure())
+        continue-on-error: true
         uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.2
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -257,6 +258,7 @@ jobs:
 
       - name: Slack Notification
         if: success() || failure()
+        continue-on-error: true
         uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.2
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -288,6 +290,7 @@ jobs:
 
       - name: Slack Notification
         if: success() || failure()
+        continue-on-error: true
         uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.0.2
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
