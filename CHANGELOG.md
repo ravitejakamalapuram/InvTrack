@@ -6,6 +6,23 @@
   _No new features_
 
 ## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- chore: sync version with Google Play Store (3.70.4+256) (959991651) by Raviteja Kamalapuram
+- ci/cd: make Slack notifications non-blocking with continue-on-error (de74ff0e8) by Raviteja Kamalapuram
+- ci: add dry-run build step and slack notifications on failure (323cf0269) by Raviteja Kamalapuram
+
+
+## [2026-05-28]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
 - fix(in-app-update): resolve Firebase Crashlytics crashes and user denial warnings (d80fd0fd90) by raviteja kamalapuram
 
 ## 📝 Documentation
