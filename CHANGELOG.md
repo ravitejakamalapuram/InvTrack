@@ -12,6 +12,21 @@
   _No documentation changes_
 
 ## 🔧 Other Changes
+- ci/cd: align reusable composite actions reference version to v1.1.8 (80bf50ece) by Raviteja Kamalapuram
+
+
+## [2026-05-30]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
 - ci: upgrade shared composite actions to v1.1.4 (#468) (2c0852f62) by raviteja kamalapuram
 
 
