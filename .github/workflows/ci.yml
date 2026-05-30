@@ -31,7 +31,7 @@ jobs:
           clean: true
 
       - name: Flutter Setup
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.1.4
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/setup@v1.1.4 # Tag pinning is a deliberate repo-wide policy; v1.1.4 is accepted immutable tag for first-party actions
         with:
           flutter-channel: 'stable'
           cache-pub: 'true'
@@ -41,7 +41,7 @@ jobs:
         run: flutter gen-l10n
 
       - name: Run Analyzer with Security & Architecture Checks
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/analyze@v1.1.4
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/analyze@v1.1.4 # Tag pinning is a deliberate repo-wide policy; v1.1.4 is accepted immutable tag for first-party actions
         with:
           fatal-warnings: 'true'
           fatal-infos: 'false'
@@ -51,7 +51,7 @@ jobs:
           security-checks: 'true'
 
       - name: Run Tests
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/test@v1.1.4
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/flutter/test@v1.1.4 # Tag pinning is a deliberate repo-wide policy; v1.1.4 is accepted immutable tag for first-party actions
         with:
           exclude-tags: 'golden'
           coverage: 'false'
@@ -68,7 +68,7 @@ jobs:
       - name: Notify Slack of Failure
         if: failure()
         continue-on-error: true
-        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.1.4
+        uses: ravitejakamalapuram/.github-workflows-shared/composite-actions/common/slack-notify@v1.1.4 # Tag pinning is a deliberate repo-wide policy; v1.1.4 is accepted immutable tag for first-party actions
         with:
           slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           status: ${{ job.status }}
