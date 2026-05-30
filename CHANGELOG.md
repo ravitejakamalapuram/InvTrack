@@ -12,6 +12,21 @@
   _No documentation changes_
 
 ## 🔧 Other Changes
+- ci/cd: upgrade shared workflows to v1.1.9 to resolve build-path bug (b6ca3a7979) by Raviteja Kamalapuram
+
+
+## [2026-05-30]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
 - ci/cd: align reusable composite actions reference version to v1.1.8 (80bf50ece) by Raviteja Kamalapuram
 
 
