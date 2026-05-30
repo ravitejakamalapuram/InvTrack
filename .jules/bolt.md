@@ -91,3 +91,7 @@
 ## 2026-05-15 - Replace O(N log N) sorting with O(N) linear scan for extremum finding
 **Learning:** Using `array.sort()` followed by accessing `.first` or `.last` just to find the maximum or minimum element in a list (such as the most recent date) is an anti-pattern. It incurs an unnecessary O(N log N) time complexity and array mutation overhead.
 **Action:** Replace `.sort()` followed by extremum access with a simple O(N) linear scan using a `for` loop. This avoids sorting the entire array and finds the minimum or maximum element efficiently in a single pass.
+
+## 2024-05-30 - Single Pass Optimization in Monthly Income Report
+**Learning:** Consolidating sequential `.where().toList()` filters and aggregations into a single loop over `allCashFlows` prevents redundant iterations and avoids intermediate array allocations, saving memory and processor time.
+**Action:** Always refactor sequential `.where()` and list operations over the same dataset into a single pass loop.
