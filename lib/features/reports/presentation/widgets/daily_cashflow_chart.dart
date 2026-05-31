@@ -39,10 +39,10 @@ class DailyCashFlowChart extends ConsumerWidget {
           child: Text(
             'No cashflows this week',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isDark
-                      ? AppColors.neutral400Dark
-                      : AppColors.neutral500Light,
-                ),
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
+            ),
           ),
         ),
       );
@@ -89,10 +89,10 @@ class DailyCashFlowChart extends ConsumerWidget {
                     child: Text(
                       getDayName(data.date),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light,
-                          ),
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
+                      ),
                     ),
                   );
                 },
@@ -142,9 +142,7 @@ class DailyCashFlowChart extends ConsumerWidget {
             toY: amount,
             color: isPositive ? Colors.green : Colors.red,
             width: 16,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(4),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
       );
@@ -153,15 +151,27 @@ class DailyCashFlowChart extends ConsumerWidget {
 
   double _getMaxY() {
     if (dailyCashFlows.isEmpty) return 100;
-    final nets = dailyCashFlows.map((d) => d.net).toList();
-    final maxValue = nets.reduce((a, b) => a > b ? a : b);
+    // Optimization: Replace .map().toList().reduce() with a standard loop to avoid multiple passes and list allocations
+    double maxValue = dailyCashFlows.first.net;
+    for (int i = 1; i < dailyCashFlows.length; i++) {
+      final net = dailyCashFlows[i].net;
+      if (net > maxValue) {
+        maxValue = net;
+      }
+    }
     return maxValue > 0 ? maxValue * 1.2 : 100;
   }
 
   double _getMinY() {
     if (dailyCashFlows.isEmpty) return 0;
-    final nets = dailyCashFlows.map((d) => d.net).toList();
-    final minValue = nets.reduce((a, b) => a < b ? a : b);
+    // Optimization: Replace .map().toList().reduce() with a standard loop to avoid multiple passes and list allocations
+    double minValue = dailyCashFlows.first.net;
+    for (int i = 1; i < dailyCashFlows.length; i++) {
+      final net = dailyCashFlows[i].net;
+      if (net < minValue) {
+        minValue = net;
+      }
+    }
     return minValue < 0 ? minValue * 1.2 : 0;
   }
 
