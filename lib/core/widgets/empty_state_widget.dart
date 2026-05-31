@@ -49,37 +49,56 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon with optional gradient background
-            if (iconBackgroundGradient != null)
-              Container(
-                padding: EdgeInsets.all(compact ? 16 : 24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: iconBackgroundGradient!),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: iconSize, color: effectiveIconColor),
-              )
-            else
-              Icon(icon, size: iconSize, color: effectiveIconColor),
-            SizedBox(height: spacing),
-            Text(
-              title,
-              style: (compact ? AppTypography.body : AppTypography.h3).copyWith(
-                color: isDark ? Colors.white : AppColors.neutral900Light,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: compact ? 4 : 8),
-            Text(
-              message,
-              style: (compact ? AppTypography.caption : AppTypography.body)
-                  .copyWith(
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral500Light,
+            Semantics(
+              label: '$title. $message',
+              excludeSemantics: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon with optional gradient background
+                  if (iconBackgroundGradient != null)
+                    Container(
+                      padding: EdgeInsets.all(compact ? 16 : 24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: iconBackgroundGradient!,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        size: iconSize,
+                        color: effectiveIconColor,
+                      ),
+                    )
+                  else
+                    Icon(icon, size: iconSize, color: effectiveIconColor),
+                  SizedBox(height: spacing),
+                  Text(
+                    title,
+                    style: (compact ? AppTypography.body : AppTypography.h3)
+                        .copyWith(
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
-              textAlign: TextAlign.center,
+                  SizedBox(height: compact ? 4 : 8),
+                  Text(
+                    message,
+                    style:
+                        (compact ? AppTypography.caption : AppTypography.body)
+                            .copyWith(
+                              color: isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light,
+                            ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
             if (actionLabel != null && onAction != null) ...[
               SizedBox(height: spacing),

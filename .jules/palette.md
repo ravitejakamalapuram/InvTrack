@@ -3,3 +3,9 @@
 **Learning:** The GlassCard widget already supports `semanticLabel` and `onLongPress` and wraps its contents properly in a `Semantics` and `InkWell`. Wrapping it in an additional `GestureDetector` causes redundant accessibility layers, confusing targets for screen readers, and prevents the default ink splash from happening since it overrides `onTap`.
 
 **Action:** Use GlassCard built-in parameters instead of custom `GestureDetectors` wrapper.
+
+## 2024-05-22 - Improved Empty State Accessibility
+
+**Learning:** When building Empty States that combine static text (titles, messages) with decorative icons, screen readers often read them as disjointed elements. Additionally, wrapping the entire `EmptyStateWidget` (including its action button) in a single `Semantics` widget with `excludeSemantics: true` causes the interactive button to be removed from the accessibility tree, making it undiscoverable by screen readers.
+
+**Action:** Wrap only the static content (Icon, Title, Message) in a `Semantics` widget using `excludeSemantics: true` with a combined label. Ensure any interactive elements like buttons are placed *outside* this wrapper so they remain discoverable and actionable.
