@@ -1,5 +1,607 @@
 # Changelog
 
+## [2026-05-30]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- ci/cd: upgrade shared workflows to v1.1.9 to resolve build-path bug (b6ca3a7979) by Raviteja Kamalapuram
+
+
+## [2026-05-30]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- ci/cd: align reusable composite actions reference version to v1.1.8 (80bf50ece) by Raviteja Kamalapuram
+
+
+## [2026-05-30]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- ci: upgrade shared composite actions to v1.1.4 (#468) (2c0852f62) by raviteja kamalapuram
+
+
+## [2026-05-28]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- chore: sync version with Google Play Store (3.70.4+256) (959991651) by Raviteja Kamalapuram
+- ci/cd: make Slack notifications non-blocking with continue-on-error (de74ff0e8) by Raviteja Kamalapuram
+- ci: add dry-run build step and slack notifications on failure (323cf0269) by Raviteja Kamalapuram
+
+
+## [2026-05-28]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+- fix(in-app-update): resolve Firebase Crashlytics crashes and user denial warnings (d80fd0fd90) by raviteja kamalapuram
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+  _No other changes_
+
+
+## [2026-05-27]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+- fix: update shared workflow pinning to v1.0.2 (438111f33) by Raviteja Kamalapuram
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+  _No other changes_
+
+
+## [2026-05-27]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+- fix: pin shared actions to v1.0.1 and use direct Slack webhook (6f1d48df4c) by Raviteja Kamalapuram
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+  _No other changes_
+
+
+## [2026-05-27]
+
+## 🚀 Features
+  _No new features_
+
+## 🐛 Bug Fixes
+  _No bug fixes_
+
+## 📝 Documentation
+  _No documentation changes_
+
+## 🔧 Other Changes
+- Merge pull request #459 from ravitejakamalapuram/feature/complete-workflows-migration (fa6a6e203d) by raviteja kamalapuram
+- chore: address PR review feedback (9c02ccd702) by Raviteja Kamalapuram
+- refactor: simplify CD workflow using shared composite actions (056347e944) by Raviteja Kamalapuram
+
+
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+- Use pre-installed Flutter and remove caching from CI on self-hosted runner
+
+## [3.68.1] - 2026-05-26
+
+### Fix
+
+- Prevent Crashlytics spam on user denying in-app update (#446)
+
+### ⚡ Performance
+
+- Replace O(N log N) sorting with O(N) linear scan for extremum finding (#442)
+
+### 🐛 Bug Fixes
+
+- Allow CI workflow to run on manual workflow_dispatch
+- Replace remaining step-level github.event.inputs references with inputs
+- Guard head_commit message retrieval in cd.yml check_skip step
+- Update concurrency and step expressions to prevent null pointer evaluation in GitHub Actions
+- Guard github.event.inputs in cd.yml job-level if conditions
+- Restore github.event.inputs context for CD job-level compatibility
+- Make rollout_percentage and update_priority choice inputs required
+- Update workflow conditions to prevent null dereferencing and standardize inputs syntax
+- Prevent crash when AppLocalizations is null during in-app update initialization (#447)
+- Gracefully handle in-app update platform exceptions (#448)
+- **crash-fix**: Fail-fast on getOpenPRs error in create-jules-sessions
+
+### 🔧 Miscellaneous
+
+- Add workflow_dispatch to ci.yml
+- Update CI runner to self-hosted
+- Resolve crash 84c125f02489d6eb7e561feb3f5f1d55 as already fixed (#451)
+- Consolidate workflows into unified ci.yml and cd.yml, remove Firestore update steps
+- Remove check-playstore-approval and init-firestore-version workflows
+- Bypass Jules API key validation in dry-run mode and update gitignore
+- Remove Jules crash fix GitHub Actions workflow and migrate to local/scheduled runner
+- **crash-fix**: Increase MAX_WAIT_MINUTES to 60 for jules monitoring
+
+## [3.68.0] - 2026-05-26
+
+### ✨ Features
+
+- **crash-fix**: Enforce fail-fast policies in fetch, create, and monitor scripts
+
+## [3.67.0] - 2026-05-26
+
+### Debug
+
+- **crash-fix**: Log client email from service account
+- **crash-fix**: Log project ID from service account credentials
+
+### ✨ Features
+
+- **crash-fix**: Change default min_affected_users to 1 and error types to all
+- **crash-fix**: Pass and prioritize FIREBASE_TOKEN to resolve service account 404 bug
+- **crash-fix**: Implement smart deduplication, dry-run, fatality filtering, and console notes for auto crash-fix pipeline
+
+### 🐛 Bug Fixes
+
+- **crash-fix**: Remove non-existent labels from gh issue create
+- **crash-fix**: Update OAuth client ID and secret to official firebase-tools credentials
+- **crash-fix**: Sanitize quotes from FIREBASE_APP_ID
+- **crash-fix**: Trim FIREBASE_APP_ID to handle trailing newlines and whitespace safely
+
+## [3.66.4] - 2026-05-24
+
+### 🐛 Bug Fixes
+
+- Add owner/date/issue to TODO comments (Rule 2.7 compliance)
+
+## [3.66.2] - 2026-05-24
+
+### 🐛 Bug Fixes
+
+- Add AdMob Application ID to fix Play Store rejection
+
+## [3.66.1] - 2026-05-24
+
+### 🐛 Bug Fixes
+
+- Restore self-hosted runner for CD Deploy to fix keystore access
+
+## [3.66.0] - 2026-05-24
+
+### ✨ Features
+
+- Enhance Income Guardian dashboard card UI and add feature flag development rule (#435)
+
+## [3.65.0] - 2026-05-24
+
+### ✨ Features
+
+- Migrate to Google Play In-App Updates SDK (#436)
+
+## [3.64.0] - 2026-05-24
+
+### ✨ Features
+
+- **income-projection**: Add Advanced Income Features Phase 1 - ML predictions & trend analysis (#407)
+
+### 🐛 Bug Fixes
+
+- Handle null callback on GoalCard long press safely (#423)
+- Install google-auth-library locally instead of globally
+- Use Google Auth Library instead of gcloud for OAuth2 tokens
+- Skip Firebase CLI reinstall if already present on self-hosted runner
+- Switch Jules AI to self-hosted runner with service account auth
+- Switch CD Deploy to GitHub-hosted macOS runners
+
+## [3.63.8] - 2026-05-23
+
+### 🐛 Bug Fixes
+
+- Use correct Crashlytics API endpoint and remove test data fallback
+
+## [3.63.7] - 2026-05-23
+
+### 📚 Documentation
+
+- Add enterprise engineering review report (#412)
+
+## [3.63.6] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Update Jules schedule to hourly and fix summary script backtick escaping
+
+## [3.9.2] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Remove cache operations entirely for self-hosted runners
+
+## [3.9.1] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Prevent CD timeout by using cache restore-only
+
+## [3.63.3] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Improve Jules automation error handling and summary creation
+
+## [3.63.2] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Switch CI to GitHub-hosted runners with Flutter setup
+
+### 🧪 Testing
+
+- Trigger CI after runner restart
+
+## [3.63.1] - 2026-05-22
+
+### 🐛 Bug Fixes
+
+- Use console.error for logs to keep JSON output clean
+
+## [3.63.0] - 2026-05-21
+
+### ✨ Features
+
+- Add Jules AI automated crash fix integration
+
+### 🐛 Bug Fixes
+
+- Update Jules automation to run every 2 hours and fix Crashlytics API
+
+## [3.62.6] - 2026-05-21
+
+### 🐛 Bug Fixes
+
+- Address 14 Crashlytics issues (235 events affecting 76+ users)
+
+## [3.62.5] - 2026-05-21
+
+### 🐛 Bug Fixes
+
+- Prevent CD deploy cancellation loop [skip-release]
+
+## [3.62.4] - 2026-05-20
+
+### 🐛 Bug Fixes
+
+- Make cache operations non-blocking in CD Deploy workflow
+
+## [3.62.3] - 2026-05-20
+
+### 🧪 Testing
+
+- Trigger CI workflow verification
+
+## [3.62.2] - 2026-05-20
+
+### 🧪 Testing
+
+- Verify CI/CD cache invalidation fixes
+
+## [3.62.1] - 2026-05-20
+
+### 🐛 Bug Fixes
+
+- Add cache invalidation to CI/CD workflows
+
+## [3.62.0] - 2026-05-19
+
+### ✨ Features
+
+- Implement Two-Track Version System for Beta/Production Separation (#399)
+
+## [3.61.3] - 2026-05-17
+
+### ⚡ Performance
+
+- Add Gradle and Flutter package caching to CI/CD workflows
+
+## [3.61.2] - 2026-05-17
+
+### 🐛 Bug Fixes
+
+- Update cash_flow_card_widget tests to use SharedPreferences override
+
+## [3.61.1] - 2026-05-17
+
+### 🐛 Bug Fixes
+
+- Complete localization and privacy protection coverage
+
+### 📚 Documentation
+
+- Update crashlytics documentation for manual monitoring
+
+### 🔧 Miscellaneous
+
+- Remove crashlytics-monitor workflow and script
+- Major Package Upgrades (v3.62.0) - 100 Dependencies Upgraded (#391)
+
+## [3.61.0] - 2026-05-14
+
+### ✨ Features
+
+- Complete Reports screen redesign with Smart Insights and DIY Report Builder
+
+### 🐛 Bug Fixes
+
+- Remove hardcoded currency symbols and strings from SmartInsightsService
+- Remove unnecessary underscores in error handlers
+- Render KPI cards properly in DynamicReportScreen instead of raw toString() debug data
+
+## [3.60.4] - 2026-05-10
+
+### 🐛 Bug Fixes
+
+- Replace deprecated hasFlag() with ignore comments
+
+## [3.60.3] - 2026-05-10
+
+### 🐛 Bug Fixes
+
+- Resolve semantics issues in glass_card tests
+
+### 🔧 Miscellaneous
+
+- Remove test artifacts from version control (Rule 10.4)
+
+## [3.60.1] - 2026-05-10
+
+### 🐛 Bug Fixes
+
+- Resolve goal notification spam, crashlytics UX, and version popup issues
+
+## [3.60.0] - 2026-05-08
+
+### ✨ Features
+
+- Enhanced Slack notifications with visual hierarchy
+
+## [3.59.6] - 2026-05-08
+
+### 🐛 Bug Fixes
+
+- Use correct SLACK_WEBHOOK_URL secret name
+
+## [3.59.5] - 2026-05-08
+
+### 🐛 Bug Fixes
+
+- Use correct FIREBASE_CREDENTIALS secret name
+
+## [3.59.4] - 2026-05-08
+
+### 🐛 Bug Fixes
+
+- Make Firestore update optional with proper credentials
+
+## [3.59.3] - 2026-05-08
+
+### 🐛 Bug Fixes
+
+- Replace fastlane with Google Play API for promotion
+
+## [3.59.2] - 2026-05-08
+
+### 🐛 Bug Fixes
+
+- Remove Ruby setup step and make Slack notifications optional
+
+## [3.59.1] - 2026-05-08
+
+### 🐛 Bug Fixes
+
+- Use fastlane for alpha to production promotion
+
+## [3.59.0] - 2026-05-08
+
+### ✨ Features
+
+- Add GitHub Action to promote alpha to production
+
+## [3.58.15] - 2026-05-07
+
+### 🐛 Bug Fixes
+
+- Use GoRouter navigation for notification deep links (#379)
+
+## [3.58.12] - 2026-05-07
+
+### ♻️ Refactoring
+
+- **reports**: Dynamic Report Builder - Replace 8 static screens (#377)
+
+## [3.58.11] - 2026-05-05
+
+### 🐛 Bug Fixes
+
+- Priority bug fixes and quality improvements (#375)
+- Update _MockCurrencyConversionService to Fake with correct method signatures
+- Add pumpAndSettle() to transaction_fab_test for proper localization loading
+
+### 🔧 Miscellaneous
+
+- Update pubspec.lock after running tests
+
+## [3.58.9] - 2026-05-04
+
+### 🐛 Bug Fixes
+
+- Prevent critical Crashlytics crashes with defensive coding patterns (#374)
+
+## [3.58.7] - 2026-05-04
+
+### 📚 Documentation
+
+- Update REPORTS_FEATURE_TODO - Privacy mode export already implemented
+
+## [3.58.6] - 2026-05-02
+
+### 🐛 Bug Fixes
+
+- Complete localization for Reports feature
+
+## [3.58.5] - 2026-05-02
+
+### 🐛 Bug Fixes
+
+- Add AdMob Application ID to prevent Android startup crash
+
+## [3.58.4] - 2026-05-02
+
+### 🐛 Bug Fixes
+
+- Currency conversion auth crash - Watch authStateProvider (#366)
+
+## [3.58.3] - 2026-05-02
+
+### 🐛 Bug Fixes
+
+- Critical startup crash - Disable AdMob auto-initialization + Update golden tests (#365)
+
+## [3.58.2] - 2026-05-01
+
+### 🐛 Bug Fixes
+
+- Resolve 3 critical Crashlytics issues and localization errors
+
+## [3.58.0] - 2026-05-01
+
+### ✨ Features
+
+- **reports**: Add localization and privacy mode compliance (#362)
+
+## [3.57.0] - 2026-04-29
+
+### ✨ Features
+
+- Implement Reports Feature - Complete (Phases 1-5) (#358)
+
+## [3.56.11] - 2026-04-29
+
+### 🐛 Bug Fixes
+
+- Add serverClientId for Google Sign-In on Android (#357)
+
+## [3.56.10] - 2026-04-27
+
+### 🐛 Bug Fixes
+
+- Resolve Crashlytics type mismatch in HealthScoreRepository timeout handling (#356)
+
+## [3.56.9] - 2026-04-25
+
+### 🐛 Bug Fixes
+
+- Remove unnecessary getter/setter for enableInDebugMode
+
+## [3.56.8] - 2026-04-25
+
+### 🐛 Bug Fixes
+
+- Comprehensive Crashlytics improvements with async error handling (#349)
+
+## [3.56.7] - 2026-04-25
+
+### ⚡ Performance
+
+- Optimize CSV injection regex for hot-path performance (#355)
+
+## [3.56.5] - 2026-04-25
+
+### 🐛 Bug Fixes
+
+- Improve version check initialization with retry mechanism (#350)
+
+## [3.56.4] - 2026-04-23
+
+### 📚 Documentation
+
+- Add comprehensive TODO.md for features and bugs
+
+## [3.56.2] - 2026-04-21
+
+### 🐛 Bug Fixes
+
+- Critical null-safety crash prevention
+
+## [3.56.1] - 2026-04-19
+
+### 🐛 Bug Fixes
+
+- Migrate ad provider to Riverpod 3.x and fix theme API
+
+### 📚 Documentation
+
+- Add comprehensive summary of all PR analyzer error fixes
+- Add comprehensive final review for completed sprint
+
+## [3.56.0] - 2026-04-18
+
+### ✨ Features
+
+- Add complete ad integration infrastructure (Phase 1 of 5)
+
+### 📚 Documentation
+
+- Archive PR #322 marathon session documentation
+
+## [3.55.3] - 2026-04-15
+
+### 🐛 Bug Fixes
+
+- **analytics**: Replace exact monthly_expenses with privacy-safe range (Rule 9) (#317)
+
 ## [3.55.0] - 2026-04-12
 
 ### ✨ Features
