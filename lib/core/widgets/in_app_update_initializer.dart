@@ -97,6 +97,7 @@ class _InAppUpdateInitializerState
               Navigator.of(dialogCtx).pop();
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
+              if (!mounted) return;
               final checkContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
               if (checkContext == null || !checkContext.mounted) return;
 
