@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Initializes in-app update check on app start
@@ -68,37 +69,43 @@ class _InAppUpdateInitializerState
   }
 
   void _showFlexibleUpdateDialog() {
-    if (!mounted) return;
+    final dialogContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
+    if (dialogContext == null || !dialogContext.mounted) {
+      LoggerService.warn('Cannot show flexible update dialog: navigator context is null or unmounted');
+      return;
+    }
 
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final l10n = Localizations.of<AppLocalizations>(dialogContext, AppLocalizations);
 
     if (l10n == null) {
       LoggerService.warn('AppLocalizations not found in context for InAppUpdateInitializer');
     }
 
     showDialog(
-      context: context,
+      context: dialogContext,
       barrierDismissible: true,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text(l10n?.updateAvailable ?? 'Update Available'),
         content: Text(l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
+            onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(l10n?.later ?? 'Later'),
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(dialogContext).pop();
+              Navigator.of(dialogCtx).pop();
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
               if (!mounted) return;
+              final checkContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
+              if (checkContext == null || !checkContext.mounted) return;
 
               // Check if update started successfully
               final state = ref.read(inAppUpdateProvider);
               if (state.error == null) {
                 // Show snackbar about background download only on success
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(checkContext).showSnackBar(
                   SnackBar(
                     content: Text(l10n?.downloadingUpdateBackground ?? 'Downloading update in background...'),
                     duration: const Duration(seconds: 3),
@@ -129,28 +136,32 @@ class _InAppUpdateInitializerState
   }
 
   void _showInstallDialog() {
-    if (!mounted) return;
+    final dialogContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
+    if (dialogContext == null || !dialogContext.mounted) {
+      LoggerService.warn('Cannot show install dialog: navigator context is null or unmounted');
+      return;
+    }
 
-    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final l10n = Localizations.of<AppLocalizations>(dialogContext, AppLocalizations);
     if (l10n == null) {
       LoggerService.warn('AppLocalizations not found in context for install dialog');
       return;
     }
 
     showDialog(
-      context: context,
+      context: dialogContext,
       barrierDismissible: false, // User must choose
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text(l10n.inAppUpdateInstallTitle),
         content: Text(l10n.inAppUpdateInstallMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
+            onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(l10n.later),
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(dialogContext).pop();
+              Navigator.of(dialogCtx).pop();
               await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
               // App will restart
             },

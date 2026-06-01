@@ -310,15 +310,28 @@ class NotificationService with NotificationPreferencesMixin {
   Future<void> _configureLocalTimeZone() async {
     try {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-      final timeZoneName = timezoneInfo.identifier;
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-      LoggerService.debug(
-        'Local timezone set',
-        metadata: {'timezone': timeZoneName},
-      );
+      var timeZoneName = timezoneInfo.identifier;
+
+      // Handle legacy timezone name alias
+      if (timeZoneName == 'Asia/Calcutta') {
+        timeZoneName = 'Asia/Kolkata';
+      }
+
+      if (tz.timeZoneDatabase.locations.containsKey(timeZoneName)) {
+        tz.setLocalLocation(tz.timeZoneDatabase.locations[timeZoneName]!);
+        LoggerService.debug(
+          'Local timezone set',
+          metadata: {'timezone': timeZoneName},
+        );
+      } else {
+        LoggerService.info(
+          'Timezone not found in database, using UTC fallback',
+          metadata: {'requestedTimezone': timeZoneName},
+        );
+      }
     } catch (e) {
-      // Fallback to UTC if we can't get the local timezone
-      LoggerService.warn('Failed to get local timezone, using UTC', error: e);
+      // Fallback to UTC if we can't get the local timezone. Use info log level to avoid polluting Crashlytics.
+      LoggerService.info('Failed to configure local timezone, using UTC fallback: $e');
       // tz.local defaults to UTC, which is fine as a fallback
     }
   }
