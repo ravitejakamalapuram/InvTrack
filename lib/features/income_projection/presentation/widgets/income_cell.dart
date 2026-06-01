@@ -41,10 +41,14 @@ class IncomeCell extends ConsumerWidget {
           color: isDark ? AppColors.neutral900Dark : Colors.white,
           border: Border(
             bottom: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
             right: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+              color: isDark
+                  ? AppColors.neutral700Dark
+                  : AppColors.neutral200Light,
             ),
           ),
         ),
@@ -55,68 +59,70 @@ class IncomeCell extends ConsumerWidget {
     final statusColor = _getStatusColor(status);
     final statusIcon = _getStatusIcon(status);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 100,
-        height: 80,
-        padding: EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: statusColor.withValues(alpha: 0.1),
-          border: Border(
-            bottom: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-            ),
-            right: BorderSide(
-              color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
-            ),
-            left: BorderSide(
-              color: statusColor,
-              width: 3,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Ink(
+          width: 100,
+          height: 80,
+          padding: EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.1),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
+              ),
+              right: BorderSide(
+                color: isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light,
+              ),
+              left: BorderSide(color: statusColor, width: 3),
             ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  statusIcon,
-                  size: 16,
-                  color: statusColor,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: PrivacyProtectionWrapper(
-                    child: Text(
-                      formatCompactCurrency(
-                        expected!.expectedAmount,
-                        symbol: currencySymbol,
-                        locale: locale,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.small.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Icon(statusIcon, size: 16, color: statusColor),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: PrivacyProtectionWrapper(
+                      child: Text(
+                        formatCompactCurrency(
+                          expected!.expectedAmount,
+                          symbol: currencySymbol,
+                          locale: locale,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.small.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getStatusDisplayName(context, status),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.caption.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral600Light,
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                _getStatusDisplayName(context, status),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.caption.copyWith(
+                  color: isDark
+                      ? AppColors.neutral400Dark
+                      : AppColors.neutral600Light,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -158,7 +164,10 @@ class IncomeCell extends ConsumerWidget {
 }
 
 /// Helper to get localized display names for status
-String _getStatusDisplayName(BuildContext context, ExpectedCashFlowStatus status) {
+String _getStatusDisplayName(
+  BuildContext context,
+  ExpectedCashFlowStatus status,
+) {
   final l10n = AppLocalizations.of(context);
   switch (status) {
     case ExpectedCashFlowStatus.upcoming:
