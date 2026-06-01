@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/services/in_app_update_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+
 
 /// Provider for InAppUpdateService
 final inAppUpdateServiceProvider = Provider<InAppUpdateService>((ref) {
@@ -145,7 +147,12 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         isDownloaded: installStatus == InstallStatus.downloaded,
       );
     } catch (e, st) {
-      LoggerService.error('Update check failed', error: e, stackTrace: st);
+      final exception = UpdateException.fromPlatformException(e, st);
+      if (exception.shouldReport) {
+        LoggerService.error('Update check failed', error: exception, stackTrace: st);
+      } else {
+        LoggerService.info('Update check failed (environmental): $e');
+      }
       state = state.copyWith(
         updateInfo: null,  // Clear stale update info
         isChecking: false,
@@ -174,7 +181,12 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         state = state.copyWith(error: 'Update installation failed. Please try again.');
       }
     } catch (e, st) {
-      LoggerService.error('Immediate update error', error: e, stackTrace: st);
+      final exception = UpdateException.fromPlatformException(e, st);
+      if (exception.shouldReport) {
+        LoggerService.error('Immediate update error', error: exception, stackTrace: st);
+      } else {
+        LoggerService.info('Immediate update error (environmental): $e');
+      }
       state = state.copyWith(error: 'Failed to start update. Please try again later.');
     }
   }
@@ -211,7 +223,12 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
         );
       }
     } catch (e, st) {
-      LoggerService.error('Flexible update error', error: e, stackTrace: st);
+      final exception = UpdateException.fromPlatformException(e, st);
+      if (exception.shouldReport) {
+        LoggerService.error('Flexible update error', error: exception, stackTrace: st);
+      } else {
+        LoggerService.info('Flexible update error (environmental): $e');
+      }
       state = state.copyWith(
         isDownloading: false,
         error: 'Failed to start update download. Please try again later.',
@@ -225,7 +242,12 @@ class InAppUpdateNotifier extends Notifier<InAppUpdateState> {
       await _service.completeFlexibleUpdate();
       // App will restart, no need to update state
     } catch (e, st) {
-      LoggerService.error('Complete update error', error: e, stackTrace: st);
+      final exception = UpdateException.fromPlatformException(e, st);
+      if (exception.shouldReport) {
+        LoggerService.error('Complete update error', error: exception, stackTrace: st);
+      } else {
+        LoggerService.info('Complete update error (environmental): $e');
+      }
       state = state.copyWith(error: 'Failed to complete update. Please restart the app manually.');
     }
   }
