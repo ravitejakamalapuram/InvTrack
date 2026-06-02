@@ -90,9 +90,16 @@ class FirebaseAuthRepository implements AuthRepository {
       // These are environmental issues, not user errors
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
+        final dataException = DataException(
+          userMessage: _mapGoogleSignInException(e),
+          technicalMessage: 'GoogleSignInException: ${e.code.name}',
+          cause: e,
+          shouldReport: false, // Environmental config issue, not app bug
+        );
+
         LoggerService.warn(
           'GoogleSignInException: Configuration error (non-fatal)',
-          error: e,
+          error: dataException,
           metadata: {
             'code': e.code.name,
             'description': e.description,
@@ -100,20 +107,20 @@ class FirebaseAuthRepository implements AuthRepository {
           },
         );
 
-        // BUG FIX: Don't report config errors to Crashlytics (environmental issue, not app bug)
-        // Fixes Crashlytics issue #9dfdf1143e4d5e88cbfe9a9d91440e44 (104 events)
-        throw DataException(
-          userMessage: _mapGoogleSignInException(e),
-          technicalMessage: 'GoogleSignInException: ${e.code.name}',
-          cause: e,
-          shouldReport: false, // Environmental config issue, not app bug
-        );
+        throw dataException;
       }
 
       // Other GoogleSignInExceptions (interrupted, userMismatch, etc.)
+      final dataException = DataException(
+        userMessage: _mapGoogleSignInException(e),
+        technicalMessage: 'GoogleSignInException: ${e.code.name}',
+        cause: e,
+        shouldReport: false, // Don't spam Crashlytics with user errors
+      );
+
       LoggerService.error(
         'GoogleSignInException during sign-in',
-        error: e,
+        error: dataException,
         metadata: {
           'code': e.code.name,
           'description': e.description,
@@ -121,13 +128,7 @@ class FirebaseAuthRepository implements AuthRepository {
         },
       );
 
-      // Throw DataException instead of generic Exception
-      throw DataException(
-        userMessage: _mapGoogleSignInException(e),
-        technicalMessage: 'GoogleSignInException: ${e.code.name}',
-        cause: e,
-        shouldReport: false, // Don't spam Crashlytics with user errors
-      );
+      throw dataException;
     } catch (e, stackTrace) {
       LoggerService.error(
         'Google Sign-In failed',
@@ -209,9 +210,16 @@ class FirebaseAuthRepository implements AuthRepository {
       // Configuration errors should NOT crash the app - return false instead
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
+        final dataException = DataException(
+          userMessage: 'Configuration error',
+          technicalMessage: 'GoogleSignInException: ${e.code.name}',
+          cause: e,
+          shouldReport: false,
+        );
+
         LoggerService.error(
           'GoogleSignInException: Configuration error during re-auth (non-fatal)',
-          error: e,
+          error: dataException,
           metadata: {
             'code': e.code.name,
             'description': e.description,
@@ -221,9 +229,16 @@ class FirebaseAuthRepository implements AuthRepository {
       }
 
       // Other GoogleSignInExceptions
+      final dataException = DataException(
+        userMessage: 'Re-authentication failed',
+        technicalMessage: 'GoogleSignInException: ${e.code.name}',
+        cause: e,
+        shouldReport: false,
+      );
+
       LoggerService.error(
         'GoogleSignInException during re-authentication',
-        error: e,
+        error: dataException,
         metadata: {
           'code': e.code.name,
           'description': e.description,
@@ -305,18 +320,20 @@ class FirebaseAuthRepository implements AuthRepository {
       final shouldReport = !_isTransientAuthError(e.code);
 
       // Log before throwing to help with debugging
-      LoggerService.warn(
-        'Anonymous Sign-In failed',
-        error: e,
-        stackTrace: stackTrace,
-        metadata: {'shouldReport': shouldReport, 'code': e.code},
-      );
-
-      throw AuthException.signInFailed(
+      final authException = AuthException.signInFailed(
         cause: e,
         stackTrace: stackTrace,
         shouldReport: shouldReport,
       );
+
+      LoggerService.warn(
+        'Anonymous Sign-In failed',
+        error: authException,
+        stackTrace: stackTrace,
+        metadata: {'code': e.code},
+      );
+
+      throw authException;
     } catch (e, stackTrace) {
       LoggerService.error(
         'Anonymous Sign-In failed',
@@ -383,49 +400,60 @@ class FirebaseAuthRepository implements AuthRepository {
 
       return _mapFirebaseUserToEntity(userCredential.user!);
     } on FirebaseAuthException catch (e, stackTrace) {
-      LoggerService.error(
-        'Account linking failed',
-        error: e,
-        stackTrace: stackTrace,
-        metadata: {'errorCode': e.code},
-      );
+      final isCredentialInUse = e.code == 'credential-already-in-use';
+      final isProviderLinked = e.code == 'provider-already-linked';
+      final isTransient = _isTransientAuthError(e.code);
+      final shouldReport = !isCredentialInUse && !isProviderLinked && !isTransient;
 
-      if (e.code == 'credential-already-in-use') {
-        // This Google account is already registered
-        throw AuthException(
-          userMessage:
-              'This Google account is already registered. Please use the backup & merge option.',
-          technicalMessage: 'credential-already-in-use during account linking',
-          cause: e,
+      final authException = e.code == 'credential-already-in-use'
+          ? AuthException(
+              userMessage:
+                  'This Google account is already registered. Please use the backup & merge option.',
+              technicalMessage: 'credential-already-in-use during account linking',
+              cause: e,
+              stackTrace: stackTrace,
+              shouldReport: false,
+              code: AuthExceptionCode.credentialAlreadyInUse,
+            )
+          : e.code == 'provider-already-linked'
+              ? AuthException(
+                  userMessage: 'Account is already linked to Google',
+                  technicalMessage: 'Provider already linked',
+                  cause: e,
+                  stackTrace: stackTrace,
+                  shouldReport: false,
+                  code: AuthExceptionCode.providerAlreadyLinked,
+                )
+              : e.code == 'invalid-credential'
+                  ? AuthException(
+                      userMessage: 'Invalid Google credentials. Please try again.',
+                      technicalMessage: 'Invalid credential for linking',
+                      cause: e,
+                      stackTrace: stackTrace,
+                      shouldReport: true,
+                      code: AuthExceptionCode.invalidCredential,
+                    )
+                  : AuthException.signInFailed(
+                      cause: e,
+                      stackTrace: stackTrace,
+                      shouldReport: shouldReport,
+                    );
+
+      if (shouldReport) {
+        LoggerService.error(
+          'Account linking failed',
+          error: authException,
           stackTrace: stackTrace,
-          shouldReport: false,
-          code: AuthExceptionCode.credentialAlreadyInUse,
+          metadata: {'errorCode': e.code},
         );
-      } else if (e.code == 'provider-already-linked') {
-        throw AuthException(
-          userMessage: 'Account is already linked to Google',
-          technicalMessage: 'Provider already linked',
-          cause: e,
-          stackTrace: stackTrace,
-          shouldReport: false,
-          code: AuthExceptionCode.providerAlreadyLinked,
-        );
-      } else if (e.code == 'invalid-credential') {
-        throw AuthException(
-          userMessage: 'Invalid Google credentials. Please try again.',
-          technicalMessage: 'Invalid credential for linking',
-          cause: e,
-          stackTrace: stackTrace,
-          shouldReport: true,
-          code: AuthExceptionCode.invalidCredential,
+      } else {
+        LoggerService.info(
+          'Account linking handled condition',
+          metadata: {'errorCode': e.code, 'reason': isTransient ? 'transient' : 'expected_flow'},
         );
       }
 
-      throw AuthException.signInFailed(
-        cause: e,
-        stackTrace: stackTrace,
-        shouldReport: !_isTransientAuthError(e.code),
-      );
+      throw authException;
     } on GoogleSignInException catch (e, stackTrace) {
       // BUG FIX (2026-05-04): Never crash on GoogleSignInException
       // Fixes Crashlytics issues:
@@ -441,9 +469,17 @@ class FirebaseAuthRepository implements AuthRepository {
       // These are environmental issues, not user errors
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
+        final authException = AuthException(
+          userMessage: _mapGoogleSignInException(e),
+          technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
+          cause: e,
+          stackTrace: stackTrace,
+          shouldReport: false, // Environmental config issue, not app bug
+        );
+
         LoggerService.warn(
           'GoogleSignInException: Configuration error during linking (non-fatal)',
-          error: e,
+          error: authException,
           stackTrace: stackTrace,
           metadata: {
             'code': e.code.name,
@@ -451,21 +487,21 @@ class FirebaseAuthRepository implements AuthRepository {
           },
         );
 
-        // BUG FIX: Don't report config errors to Crashlytics (environmental issue, not app bug)
-        // Fixes Crashlytics issue #9dfdf1143e4d5e88cbfe9a9d91440e44 (104 events)
-        throw AuthException(
-          userMessage: _mapGoogleSignInException(e),
-          technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
-          cause: e,
-          stackTrace: stackTrace,
-          shouldReport: false, // Environmental config issue, not app bug
-        );
+        throw authException;
       }
 
       // Other GoogleSignInExceptions
+      final authException = AuthException(
+        userMessage: _mapGoogleSignInException(e),
+        technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
+        cause: e,
+        stackTrace: stackTrace,
+        shouldReport: false, // Don't spam Crashlytics with user errors
+      );
+
       LoggerService.error(
         'GoogleSignInException during account linking',
-        error: e,
+        error: authException,
         stackTrace: stackTrace,
         metadata: {
           'code': e.code.name,
@@ -473,30 +509,26 @@ class FirebaseAuthRepository implements AuthRepository {
         },
       );
 
-      throw AuthException(
-        userMessage: _mapGoogleSignInException(e),
-        technicalMessage: 'GoogleSignInException during linking: ${e.code.name}',
-        cause: e,
-        stackTrace: stackTrace,
-        shouldReport: false, // Don't spam Crashlytics with user errors
-      );
+      throw authException;
     } catch (e, stackTrace) {
-      LoggerService.error(
-        'Unexpected error during account linking',
-        error: e,
-        stackTrace: stackTrace,
-      );
-
       // Clean up Google Sign-In state on error
       await _googleSignIn.signOut();
 
-      throw AuthException(
+      final authException = AuthException(
         userMessage: 'An unexpected error occurred during account linking',
         technicalMessage: 'Unexpected error in linkAnonymousToGoogle',
         cause: e,
         stackTrace: stackTrace,
         shouldReport: true,
       );
+
+      LoggerService.error(
+        'Unexpected error during account linking',
+        error: authException,
+        stackTrace: stackTrace,
+      );
+
+      throw authException;
     }
   }
 
