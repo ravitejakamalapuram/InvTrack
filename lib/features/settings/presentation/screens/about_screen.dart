@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -129,7 +130,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       // Check for updates via Google Play
       await ref.read(inAppUpdateProvider.notifier).checkForUpdate();
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       final state = ref.read(inAppUpdateProvider);
 
@@ -139,7 +140,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         _showUpdateOptionsDialog(context, state);
       } else if (state.error != null) {
         // Error case - update check failed
-        if (mounted) {
+        if (context.mounted) {
           ErrorHandler.handle(
             Exception('Failed to check for updates: ${state.error}'),
             StackTrace.current,
@@ -174,7 +175,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.updateAvailable),
         content: Text(
           state.isHighPriority
@@ -184,12 +185,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         actions: [
           if (!state.isHighPriority)
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(l10n.later),
             ),
           FilledButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
 
               if (state.isHighPriority && state.immediateUpdateAllowed) {
                 // Critical update: immediate (blocking)
@@ -198,11 +199,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 // Non-critical: flexible (background)
                 await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
-                if (mounted) {
+                final scaffoldContext = rootNavigatorKey.currentContext;
+                if (scaffoldContext != null && scaffoldContext.mounted) {
                   // Check if update started successfully
                   final updatedState = ref.read(inAppUpdateProvider);
                   if (updatedState.error == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
                       SnackBar(
                         content: Text(l10n.downloadingUpdateBackground),
                         duration: const Duration(seconds: 3),
@@ -213,7 +215,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     ErrorHandler.handle(
                       Exception(updatedState.error),
                       StackTrace.current,
-                      context: context,
+                      context: scaffoldContext,
                       showFeedback: true,
                     );
                   }

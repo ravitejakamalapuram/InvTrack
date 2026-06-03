@@ -10,6 +10,7 @@ class MockInAppUpdateService extends Mock implements InAppUpdateService {}
 class MockAppUpdateInfo extends Mock implements AppUpdateInfo {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('InAppUpdateState', () {
     group('default values', () {
       test('all fields are null or false by default', () {
