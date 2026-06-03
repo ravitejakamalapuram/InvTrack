@@ -305,15 +305,25 @@ class IncomeTrendAnalyzer {
 
     // Platform reliability insights
     if (platformReliability.isNotEmpty) {
-      final unreliable = platformReliability.where((p) => p.onTimeRate < 0.80).toList();
-      if (unreliable.isNotEmpty) {
-        final platform = unreliable.first;
-        insights.add('${platform.platform} is frequently late (${(platform.onTimeRate * 100).toStringAsFixed(0)}% on-time rate).');
+      PlatformReliability? firstUnreliable;
+      int reliableCount = 0;
+
+      // Optimization: Single pass loop replacing multiple sequential .where().toList() calls
+      for (final p in platformReliability) {
+        if (p.onTimeRate < 0.80 && firstUnreliable == null) {
+          firstUnreliable = p;
+        }
+        if (p.onTimeRate >= 0.95) {
+          reliableCount++;
+        }
       }
 
-      final reliable = platformReliability.where((p) => p.onTimeRate >= 0.95).toList();
-      if (reliable.isNotEmpty) {
-        insights.add('${reliable.length} platforms with excellent reliability (95%+ on-time).');
+      if (firstUnreliable != null) {
+        insights.add('${firstUnreliable.platform} is frequently late (${(firstUnreliable.onTimeRate * 100).toStringAsFixed(0)}% on-time rate).');
+      }
+
+      if (reliableCount > 0) {
+        insights.add('$reliableCount platforms with excellent reliability (95%+ on-time).');
       }
     }
 
