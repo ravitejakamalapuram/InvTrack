@@ -1,5 +1,6 @@
 # InvTrack Enterprise Engineering Review
 ## Executive Summary
+
 - **Overall Repo Health Score:** 78/100 (Good, but requires strict adherence to enterprise rules to scale safely)
 - **Biggest Risks:** Multi-currency compliance gaps, `ref.read` usage in build methods, missing `PrivacyProtectionWrapper` for financial data, and direct Firestore access in the presentation layer.
 - **Highest ROI Improvements:** Standardizing string localization (removing hardcoded strings), extracting duplicated UI patterns (like `showDialog` and `ScaffoldMessenger`), and strictly enforcing Clean Architecture boundaries.
@@ -7,6 +8,7 @@
 
 ## Critical Issues
 1. **Direct Firestore Access in Presentation Layer:**
+
    - `lib/features/settings/presentation/screens/data_management_screen.dart` directly imports/uses `FirebaseFirestore`.
    - **Impact:** Violates Clean Architecture. UI is tightly coupled to the database, making it hard to test, cache, or switch backend implementations.
    - **Fix:** Move Firestore calls to a repository class in `data/repositories` and use Riverpod providers to access it.
@@ -21,6 +23,7 @@
 
 ## Duplication Report
 1. **Snackbar Invocations (49 matches):**
+
    - `ScaffoldMessenger.of(context).showSnackBar(...)` is used repeatedly across the app.
    - **Impact:** Inconsistent styling, redundant code, and difficult to change global snackbar behavior.
    - **Fix:** Create a centralized `AppFeedback.showSnackbar(context, message, type)` utility.
@@ -39,6 +42,7 @@
 
 ## Reusability Opportunities
 1. **`CompactAmountText` Component:**
+
    - Create a reusable widget that automatically handles `formatCompactCurrency`, localization, and `PrivacyProtectionWrapper` all in one place.
 2. **Form Validation Mixins:**
    - Extract common form validation logic (amount, dates, text) into a reusable mixin for consistency across screens.
@@ -49,6 +53,7 @@
 
 ## Architecture Review
 1. **God Components:**
+
    - `add_investment_screen.dart` (1502 lines) is significantly oversized.
    - `analytics_service.dart` (1440 lines) and `notification_service.dart` (1080 lines) handle too many responsibilities.
    - **Impact:** Violates the 500-line screen limit rule. High maintenance cost and merge conflict risk.
@@ -59,6 +64,7 @@
 
 ## Performance Findings
 1. **Excessive `build()` Logic:**
+
    - God components likely have expensive `build()` methods.
    - **Fix:** Use `const` constructors aggressively, and break down large widget trees to minimize rebuild scope.
 2. **List Optimization:**
@@ -68,6 +74,7 @@
 
 ## Security & Reliability Findings
 1. **Firestore Timeout Handling:**
+
    - Rule 19.5 requires all Firestore write operations to include a 5-second timeout (`.timeout(Duration(seconds: 5))`) to properly support offline persistence.
    - Needs audit to ensure all `set()`, `update()`, and `delete()` calls have this timeout.
 2. **Error Logging:**
@@ -75,12 +82,14 @@
 
 ## Testing Gaps
 1. **Multi-Currency Testing:**
+
    - Need comprehensive tests verifying that original data remains unchanged when the base currency changes (Rule 21).
 2. **Golden Tests & L10n:**
    - `flutter analyze` shows 414 issues mostly related to missing `AppLocalizations` in test files. Run `flutter gen-l10n` before tests to resolve missing generated files.
 
 ## Rules Compliance Findings
 1. **Rule 14.1 (Riverpod usage):** Violated by `ref.read` inside `build()` in 11 screens.
+
 2. **Rule 19.4 (Empty States):** Needs audit to ensure all lists have empty states.
 3. **Rule 21 (Multi-currency):** `formatCompactIndian` is used in `currency_utils.dart` which is explicitly deprecated by the rules. Must use `formatCompactCurrency()` with locale.
 4. **Privacy Protection Rule:** Violated by potential missing `PrivacyProtectionWrapper` instances.
@@ -88,21 +97,25 @@
 
 ## Recommended Refactor Plan
 ### Phase 1: Quick Wins (Days 1-3)
+
 1. Replace `ref.read` with `ref.watch` in all `build()` methods.
 2. Remove direct Firestore access from `data_management_screen.dart`.
 3. Replace `formatCompactIndian` with `formatCompactCurrency`.
 4. Create and implement `AppFeedback.showSnackbar` utility.
 ### Phase 2: Medium Effort Improvements (Weeks 1-2)
 1. Audit and apply `PrivacyProtectionWrapper` to all missing financial data points.
+
 2. Extract hardcoded strings to ARB files for localization.
 3. Implement standardized `AppDialogs` and `LoadingOverlay`.
 ### Phase 3: Long-term Architecture Improvements (Weeks 3+)
 1. Decompose God components: `add_investment_screen.dart`, `analytics_service.dart`, `notification_service.dart`.
+
 2. Implement strict Use Case layer to thin out oversized Riverpod Notifiers.
 3. Comprehensive audit of Multi-Currency Rule 21 compliance across all data models.
 
 ## Final Requirement Lists
 ### Top 10 Highest-Value Fixes
+
 1. Remove `ref.read` from `build()` methods across 11 screens.
 2. Remove `FirebaseFirestore` import from `data_management_screen.dart`.
 3. Add `PrivacyProtectionWrapper` to the 23 identified potential missing locations.
@@ -116,6 +129,7 @@
 
 ### Top 10 Duplication-Removal Opportunities
 1. `ScaffoldMessenger.of(context).showSnackBar` (49 instances)
+
 2. `Container(decoration: BoxDecoration(color: Colors...))` (65 instances)
 3. `showDialog(context: context...` (8 instances)
 4. `GestureDetector` for opaque interactions (7 instances)
@@ -128,6 +142,7 @@
 
 ### Top Reusable Abstractions Worth Introducing
 1. `CompactAmountText` widget (combines formatting + privacy wrapper)
+
 2. `AppFeedback` service (snackbars, toasts)
 3. `AppDialogs` service (confirmation, info, error dialogs)
 4. `AppEmptyState` widget
@@ -135,6 +150,7 @@
 
 ### Files/Components with Highest Technical Debt
 1. `lib/features/investment/presentation/screens/add_investment_screen.dart` (1502 lines)
+
 2. `lib/core/analytics/analytics_service.dart` (1440 lines)
 3. `lib/core/notifications/notification_service.dart` (1080 lines)
 4. `lib/features/investment/presentation/widgets/add_document_sheet.dart` (1020 lines)
@@ -142,6 +158,7 @@
 
 ### Suggested Engineering Standards Missing From the Repository
 1. **Strict File Size Limits in CI:** Add a check to fail PRs if files exceed 500 lines.
+
 2. **Automated Architecture Linter:** Use tools like `dart_code_metrics` to enforce Clean Architecture imports (e.g., prevent presentation from importing data/firebase).
 3. **Mandatory Widget Testing for Empty/Loading States:** Ensure all list views have tests asserting the presence of `AppEmptyState` and `LoadingOverlay`.
 4. **Design System Extension:** Standardize `BoxDecoration` and text styles to prevent hardcoded colors/styles entirely.
