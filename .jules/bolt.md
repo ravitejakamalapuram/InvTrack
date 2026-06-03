@@ -95,3 +95,7 @@
 ## 2024-05-30 - Single Pass Optimization in Monthly Income Report
 **Learning:** Consolidating sequential `.where().toList()` filters and aggregations into a single loop over `allCashFlows` prevents redundant iterations and avoids intermediate array allocations, saving memory and processor time.
 **Action:** Always refactor sequential `.where()` and list operations over the same dataset into a single pass loop.
+
+## 2026-06-02 - Avoid Re-Sorting Primitive Arrays Extracted from Sorted Objects
+**Learning:** If an object array is already sorted by a property, extracting that property into a primitive array and sorting it again is wasteful O(N log N) work.
+**Action:** Reuse the existing object sort order when possible. For median calculations, directly access the middle element of the sorted object array instead of creating a new sorted primitive array.
