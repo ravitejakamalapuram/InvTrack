@@ -820,59 +820,63 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   },
                 }
               : null,
-          child: GlassCard(
+          child: GestureDetector(
             onTap: () => _selectStartDate(context, isDark),
-            padding: AppSpacing.cardPadding,
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withValues(alpha: 0.1),
-                    borderRadius: AppSizes.borderRadiusMd,
-                  ),
-                  child: Icon(
-                    Icons.calendar_today_rounded,
-                    color: AppColors.primaryLight,
-                    size: AppSizes.iconSm,
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm + 2),
-                Expanded(
-                  child: Text(
-                    _startDate != null
-                        ? AppDateUtils.formatLong(_startDate!)
-                        : l10n.hintWhenDidYouInvest,
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: _startDate != null
-                          ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
+            child: GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      borderRadius: AppSizes.borderRadiusMd,
+                    ),
+                    child: Icon(
+                      Icons.calendar_today_rounded,
+                      color: AppColors.primaryLight,
+                      size: AppSizes.iconSm,
                     ),
                   ),
-                ),
-                if (_startDate != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.clear_rounded,
+                  SizedBox(width: AppSpacing.sm + 2),
+                  Expanded(
+                    child: Text(
+                      _startDate != null
+                          ? AppDateUtils.formatLong(_startDate!)
+                          : l10n.hintWhenDidYouInvest,
+                      style: AppTypography.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: _startDate != null
+                            ? (isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
+                            : (isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
+                      ),
+                    ),
+                  ),
+                  if (_startDate != null)
+                    IconButton(
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
+                        size: 20,
+                      ),
+                      tooltip: l10n.tooltipClearStartDate,
+                      onPressed: () => setState(() => _startDate = null),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
                       color: isDark
                           ? AppColors.neutral400Dark
                           : AppColors.neutral400Light,
-                      size: 20,
                     ),
-                    tooltip: l10n.tooltipClearStartDate,
-                    onPressed: () => setState(() => _startDate = null),
-                  )
-                else
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral400Light,
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1289,62 +1293,66 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                   },
                 }
               : null,
-          child: GlassCard(
+          child: GestureDetector(
             onTap: () => _selectMaturityDate(context, isDark),
-            padding: AppSpacing.cardPadding,
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight.withValues(alpha: 0.1),
-                    borderRadius: AppSizes.borderRadiusMd,
-                  ),
-                  child: Icon(
-                    Icons.event_rounded,
-                    color: AppColors.primaryLight,
-                    size: AppSizes.iconSm,
-                  ),
-                ),
-                SizedBox(width: AppSpacing.sm + 2),
-                Expanded(
-                  child: Text(
-                    _maturityDate != null
-                        ? AppDateUtils.formatLong(_maturityDate!)
-                        : 'No maturity date set',
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: _maturityDate != null
-                          ? (isDark ? Colors.white : AppColors.neutral900Light)
-                          : (isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral500Light),
+            child: GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.1),
+                      borderRadius: AppSizes.borderRadiusMd,
+                    ),
+                    child: Icon(
+                      Icons.event_rounded,
+                      color: AppColors.primaryLight,
+                      size: AppSizes.iconSm,
                     ),
                   ),
-                ),
-                if (_maturityDate != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.clear_rounded,
+                  SizedBox(width: AppSpacing.sm + 2),
+                  Expanded(
+                    child: Text(
+                      _maturityDate != null
+                          ? AppDateUtils.formatLong(_maturityDate!)
+                          : 'No maturity date set',
+                      style: AppTypography.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: _maturityDate != null
+                            ? (isDark
+                                  ? Colors.white
+                                  : AppColors.neutral900Light)
+                            : (isDark
+                                  ? AppColors.neutral400Dark
+                                  : AppColors.neutral500Light),
+                      ),
+                    ),
+                  ),
+                  if (_maturityDate != null)
+                    IconButton(
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
+                        size: 20,
+                      ),
+                      tooltip: 'Clear maturity date',
+                      onPressed: () => setState(() {
+                        _maturityDate = null;
+                        _maturityDateAutoCalculated = false;
+                      }),
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right_rounded,
                       color: isDark
                           ? AppColors.neutral400Dark
                           : AppColors.neutral400Light,
-                      size: 20,
                     ),
-                    tooltip: 'Clear maturity date',
-                    onPressed: () => setState(() {
-                      _maturityDate = null;
-                      _maturityDateAutoCalculated = false;
-                    }),
-                  )
-                else
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: isDark
-                        ? AppColors.neutral400Dark
-                        : AppColors.neutral400Light,
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
