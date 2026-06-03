@@ -1,7 +1,6 @@
 /// Unified data and account management screen.
 library;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -665,18 +665,11 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
 
     // Delete exchange rate cache (Rule 21.6: Data Lifecycle - Multi-Currency)
-    final userId = user.id;
-    final exchangeRatesRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('exchangeRates');
-
-    final snapshot = await exchangeRatesRef.get();
-    final batch = FirebaseFirestore.instance.batch();
-    for (final doc in snapshot.docs) {
-      batch.delete(doc.reference);
+    // ARCHITECTURE FIX: Use CurrencyConversionService instead of direct Firestore access
+    final currencyService = ref.read(currencyConversionServiceProvider);
+    if (currencyService != null) {
+      await currencyService.clearCache();
     }
-    await batch.commit();
 
     // Delete portfolio health score snapshots (Week 2: Portfolio Health Score)
     final healthScoreRepo = ref.read(healthScoreRepositoryProvider);
