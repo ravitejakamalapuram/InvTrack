@@ -1283,8 +1283,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           onTap: () => _selectMaturityDate(context, isDark),
           customSemanticsActions: _maturityDate != null
               ? {
-                  const CustomSemanticsAction(
-                    label: 'Clear maturity date',
+                  CustomSemanticsAction(
+                    label: l10n.tooltipClearMaturityDate,
                   ): () {
                     setState(() {
                       _maturityDate = null;
@@ -1316,7 +1316,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                     child: Text(
                       _maturityDate != null
                           ? AppDateUtils.formatLong(_maturityDate!)
-                          : 'No maturity date set',
+                          : l10n.hintNoMaturityDateSet,
                       style: AppTypography.bodyLarge.copyWith(
                         fontWeight: FontWeight.w500,
                         color: _maturityDate != null
@@ -1338,7 +1338,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                             : AppColors.neutral400Light,
                         size: 20,
                       ),
-                      tooltip: 'Clear maturity date',
+                      tooltip: l10n.tooltipClearMaturityDate,
                       onPressed: () => setState(() {
                         _maturityDate = null;
                         _maturityDateAutoCalculated = false;

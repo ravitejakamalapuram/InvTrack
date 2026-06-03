@@ -4983,5 +4983,20 @@
   "platformReliabilityPoor": "Poor",
   "@platformReliabilityPoor": {
     "description": "Platform reliability grade: <70% on-time"
+  },
+
+  "hintNoMaturityDateSet": "No maturity date set",
+  "@hintNoMaturityDateSet": {
+    "description": "Hint text when maturity date is not set"
+  },
+
+  "tooltipClearMaturityDate": "Clear maturity date",
+  "@tooltipClearMaturityDate": {
+    "description": "Tooltip for clear maturity date button"
+  },
+
+  "semanticSelectTransactionDate": "Select transaction date",
+  "@semanticSelectTransactionDate": {
+    "description": "Semantic label for transaction date selector"
   }
 }
