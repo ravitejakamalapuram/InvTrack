@@ -1273,88 +1273,93 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           ],
         ),
         SizedBox(height: AppSpacing.xs),
-        Semantics(
-          button: true,
-          label: 'Select Maturity Date',
-          value: _maturityDate != null
-              ? AppDateUtils.formatLong(_maturityDate!)
-              : 'Not set',
-          excludeSemantics: true,
-          onTap: () => _selectMaturityDate(context, isDark),
-          customSemanticsActions: _maturityDate != null
-              ? {
-                  const CustomSemanticsAction(
-                    label: 'Clear maturity date',
-                  ): () {
-                    setState(() {
-                      _maturityDate = null;
-                      _maturityDateAutoCalculated = false;
-                    });
-                  },
-                }
-              : null,
-          child: GestureDetector(
-            onTap: () => _selectMaturityDate(context, isDark),
-            child: GlassCard(
-              padding: AppSpacing.cardPadding,
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: AppSizes.borderRadiusMd,
-                    ),
-                    child: Icon(
-                      Icons.event_rounded,
-                      color: AppColors.primaryLight,
-                      size: AppSizes.iconSm,
-                    ),
-                  ),
-                  SizedBox(width: AppSpacing.sm + 2),
-                  Expanded(
-                    child: Text(
-                      _maturityDate != null
-                          ? AppDateUtils.formatLong(_maturityDate!)
-                          : 'No maturity date set',
-                      style: AppTypography.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: _maturityDate != null
-                            ? (isDark
-                                  ? Colors.white
-                                  : AppColors.neutral900Light)
-                            : (isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light),
+        Builder(
+          builder: (context) {
+            final clearLabel = AppLocalizations.of(context).tooltipClearMaturityDate;
+            return Semantics(
+              button: true,
+              label: 'Select Maturity Date',
+              value: _maturityDate != null
+                  ? AppDateUtils.formatLong(_maturityDate!)
+                  : 'Not set',
+              excludeSemantics: true,
+              onTap: () => _selectMaturityDate(context, isDark),
+              customSemanticsActions: _maturityDate != null
+                  ? {
+                      CustomSemanticsAction(
+                        label: clearLabel,
+                      ): () {
+                        setState(() {
+                          _maturityDate = null;
+                          _maturityDateAutoCalculated = false;
+                        });
+                      },
+                    }
+                  : null,
+              child: GestureDetector(
+                onTap: () => _selectMaturityDate(context, isDark),
+                child: GlassCard(
+                  padding: AppSpacing.cardPadding,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withValues(alpha: 0.1),
+                          borderRadius: AppSizes.borderRadiusMd,
+                        ),
+                        child: Icon(
+                          Icons.event_rounded,
+                          color: AppColors.primaryLight,
+                          size: AppSizes.iconSm,
+                        ),
                       ),
-                    ),
-                  ),
-                  if (_maturityDate != null)
-                    IconButton(
-                      icon: Icon(
-                        Icons.clear_rounded,
-                        color: isDark
-                            ? AppColors.neutral400Dark
-                            : AppColors.neutral400Light,
-                        size: 20,
+                      SizedBox(width: AppSpacing.sm + 2),
+                      Expanded(
+                        child: Text(
+                          _maturityDate != null
+                              ? AppDateUtils.formatLong(_maturityDate!)
+                              : AppLocalizations.of(context).hintNoMaturityDateSet,
+                          style: AppTypography.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: _maturityDate != null
+                                ? (isDark
+                                      ? Colors.white
+                                      : AppColors.neutral900Light)
+                                : (isDark
+                                      ? AppColors.neutral400Dark
+                                      : AppColors.neutral500Light),
+                          ),
+                        ),
                       ),
-                      tooltip: 'Clear maturity date',
-                      onPressed: () => setState(() {
-                        _maturityDate = null;
-                        _maturityDateAutoCalculated = false;
-                      }),
-                    )
-                  else
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral400Light,
-                    ),
-                ],
+                      if (_maturityDate != null)
+                        IconButton(
+                          icon: Icon(
+                            Icons.clear_rounded,
+                            color: isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral400Light,
+                            size: 20,
+                          ),
+                          tooltip: AppLocalizations.of(context).tooltipClearMaturityDate,
+                          onPressed: () => setState(() {
+                            _maturityDate = null;
+                            _maturityDateAutoCalculated = false;
+                          }),
+                        )
+                      else
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral400Light,
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );

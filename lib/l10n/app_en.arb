@@ -2140,6 +2140,21 @@
     "description": "Tooltip for clear start date button"
   },
 
+  "tooltipClearMaturityDate": "Clear maturity date",
+  "@tooltipClearMaturityDate": {
+    "description": "Tooltip for clear maturity date button"
+  },
+
+  "hintNoMaturityDateSet": "No maturity date set",
+  "@hintNoMaturityDateSet": {
+    "description": "Hint text when maturity date is not set"
+  },
+
+  "semanticSelectTransactionDate": "Select transaction date",
+  "@semanticSelectTransactionDate": {
+    "description": "Semantic label for transaction date picker"
+  },
+
   "hintSearch": "Search...",
   "@hintSearch": {
     "description": "Hint text for search field"
