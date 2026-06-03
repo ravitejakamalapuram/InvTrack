@@ -130,4 +130,39 @@ void main() {
       expect(exception.userMessage, contains('500'));
     });
   });
+
+  group('UpdateException', () {
+    test('identifies TASK_FAILURE as environmental', () {
+      final exception = UpdateException.fromPlatformException(
+        _MockPlatformException('TASK_FAILURE', 'Install Error(-6)'),
+        StackTrace.empty,
+      );
+      expect(exception.shouldReport, isFalse);
+      expect(exception.technicalMessage, contains('Install Error(-6)'));
+    });
+
+    test('identifies non-environmental platform exceptions as reportable', () {
+      final exception = UpdateException.fromPlatformException(
+        _MockPlatformException('OTHER_CODE', 'Unexpected error'),
+        StackTrace.empty,
+      );
+      expect(exception.shouldReport, isTrue);
+      expect(exception.technicalMessage, contains('Unexpected error'));
+    });
+
+    test('identifies regular exceptions as reportable', () {
+      final exception = UpdateException.fromPlatformException(
+        Exception('Normal exception'),
+        StackTrace.empty,
+      );
+      expect(exception.shouldReport, isTrue);
+    });
+  });
 }
+
+class _MockPlatformException {
+  final String code;
+  final String? message;
+  _MockPlatformException(this.code, this.message);
+}
+

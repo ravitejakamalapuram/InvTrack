@@ -26,11 +26,9 @@ class MonthlyIncomeService {
     final monthStart = DateTime(period.year, period.month, 1);
     final monthEnd = DateTime(period.year, period.month + 1, 0);
 
-    // Filter cashflows for this month
-    final monthCashFlows = allCashFlows.where((cf) {
-      return cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-          cf.date.isBefore(monthEnd.add(const Duration(days: 1)));
-    }).toList();
+    // Optimization: Hoist invariant date boundary calculations outside the loop
+    final startBoundary = monthStart.subtract(const Duration(days: 1));
+    final endBoundary = monthEnd.add(const Duration(days: 1));
 
     // Optimization: Pre-compute dictionary comprehension to avoid O(N*M) nested iterations
     final investmentMap = {for (final inv in allInvestments) inv.id: inv};
@@ -42,68 +40,70 @@ class MonthlyIncomeService {
     double totalFees = 0;
     final Map<String, double> incomeByType = {};
     final List<IncomeTransaction> transactions = [];
-
-    for (final cf in monthCashFlows) {
-      switch (cf.type) {
-        case CashFlowType.income:
-          // Find investment name
-          final investment = investmentMap[cf.investmentId];
-          if (investment == null) continue; // Fallback for invalid references
-
-          totalIncome += cf.amount;
-          // Group by notes (type) if available
-          final type = (cf.notes == null || cf.notes!.isEmpty) ? 'Other' : cf.notes!;
-          incomeByType[type] = (incomeByType[type] ?? 0) + cf.amount;
-
-          transactions.add(
-            IncomeTransaction(
-              id: cf.id,
-              investmentName: investment.name,
-              date: cf.date,
-              amount: cf.amount,
-              currency: cf.currency,
-              type: type,
-              note: cf.notes,
-            ),
-          );
-          break;
-        case CashFlowType.invest:
-          totalInvested += cf.amount;
-          break;
-        case CashFlowType.returnFlow:
-          totalReturns += cf.amount;
-          break;
-        case CashFlowType.fee:
-          totalFees += cf.amount;
-          break;
-      }
-    }
-
-    // Calculate top earners (investments with most income)
     final investmentIncomeMap = <String, double>{};
     final investmentTypeMap = <String, String>{};
 
-    for (final cf in monthCashFlows.where((cf) => cf.type == CashFlowType.income)) {
-      investmentIncomeMap[cf.investmentId] =
-          (investmentIncomeMap[cf.investmentId] ?? 0) + cf.amount;
-      investmentTypeMap[cf.investmentId] =
-          (cf.notes == null || cf.notes!.isEmpty) ? 'Other' : cf.notes!;
+    // Optimization: Single pass loop replacing multiple sequential .where().toList() and .where() calls
+    for (final cf in allCashFlows) {
+      if (cf.date.isAfter(startBoundary) && cf.date.isBefore(endBoundary)) {
+        switch (cf.type) {
+          case CashFlowType.income:
+            // Find investment name
+            final investment = investmentMap[cf.investmentId];
+            if (investment == null) continue; // Fallback for invalid references
+
+            totalIncome += cf.amount;
+            // Group by notes (type) if available
+            final type = (cf.notes == null || cf.notes!.isEmpty)
+                ? 'Other'
+                : cf.notes!;
+            incomeByType[type] = (incomeByType[type] ?? 0) + cf.amount;
+
+            transactions.add(
+              IncomeTransaction(
+                id: cf.id,
+                investmentName: investment.name,
+                date: cf.date,
+                amount: cf.amount,
+                currency: cf.currency,
+                type: type,
+                note: cf.notes,
+              ),
+            );
+
+            // Calculate top earners (investments with most income)
+            investmentIncomeMap[cf.investmentId] =
+                (investmentIncomeMap[cf.investmentId] ?? 0) + cf.amount;
+            investmentTypeMap[cf.investmentId] = type;
+            break;
+          case CashFlowType.invest:
+            totalInvested += cf.amount;
+            break;
+          case CashFlowType.returnFlow:
+            totalReturns += cf.amount;
+            break;
+          case CashFlowType.fee:
+            totalFees += cf.amount;
+            break;
+        }
+      }
     }
 
-    final topEarners = investmentIncomeMap.entries
-        .map((e) {
-          final investment = investmentMap[e.key];
-          if (investment == null) return null;
+    final topEarners =
+        investmentIncomeMap.entries
+            .map((e) {
+              final investment = investmentMap[e.key];
+              if (investment == null) return null;
 
-          return InvestmentWithIncome(
-            investment: investment,
-            income: e.value,
-            incomeType: investmentTypeMap[e.key] ?? 'Other',
-          );
-        })
-        .whereType<InvestmentWithIncome>()
-        .toList()
-      ..sort((a, b) => b.income.compareTo(a.income));
+              return InvestmentWithIncome(
+                investment: investment,
+                income: e.value,
+                incomeType: investmentTypeMap[e.key] ?? 'Other',
+              );
+            })
+            .whereType<InvestmentWithIncome>()
+            .toList()
+          ..sort((a, b) => b.income.compareTo(a.income));
 
     return MonthlyIncomeReport(
       period: monthStart,
@@ -114,8 +114,7 @@ class MonthlyIncomeService {
       netCashFlow: (totalIncome + totalReturns) - (totalInvested + totalFees),
       incomeByType: incomeByType,
       topEarners: topEarners.take(5).toList(),
-      transactions: transactions
-        ..sort((a, b) => b.date.compareTo(a.date)),
+      transactions: transactions..sort((a, b) => b.date.compareTo(a.date)),
     );
   }
 

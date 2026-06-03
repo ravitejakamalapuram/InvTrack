@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
@@ -198,11 +199,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                 // Non-critical: flexible (background)
                 await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
-                if (context.mounted) {
+                final scaffoldContext = rootNavigatorKey.currentContext;
+                if (scaffoldContext != null && scaffoldContext.mounted) {
                   // Check if update started successfully
                   final updatedState = ref.read(inAppUpdateProvider);
                   if (updatedState.error == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
                       SnackBar(
                         content: Text(l10n.downloadingUpdateBackground),
                         duration: const Duration(seconds: 3),
@@ -213,7 +215,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     ErrorHandler.handle(
                       Exception(updatedState.error),
                       StackTrace.current,
-                      context: context,
+                      context: scaffoldContext,
                       showFeedback: true,
                     );
                   }
