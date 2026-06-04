@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
@@ -130,6 +131,10 @@ class FirebaseAuthRepository implements AuthRepository {
 
       throw dataException;
     } catch (e, stackTrace) {
+      if (e is PlatformException && e.code == 'sign_in_canceled') {
+        LoggerService.info('User cancelled Google Sign-In (PlatformException)');
+        return null;
+      }
       LoggerService.error(
         'Google Sign-In failed',
         error: e,
@@ -247,6 +252,10 @@ class FirebaseAuthRepository implements AuthRepository {
       );
       return false; // Don't crash on sign-in errors
     } catch (e, stackTrace) {
+      if (e is PlatformException && e.code == 'sign_in_canceled') {
+        LoggerService.info('User cancelled re-authentication (PlatformException)');
+        return false;
+      }
       LoggerService.error(
         'Re-authentication failed',
         error: e,
@@ -511,6 +520,11 @@ class FirebaseAuthRepository implements AuthRepository {
 
       throw authException;
     } catch (e, stackTrace) {
+      if (e is PlatformException && e.code == 'sign_in_canceled') {
+        LoggerService.info('User cancelled account linking (PlatformException)');
+        throw AuthException.signInCancelled();
+      }
+
       // Clean up Google Sign-In state on error
       await _googleSignIn.signOut();
 
