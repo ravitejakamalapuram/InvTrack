@@ -7,6 +7,8 @@ import 'package:inv_tracker/features/portfolio_health/data/models/health_score_s
 import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
 
 part 'portfolio_health_provider.g.dart';
@@ -73,12 +75,16 @@ class PortfolioHealth extends _$PortfolioHealth {
       }
     }
 
-    // Calculate health score
-    final score = PortfolioHealthCalculator.calculate(
+    final engine = ref.watch(calculationEngineProvider);
+    final baseCurrency = ref.watch(currencyCodeProvider);
+
+    // Calculate health score using the unified calculation engine
+    final score = await engine.health.calculate(
       investments: investments,
       investmentStats: statsMap,
       allCashFlows: cashFlows,
       goalProgress: goalProgress,
+      baseCurrency: baseCurrency,
     );
 
     // Log analytics - score calculated (non-blocking, privacy-safe)
