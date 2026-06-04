@@ -4998,5 +4998,20 @@
   "platformReliabilityPoor": "Poor",
   "@platformReliabilityPoor": {
     "description": "Platform reliability grade: <70% on-time"
+  },
+
+  "semanticSelectMaturityDate": "Select Maturity Date",
+  "@semanticSelectMaturityDate": {
+    "description": "Semantic label for maturity date picker button"
+  },
+
+  "semanticSelectStartDate": "Select Start Date",
+  "@semanticSelectStartDate": {
+    "description": "Semantic label for start date picker button"
+  },
+
+  "notSet": "Not set",
+  "@notSet": {
+    "description": "Value shown when a date field is not set"
   }
 }

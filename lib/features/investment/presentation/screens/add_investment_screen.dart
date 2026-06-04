@@ -803,21 +803,27 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
           ),
         ),
         SizedBox(height: AppSpacing.xs),
-        Semantics(
-          button: true,
-          label: 'Select Start Date',
-          value: _startDate != null
-              ? AppDateUtils.formatLong(_startDate!)
-              : 'Not set',
-          excludeSemantics: true,
-          onTap: () => _selectStartDate(context, isDark),
-          customSemanticsActions: _startDate != null
-              ? {
-                  const CustomSemanticsAction(label: 'Clear start date'): () {
-                    setState(() => _startDate = null);
-                    // Also clear auto-calculated maturity if needed?
-                    // For now, mirroring existing clear behavior.
-                  },
+        Builder(
+          builder: (context) {
+            final selectLabel = AppLocalizations.of(context).semanticSelectStartDate;
+            final notSetValue = AppLocalizations.of(context).notSet;
+            final clearLabel = AppLocalizations.of(context).tooltipClearStartDate;
+
+            return Semantics(
+              button: true,
+              label: selectLabel,
+              value: _startDate != null
+                  ? AppDateUtils.formatLong(_startDate!)
+                  : notSetValue,
+              excludeSemantics: true,
+              onTap: () => _selectStartDate(context, isDark),
+              customSemanticsActions: _startDate != null
+                  ? {
+                      CustomSemanticsAction(label: clearLabel): () {
+                        setState(() => _startDate = null);
+                        // Also clear auto-calculated maturity if needed?
+                        // For now, mirroring existing clear behavior.
+                      },
                 }
               : null,
           child: GestureDetector(
@@ -879,6 +885,8 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               ),
             ),
           ),
+        );
+          },
         ),
       ],
     );
@@ -1276,12 +1284,14 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         Builder(
           builder: (context) {
             final clearLabel = AppLocalizations.of(context).tooltipClearMaturityDate;
+            final selectLabel = AppLocalizations.of(context).semanticSelectMaturityDate;
+            final notSetValue = AppLocalizations.of(context).notSet;
             return Semantics(
               button: true,
-              label: 'Select Maturity Date',
+              label: selectLabel,
               value: _maturityDate != null
                   ? AppDateUtils.formatLong(_maturityDate!)
-                  : 'Not set',
+                  : notSetValue,
               excludeSemantics: true,
               onTap: () => _selectMaturityDate(context, isDark),
               customSemanticsActions: _maturityDate != null
