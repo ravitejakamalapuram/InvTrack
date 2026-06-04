@@ -68,8 +68,26 @@ class _InAppUpdateInitializerState
     }
   }
 
+  BuildContext? _getValidDialogContext() {
+    // 1. Try local widget context if it is mounted and has a Navigator ancestor
+    if (mounted && Navigator.maybeOf(context) != null) {
+      return context;
+    }
+    // 2. Try root navigator's overlay context, which is inside the Navigator
+    final overlayContext = rootNavigatorKey.currentState?.overlay?.context;
+    if (overlayContext != null && overlayContext.mounted) {
+      return overlayContext;
+    }
+    // 3. Fallback to root navigator's own context
+    final rootContext = rootNavigatorKey.currentContext;
+    if (rootContext != null && rootContext.mounted) {
+      return rootContext;
+    }
+    return null;
+  }
+
   void _showFlexibleUpdateDialog() {
-    final dialogContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
+    final dialogContext = _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
       LoggerService.warn('Cannot show flexible update dialog: navigator context is null or unmounted');
       return;
@@ -98,7 +116,7 @@ class _InAppUpdateInitializerState
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
               if (!mounted) return;
-              final checkContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
+              final checkContext = _getValidDialogContext();
               if (checkContext == null || !checkContext.mounted) return;
 
               // Check if update started successfully
@@ -136,7 +154,7 @@ class _InAppUpdateInitializerState
   }
 
   void _showInstallDialog() {
-    final dialogContext = Navigator.maybeOf(context) != null ? context : rootNavigatorKey.currentContext;
+    final dialogContext = _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
       LoggerService.warn('Cannot show install dialog: navigator context is null or unmounted');
       return;
