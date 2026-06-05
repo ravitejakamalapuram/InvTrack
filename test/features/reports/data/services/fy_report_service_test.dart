@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
@@ -281,5 +282,128 @@ void main() {
 
       expect(report.monthlyBreakdown.length, 12); // All 12 months of FY
     });
+
+    test('should apply currency conversion correctly for multi-currency portfolios', () async {
+      // 1 EUR = 1.2 USD, 1 USD = 80 INR
+      final mockService = MockCurrencyConversionService({
+        'EUR_USD': 1.2,
+        'USD_EUR': 1 / 1.2,
+        'EUR_INR': 96.0,
+        'USD_INR': 80.0,
+      });
+
+      final multiCurrencyEngine = CalculationEngine()
+        ..registerModule(CurrencyConverterModule(mockService))
+        ..registerModule(FinancialCalculatorModule());
+
+      final serviceWithConversion = FYReportService(multiCurrencyEngine);
+
+      final cashFlows = [
+        CashFlowEntity(
+          id: '1',
+          investmentId: 'inv-eur',
+          amount: 1000, // 1000 EUR
+          date: DateTime(2023, 5, 1),
+          type: CashFlowType.invest,
+          currency: 'EUR',
+          createdAt: DateTime(2023, 5, 1),
+        ),
+      ];
+
+      final investments = [
+        InvestmentEntity(
+          id: 'inv-eur',
+          name: 'EUR Stock',
+          type: InvestmentType.stocks,
+          status: InvestmentStatus.open,
+          startDate: DateTime(2023, 5, 1),
+          createdAt: DateTime(2023, 5, 1),
+          updatedAt: DateTime(2023, 5, 1),
+          currency: 'EUR',
+        ),
+      ];
+
+      // Generate report with baseCurrency USD -> 1000 EUR becomes 1200 USD
+      final reportUSD = await serviceWithConversion.generateReport(
+        fyYear: fyYear,
+        allCashFlows: cashFlows,
+        allInvestments: investments,
+        baseCurrency: 'USD',
+      );
+
+      // Generate report with baseCurrency INR -> 1000 EUR becomes 96000 INR
+      final reportINR = await serviceWithConversion.generateReport(
+        fyYear: fyYear,
+        allCashFlows: cashFlows,
+        allInvestments: investments,
+        baseCurrency: 'INR',
+      );
+
+      expect(reportUSD.totalInvested, 1200.0);
+      expect(reportINR.totalInvested, 96000.0);
+      expect(reportUSD.totalInvested, isNot(equals(reportINR.totalInvested)));
+    });
   });
+}
+
+class MockCurrencyConversionService implements CurrencyConversionService {
+  final Map<String, double> rates;
+
+  MockCurrencyConversionService(this.rates);
+
+  @override
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    if (from == to) return amount;
+    final key = '${from}_$to';
+    final rate = rates[key];
+    if (rate == null) {
+      throw CurrencyConversionException('Rate not found');
+    }
+    return amount * rate;
+  }
+
+  @override
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) async {
+    if (from == to) return 1.0;
+    return rates['${from}_$to'];
+  }
+
+  @override
+  Future<double> getHistoricalRate(DateTime date, String from, String to) async {
+    return convert(amount: 1.0, from: from, to: to);
+  }
+
+  @override
+  Future<double> getLiveRate(String from, String to) async {
+    return convert(amount: 1.0, from: from, to: to);
+  }
+
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async {
+    final Map<String, double> results = {};
+    for (final entry in requests.entries) {
+      final key = entry.key;
+      final req = entry.value;
+      final rate = rates['${req.from}_$to'];
+      if (rate == null) {
+        throw CurrencyConversionException('Rate not found for ${req.from}');
+      }
+      results[key] = rate;
+    }
+    return results;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
