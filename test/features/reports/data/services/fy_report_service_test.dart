@@ -343,6 +343,109 @@ void main() {
       expect(reportINR.totalInvested, 96000.0);
       expect(reportUSD.totalInvested, isNot(equals(reportINR.totalInvested)));
     });
+
+    test('should convert multi-currency cashflows with different base currencies', () async {
+      // Create a mock conversion service with EUR to USD and INR to USD rates
+      final mockConversionService = MockCurrencyConversionService({
+        'EUR_USD': 1.1, // 1 EUR = 1.1 USD
+        'USD_EUR': 1 / 1.1, // 1 USD = 0.909 EUR
+        'INR_USD': 1 / 80, // 80 INR = 1 USD
+        'USD_INR': 80, // 1 USD = 80 INR
+        'EUR_INR': 1.1 * 80, // 1 EUR = 88 INR
+        'INR_EUR': 1 / (1.1 * 80), // 1 INR = 0.0114 EUR
+      });
+      final engine = CalculationEngine()
+        ..registerModule(CurrencyConverterModule(mockConversionService))
+        ..registerModule(FinancialCalculatorModule());
+      final testService = FYReportService(engine);
+
+      final cashFlows = [
+        // USD investment
+        CashFlowEntity(
+          id: '1',
+          investmentId: 'inv1',
+          amount: 1000,
+          date: DateTime(2023, 5, 1),
+          type: CashFlowType.invest,
+          currency: 'USD',
+          createdAt: DateTime(2023, 5, 1),
+        ),
+        // EUR investment (1 EUR = 1.1 USD)
+        CashFlowEntity(
+          id: '2',
+          investmentId: 'inv2',
+          amount: 500,
+          date: DateTime(2023, 6, 1),
+          type: CashFlowType.invest,
+          currency: 'EUR',
+          createdAt: DateTime(2023, 6, 1),
+        ),
+        // INR return (80 INR = 1 USD)
+        CashFlowEntity(
+          id: '3',
+          investmentId: 'inv1',
+          amount: 8000,
+          date: DateTime(2024, 3, 15),
+          type: CashFlowType.returnFlow,
+          currency: 'INR',
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      ];
+
+      final investments = [
+        InvestmentEntity(
+          id: 'inv1',
+          name: 'US Stocks',
+          type: InvestmentType.stocks,
+          status: InvestmentStatus.open,
+          startDate: DateTime(2023, 5, 1),
+          createdAt: DateTime(2023, 5, 1),
+          updatedAt: DateTime(2023, 5, 1),
+          currency: 'USD',
+        ),
+        InvestmentEntity(
+          id: 'inv2',
+          name: 'European Bonds',
+          type: InvestmentType.bonds,
+          status: InvestmentStatus.open,
+          startDate: DateTime(2023, 6, 1),
+          createdAt: DateTime(2023, 6, 1),
+          updatedAt: DateTime(2023, 6, 1),
+          currency: 'EUR',
+        ),
+      ];
+
+      final reportUSD = await testService.generateReport(
+        fyYear: fyYear,
+        allCashFlows: cashFlows,
+        allInvestments: investments,
+        baseCurrency: 'USD',
+      );
+
+      // Expected totals in USD:
+      // - Invested: 1000 USD + (500 EUR * 1.1) = 1000 + 550 = 1550 USD
+      // - Returns: (8000 INR / 80) = 100 USD
+      expect(reportUSD.totalInvested, closeTo(1550.0, 0.01));
+      expect(reportUSD.totalReturns, closeTo(100.0, 0.01));
+
+      // Now test with different base currency (EUR)
+      final reportEUR = await testService.generateReport(
+        fyYear: fyYear,
+        allCashFlows: cashFlows,
+        allInvestments: investments,
+        baseCurrency: 'EUR',
+      );
+
+      // Expected totals in EUR:
+      // - Invested: (1000 USD * 0.909) + 500 EUR = 909 + 500 = 1409 EUR
+      // - Returns: (8000 INR * 0.0114) = 91.2 EUR
+      expect(reportEUR.totalInvested, closeTo(1409.0, 5.0));
+      expect(reportEUR.totalReturns, closeTo(91.2, 5.0));
+
+      // Verify that totals differ when baseCurrency changes (proves conversion occurred)
+      expect(reportUSD.totalInvested, isNot(equals(reportEUR.totalInvested)));
+      expect(reportUSD.totalReturns, isNot(equals(reportEUR.totalReturns)));
+    });
   });
 }
 
