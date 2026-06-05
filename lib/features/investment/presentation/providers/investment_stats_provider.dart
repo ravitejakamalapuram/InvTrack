@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
-import 'package:inv_tracker/core/calculations/xirr_solver.dart';
+import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -393,87 +393,13 @@ final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 // ============ STATS CALCULATION ============
 
 /// Calculate stats from a list of cash flows.
-/// Uses [FinancialCalculator] for all financial calculations to avoid duplication.
-///
-/// [includeXirr] - Set to false to skip expensive XIRR calculation if not needed
-/// (e.g. for simple sorting or lists where XIRR is not displayed).
+/// Delegates to the unified [FinancialCalculatorModule].
 InvestmentStats calculateStats(
   List<CashFlowEntity> cashFlows, {
   bool includeXirr = true,
 }) {
-  if (cashFlows.isEmpty) {
-    return InvestmentStats.empty();
-  }
-
-  // Single pass calculation for O(N) complexity
-  double totalInvested = 0.0;
-  double totalReturned = 0.0;
-
-  // Optimization: Use millisecondsSinceEpoch for faster date comparisons in loop
-  int? firstDateMs;
-  int? lastDateMs;
-
-  // Pre-allocate lists for XIRR if needed
-  final xirrDates = includeXirr ? <DateTime>[] : null;
-  final xirrAmounts = includeXirr ? <double>[] : null;
-
-  for (final cf in cashFlows) {
-    // 1. Date range
-    final ms = cf.date.millisecondsSinceEpoch;
-    if (firstDateMs == null || ms < firstDateMs) {
-      firstDateMs = ms;
-    }
-    if (lastDateMs == null || ms > lastDateMs) {
-      lastDateMs = ms;
-    }
-
-    // 2. Totals
-    if (cf.type.isOutflow) {
-      totalInvested += cf.amount;
-    } else if (cf.type.isInflow) {
-      totalReturned += cf.amount;
-    }
-
-    // 3. XIRR data prep
-    if (includeXirr) {
-      xirrDates!.add(cf.date);
-      xirrAmounts!.add(cf.signedAmount);
-    }
-  }
-
-  // Convert milliseconds back to DateTime
-  final firstDate = firstDateMs != null
-      ? DateTime.fromMillisecondsSinceEpoch(firstDateMs)
-      : null;
-  final lastDate = lastDateMs != null
-      ? DateTime.fromMillisecondsSinceEpoch(lastDateMs)
-      : null;
-
-  // Calculate derived stats (O(1))
-  final netCashFlow = FinancialCalculator.calculateNetCashFlow(
-    totalInvested,
-    totalReturned,
-  );
-  final absoluteReturn = FinancialCalculator.calculateAbsoluteReturn(
-    totalInvested,
-    totalReturned,
-  );
-  final moic = FinancialCalculator.calculateMOIC(totalInvested, totalReturned);
-
-  // XIRR calculation using pre-populated lists
-  final xirr = includeXirr
-      ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
-      : 0.0;
-
-  return InvestmentStats(
-    totalInvested: totalInvested,
-    totalReturned: totalReturned,
-    netCashFlow: netCashFlow,
-    absoluteReturn: absoluteReturn,
-    moic: moic,
-    xirr: xirr,
-    cashFlowCount: cashFlows.length,
-    firstCashFlowDate: firstDate,
-    lastCashFlowDate: lastDate,
+  return FinancialCalculatorModule().calculateStats(
+    cashFlows,
+    includeXirr: includeXirr,
   );
 }

@@ -26,6 +26,7 @@ class PortfolioHealthModule implements CalculationModule {
     required List<GoalProgress> goalProgress,
     required String baseCurrency,
     double benchmarkInflationRate = PortfolioHealthCalculator.defaultInflationRate,
+    bool areStatsInBaseCurrency = false,
   }) async {
     final convertedStats = <String, InvestmentStats>{};
 
@@ -33,7 +34,7 @@ class PortfolioHealthModule implements CalculationModule {
       final stat = investmentStats[inv.id];
       if (stat == null) continue;
 
-      if (inv.currency == baseCurrency) {
+      if (areStatsInBaseCurrency || inv.currency == baseCurrency) {
         convertedStats[inv.id] = stat;
       } else {
         // Convert monetary amounts to base currency.

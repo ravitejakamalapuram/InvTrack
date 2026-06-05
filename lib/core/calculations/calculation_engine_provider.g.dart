@@ -12,10 +12,14 @@ part of 'calculation_engine_provider.dart';
 @ProviderFor(calculationEngine)
 final calculationEngineProvider = CalculationEngineProvider._();
 
-typedef CalculationEngineRef = AutoDisposeProviderRef<CalculationEngine>;
-
 final class CalculationEngineProvider
-    extends $AutoDisposeProvider<CalculationEngine> {
+    extends
+        $FunctionalProvider<
+          CalculationEngine,
+          CalculationEngine,
+          CalculationEngine
+        >
+    with $Provider<CalculationEngine> {
   CalculationEngineProvider._()
       : super(
           from: null,
@@ -51,5 +55,4 @@ final class CalculationEngineProvider
 }
 
 String _$calculationEngineHash() => r'8c5e9f7a4b3d2c1e0f9a8b7c6d5e4f3a2b1c0d9e';
-// ignore: unused_element
 String $calculationEngineHash() => _$calculationEngineHash();

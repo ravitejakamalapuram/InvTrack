@@ -8,7 +8,10 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -16,25 +19,38 @@ import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
 
 /// Provider for FY report generation service
 final fyReportServiceProvider = Provider((ref) {
-  return FYReportService();
+  final engine = ref.watch(calculationEngineProvider);
+  return FYReportService(engine);
 });
 
 /// Service to generate Financial Year reports
 class FYReportService {
+  final CalculationEngine _engine;
+
+  FYReportService(this._engine);
+
   /// Generate FY report for a given FY year
   /// FY year is the year when FY starts (e.g., 2023 for FY 2023-24)
-  FYReport generateReport({
+  Future<FYReport> generateReport({
     required int fyYear,
     required List<CashFlowEntity> allCashFlows,
     required List<InvestmentEntity> allInvestments,
-  }) {
+    required String baseCurrency,
+  }) async {
     // FY period: Apr 1 of fyYear to Mar 31 of (fyYear+1)
     final fyStart = DateTime(fyYear, 4, 1);
     final fyEnd = DateTime(fyYear + 1, 3, 31, 23, 59, 59);
     final fyLabel = '$fyYear-${(fyYear + 1) % 100}';
 
-    // Filter cashflows for this FY
-    final fyCashFlows = allCashFlows.where((cf) {
+    // Convert all cash flows to base currency
+    final baseCashFlows = await _engine.currency.batchConvert(
+      cashFlows: allCashFlows,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+    );
+
+    // Filter cashflows for this FY using the converted cashflows
+    final fyCashFlows = baseCashFlows.where((cf) {
       return cf.date.isAfter(fyStart.subtract(const Duration(days: 1))) &&
           cf.date.isBefore(fyEnd.add(const Duration(days: 1)));
     }).toList();
@@ -86,8 +102,18 @@ class FYReportService {
     final topPerformers = _calculateTopPerformers(allInvestments, fyCashFlows);
 
     // Calculate portfolio values at start and end of FY
-    final portfolioValueAtStart = _calculatePortfolioValue(allInvestments, fyStart);
-    final portfolioValueAtEnd = _calculatePortfolioValue(allInvestments, fyEnd);
+    final portfolioValueAtStart = await _calculatePortfolioValue(
+      allInvestments,
+      baseCashFlows,
+      fyStart,
+      baseCurrency,
+    );
+    final portfolioValueAtEnd = await _calculatePortfolioValue(
+      allInvestments,
+      baseCashFlows,
+      fyEnd,
+      baseCurrency,
+    );
 
     return FYReport(
       fyStart: fyStart,
@@ -112,10 +138,11 @@ class FYReportService {
   }
 
   /// Get current FY report
-  FYReport getCurrentFY({
+  Future<FYReport> getCurrentFY({
     required List<CashFlowEntity> allCashFlows,
     required List<InvestmentEntity> allInvestments,
-  }) {
+    required String baseCurrency,
+  }) async {
     final now = DateTime.now();
     // Current FY is Apr 1 of current year if we're past April, else previous year
     final fyYear = now.month >= 4 ? now.year : now.year - 1;
@@ -123,20 +150,23 @@ class FYReportService {
       fyYear: fyYear,
       allCashFlows: allCashFlows,
       allInvestments: allInvestments,
+      baseCurrency: baseCurrency,
     );
   }
 
   /// Get previous FY report
-  FYReport getPreviousFY({
+  Future<FYReport> getPreviousFY({
     required List<CashFlowEntity> allCashFlows,
     required List<InvestmentEntity> allInvestments,
-  }) {
+    required String baseCurrency,
+  }) async {
     final now = DateTime.now();
     final currentFYYear = now.month >= 4 ? now.year : now.year - 1;
     return generateReport(
       fyYear: currentFYYear - 1,
       allCashFlows: allCashFlows,
       allInvestments: allInvestments,
+      baseCurrency: baseCurrency,
     );
   }
 
@@ -290,14 +320,15 @@ class FYReportService {
 
   /// Calculate portfolio value at a specific date
   ///
-  /// NOTE: This is a simplified calculation that uses total invested - total returned
-  /// as a proxy for portfolio value at a specific date. For true historical values,
-  /// we would need to track value at each point in time.
-  double _calculatePortfolioValue(
+  /// Calculates outstanding cost basis by summing all investments (outflows)
+  /// minus partial exits (inflows) up to the specified date, converted to base currency.
+  Future<double> _calculatePortfolioValue(
     List<InvestmentEntity> allInvestments,
+    List<CashFlowEntity> allCashFlows,
     DateTime date,
-  ) {
-    double totalValue = 0;
+    String baseCurrency,
+  ) async {
+    double totalValue = 0.0;
 
     for (final investment in allInvestments) {
       final startDate = investment.startDate ?? investment.createdAt;
@@ -310,9 +341,34 @@ class FYReportService {
           continue;
         }
 
-        // For simplicity, count this investment as active
-        // In a real system, we'd need historical portfolio values
-        totalValue += 1000; // Placeholder - each investment counts as 1000 for now
+        // Get cash flows for this investment up to the given date
+        final investmentFlows = allCashFlows.where((cf) =>
+            cf.investmentId == investment.id &&
+            cf.date.isBefore(date.add(const Duration(days: 1)))).toList();
+
+        double invested = 0.0;
+        double returned = 0.0;
+
+        for (final cf in investmentFlows) {
+          // Convert amount to baseCurrency using engine's currency module
+          final convertedAmount = await _engine.currency.convert(
+            amount: cf.amount,
+            from: cf.currency,
+            to: baseCurrency,
+            date: cf.date,
+          );
+
+          if (cf.type.isOutflow) {
+            invested += convertedAmount;
+          } else if (cf.type == CashFlowType.returnFlow) {
+            returned += convertedAmount;
+          }
+        }
+
+        final netValue = invested - returned;
+        if (netValue > 0) {
+          totalValue += netValue;
+        }
       }
     }
 

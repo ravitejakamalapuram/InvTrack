@@ -5,6 +5,8 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/fy_report.dart';
@@ -22,20 +24,14 @@ final currentFYReportProvider =
 final fyReportProvider =
     FutureProvider.autoDispose.family<FYReport, int>(
   (ref, fyYear) async {
-    // FY period: Apr 1 of fyYear to Mar 31 of (fyYear+1)
-    final fyStart = DateTime(fyYear, 4, 1);
-    final fyEnd = DateTime(fyYear + 1, 3, 31, 23, 59, 59);
-
     // Get all investments (needed for capital gains, portfolio values)
     final investmentsAsync = ref.watch(activeInvestmentsProvider);
 
-    // Get only cashflows in FY range (optimized - server-side filtering)
-    final cashFlowsAsync = ref.watch(
-      cashFlowsInDateRangeProvider((
-        start: fyStart,
-        end: fyEnd,
-      )),
-    );
+    // Get all cashflows (needed to compute historical portfolio valuation correctly)
+    final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+    // Get base currency
+    final baseCurrency = ref.watch(currencyCodeProvider);
 
     // Wait for all data to load
     final investments = await investmentsAsync.when(
@@ -52,10 +48,11 @@ final fyReportProvider =
 
     // Generate report
     final service = ref.read(fyReportServiceProvider);
-    return service.generateReport(
+    return await service.generateReport(
       fyYear: fyYear,
       allCashFlows: cashFlows,
       allInvestments: investments,
+      baseCurrency: baseCurrency,
     );
   },
 );

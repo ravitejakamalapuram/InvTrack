@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';

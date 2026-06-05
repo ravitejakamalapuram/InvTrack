@@ -1,4 +1,4 @@
-import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -43,14 +43,11 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
 
   if (cashFlows.isEmpty) return 0.0;
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return 0.0;
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return 0.0;
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  // Optimization: Replace .where().toList() with standard loop
   // Filter outflows only
   final outflows = <CashFlowEntity>[];
   for (final cf in cashFlows) {
@@ -61,14 +58,12 @@ Future<double> multiCurrencyInvestedAmount(Ref ref, String investmentId) async {
   if (outflows.isEmpty) return 0.0;
 
   // Batch convert all outflows to base currency (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: outflows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  // Optimization: Replace .fold() with standard loop
-  // Sum converted amounts
   double total = 0.0;
   for (final cf in convertedCashFlows) {
     total += cf.amount;
@@ -94,14 +89,11 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
 
   if (cashFlows.isEmpty) return 0.0;
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return 0.0;
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return 0.0;
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
-  // Optimization: Replace .where().toList() with standard loop
   // Filter inflows only
   final inflows = <CashFlowEntity>[];
   for (final cf in cashFlows) {
@@ -112,14 +104,12 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   if (inflows.isEmpty) return 0.0;
 
   // Batch convert all inflows to base currency (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: inflows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  // Optimization: Replace .fold() with standard loop
-  // Sum converted amounts
   double total = 0.0;
   for (final cf in convertedCashFlows) {
     total += cf.amount;
@@ -146,22 +136,20 @@ Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
 
   if (cashFlows.isEmpty) return 0.0;
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return 0.0;
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return 0.0;
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert all cash flows to base currency (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: cashFlows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
   // Calculate XIRR using converted cash flows
-  return FinancialCalculator.calculateXirrFromCashFlows(convertedCashFlows);
+  return engine.financial.calculateXirrFromCashFlows(convertedCashFlows);
 }
 
 /// Provider for multi-currency portfolio value
@@ -183,10 +171,8 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
 
   if (investments.isEmpty) return 0.0;
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return 0.0;
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return 0.0;
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
@@ -202,7 +188,7 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
   if (allCashFlows.isEmpty) return 0.0;
 
   // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: allCashFlows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
@@ -242,22 +228,20 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
     return InvestmentStats.empty();
   }
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return InvestmentStats.empty();
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return InvestmentStats.empty();
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: cashFlows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  // Use existing calculateStats with converted cash flows
-  return calculateStats(convertedCashFlows);
+  // Use engine's financial module to calculate stats
+  return engine.financial.calculateStats(convertedCashFlows);
 }
 
 /// Provider for multi-currency global stats
@@ -285,22 +269,20 @@ Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return InvestmentStats.empty();
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return InvestmentStats.empty();
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: cashFlows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  // Use existing calculateStats with converted cash flows
-  return calculateStats(convertedCashFlows);
+  // Use engine's financial module to calculate stats
+  return engine.financial.calculateStats(convertedCashFlows);
 }
 
 /// Provider for multi-currency open investments stats
@@ -353,21 +335,19 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return InvestmentStats.empty();
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return InvestmentStats.empty();
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: openCashFlows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  return calculateStats(convertedCashFlows);
+  return engine.financial.calculateStats(convertedCashFlows);
 }
 
 /// Provider for multi-currency closed investments stats
@@ -420,19 +400,17 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) return InvestmentStats.empty();
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) return InvestmentStats.empty();
 
   final userBaseCurrency = ref.watch(currencyCodeProvider);
 
   // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await batchConverter.batchConvert(
+  final convertedCashFlows = await engine.currency.batchConvert(
     cashFlows: closedCashFlows,
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
 
-  return calculateStats(convertedCashFlows);
+  return engine.financial.calculateStats(convertedCashFlows);
 }
