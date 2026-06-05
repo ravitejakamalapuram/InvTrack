@@ -297,6 +297,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.pop(context),
+                  tooltip: l10n.tooltipClose,
                 ),
               ],
             ),
