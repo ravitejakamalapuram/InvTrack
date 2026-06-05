@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
+import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/reports/data/services/fy_report_service.dart';
@@ -9,10 +12,13 @@ void main() {
     const int fyYear = 2023; // FY 2023-24 (Apr 1, 2023 - Mar 31, 2024)
 
     setUp(() {
-      service = FYReportService();
+      final engine = CalculationEngine()
+        ..registerModule(CurrencyConverterModule(null))
+        ..registerModule(FinancialCalculatorModule());
+      service = FYReportService(engine);
     });
 
-    test('should calculate FY totals correctly', () {
+    test('should calculate FY totals correctly', () async {
       final cashFlows = [
         CashFlowEntity(
           id: '1',
@@ -66,10 +72,11 @@ void main() {
         ),
       ];
 
-      final report = service.generateReport(
+      final report = await service.generateReport(
         fyYear: fyYear,
         allCashFlows: cashFlows,
         allInvestments: investments,
+        baseCurrency: 'USD',
       );
 
       expect(report.totalInvested, 10000.0);
@@ -80,7 +87,7 @@ void main() {
       expect(report.fyLabel, '2023-24');
     });
 
-    test('should filter out cashflows outside FY period', () {
+    test('should filter out cashflows outside FY period', () async {
       final cashFlows = [
         // Before FY start (Mar 30, 2023 - should be excluded)
         CashFlowEntity(
@@ -127,16 +134,17 @@ void main() {
         ),
       ];
 
-      final report = service.generateReport(
+      final report = await service.generateReport(
         fyYear: fyYear,
         allCashFlows: cashFlows,
         allInvestments: investments,
+        baseCurrency: 'USD',
       );
 
       expect(report.totalInvested, 2000.0); // Only May 1 transaction included
     });
 
-    test('should categorize dividend and interest income', () {
+    test('should categorize dividend and interest income', () async {
       final cashFlows = [
         CashFlowEntity(
           id: '1',
@@ -183,10 +191,11 @@ void main() {
         ),
       ];
 
-      final report = service.generateReport(
+      final report = await service.generateReport(
         fyYear: fyYear,
         allCashFlows: cashFlows,
         allInvestments: investments,
+        baseCurrency: 'USD',
       );
 
       expect(report.totalIncome, 800.0);
@@ -194,11 +203,12 @@ void main() {
       expect(report.interestIncome, 300.0);
     });
 
-    test('should handle empty data', () {
-      final report = service.generateReport(
+    test('should handle empty data', () async {
+      final report = await service.generateReport(
         fyYear: fyYear,
         allCashFlows: [],
         allInvestments: [],
+        baseCurrency: 'USD',
       );
 
       expect(report.totalInvested, 0.0);
@@ -210,11 +220,12 @@ void main() {
       expect(report.interestIncome, 0.0);
     });
 
-    test('should calculate correct FY start and end dates', () {
-      final report = service.generateReport(
+    test('should calculate correct FY start and end dates', () async {
+      final report = await service.generateReport(
         fyYear: fyYear,
         allCashFlows: [],
         allInvestments: [],
+        baseCurrency: 'USD',
       );
 
       expect(report.fyStart.year, 2023);
@@ -226,7 +237,7 @@ void main() {
       expect(report.fyEnd.day, 31);
     });
 
-    test('should generate monthly breakdown with 12 months', () {
+    test('should generate monthly breakdown with 12 months', () async {
       final cashFlows = [
         CashFlowEntity(
           id: '1',
@@ -261,10 +272,11 @@ void main() {
         ),
       ];
 
-      final report = service.generateReport(
+      final report = await service.generateReport(
         fyYear: fyYear,
         allCashFlows: cashFlows,
         allInvestments: investments,
+        baseCurrency: 'USD',
       );
 
       expect(report.monthlyBreakdown.length, 12); // All 12 months of FY

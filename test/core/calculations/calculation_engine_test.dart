@@ -6,8 +6,6 @@ import 'package:inv_tracker/core/calculations/modules/portfolio_health_module.da
 import 'package:inv_tracker/core/calculations/modules/projection_module.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
-import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
-import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';

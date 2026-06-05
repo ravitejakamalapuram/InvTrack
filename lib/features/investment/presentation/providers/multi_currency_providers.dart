@@ -1,5 +1,4 @@
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
-import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';

@@ -9,7 +9,6 @@ import 'package:inv_tracker/features/portfolio_health/data/services/health_score
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
 
 part 'portfolio_health_provider.g.dart';
 
