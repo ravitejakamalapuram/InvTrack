@@ -84,6 +84,7 @@ class PortfolioHealth extends _$PortfolioHealth {
       allCashFlows: cashFlows,
       goalProgress: goalProgress,
       baseCurrency: baseCurrency,
+      areStatsInBaseCurrency: true,
     );
 
     // Log analytics - score calculated (non-blocking, privacy-safe)

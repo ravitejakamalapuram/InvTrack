@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -41,8 +42,15 @@ class FYReportService {
     final fyEnd = DateTime(fyYear + 1, 3, 31, 23, 59, 59);
     final fyLabel = '$fyYear-${(fyYear + 1) % 100}';
 
-    // Filter cashflows for this FY
-    final fyCashFlows = allCashFlows.where((cf) {
+    // Convert all cash flows to base currency
+    final baseCashFlows = await _engine.currency.batchConvert(
+      cashFlows: allCashFlows,
+      baseCurrency: baseCurrency,
+      fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+    );
+
+    // Filter cashflows for this FY using the converted cashflows
+    final fyCashFlows = baseCashFlows.where((cf) {
       return cf.date.isAfter(fyStart.subtract(const Duration(days: 1))) &&
           cf.date.isBefore(fyEnd.add(const Duration(days: 1)));
     }).toList();
@@ -96,13 +104,13 @@ class FYReportService {
     // Calculate portfolio values at start and end of FY
     final portfolioValueAtStart = await _calculatePortfolioValue(
       allInvestments,
-      allCashFlows,
+      baseCashFlows,
       fyStart,
       baseCurrency,
     );
     final portfolioValueAtEnd = await _calculatePortfolioValue(
       allInvestments,
-      allCashFlows,
+      baseCashFlows,
       fyEnd,
       baseCurrency,
     );

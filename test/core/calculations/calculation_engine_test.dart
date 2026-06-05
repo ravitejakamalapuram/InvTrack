@@ -263,15 +263,23 @@ void main() {
       test('fallback strategy application on conversion failure', () async {
         final c = conversionEngine.currency;
 
-        // Strategy: throwError should raise exception when currency conversion service fails to find conversion rates
+        // Strategy: throwError should raise CurrencyConversionException when currency conversion service fails to find conversion rates
         expect(
           () => c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.throwError),
-          throwsException,
+          throwsA(isA<CurrencyConversionException>()),
         );
 
-        // Strategy: useOriginal should keep the original amount and currency
+        // Strategy: useOriginal should keep the original amount
         final original = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.useOriginal);
         expect(original, 100.0);
+
+        // Strategy: skipTransaction should return 0.0
+        final zero = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.skipTransaction);
+        expect(zero, 0.0);
+
+        // Strategy: useLastKnown should try to get the last known rate or return original
+        final lastKnown = await c.convert(amount: 100.0, from: 'GBP', to: 'INR', fallbackStrategy: ConversionFallbackStrategy.useLastKnown);
+        expect(lastKnown, 100.0); // No last known rate exists, returns original amount
       });
     });
 
@@ -331,10 +339,21 @@ void main() {
           baseCurrency: 'INR',
         );
 
+        final identityScore = await identityEngine.health.calculate(
+          investments: investments,
+          investmentStats: statsMap,
+          allCashFlows: const [],
+          goalProgress: const [],
+          baseCurrency: 'INR',
+        );
+
         // Overall score should resolve successfully and both return/diversification must be positive
         expect(score.overallScore, greaterThan(0));
         expect(score.overallScore, lessThanOrEqualTo(100));
         expect(score.diversification.score, greaterThan(0)); // diversified!
+
+        // Verify that conversion actually occurred (diversity score differs from the no-conversion control)
+        expect(score.diversification.score, isNot(equals(identityScore.diversification.score)));
       });
     });
   });
