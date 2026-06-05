@@ -18,7 +18,6 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(incomeGuardianSettingsProvider);
-    final notifier = ref.read(incomeGuardianSettingsProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
 
@@ -43,7 +42,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                     ? l10n.incomeGuardianEnabled
                     : l10n.incomeGuardianDisabled,
                 value: settings.enabled,
-                onChanged: (value) => notifier.setEnabled(value),
+                onChanged: (value) => ref
+                    .read(incomeGuardianSettingsProvider.notifier)
+                    .setEnabled(value),
               ),
             ],
           ),
@@ -66,7 +67,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 max: 7,
                 divisions: 7,
                 isDark: isDark,
-                onChanged: (value) => notifier.setUpcomingDaysBefore(value.toInt()),
+                onChanged: (value) => ref
+                    .read(incomeGuardianSettingsProvider.notifier)
+                    .setUpcomingDaysBefore(value.toInt()),
               ),
               _SliderTile(
                 icon: Icons.warning_amber_rounded,
@@ -81,7 +84,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 max: 7,
                 divisions: 7,
                 isDark: isDark,
-                onChanged: (value) => notifier.setOverdueDaysAfter(value.toInt()),
+                onChanged: (value) => ref
+                    .read(incomeGuardianSettingsProvider.notifier)
+                    .setOverdueDaysAfter(value.toInt()),
               ),
             ],
           ),
@@ -101,7 +106,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 max: 30,
                 divisions: 5,
                 isDark: isDark,
-                onChanged: (value) => notifier.setAmountTolerancePercent(value.toInt()),
+                onChanged: (value) => ref
+                    .read(incomeGuardianSettingsProvider.notifier)
+                    .setAmountTolerancePercent(value.toInt()),
               ),
               _SliderTile(
                 icon: Icons.calendar_month,
@@ -119,7 +126,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 onChanged: (value) {
                   // Round to nearest 7 days
                   final roundedValue = ((value / 7).round() * 7).clamp(7, 60);
-                  notifier.setDateWindowDays(roundedValue);
+                  ref
+                      .read(incomeGuardianSettingsProvider.notifier)
+                      .setDateWindowDays(roundedValue);
                 },
               ),
               _SliderTile(
@@ -132,7 +141,9 @@ class IncomeGuardianSettingsScreen extends ConsumerWidget {
                 max: 95,
                 divisions: 9,
                 isDark: isDark,
-                onChanged: (value) => notifier.setConfidenceThresholdPercent(value.toInt()),
+                onChanged: (value) => ref
+                    .read(incomeGuardianSettingsProvider.notifier)
+                    .setConfidenceThresholdPercent(value.toInt()),
               ),
             ],
           ),

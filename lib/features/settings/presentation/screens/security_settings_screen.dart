@@ -19,7 +19,6 @@ class SecuritySettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final securityState = ref.watch(securityProvider);
-    final securityNotifier = ref.read(securityProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
 
@@ -44,8 +43,11 @@ class SecuritySettingsScreen extends ConsumerWidget {
                     ? l10n.pinRequiredToOpenApp
                     : l10n.protectWithFourDigitPin,
                 value: securityState.hasPin,
-                onChanged: (value) =>
-                    _handlePinToggle(context, value, securityNotifier),
+                onChanged: (value) => _handlePinToggle(
+                  context,
+                  value,
+                  ref.read(securityProvider.notifier),
+                ),
               ),
             ],
           ),
@@ -64,8 +66,9 @@ class SecuritySettingsScreen extends ConsumerWidget {
                   title: l10n.faceIdTouchId,
                   subtitle: l10n.unlockWithBiometrics,
                   value: securityState.isBiometricEnabled,
-                  onChanged: (value) =>
-                      securityNotifier.toggleBiometrics(value),
+                  onChanged: (value) => ref
+                      .read(securityProvider.notifier)
+                      .toggleBiometrics(value),
                 ),
               ],
             ),
@@ -80,7 +83,10 @@ class SecuritySettingsScreen extends ConsumerWidget {
                   iconColor: Colors.blue,
                   title: l10n.changePin,
                   subtitle: l10n.updateYourSecurityCode,
-                  onTap: () => _handleChangePin(context, securityNotifier),
+                  onTap: () => _handleChangePin(
+                    context,
+                    ref.read(securityProvider.notifier),
+                  ),
                 ),
               ],
             ),

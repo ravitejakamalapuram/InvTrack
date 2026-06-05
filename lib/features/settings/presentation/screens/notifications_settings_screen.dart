@@ -20,7 +20,6 @@ class NotificationsSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(notificationSettingsProvider);
-    final notifier = ref.read(notificationSettingsProvider.notifier);
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -42,10 +41,12 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 title: l10n.weeklySummary,
                 subtitle: l10n.getSummaryEverySunday,
                 value: settings.weeklySummaryEnabled,
-                onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.weeklySummary,
-                  value,
-                ),
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(
+                      NotificationSettingType.weeklySummary,
+                      value,
+                    ),
               ),
               SettingsToggleTile(
                 icon: Icons.summarize,
@@ -53,10 +54,12 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 title: l10n.monthlySummary,
                 subtitle: l10n.endOfMonthIncomeRecap,
                 value: settings.monthlySummaryEnabled,
-                onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.monthlySummary,
-                  value,
-                ),
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(
+                      NotificationSettingType.monthlySummary,
+                      value,
+                    ),
               ),
             ],
           ),
@@ -72,10 +75,12 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 title: l10n.incomeReminders,
                 subtitle: l10n.whenIncomeIsExpected,
                 value: settings.incomeRemindersEnabled,
-                onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.incomeReminders,
-                  value,
-                ),
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(
+                      NotificationSettingType.incomeReminders,
+                      value,
+                    ),
               ),
               SettingsToggleTile(
                 icon: Icons.event_available,
@@ -83,10 +88,12 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 title: l10n.maturityReminders,
                 subtitle: l10n.beforeInvestmentsMature,
                 value: settings.maturityRemindersEnabled,
-                onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.maturityReminders,
-                  value,
-                ),
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(
+                      NotificationSettingType.maturityReminders,
+                      value,
+                    ),
               ),
             ],
           ),
@@ -101,10 +108,12 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                 title: l10n.goalMilestones,
                 subtitle: l10n.celebrateAtMilestones,
                 value: settings.goalMilestonesEnabled,
-                onChanged: (value) => notifier.setSetting(
-                  NotificationSettingType.goalMilestones,
-                  value,
-                ),
+                onChanged: (value) => ref
+                    .read(notificationSettingsProvider.notifier)
+                    .setSetting(
+                      NotificationSettingType.goalMilestones,
+                      value,
+                    ),
               ),
             ],
           ),
