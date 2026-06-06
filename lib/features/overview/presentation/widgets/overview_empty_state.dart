@@ -404,6 +404,7 @@ class _QuickStartButton extends StatelessWidget {
       button: true,
       label: '$label, $sublabel',
       excludeSemantics: true,
+      onTap: onTap,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -528,6 +529,7 @@ class _TemplateChip extends StatelessWidget {
       button: true,
       label: 'Template: ${template.name}',
       excludeSemantics: true,
+      onTap: onTap,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

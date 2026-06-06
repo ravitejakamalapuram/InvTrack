@@ -9,3 +9,9 @@
 **Learning:** When building Empty States that combine static text (titles, messages) with decorative icons, screen readers often read them as disjointed elements. Additionally, wrapping the entire `EmptyStateWidget` (including its action button) in a single `Semantics` widget with `excludeSemantics: true` causes the interactive button to be removed from the accessibility tree, making it undiscoverable by screen readers.
 
 **Action:** Wrap only the static content (Icon, Title, Message) in a `Semantics` widget using `excludeSemantics: true` with a combined label. Ensure any interactive elements like buttons are placed *outside* this wrapper so they remain discoverable and actionable.
+
+## 2026-06-06 - Semantics excludeSemantics with interactive children
+
+**Learning:** When using `excludeSemantics: true` on a `Semantics` widget that wraps an interactive element (like `InkWell`), the underlying interactive semantics (such as `onTap`) are completely dropped from the accessibility tree. This makes the element unclickable for screen reader users.
+
+**Action:** If you must use `excludeSemantics: true` around an interactive element to provide a custom label, you MUST explicitly provide the `onTap` property to the `Semantics` widget itself so the screen reader knows it is actionable.
