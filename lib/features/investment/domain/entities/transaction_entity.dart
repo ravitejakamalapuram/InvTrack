@@ -1,3 +1,5 @@
+import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
+
 /// Cash Flow Type - direction of money
 ///
 /// Note: Icon and color are handled in UI extensions to keep domain layer
@@ -85,11 +87,14 @@ enum CashFlowType {
 }
 
 /// Cash Flow Entity - tracks money in and out
-class CashFlowEntity {
+class CashFlowEntity implements ICashFlow {
   final String id;
+  @override
   final String investmentId;
+  @override
   final DateTime date;
   final CashFlowType type;
+  @override
   final double amount; // Always positive, direction determined by type
   final String? notes;
   final DateTime createdAt;
@@ -97,6 +102,7 @@ class CashFlowEntity {
   /// Currency of this cash flow
   /// Each cash flow can have its own currency (not inherited from investment)
   /// Default: 'USD' for backward compatibility
+  @override
   final String currency;
 
   const CashFlowEntity({
@@ -110,8 +116,23 @@ class CashFlowEntity {
     this.currency = 'USD', // Default for backward compatibility
   });
 
+  @override
+  CalculationCashFlowType get calculationType {
+    switch (type) {
+      case CashFlowType.invest:
+        return CalculationCashFlowType.invest;
+      case CashFlowType.returnFlow:
+        return CalculationCashFlowType.returnFlow;
+      case CashFlowType.income:
+        return CalculationCashFlowType.income;
+      case CashFlowType.fee:
+        return CalculationCashFlowType.fee;
+    }
+  }
+
   /// Returns the signed amount for calculations
   /// Outflows (INVEST, FEE) are negative, Inflows (RETURN, INCOME) are positive
+  @override
   double get signedAmount => type.isOutflow ? -amount : amount;
 
   CashFlowEntity copyWith({

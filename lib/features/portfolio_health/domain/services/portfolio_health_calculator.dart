@@ -1,10 +1,10 @@
 import 'dart:math';
 
+import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 
 /// Portfolio Health Score Calculator
@@ -23,7 +23,7 @@ class PortfolioHealthCalculator {
   static PortfolioHealthScore calculate({
     required List<InvestmentEntity> investments,
     required Map<String, InvestmentStats> investmentStats,
-    required List<CashFlowEntity> allCashFlows,
+    required List<ICashFlow> allCashFlows,
     required List<GoalProgress> goalProgress,
     double benchmarkInflationRate = defaultInflationRate,
   }) {
@@ -436,7 +436,7 @@ class PortfolioHealthCalculator {
   /// Score based on stale investments and overdue actions
   static ComponentScore _calculateActionReadinessScore(
     List<InvestmentEntity> investments,
-    List<CashFlowEntity> allCashFlows,
+    List<ICashFlow> allCashFlows,
   ) {
     if (investments.isEmpty) {
       return ComponentScore(
@@ -473,10 +473,10 @@ class PortfolioHealthCalculator {
     int staleInvestments = 0;
 
     // Pre-index cash flows by investment ID to avoid O(n*m) complexity
-    final cashFlowsByInvestmentId = <String, List<CashFlowEntity>>{};
+    final cashFlowsByInvestmentId = <String, List<ICashFlow>>{};
     for (final cashFlow in allCashFlows) {
       cashFlowsByInvestmentId
-          .putIfAbsent(cashFlow.investmentId, () => <CashFlowEntity>[])
+          .putIfAbsent(cashFlow.investmentId, () => <ICashFlow>[])
           .add(cashFlow);
     }
 
@@ -489,7 +489,7 @@ class PortfolioHealthCalculator {
 
       // Check for stale investments (no activity in 6+ months)
       final cashFlows =
-          cashFlowsByInvestmentId[inv.id] ?? const <CashFlowEntity>[];
+          cashFlowsByInvestmentId[inv.id] ?? const <ICashFlow>[];
       if (cashFlows.isNotEmpty) {
         // Optimization: Replace .map().reduce() with a standard loop
         var lastActivity = cashFlows.first.date;

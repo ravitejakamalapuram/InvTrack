@@ -32,8 +32,8 @@
 library;
 
 import 'dart:math';
+import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// Utility class for financial calculations used in investment analysis.
 ///
@@ -84,7 +84,7 @@ class FinancialCalculator {
   ///
   /// - [XirrSolver.calculateXirr] for the underlying algorithm
   /// - [calculateCAGR] for simple single-investment scenarios
-  static double calculateXirrFromCashFlows(List<CashFlowEntity> cashFlows) {
+  static double calculateXirrFromCashFlows(List<ICashFlow> cashFlows) {
     if (cashFlows.isEmpty) return 0.0;
 
     final dates = <DateTime>[];
@@ -270,10 +270,10 @@ class FinancialCalculator {
   ///
   /// - [calculateTotalReturned] for total inflows
   /// - [calculateNetCashFlow] for net profit/loss
-  static double calculateTotalInvested(List<CashFlowEntity> cashFlows) {
+  static double calculateTotalInvested(List<ICashFlow> cashFlows) {
     double total = 0.0;
     for (final cf in cashFlows) {
-      if (cf.type.isOutflow) {
+      if (cf.signedAmount < 0) {
         total += cf.amount;
       }
     }
@@ -309,10 +309,10 @@ class FinancialCalculator {
   ///
   /// - [calculateTotalInvested] for total outflows
   /// - [calculateNetCashFlow] for net profit/loss
-  static double calculateTotalReturned(List<CashFlowEntity> cashFlows) {
+  static double calculateTotalReturned(List<ICashFlow> cashFlows) {
     double total = 0.0;
     for (final cf in cashFlows) {
-      if (cf.type.isInflow) {
+      if (cf.signedAmount > 0) {
         total += cf.amount;
       }
     }

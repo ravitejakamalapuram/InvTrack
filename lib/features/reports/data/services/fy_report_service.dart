@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/tax_and_basis_calculator.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -175,6 +176,7 @@ class FYReportService {
     List<CashFlowEntity> fyCashFlows,
     int fyYear,
   ) {
+    final monthlyBuckets = TaxAndBasisCalculator.calculateMonthlyBuckets(fyCashFlows);
     final breakdown = <MonthlyFYData>[];
 
     // Generate 12 months from Apr to Mar
@@ -183,41 +185,16 @@ class FYReportService {
       final year = month < 4 ? fyYear + 1 : fyYear;
 
       final monthStart = DateTime(year, month, 1);
-      final monthEnd = DateTime(year, month + 1, 0, 23, 59, 59);
-
-      double invested = 0;
-      double returns = 0;
-      double income = 0;
-      double fees = 0;
-
-      for (final cf in fyCashFlows) {
-        if (cf.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
-            cf.date.isBefore(monthEnd.add(const Duration(days: 1)))) {
-          switch (cf.type) {
-            case CashFlowType.invest:
-              invested += cf.amount;
-              break;
-            case CashFlowType.returnFlow:
-              returns += cf.amount;
-              break;
-            case CashFlowType.income:
-              income += cf.amount;
-              break;
-            case CashFlowType.fee:
-              fees += cf.amount;
-              break;
-          }
-        }
-      }
+      final bucket = monthlyBuckets[monthStart] ?? const MonthlyBucket();
 
       breakdown.add(
         MonthlyFYData(
           month: month,
           year: year,
-          invested: invested,
-          returns: returns,
-          income: income,
-          fees: fees,
+          invested: bucket.invested,
+          returns: bucket.returns,
+          income: bucket.income,
+          fees: bucket.fees,
         ),
       );
     }
@@ -243,36 +220,16 @@ class FYReportService {
     List<InvestmentEntity> allInvestments,
     DateTime fyEnd,
   ) {
-    double shortTermGains = 0;
-    double longTermGains = 0;
+    final investmentStartDates = {
+      for (final inv in allInvestments)
+        inv.id: inv.startDate ?? inv.createdAt
+    };
 
-    // Only consider RETURN cashflows for capital gains
-    final returns = fyCashFlows.where((cf) => cf.type == CashFlowType.returnFlow);
-
-    // Optimization: Pre-compute dictionary comprehension to avoid O(N*M) nested iterations
-    final investmentMap = {for (final inv in allInvestments) inv.id: inv};
-
-    for (final returnCF in returns) {
-      final investment = investmentMap[returnCF.investmentId];
-      if (investment == null) continue;
-
-      // Calculate holding period (from first investment to return)
-      final investmentDate = investment.startDate ?? investment.createdAt;
-      final holdingDays = returnCF.date.difference(investmentDate).inDays;
-
-      // Simplified gain calculation
-      // For capital gains, we approximate: return amount is the gain
-      // In reality, should match cost basis, but for annual reporting this is acceptable
-      final gain = returnCF.amount * 0.1; // Assume 10% gain on returns (conservative estimate)
-
-      if (holdingDays < 365) {
-        shortTermGains += gain;
-      } else {
-        longTermGains += gain;
-      }
-    }
-
-    return (shortTermGains, longTermGains);
+    return TaxAndBasisCalculator.calculateCapitalGains(
+      cashFlows: fyCashFlows,
+      investmentStartDates: investmentStartDates,
+      assumedGainPercentage: 0.10,
+    );
   }
 
   /// Calculate top performers by returns and XIRR

@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -35,6 +36,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
+    final baseCurrency = ref.watch(currencyCodeProvider);
     
     final expectedAsync = ref.watch(allExpectedCashFlowsProvider);
 
@@ -62,9 +64,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             children: [
               _buildHeader(isDark, l10n),
               SizedBox(height: AppSpacing.md),
-              
+
               if (nextPayment != null)
-                _buildNextPayment(context, ref, nextPayment, currencySymbol, locale, isDark, l10n)
+                _buildNextPayment(context, ref, nextPayment, currencySymbol, locale, baseCurrency, isDark, l10n)
               else
                 _buildEmptyState(isDark, l10n),
               
@@ -252,6 +254,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     ExpectedCashFlowEntity payment,
     String currencySymbol,
     String locale,
+    String baseCurrency,
     bool isDark,
     AppLocalizations l10n,
   ) {
@@ -358,28 +361,8 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             ],
           ),
           SizedBox(height: AppSpacing.md),
-          // Amount - Larger and more prominent
-          PrivacyProtectionWrapper(
-            child: Text(
-              formatCompactCurrency(
-                payment.expectedAmount,
-                symbol: currencySymbol,
-                locale: locale,
-              ),
-              style: AppTypography.h1.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 36,
-                height: 1.1,
-                shadows: [
-                  Shadow(
-                    color: statusColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Amount - Currency-aware with conversion (Rule 21)
+          _buildConvertedAmount(ref, payment, baseCurrency, currencySymbol, locale, statusColor),
           SizedBox(height: AppSpacing.md),
           // Divider
           Container(
@@ -711,6 +694,110 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Build currency-converted amount display (Rule 21 compliant)
+  Widget _buildConvertedAmount(
+    WidgetRef ref,
+    ExpectedCashFlowEntity payment,
+    String baseCurrency,
+    String currencySymbol,
+    String locale,
+    Color statusColor,
+  ) {
+    // Check if conversion is needed
+    if (payment.currency == baseCurrency) {
+      // Same currency - display directly
+      return PrivacyProtectionWrapper(
+        child: Text(
+          formatCompactCurrency(
+            payment.expectedAmount,
+            symbol: currencySymbol,
+            locale: locale,
+          ),
+          style: AppTypography.h1.copyWith(
+            color: statusColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 36,
+            height: 1.1,
+            shadows: [
+              Shadow(
+                color: statusColor.withValues(alpha: 0.3),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Different currency - convert before display
+    final conversionService = ref.watch(currencyConversionServiceProvider);
+
+    // Handle null service (unauthenticated user)
+    if (conversionService == null) {
+      return PrivacyProtectionWrapper(
+        child: Text(
+          formatCompactCurrency(
+            payment.expectedAmount,
+            symbol: currencySymbol,
+            locale: locale,
+          ),
+          style: AppTypography.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: statusColor,
+          ),
+        ),
+      );
+    }
+
+    return FutureBuilder<double>(
+      future: conversionService.convert(
+        amount: payment.expectedAmount,
+        from: payment.currency,
+        to: baseCurrency,
+        date: payment.expectedDate,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          // Loading - show original with currency code
+          return PrivacyProtectionWrapper(
+            child: Text(
+              '${payment.expectedAmount.toStringAsFixed(0)} ${payment.currency}',
+              style: AppTypography.h1.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 36,
+                height: 1.1,
+              ),
+            ),
+          );
+        }
+
+        final convertedAmount = snapshot.data!;
+        return PrivacyProtectionWrapper(
+          child: Text(
+            formatCompactCurrency(
+              convertedAmount,
+              symbol: currencySymbol,
+              locale: locale,
+            ),
+            style: AppTypography.h1.copyWith(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 36,
+              height: 1.1,
+              shadows: [
+                Shadow(
+                  color: statusColor.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
