@@ -135,7 +135,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       final state = ref.read(inAppUpdateProvider);
 
       // Show result
-      if (state.hasUpdate) {
+      if (state.isDownloaded) {
+        _showInstallDialog(context);
+      } else if (state.hasUpdate) {
         // Show update options dialog
         _showUpdateOptionsDialog(context, state);
       } else if (state.error != null) {
@@ -168,6 +170,32 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       // ignore: use_build_context_synchronously
       ErrorHandler.handle(e, st, context: context, showFeedback: true);
     }
+  }
+
+  void _showInstallDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must choose
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(l10n.inAppUpdateInstallTitle),
+        content: Text(l10n.inAppUpdateInstallMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text(l10n.later),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogCtx).pop();
+              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+            },
+            child: Text(l10n.inAppUpdateInstallButton),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showUpdateOptionsDialog(BuildContext context, InAppUpdateState state) {
