@@ -66,9 +66,7 @@
 - **Long-term Architecture:**
     - Move heavy portfolio calculation logic (XIRR, CAGR) into background isolates (`compute`) to ensure performance scalability.
 
-# Final Lists
-
-1. **Top 10 highest-value fixes:**
+1. Top 10 highest-value fixes:
     1. Fix silent error swallowing in Riverpod `AsyncValue.when(error: ...)` by adding `LoggerService` logging.
     2. Ensure 100% compliance with `PrivacyProtectionWrapper` and `CompactAmountText` for all financial data.
     3. Change logging level from `error` to `info`/`warn` for expected user cancellations or third-party platform exceptions.
@@ -80,7 +78,7 @@
     9. Ensure all missing localizations trigger a non-fatal `LoggerService.warn` log.
     10. Enforce timeout-based writes for Firestore operations to guarantee offline persistence.
 
-2. **Top 10 duplication-removal opportunities:**
+2. Top 10 duplication-removal opportunities:
     1. UI empty states across different feature lists.
     2. Riverpod `AsyncValue` loading and error state UI handling.
     3. Currency conversion logic (ensure both values are in the same currency before ratio calculations).
@@ -92,20 +90,20 @@
     9. Custom dialog and bottom sheet creation.
     10. Mocking setup in unit tests.
 
-3. **Top reusable abstractions worth introducing:**
+3. Top reusable abstractions worth introducing:
     1. `AsyncStateWrapper<T>` for consistent Riverpod state UI and logging.
     2. Standardized `EmptyState` widget.
     3. `ValidatedFormBuilder` for consistent form handling.
     4. Performance-optimized single-pass collection iteration utilities.
     5. `ResponsiveLayout` wrapper for phone/tablet adaptation.
 
-4. **Files/components with highest technical debt:**
+4. Files/components with highest technical debt:
     1. Deeply chained functional collection operations in overview providers.
     2. `lib/core/calculations/xirr_calculator.dart` (if not already using isolates).
     3. Scattered manual currency formatting instead of `CompactAmountText`.
     4. UI widgets with hardcoded string literals (violates localization architecture rules).
 
-5. **Suggested engineering standards missing from the repository:**
+5. Suggested engineering standards missing from the repository:
     1. Explicit guideline requiring background isolates for data transformations involving more than N items.
     2. Mandated use of `AsyncStateWrapper` to enforce error logging.
     3. Standardized pattern for complex form state management.
