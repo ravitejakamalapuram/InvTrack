@@ -126,6 +126,7 @@ class _TemplateCard extends StatelessWidget {
       selected: isSelected,
       label: template.name,
       excludeSemantics: true,
+      onTap: onTap,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
