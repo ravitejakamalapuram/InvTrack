@@ -88,7 +88,8 @@ class FYReportService {
       }
     }
 
-    final netCashFlow = (totalIncome + totalReturns) - (totalInvested + totalFees);
+    final netCashFlow =
+        (totalIncome + totalReturns) - (totalInvested + totalFees);
 
     // Calculate monthly breakdown
     final monthlyBreakdown = _calculateMonthlyBreakdown(fyCashFlows, fyYear);
@@ -97,7 +98,11 @@ class FYReportService {
     final xirr = _calculateFYXIRR(fyCashFlows, allInvestments, fyEnd);
 
     // Calculate capital gains (short-term vs long-term)
-    final capitalGains = _calculateCapitalGains(fyCashFlows, allInvestments, fyEnd);
+    final capitalGains = _calculateCapitalGains(
+      fyCashFlows,
+      allInvestments,
+      fyEnd,
+    );
 
     // Calculate top performers
     final topPerformers = _calculateTopPerformers(allInvestments, fyCashFlows);
@@ -233,7 +238,8 @@ class FYReportService {
   }
 
   /// Calculate top performers by returns and XIRR
-  (List<InvestmentWithReturns>, List<InvestmentWithReturns>) _calculateTopPerformers(
+  (List<InvestmentWithReturns>, List<InvestmentWithReturns>)
+  _calculateTopPerformers(
     List<InvestmentEntity> allInvestments,
     List<CashFlowEntity> fyCashFlows,
   ) {
@@ -287,11 +293,19 @@ class FYReportService {
   ) async {
     double totalValue = 0.0;
 
+    // Optimization: Group cash flows by investment ID to change O(N*M) nested loop into O(N+M)
+    final cashFlowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in allCashFlows) {
+      (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
+    }
+
+    final dateLimit = date.add(const Duration(days: 1));
+
     for (final investment in allInvestments) {
       final startDate = investment.startDate ?? investment.createdAt;
 
       // Only count investments that existed at this date
-      if (startDate.isBefore(date.add(const Duration(days: 1)))) {
+      if (startDate.isBefore(dateLimit)) {
         // If investment was closed before this date, value is 0
         if (investment.closedAt != null &&
             investment.closedAt!.isBefore(date)) {
@@ -299,9 +313,13 @@ class FYReportService {
         }
 
         // Get cash flows for this investment up to the given date
-        final investmentFlows = allCashFlows.where((cf) =>
-            cf.investmentId == investment.id &&
-            cf.date.isBefore(date.add(const Duration(days: 1)))).toList();
+        final allInvestmentFlows = cashFlowsByInvestment[investment.id] ?? [];
+        final investmentFlows = <CashFlowEntity>[];
+        for (final cf in allInvestmentFlows) {
+          if (cf.date.isBefore(dateLimit)) {
+            investmentFlows.add(cf);
+          }
+        }
 
         double invested = 0.0;
         double returned = 0.0;

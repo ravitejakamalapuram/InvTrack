@@ -99,3 +99,7 @@
 ## 2026-06-02 - Avoid Re-Sorting Primitive Arrays Extracted from Sorted Objects
 **Learning:** If an object array is already sorted by a property, extracting that property into a primitive array and sorting it again is wasteful O(N log N) work.
 **Action:** Reuse the existing object sort order when possible. For median calculations, directly access the middle element of the sorted object array instead of creating a new sorted primitive array.
+
+## 2024-06-25 - Avoid Nested Iterable Lookups in Loop Optimizations
+**Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
+**Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
