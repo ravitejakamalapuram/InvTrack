@@ -23,21 +23,46 @@ class InAppUpdateInitializer extends ConsumerStatefulWidget {
 }
 
 class _InAppUpdateInitializerState
-    extends ConsumerState<InAppUpdateInitializer> {
+    extends ConsumerState<InAppUpdateInitializer>
+    with WidgetsBindingObserver {
   bool _hasChecked = false;
+  bool _hasDeferredUpdate = false;
+  bool _hasDeferredInstall = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Check for updates after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
     });
   }
 
-  Future<void> _checkForUpdates() async {
-    if (_hasChecked || !mounted) return;
-    _hasChecked = true;
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      LoggerService.info('App resumed, checking update status');
+      _checkForUpdates(isResume: true);
+    }
+  }
+
+  Future<void> _checkForUpdates({bool isResume = false}) async {
+    if (!isResume) {
+      if (_hasChecked) return;
+      _hasChecked = true;
+    }
+
+    if (!mounted) return;
+
+    // Avoid duplicate checks if already checking
+    if (ref.read(inAppUpdateProvider).isChecking) return;
 
     try {
       await ref.read(inAppUpdateProvider.notifier).checkForUpdate();
@@ -45,6 +70,17 @@ class _InAppUpdateInitializerState
       if (!mounted) return;
 
       final state = ref.read(inAppUpdateProvider);
+
+      // Check if update is already downloaded
+      if (state.isDownloaded) {
+        if (!_hasDeferredInstall) {
+          LoggerService.info('Showing install dialog (update already downloaded)');
+          _showInstallDialog();
+        } else {
+          LoggerService.debug('Update is downloaded but prompt was deferred by user');
+        }
+        return;
+      }
 
       if (!state.hasUpdate) {
         LoggerService.debug('No update available');
@@ -59,7 +95,7 @@ class _InAppUpdateInitializerState
       }
 
       // Low priority updates: Show flexible update dialog
-      if (state.flexibleUpdateAllowed && !state.isDownloaded) {
+      if (state.flexibleUpdateAllowed && !_hasDeferredUpdate) {
         LoggerService.info('Showing flexible update dialog');
         _showFlexibleUpdateDialog();
       }
@@ -68,26 +104,30 @@ class _InAppUpdateInitializerState
     }
   }
 
-  BuildContext? _getValidDialogContext() {
-    // 1. Try local widget context if it is mounted and has a Navigator ancestor
-    if (mounted && Navigator.maybeOf(context) != null) {
-      return context;
-    }
-    // 2. Try root navigator's overlay context, which is inside the Navigator
-    final overlayContext = rootNavigatorKey.currentState?.overlay?.context;
-    if (overlayContext != null && overlayContext.mounted) {
-      return overlayContext;
-    }
-    // 3. Fallback to root navigator's own context
-    final rootContext = rootNavigatorKey.currentContext;
-    if (rootContext != null && rootContext.mounted) {
-      return rootContext;
+  Future<BuildContext?> _getValidDialogContext() async {
+    for (int i = 0; i < 10; i++) {
+      if (!mounted) return null;
+      // 1. Try local widget context if it is mounted and has a Navigator ancestor
+      if (Navigator.maybeOf(context) != null) {
+        return context;
+      }
+      // 2. Try root navigator's overlay context, which is inside the Navigator
+      final overlayContext = rootNavigatorKey.currentState?.overlay?.context;
+      if (overlayContext != null && overlayContext.mounted) {
+        return overlayContext;
+      }
+      // 3. Fallback to root navigator's own context
+      final rootContext = rootNavigatorKey.currentContext;
+      if (rootContext != null && rootContext.mounted) {
+        return rootContext;
+      }
+      await Future.delayed(const Duration(milliseconds: 200));
     }
     return null;
   }
 
-  void _showFlexibleUpdateDialog() {
-    final dialogContext = _getValidDialogContext();
+  Future<void> _showFlexibleUpdateDialog() async {
+    final dialogContext = await _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
       LoggerService.warn('Cannot show flexible update dialog: navigator context is null or unmounted');
       return;
@@ -107,7 +147,12 @@ class _InAppUpdateInitializerState
         content: Text(l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
+            onPressed: () {
+              setState(() {
+                _hasDeferredUpdate = true;
+              });
+              Navigator.of(dialogCtx).pop();
+            },
             child: Text(l10n?.later ?? 'Later'),
           ),
           FilledButton(
@@ -116,7 +161,7 @@ class _InAppUpdateInitializerState
               await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
 
               if (!mounted) return;
-              final checkContext = _getValidDialogContext();
+              final checkContext = await _getValidDialogContext();
               if (checkContext == null || !checkContext.mounted) return;
 
               // Check if update started successfully
@@ -153,8 +198,8 @@ class _InAppUpdateInitializerState
     return widget.child;
   }
 
-  void _showInstallDialog() {
-    final dialogContext = _getValidDialogContext();
+  Future<void> _showInstallDialog() async {
+    final dialogContext = await _getValidDialogContext();
     if (dialogContext == null || !dialogContext.mounted) {
       LoggerService.warn('Cannot show install dialog: navigator context is null or unmounted');
       return;
@@ -174,7 +219,12 @@ class _InAppUpdateInitializerState
         content: Text(l10n.inAppUpdateInstallMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
+            onPressed: () {
+              setState(() {
+                _hasDeferredInstall = true;
+              });
+              Navigator.of(dialogCtx).pop();
+            },
             child: Text(l10n.later),
           ),
           FilledButton(

@@ -11,20 +11,25 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/income_trend_report.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 
 /// Income Trend Analyzer Service
 class IncomeTrendAnalyzer {
   /// Generate income trend analysis report
-  IncomeTrendReport generateReport({
+  ///
+  /// **Multi-Currency Compliance (Rule 21):**
+  /// All cash flows are converted to the user's base currency before aggregation.
+  Future<IncomeTrendReport> generateReport({
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
     required List<ExpectedCashFlowEntity> expectedCashFlows,
-    required String currency,
-  }) {
+    required String baseCurrency,
+    required CalculationEngine engine,
+  }) async {
     final now = DateTime.now();
 
-    // 1. Calculate monthly data (last 12 months)
-    final monthlyData = _calculateMonthlyData(cashFlows, currency);
+    // 1. Calculate monthly data (last 12 months) with currency conversion
+    final monthlyData = await _calculateMonthlyData(cashFlows, baseCurrency, engine);
 
     // 2. Calculate growth metrics
     final momGrowth = _calculateMoMGrowth(monthlyData);
@@ -37,8 +42,8 @@ class IncomeTrendAnalyzer {
       expectedCashFlows,
     );
 
-    // 4. Calculate income diversification (HHI)
-    final incomeSources = _calculateIncomeSources(investments, cashFlows);
+    // 4. Calculate income diversification (HHI) with currency conversion
+    final incomeSources = await _calculateIncomeSources(investments, cashFlows, baseCurrency, engine);
     final diversificationScore = _calculateHHI(incomeSources);
 
     // 5. Calculate totals
@@ -71,25 +76,52 @@ class IncomeTrendAnalyzer {
       insights: insights,
       totalIncome: totalIncome,
       averageMonthlyIncome: averageMonthlyIncome,
-      currency: currency,
+      currency: baseCurrency,
     );
   }
 
   /// Calculate monthly income data for last 12 months
-  List<MonthlyIncomeData> _calculateMonthlyData(
+  ///
+  /// **Multi-Currency Compliance (Rule 21):**
+  /// All cash flows are batch-converted to base currency before aggregation.
+  Future<List<MonthlyIncomeData>> _calculateMonthlyData(
     List<CashFlowEntity> cashFlows,
-    String currency,
-  ) {
+    String baseCurrency,
+    CalculationEngine engine,
+  ) async {
     final now = DateTime.now();
-    final monthlyMap = <String, List<CashFlowEntity>>{};
 
-    // Group income by month (last 12 months)
-    for (final cf in cashFlows) {
-      if (cf.type != CashFlowType.income) continue;
-
+    // Filter income cash flows for last 12 months
+    final incomeCashFlows = cashFlows.where((cf) {
+      if (cf.type != CashFlowType.income) return false;
       final monthsDiff = (now.year - cf.date.year) * 12 + (now.month - cf.date.month);
-      if (monthsDiff < 0 || monthsDiff >= 12) continue;
+      return monthsDiff >= 0 && monthsDiff < 12;
+    }).toList();
 
+    if (incomeCashFlows.isEmpty) {
+      // Return 12 months of zero data
+      final monthlyData = <MonthlyIncomeData>[];
+      for (int i = 11; i >= 0; i--) {
+        final targetDate = DateTime(now.year, now.month - i, 1);
+        monthlyData.add(MonthlyIncomeData(
+          month: targetDate,
+          totalIncome: 0.0,
+          paymentCount: 0,
+          currency: baseCurrency,
+        ));
+      }
+      return monthlyData;
+    }
+
+    // Batch convert all income cash flows to base currency (OPTIMIZED)
+    final convertedCashFlows = await engine.currency.batchConvert(
+      cashFlows: incomeCashFlows,
+      baseCurrency: baseCurrency,
+    );
+
+    // Group converted cash flows by month
+    final monthlyMap = <String, List<CashFlowEntity>>{};
+    for (final cf in convertedCashFlows) {
       final key = '${cf.date.year}-${cf.date.month.toString().padLeft(2, '0')}';
       monthlyMap.putIfAbsent(key, () => []).add(cf);
     }
@@ -99,7 +131,7 @@ class IncomeTrendAnalyzer {
     for (int i = 11; i >= 0; i--) {
       final targetDate = DateTime(now.year, now.month - i, 1);
       final key = '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}';
-      
+
       final payments = monthlyMap[key] ?? [];
       final totalIncome = payments.fold<double>(0.0, (sum, cf) => sum + cf.amount);
 
@@ -107,7 +139,7 @@ class IncomeTrendAnalyzer {
         month: targetDate,
         totalIncome: totalIncome,
         paymentCount: payments.length,
-        currency: currency,
+        currency: baseCurrency,
       ));
     }
 
@@ -215,19 +247,34 @@ class IncomeTrendAnalyzer {
   }
 
   /// Calculate income sources breakdown
-  List<IncomeSource> _calculateIncomeSources(
+  ///
+  /// **Multi-Currency Compliance (Rule 21):**
+  /// All income cash flows are batch-converted to base currency before aggregation.
+  Future<List<IncomeSource>> _calculateIncomeSources(
     List<InvestmentEntity> investments,
     List<CashFlowEntity> cashFlows,
-  ) {
-    final investmentIncomeMap = <String, double>{};
+    String baseCurrency,
+    CalculationEngine engine,
+  ) async {
     final now = DateTime.now();
     final oneYearAgo = now.subtract(const Duration(days: 365));
 
-    // Sum income by investment (last 12 months)
-    for (final cf in cashFlows) {
-      if (cf.type != CashFlowType.income) continue;
-      if (cf.date.isBefore(oneYearAgo)) continue;
+    // Filter income cash flows (last 12 months)
+    final incomeCashFlows = cashFlows.where((cf) {
+      return cf.type == CashFlowType.income && !cf.date.isBefore(oneYearAgo);
+    }).toList();
 
+    if (incomeCashFlows.isEmpty) return [];
+
+    // Batch convert all income cash flows to base currency (OPTIMIZED)
+    final convertedCashFlows = await engine.currency.batchConvert(
+      cashFlows: incomeCashFlows,
+      baseCurrency: baseCurrency,
+    );
+
+    // Sum converted income by investment
+    final investmentIncomeMap = <String, double>{};
+    for (final cf in convertedCashFlows) {
       investmentIncomeMap[cf.investmentId] =
           (investmentIncomeMap[cf.investmentId] ?? 0.0) + cf.amount;
     }

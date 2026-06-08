@@ -83,7 +83,7 @@ void main() {
       identityEngine.registerModule(CurrencyConverterModule(null));
       identityEngine.registerModule(FinancialCalculatorModule());
       identityEngine.registerModule(ProjectionCalculatorModule());
-      identityEngine.registerModule(PortfolioHealthModule(identityEngine));
+      identityEngine.registerModule(PortfolioHealthModule());
 
       mockService = MockCurrencyConversionService({
         'USD_INR': 80.0,
@@ -94,7 +94,7 @@ void main() {
       conversionEngine.registerModule(CurrencyConverterModule(mockService));
       conversionEngine.registerModule(FinancialCalculatorModule());
       conversionEngine.registerModule(ProjectionCalculatorModule());
-      conversionEngine.registerModule(PortfolioHealthModule(conversionEngine));
+      conversionEngine.registerModule(PortfolioHealthModule());
     });
 
     group('Core Facade Registry', () {
@@ -328,23 +328,43 @@ void main() {
           ),
         };
 
+        // Pre-converted stats where USD is converted to INR (100 USD -> 8000 INR)
+        final convertedStatsMap = {
+          'inv-usd': const InvestmentStats(
+            totalInvested: 8000.0, // USD converted to INR
+            totalReturned: 8800.0, // USD converted to INR
+            netCashFlow: 800.0,
+            absoluteReturn: 10.0,
+            moic: 1.1,
+            xirr: 0.10,
+            cashFlowCount: 2,
+          ),
+          'inv-inr': const InvestmentStats(
+            totalInvested: 8000.0, // INR
+            totalReturned: 8800.0, // INR
+            netCashFlow: 800.0,
+            absoluteReturn: 10.0,
+            moic: 1.1,
+            xirr: 0.10,
+            cashFlowCount: 2,
+          ),
+        };
+
         // When baseCurrency is 'INR', USD stats should be converted to INR.
         // 100 USD becomes 8000 INR.
         // Portfolio will have equal weights: 8000 INR (Tech) and 8000 INR (FD).
-        final score = await conversionEngine.health.calculate(
+        final score = conversionEngine.health.calculate(
           investments: investments,
-          investmentStats: statsMap,
+          investmentStats: convertedStatsMap,
           allCashFlows: const [],
           goalProgress: const [],
-          baseCurrency: 'INR',
         );
 
-        final identityScore = await identityEngine.health.calculate(
+        final identityScore = identityEngine.health.calculate(
           investments: investments,
           investmentStats: statsMap,
           allCashFlows: const [],
           goalProgress: const [],
-          baseCurrency: 'INR',
         );
 
         // Overall score should resolve successfully and both return/diversification must be positive

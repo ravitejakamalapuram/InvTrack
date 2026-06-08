@@ -20,7 +20,7 @@ CalculationEngine calculationEngine(Ref ref) {
   engine.registerModule(CurrencyConverterModule(conversionService));
   engine.registerModule(FinancialCalculatorModule());
   engine.registerModule(ProjectionCalculatorModule());
-  engine.registerModule(PortfolioHealthModule(engine));
+  engine.registerModule(PortfolioHealthModule());
 
   return engine;
 }

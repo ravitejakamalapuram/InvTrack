@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -32,6 +33,7 @@ class IncomeCell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(currencyLocaleProvider);
     final currencySymbol = ref.watch(currencySymbolProvider);
+    final baseCurrency = ref.watch(currencyCodeProvider);
     if (expected == null) {
       // Empty cell
       return Container(
@@ -89,21 +91,7 @@ class IncomeCell extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 Expanded(
-                  child: PrivacyProtectionWrapper(
-                    child: Text(
-                      formatCompactCurrency(
-                        expected!.expectedAmount,
-                        symbol: currencySymbol,
-                        locale: locale,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.small.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
+                  child: _buildConvertedAmount(ref, expected!, baseCurrency, currencySymbol, locale, statusColor),
                 ),
               ],
             ),
@@ -154,6 +142,97 @@ class IncomeCell extends ConsumerWidget {
       case ExpectedCashFlowStatus.dismissed:
         return Icons.cancel_rounded;
     }
+  }
+
+  /// Build currency-converted amount display (Rule 21 compliant)
+  Widget _buildConvertedAmount(
+    WidgetRef ref,
+    ExpectedCashFlowEntity expected,
+    String baseCurrency,
+    String currencySymbol,
+    String locale,
+    Color statusColor,
+  ) {
+    // Check if conversion is needed
+    if (expected.currency == baseCurrency) {
+      // Same currency - display directly
+      return PrivacyProtectionWrapper(
+        child: Text(
+          formatCompactCurrency(
+            expected.expectedAmount,
+            symbol: currencySymbol,
+            locale: locale,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.small.copyWith(
+            fontWeight: FontWeight.w600,
+            color: statusColor,
+          ),
+        ),
+      );
+    }
+
+    // Different currency - convert before display
+    final conversionService = ref.watch(currencyConversionServiceProvider);
+
+    // Handle null service (unauthenticated user)
+    if (conversionService == null) {
+      return PrivacyProtectionWrapper(
+        child: Text(
+          formatCompactCurrency(
+            expected.expectedAmount,
+            symbol: currencySymbol,
+            locale: locale,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.small.copyWith(
+            fontWeight: FontWeight.w600,
+            color: statusColor,
+          ),
+        ),
+      );
+    }
+
+    return FutureBuilder<double>(
+      future: conversionService.convert(
+        amount: expected.expectedAmount,
+        from: expected.currency,
+        to: baseCurrency,
+        date: expected.expectedDate,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          // Loading - show compact placeholder
+          return Text(
+            '...',
+            maxLines: 1,
+            style: AppTypography.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: statusColor,
+            ),
+          );
+        }
+
+        final convertedAmount = snapshot.data!;
+        return PrivacyProtectionWrapper(
+          child: Text(
+            formatCompactCurrency(
+              convertedAmount,
+              symbol: currencySymbol,
+              locale: locale,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.small.copyWith(
+              fontWeight: FontWeight.w600,
+              color: statusColor,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

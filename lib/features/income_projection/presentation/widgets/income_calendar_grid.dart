@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -42,6 +43,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
+    final baseCurrency = ref.watch(currencyCodeProvider);
     final now = DateTime.now();
     final centerMonth = DateTime(now.year, now.month + monthOffset, 1);
     
@@ -86,6 +88,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
                   l10n,
                   currencySymbol,
                   locale,
+                  baseCurrency,
                   entry.key,
                   entry.value,
                   months,
@@ -186,6 +189,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
     AppLocalizations l10n,
     String currencySymbol,
     String locale,
+    String baseCurrency,
     String investmentId,
     List<ExpectedCashFlowEntity> expectedForInvestment,
     List<DateTime> months,
@@ -254,7 +258,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
             expected: expectedForMonth.isEmpty ? null : expectedForMonth.first,
             isDark: isDark,
             onTap: expectedForMonth.isEmpty ? null : () {
-              _showPaymentDetails(context, expectedForMonth.first, ref, l10n, currencySymbol, locale);
+              _showPaymentDetails(context, expectedForMonth.first, ref, baseCurrency, l10n, currencySymbol, locale);
             },
           );
         }),
@@ -266,6 +270,7 @@ class IncomeCalendarGrid extends ConsumerWidget {
     BuildContext context,
     ExpectedCashFlowEntity expected,
     WidgetRef ref,
+    String baseCurrency,
     AppLocalizations l10n,
     String currencySymbol,
     String locale,
@@ -303,10 +308,10 @@ class IncomeCalendarGrid extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             _buildDetailRow(l10n.calendarGridExpectedDate, DateFormat('MMM dd, yyyy').format(expected.expectedDate)),
-            _buildDetailRow(l10n.calendarGridExpectedAmount, formatCompactCurrency(expected.expectedAmount, symbol: currencySymbol, locale: locale)),
+            _buildConvertedDetailRow(ref, l10n.calendarGridExpectedAmount, expected, baseCurrency, currencySymbol, locale, isExpected: true),
             _buildDetailRow(l10n.calendarGridStatus, getStatusDisplayName(l10n, expected.status)),
             if (expected.actualAmount != null)
-              _buildDetailRow(l10n.calendarGridActualAmount, formatCompactCurrency(expected.actualAmount!, symbol: currencySymbol, locale: locale)),
+              _buildConvertedDetailRow(ref, l10n.calendarGridActualAmount, expected, baseCurrency, currencySymbol, locale, isExpected: false),
             if (expected.actualDate != null)
               _buildDetailRow(l10n.calendarGridActualDate, DateFormat('MMM dd, yyyy').format(expected.actualDate!)),
             const SizedBox(height: 24),
@@ -337,6 +342,60 @@ class IncomeCalendarGrid extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Build currency-converted detail row (Rule 21 compliant)
+  Widget _buildConvertedDetailRow(
+    WidgetRef ref,
+    String label,
+    ExpectedCashFlowEntity expected,
+    String baseCurrency,
+    String currencySymbol,
+    String locale, {
+    required bool isExpected,
+  }) {
+    final amount = isExpected ? expected.expectedAmount : expected.actualAmount!;
+
+    // Check if conversion is needed
+    if (expected.currency == baseCurrency) {
+      // Same currency - display directly
+      return _buildDetailRow(
+        label,
+        formatCompactCurrency(amount, symbol: currencySymbol, locale: locale),
+      );
+    }
+
+    // Different currency - convert before display
+    final conversionService = ref.watch(currencyConversionServiceProvider);
+
+    // Handle null service (unauthenticated user)
+    if (conversionService == null) {
+      return _buildDetailRow(
+        label,
+        formatCompactCurrency(amount, symbol: currencySymbol, locale: locale),
+      );
+    }
+
+    return FutureBuilder<double>(
+      future: conversionService.convert(
+        amount: amount,
+        from: expected.currency,
+        to: baseCurrency,
+        date: expected.expectedDate,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          // Loading - show placeholder
+          return _buildDetailRow(label, '...');
+        }
+
+        final convertedAmount = snapshot.data!;
+        return _buildDetailRow(
+          label,
+          formatCompactCurrency(convertedAmount, symbol: currencySymbol, locale: locale),
+        );
+      },
     );
   }
 }

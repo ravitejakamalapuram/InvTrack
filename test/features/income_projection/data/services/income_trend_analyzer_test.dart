@@ -3,16 +3,29 @@ import 'package:inv_tracker/features/income_projection/data/services/income_tren
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
+import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
+import 'package:inv_tracker/core/calculations/modules/projection_module.dart';
+import 'package:inv_tracker/core/calculations/modules/portfolio_health_module.dart';
 
 void main() {
   late IncomeTrendAnalyzer analyzer;
+  late CalculationEngine engine;
 
   setUp(() {
     analyzer = IncomeTrendAnalyzer();
+    
+    // Set up calculation engine with identity currency conversion (no conversion needed for USD)
+    engine = CalculationEngine();
+    engine.registerModule(CurrencyConverterModule(null)); // null = no conversion needed
+    engine.registerModule(FinancialCalculatorModule());
+    engine.registerModule(ProjectionCalculatorModule());
+    engine.registerModule(PortfolioHealthModule());
   });
 
   group('IncomeTrendAnalyzer - Growth Metrics', () {
-    test('should calculate positive MoM growth', () {
+    test('should calculate positive MoM growth', () async {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
@@ -21,18 +34,18 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month - 2, 1), 'inv-1'),
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       // MoM = (1200 - 1000) / 1000 * 100 = 20%
       expect(report.momGrowth, closeTo(20.0, 0.1));
     });
 
-    test('should calculate negative MoM growth', () {
+    test('should calculate negative MoM growth', () async {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
@@ -41,35 +54,35 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month - 2, 1), 'inv-1'),
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       // MoM = (800 - 1000) / 1000 * 100 = -20%
       expect(report.momGrowth, closeTo(-20.0, 0.1));
     });
 
-    test('should return 0 MoM when fewer than 2 months', () {
+    test('should return 0 MoM when fewer than 2 months', () async {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-1'),
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.momGrowth, 0.0);
     });
 
-    test('should calculate QoQ growth', () {
+    test('should calculate QoQ growth', () async {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = _createMonthlyIncome(
@@ -86,11 +99,11 @@ void main() {
         ],
       );
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       // QoQ growth should be positive (current > previous)
@@ -99,7 +112,7 @@ void main() {
   });
 
   group('IncomeTrendAnalyzer - Income Sources & HHI', () {
-    test('should calculate well-diversified portfolio (low HHI)', () {
+    test('should calculate well-diversified portfolio (low HHI)', () async {
       final now = DateTime.now();
       final investments = [
         _createInvestment('inv-1', name: 'Investment 1'),
@@ -112,11 +125,11 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-3'), // 33.3%
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       // HHI = 0.333^2 + 0.333^2 + 0.333^2 ≈ 0.33 (moderate)
@@ -124,7 +137,7 @@ void main() {
       expect(report.incomeSources.length, 3);
     });
 
-    test('should calculate concentrated portfolio (high HHI)', () {
+    test('should calculate concentrated portfolio (high HHI)', () async {
       final now = DateTime.now();
       final investments = [
         _createInvestment('inv-1', name: 'Investment 1'),
@@ -135,11 +148,11 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-2'), // 10%
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       // HHI = 0.9^2 + 0.1^2 = 0.81 + 0.01 = 0.82 (very high concentration)
@@ -149,7 +162,7 @@ void main() {
   });
 
   group('IncomeTrendAnalyzer - Platform Reliability', () {
-    test('should calculate 100% reliability when all payments on time', () {
+    test('should calculate 100% reliability when all payments on time', () async {
       final investments = [
         _createInvestment('inv-1', platform: 'LenDenClub'),
       ];
@@ -159,11 +172,11 @@ void main() {
         _createExpectedFlow('inv-1', DateTime(2024, 4, 5), DateTime(2024, 4, 5)), // On time
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.platformReliability.length, 1);
@@ -172,7 +185,7 @@ void main() {
       expect(report.platformReliability.first.averageDelayDays, 0.0);
     });
 
-    test('should calculate reliability with some late payments', () {
+    test('should calculate reliability with some late payments', () async {
       final investments = [
         _createInvestment('inv-1', platform: 'Grip'),
       ];
@@ -183,11 +196,11 @@ void main() {
         _createExpectedFlow('inv-1', DateTime(2024, 3, 5), DateTime(2024, 3, 5)), // On time
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.platformReliability.length, 1);
@@ -198,7 +211,7 @@ void main() {
       expect(report.platformReliability.first.averageDelayDays, closeTo(2.0, 0.5));
     });
 
-    test('should sort platforms by reliability', () {
+    test('should sort platforms by reliability', () async {
       final investments = [
         _createInvestment('inv-1', platform: 'LenDenClub'),
         _createInvestment('inv-2', platform: 'Grip'),
@@ -212,11 +225,11 @@ void main() {
         _createExpectedFlow('inv-2', DateTime(2024, 5, 5), DateTime(2024, 5, 5)),
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.platformReliability.length, 2);
@@ -229,7 +242,7 @@ void main() {
   });
 
   group('IncomeTrendAnalyzer - Auto-Insights', () {
-    test('should generate strong growth insight', () {
+    test('should generate strong growth insight', () async {
       final now = DateTime.now();
       final investments = [_createInvestment('inv-1')];
       final cashFlows = [
@@ -237,17 +250,17 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month - 1, 1), 'inv-1'),
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.insights.any((i) => i.contains('Strong growth') || i.contains('Positive growth')), true);
     });
 
-    test('should generate diversification warning for concentrated portfolio', () {
+    test('should generate diversification warning for concentrated portfolio', () async {
       final now = DateTime.now();
       final investments = [
         _createInvestment('inv-1', name: 'Top Source'),
@@ -258,17 +271,17 @@ void main() {
         _createIncome(1000, DateTime(now.year, now.month, 1), 'inv-2'), // 10%
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: cashFlows,
         expectedCashFlows: [],
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.insights.any((i) => i.contains('Consider diversifying')), true);
     });
 
-    test('should generate platform reliability warning', () {
+    test('should generate platform reliability warning', () async {
       final investments = [_createInvestment('inv-1', platform: 'SlowPlatform')];
       final expectedCashFlows = [
         _createExpectedFlow('inv-1', DateTime(2024, 6, 5), DateTime(2024, 6, 10)), // Late
@@ -277,11 +290,11 @@ void main() {
         _createExpectedFlow('inv-1', DateTime(2024, 3, 5), DateTime(2024, 3, 10)), // Late
       ];
 
-      final report = analyzer.generateReport(
-        investments: investments,
+      final report = await analyzer.generateReport(investments: investments,
         cashFlows: [],
         expectedCashFlows: expectedCashFlows,
-        currency: 'USD',
+        engine: engine,
+        baseCurrency: 'USD',
       );
 
       expect(report.insights.any((i) => i.contains('frequently late')), true);

@@ -1,8 +1,8 @@
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
-import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 /// Module for handling basic and advanced financial calculations.
 class FinancialCalculatorModule implements CalculationModule {
@@ -15,7 +15,7 @@ class FinancialCalculatorModule implements CalculationModule {
   }
 
   /// Calculates XIRR (Extended Internal Rate of Return) from a list of cash flows.
-  double calculateXirrFromCashFlows(List<CashFlowEntity> cashFlows) {
+  double calculateXirrFromCashFlows(List<ICashFlow> cashFlows) {
     return FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
   }
 
@@ -40,12 +40,12 @@ class FinancialCalculatorModule implements CalculationModule {
   }
 
   /// Calculates Total Invested (outflows) from cash flows.
-  double calculateTotalInvested(List<CashFlowEntity> cashFlows) {
+  double calculateTotalInvested(List<ICashFlow> cashFlows) {
     return FinancialCalculator.calculateTotalInvested(cashFlows);
   }
 
   /// Calculates Total Returned (inflows) from cash flows.
-  double calculateTotalReturned(List<CashFlowEntity> cashFlows) {
+  double calculateTotalReturned(List<ICashFlow> cashFlows) {
     return FinancialCalculator.calculateTotalReturned(cashFlows);
   }
 
@@ -53,7 +53,7 @@ class FinancialCalculatorModule implements CalculationModule {
   ///
   /// [includeXirr] - Set to false to skip expensive XIRR calculation if not needed.
   InvestmentStats calculateStats(
-    List<CashFlowEntity> cashFlows, {
+    List<ICashFlow> cashFlows, {
     bool includeXirr = true,
   }) {
     if (cashFlows.isEmpty) {
@@ -79,9 +79,9 @@ class FinancialCalculatorModule implements CalculationModule {
         lastDateMs = ms;
       }
 
-      if (cf.type.isOutflow) {
+      if (cf.signedAmount < 0) {
         totalInvested += cf.amount;
-      } else if (cf.type.isInflow) {
+      } else if (cf.signedAmount > 0) {
         totalReturned += cf.amount;
       }
 

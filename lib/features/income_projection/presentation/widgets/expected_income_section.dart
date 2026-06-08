@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -27,6 +28,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
+    final baseCurrency = ref.watch(currencyCodeProvider);
     final expectedCashFlowsAsync = ref.watch(
       expectedCashFlowsByInvestmentProvider(investmentId),
     );
@@ -77,7 +79,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
           for (final payment in overduePayments) {
             allSections.add(Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _buildPaymentCard(payment, currencySymbol, locale, isDark, l10n, isOverdue: true),
+              child: _buildPaymentCard(ref, payment, baseCurrency, currencySymbol, locale, isDark, l10n, isOverdue: true),
             ));
           }
         }
@@ -92,7 +94,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
           for (final payment in futurePayments.take(5)) {
             allSections.add(Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _buildPaymentCard(payment, currencySymbol, locale, isDark, l10n),
+              child: _buildPaymentCard(ref, payment, baseCurrency, currencySymbol, locale, isDark, l10n),
             ));
           }
         }
@@ -107,7 +109,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
           for (final payment in pastPayments.take(5)) {
             allSections.add(Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _buildPaymentCard(payment, currencySymbol, locale, isDark, l10n, isPast: true),
+              child: _buildPaymentCard(ref, payment, baseCurrency, currencySymbol, locale, isDark, l10n, isPast: true),
             ));
           }
         }
@@ -266,7 +268,9 @@ class ExpectedIncomeSection extends ConsumerWidget {
   }
 
   Widget _buildPaymentCard(
+    WidgetRef ref,
     ExpectedCashFlowEntity payment,
+    String baseCurrency,
     String currencySymbol,
     String locale,
     bool isDark,
@@ -304,19 +308,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: PrivacyProtectionWrapper(
-                        child: Text(
-                          formatCompactCurrency(
-                            payment.expectedAmount,
-                            symbol: currencySymbol,
-                            locale: locale,
-                          ),
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: statusColor,
-                          ),
-                        ),
-                      ),
+                      child: _buildConvertedAmount(ref, payment, baseCurrency, currencySymbol, locale, statusColor, isExpected: true),
                     ),
                     if (payment.actualAmount != null)
                       Icon(
@@ -339,21 +331,91 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 ),
                 if (payment.actualAmount != null) ...[
                   SizedBox(height: 4),
-                  PrivacyProtectionWrapper(
-                    child: Text(
-                      l10n.expectedIncomeReceived(formatCompactCurrency(payment.actualAmount!, symbol: currencySymbol, locale: locale)),
-                      style: AppTypography.small.copyWith(
-                        color: AppColors.graphCyan,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
+                  _buildConvertedAmount(ref, payment, baseCurrency, currencySymbol, locale, AppColors.graphCyan, isExpected: false),
                 ],
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Build currency-converted amount display (Rule 21 compliant)
+  Widget _buildConvertedAmount(
+    WidgetRef ref,
+    ExpectedCashFlowEntity payment,
+    String baseCurrency,
+    String currencySymbol,
+    String locale,
+    Color statusColor, {
+    required bool isExpected,
+  }) {
+    final amount = isExpected ? payment.expectedAmount : payment.actualAmount!;
+    final l10n = AppLocalizations.of(ref.context);
+
+    // Check if conversion is needed
+    if (payment.currency == baseCurrency) {
+      // Same currency - display directly
+      return PrivacyProtectionWrapper(
+        child: Text(
+          isExpected
+              ? formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)
+              : l10n.expectedIncomeReceived(formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)),
+          style: isExpected
+              ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
+              : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+        ),
+      );
+    }
+
+    // Different currency - convert before display
+    final conversionService = ref.watch(currencyConversionServiceProvider);
+
+    // Handle null service (unauthenticated user)
+    if (conversionService == null) {
+      return PrivacyProtectionWrapper(
+        child: Text(
+          isExpected
+              ? formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)
+              : l10n.expectedIncomeReceived(formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)),
+          style: isExpected
+              ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
+              : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+        ),
+      );
+    }
+
+    return FutureBuilder<double>(
+      future: conversionService.convert(
+        amount: amount,
+        from: payment.currency,
+        to: baseCurrency,
+        date: payment.expectedDate,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          // Loading - show placeholder
+          return Text(
+            '...',
+            style: isExpected
+                ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
+                : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+          );
+        }
+
+        final convertedAmount = snapshot.data!;
+        return PrivacyProtectionWrapper(
+          child: Text(
+            isExpected
+                ? formatCompactCurrency(convertedAmount, symbol: currencySymbol, locale: locale)
+                : l10n.expectedIncomeReceived(formatCompactCurrency(convertedAmount, symbol: currencySymbol, locale: locale)),
+            style: isExpected
+                ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
+                : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+          ),
+        );
+      },
     );
   }
 }
