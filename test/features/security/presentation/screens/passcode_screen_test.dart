@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 // Mock SecurityNotifier
 class MockSecurityNotifier extends SecurityNotifier {
@@ -49,7 +50,11 @@ void main() {
           overrides: [
             securityProvider.overrideWith(() => MockSecurityNotifier()),
           ],
-          child: const MaterialApp(home: PasscodeScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: PasscodeScreen(),
+          ),
         ),
       );
 

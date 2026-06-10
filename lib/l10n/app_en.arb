@@ -5013,5 +5013,17 @@
   "notSet": "Not set",
   "@notSet": {
     "description": "Value shown when a date field is not set"
+  },
+  "tooltipUseBiometric": "Use biometric authentication",
+  "@tooltipUseBiometric": {
+    "description": "Tooltip for the use biometric authentication button"
+  },
+  "tooltipClearPasscode": "Clear passcode",
+  "@tooltipClearPasscode": {
+    "description": "Tooltip for the clear passcode button"
+  },
+  "tooltipDeleteDigit": "Delete last digit",
+  "@tooltipDeleteDigit": {
+    "description": "Tooltip for the delete last digit button"
   }
 }
