@@ -104,6 +104,10 @@
 **Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
 **Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
 
+## 2024-07-15 - Optimize Multiple Sequential Fold Operations
+**Learning:** Using multiple sequential `.where(...).fold(...)` operations on the same dataset to aggregate different metrics operates at O(K*N) complexity and creates closure overhead.
+**Action:** Replace multiple sequential `.where().fold()` calls with a single standard `for` loop to accumulate all required metrics concurrently in an O(N) pass, avoiding redundant iterations and closure allocations.
+
 ## 2026-05-16 - Redundant await in pre-computed iterations
 **Learning:** In InvTrack's reporting services, collections named `baseCashFlows` are pre-converted to the base currency (e.g., via `batchConvert`). Performing redundant asynchronous `_engine.currency.convert` calls on these cash flows within loops introduces severe N+1 performance bottlenecks because `await` yields to the Dart event loop each time, even if the result resolves immediately.
 **Action:** When calculating portfolio values or totals on `baseCashFlows`, strip `async`/`await` and extract values synchronously to allow entirely synchronous execution and eliminate N+1 bottlenecks.
