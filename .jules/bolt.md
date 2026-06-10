@@ -103,3 +103,7 @@
 ## 2024-06-25 - Avoid Nested Iterable Lookups in Loop Optimizations
 **Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
 **Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
+
+## 2024-07-15 - Optimize Multiple Sequential Fold Operations
+**Learning:** Using multiple sequential `.where(...).fold(...)` operations on the same dataset to aggregate different metrics operates at O(K*N) complexity and creates closure overhead.
+**Action:** Replace multiple sequential `.where().fold()` calls with a single standard `for` loop to accumulate all required metrics concurrently in an O(N) pass, avoiding redundant iterations and closure allocations.
