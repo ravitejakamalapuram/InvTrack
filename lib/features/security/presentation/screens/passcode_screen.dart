@@ -431,6 +431,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
   }
 
   Widget _buildKeyRow(List<String> keys) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -447,7 +448,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               height: 80,
               child: showBiometric
                   ? IconButton(
-                      tooltip: 'Use biometric authentication',
+                      tooltip: l10n.tooltipBiometric,
                       icon: Icon(
                         Icons.fingerprint,
                         size: 32,
@@ -456,7 +457,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
                       onPressed: _onBiometricButtonPressed,
                     )
                   : IconButton(
-                      tooltip: 'Clear',
+                      tooltip: l10n.clear,
                       icon: Icon(
                         Icons.clear,
                         size: 28,
@@ -473,7 +474,7 @@ class _PasscodeScreenState extends ConsumerState<PasscodeScreen>
               width: 80,
               height: 80,
               child: IconButton(
-                tooltip: 'Delete last digit',
+                tooltip: l10n.tooltipDeleteLastDigit,
                 icon: Icon(
                   Icons.backspace_outlined,
                   size: 28,
