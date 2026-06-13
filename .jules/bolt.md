@@ -103,3 +103,7 @@
 ## 2024-06-25 - Avoid Nested Iterable Lookups in Loop Optimizations
 **Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
 **Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
+
+## 2026-06-25 - Avoid Redundant Async Conversion on Pre-Converted Iterables
+**Learning:** Performing `await _engine.currency.convert(...)` inside nested loops over a dataset that is already explicitly passed in as `baseCashFlows` (having been converted beforehand) introduces an N+1 async wait bottleneck. Even if the conversion from base to base is a no-op, the `await` keyword yields to the event loop each time, causing significant CPU and time overhead.
+**Action:** When passing pre-calculated or pre-converted data arrays to sub-methods, strip out redundant `await` processing operations that effectively do nothing. Remove the `async`/`await` keywords completely from the loop and method to allow for entirely synchronous execution, vastly speeding up report generation.
