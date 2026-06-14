@@ -1,0 +1,26 @@
+{
+  "appName": "inv_tracker",
+  "appType": "flutter-app",
+  "repoName": "InvTrack",
+  "description": "\"InvTracker - Track what you invested and what came back. XIRR & MOIC calculations. Works offline, syncs online.\"",
+  "modules": [
+    {
+      "name": "Flutter Android App",
+      "type": "flutter-app",
+      "path": ".",
+      "status": "published",
+      "storeId": "com.invtracker.inv_tracker",
+      "storeUrl": "https://play.google.com/store/apps/details?id=com.invtracker.inv_tracker",
+      "developerConsoleUrl": "https://play.google.com/console/u/0/developers",
+      "buildScript": "flutter build appbundle",
+      "artifactPath": "build/app/outputs/bundle/release/app-release.aab",
+      "playStoreListing": {
+        "title": "inv_tracker",
+        "shortDescription": "\"InvTracker - Track what you invested and what came back. XIRR & MOIC calculatio",
+        "fullDescription": "\"InvTracker - Track what you invested and what came back. XIRR & MOIC calculations. Works offline, syncs online.\"",
+        "category": "utilities",
+        "privacyPolicyUrl": "https://ravitejakamalapuram.github.io/InvTrack/privacy.html"
+      }
+    }
+  ]
+}
