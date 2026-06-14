@@ -41,7 +41,7 @@
 
 ## Rules Compliance Findings
 * **Rule 19.3 (Accessibility)**: Some `InkWell` elements inside custom cards may be missing `Semantics` wrappers.
-* **Rule 14.1 (Riverpod)**: Must ensure `ref.read` is NOT used inside `build()` methods anywhere.
+* **Rule 14.1 (Riverpod)**: Must ensure `ref.read` is NOT used inside `build()` methods anywhere. There are currently some violations in widgets like `lib/features/investment/presentation/screens/investment_list_screen.dart`.
 * **Rule 19.5 (Offline)**: All Firestore write operations (`.add`, `.update`, `.set`) must include a `.timeout(Duration(seconds: 5))`.
 
 ## Recommended Refactor Plan
