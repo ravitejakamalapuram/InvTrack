@@ -59,47 +59,47 @@
 
 ---
 
-### Top 10 highest-value fixes
-1. Split `add_investment_screen.dart` (1517 lines) into smaller, manageable widgets.
-2. Refactor `analytics_service.dart` (1440 lines) to decouple analytics implementations.
-3. Optimize chained `.toList().sort()` calls in `performance_report_service.dart`.
-4. Add missing `Semantics` wrappers to all interactive custom elements.
-5. Verify and enforce `.timeout()` clauses on all Firestore write operations.
-6. Break down `notification_service_test.dart`.
-7. Refactor `investment_notifier.dart` (940 lines) into separate smaller providers.
-8. Unify empty state duplicate code into `EmptyStateWidget`.
-9. Ensure all string values are passed through `AppLocalizations`.
-10. Ensure no `ref.read` is incorrectly used inside Riverpod `build()` methods.
+1. Top 10 highest-value fixes
+   - Split `add_investment_screen.dart` (1517 lines) into smaller, manageable widgets.
+   - Refactor `analytics_service.dart` (1440 lines) to decouple analytics implementations.
+   - Optimize chained `.toList().sort()` calls in `performance_report_service.dart`.
+   - Add missing `Semantics` wrappers to all interactive custom elements.
+   - Verify and enforce `.timeout()` clauses on all Firestore write operations.
+   - Break down `notification_service_test.dart`.
+   - Refactor `investment_notifier.dart` (940 lines) into separate smaller providers.
+   - Unify empty state duplicate code into `EmptyStateWidget`.
+   - Ensure all string values are passed through `AppLocalizations`.
+   - Ensure no `ref.read` is incorrectly used inside Riverpod `build()` methods.
 
-### Top 10 duplication-removal opportunities
-1. Empty state UI elements (`OverviewEmptyState`, `GoalsEmptyState`).
-2. Form field styles and error message handling.
-3. Custom bottom sheet skeletons.
-4. Repetitive `try-catch` Firestore exception mapping.
-5. Number formatting implementations across features.
-6. Loading skeletons.
-7. Date formatting strings.
-8. Localized dialog prompts.
-9. Theme color extractors.
-10. Snack bar notifications.
+2. Top 10 duplication-removal opportunities
+   - Empty state UI elements (`OverviewEmptyState`, `GoalsEmptyState`).
+   - Form field styles and error message handling.
+   - Custom bottom sheet skeletons.
+   - Repetitive `try-catch` Firestore exception mapping.
+   - Number formatting implementations across features.
+   - Loading skeletons.
+   - Date formatting strings.
+   - Localized dialog prompts.
+   - Theme color extractors.
+   - Snack bar notifications.
 
-### Top reusable abstractions
-1. `AppEmptyState`
-2. `FirestoreExceptionHandler`
-3. `AppFormBuilder`
-4. `AsyncValueWrapper` (for handling Riverpod UI states)
-5. `CompactAmountText` (already exists, must enforce usage)
+3. Top reusable abstractions worth introducing
+   - `AppEmptyState`
+   - `FirestoreExceptionHandler`
+   - `AppFormBuilder`
+   - `AsyncValueWrapper` (for handling Riverpod UI states)
+   - `CompactAmountText` (already exists, must enforce usage)
 
-### Files/components with highest technical debt
-1. `lib/features/investment/presentation/screens/add_investment_screen.dart`
-2. `lib/core/analytics/analytics_service.dart`
-3. `lib/core/notifications/notification_service.dart`
-4. `lib/features/investment/presentation/widgets/add_document_sheet.dart`
-5. `lib/core/services/currency_conversion_service.dart`
+4. Files/components with highest technical debt
+   - `lib/features/investment/presentation/screens/add_investment_screen.dart`
+   - `lib/core/analytics/analytics_service.dart`
+   - `lib/core/notifications/notification_service.dart`
+   - `lib/features/investment/presentation/widgets/add_document_sheet.dart`
+   - `lib/core/services/currency_conversion_service.dart`
 
-### Suggested missing engineering standards
-1. Strict file length limits (e.g., maximum 500 lines per file).
-2. Rule to forbid `.toList().sort()` chaining for performance.
-3. Centralized API/Firestore exception wrapper enforcement.
-4. Mandatory UI separation for screens vs widgets.
-5. Explicit unit testing rules for localization mapping.
+5. Suggested engineering standards missing from the repository
+   - Strict file length limits (e.g., maximum 500 lines per file).
+   - Rule to forbid `.toList().sort()` chaining for performance.
+   - Centralized API/Firestore exception wrapper enforcement.
+   - Mandatory UI separation for screens vs widgets.
+   - Explicit unit testing rules for localization mapping.
