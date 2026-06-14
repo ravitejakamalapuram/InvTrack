@@ -2145,6 +2145,16 @@
     "description": "Tooltip for clear maturity date button"
   },
 
+  "tooltipBiometric": "Use biometric authentication",
+  "@tooltipBiometric": {
+    "description": "Tooltip for biometric authentication button"
+  },
+
+  "tooltipDeleteLastDigit": "Delete last digit",
+  "@tooltipDeleteLastDigit": {
+    "description": "Tooltip for deleting the last digit on passcode screen"
+  },
+
   "hintNoMaturityDateSet": "No maturity date set",
   "@hintNoMaturityDateSet": {
     "description": "Hint text when maturity date is not set"
