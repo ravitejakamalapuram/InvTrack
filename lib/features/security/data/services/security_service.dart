@@ -314,6 +314,7 @@ class SecurityService {
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
+    await _clearRateLimit(); // Clear failed attempts and lockout
     await setBiometricEnabled(false); // Disable biometrics if PIN is removed
   }
 
