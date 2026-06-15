@@ -26,3 +26,7 @@
 **Vulnerability:** Flutter web was missing Content Security Policy (CSP) headers, a high priority defense in depth measure against Cross Site Scripting (XSS).
 **Learning:** Adding CSP for a Firebase/Flutter app is tricky. We need to specifically allow `https://unpkg.com` for CanvasKit, `https://fonts.gstatic.com` for Material Icons, and `https://firestore.googleapis.com`, `https://identitytoolkit.googleapis.com`, and `https://securetoken.googleapis.com` for Firebase connections.
 **Prevention:** Make sure `web/index.html` has CSP configured correctly right from the setup phase of any new web project.
+## 2024-06-15 - [Rate Limiting] Fix state leakage on credential removal
+**Vulnerability:** When a user removed their PIN using the `removePin()` method in `SecurityService`, the associated rate-limiting state (failed attempts and lockout timestamps) stored in `FlutterSecureStorage` was not cleared.
+**Learning:** Security state must be explicitly managed alongside the credentials it protects. Leaving stale rate-limit data behind when a credential is removed or reset creates a vulnerability where a newly set credential could instantly be locked out (denial of service), or state from a previous authentication context could leak into a new one.
+**Prevention:** Always ensure that removing or resetting an authentication factor (like a PIN, password, or biometric link) also triggers a cleanup of all associated security metadata, such as failed attempt counters and lockout timers.
