@@ -25,10 +25,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 class IncomeGuardianDashboardCard extends ConsumerWidget {
   final VoidCallback? onCalendarTap;
 
-  const IncomeGuardianDashboardCard({
-    super.key,
-    this.onCalendarTap,
-  });
+  const IncomeGuardianDashboardCard({super.key, this.onCalendarTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,25 +34,34 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     final currencySymbol = ref.watch(currencySymbolProvider);
     final locale = ref.watch(currencyLocaleProvider);
     final baseCurrency = ref.watch(currencyCodeProvider);
-    
+
     final expectedAsync = ref.watch(allExpectedCashFlowsProvider);
 
     return expectedAsync.when(
       data: (allExpected) {
-        // Filter for upcoming payments (not received, not dismissed)
-        final upcoming = allExpected.where((e) =>
-          e.status == ExpectedCashFlowStatus.upcoming ||
-          e.status == ExpectedCashFlowStatus.dueSoon ||
-          e.status == ExpectedCashFlowStatus.overdue ||
-          e.status == ExpectedCashFlowStatus.gracePeriod
-        ).toList();
+        // Optimization: Single O(N) pass to find extremum (earliest date) and compute metrics
+        // replaces O(N log N) sorting and multiple O(N) array passes.
+        ExpectedCashFlowEntity? nextPayment;
+        int overdueCount = 0;
+        int totalPending = 0;
 
-        // Sort by expected date (earliest first)
-        upcoming.sort((a, b) => a.expectedDate.compareTo(b.expectedDate));
+        for (final e in allExpected) {
+          if (e.status == ExpectedCashFlowStatus.upcoming ||
+              e.status == ExpectedCashFlowStatus.dueSoon ||
+              e.status == ExpectedCashFlowStatus.overdue ||
+              e.status == ExpectedCashFlowStatus.gracePeriod) {
+            totalPending++;
 
-        final nextPayment = upcoming.isNotEmpty ? upcoming.first : null;
-        final overdueCount = upcoming.where((e) => e.status == ExpectedCashFlowStatus.overdue).length;
-        final totalPending = upcoming.length;
+            if (e.status == ExpectedCashFlowStatus.overdue) {
+              overdueCount++;
+            }
+
+            if (nextPayment == null ||
+                e.expectedDate.isBefore(nextPayment.expectedDate)) {
+              nextPayment = e;
+            }
+          }
+        }
 
         return GlassCard(
           onTap: onCalendarTap,
@@ -66,10 +72,19 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
               SizedBox(height: AppSpacing.md),
 
               if (nextPayment != null)
-                _buildNextPayment(context, ref, nextPayment, currencySymbol, locale, baseCurrency, isDark, l10n)
+                _buildNextPayment(
+                  context,
+                  ref,
+                  nextPayment,
+                  currencySymbol,
+                  locale,
+                  baseCurrency,
+                  isDark,
+                  l10n,
+                )
               else
                 _buildEmptyState(isDark, l10n),
-              
+
               SizedBox(height: AppSpacing.md),
               _buildMetrics(totalPending, overdueCount, isDark, l10n),
             ],
@@ -201,13 +216,17 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                   Icon(
                     Icons.auto_awesome_rounded,
                     size: 12,
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                   SizedBox(width: 4),
                   Text(
                     l10n.dashboardIncomeGuardianSubtitle,
                     style: AppTypography.small.copyWith(
-                      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                      color: isDark
+                          ? AppColors.neutral400Dark
+                          : AppColors.neutral500Light,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -233,15 +252,20 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: (isDark ? AppColors.neutral600Dark : AppColors.neutral300Light)
-                  .withValues(alpha: 0.5),
+              color:
+                  (isDark
+                          ? AppColors.neutral600Dark
+                          : AppColors.neutral300Light)
+                      .withValues(alpha: 0.5),
               width: 1,
             ),
           ),
           child: Icon(
             Icons.arrow_forward_ios_rounded,
             size: 16,
-            color: isDark ? AppColors.neutral300Dark : AppColors.neutral600Light,
+            color: isDark
+                ? AppColors.neutral300Dark
+                : AppColors.neutral600Light,
           ),
         ),
       ],
@@ -263,18 +287,21 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
     final statusColor = isOverdue
         ? AppColors.errorLight
         : isDueSoon
-            ? Colors.orange
-            : AppColors.successLight;
+        ? Colors.orange
+        : AppColors.successLight;
     final statusIcon = isOverdue
         ? Icons.error_outline_rounded
         : isDueSoon
-            ? Icons.schedule_rounded
-            : Icons.check_circle_outline_rounded;
+        ? Icons.schedule_rounded
+        : Icons.check_circle_outline_rounded;
 
     // Get investment name asynchronously
-    final investmentAsync = ref.watch(investmentByIdProvider(payment.investmentId));
+    final investmentAsync = ref.watch(
+      investmentByIdProvider(payment.investmentId),
+    );
     final investmentName = investmentAsync.when(
-      data: (inv) => inv?.platform ?? inv?.name ?? l10n.dashboardUnknownInvestment,
+      data: (inv) =>
+          inv?.platform ?? inv?.name ?? l10n.dashboardUnknownInvestment,
       loading: () => l10n.dashboardLoading,
       error: (error, stack) => l10n.dashboardUnknownInvestment,
     );
@@ -291,10 +318,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: statusColor.withValues(alpha: 0.3),
-          width: 2,
-        ),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 2),
         boxShadow: [
           BoxShadow(
             color: statusColor.withValues(alpha: 0.1),
@@ -362,7 +386,14 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           ),
           SizedBox(height: AppSpacing.md),
           // Amount - Currency-aware with conversion (Rule 21)
-          _buildConvertedAmount(ref, payment, baseCurrency, currencySymbol, locale, statusColor),
+          _buildConvertedAmount(
+            ref,
+            payment,
+            baseCurrency,
+            currencySymbol,
+            locale,
+            statusColor,
+          ),
           SizedBox(height: AppSpacing.md),
           // Divider
           Container(
@@ -403,7 +434,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                         Text(
                           l10n.dashboardDueDate,
                           style: AppTypography.small.copyWith(
-                            color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                            color: isDark
+                                ? AppColors.neutral400Dark
+                                : AppColors.neutral500Light,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
@@ -412,7 +445,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                         Text(
                           DateFormat.MMMd(locale).format(payment.expectedDate),
                           style: AppTypography.small.copyWith(
-                            color: isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+                            color: isDark
+                                ? AppColors.neutral200Dark
+                                : AppColors.neutral700Light,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -447,7 +482,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                     Text(
                       l10n.dashboardSource,
                       style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral500Light,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -456,7 +493,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
                     Text(
                       investmentName,
                       style: AppTypography.small.copyWith(
-                        color: isDark ? AppColors.neutral200Dark : AppColors.neutral700Light,
+                        color: isDark
+                            ? AppColors.neutral200Dark
+                            : AppColors.neutral700Light,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
@@ -534,7 +573,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           Text(
             l10n.dashboardNoPendingPayments,
             style: AppTypography.small.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
             ),
             textAlign: TextAlign.center,
           ),
@@ -601,7 +642,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             icon: Icons.error_outline_rounded,
             label: l10n.dashboardOverdue,
             value: overdueCount.toString(),
-            color: overdueCount > 0 ? AppColors.errorLight : AppColors.successLight,
+            color: overdueCount > 0
+                ? AppColors.errorLight
+                : AppColors.successLight,
             isDark: isDark,
           ),
         ),
@@ -628,10 +671,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,7 +700,9 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
           Text(
             label,
             style: AppTypography.small.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -674,16 +716,14 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.cloud_off_rounded,
-            size: 48,
-            color: AppColors.errorLight,
-          ),
+          Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.errorLight),
           SizedBox(height: AppSpacing.sm),
           Text(
             l10n.dashboardLoadFailed,
             style: AppTypography.body.copyWith(
-              color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
             ),
             textAlign: TextAlign.center,
           ),
@@ -722,10 +762,7 @@ class IncomeGuardianDashboardCard extends ConsumerWidget {
             fontSize: 36,
             height: 1.1,
             shadows: [
-              Shadow(
-                color: statusColor.withValues(alpha: 0.3),
-                blurRadius: 8,
-              ),
+              Shadow(color: statusColor.withValues(alpha: 0.3), blurRadius: 8),
             ],
           ),
         ),
