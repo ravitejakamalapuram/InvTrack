@@ -16,6 +16,12 @@
 
 **Action:** If you must use `excludeSemantics: true` around an interactive element to provide a custom label, you MUST explicitly provide the `onTap` property to the `Semantics` widget itself so the screen reader knows it is actionable.
 
+## 2024-06-16 - Removed unnecessary GestureDetectors on GlassCards
+
+**Learning:** The GlassCard widget already supports `semanticLabel` and `onTap` directly and wraps its contents properly in a `Semantics` and `InkWell`. Wrapping it in an additional `GestureDetector` causes redundant accessibility layers, confusing targets for screen readers, and prevents the default ink splash from happening since it overrides `onTap`.
+
+**Action:** Use GlassCard built-in parameters instead of custom `GestureDetectors` wrappers.
+
 ## 2026-06-12 - Importance of Localizing All Tooltips
 
 **Learning:** When reviewing `PasscodeScreen`, I found hardcoded accessibility tooltips like "Use biometric authentication", "Clear", and "Delete last digit". Screen readers read these tooltips to visually impaired users. Since the app supports multiple languages, hardcoded tooltips mean non-English users receive screen reader instructions in English, degrading their experience.
