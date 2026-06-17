@@ -2125,6 +2125,21 @@
     }
   },
 
+  "tooltipToggleSelectionMode": "Toggle selection mode",
+  "@tooltipToggleSelectionMode": {
+    "description": "Tooltip for toggle selection mode button"
+  },
+
+  "tooltipSortInvestments": "Sort investments",
+  "@tooltipSortInvestments": {
+    "description": "Tooltip for sort investments button"
+  },
+
+  "tooltipFilterInvestments": "Filter investments",
+  "@tooltipFilterInvestments": {
+    "description": "Tooltip for filter investments button"
+  },
+
   "tooltipSearchInvestments": "Search investments",
   "@tooltipSearchInvestments": {
     "description": "Tooltip for search investments button"
