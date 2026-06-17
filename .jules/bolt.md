@@ -103,3 +103,7 @@
 ## 2024-06-25 - Avoid Nested Iterable Lookups in Loop Optimizations
 **Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
 **Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
+
+## 2024-06-25 - Redundant Async Currency Conversion on Pre-converted Data
+**Learning:** In reporting services, calling `await _engine.currency.convert()` inside loops on cash flows that were already batch converted (e.g. `baseCashFlows`) introduces a severe N+1 asynchronous bottleneck and is redundant since the amounts are already in the base currency.
+**Action:** Do not perform redundant asynchronous `.convert` calls on pre-converted collections; extract the base amount directly (e.g., `cf.amount`) and remove unnecessary `async/await` overhead.

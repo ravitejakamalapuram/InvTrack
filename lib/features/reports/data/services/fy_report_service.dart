@@ -108,13 +108,13 @@ class FYReportService {
     final topPerformers = _calculateTopPerformers(allInvestments, fyCashFlows);
 
     // Calculate portfolio values at start and end of FY
-    final portfolioValueAtStart = await _calculatePortfolioValue(
+    final portfolioValueAtStart = _calculatePortfolioValue(
       allInvestments,
       baseCashFlows,
       fyStart,
       baseCurrency,
     );
-    final portfolioValueAtEnd = await _calculatePortfolioValue(
+    final portfolioValueAtEnd = _calculatePortfolioValue(
       allInvestments,
       baseCashFlows,
       fyEnd,
@@ -181,7 +181,9 @@ class FYReportService {
     List<CashFlowEntity> fyCashFlows,
     int fyYear,
   ) {
-    final monthlyBuckets = TaxAndBasisCalculator.calculateMonthlyBuckets(fyCashFlows);
+    final monthlyBuckets = TaxAndBasisCalculator.calculateMonthlyBuckets(
+      fyCashFlows,
+    );
     final breakdown = <MonthlyFYData>[];
 
     // Generate 12 months from Apr to Mar
@@ -226,8 +228,7 @@ class FYReportService {
     DateTime fyEnd,
   ) {
     final investmentStartDates = {
-      for (final inv in allInvestments)
-        inv.id: inv.startDate ?? inv.createdAt
+      for (final inv in allInvestments) inv.id: inv.startDate ?? inv.createdAt,
     };
 
     return TaxAndBasisCalculator.calculateCapitalGains(
@@ -285,12 +286,12 @@ class FYReportService {
   ///
   /// Calculates outstanding cost basis by summing all investments (outflows)
   /// minus partial exits (inflows) up to the specified date, converted to base currency.
-  Future<double> _calculatePortfolioValue(
+  double _calculatePortfolioValue(
     List<InvestmentEntity> allInvestments,
     List<CashFlowEntity> allCashFlows,
     DateTime date,
     String baseCurrency,
-  ) async {
+  ) {
     double totalValue = 0.0;
 
     // Optimization: Group cash flows by investment ID to change O(N*M) nested loop into O(N+M)
@@ -325,13 +326,9 @@ class FYReportService {
         double returned = 0.0;
 
         for (final cf in investmentFlows) {
-          // Convert amount to baseCurrency using engine's currency module
-          final convertedAmount = await _engine.currency.convert(
-            amount: cf.amount,
-            from: cf.currency,
-            to: baseCurrency,
-            date: cf.date,
-          );
+          // Amount is already in baseCurrency because allCashFlows passed
+          // here is the pre-converted baseCashFlows collection.
+          final convertedAmount = cf.amount;
 
           if (cf.type.isOutflow) {
             invested += convertedAmount;
