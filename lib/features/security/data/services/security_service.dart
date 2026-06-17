@@ -37,7 +37,9 @@ class SecurityService {
       const IOSOptions(accessibility: KeychainAccessibility.first_unlock);
 
   Future<bool> hasPin() {
-    _hasPinFuture ??= _hasPinInternal().whenComplete(() => _hasPinFuture = null);
+    _hasPinFuture ??= _hasPinInternal().whenComplete(
+      () => _hasPinFuture = null,
+    );
     return _hasPinFuture!;
   }
 
@@ -314,6 +316,7 @@ class SecurityService {
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
+    await _clearRateLimit(); // Security: Clear rate limits when removing PIN to prevent state leakage
     await setBiometricEnabled(false); // Disable biometrics if PIN is removed
   }
 
