@@ -156,6 +156,18 @@ void main() {
       expect(await service.hasPin(), isFalse);
       expect(service.isBiometricEnabled, isFalse);
     });
+
+    test('removePin clears rate limiting data', () async {
+      await service.setPin('1234');
+      await service.verifyPin('0000'); // Failed attempt
+
+      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isTrue);
+
+      await service.removePin();
+
+      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isFalse);
+      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isFalse);
+    });
   });
 
   group('SecurityService - Rate Limiting', () {

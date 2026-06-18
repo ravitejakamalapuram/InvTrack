@@ -98,6 +98,7 @@ class SecurityService {
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
+    await _clearRateLimit();
   }
 
   // --- Rate Limiting Helpers ---
@@ -314,6 +315,7 @@ class SecurityService {
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
+    await _clearRateLimit();
     await setBiometricEnabled(false); // Disable biometrics if PIN is removed
   }
 
