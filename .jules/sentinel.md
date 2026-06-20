@@ -26,3 +26,8 @@
 **Vulnerability:** Flutter web was missing Content Security Policy (CSP) headers, a high priority defense in depth measure against Cross Site Scripting (XSS).
 **Learning:** Adding CSP for a Firebase/Flutter app is tricky. We need to specifically allow `https://unpkg.com` for CanvasKit, `https://fonts.gstatic.com` for Material Icons, and `https://firestore.googleapis.com`, `https://identitytoolkit.googleapis.com`, and `https://securetoken.googleapis.com` for Firebase connections.
 **Prevention:** Make sure `web/index.html` has CSP configured correctly right from the setup phase of any new web project.
+
+## 2026-06-18 - [State Leakage] Clear rate limiting data on PIN reset/removal
+**Vulnerability:** The application was not clearing rate limiting data (`_failedAttemptsKey` and `_lockoutTimestampKey`) when a PIN was removed (`removePin()`) or reset (`setPin()`). This state leakage meant that if a user forgot their PIN, was locked out, and managed to reset it, the new PIN would inherit the previous lockout state, potentially continuing to block access or maintaining a high failed attempt count.
+**Learning:** In stateful security mechanisms (e.g., `SecurityService`), when removing or resetting credentials, all associated security states must be explicitly cleared to prevent rate limit bypasses or state leakage to subsequent credentials.
+**Prevention:** Always ensure that any function modifying credentials (like setting or removing a PIN) explicitly clears related security state variables (e.g., failed attempt counters and lockout timestamps).

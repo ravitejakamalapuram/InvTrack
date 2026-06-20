@@ -156,6 +156,48 @@ void main() {
       expect(await service.hasPin(), isFalse);
       expect(service.isBiometricEnabled, isFalse);
     });
+
+    test('removePin clears rate limiting data', () async {
+      await service.setPin('1234');
+
+      // Trigger lockout with 5 failed attempts
+      await service.verifyPin('0000'); // 1st attempt
+      await service.verifyPin('0000'); // 2nd attempt
+      await service.verifyPin('0000'); // 3rd attempt
+      await service.verifyPin('0000'); // 4th attempt
+      await service.verifyPin('0000'); // 5th attempt - triggers lockout
+
+      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isTrue);
+      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isTrue);
+
+      await service.removePin();
+
+      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isFalse);
+      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isFalse);
+    });
+
+    test('setPin clears existing rate limiting data', () async {
+      await service.setPin('1234');
+
+      // Trigger lockout with 5 failed attempts
+      await service.verifyPin('0000'); // 1st attempt
+      await service.verifyPin('0000'); // 2nd attempt
+      await service.verifyPin('0000'); // 3rd attempt
+      await service.verifyPin('0000'); // 4th attempt
+      await service.verifyPin('0000'); // 5th attempt - triggers lockout
+
+      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isTrue);
+      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isTrue);
+
+      // Set a new PIN - should clear rate limiting
+      await service.setPin('5678');
+
+      expect(fakeSecureStorage.storage.containsKey('pin_failed_attempts'), isFalse);
+      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isFalse);
+
+      // Verify new PIN works
+      expect(await service.verifyPin('5678'), isTrue);
+    });
   });
 
   group('SecurityService - Rate Limiting', () {
