@@ -310,13 +310,17 @@ class SecurityService {
   }
 
   Future<void> removePin() async {
-    await _secureStorage.delete(
-      key: _pinKey,
-      aOptions: _getAndroidOptions(),
-      iOptions: _getIOSOptions(),
-    );
-    await _clearRateLimit();
-    await setBiometricEnabled(false); // Disable biometrics if PIN is removed
+    try {
+      await _clearRateLimit();
+      await _secureStorage.delete(
+        key: _pinKey,
+        aOptions: _getAndroidOptions(),
+        iOptions: _getIOSOptions(),
+      );
+    } finally {
+      // Always disable biometrics even if PIN removal fails
+      await setBiometricEnabled(false);
+    }
   }
 
   // --- Biometrics ---
