@@ -805,9 +805,13 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         SizedBox(height: AppSpacing.xs),
         Builder(
           builder: (context) {
-            final selectLabel = AppLocalizations.of(context).semanticSelectStartDate;
+            final selectLabel = AppLocalizations.of(
+              context,
+            ).semanticSelectStartDate;
             final notSetValue = AppLocalizations.of(context).notSet;
-            final clearLabel = AppLocalizations.of(context).tooltipClearStartDate;
+            final clearLabel = AppLocalizations.of(
+              context,
+            ).tooltipClearStartDate;
 
             return Semantics(
               button: true,
@@ -824,68 +828,66 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                         // Also clear auto-calculated maturity if needed?
                         // For now, mirroring existing clear behavior.
                       },
-                }
-              : null,
-          child: GestureDetector(
-            onTap: () => _selectStartDate(context, isDark),
-            child: GlassCard(
-              padding: AppSpacing.cardPadding,
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.1),
-                      borderRadius: AppSizes.borderRadiusMd,
-                    ),
-                    child: Icon(
-                      Icons.calendar_today_rounded,
-                      color: AppColors.primaryLight,
-                      size: AppSizes.iconSm,
-                    ),
-                  ),
-                  SizedBox(width: AppSpacing.sm + 2),
-                  Expanded(
-                    child: Text(
-                      _startDate != null
-                          ? AppDateUtils.formatLong(_startDate!)
-                          : l10n.hintWhenDidYouInvest,
-                      style: AppTypography.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: _startDate != null
-                            ? (isDark
-                                  ? Colors.white
-                                  : AppColors.neutral900Light)
-                            : (isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light),
+                    }
+                  : null,
+              child: GlassCard(
+                onTap: () => _selectStartDate(context, isDark),
+                padding: AppSpacing.cardPadding,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withValues(alpha: 0.1),
+                        borderRadius: AppSizes.borderRadiusMd,
+                      ),
+                      child: Icon(
+                        Icons.calendar_today_rounded,
+                        color: AppColors.primaryLight,
+                        size: AppSizes.iconSm,
                       ),
                     ),
-                  ),
-                  if (_startDate != null)
-                    IconButton(
-                      icon: Icon(
-                        Icons.clear_rounded,
+                    SizedBox(width: AppSpacing.sm + 2),
+                    Expanded(
+                      child: Text(
+                        _startDate != null
+                            ? AppDateUtils.formatLong(_startDate!)
+                            : l10n.hintWhenDidYouInvest,
+                        style: AppTypography.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: _startDate != null
+                              ? (isDark
+                                    ? Colors.white
+                                    : AppColors.neutral900Light)
+                              : (isDark
+                                    ? AppColors.neutral400Dark
+                                    : AppColors.neutral500Light),
+                        ),
+                      ),
+                    ),
+                    if (_startDate != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: isDark
+                              ? AppColors.neutral400Dark
+                              : AppColors.neutral400Light,
+                          size: 20,
+                        ),
+                        tooltip: l10n.tooltipClearStartDate,
+                        onPressed: () => setState(() => _startDate = null),
+                      )
+                    else
+                      Icon(
+                        Icons.chevron_right_rounded,
                         color: isDark
                             ? AppColors.neutral400Dark
                             : AppColors.neutral400Light,
-                        size: 20,
                       ),
-                      tooltip: l10n.tooltipClearStartDate,
-                      onPressed: () => setState(() => _startDate = null),
-                    )
-                  else
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: isDark
-                          ? AppColors.neutral400Dark
-                          : AppColors.neutral400Light,
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
-        );
+            );
           },
         ),
       ],
@@ -1283,8 +1285,12 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
         SizedBox(height: AppSpacing.xs),
         Builder(
           builder: (context) {
-            final clearLabel = AppLocalizations.of(context).tooltipClearMaturityDate;
-            final selectLabel = AppLocalizations.of(context).semanticSelectMaturityDate;
+            final clearLabel = AppLocalizations.of(
+              context,
+            ).tooltipClearMaturityDate;
+            final selectLabel = AppLocalizations.of(
+              context,
+            ).semanticSelectMaturityDate;
             final notSetValue = AppLocalizations.of(context).notSet;
             return Semantics(
               button: true,
@@ -1296,9 +1302,7 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
               onTap: () => _selectMaturityDate(context, isDark),
               customSemanticsActions: _maturityDate != null
                   ? {
-                      CustomSemanticsAction(
-                        label: clearLabel,
-                      ): () {
+                      CustomSemanticsAction(label: clearLabel): () {
                         setState(() {
                           _maturityDate = null;
                           _maturityDateAutoCalculated = false;
@@ -1306,66 +1310,68 @@ class _AddInvestmentScreenState extends ConsumerState<AddInvestmentScreen>
                       },
                     }
                   : null,
-              child: GestureDetector(
+              child: GlassCard(
                 onTap: () => _selectMaturityDate(context, isDark),
-                child: GlassCard(
-                  padding: AppSpacing.cardPadding,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.1),
-                          borderRadius: AppSizes.borderRadiusMd,
-                        ),
-                        child: Icon(
-                          Icons.event_rounded,
-                          color: AppColors.primaryLight,
-                          size: AppSizes.iconSm,
+                padding: AppSpacing.cardPadding,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withValues(alpha: 0.1),
+                        borderRadius: AppSizes.borderRadiusMd,
+                      ),
+                      child: Icon(
+                        Icons.event_rounded,
+                        color: AppColors.primaryLight,
+                        size: AppSizes.iconSm,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.sm + 2),
+                    Expanded(
+                      child: Text(
+                        _maturityDate != null
+                            ? AppDateUtils.formatLong(_maturityDate!)
+                            : AppLocalizations.of(
+                                context,
+                              ).hintNoMaturityDateSet,
+                        style: AppTypography.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: _maturityDate != null
+                              ? (isDark
+                                    ? Colors.white
+                                    : AppColors.neutral900Light)
+                              : (isDark
+                                    ? AppColors.neutral400Dark
+                                    : AppColors.neutral500Light),
                         ),
                       ),
-                      SizedBox(width: AppSpacing.sm + 2),
-                      Expanded(
-                        child: Text(
-                          _maturityDate != null
-                              ? AppDateUtils.formatLong(_maturityDate!)
-                              : AppLocalizations.of(context).hintNoMaturityDateSet,
-                          style: AppTypography.bodyLarge.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: _maturityDate != null
-                                ? (isDark
-                                      ? Colors.white
-                                      : AppColors.neutral900Light)
-                                : (isDark
-                                      ? AppColors.neutral400Dark
-                                      : AppColors.neutral500Light),
-                          ),
-                        ),
-                      ),
-                      if (_maturityDate != null)
-                        IconButton(
-                          icon: Icon(
-                            Icons.clear_rounded,
-                            color: isDark
-                                ? AppColors.neutral400Dark
-                                : AppColors.neutral400Light,
-                            size: 20,
-                          ),
-                          tooltip: AppLocalizations.of(context).tooltipClearMaturityDate,
-                          onPressed: () => setState(() {
-                            _maturityDate = null;
-                            _maturityDateAutoCalculated = false;
-                          }),
-                        )
-                      else
-                        Icon(
-                          Icons.chevron_right_rounded,
+                    ),
+                    if (_maturityDate != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
                           color: isDark
                               ? AppColors.neutral400Dark
                               : AppColors.neutral400Light,
+                          size: 20,
                         ),
-                    ],
-                  ),
+                        tooltip: AppLocalizations.of(
+                          context,
+                        ).tooltipClearMaturityDate,
+                        onPressed: () => setState(() {
+                          _maturityDate = null;
+                          _maturityDateAutoCalculated = false;
+                        }),
+                      )
+                    else
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark
+                            ? AppColors.neutral400Dark
+                            : AppColors.neutral400Light,
+                      ),
+                  ],
                 ),
               ),
             );
