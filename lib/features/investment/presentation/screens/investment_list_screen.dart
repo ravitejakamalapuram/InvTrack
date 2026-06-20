@@ -240,7 +240,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
     return [
       // Selection mode toggle
       IconButton(
-        tooltip: 'Toggle selection mode',
+        tooltip: l10n.tooltipToggleSelectionMode,
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
@@ -266,7 +266,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       ),
       // Sort button
       IconButton(
-        tooltip: 'Sort investments',
+        tooltip: l10n.tooltipSortInvestments,
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
@@ -289,7 +289,7 @@ class _InvestmentListScreenState extends ConsumerState<InvestmentListScreen>
       ),
       // Type filter button
       IconButton(
-        tooltip: 'Filter investments',
+        tooltip: l10n.tooltipFilterInvestments,
         icon: Container(
           padding: EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(

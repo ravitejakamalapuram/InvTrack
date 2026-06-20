@@ -15,3 +15,9 @@
 **Learning:** When using `excludeSemantics: true` on a `Semantics` widget that wraps an interactive element (like `InkWell`), the underlying interactive semantics (such as `onTap`) are completely dropped from the accessibility tree. This makes the element unclickable for screen reader users.
 
 **Action:** If you must use `excludeSemantics: true` around an interactive element to provide a custom label, you MUST explicitly provide the `onTap` property to the `Semantics` widget itself so the screen reader knows it is actionable.
+
+## 2024-06-17 - Avoid Hardcoded Tooltips
+
+**Learning:** When developing UI, hardcoding tooltip texts like `tooltip: 'Toggle selection mode'` bypasses the localization and internationalization system. This results in inaccessible experiences for users utilizing non-English languages, as screen readers will read the hardcoded English text.
+
+**Action:** Always add tooltip strings to the `lib/l10n/app_en.arb` file (e.g., `"tooltipToggleSelectionMode": "Toggle selection mode"`) and use the generated `AppLocalizations` instance in widgets (e.g., `tooltip: l10n.tooltipToggleSelectionMode`) to ensure accessibility for all supported locales.
