@@ -45,6 +45,7 @@
 - **Rule 1.4 (Feature Flags)**: Ensure all new features are hidden behind the `FeatureFlag` enum.
 
 ## Recommended Refactor Plan
+
 ### Quick Wins
 - Add `.timeout(Duration(seconds: 5))` to all missing Firestore write operations.
 - Replace `.toList().sort()` calls with optimized single-loop data aggregation where applicable.
