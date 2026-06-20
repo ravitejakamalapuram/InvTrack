@@ -149,10 +149,14 @@ void main() {
       await service.setPin('1234');
       await service.setBiometricEnabled(true);
 
-      // Simulate failed attempts
-      await service.verifyPin('5678');
-      await service.verifyPin('5678');
-      expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('2'));
+      // Simulate failed attempts (5 attempts to trigger lockout)
+      await service.verifyPin('5678'); // 1st attempt
+      await service.verifyPin('5678'); // 2nd attempt
+      await service.verifyPin('5678'); // 3rd attempt
+      await service.verifyPin('5678'); // 4th attempt
+      await service.verifyPin('5678'); // 5th attempt - triggers lockout
+      expect(fakeSecureStorage.storage['pin_failed_attempts'], equals('5'));
+      expect(fakeSecureStorage.storage.containsKey('pin_lockout_timestamp'), isTrue);
 
       expect(await service.hasPin(), isTrue);
       expect(service.isBiometricEnabled, isTrue);
