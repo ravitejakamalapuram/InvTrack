@@ -83,18 +83,26 @@ class ReportBuilderService {
     final sections = <ReportSection>[];
 
     // KPI Grid section
-    final totalInvested = _calculateTotalByType(
-      filteredCashFlows,
-      CashFlowType.invest,
-    );
-    final totalReturns = _calculateTotalByType(
-      filteredCashFlows,
-      CashFlowType.returnFlow,
-    );
-    final totalIncome = _calculateTotalByType(
-      filteredCashFlows,
-      CashFlowType.income,
-    );
+    // ⚡ Bolt: Single pass loop for all metrics replacing multiple sequential _calculateTotalByType calls
+    double totalInvested = 0;
+    double totalReturns = 0;
+    double totalIncome = 0;
+
+    for (final cf in filteredCashFlows) {
+      switch (cf.type) {
+        case CashFlowType.invest:
+          totalInvested += cf.amount;
+          break;
+        case CashFlowType.returnFlow:
+          totalReturns += cf.amount;
+          break;
+        case CashFlowType.income:
+          totalIncome += cf.amount;
+          break;
+        default:
+          break;
+      }
+    }
 
     sections.add(
       ReportSection(
@@ -151,9 +159,7 @@ class ReportBuilderService {
   }
 
   /// Build FY report
-  Future<DynamicReportData> _buildFyReport(
-    ReportConfiguration config,
-  ) async {
+  Future<DynamicReportData> _buildFyReport(ReportConfiguration config) async {
     return DynamicReportData(
       reportType: ReportType.fyReport,
       title: 'Financial Year Report',
@@ -228,9 +234,14 @@ class ReportBuilderService {
     List<CashFlowEntity> cashFlows,
     DateRangeFilter dateRange,
   ) {
-    return cashFlows
-        .where((cf) => dateRange.contains(cf.date))
-        .toList();
+    // ⚡ Bolt: Replace .where().toList() with a standard loop to avoid closure allocation overhead
+    final result = <CashFlowEntity>[];
+    for (final cf in cashFlows) {
+      if (dateRange.contains(cf.date)) {
+        result.add(cf);
+      }
+    }
+    return result;
   }
 
   /// Filter investments by ID
@@ -238,19 +249,13 @@ class ReportBuilderService {
     List<InvestmentEntity> investments,
     String investmentId,
   ) {
-    return investments
-        .where((inv) => inv.id == investmentId)
-        .toList();
-  }
-
-  /// Calculate total amount for specific cashflow type
-  double _calculateTotalByType(
-    List<CashFlowEntity> cashFlows,
-    CashFlowType type,
-  ) {
-    return cashFlows
-        .where((cf) => cf.type == type)
-        .fold(0.0, (sum, cf) => sum + cf.amount);
+    // ⚡ Bolt: Replace .where().toList() with a standard loop to avoid closure allocation overhead
+    final result = <InvestmentEntity>[];
+    for (final inv in investments) {
+      if (inv.id == investmentId) {
+        result.add(inv);
+      }
+    }
+    return result;
   }
 }
-
