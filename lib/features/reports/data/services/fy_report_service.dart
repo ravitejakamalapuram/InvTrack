@@ -112,13 +112,11 @@ class FYReportService {
       allInvestments,
       baseCashFlows,
       fyStart,
-      baseCurrency,
     );
     final portfolioValueAtEnd = _calculatePortfolioValue(
       allInvestments,
       baseCashFlows,
       fyEnd,
-      baseCurrency,
     );
 
     return FYReport(
@@ -290,7 +288,6 @@ class FYReportService {
     List<InvestmentEntity> allInvestments,
     List<CashFlowEntity> allCashFlows,
     DateTime date,
-    String baseCurrency,
   ) {
     double totalValue = 0.0;
 
