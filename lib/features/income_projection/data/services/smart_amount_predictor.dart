@@ -108,12 +108,15 @@ class SmartAmountPredictor {
     double nonQ4Total = 0.0;
     int nonQ4Count = 0;
 
-    // Optimization: Single pass loop replacing multiple sequential .where().toList(), .map() and .reduce() calls
+    // Single pass optimization: O(N) iteration instead of chained .where().toList()
+    // and .reduce() to avoid redundant loop cycles and intermediate array allocations.
     for (final p in payments) {
+      // Find Q4 payments (Oct, Nov, Dec)
       if (p.date.month >= 10 && p.date.month <= 12) {
         q4Total += p.amount;
         q4Count++;
       } else {
+        // Find non-Q4 payments
         nonQ4Total += p.amount;
         nonQ4Count++;
       }

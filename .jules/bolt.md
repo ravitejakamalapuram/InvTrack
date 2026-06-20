@@ -85,6 +85,10 @@
 ## 2024-06-25 - Avoid nested iterable lookups in loop optimizations
 **Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
 **Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
+
+## 2024-06-25 - Avoid Chaining Functional Operators for Multiple Disjoint Aggregations
+**Learning:** Chaining functional operations like `.where().toList()` to partition an array followed by `.map().reduce()` to sum up the values causes O(N) intermediate allocations and up to 4 iterations over the same data.
+**Action:** Replace disjoint `.where().toList()` and `.map().reduce()` subsets with a single `for` loop that iterates exactly once while concurrently accumulating the sum and counts for all conditions to achieve O(N) processing with zero intermediate collections.
 ## 2024-05-25 - Single Pass Aggregate Calculations with Hoisted Date Boundaries
 **Learning:** In reporting services, calculating multiple aggregates sequentially using `where().fold()` across the same dataset creates an O(K*N) problem. Filtering by an invariant condition (like whether a date falls between two calculated boundaries) inside the loop results in redundant object allocation or computation per item.
 **Action:** Replace multiple chains of `where().fold()` with a single O(N) `for` loop that computes all required metrics simultaneously. Furthermore, calculate loop-invariant boundaries (e.g. `startDate` and `endDate`) outside the iteration entirely to prevent redundant date arithmetic during the aggregation.
