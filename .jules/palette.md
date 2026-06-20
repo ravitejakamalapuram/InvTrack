@@ -16,7 +16,13 @@
 
 **Action:** If you must use `excludeSemantics: true` around an interactive element to provide a custom label, you MUST explicitly provide the `onTap` property to the `Semantics` widget itself so the screen reader knows it is actionable.
 
-## 2024-06-17 - Avoid Hardcoded Tooltips
+## 2026-06-12 - Importance of Localizing All Tooltips
+
+**Learning:** When reviewing `PasscodeScreen`, I found hardcoded accessibility tooltips like "Use biometric authentication", "Clear", and "Delete last digit". Screen readers read these tooltips to visually impaired users. Since the app supports multiple languages, hardcoded tooltips mean non-English users receive screen reader instructions in English, degrading their experience.
+
+**Action:** Always localize tooltips, especially those on `IconButton` or icon-only elements used extensively for accessibility. Check `.arb` files and add missing keys to ensure the app is both accessible and fully localized.
+
+## 2026-06-17 - Avoid Hardcoded Tooltips
 
 **Learning:** When developing UI, hardcoding tooltip texts like `tooltip: 'Toggle selection mode'` bypasses the localization and internationalization system. This results in inaccessible experiences for users utilizing non-English languages, as screen readers will read the hardcoded English text.
 
