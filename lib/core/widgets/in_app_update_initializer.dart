@@ -135,16 +135,23 @@ class _InAppUpdateInitializerState
 
     final l10n = Localizations.of<AppLocalizations>(dialogContext, AppLocalizations);
 
+    // FIX: Crash "Null check operator used on a null value" - Crashlytics issue c8f980cd37a050d99b236193ef9ea583
+    // If localizations not found, log error and return instead of crashing
     if (l10n == null) {
-      LoggerService.warn('AppLocalizations not found in context for InAppUpdateInitializer');
+      LoggerService.error(
+        'AppLocalizations not found in context for InAppUpdateInitializer',
+        error: Exception('l10n is null in _showFlexibleUpdateDialog'),
+        metadata: {'context_type': dialogContext.runtimeType.toString()},
+      );
+      return; // Don't show dialog if localizations are missing
     }
 
     showDialog(
       context: dialogContext,
       barrierDismissible: true,
       builder: (dialogCtx) => AlertDialog(
-        title: Text(l10n?.updateAvailable ?? 'Update Available'),
-        content: Text(l10n?.updatePromptMessage ?? 'A new version of InvTrack is available. Would you like to update now?'),
+        title: Text(l10n.updateAvailable),
+        content: Text(l10n.updatePromptMessage),
         actions: [
           TextButton(
             onPressed: () {
@@ -153,7 +160,7 @@ class _InAppUpdateInitializerState
               });
               Navigator.of(dialogCtx).pop();
             },
-            child: Text(l10n?.later ?? 'Later'),
+            child: Text(l10n.later),
           ),
           FilledButton(
             onPressed: () async {
@@ -167,16 +174,20 @@ class _InAppUpdateInitializerState
               // Check if update started successfully
               final state = ref.read(inAppUpdateProvider);
               if (state.error == null) {
+                // Get fresh l10n from checkContext
+                final checkL10n = Localizations.of<AppLocalizations>(checkContext, AppLocalizations);
+                if (checkL10n == null) return;
+
                 // Show snackbar about background download only on success
                 ScaffoldMessenger.of(checkContext).showSnackBar(
                   SnackBar(
-                    content: Text(l10n?.downloadingUpdateBackground ?? 'Downloading update in background...'),
+                    content: Text(checkL10n.downloadingUpdateBackground),
                     duration: const Duration(seconds: 3),
                   ),
                 );
               }
             },
-            child: Text(l10n?.update ?? 'Update'),
+            child: Text(l10n.update),
           ),
         ],
       ),

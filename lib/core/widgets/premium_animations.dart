@@ -145,9 +145,11 @@ class _AnimatedCounterState extends State<AnimatedCounter>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
+        // Protect from Infinity/NaN
+        final value = _animation.value.isFinite ? _animation.value : 0.0;
         final formatted = widget.decimals > 0
-            ? _animation.value.toStringAsFixed(widget.decimals)
-            : _animation.value.toInt().toString();
+            ? value.toStringAsFixed(widget.decimals)
+            : value.toInt().toString();
         return Text(
           '${widget.prefix}$formatted${widget.suffix}',
           style: widget.style,

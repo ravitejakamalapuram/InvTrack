@@ -75,9 +75,11 @@ class FireProgressRing extends ConsumerWidget {
               // Fire icon
               Icon(Icons.local_fire_department, size: 32, color: progressColor),
               SizedBox(height: AppSpacing.xxs),
-              // Percentage
+              // Percentage - protected from Infinity/NaN
+              // Fixes crash: "Unsupported operation: Infinity or NaN toInt"
+              // Crashlytics issues: d4131a2ceec52d1a8fb783a8e187559e, f44a8b7d80af757a18f4b70b08dd7846
               Text(
-                '${progress.toInt()}%',
+                '${_safeToInt(progress)}%',
                 style: AppTypography.displaySmall.copyWith(
                   fontWeight: FontWeight.w800,
                   color: isDark ? Colors.white : AppColors.neutral900Light,
@@ -182,4 +184,12 @@ class _FireRingPainter extends CustomPainter {
         oldDelegate.color != color ||
         oldDelegate.strokeWidth != strokeWidth;
   }
+}
+
+/// Safely converts a double to int, handling Infinity and NaN
+int _safeToInt(double value) {
+  if (!value.isFinite) {
+    return 0; // Return 0 for Infinity or NaN
+  }
+  return value.clamp(0.0, 100.0).toInt();
 }
