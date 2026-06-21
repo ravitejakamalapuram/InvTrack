@@ -51,10 +51,10 @@ class GoalProgressRing extends StatelessWidget {
               strokeWidth: strokeWidth,
             ),
           ),
-          // Percentage text
+          // Percentage text - protected from Infinity/NaN
           if (showPercentage)
             Text(
-              '${progress.toInt()}%',
+              '${_safeToInt(progress)}%',
               style: AppTypography.small.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white : AppColors.neutral900Light,
@@ -108,6 +108,14 @@ class _RingPainter extends CustomPainter {
   }
 }
 
+/// Safely converts a double to int, handling Infinity and NaN
+int _safeToInt(double value) {
+  if (!value.isFinite) {
+    return 0; // Return 0 for Infinity or NaN
+  }
+  return value.clamp(0.0, 100.0).toInt();
+}
+
 /// Large progress ring for goal detail screen
 class GoalProgressRingLarge extends StatelessWidget {
   final double progress;
@@ -144,7 +152,7 @@ class GoalProgressRingLarge extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '${progress.toInt()}%',
+                '${_safeToInt(progress)}%',
                 style: AppTypography.h1.copyWith(
                   fontWeight: FontWeight.w700,
                   color: isDark ? Colors.white : AppColors.neutral900Light,
