@@ -119,3 +119,7 @@
 ## 2026-06-03 - Optimize Repeated Functional Operations on Same Dataset
 **Learning:** In Dart, chaining multiple functional collection operations (`.where().toList()`, `.map()`, `.reduce()`) over the same dataset results in redundant iterations and unnecessary intermediate object allocations (like primitive lists and closures). This becomes a severe bottleneck in data processing logic where multiple aggregates or subset groupings are required.
 **Action:** Consolidate chained operations into a single standard `for` loop to compute all required metrics concurrently. This reduces time complexity from multiple O(N) passes to a single O(N) pass, eliminating intermediate arrays and closure overhead.
+
+## 2026-06-22 - Single-pass filtering and aggregation with hoisted boundaries
+**Learning:** In Dart, calling `.where().toList()` followed by a `for` loop over the same dataset creates redundant O(N) array allocations and multiple iterations. Furthermore, calculating invariant boundaries (like `DateTime` limits offset by a `Duration`) inside the callback allocates new objects for every item.
+**Action:** Combine filtering and aggregation into a single `for` loop to achieve true O(N) processing. Hoist boundary calculations outside the loop to eliminate redundant heap allocations per item.
