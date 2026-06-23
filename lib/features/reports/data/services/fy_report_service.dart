@@ -50,13 +50,12 @@ class FYReportService {
       fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
     );
 
-    // Filter cashflows for this FY using the converted cashflows
-    final fyCashFlows = baseCashFlows.where((cf) {
-      return cf.date.isAfter(fyStart.subtract(const Duration(days: 1))) &&
-          cf.date.isBefore(fyEnd.add(const Duration(days: 1)));
-    }).toList();
+    // Optimization: Precompute date boundaries outside the loop
+    final fyStartLimit = fyStart.subtract(const Duration(days: 1));
+    final fyEndLimit = fyEnd.add(const Duration(days: 1));
 
     // Calculate totals
+    final fyCashFlows = <CashFlowEntity>[];
     double totalInvested = 0;
     double totalReturns = 0;
     double totalIncome = 0;
@@ -64,27 +63,32 @@ class FYReportService {
     double dividendIncome = 0;
     double interestIncome = 0;
 
-    for (final cf in fyCashFlows) {
-      switch (cf.type) {
-        case CashFlowType.invest:
-          totalInvested += cf.amount;
-          break;
-        case CashFlowType.returnFlow:
-          totalReturns += cf.amount;
-          break;
-        case CashFlowType.income:
-          totalIncome += cf.amount;
-          // Categorize by note
-          final noteType = (cf.notes ?? '').toLowerCase();
-          if (noteType.contains('dividend')) {
-            dividendIncome += cf.amount;
-          } else if (noteType.contains('interest')) {
-            interestIncome += cf.amount;
-          }
-          break;
-        case CashFlowType.fee:
-          totalFees += cf.amount;
-          break;
+    // Optimization: Single pass loop for filtering and aggregation
+    for (final cf in baseCashFlows) {
+      if (cf.date.isAfter(fyStartLimit) && cf.date.isBefore(fyEndLimit)) {
+        fyCashFlows.add(cf);
+
+        switch (cf.type) {
+          case CashFlowType.invest:
+            totalInvested += cf.amount;
+            break;
+          case CashFlowType.returnFlow:
+            totalReturns += cf.amount;
+            break;
+          case CashFlowType.income:
+            totalIncome += cf.amount;
+            // Categorize by note
+            final noteType = (cf.notes ?? '').toLowerCase();
+            if (noteType.contains('dividend')) {
+              dividendIncome += cf.amount;
+            } else if (noteType.contains('interest')) {
+              interestIncome += cf.amount;
+            }
+            break;
+          case CashFlowType.fee:
+            totalFees += cf.amount;
+            break;
+        }
       }
     }
 
@@ -312,23 +316,20 @@ class FYReportService {
 
         // Get cash flows for this investment up to the given date
         final allInvestmentFlows = cashFlowsByInvestment[investment.id] ?? [];
-        final investmentFlows = <CashFlowEntity>[];
-        for (final cf in allInvestmentFlows) {
-          if (cf.date.isBefore(dateLimit)) {
-            investmentFlows.add(cf);
-          }
-        }
 
         double invested = 0.0;
         double returned = 0.0;
 
-        for (final cf in investmentFlows) {
-          final convertedAmount = cf.amount;
+        // Optimization: Merged loops to avoid intermediate array allocation
+        for (final cf in allInvestmentFlows) {
+          if (cf.date.isBefore(dateLimit)) {
+            final convertedAmount = cf.amount;
 
-          if (cf.type.isOutflow) {
-            invested += convertedAmount;
-          } else if (cf.type == CashFlowType.returnFlow) {
-            returned += convertedAmount;
+            if (cf.type.isOutflow) {
+              invested += convertedAmount;
+            } else if (cf.type == CashFlowType.returnFlow) {
+              returned += convertedAmount;
+            }
           }
         }
 
