@@ -1,56 +1,56 @@
 # InvTrack Repository Engineering Review
 
 ## Executive Summary
-* **Overall Repo Health**: 7.5/10. The project follows Clean Architecture, but suffers from large files, some architectural violations, and missing optimizations.
-* **Biggest Risks**: Extremely large "God components" (e.g., `add_investment_screen.dart` at 1517 lines), potential performance bottlenecks from unoptimized array manipulations, and UI components handling business logic.
-* **Highest ROI Improvements**: Refactoring god classes into smaller, modular components, enforcing strict separation of concerns, and utilizing proper performance patterns for collections.
-* **Architecture Concerns**: Presentation layer handling complex state and formatting logic, mixing UI with data transformation.
+* **Overall Repo Health**: 7.5/10. The project uses Clean Architecture and Riverpod, but suffers from "God components" (massive files), incomplete separation of concerns in the UI layer, and unoptimized array manipulations in services.
+* **Biggest Risks**: Extremely large files (e.g. `add_investment_screen.dart` is >1500 lines) that mix UI and complex business logic, leading to maintainability nightmares and potential merge conflicts. Several areas missing offline resiliency configurations.
+* **Highest ROI Improvements**: Break down UI God components into smaller widgets, centralize repetitive UI forms and empty states, and optimize large collection loops (e.g., replace `toList().sort()` chains).
+* **Architecture Concerns**: The UI layer frequently handles data transformation and formatting instead of delegating to domain providers. `ref.read` is occasionally misused inside widget `build()` methods or initializers.
 
 ## Critical Issues
-* **God Components**: Multiple files exceed 500 lines, violating Rule 14 Anti-Pattern. `add_investment_screen.dart` is 1517 lines.
+* **God Components**: Multiple files exceed 1000 lines (e.g., `add_investment_screen.dart` - 1523 lines, `analytics_service.dart` - 1439 lines, `notification_service.dart` - 1093 lines). This violates maintainability standards and Rule 14.
+* **Missing Timeouts**: Several Firestore write operations (`.add`, `.update`, `.set`) do not use `.timeout(Duration(seconds: 5))` as mandated by Rule 19.5, potentially hanging the app indefinitely in poor network conditions.
 * **Business Logic in UI**: Formatting and domain logic reside directly within UI components instead of using specialized providers or domain utilities.
-* **Missing Timeouts**: Some Firestore `.add`, `.update`, or `.set` operations do not use `.timeout(Duration(seconds: 5))`, violating Rule 19.5 (Offline considerations).
 
 ## Duplication Report
-* **Empty States**: Multiple custom empty state widgets (`OverviewEmptyState`, `GoalsEmptyState`) duplicate logic that should be centralized.
+* **Empty States**: Multiple custom empty state widgets (`OverviewEmptyState`, `GoalsEmptyState`, etc.) duplicate layout and styling logic that should be centralized.
 * **Form Logic**: Reused form validation, formatting, and standard fields (text fields, dropdowns) are duplicated across screens instead of utilizing a unified form builder abstraction.
-* **Exception Handling**: Repeated `try-catch` blocks catching generic and specific exceptions across repositories and services.
+* **Try-Catch Blocks**: Repeated generic `try-catch` blocks catching and mapping exceptions manually across repositories instead of using a unified `ErrorHandler.handle()` wrapper everywhere.
 
 ## Reusability Opportunities
-* **EmptyStateWidget**: A centralized builder for all empty states in the application.
-* **AppFormField**: A standardized wrapper for text inputs to ensure consistent styling and validation.
-* **AsyncValue UI Wrapper**: A reusable Riverpod `AsyncValue` wrapper that standardizes loading and error states across the app.
+* **`AppEmptyState`**: A centralized builder for all empty states in the application.
+* **`AppFormField`**: A standardized wrapper for text inputs to ensure consistent styling and validation.
+* **`AsyncValueUIWrapper`**: A reusable Riverpod `AsyncValue` wrapper that standardizes loading and error states across the app.
 
 ## Architecture Review
-* **Scalability**: While the feature-first approach is good, the size of some core services and screens limits maintainability and increases merge conflicts.
+* **Scalability**: Feature-first structure is good, but the size of core services limits maintainability.
 * **Maintainability**: Many files are difficult to test and maintain due to tight coupling and excessive lines of code.
-* **Separation of Concerns**: Riverpod providers and domain services should handle formatting and business logic, not the UI `build` methods.
+* **Separation of Concerns**: Riverpod providers and domain services should handle formatting and business logic, not the UI `build` methods. `ref.read` must never be used inside `build()`.
+* **Testing Isolation**: Enormous test files (e.g., `notification_service_test.dart`) are brittle.
 
 ## Performance Findings
-* **Unoptimized Array Manipulations**: Chaining operations like `.toList().sort()` creates unnecessary intermediate array allocations.
+* **Unoptimized Array Manipulations**: Chaining operations like `.where(...).toList().sort(...)` creates unnecessary intermediate array allocations.
 * **Redundant Iterations**: Multiple `.where().toList()` chains instead of single loop passes.
 * **Synchronous `await` in Loops**: Awaiting synchronous or pre-computed data inside loops causes event-loop yields, bottlenecking large iterations.
 
 ## Security & Reliability Findings
 * **Offline Resiliency**: Ensure all Firestore write operations strictly adhere to the `.timeout()` requirement.
-* **Error Swallowing**: Catch-all blocks without proper logging or exception mapping mask underlying issues.
+* **Error Swallowing**: Catch-all blocks without proper logging or exception mapping mask underlying issues. Need broader use of `ErrorHandler.handle`.
 * **Credential State**: Need to ensure stateful security mechanisms (like failed PIN attempts) are completely reset when credentials are removed.
 
 ## Testing Gaps
-* **Missing coverage for God Classes**: Enormous test files like `notification_service_test.dart` are brittle and hard to maintain.
+* **Missing coverage for God Classes**: Enormous test files are brittle and hard to maintain. Need to break into smaller focused suites.
 * **Integration Tests**: Comprehensive contract and end-to-end tests for offline-first data sync are insufficient.
 
 ## Rules Compliance Findings
 * **Rule 14 Anti-Pattern**: Files > 500 lines (e.g., `add_investment_screen.dart`). Impact: Unmaintainable code. Suggestion: Break into smaller widgets.
 * **Rule 19.5**: Missing `.timeout(Duration(seconds: 5))` on Firestore writes. Impact: App hangs offline. Suggestion: Wrap all writes.
-* **Hardcoded Strings**: Missing `AppLocalizations` for user-facing strings. Impact: Broken localization. Suggestion: Migrate all strings to ARB files.
-* **Accessibility**: Missing or incorrectly used `Semantics` wrappers, e.g., missing `onTap` on `Semantics` when `excludeSemantics: true`.
+* **Riverpod Best Practices**: `ref.read` inside `build()` or initializers incorrectly accessing state. Impact: UI bugs. Suggestion: Use `ref.watch`.
 
 ## Recommended Refactor Plan
 ### Quick Wins
 * Add `.timeout(Duration(seconds: 5))` to all missing Firestore write operations.
 * Replace inefficient chained list operations (`.toList().sort()`) with localized loops.
-* Extract hardcoded strings into localization ARB files.
+* Enforce `ErrorHandler.handle()` across repositories.
 
 ### Medium Effort
 * Consolidate empty state duplicate code into a unified `EmptyStateWidget`.
@@ -69,7 +69,7 @@
 3. Fix unoptimized `.toList().sort()` and chained list operations across services.
 4. Apply `.timeout(Duration(seconds: 5))` to all Firestore write operations.
 5. Fix `ref.read` usage inside `build()` methods to prevent state bugs.
-6. Centralize exception handling to prevent swallowed errors.
+6. Centralize exception handling with `ErrorHandler` to prevent swallowed errors.
 7. Audit and fix `Semantics` wrappers on all interactive custom elements (e.g., `GlassCard`).
 8. Break down `notification_service_test.dart` into specialized test suites.
 9. Migrate all remaining hardcoded strings to `AppLocalizations`.
