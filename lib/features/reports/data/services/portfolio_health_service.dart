@@ -22,9 +22,13 @@ class PortfolioHealthService {
     required Map<String, InvestmentStats> statsMap,
     required List<CashFlowEntity> cashFlows,
   }) {
-    final activeInvestments = investments
-        .where((i) => i.status == InvestmentStatus.open)
-        .toList();
+    // ⚡ Bolt: Replace .where().toList() with single pass loop to avoid closure and intermediate list allocation
+    final activeInvestments = <InvestmentEntity>[];
+    for (final i in investments) {
+      if (i.status == InvestmentStatus.open) {
+        activeInvestments.add(i);
+      }
+    }
 
     // 1. Calculate diversification
     final diversification = _calculateDiversification(

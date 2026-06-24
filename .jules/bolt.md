@@ -119,3 +119,7 @@
 ## 2026-06-03 - Optimize Repeated Functional Operations on Same Dataset
 **Learning:** In Dart, chaining multiple functional collection operations (`.where().toList()`, `.map()`, `.reduce()`) over the same dataset results in redundant iterations and unnecessary intermediate object allocations (like primitive lists and closures). This becomes a severe bottleneck in data processing logic where multiple aggregates or subset groupings are required.
 **Action:** Consolidate chained operations into a single standard `for` loop to compute all required metrics concurrently. This reduces time complexity from multiple O(N) passes to a single O(N) pass, eliminating intermediate arrays and closure overhead.
+
+## 2026-06-25 - Avoid Intermediate List Allocations in Filtering
+**Learning:** Using `.where(...).toList()` simply to filter an array allocates closures and an intermediate primitive list. This increases memory footprint and garbage collection overhead unnecessarily in performance-critical code paths.
+**Action:** Replace `.where(...).toList()` with a manual `for` loop that iterates over the array and adds matching elements to a pre-allocated or dynamically-grown list. This eliminates intermediate closures and chained iterations.
