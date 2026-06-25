@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/widgets/app_text_field.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('AppTextField shows clear button only when text is not empty', (
@@ -11,6 +12,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: AppTextField(
             controller: controller,
@@ -68,6 +71,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: AppTextField(controller: controller, readOnly: true),
         ),
@@ -85,6 +90,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: AppTextField(label: 'Click Me', focusNode: focusNode),
         ),
@@ -106,6 +113,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: AppTextField(label: 'Click Me Internal')),
       ),
     );
@@ -125,6 +134,8 @@ void main() {
   testWidgets('AppTextField semantics test', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: AppTextField(label: 'Semantic Label')),
       ),
     );
