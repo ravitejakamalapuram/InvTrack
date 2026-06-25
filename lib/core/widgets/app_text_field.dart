@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
-import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A styled text field widget following the app's design language.
 /// Supports both single-line and multi-line input with optional prefix icon and label.
@@ -164,7 +163,6 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context);
 
     // Sync state in case parent rebuilt us (e.g. readOnly changed)
     _wasClearButtonVisible = _shouldShowClearButton;
@@ -187,7 +185,10 @@ class _AppTextFieldState extends State<AppTextField> {
                 }
               },
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                constraints: const BoxConstraints(
+                  minWidth: 44,
+                  minHeight: 44,
+                ),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -262,7 +263,7 @@ class _AppTextFieldState extends State<AppTextField> {
                             : AppColors.neutral400Light,
                         size: 20,
                       ),
-                      tooltip: l10n.tooltipClearText,
+                      tooltip: 'Clear text',
                       onPressed: _clearText,
                     ),
                   )
