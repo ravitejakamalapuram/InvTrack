@@ -91,7 +91,7 @@ class FirebaseAuthRepository implements AuthRepository {
       // These are environmental issues, not user errors
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
-        final authException = AuthException(
+        final dataException = DataException(
           userMessage: _mapGoogleSignInException(e),
           technicalMessage: 'GoogleSignInException: ${e.code.name}',
           cause: e,
@@ -100,7 +100,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
         LoggerService.warn(
           'GoogleSignInException: Configuration error (non-fatal)',
-          error: authException,
+          error: dataException,
           metadata: {
             'code': e.code.name,
             'description': e.description,
@@ -108,11 +108,11 @@ class FirebaseAuthRepository implements AuthRepository {
           },
         );
 
-        throw authException;
+        throw dataException;
       }
 
       // Other GoogleSignInExceptions (interrupted, userMismatch, etc.)
-      final authException = AuthException(
+      final dataException = DataException(
         userMessage: _mapGoogleSignInException(e),
         technicalMessage: 'GoogleSignInException: ${e.code.name}',
         cause: e,
@@ -121,7 +121,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
       LoggerService.error(
         'GoogleSignInException during sign-in',
-        error: authException,
+        error: dataException,
         metadata: {
           'code': e.code.name,
           'description': e.description,
@@ -129,7 +129,7 @@ class FirebaseAuthRepository implements AuthRepository {
         },
       );
 
-      throw authException;
+      throw dataException;
     } catch (e, stackTrace) {
       if (e is PlatformException && e.code == 'sign_in_canceled') {
         LoggerService.info('User cancelled Google Sign-In (PlatformException)');
@@ -215,7 +215,7 @@ class FirebaseAuthRepository implements AuthRepository {
       // Configuration errors should NOT crash the app - return false instead
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
-        final authException = AuthException(
+        final dataException = DataException(
           userMessage: 'Configuration error',
           technicalMessage: 'GoogleSignInException: ${e.code.name}',
           cause: e,
@@ -224,7 +224,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
         LoggerService.error(
           'GoogleSignInException: Configuration error during re-auth (non-fatal)',
-          error: authException,
+          error: dataException,
           metadata: {
             'code': e.code.name,
             'description': e.description,
@@ -234,7 +234,7 @@ class FirebaseAuthRepository implements AuthRepository {
       }
 
       // Other GoogleSignInExceptions
-      final authException = AuthException(
+      final dataException = DataException(
         userMessage: 'Re-authentication failed',
         technicalMessage: 'GoogleSignInException: ${e.code.name}',
         cause: e,
@@ -243,7 +243,7 @@ class FirebaseAuthRepository implements AuthRepository {
 
       LoggerService.error(
         'GoogleSignInException during re-authentication',
-        error: authException,
+        error: dataException,
         metadata: {
           'code': e.code.name,
           'description': e.description,
