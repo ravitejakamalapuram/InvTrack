@@ -58,7 +58,7 @@ permissions:
 
 jobs:
   release:
-    uses: ravitejakamalapuram/.github-workflows-shared/.github/workflows/flutter-cd.yml@v1.1.9
+    uses: ravitejakamalapuram/.github-workflows-shared/.github/workflows/flutter-cd.yml@main
     with:
       action: ${{ github.event.inputs.action || 'bump-and-deploy' }}
       tag: ${{ github.event.inputs.tag || '' }}
