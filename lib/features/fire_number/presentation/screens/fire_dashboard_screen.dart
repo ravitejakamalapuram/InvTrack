@@ -635,7 +635,7 @@ class FireDashboardScreen extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              '${nextMilestone.currentProgress.toInt()}%',
+                              '${_safeToInt(nextMilestone.currentProgress)}%',
                               style: AppTypography.small.copyWith(
                                 color: isDark
                                     ? AppColors.textPrimaryDark
@@ -794,4 +794,12 @@ class FireDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Safely converts a double to int, handling Infinity and NaN
+int _safeToInt(double value) {
+  if (!value.isFinite) {
+    return 0; // Return 0 for Infinity or NaN
+  }
+  return value.clamp(0.0, 100.0).toInt();
 }
