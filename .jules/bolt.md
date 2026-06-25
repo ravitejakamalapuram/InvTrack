@@ -123,3 +123,6 @@
 ## 2026-06-25 - Avoid Intermediate List Allocations in Filtering
 **Learning:** Using `.where(...).toList()` simply to filter an array allocates closures and an intermediate primitive list. This increases memory footprint and garbage collection overhead unnecessarily in performance-critical code paths.
 **Action:** Replace `.where(...).toList()` with a manual `for` loop that iterates over the array and adds matching elements to a pre-allocated or dynamically-grown list. This eliminates intermediate closures and chained iterations.
+## 2026-06-25 - Maintain Bounded Top Elements List
+**Learning:** Sorting an entire array just to extract the top few elements introduces a heavy O(N log N) penalty, which scales poorly when only the extremes (e.g., top 3) are needed. Gathering the items in an intermediate list only exacerbates the allocation cost.
+**Action:** When extracting a bounded number of top elements (e.g., 'top 3 most recently closed investments') from an unsorted collection in Dart, use a single-pass O(N) linear scan maintaining a bounded list rather than gathering all items and sorting them in O(N log N) time. This eliminates intermediate memory allocations and significant sorting overhead.
