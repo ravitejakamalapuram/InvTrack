@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Segmented control for switching between Transactions, Documents, and Expected Income tabs.
 class InvestmentDetailSegmentControl extends StatelessWidget {
@@ -23,6 +24,8 @@ class InvestmentDetailSegmentControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.neutral800Dark : AppColors.neutral100Light,
@@ -33,33 +36,38 @@ class InvestmentDetailSegmentControl extends StatelessWidget {
         children: [
           // Transactions Tab
           Expanded(
+            flex: 2,
             child: _SegmentTab(
               isDark: isDark,
               isSelected: selectedSegment == 0,
               icon: Icons.swap_vert_rounded,
-              label: 'Transactions',
+              label: l10n.segmentActivity,
               count: transactionCount,
               onTap: () => onSegmentChanged(0),
             ),
           ),
+          const SizedBox(width: 4),
           // Expected Income Tab
           Expanded(
+            flex: 2,
             child: _SegmentTab(
               isDark: isDark,
               isSelected: selectedSegment == 1,
               icon: Icons.schedule_rounded,
-              label: 'Expected',
+              label: l10n.segmentUpcoming,
               count: expectedIncomeCount,
               onTap: () => onSegmentChanged(1),
             ),
           ),
+          const SizedBox(width: 4),
           // Documents Tab
           Expanded(
+            flex: 2,
             child: _SegmentTab(
               isDark: isDark,
               isSelected: selectedSegment == 2,
               icon: Icons.folder_outlined,
-              label: 'Documents',
+              label: l10n.segmentDocs,
               count: documentCount,
               onTap: () => onSegmentChanged(2),
             ),
@@ -126,7 +134,7 @@ class _SegmentTab extends StatelessWidget {
             final shadowOpacity = 0.08 * value;
 
             return Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(10),
@@ -142,24 +150,30 @@ class _SegmentTab extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 18, color: iconTextColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: iconTextColor,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                  Icon(icon, size: 16, color: iconTextColor),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: iconTextColor,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
                   if (count > 0) ...[
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: 5,
+                        vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: badgeBgColor,
@@ -170,7 +184,7 @@ class _SegmentTab extends StatelessWidget {
                         style: AppTypography.small.copyWith(
                           color: badgeTextColor,
                           fontWeight: FontWeight.w600,
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                     ),
