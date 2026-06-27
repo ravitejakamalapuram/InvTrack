@@ -444,6 +444,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               : _selectedSegment == 2
                   ? DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark))
                   : null, // No FAB for Expected Income tab
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

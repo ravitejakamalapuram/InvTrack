@@ -20,43 +20,30 @@ class TransactionFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    void handleTap() {
-      HapticFeedback.selectionClick();
-      onTap();
-    }
-
-    return Semantics(
-      button: true,
-      label: l10n.addTransaction,
-      excludeSemantics: true,
-      onTap: handleTap,
-      child: InkWell(
-        onTap: handleTap,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: AppColors.heroGradient,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryLight.withValues(alpha: 0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryLight.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.add_rounded, color: Colors.white),
-              const SizedBox(width: 8),
-              Text(
-                l10n.addTransaction,
-                style: AppTypography.button.copyWith(color: Colors.white),
-              ),
-            ],
-          ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        heroTag: 'investment_detail_transaction_fab',
+        onPressed: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: Text(
+          l10n.addTransaction,
+          style: AppTypography.button.copyWith(color: Colors.white),
         ),
       ),
     );
