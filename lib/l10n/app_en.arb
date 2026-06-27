@@ -5038,5 +5038,20 @@
   "notSet": "Not set",
   "@notSet": {
     "description": "Value shown when a date field is not set"
+  },
+
+  "segmentActivity": "Activity",
+  "@segmentActivity": {
+    "description": "Segment control tab label for investment activity/transactions"
+  },
+
+  "segmentUpcoming": "Upcoming",
+  "@segmentUpcoming": {
+    "description": "Segment control tab label for upcoming expected income"
+  },
+
+  "segmentDocs": "Docs",
+  "@segmentDocs": {
+    "description": "Segment control tab label for documents"
   }
 }
