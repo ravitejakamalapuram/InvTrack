@@ -280,14 +280,35 @@ class SmartInsightsService {
       }
     }
 
-    // Return top 3 most declining investments
-    insights.sort((a, b) {
-      final aValue = double.tryParse(a.value.replaceAll('%', '')) ?? 0;
-      final bValue = double.tryParse(b.value.replaceAll('%', '')) ?? 0;
-      return aValue.compareTo(bValue);
-    });
+    // ⚡ Bolt: Replace O(N log N) sorting with O(N) bounded linear scan
+    // Return top 3 most declining investments (lowest percentages)
+    final topDeclining = <SmartInsight>[];
+    for (final insight in insights) {
+      int insertIdx = 0;
+      final insightValue =
+          double.tryParse(insight.value.replaceAll('%', '')) ?? 0;
 
-    return insights.take(3).toList();
+      while (insertIdx < topDeclining.length) {
+        final currentTopValue =
+            double.tryParse(
+              topDeclining[insertIdx].value.replaceAll('%', ''),
+            ) ??
+            0;
+        if (insightValue <= currentTopValue) {
+          break;
+        }
+        insertIdx++;
+      }
+
+      if (insertIdx < 3) {
+        topDeclining.insert(insertIdx, insight);
+        if (topDeclining.length > 3) {
+          topDeclining.removeLast();
+        }
+      }
+    }
+
+    return topDeclining;
   }
 
   /// Generate goal progress insights
