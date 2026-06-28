@@ -2130,6 +2130,31 @@
     "description": "Tooltip for toggle selection mode button"
   },
 
+  "tooltipShowAmounts": "Show amounts",
+  "@tooltipShowAmounts": {
+    "description": "Tooltip for show amounts button"
+  },
+
+  "tooltipHideAmounts": "Hide amounts",
+  "@tooltipHideAmounts": {
+    "description": "Tooltip for hide amounts button"
+  },
+
+  "tooltipCloseSearch": "Close search",
+  "@tooltipCloseSearch": {
+    "description": "Tooltip for close search button"
+  },
+
+  "tooltipRemoveFile": "Remove file",
+  "@tooltipRemoveFile": {
+    "description": "Tooltip for remove file button"
+  },
+
+  "tooltipCopyAmount": "Copy amount",
+  "@tooltipCopyAmount": {
+    "description": "Tooltip for copy amount button"
+  },
+
   "tooltipSortInvestments": "Sort investments",
   "@tooltipSortInvestments": {
     "description": "Tooltip for sort investments button"
