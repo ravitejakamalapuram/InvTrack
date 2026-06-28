@@ -16,245 +16,64 @@ on:
         default: 'bump-and-deploy'
         options:
           - 'bump-and-deploy'
+          - 'deploy-tag'
+          - 'promote-production'
+      tag:
+        description: 'Tag to deploy (required for deploy-tag)'
+        required: false
+        type: string
+      rollout_percentage:
+        description: 'Rollout percentage (for promote-production)'
+        required: true
+        type: choice
+        default: '20'
+        options:
+          - '10'
+          - '20'
+          - '50'
+          - '100'
+      update_priority:
+        description: 'In-app update priority (0-5, higher = more urgent, for promote-production)'
+        required: true
+        type: choice
+        default: '2'
+        options:
+          - '0'
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
   group: cd-release
-  cancel-in-progress: true  # Cancel previous runs to prevent queue buildup
+  cancel-in-progress: false
 
 permissions:
   contents: write
   actions: write
 
 jobs:
-  bump-and-deploy:
-    name: Bump Version & Deploy to Play Store (Alpha)
-    runs-on: self-hosted
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'bump-and-deploy')
-
-    steps:
-      - name: Check Commit Message for Release Skip
-        id: check_skip
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit && github.event.head_commit.message || '' }}
-        run: |
-          # Skip if commit message contains skip markers
-          if [[ "$COMMIT_MSG" == *"[skip-release]"* ]] || \
-             [[ "$COMMIT_MSG" == *"chore(release)"* ]] || \
-             [[ "$COMMIT_MSG" == chore:* ]]; then
-            if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "⏭️ Skipping automatic release (commit message: $COMMIT_MSG)"
-              exit 0
-            fi
-          fi
-          echo "skip=false" >> $GITHUB_OUTPUT
-          echo "✅ Running release (commit message: $COMMIT_MSG)"
-
-      - name: Checkout code
-        if: steps.check_skip.outputs.skip != 'true'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
-
-      - name: Configure Git
-        if: steps.check_skip.outputs.skip != 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Bump version
-        if: steps.check_skip.outputs.skip != 'true'
-        id: new_version
-        run: |
-          # Extract current version
-          CURRENT_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
-          CURRENT_BUILD=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f2)
-
-          # Increment patch version
-          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-          patch=$((patch + 1))
-          NEW_VERSION="$major.$minor.$patch"
-          NEW_BUILD=$((CURRENT_BUILD + 1))
-
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "new_build=$NEW_BUILD" >> $GITHUB_OUTPUT
-
-          # Update pubspec.yaml
-          sed -i.bak "s/^version: .*/version: $NEW_VERSION+$NEW_BUILD/" pubspec.yaml
-          rm pubspec.yaml.bak
-
-          # Update about_screen.dart
-          sed -i.bak "s/static const version = '[^']*';/static const version = '$NEW_VERSION';/" lib/features/settings/presentation/screens/about_screen.dart
-          sed -i.bak "s/static const buildNumber = '[^']*';/static const buildNumber = '$NEW_BUILD';/" lib/features/settings/presentation/screens/about_screen.dart
-          rm lib/features/settings/presentation/screens/about_screen.dart.bak
-
-          echo "✅ Version bumped: $CURRENT_VERSION+$CURRENT_BUILD → $NEW_VERSION+$NEW_BUILD"
-
-      - name: Generate changelog
-        if: steps.check_skip.outputs.skip != 'true'
-        id: changelog
-        run: |
-          # Install git-cliff if not present
-          if ! command -v git-cliff &> /dev/null; then
-            cargo install git-cliff || true
-          fi
-
-          # Generate changelogs
-          git-cliff --output CHANGELOG.md
-
-          # Generate Play Store changelog
-          BUILD_NUM="${{ steps.new_version.outputs.new_build }}"
-          mkdir -p android/fastlane/metadata/android/en-US/changelogs
-          CHANGELOG_FILE="android/fastlane/metadata/android/en-US/changelogs/${BUILD_NUM}.txt"
-          git-cliff --config cliff-playstore.toml --latest --strip all > "$CHANGELOG_FILE"
-
-          # Trim to 500 chars for Play Store
-          if [ $(wc -c < "$CHANGELOG_FILE") -gt 500 ]; then
-            head -c 497 "$CHANGELOG_FILE" > "${CHANGELOG_FILE}.tmp"
-            echo "..." >> "${CHANGELOG_FILE}.tmp"
-            mv "${CHANGELOG_FILE}.tmp" "$CHANGELOG_FILE"
-          fi
-
-      - name: Install dependencies
-        if: steps.check_skip.outputs.skip != 'true'
-        run: |
-          # Flutter is pre-installed on self-hosted runner
-          flutter clean
-          flutter pub get
-
-      - name: Setup signing from GitHub Secrets
-        if: steps.check_skip.outputs.skip != 'true'
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-        run: |
-          # Decode keystore from base64
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
-
-          # Create key.properties
-          cat > android/key.properties <<EOF
-          storePassword=$STORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
-          storeFile=upload-keystore.jks
-          EOF
-
-          echo "✅ Signing keys configured from GitHub Secrets"
-
-      - name: Build Release Bundle
-        if: steps.check_skip.outputs.skip != 'true'
-        run: flutter build appbundle --release
-
-      - name: Track app size
-        if: steps.check_skip.outputs.skip != 'true'
-        id: app_size
-        run: |
-          AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
-          SIZE_BYTES=$(stat -f%z "$AAB_PATH" 2>/dev/null || stat -c%s "$AAB_PATH" 2>/dev/null)
-          SIZE_MB=$(echo "scale=2; $SIZE_BYTES / 1048576" | bc)
-          echo "size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
-          echo "📦 App Size: $SIZE_MB MB"
-
-      - name: Deploy to Google Play (Alpha Track)
-        if: steps.check_skip.outputs.skip != 'true'
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_CREDENTIALS }}
-          packageName: com.invtracker.inv_tracker
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: alpha
-          status: completed
-          inAppUpdatePriority: 2
-          releaseName: v${{ steps.new_version.outputs.new_version }}
-          whatsNewDirectory: android/fastlane/metadata/android/en-US/changelogs
-          # ⚠️ CRITICAL: Do NOT set changesNotSentForReview
-          # Google Play alpha track auto-sends for review as of 2026
-          # Setting this parameter causes: "Changes are sent for review automatically. The query parameter changesNotSentForReview must not be set."
-
-      - name: Commit version bump
-        if: steps.check_skip.outputs.skip != 'true'
-        run: |
-          git add pubspec.yaml CHANGELOG.md \
-            lib/features/settings/presentation/screens/about_screen.dart \
-            android/fastlane/metadata/android/en-US/changelogs/
-          git commit -m "chore(release): v${{ steps.new_version.outputs.new_version }} [skip-release]"
-          git push
-
-      - name: Create and push tag
-        if: steps.check_skip.outputs.skip != 'true'
-        run: |
-          TAG_NAME="v${{ steps.new_version.outputs.new_version }}"
-          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          git push origin "$TAG_NAME"
-
-      - name: Create GitHub Release
-        if: steps.check_skip.outputs.skip != 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.new_version.outputs.new_version }}
-          name: Release ${{ steps.new_version.outputs.new_version }}
-          body: |
-            ## Release v${{ steps.new_version.outputs.new_version }}
-
-            📦 **App Size:** ${{ steps.app_size.outputs.size_mb }} MB
-            🚀 **Track:** Google Play Alpha (Closed Testing)
-
-            ### What's Changed
-            See [CHANGELOG.md](https://github.com/ravitejakamalapuram/InvTrack/blob/main/CHANGELOG.md)
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-
-      - name: Notify Slack - Success
-        if: success() && steps.check_skip.outputs.skip != 'true'
-        run: |
-          PAYLOAD=$(jq -n \
-            --arg text "✅ InvTrack v${{ steps.new_version.outputs.new_version }} deployed to Google Play Alpha" \
-            --arg version "${{ steps.new_version.outputs.new_version }}" \
-            --arg build "${{ steps.new_version.outputs.new_build }}" \
-            --arg size "${{ steps.app_size.outputs.size_mb }}" \
-            '{
-              text: $text,
-              attachments: [{
-                color: "#2eb886",
-                fields: [
-                  {title: "Version", value: $version, short: true},
-                  {title: "Build", value: $build, short: true},
-                  {title: "Size", value: ($size + " MB"), short: true},
-                  {title: "Track", value: "Alpha", short: true}
-                ]
-              }]
-            }')
-
-          curl -k -X POST -H 'Content-type: application/json' \
-            --data "$PAYLOAD" \
-            "${{ secrets.SLACK_WEBHOOK_URL }}"
-
-      - name: Notify Slack - Failure
-        if: failure() && steps.check_skip.outputs.skip != 'true'
-        run: |
-          PAYLOAD=$(jq -n \
-            --arg text "❌ InvTrack CD deployment failed" \
-            --arg version "${{ steps.new_version.outputs.new_version || 'N/A' }}" \
-            '{
-              text: $text,
-              attachments: [{
-                color: "#a30200",
-                fields: [
-                  {title: "Version", value: $version, short: true},
-                  {title: "Workflow", value: "CD Release", short: true}
-                ]
-              }]
-            }')
-
-          curl -k -X POST -H 'Content-type: application/json' \
-            --data "$PAYLOAD" \
-            "${{ secrets.SLACK_WEBHOOK_URL }}"
+  release:
+    uses: ravitejakamalapuram/.github-workflows-shared/.github/workflows/flutter-cd.yml@main
+    with:
+      action: ${{ github.event.inputs.action || 'bump-and-deploy' }}
+      tag: ${{ github.event.inputs.tag || '' }}
+      rollout-percentage: ${{ github.event.inputs.rollout_percentage || '20' }}
+      update-priority: ${{ github.event.inputs.update_priority || '2' }}
+      package-name: 'com.invtracker.inv_tracker'
+      update-dart-file: 'lib/features/settings/presentation/screens/about_screen.dart'
+      runner-type: 'self-hosted'
+      slack-app-name: 'InvTrack'
+      slack-track: 'Alpha'
+    secrets:
+      pat-token: ${{ secrets.PAT_TOKEN }}
+      android-keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      android-keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      android-key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+      android-key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      play-store-credentials: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+      slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
