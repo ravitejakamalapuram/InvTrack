@@ -583,71 +583,79 @@ class FireDashboardScreen extends ConsumerWidget {
                         : AppColors.neutral100Light,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.emoji_events_outlined,
-                        color: milestoneColor,
-                        size: 20,
-                      ),
-                      SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Next Milestone: ${nextMilestone.label}',
-                              style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.textPrimaryDark
-                                    : AppColors.textPrimaryLight,
-                                fontWeight: FontWeight.w500,
-                              ),
+                  child: Builder(
+                    builder: (context) {
+                      // Sanitize progress once and use for both ring and label
+                      final safeProgress = _safeToInt(nextMilestone.currentProgress);
+                      final safeProgressValue = safeProgress / 100.0;
+
+                      return Row(
+                        children: [
+                          Icon(
+                            Icons.emoji_events_outlined,
+                            color: milestoneColor,
+                            size: 20,
+                          ),
+                          SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Next Milestone: ${nextMilestone.label}',
+                                  style: AppTypography.small.copyWith(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimaryLight,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                MaskedAmountText(
+                                  text:
+                                      '${formatCompactCurrency(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale)} to go',
+                                  style: AppTypography.small.copyWith(
+                                    color: isDark
+                                        ? AppColors.neutral400Dark
+                                        : AppColors.neutral500Light,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
                             ),
-                            MaskedAmountText(
-                              text:
-                                  '${formatCompactCurrency(nextMilestone.targetAmount - calculation.currentPortfolioValue, symbol: currencySymbol, locale: locale)} to go',
-                              style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.neutral400Dark
-                                    : AppColors.neutral500Light,
-                                fontSize: 11,
-                              ),
+                          ),
+                          // Mini progress
+                          SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                CircularProgressIndicator(
+                                  value: safeProgressValue,
+                                  strokeWidth: 4,
+                                  backgroundColor: isDark
+                                      ? AppColors.neutral700Dark
+                                      : AppColors.neutral200Light,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    milestoneColor,
+                                  ),
+                                ),
+                                Text(
+                                  '$safeProgress%',
+                                  style: AppTypography.small.copyWith(
+                                    color: isDark
+                                        ? AppColors.textPrimaryDark
+                                        : AppColors.textPrimaryLight,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      // Mini progress
-                      SizedBox(
-                        width: 50,
-                        height: 50,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: nextMilestone.currentProgress / 100,
-                              strokeWidth: 4,
-                              backgroundColor: isDark
-                                  ? AppColors.neutral700Dark
-                                  : AppColors.neutral200Light,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                milestoneColor,
-                              ),
-                            ),
-                            Text(
-                              '${nextMilestone.currentProgress.toInt()}%',
-                              style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.textPrimaryDark
-                                    : AppColors.textPrimaryLight,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 );
               },
@@ -794,4 +802,12 @@ class FireDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Safely converts a double to int, handling Infinity and NaN
+int _safeToInt(double value) {
+  if (!value.isFinite) {
+    return 0; // Return 0 for Infinity or NaN
+  }
+  return value.clamp(0.0, 100.0).toInt();
 }
