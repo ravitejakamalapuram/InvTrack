@@ -5,6 +5,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
   late SharedPreferences prefs;
@@ -18,9 +19,8 @@ void main() {
     return ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: Center(child: child)),
       ),
     );
@@ -29,53 +29,34 @@ void main() {
   group('PrivacyToggleButton', () {
     testWidgets('has semantic label', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
-
-      // Initial state is false (privacy mode off), so amounts are shown.
-      // Button should say "Hide amounts" because clicking it hides them?
-      // Wait, let's check logic:
-      // isPrivacyMode = false. Icon is visibility_rounded (eye open).
-      // Logic: toggle() -> sets isPrivacyMode = true.
-      // If isPrivacyMode is false (visible), action is to "Hide amounts" (make them invisible).
-      // If isPrivacyMode is true (hidden), action is to "Show amounts".
-
-      // Let's verify existing CompactPrivacyToggle logic:
-      // tooltip: isPrivacyMode ? 'Show amounts' : 'Hide amounts'
-      // If isPrivacyMode is true (hidden), button shows 'Show amounts'. Correct.
-      // If isPrivacyMode is false (visible), button shows 'Hide amounts'. Correct.
-
-      expect(find.bySemanticsLabel('Hide amounts'), findsOneWidget);
+      final context = tester.element(find.byType(PrivacyToggleButton));
+      expect(find.bySemanticsLabel(AppLocalizations.of(context).tooltipHideAmounts), findsOneWidget);
     });
 
     testWidgets('toggles semantics when tapped', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
+      final context = tester.element(find.byType(PrivacyToggleButton));
+      final hideAmounts = AppLocalizations.of(context).tooltipHideAmounts;
+      final showAmounts = AppLocalizations.of(context).tooltipShowAmounts;
 
-      // Initially "Hide amounts"
-      expect(find.bySemanticsLabel('Hide amounts'), findsOneWidget);
+      expect(find.bySemanticsLabel(hideAmounts), findsOneWidget);
 
-      // Tap to toggle
       await tester.tap(find.byType(PrivacyToggleButton));
       await tester.pumpAndSettle();
 
-      // Now "Show amounts"
-      expect(find.bySemanticsLabel('Show amounts'), findsOneWidget);
+      expect(find.bySemanticsLabel(showAmounts), findsOneWidget);
     });
 
     testWidgets('has tooltip', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
-
-      // Verify the widget contains a Tooltip
-      expect(find.byTooltip('Hide amounts'), findsOneWidget);
+      final context = tester.element(find.byType(PrivacyToggleButton));
+      expect(find.byTooltip(AppLocalizations.of(context).tooltipHideAmounts), findsOneWidget);
     });
 
     testWidgets('is tappable as a button', (tester) async {
       await tester.pumpWidget(buildTestWidget(const PrivacyToggleButton()));
-
-      // Verify the widget contains a tappable GestureDetector/InkWell
-      // by checking it can be tapped without error
       await tester.tap(find.byType(PrivacyToggleButton));
       await tester.pump();
-
-      // If we got here without error, the button is tappable
       expect(find.byType(PrivacyToggleButton), findsOneWidget);
     });
   });
@@ -83,23 +64,22 @@ void main() {
   group('CompactPrivacyToggle', () {
     testWidgets('has tooltip for accessibility', (tester) async {
       await tester.pumpWidget(buildTestWidget(const CompactPrivacyToggle()));
-
-      // Verify the IconButton has a tooltip for accessibility
-      expect(find.byTooltip('Hide amounts'), findsOneWidget);
+      final context = tester.element(find.byType(CompactPrivacyToggle));
+      expect(find.byTooltip(AppLocalizations.of(context).tooltipHideAmounts), findsOneWidget);
     });
 
     testWidgets('toggles tooltip when tapped', (tester) async {
       await tester.pumpWidget(buildTestWidget(const CompactPrivacyToggle()));
+      final context = tester.element(find.byType(CompactPrivacyToggle));
+      final hideAmounts = AppLocalizations.of(context).tooltipHideAmounts;
+      final showAmounts = AppLocalizations.of(context).tooltipShowAmounts;
 
-      // Initially shows "Hide amounts" tooltip
-      expect(find.byTooltip('Hide amounts'), findsOneWidget);
+      expect(find.byTooltip(hideAmounts), findsOneWidget);
 
-      // Tap to toggle
       await tester.tap(find.byType(CompactPrivacyToggle));
       await tester.pumpAndSettle();
 
-      // Now shows "Show amounts" tooltip
-      expect(find.byTooltip('Show amounts'), findsOneWidget);
+      expect(find.byTooltip(showAmounts), findsOneWidget);
     });
   });
 }
