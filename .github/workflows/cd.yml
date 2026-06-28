@@ -22,7 +22,7 @@ env:
 
 concurrency:
   group: cd-release
-  cancel-in-progress: false
+  cancel-in-progress: true  # Cancel previous runs to prevent queue buildup
 
 permissions:
   contents: write
@@ -42,14 +42,18 @@ jobs:
         env:
           COMMIT_MSG: ${{ github.event.head_commit && github.event.head_commit.message || '' }}
         run: |
-          if [[ "$COMMIT_MSG" == *"[skip-release]"* || "$COMMIT_MSG" == *"chore(release)"* || "$COMMIT_MSG" == "chore:"* ]]; then
+          # Skip if commit message contains skip markers
+          if [[ "$COMMIT_MSG" == *"[skip-release]"* ]] || \
+             [[ "$COMMIT_MSG" == *"chore(release)"* ]] || \
+             [[ "$COMMIT_MSG" == chore:* ]]; then
             if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
               echo "skip=true" >> $GITHUB_OUTPUT
-              echo "⏭️ Skipping automatic release (commit message contains [skip-release] or chore prefix)"
+              echo "⏭️ Skipping automatic release (commit message: $COMMIT_MSG)"
               exit 0
             fi
           fi
           echo "skip=false" >> $GITHUB_OUTPUT
+          echo "✅ Running release (commit message: $COMMIT_MSG)"
 
       - name: Checkout code
         if: steps.check_skip.outputs.skip != 'true'
