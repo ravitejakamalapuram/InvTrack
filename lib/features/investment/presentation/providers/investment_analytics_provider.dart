@@ -103,19 +103,25 @@ final monthlyCashFlowTrendProvider =
 
           final result = <MonthlyCashFlowData>[];
 
+          // Optimization: Group cashflows by year-month to avoid O(D*N) performance bottleneck
+          final cashFlowsByMonth = <String, List<CashFlowEntity>>{};
+          for (final cf in cashFlows) {
+            final key = '${cf.date.year}-${cf.date.month}';
+            (cashFlowsByMonth[key] ??= []).add(cf);
+          }
+
           for (final month in months) {
-            final nextMonth = DateTime(month.year, month.month + 1, 1);
             double inflows = 0;
             double outflows = 0;
 
-            for (final cf in cashFlows) {
-              if (cf.date.isAfter(month.subtract(const Duration(days: 1))) &&
-                  cf.date.isBefore(nextMonth)) {
-                if (cf.type.isOutflow) {
-                  outflows += cf.amount;
-                } else {
-                  inflows += cf.amount;
-                }
+            final key = '${month.year}-${month.month}';
+            final monthlyCashFlows = cashFlowsByMonth[key] ?? const [];
+
+            for (final cf in monthlyCashFlows) {
+              if (cf.type.isOutflow) {
+                outflows += cf.amount;
+              } else {
+                inflows += cf.amount;
               }
             }
 
