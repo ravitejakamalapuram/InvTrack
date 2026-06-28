@@ -187,6 +187,7 @@ jobs:
             lib/features/settings/presentation/screens/about_screen.dart \
             android/fastlane/metadata/android/en-US/changelogs/
           git commit -m "chore(release): v${{ steps.new_version.outputs.new_version }} [skip-release]"
+          git pull --rebase origin main
           git push
 
       - name: Create and push tag
