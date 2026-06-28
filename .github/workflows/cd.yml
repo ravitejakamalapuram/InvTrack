@@ -133,7 +133,7 @@ jobs:
             cp "$KEYS_DIR/upload-keystore.jks" android/upload-keystore.jks
           fi
           if [ -f "$KEYS_DIR/key.properties" ]; then
-            cp "$KEYS_DIR/key.properties" android/key.properties"
+            cp "$KEYS_DIR/key.properties" android/key.properties
           fi
 
       - name: Build Release Bundle
