@@ -118,16 +118,10 @@ jobs:
             mv "${CHANGELOG_FILE}.tmp" "$CHANGELOG_FILE"
           fi
 
-      - name: Setup Flutter
-        if: steps.check_skip.outputs.skip != 'true'
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
       - name: Install dependencies
         if: steps.check_skip.outputs.skip != 'true'
         run: |
+          # Flutter is pre-installed on self-hosted runner
           flutter clean
           flutter pub get
 
