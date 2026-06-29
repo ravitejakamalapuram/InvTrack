@@ -76,15 +76,12 @@
 ## 2026-05-02 - Single Pass Multiple Metric Extraction in WeeklySummaryService
 **Learning:** Chaining multiple `.where().fold()` operations to compute multiple metrics across a collection results in excessive iteration and closure allocation overhead, operating essentially at O(K*N) complexity.
 **Action:** Replace multiple chained operations with a single, standard `for` loop to process all items in a single O(N) pass, accumulating required metrics concurrently to optimize processing speed.
-
 ## 2026-05-06 - Optimize O(N*M) nested iterations in Dart
 **Learning:** The `.firstWhere()` lookup inside loops is an anti-pattern when finding matches between two arrays, resulting in O(N*M) time complexity. Using unhandled `.firstWhere()` (without `orElse`) can also lead to `StateError` exceptions that crash processing when matching records are missing. Pre-grouping data in a `Map` or `HashMap` before nested iterations eliminates O(N*M) bottlenecks. Grouping data in Dart is simple with operations like `putIfAbsent()` and dictionary comprehensions (e.g. `{for (final item in items) item.id: item}`).
 **Action:** Use a pre-computed dictionary comprehension (e.g. `final map = {for (final item in items) item.id: item};`) before the loop. This converts performance from O(N*M) to O(N+M) while enabling safe null-checks (`if (item == null) continue;`) to avoid crashes on missing data. Always replace `.where(...).toList()` operations inside a loop with a single `Map` lookup by pre-computing mappings outside the loop.
-
 ## 2026-05-10 - Pre-Group Iterations by Date to Change O(D*N) to O(N+D)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like dates in a `while` loop), putting a `.where` condition inside the loop introduces a heavy O(D*N) execution time.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g. by date format) outside of the loop first. It modifies the complexity to O(N+D), dramatically enhancing loop execution times.
-
 ## 2024-06-25 - Avoid nested iterable lookups in loop optimizations
 **Learning:** Dart's `.where()` iteration is O(N) when performed over collections. Nesting `.where().toList()` inside a loop (like iterating through investments and looking up their cash flows) creates an O(N*M) time complexity bottleneck. Furthermore, calculating multiple aggregated metrics from the same subset using chained `.where().fold()` causes unnecessary passes over the data.
 **Action:** Always group data into an O(1) map lookup outside the loop (e.g. `final Map<String, List<Entity>> entitiesById = {}`). When calculating multiple metrics, replace `.where().fold()` chains with a single standard `for` loop to accumulate all totals simultaneously, avoiding redundant closures and passes.
@@ -92,7 +89,6 @@
 ## 2024-06-25 - Avoid Chaining Functional Operators for Multiple Disjoint Aggregations
 **Learning:** Chaining functional operations like `.where().toList()` to partition an array followed by `.map().reduce()` to sum up the values causes O(N) intermediate allocations and up to 4 iterations over the same data.
 **Action:** Replace disjoint `.where().toList()` and `.map().reduce()` subsets with a single `for` loop that iterates exactly once while concurrently accumulating the sum and counts for all conditions to achieve O(N) processing with zero intermediate collections.
-
 ## 2024-05-25 - Single Pass Aggregate Calculations with Hoisted Date Boundaries
 **Learning:** In reporting services, calculating multiple aggregates sequentially using `where().fold()` across the same dataset creates an O(K*N) problem. Filtering by an invariant condition (like whether a date falls between two calculated boundaries) inside the loop results in redundant object allocation or computation per item.
 **Action:** Replace multiple chains of `where().fold()` with a single O(N) `for` loop that computes all required metrics simultaneously. Furthermore, calculate loop-invariant boundaries (e.g. `startDate` and `endDate`) outside the iteration entirely to prevent redundant date arithmetic during the aggregation.
@@ -128,6 +124,6 @@
 **Learning:** Using `.where(...).toList()` simply to filter an array allocates closures and an intermediate primitive list. This increases memory footprint and garbage collection overhead unnecessarily in performance-critical code paths.
 **Action:** Replace `.where(...).toList()` with a manual `for` loop that iterates over the array and adds matching elements to a pre-allocated or dynamically-grown list. This eliminates intermediate closures and chained iterations.
 
-## 2026-06-25 - Maintain Bounded Top Elements List
-**Learning:** Sorting an entire array just to extract the top few elements introduces a heavy O(N log N) penalty, which scales poorly when only the extremes (e.g., top 3) are needed. Gathering the items in an intermediate list only exacerbates the allocation cost.
-**Action:** When extracting a bounded number of top elements (e.g., 'top 3 most recently closed investments') from an unsorted collection in Dart, use a single-pass O(N) linear scan maintaining a bounded list rather than gathering all items and sorting them in O(N log N) time. This eliminates intermediate memory allocations and significant sorting overhead.
+## 2024-06-27 - Replace O(N log N) sorting with O(N) bounded linear scan
+**Learning:** Using `array.sort()` followed by `.take(K).toList()` to find the top K elements incurs unnecessary O(N log N) time complexity.
+**Action:** Replace full array sorting with a single-pass O(N) linear scan that maintains a bounded list of size K.

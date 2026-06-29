@@ -31,30 +31,16 @@ final recentlyClosedInvestmentsProvider =
 
       return investmentsAsync.when(
         data: (investments) {
-          // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
-          final recentClosed = <InvestmentEntity>[];
+          // Optimization: Replace .where().toList() with standard loop
+          final closed = <InvestmentEntity>[];
           for (final i in investments) {
             if (i.status == InvestmentStatus.closed) {
-              // Maintain top 3 most recently closed
-              int insertIdx = -1;
-              for (int j = 0; j < recentClosed.length; j++) {
-                if (i.updatedAt.isAfter(recentClosed[j].updatedAt)) {
-                  insertIdx = j;
-                  break;
-                }
-              }
-
-              if (insertIdx != -1) {
-                recentClosed.insert(insertIdx, i);
-              } else if (recentClosed.length < 3) {
-                recentClosed.add(i);
-              }
-
-              if (recentClosed.length > 3) {
-                recentClosed.removeLast();
-              }
+              closed.add(i);
             }
           }
+          closed.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+          final recentClosed = closed.take(3).toList();
 
           return cashFlowsAsync.when(
             data: (allCashFlows) {

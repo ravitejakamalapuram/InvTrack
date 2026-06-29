@@ -1,6 +1,0 @@
-🐛 Bug Fixes & Improvements
-• Update CHANGELOG for v3.70.14+267 Crashlytics fixes release
-• Add onTap to Semantics wrapper in TemplateSelector
-• Resolve in-app update flows, resume checks, and context race condition
-• Enable encryptedSharedPreferences for Android FlutterSecureStorage
-
