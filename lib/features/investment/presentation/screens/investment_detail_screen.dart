@@ -96,6 +96,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           : AppColors.backgroundLight,
       body: CustomScrollView(
         // Pre-render items 500 pixels before they come into view for smoother fast scrolling
+        // ignore: deprecated_member_use
         cacheExtent: 500,
         slivers: [
           // Hero App Bar with pinned navigation
