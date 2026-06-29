@@ -33,3 +33,9 @@
 **Learning:** When developing UI, hardcoding tooltip texts like `tooltip: 'Toggle selection mode'` bypasses the localization and internationalization system. This results in inaccessible experiences for users utilizing non-English languages, as screen readers will read the hardcoded English text.
 
 **Action:** Always add tooltip strings to the `lib/l10n/app_en.arb` file (e.g., `"tooltipToggleSelectionMode": "Toggle selection mode"`) and use the generated `AppLocalizations` instance in widgets (e.g., `tooltip: l10n.tooltipToggleSelectionMode`) to ensure accessibility for all supported locales.
+
+## 2024-06-29 - Avoid Hardcoded Tooltips
+
+**Learning:** When developing UI, hardcoding tooltip texts like `tooltip: 'Close search'` bypasses the localization and internationalization system. This results in inaccessible experiences for users utilizing non-English languages, as screen readers will read the hardcoded English text.
+
+**Action:** Always add tooltip strings to the `lib/l10n/app_en.arb` file (e.g., `"tooltipCloseSearch": "Close search"`) and use the generated `AppLocalizations` instance in widgets (e.g., `tooltip: l10n.tooltipCloseSearch`) to ensure accessibility for all supported locales.
