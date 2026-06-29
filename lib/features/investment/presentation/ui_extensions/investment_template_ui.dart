@@ -7,6 +7,7 @@ import 'package:inv_tracker/features/investment/domain/models/investment_templat
 
 extension InvestmentTemplateUI on InvestmentTemplate {
   /// Convert icon codepoint to Flutter IconData
+  // ignore: non_const_argument_for_const_parameter
   IconData get icon {
     return IconData(
       iconCodePoint,
