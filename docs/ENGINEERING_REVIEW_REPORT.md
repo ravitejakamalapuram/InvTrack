@@ -1,19 +1,19 @@
-# InvTrack Repository Engineering Review
+# Engineering Review Report (2026-06-29)
 
 ## Executive Summary
-* **Overall Repo Health**: 7.5/10. The project adopts Clean Architecture and Riverpod state management effectively, but its scalability is hindered by severely oversized components, architectural boundary leakage (UI handling complex formatting), and missed compliance with internal rules (offline resilience and performance constraints).
+* **Overall Repo Health Score**: 70/100 (Needs improvement in maintainability and separation of concerns)
 * **Biggest Risks**: "God classes" masquerading as UI components (e.g., `add_investment_screen.dart` at >1500 lines) which combine state, layout, and domain logic. Another key risk is lack of `.timeout()` on offline-first database writes, risking application hangs in poor network conditions.
 * **Highest ROI Improvements**: Refactoring massive files into modular components, establishing a centralized UI abstraction for empty states, and fixing missing timeouts on Firestore mutations.
 * **Architecture Concerns**: Presentation layer handling complex data transformations and business logic (e.g., date/currency formatting logic in UI) rather than delegating to domain providers.
 
 ## Critical Issues
 * **God Components (Violates Rule 14 Anti-Pattern)**: Multiple files exceed acceptable limits for maintainable code:
-  * `add_investment_screen.dart` (1523 lines)
-  * `analytics_service.dart` (1439 lines)
-  * `notification_service.dart` (1093 lines)
-  * `add_document_sheet.dart` (1020 lines)
+  * `lib/features/investment/presentation/screens/add_investment_screen.dart` (1523 lines)
+  * `lib/core/analytics/analytics_service.dart` (1440 lines)
+  * `lib/core/notifications/notification_service.dart` (1093 lines)
+  * `lib/features/investment/presentation/widgets/add_document_sheet.dart` (1020 lines)
   Impact: These files are brittle, difficult to test, and highly prone to merge conflicts.
-* **Missing Timeouts on Firestore Writes (Violates Rule 19.5)**: Many Firestore operations (e.g., in `firestore_investment_repository.dart` around `batch.set`, `.update`, and `collection.add`) omit the required `.timeout(Duration(seconds: 5))`.
+* **Missing Timeouts on Firestore Writes (Violates Rule 19.5)**: Many Firestore operations (e.g., in `lib/features/investment/data/repositories/firestore_investment_repository.dart` and `lib/features/investment/data/repositories/firestore_document_repository.dart` around `batch.set`, `.update`, and `collection.add`) omit the required `.timeout(Duration(seconds: 5))`.
   Impact: Will cause the app to hang indefinitely when offline instead of gracefully falling back to local cache.
 * **Missing Exception Handling Mapping**: Core services handle exceptions natively instead of consistently routing them through the centralized `ErrorHandler.handle()` method.
 
@@ -34,11 +34,11 @@
 ## Architecture Review
 * **Scalability**: Feature-first folder structure is excellent. However, individual features contain components that are too granularly coupled, violating single responsibility.
 * **Maintainability**: The existence of massive files (e.g. >1000 lines) makes onboarding new engineers difficult and significantly increases maintenance costs.
-* **Separation of Concerns**: Riverpod `ref.watch` and `ref.read` usage needs close monitoring. The UI should strictly declare layouts, while domain providers should format currency, dates, and compute percentages.
+* **Separation of Concerns**: Riverpod `ref.watch` and `ref.read` usage needs close monitoring. The UI should strictly declare layouts, while domain providers should format currency, dates, and compute percentages. Specifically, `ref.read` was found incorrectly inside build methods (though mostly safe, it requires strict adherence).
 
 ## Performance Findings
-* **Unoptimized Iterable Operations**: There are widespread uses of inefficient iterable chains. For example, `collection.where().toList()` or sorting operations chained directly on collections where a single-pass loop or bounded linear scan would eliminate intermediate memory allocation and O(N log N) sorting overhead.
-* **Sorting Bottlenecks**: Sorting lists just to find maximum/minimum values or recent items (e.g., `.sort((a, b) => a.compareTo(b))` instead of using `reduce` or a single-pass iteration).
+* **Unoptimized Iterable Operations**: Widespread uses of inefficient iterable chains. For example, `collection.where().toList()` or `collection.where().map().toList()` directly on collections where a single-pass loop would eliminate intermediate memory allocation. Found in files such as `lib/features/income_projection/data/services/smart_amount_predictor.dart`, `lib/features/income_projection/data/services/income_trend_analyzer.dart`, `lib/core/utils/batch_currency_converter.dart`, etc.
+* **Sorting Bottlenecks**: Sorting lists just to find maximum/minimum values or recent items (e.g., `.sort((a, b) => a.compareTo(b))` instead of using `reduce` or a single-pass iteration). Found in files such as `lib/core/performance/performance_service.dart`, `lib/features/reports/data/services/smart_insights_service.dart`, `lib/features/income_projection/data/services/reinvestment_advisor.dart`, etc.
 * **Render Bloat**: Very large build methods in UI "God classes" mean that small state changes trigger massive re-renders.
 
 ## Security & Reliability Findings
@@ -52,13 +52,14 @@
 * **Coverage of Core Formatters**: Currency and numeric conversion edge cases (like zero, infinity, formatting boundaries) need exhaustive testing given the app's multi-currency mandate.
 
 ## Rules Compliance Findings
-* **Rule 14 (Anti-Pattern - God Classes)**: Discovered files > 500 lines (`add_investment_screen.dart`, `analytics_service.dart`).
+* **Rule 14 (Anti-Pattern - God Classes)**: Discovered files > 500 lines (`lib/features/investment/presentation/screens/add_investment_screen.dart`, `lib/core/analytics/analytics_service.dart`).
   * *Impact*: Maintenance nightmare.
   * *Suggestion*: Break `add_investment_screen.dart` into composed sub-widgets for distinct form sections.
 * **Rule 19.5 (Offline Behavior)**: Missing `.timeout(Duration(seconds: 5))` on several Firestore writes in repositories.
   * *Impact*: Loss of offline-first capability during writes.
   * *Suggestion*: Audit and wrap all `set`, `update`, and `add` calls with `.timeout()`.
 * **Riverpod Best Practices (Rule 14.1)**: Ensure `ref.read` is strictly avoided inside `build()` methods to prevent stale state issues.
+* **Semantics Missing onTap**: Several widgets like `EmptyStateWidget` missing explicitly added `onTap` to ensure screen readers recognize the element as interactive.
 
 ## Recommended Refactor Plan
 
@@ -103,7 +104,7 @@
 9. Toast/Snackbar notification displays.
 10. API request retry handling loops.
 
-### Top reusable abstractions
+### Top reusable abstractions worth introducing
 1. `AppEmptyState` for standardized empty states.
 2. `AppFormField` for standardized user inputs.
 3. `RiverpodAsyncValueWrapper` for unified loading/error handling.
@@ -112,7 +113,7 @@
 
 ### Files/components with highest technical debt
 1. `lib/features/investment/presentation/screens/add_investment_screen.dart` (1523 lines)
-2. `lib/core/analytics/analytics_service.dart` (1439 lines)
+2. `lib/core/analytics/analytics_service.dart` (1440 lines)
 3. `lib/core/notifications/notification_service.dart` (1093 lines)
 4. `lib/features/investment/presentation/widgets/add_document_sheet.dart` (1020 lines)
 5. `lib/core/services/currency_conversion_service.dart` (978 lines)
