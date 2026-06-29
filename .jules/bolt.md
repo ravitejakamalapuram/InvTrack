@@ -131,3 +131,7 @@
 ## 2026-06-25 - Maintain Bounded Top Elements List
 **Learning:** Sorting an entire array just to extract the top few elements introduces a heavy O(N log N) penalty, which scales poorly when only the extremes (e.g., top 3) are needed. Gathering the items in an intermediate list only exacerbates the allocation cost.
 **Action:** When extracting a bounded number of top elements (e.g., 'top 3 most recently closed investments') from an unsorted collection in Dart, use a single-pass O(N) linear scan maintaining a bounded list rather than gathering all items and sorting them in O(N log N) time. This eliminates intermediate memory allocations and significant sorting overhead.
+
+## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
+**Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
+**Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
