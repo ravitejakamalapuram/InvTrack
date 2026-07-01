@@ -25,9 +25,10 @@ import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 ///
 /// This provider manages whether Crashlytics is enabled in debug builds.
 /// In release builds, Crashlytics is always enabled regardless of this setting.
-final crashlyticsDebugModeProvider = NotifierProvider<CrashlyticsDebugModeNotifier, bool>(
-  CrashlyticsDebugModeNotifier.new,
-);
+final crashlyticsDebugModeProvider =
+    NotifierProvider<CrashlyticsDebugModeNotifier, bool>(
+      CrashlyticsDebugModeNotifier.new,
+    );
 
 /// Notifier for managing Crashlytics debug mode state.
 ///
@@ -54,11 +55,14 @@ class CrashlyticsDebugModeNotifier extends Notifier<bool> {
 
     // Update Crashlytics collection state FIRST (atomic - only persist if this succeeds)
     final shouldEnable = !kDebugMode || enabled;
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(shouldEnable);
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+      shouldEnable,
+    );
 
     // Only update state and prefs if Firebase call succeeded
     await prefs.setBool(prefKey, enabled);
-    CrashlyticsService.enableInDebugMode = enabled; // Keep static mirror in sync
+    CrashlyticsService.enableInDebugMode =
+        enabled; // Keep static mirror in sync
     state = enabled;
   }
 }
@@ -178,20 +182,32 @@ class CrashlyticsService {
           metadata: {'source': 'PlatformDispatcher'},
         );
       } else {
-        // In release mode OR debug mode with override, send to Crashlytics
-        final isFatal = !_isTransientError(error, stack);
-        _crashlytics.recordError(
-          error,
-          stack,
-          reason: 'Uncaught async error from PlatformDispatcher',
-          fatal: isFatal,
-        );
-        LoggerService.error(
-          'Uncaught async error reported to Crashlytics',
-          error: error,
-          stackTrace: stack,
-          metadata: {'fatal': isFatal.toString(), 'source': 'PlatformDispatcher'},
-        );
+        // BUG FIX: Do not report transient errors (e.g. offline) to Crashlytics at all
+        final isTransient = _isTransientError(error, stack);
+
+        if (!isTransient) {
+          // In release mode OR debug mode with override, send non-transient errors to Crashlytics
+          _crashlytics.recordError(
+            error,
+            stack,
+            reason: 'Uncaught async error from PlatformDispatcher',
+            fatal: true, // If it made it here, it's considered fatal
+          );
+          LoggerService.error(
+            'Uncaught async error reported to Crashlytics',
+            error: error,
+            stackTrace: stack,
+            metadata: {'fatal': 'true', 'source': 'PlatformDispatcher'},
+          );
+        } else {
+          // Log transient errors locally but do not pollute Crashlytics
+          LoggerService.warn(
+            'Uncaught transient async error (ignored for Crashlytics)',
+            error: error,
+            stackTrace: stack,
+            metadata: {'source': 'PlatformDispatcher'},
+          );
+        }
       }
 
       // Chain to previous handler if it exists, otherwise return true (handled)
