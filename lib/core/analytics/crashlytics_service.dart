@@ -180,18 +180,28 @@ class CrashlyticsService {
       } else {
         // In release mode OR debug mode with override, send to Crashlytics
         final isFatal = !_isTransientError(error, stack);
-        _crashlytics.recordError(
-          error,
-          stack,
-          reason: 'Uncaught async error from PlatformDispatcher',
-          fatal: isFatal,
-        );
-        LoggerService.error(
-          'Uncaught async error reported to Crashlytics',
-          error: error,
-          stackTrace: stack,
-          metadata: {'fatal': isFatal.toString(), 'source': 'PlatformDispatcher'},
-        );
+
+        // BUG FIX: Skip sending transient errors to Crashlytics entirely
+        // to prevent polluting crash reports with network/connectivity issues
+        if (!isFatal) {
+          LoggerService.info(
+            'Transient async error caught by PlatformDispatcher (skipped Crashlytics)',
+            metadata: {'source': 'PlatformDispatcher', 'error': error.toString()},
+          );
+        } else {
+          _crashlytics.recordError(
+            error,
+            stack,
+            reason: 'Uncaught async error from PlatformDispatcher',
+            fatal: true,
+          );
+          LoggerService.error(
+            'Uncaught async error reported to Crashlytics',
+            error: error,
+            stackTrace: stack,
+            metadata: {'fatal': 'true', 'source': 'PlatformDispatcher'},
+          );
+        }
       }
 
       // Chain to previous handler if it exists, otherwise return true (handled)
