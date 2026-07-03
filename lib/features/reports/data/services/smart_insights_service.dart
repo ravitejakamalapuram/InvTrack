@@ -264,30 +264,40 @@ class SmartInsightsService {
 
       // Alert if decline > 10% (significant drop in returns)
       if (decline < -10) {
-        insights.add(
-          SmartInsight(
-            type: InsightType.decliningInvestment,
-            priority: decline < -20
-                ? InsightPriority.urgent
-                : InsightPriority.warning,
-            title: investment.name,
-            subtitle: l10n.decliningInValue,
-            value: '${decline.toStringAsFixed(1)}%',
-            icon: 'trending_down',
-            generatedAt: now,
-          ),
+        final newInsight = SmartInsight(
+          type: InsightType.decliningInvestment,
+          priority: decline < -20
+              ? InsightPriority.urgent
+              : InsightPriority.warning,
+          title: investment.name,
+          subtitle: l10n.decliningInValue,
+          value: '${decline.toStringAsFixed(1)}%',
+          icon: 'trending_down',
+          generatedAt: now,
         );
+
+        // ⚡ Bolt: Maintain a bounded top 3 list sorted by decline value
+        // to avoid O(N log N) sorting and string parsing overhead at the end
+        bool inserted = false;
+        for (int i = 0; i < insights.length; i++) {
+          final existingDecline =
+              double.tryParse(insights[i].value.replaceAll('%', '')) ?? 0.0;
+          if (decline < existingDecline) {
+            insights.insert(i, newInsight);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted && insights.length < 3) {
+          insights.add(newInsight);
+        }
+        if (insights.length > 3) {
+          insights.removeLast();
+        }
       }
     }
 
-    // Return top 3 most declining investments
-    insights.sort((a, b) {
-      final aValue = double.tryParse(a.value.replaceAll('%', '')) ?? 0;
-      final bValue = double.tryParse(b.value.replaceAll('%', '')) ?? 0;
-      return aValue.compareTo(bValue);
-    });
-
-    return insights.take(3).toList();
+    return insights;
   }
 
   /// Generate goal progress insights
