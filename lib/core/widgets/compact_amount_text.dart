@@ -92,7 +92,7 @@ class CompactAmountText extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Exact Amount',
+                    l10n.exactAmount,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.white.withValues(alpha: 0.7),
