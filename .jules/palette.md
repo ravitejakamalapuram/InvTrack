@@ -37,3 +37,7 @@
 ## 2026-07-08 - Localize Tooltips on Privacy Toggle
 **Learning:** Hardcoded accessibility tooltips like 'Show amounts' on PrivacyToggleButton bypass the localization system, resulting in an inaccessible experience for non-English users as screen readers will read the hardcoded English text.
 **Action:** Always add tooltip strings to lib/l10n/app_en.arb and use AppLocalizations.of(context) in widgets to ensure accessibility for all supported locales.
+
+## 2026-07-04 - Localize Accessibility Labels
+**Learning:** Found hardcoded string tooltips like 'Close search' on IconButtons. These must always be localized so non-English screen reader users receive proper instructions.
+**Action:** Use AppLocalizations keys for all tooltips and accessibility labels.
