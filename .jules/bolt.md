@@ -140,6 +140,6 @@
 **Learning:** In Dart, using chained functional operations like `.where().toList()` followed by extracting a single value (like `.first` or `.length`) creates unnecessary intermediate list allocations in memory. This is particularly wasteful when only counting elements or finding a minimum/maximum value (like the closest maturity date) from a filtered subset.
 **Action:** Replace `.where().toList()` with a single-pass `for` loop that maintains running variables (like count or closest value). This reduces memory complexity from O(N) to O(1) and eliminates the CPU overhead of constructing intermediate lists.
 
-## 2026-07-11 - Replace sorting with single-pass aggregate finding in UI Builders
-**Learning:** Sorting an entire list with O(N log N) time complexity just to find the minimum/maximum element and chaining subsequent `.where` filters within a build method creates severe rendering overhead, redundant iterations, and intermediate allocations.
-**Action:** Always replace O(N log N) sorting for extremum finding and chained `.where().length` checks with a single O(N) `for` loop to find the minimum element and count aggregates concurrently in a single pass.
+## 2026-07-04 - Precomputing static boundaries
+**Learning:** Computing `DateTime` boundaries (like `date.add()` or `date.subtract()`) inside a `.where()` closure causes redundant heap allocations on every iteration.
+**Action:** Precompute these static boundaries outside the closure to eliminate redundant allocations.
