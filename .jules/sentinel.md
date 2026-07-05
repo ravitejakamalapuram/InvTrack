@@ -31,3 +31,7 @@
 **Vulnerability:** The application was not clearing rate limiting data (`_failedAttemptsKey` and `_lockoutTimestampKey`) when a PIN was removed (`removePin()`) or reset (`setPin()`). This state leakage meant that if a user forgot their PIN, was locked out, and managed to reset it, the new PIN would inherit the previous lockout state, potentially continuing to block access or maintaining a high failed attempt count.
 **Learning:** In stateful security mechanisms (e.g., `SecurityService`), when removing or resetting credentials, all associated security states must be explicitly cleared to prevent rate limit bypasses or state leakage to subsequent credentials.
 **Prevention:** Always ensure that any function modifying credentials (like setting or removing a PIN) explicitly clears related security state variables (e.g., failed attempt counters and lockout timestamps).
+## 2024-07-05 - API Keys Hardcoded in Firebase Options
+**Vulnerability:** Firebase `apiKey` and `clientId` values were found hardcoded in `lib/firebase_options.dart`.
+**Learning:** Even generated files can accidentally check in sensitive configuration.
+**Prevention:** Remove hardcoded secrets from checked-in files and manage them via environment variables or a secure build process.
