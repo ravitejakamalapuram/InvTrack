@@ -209,8 +209,7 @@ class SmartInsightsService {
     List<CashFlowEntity> cashFlows,
     AppLocalizations l10n,
   ) {
-    final insights = <SmartInsight>[];
-    if (investments.isEmpty || cashFlows.isEmpty) return insights;
+    if (investments.isEmpty || cashFlows.isEmpty) return [];
 
     final now = DateTime.now();
     final monthAgo = now.subtract(const Duration(days: 30));
@@ -220,6 +219,9 @@ class SmartInsightsService {
     for (final cf in cashFlows) {
       (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
     }
+
+    // ⚡ Bolt: Maintain a bounded list of top 3 declining investments using Dart 3 records to avoid O(N log N) sorting
+    final List<(SmartInsight, double)> topInsights = [];
 
     for (final investment in investments) {
       // O(1) map lookup instead of O(N) .where() scan
@@ -262,32 +264,45 @@ class SmartInsightsService {
       final currentReturnPct = (currentValue / totalInvested) * 100;
       final decline = currentReturnPct - oldReturnPct;
 
-      // Alert if decline > 10% (significant drop in returns)
+      // Alert if decline < -10% (significant drop in returns)
       if (decline < -10) {
-        insights.add(
-          SmartInsight(
-            type: InsightType.decliningInvestment,
-            priority: decline < -20
-                ? InsightPriority.urgent
-                : InsightPriority.warning,
-            title: investment.name,
-            subtitle: l10n.decliningInValue,
-            value: '${decline.toStringAsFixed(1)}%',
-            icon: 'trending_down',
-            generatedAt: now,
-          ),
-        );
+        if (topInsights.length < 3) {
+          topInsights.add((
+            SmartInsight(
+              type: InsightType.decliningInvestment,
+              priority: decline < -20
+                  ? InsightPriority.urgent
+                  : InsightPriority.warning,
+              title: investment.name,
+              subtitle: l10n.decliningInValue,
+              value: '${decline.toStringAsFixed(1)}%',
+              icon: 'trending_down',
+              generatedAt: now,
+            ),
+            decline,
+          ));
+          topInsights.sort((a, b) => a.$2.compareTo(b.$2));
+        } else if (decline < topInsights.last.$2) {
+          topInsights[2] = (
+            SmartInsight(
+              type: InsightType.decliningInvestment,
+              priority: decline < -20
+                  ? InsightPriority.urgent
+                  : InsightPriority.warning,
+              title: investment.name,
+              subtitle: l10n.decliningInValue,
+              value: '${decline.toStringAsFixed(1)}%',
+              icon: 'trending_down',
+              generatedAt: now,
+            ),
+            decline,
+          );
+          topInsights.sort((a, b) => a.$2.compareTo(b.$2));
+        }
       }
     }
 
-    // Return top 3 most declining investments
-    insights.sort((a, b) {
-      final aValue = double.tryParse(a.value.replaceAll('%', '')) ?? 0;
-      final bValue = double.tryParse(b.value.replaceAll('%', '')) ?? 0;
-      return aValue.compareTo(bValue);
-    });
-
-    return insights.take(3).toList();
+    return topInsights.map((e) => e.$1).toList();
   }
 
   /// Generate goal progress insights

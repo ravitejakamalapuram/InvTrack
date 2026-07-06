@@ -131,3 +131,11 @@
 ## 2026-06-25 - Maintain Bounded Top Elements List
 **Learning:** Sorting an entire array just to extract the top few elements introduces a heavy O(N log N) penalty, which scales poorly when only the extremes (e.g., top 3) are needed. Gathering the items in an intermediate list only exacerbates the allocation cost.
 **Action:** When extracting a bounded number of top elements (e.g., 'top 3 most recently closed investments') from an unsorted collection in Dart, use a single-pass O(N) linear scan maintaining a bounded list rather than gathering all items and sorting them in O(N log N) time. This eliminates intermediate memory allocations and significant sorting overhead.
+
+## 2026-07-06 - Expensive Parsing Operations in Sort Comparators
+**Learning:** When generating sorted lists derived from unsorted source items, passing complex string operations (like `.replaceAll('%', '')`) and type parsing (`double.tryParse`) directly into the `.sort()` closure forces Dart to execute these expensive operations on every single  evaluation (O(N log N) times) which can be extremely slow and cause UI jank.
+**Action:** When extracting top elements or sorting based on parsed data, use Dart 3 records to parse and cache the keys once alongside the source item in an intermediate or bounded list (e.g. `List<(Entity, double)>`). Then, run the  exclusively against the cached primitive values to optimize CPU overhead.
+
+## 2026-06-25 - Expensive Parsing Operations in Sort Comparators
+**Learning:** When generating sorted lists derived from unsorted source items, passing complex string operations (like `.replaceAll('%', '')`) and type parsing (`double.tryParse`) directly into the `.sort()` closure forces Dart to execute these expensive operations on every single `a.compareTo(b)` evaluation (O(N log N) times) which can be extremely slow and cause UI jank.
+**Action:** When extracting top elements or sorting based on parsed data, use Dart 3 records to parse and cache the keys once alongside the source item in an intermediate or bounded list (e.g. `List<(Entity, double)>`). Then, run the `.sort()` exclusively against the cached primitive values to optimize CPU overhead.
