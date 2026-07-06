@@ -35,6 +35,6 @@ jobs:
       check-api-in-widgets: 'true'
       check-navigation-in-domain: 'true'
       security-checks: 'true'
-      runner-type: 'self-hosted'
+      runner-type: 'ubuntu-latest'
     secrets:
       slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
