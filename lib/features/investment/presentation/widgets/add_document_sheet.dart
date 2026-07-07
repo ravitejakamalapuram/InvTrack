@@ -58,6 +58,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 

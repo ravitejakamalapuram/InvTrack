@@ -6,6 +6,7 @@ import 'package:inv_tracker/features/investment/presentation/widgets/add_documen
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../mocks/mock_security_service.dart';
@@ -34,6 +35,8 @@ void main() {
         localAuthProvider.overrideWithValue(fakeLocalAuth),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
