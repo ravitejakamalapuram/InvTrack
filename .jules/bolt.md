@@ -131,6 +131,11 @@
 ## 2026-06-25 - Maintain Bounded Top Elements List
 **Learning:** Sorting an entire array just to extract the top few elements introduces a heavy O(N log N) penalty, which scales poorly when only the extremes (e.g., top 3) are needed. Gathering the items in an intermediate list only exacerbates the allocation cost.
 **Action:** When extracting a bounded number of top elements (e.g., 'top 3 most recently closed investments') from an unsorted collection in Dart, use a single-pass O(N) linear scan maintaining a bounded list rather than gathering all items and sorting them in O(N log N) time. This eliminates intermediate memory allocations and significant sorting overhead.
+
 ## 2026-07-09 - Replace sorting with bounded list in Monthly Income Service
 **Learning:** Sorting an entire collection and keeping only the top few elements introduces significant overhead (O(N log N) time complexity), particularly inside mapping iterations.
 **Action:** Use an O(N) bounded list technique with a single-pass loop when extracting a bounded number of top elements (e.g. top 5 top earners) to eliminate sorting costs.
+
+## 2026-07-07 - Prevent Intermediate List Allocations for Extrema
+**Learning:** In Dart, using chained functional operations like `.where().toList()` followed by extracting a single value (like `.first` or `.length`) creates unnecessary intermediate list allocations in memory. This is particularly wasteful when only counting elements or finding a minimum/maximum value (like the closest maturity date) from a filtered subset.
+**Action:** Replace `.where().toList()` with a single-pass `for` loop that maintains running variables (like count or closest value). This reduces memory complexity from O(N) to O(1) and eliminates the CPU overhead of constructing intermediate lists.

@@ -175,17 +175,27 @@ class SmartInsightsService {
     final insights = <SmartInsight>[];
     final next30Days = now.add(const Duration(days: 30));
 
-    final maturingSoon = investments.where((inv) {
-      return inv.maturityDate != null &&
-          inv.maturityDate!.isAfter(now) &&
-          inv.maturityDate!.isBefore(next30Days);
-    }).toList();
+    // ⚡ Bolt: Replace .where().toList() with a standard loop to avoid list allocation
+    // and find the closest maturity day directly in a single pass.
+    int count = 0;
+    int? closestDays;
 
-    if (maturingSoon.isEmpty) return insights;
+    for (final inv in investments) {
+      if (inv.maturityDate != null &&
+          inv.maturityDate!.isAfter(now) &&
+          inv.maturityDate!.isBefore(next30Days)) {
+        count++;
+        final days = inv.maturityDate!.difference(now).inDays;
+        if (closestDays == null || days < closestDays) {
+          closestDays = days;
+        }
+      }
+    }
+
+    if (count == 0 || closestDays == null) return insights;
 
     // Use count for now (accurate amount would require cash flow aggregation)
-    final count = maturingSoon.length;
-    final days = maturingSoon.first.maturityDate!.difference(now).inDays;
+    final days = closestDays;
 
     insights.add(
       SmartInsight(
