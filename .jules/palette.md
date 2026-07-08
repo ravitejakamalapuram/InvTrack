@@ -33,3 +33,7 @@
 **Learning:** When developing UI, hardcoding tooltip texts like `tooltip: 'Toggle selection mode'` bypasses the localization and internationalization system. This results in inaccessible experiences for users utilizing non-English languages, as screen readers will read the hardcoded English text.
 
 **Action:** Always add tooltip strings to the `lib/l10n/app_en.arb` file (e.g., `"tooltipToggleSelectionMode": "Toggle selection mode"`) and use the generated `AppLocalizations` instance in widgets (e.g., `tooltip: l10n.tooltipToggleSelectionMode`) to ensure accessibility for all supported locales.
+
+## 2026-07-08 - Localize Tooltips on Privacy Toggle
+**Learning:** Hardcoded accessibility tooltips like 'Show amounts' on PrivacyToggleButton bypass the localization system, resulting in an inaccessible experience for non-English users as screen readers will read the hardcoded English text.
+**Action:** Always add tooltip strings to lib/l10n/app_en.arb and use AppLocalizations.of(context) in widgets to ensure accessibility for all supported locales.

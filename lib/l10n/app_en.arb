@@ -5054,4 +5054,13 @@
   "@segmentDocs": {
     "description": "Segment control tab label for documents"
   }
+,
+  "tooltipShowAmounts": "Show amounts",
+  "@tooltipShowAmounts": {
+    "description": "Tooltip to show amounts"
+  },
+  "tooltipHideAmounts": "Hide amounts",
+  "@tooltipHideAmounts": {
+    "description": "Tooltip to hide amounts"
+  }
 }
