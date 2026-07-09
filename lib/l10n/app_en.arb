@@ -2146,6 +2146,18 @@
   },
 
   "tooltipClearText": "Clear text",
+  "tooltipCopyAmount": "Copy amount",
+  "@tooltipCopyAmount": {
+    "description": "Tooltip for copying amount"
+  },
+  "tooltipCloseSearch": "Close search",
+  "@tooltipCloseSearch": {
+    "description": "Tooltip for closing search"
+  },
+  "tooltipRemoveFile": "Remove file",
+  "@tooltipRemoveFile": {
+    "description": "Tooltip for removing file"
+  },
   "@tooltipClearText": {
     "description": "Tooltip for clear text button"
   },
