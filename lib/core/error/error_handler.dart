@@ -71,6 +71,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
@@ -135,6 +136,11 @@ class ErrorHandler {
       return _mapFirebaseAuthError(error, stackTrace);
     }
 
+    // Google Sign In errors
+    if (error is GoogleSignInException) {
+      return _mapGoogleSignInError(error, stackTrace);
+    }
+
     // Firestore errors
     if (error is FirebaseException) {
       return _mapFirebaseError(error, stackTrace);
@@ -151,6 +157,34 @@ class ErrorHandler {
       technicalMessage: error.toString(),
       cause: error,
       stackTrace: stackTrace,
+    );
+  }
+
+  static AuthException _mapGoogleSignInError(
+    GoogleSignInException error,
+    StackTrace? stackTrace,
+  ) {
+    if (error.code == GoogleSignInExceptionCode.canceled) {
+      return AuthException.signInCancelled();
+    }
+
+    if (error.code == GoogleSignInExceptionCode.clientConfigurationError ||
+        error.code == GoogleSignInExceptionCode.providerConfigurationError) {
+      return AuthException(
+        userMessage: 'Configuration error. Please contact support.',
+        technicalMessage: 'GoogleSignInException: ${error.code.name}',
+        cause: error,
+        stackTrace: stackTrace,
+        shouldReport: false, // Environmental config issue, not app bug
+      );
+    }
+
+    return AuthException(
+      userMessage: 'Sign in failed. Please try again.',
+      technicalMessage: 'GoogleSignInException: ${error.code.name}',
+      cause: error,
+      stackTrace: stackTrace,
+      shouldReport: false, // Don't spam Crashlytics with user errors
     );
   }
 

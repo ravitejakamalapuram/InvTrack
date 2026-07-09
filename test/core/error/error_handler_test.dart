@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 
@@ -28,6 +29,33 @@ void main() {
 
         expect(result, isA<DataException>());
         expect(result.userMessage, contains('unexpected error'));
+      });
+
+      test('maps GoogleSignInException (canceled) to AuthException.signInCancelled', () {
+        final error = GoogleSignInException(code: GoogleSignInExceptionCode.canceled);
+        final result = ErrorHandler.mapException(error);
+
+        expect(result, isA<AuthException>());
+        expect((result as AuthException).shouldReport, isFalse);
+        expect(result.userMessage, contains('cancelled'));
+      });
+
+      test('maps GoogleSignInException (clientConfigurationError) to AuthException with shouldReport=false', () {
+        final error = GoogleSignInException(code: GoogleSignInExceptionCode.clientConfigurationError);
+        final result = ErrorHandler.mapException(error);
+
+        expect(result, isA<AuthException>());
+        expect((result as AuthException).shouldReport, isFalse);
+        expect(result.userMessage, contains('Configuration error'));
+      });
+
+      test('maps GoogleSignInException (unknown) to AuthException with shouldReport=false', () {
+        final error = GoogleSignInException(code: GoogleSignInExceptionCode.unknownError);
+        final result = ErrorHandler.mapException(error);
+
+        expect(result, isA<AuthException>());
+        expect((result as AuthException).shouldReport, isFalse);
+        expect(result.userMessage, contains('Sign in failed'));
       });
 
       test('preserves stack trace', () {
