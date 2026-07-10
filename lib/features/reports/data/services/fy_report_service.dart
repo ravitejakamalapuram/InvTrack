@@ -50,12 +50,6 @@ class FYReportService {
       fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
     );
 
-    // Filter cashflows for this FY using the converted cashflows
-    final fyCashFlows = baseCashFlows.where((cf) {
-      return cf.date.isAfter(fyStart.subtract(const Duration(days: 1))) &&
-          cf.date.isBefore(fyEnd.add(const Duration(days: 1)));
-    }).toList();
-
     // Calculate totals
     double totalInvested = 0;
     double totalReturns = 0;
@@ -64,27 +58,35 @@ class FYReportService {
     double dividendIncome = 0;
     double interestIncome = 0;
 
-    for (final cf in fyCashFlows) {
-      switch (cf.type) {
-        case CashFlowType.invest:
-          totalInvested += cf.amount;
-          break;
-        case CashFlowType.returnFlow:
-          totalReturns += cf.amount;
-          break;
-        case CashFlowType.income:
-          totalIncome += cf.amount;
-          // Categorize by note
-          final noteType = (cf.notes ?? '').toLowerCase();
-          if (noteType.contains('dividend')) {
-            dividendIncome += cf.amount;
-          } else if (noteType.contains('interest')) {
-            interestIncome += cf.amount;
-          }
-          break;
-        case CashFlowType.fee:
-          totalFees += cf.amount;
-          break;
+    // ⚡ Bolt: Single pass loop replacing .where().toList() to avoid intermediate array allocation
+    final startLimit = fyStart.subtract(const Duration(days: 1));
+    final endLimit = fyEnd.add(const Duration(days: 1));
+    final fyCashFlows = <CashFlowEntity>[];
+
+    for (final cf in baseCashFlows) {
+      if (cf.date.isAfter(startLimit) && cf.date.isBefore(endLimit)) {
+        fyCashFlows.add(cf);
+        switch (cf.type) {
+          case CashFlowType.invest:
+            totalInvested += cf.amount;
+            break;
+          case CashFlowType.returnFlow:
+            totalReturns += cf.amount;
+            break;
+          case CashFlowType.income:
+            totalIncome += cf.amount;
+            // Categorize by note
+            final noteType = (cf.notes ?? '').toLowerCase();
+            if (noteType.contains('dividend')) {
+              dividendIncome += cf.amount;
+            } else if (noteType.contains('interest')) {
+              interestIncome += cf.amount;
+            }
+            break;
+          case CashFlowType.fee:
+            totalFees += cf.amount;
+            break;
+        }
       }
     }
 
