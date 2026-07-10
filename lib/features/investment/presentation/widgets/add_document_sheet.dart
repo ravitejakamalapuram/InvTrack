@@ -457,6 +457,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
             itemCount: _multipleFiles.length,
             separatorBuilder: (_, _) => SizedBox(height: AppSpacing.xs),
             itemBuilder: (context, index) {
+              final l10n = AppLocalizations.of(context);
               final file = _multipleFiles[index];
               final isImage = DocumentMimeTypes.isImage(file.fileName);
               return Container(
@@ -578,7 +579,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                     if (!_isLoading)
                       IconButton(
                         icon: Icon(Icons.close, size: 20),
-                        tooltip: 'Remove file',
+                        tooltip: l10n.tooltipRemoveFile,
                         onPressed: () {
                           setState(() {
                             _multipleFiles.removeAt(index);
