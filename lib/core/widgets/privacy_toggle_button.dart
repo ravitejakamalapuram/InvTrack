@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A beautiful animated eye icon button for toggling privacy mode.
 /// Features smooth animations and haptic feedback.
@@ -110,12 +111,14 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
       ),
     );
 
+    final l10n = AppLocalizations.of(context);
+
     if (!widget.showBackground) {
       return Semantics(
         button: true,
-        label: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+        label: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
         child: Tooltip(
-          message: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+          message: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
           excludeFromSemantics: true,
           child: GestureDetector(
             onTap: _handleTap,
@@ -128,9 +131,9 @@ class _PrivacyToggleButtonState extends ConsumerState<PrivacyToggleButton>
 
     return Semantics(
       button: true,
-      label: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+      label: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
       child: Tooltip(
-        message: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+        message: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
         excludeFromSemantics: true,
         child: GestureDetector(
           onTap: _handleTap,
@@ -196,6 +199,7 @@ class CompactPrivacyToggle extends ConsumerWidget {
     final effectiveColor =
         color ??
         (isDark ? Colors.white.withValues(alpha: 0.8) : Colors.black87);
+    final l10n = AppLocalizations.of(context);
 
     return IconButton(
       onPressed: () {
@@ -213,7 +217,7 @@ class CompactPrivacyToggle extends ConsumerWidget {
           color: effectiveColor,
         ),
       ),
-      tooltip: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+      tooltip: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
     );
   }
 }
