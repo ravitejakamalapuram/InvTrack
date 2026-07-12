@@ -4,21 +4,6 @@
 
 ### ⚡ Performance
 
-- **reports**: Replace O(N log N) declining investments sorting with O(N) bounded insertion (#559)
-- Optimize top earners extraction in monthly income service (#578)
-
-### 🐛 Bug Fixes
-
-- **cd**: Fix infinite loop - correct skip logic and enable cancel-in-progress
-
-### 📚 Documentation
-
-- Generate daily engineering review report (#555)
-
-## [3.70.16] - 2026-06-28
-
-### ⚡ Performance
-
 - Optimize FYReportService data processing by removing redundant closures
 - Optimize FYReportService data processing by removing redundant closures
 

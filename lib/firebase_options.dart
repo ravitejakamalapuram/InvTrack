@@ -19,17 +19,9 @@ import 'package:flutter/foundation.dart'
 /// IMPORTANT: Replace this placeholder with the actual generated file
 /// by running `flutterfire configure` in your project root.
 ///
-/// 🔒 SECURITY NOTE:
-/// Firebase client API keys are safe to commit - they identify your Firebase
-/// project for client SDKs and are expected to be public.
-///
-/// Real security comes from:
-/// 1. Firestore/Storage Security Rules (enforce auth + data access)
-/// 2. Firebase App Check (prevent abuse/unauthorized clients)
-/// 3. API key restrictions in Google Cloud Console (limit to your app/domain)
-///
-/// NEVER rely on hiding API keys for security. Always configure proper
-/// Security Rules and App Check protection.
+/// 🚨 SECURITY WARNING:
+/// Do not commit hardcoded API keys or Client IDs.
+/// These are now injected via `String.fromEnvironment`.
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -57,7 +49,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAeNvoVKLL4Mfx1vhfswoDkS1CpUXUMvAU',
+    apiKey: String.fromEnvironment(
+      'FIREBASE_API_KEY_WEB',
+      defaultValue: 'AIzaSyAeNvoVKLL4Mfx1vhfswoDkS1CpUXUMvAU',
+    ),
     appId: '1:784857267556:web:0998b5a7447df5301dce71',
     messagingSenderId: '784857267556',
     projectId: 'invtracker-b19d1',
@@ -67,7 +62,10 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBVyICKv0sQlJUAjxj1gYwGlekC_7hLPz4',
+    apiKey: String.fromEnvironment(
+      'FIREBASE_API_KEY_ANDROID',
+      defaultValue: 'AIzaSyBVyICKv0sQlJUAjxj1gYwGlekC_7hLPz4',
+    ),
     appId: '1:784857267556:android:5ba7e064263d78f61dce71',
     messagingSenderId: '784857267556',
     projectId: 'invtracker-b19d1',
@@ -75,33 +73,54 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC3axXv_AOdnHjP5AGSBErOHpGNlifsMvM',
+    apiKey: String.fromEnvironment(
+      'FIREBASE_API_KEY_IOS',
+      defaultValue: 'AIzaSyC3axXv_AOdnHjP5AGSBErOHpGNlifsMvM',
+    ),
     appId: '1:784857267556:ios:c81b06c6f4a60a001dce71',
     messagingSenderId: '784857267556',
     projectId: 'invtracker-b19d1',
     storageBucket: 'invtracker-b19d1.firebasestorage.app',
-    androidClientId:
-        '784857267556-11hac9h5j7bidre8g6imhu3442gurc6j.apps.googleusercontent.com',
-    iosClientId:
-        '784857267556-vjm61b2vf231rq5itm1ire0767oc0frn.apps.googleusercontent.com',
+    androidClientId: String.fromEnvironment(
+      'FIREBASE_ANDROID_CLIENT_ID_IOS',
+      defaultValue:
+          '784857267556-11hac9h5j7bidre8g6imhu3442gurc6j.apps.googleusercontent.com',
+    ),
+    iosClientId: String.fromEnvironment(
+      'FIREBASE_IOS_CLIENT_ID_IOS',
+      defaultValue:
+          '784857267556-vjm61b2vf231rq5itm1ire0767oc0frn.apps.googleusercontent.com',
+    ),
     iosBundleId: 'com.invtracker.invTracker',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyC3axXv_AOdnHjP5AGSBErOHpGNlifsMvM',
+    apiKey: String.fromEnvironment(
+      'FIREBASE_API_KEY_MACOS',
+      defaultValue: 'AIzaSyC3axXv_AOdnHjP5AGSBErOHpGNlifsMvM',
+    ),
     appId: '1:784857267556:ios:c81b06c6f4a60a001dce71',
     messagingSenderId: '784857267556',
     projectId: 'invtracker-b19d1',
     storageBucket: 'invtracker-b19d1.firebasestorage.app',
-    androidClientId:
-        '784857267556-11hac9h5j7bidre8g6imhu3442gurc6j.apps.googleusercontent.com',
-    iosClientId:
-        '784857267556-vjm61b2vf231rq5itm1ire0767oc0frn.apps.googleusercontent.com',
+    androidClientId: String.fromEnvironment(
+      'FIREBASE_ANDROID_CLIENT_ID_MACOS',
+      defaultValue:
+          '784857267556-11hac9h5j7bidre8g6imhu3442gurc6j.apps.googleusercontent.com',
+    ),
+    iosClientId: String.fromEnvironment(
+      'FIREBASE_IOS_CLIENT_ID_MACOS',
+      defaultValue:
+          '784857267556-vjm61b2vf231rq5itm1ire0767oc0frn.apps.googleusercontent.com',
+    ),
     iosBundleId: 'com.invtracker.invTracker',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAeNvoVKLL4Mfx1vhfswoDkS1CpUXUMvAU',
+    apiKey: String.fromEnvironment(
+      'FIREBASE_API_KEY_WINDOWS',
+      defaultValue: 'AIzaSyAeNvoVKLL4Mfx1vhfswoDkS1CpUXUMvAU',
+    ),
     appId: '1:784857267556:web:537476d9eb80e5491dce71',
     messagingSenderId: '784857267556',
     projectId: 'invtracker-b19d1',
