@@ -89,34 +89,21 @@ class MonthlyIncomeService {
       }
     }
 
-    final topEarners = <InvestmentWithIncome>[];
+    final topEarners =
+        investmentIncomeMap.entries
+            .map((e) {
+              final investment = investmentMap[e.key];
+              if (investment == null) return null;
 
-    for (final e in investmentIncomeMap.entries) {
-      final investment = investmentMap[e.key];
-      if (investment == null) continue;
-
-      final investmentWithIncome = InvestmentWithIncome(
-        investment: investment,
-        income: e.value,
-        incomeType: investmentTypeMap[e.key] ?? 'Other',
-      );
-
-      // Maintain a bounded list of top 5 earners sorted by income descending
-      bool inserted = false;
-      for (int i = 0; i < topEarners.length; i++) {
-        if (investmentWithIncome.income > topEarners[i].income) {
-          topEarners.insert(i, investmentWithIncome);
-          inserted = true;
-          break;
-        }
-      }
-      if (!inserted && topEarners.length < 5) {
-        topEarners.add(investmentWithIncome);
-      }
-      if (topEarners.length > 5) {
-        topEarners.removeLast();
-      }
-    }
+              return InvestmentWithIncome(
+                investment: investment,
+                income: e.value,
+                incomeType: investmentTypeMap[e.key] ?? 'Other',
+              );
+            })
+            .whereType<InvestmentWithIncome>()
+            .toList()
+          ..sort((a, b) => b.income.compareTo(a.income));
 
     return MonthlyIncomeReport(
       period: monthStart,
@@ -126,7 +113,7 @@ class MonthlyIncomeService {
       totalFees: totalFees,
       netCashFlow: (totalIncome + totalReturns) - (totalInvested + totalFees),
       incomeByType: incomeByType,
-      topEarners: topEarners,
+      topEarners: topEarners.take(5).toList(),
       transactions: transactions..sort((a, b) => b.date.compareTo(a.date)),
     );
   }
