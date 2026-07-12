@@ -5075,6 +5075,16 @@
   "segmentDocs": "Docs",
   "@segmentDocs": {
     "description": "Segment control tab label for documents"
+  },
+
+  "tooltipCloseSearch": "Close search",
+  "@tooltipCloseSearch": {
+    "description": "Tooltip for close search button"
+  },
+
+  "tooltipRemoveFile": "Remove file",
+  "@tooltipRemoveFile": {
+    "description": "Tooltip for remove file button"
   }
 ,
   "tooltipShowAmounts": "Show amounts",
