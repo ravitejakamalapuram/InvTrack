@@ -271,15 +271,36 @@ class FYReportService {
       );
     }
 
-    // Sort by absolute returns
-    final byReturns = List<InvestmentWithReturns>.from(performers)
-      ..sort((a, b) => b.absoluteReturns.compareTo(a.absoluteReturns));
+    // Optimization: Use a single-pass O(N) bounded list instead of O(N log N) sorting
+    // to extract the top 5 elements.
+    final topByReturns = <InvestmentWithReturns>[];
+    final topByXIRR = <InvestmentWithReturns>[];
 
-    // Sort by XIRR
-    final byXIRR = List<InvestmentWithReturns>.from(performers)
-      ..sort((a, b) => b.xirr.compareTo(a.xirr));
+    for (final p in performers) {
+      if (topByReturns.length < 5) {
+        topByReturns.add(p);
+        topByReturns.sort(
+          (a, b) => b.absoluteReturns.compareTo(a.absoluteReturns),
+        );
+      } else if (p.absoluteReturns > topByReturns.last.absoluteReturns) {
+        topByReturns.removeLast();
+        topByReturns.add(p);
+        topByReturns.sort(
+          (a, b) => b.absoluteReturns.compareTo(a.absoluteReturns),
+        );
+      }
 
-    return (byReturns.take(5).toList(), byXIRR.take(5).toList());
+      if (topByXIRR.length < 5) {
+        topByXIRR.add(p);
+        topByXIRR.sort((a, b) => b.xirr.compareTo(a.xirr));
+      } else if (p.xirr > topByXIRR.last.xirr) {
+        topByXIRR.removeLast();
+        topByXIRR.add(p);
+        topByXIRR.sort((a, b) => b.xirr.compareTo(a.xirr));
+      }
+    }
+
+    return (topByReturns, topByXIRR);
   }
 
   /// Calculate portfolio value at a specific date
