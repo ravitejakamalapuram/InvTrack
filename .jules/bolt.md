@@ -147,3 +147,7 @@
 ## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
+
+## 2026-05-24 - Optimize Declining Investments Smart Insights
+**Learning:** When maintaining a bounded list inside a loop to extract top elements, pre-calculate and store the parsed sort keys (e.g., using Dart 3 records). Performing string replacements and `double.tryParse` inside a final bounded list `.sort()` comparator on every loop iteration causes severe de-optimization.
+**Action:** Use a single-pass O(N) linear scan maintaining a bounded list of pre-calculated keys (Dart 3 records) to eliminate intermediate object allocations and O(N log N) sorting overhead when extracting top items.
