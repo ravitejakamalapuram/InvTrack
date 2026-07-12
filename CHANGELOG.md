@@ -4,6 +4,33 @@
 
 ### ⚡ Performance
 
+- Replace O(N log N) sort with O(N) bounded list scan in FY report (#556)
+
+### 🐛 Bug Fixes
+
+- Resolve merge conflict artifacts and localization issues
+- **auth**: Correct exception throwing in Google SignIn handler (#546)
+- Skip transient errors from Crashlytics in PlatformDispatcher (#560)
+
+## [3.70.17] - 2026-07-10
+
+### ⚡ Performance
+
+- **reports**: Replace O(N log N) declining investments sorting with O(N) bounded insertion (#559)
+- Optimize top earners extraction in monthly income service (#578)
+
+### 🐛 Bug Fixes
+
+- **cd**: Fix infinite loop - correct skip logic and enable cancel-in-progress
+
+### 📚 Documentation
+
+- Generate daily engineering review report (#555)
+
+## [3.70.16] - 2026-06-28
+
+### ⚡ Performance
+
 - Optimize FYReportService data processing by removing redundant closures
 - Optimize FYReportService data processing by removing redundant closures
 

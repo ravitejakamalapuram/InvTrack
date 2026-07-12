@@ -1,0 +1,7 @@
+⚡ Performance Improvements
+• Replace O(N log N) declining investments sorting with O(N) bounded insertion (#559)
+• Optimize top earners extraction in monthly income service (#578)
+
+🐛 Bug Fixes & Improvements
+• Fix infinite loop - correct skip logic and enable cancel-in-progress
+
