@@ -35,3 +35,8 @@
 **Vulnerability:** Firebase `apiKey` and `clientId` values were found hardcoded in `lib/firebase_options.dart`.
 **Learning:** Even generated files can accidentally check in sensitive configuration.
 **Prevention:** Remove hardcoded secrets from checked-in files and manage them via environment variables or a secure build process.
+
+## 2025-01-20 - [App Lifecycle] Handle AppLifecycleState.hidden for state leakage
+**Vulnerability:** AppLifecycleState.hidden was not checked during lifecycle events which could lead to state leakage when the app is minimized.
+**Learning:** In Flutter 3.13+, when implementing app lifecycle-dependent security features such as privacy protection wrappers or auto-lock mechanisms, explicitly handle AppLifecycleState.hidden in addition to paused and inactive states.
+**Prevention:** Ensure AppLifecycleState.hidden is checked along with inactive and paused.

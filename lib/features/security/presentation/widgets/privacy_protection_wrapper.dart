@@ -46,7 +46,8 @@ class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
     // detached: App is detached from engine
     final shouldObscure =
         state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused;
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden;
 
     if (_shouldObscure != shouldObscure) {
       setState(() {
