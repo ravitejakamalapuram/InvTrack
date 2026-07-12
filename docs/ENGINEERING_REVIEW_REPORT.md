@@ -1,125 +1,111 @@
-# InvTrack Repository Engineering Review
+# InvTracker Engineering Review Report
 
 ## Executive Summary
-* **Overall Repo Health**: 7.5/10. The project adopts Clean Architecture and Riverpod state management effectively, but its scalability is hindered by severely oversized components, architectural boundary leakage (UI handling complex formatting), and missed compliance with internal rules (offline resilience and performance constraints).
-* **Biggest Risks**: "God classes" masquerading as UI components (e.g., `add_investment_screen.dart` at >1500 lines) which combine state, layout, and domain logic. Another key risk is lack of `.timeout()` on offline-first database writes, risking application hangs in poor network conditions.
-* **Highest ROI Improvements**: Refactoring massive files into modular components, establishing a centralized UI abstraction for empty states, and fixing missing timeouts on Firestore mutations.
-* **Architecture Concerns**: Presentation layer handling complex data transformations and business logic (e.g., date/currency formatting logic in UI) rather than delegating to domain providers.
+* **Overall Repo Health Score:** 75/100. Good foundation, well-structured features, but showing signs of growing pains with God classes, duplicated UI state patterns, and potential performance bottlenecks in large list rendering.
+* **Biggest Risks:** God classes exceeding 500 lines (Rule 14 Anti-Pattern), especially `add_investment_screen.dart` (~1500 lines) and `analytics_service.dart` (~1400 lines). These pose significant maintainability and bug-introduction risks.
+* **Highest ROI Improvements:** Componentizing large UI screens, extracting shared form logic, and standardizing data parsing/CSV services.
+* **Architecture Concerns:** UI layer (presentation) containing too much logic, specifically in stateful widgets. Need stricter adherence to Layer Boundaries: UI -> State -> Domain -> Data.
 
 ## Critical Issues
-* **God Components (Violates Rule 14 Anti-Pattern)**: Multiple files exceed acceptable limits for maintainable code:
-  * `add_investment_screen.dart` (1523 lines)
-  * `analytics_service.dart` (1439 lines)
-  * `notification_service.dart` (1093 lines)
-  * `add_document_sheet.dart` (1020 lines)
-  Impact: These files are brittle, difficult to test, and highly prone to merge conflicts.
-* **Missing Timeouts on Firestore Writes (Violates Rule 19.5)**: Many Firestore operations (e.g., in `firestore_investment_repository.dart` around `batch.set`, `.update`, and `collection.add`) omit the required `.timeout(Duration(seconds: 5))`.
-  Impact: Will cause the app to hang indefinitely when offline instead of gracefully falling back to local cache.
-* **Missing Exception Handling Mapping**: Core services handle exceptions natively instead of consistently routing them through the centralized `ErrorHandler.handle()` method.
+
+* **God Classes Violating Rule 14 Anti-Pattern**
+   - **Issue:** Several classes exceed the 500-line limit mandated by the memory/rules.
+   - **Locations:**
+     - `lib/features/investment/presentation/screens/add_investment_screen.dart` (~1500 lines)
+     - `lib/core/analytics/analytics_service.dart` (~1400 lines)
+     - `lib/features/investment/presentation/screens/investment_detail_screen.dart` (~960 lines)
+     - `lib/core/notifications/notification_service.dart` (~1090 lines)
+   - **Impact:** Extremely hard to maintain, test, and read. High risk of breaking existing functionality when adding features.
+   - **Action:** Break down UI screens into smaller widget components. Split services into more focused, single-responsibility domain classes.
 
 ## Duplication Report
-* **Empty States**: Redundant empty state widget implementations exist across features:
-  * `GoalsEmptyState` (`lib/features/goals/presentation/widgets/goals_empty_state.dart`)
-  * `OverviewEmptyState` (`lib/features/overview/presentation/widgets/overview_empty_state.dart`)
-  * `InvestmentEmptyState` (`lib/features/investment/presentation/widgets/investment_list_states.dart`)
-  These classes duplicate structural UI code and layout logic.
-* **CSV Parsing Logic**: Bulk import features contain manual iteration and error extraction that could be centralized in a shared domain utility.
-* **Form Field Configurations**: UI screens re-declare consistent form styles, spacings, and validation for text fields and dropdowns instead of utilizing shared abstractions.
+
+* **Empty States**
+   - **Issue:** Duplicate implementation of empty states across features despite having a core reusable widget.
+   - **Locations:** `lib/features/goals/presentation/widgets/goals_empty_state.dart`, `lib/features/overview/presentation/widgets/overview_empty_state.dart`
+   - **Impact:** Inconsistent UI, duplicated styling logic.
+   - **Action:** Refactor all feature-specific empty states to use `lib/core/widgets/empty_state_widget.dart`.
 
 ## Reusability Opportunities
-* **`AppEmptyState` Component**: Create a single parameterized abstraction for all empty states (accepting an icon, title, description, and primary action).
-* **`AppFormField` / `ValidatedTextField`**: A reusable builder that standardizes form inputs to ensure uniform styling and validation across all screens.
-* **`RiverpodAsyncValueWrapper`**: A common wrapper for `AsyncValue` to handle standardized shimmering/loading states and error displays consistently across the application.
+
+* **Form Validation and Management**
+   - **Observation:** Large forms like `add_investment_screen.dart` contain massive amounts of inline state management and validation.
+   - **Suggestion:** Introduce reusable form field wrapper widgets and a centralized form validation service or hook-like structure (using Riverpod) to handle complex, multi-step forms.
 
 ## Architecture Review
-* **Scalability**: Feature-first folder structure is excellent. However, individual features contain components that are too granularly coupled, violating single responsibility.
-* **Maintainability**: The existence of massive files (e.g. >1000 lines) makes onboarding new engineers difficult and significantly increases maintenance costs.
-* **Separation of Concerns**: Riverpod `ref.watch` and `ref.read` usage needs close monitoring. The UI should strictly declare layouts, while domain providers should format currency, dates, and compute percentages.
+
+* **Presentation Logic Leakage**
+   - **Observation:** `_AddInvestmentScreenState` and `_InvestmentDetailScreenState` are managing complex domain logic and state directly in the UI layer.
+   - **Suggestion:** Move this logic into Riverpod Notifiers (State/Domain layer) in accordance with Rule 1.1 Layer Boundaries.
 
 ## Performance Findings
-* **Unoptimized Iterable Operations**: There are widespread uses of inefficient iterable chains. For example, `collection.where().toList()` or sorting operations chained directly on collections where a single-pass loop or bounded linear scan would eliminate intermediate memory allocation and O(N log N) sorting overhead.
-* **Sorting Bottlenecks**: Sorting lists just to find maximum/minimum values or recent items (e.g., `.sort((a, b) => a.compareTo(b))` instead of using `reduce` or a single-pass iteration).
-* **Render Bloat**: Very large build methods in UI "God classes" mean that small state changes trigger massive re-renders.
+
+* **Large List Rendering**
+   - **Observation:** Need to ensure `ListView.builder` is used consistently, and complex items (like cards) are broken down into `const` widgets to avoid unnecessary re-renders. Check `lib/features/investment/presentation/screens/investment_list_screen.dart` for optimization opportunities.
 
 ## Security & Reliability Findings
-* **Rate Limiting & Security State**: When credentials (like PINs) are removed, associated security states such as failed attempt counters and lockout timestamps must be explicitly cleared to prevent rate-limiting bypasses.
-* **Silent Errors**: Catch-all blocks that fail to properly map exceptions to domain errors (e.g., `AppException`) hide underlying data issues and mask failures from Crashlytics.
-* **Offline Resiliency**: Uncapped async calls to Firestore in repositories severely threaten offline reliability.
+
+* **Firestore Write Timeouts**
+   - **Observation:** Need to ensure all Firestore writes (`.add`, `.update`, `.set`, `.commit()`) include a `.timeout(Duration(seconds: 5))` clause as per Rule 19.5 to prevent offline hanging.
 
 ## Testing Gaps
-* **Oversized Component Tests**: Due to the size of classes like `notification_service.dart`, tests are either missing significant edge cases or are overly brittle.
-* **Localization Context in Tests**: Widget tests need to ensure `AppLocalizations` delegates are provided in `MaterialApp` wrappers to prevent runtime `_TypeError`s.
-* **Coverage of Core Formatters**: Currency and numeric conversion edge cases (like zero, infinity, formatting boundaries) need exhaustive testing given the app's multi-currency mandate.
+
+* **Unit Tests for God Classes**
+   - **Observation:** The large classes identified are likely under-tested due to their complexity. Breaking them down is a prerequisite for effective unit testing.
 
 ## Rules Compliance Findings
-* **Rule 14 (Anti-Pattern - God Classes)**: Discovered files > 500 lines (`add_investment_screen.dart`, `analytics_service.dart`).
-  * *Impact*: Maintenance nightmare.
-  * *Suggestion*: Break `add_investment_screen.dart` into composed sub-widgets for distinct form sections.
-* **Rule 19.5 (Offline Behavior)**: Missing `.timeout(Duration(seconds: 5))` on several Firestore writes in repositories.
-  * *Impact*: Loss of offline-first capability during writes.
-  * *Suggestion*: Audit and wrap all `set`, `update`, and `add` calls with `.timeout()`.
-* **Riverpod Best Practices (Rule 14.1)**: Ensure `ref.read` is strictly avoided inside `build()` methods to prevent stale state issues.
+
+* **Rule 14 Anti-Pattern (God Classes)**
+   - **Violation:** Multiple classes exceed 500 lines.
+   - **Action:** Refactor `lib/features/investment/presentation/screens/add_investment_screen.dart`, `lib/core/analytics/analytics_service.dart`, etc.
 
 ## Recommended Refactor Plan
 
-### Quick Wins (0-2 weeks)
-1. Apply `.timeout(Duration(seconds: 5))` to all missing Firestore write operations across repository classes.
-2. Refactor unoptimized list iterations (replace chained `.where().toList()` and `.sort()` max/min scans with single-pass `for` loops).
-3. Consolidate `OverviewEmptyState`, `GoalsEmptyState`, and `InvestmentEmptyState` into a unified `AppEmptyState` widget.
+* **Quick wins:** Use `EmptyStateWidget` everywhere. Ensure `.timeout` on Firestore writes.
+* **Medium effort improvements:** Refactor `lib/core/analytics/analytics_service.dart` and `lib/core/notifications/notification_service.dart` into smaller, focused modules.
+* **Long-term architecture improvements:** Systematically componentize large UI screens starting with `lib/features/investment/presentation/screens/add_investment_screen.dart`.
 
-### Medium Effort (2-4 weeks)
-1. Split `add_investment_screen.dart` and `add_document_sheet.dart` into smaller, independent sub-form widgets to reduce file sizes.
-2. Centralize application exception handling to exclusively use `ErrorHandler.handle()` instead of local try-catch mapping.
-3. Establish a standard `AppFormField` abstraction and migrate all hardcoded text field configurations.
+1. Top 10 highest-value fixes.
+   - Refactor `lib/features/investment/presentation/screens/add_investment_screen.dart` to fix Rule 14 God class violation.
+   - Refactor `lib/core/analytics/analytics_service.dart` to fix Rule 14 God class violation.
+   - Consolidate feature-specific empty states to use `EmptyStateWidget`.
+   - Implement `.timeout(Duration(seconds: 5))` on all missing Firestore writes.
+   - Create reusable form validation abstractions.
+   - Extract complex state logic from `_InvestmentDetailScreenState` into Notifiers.
+   - Refactor `lib/core/notifications/notification_service.dart` to fix Rule 14 God class violation.
+   - Componentize `lib/features/investment/presentation/screens/investment_list_screen.dart` for better render performance.
+   - Extract data mapping logic from UI in `SeedDataService`.
+   - Refactor `FirestoreInvestmentRepository` to ensure offline caching boundaries.
 
-### Long-term Architecture (1-2 months)
-1. Break down `analytics_service.dart` and `notification_service.dart` into specialized domain providers focused on distinct entities.
-2. Implement strict linting rules or CI checks to fail builds on files exceeding 500 lines.
-3. Migrate all data transformation and formatting logic strictly into domain layer providers to purify the presentation layer.
+2. Top 10 duplication-removal opportunities.
+   - Empty states (`lib/features/goals/presentation/widgets/goals_empty_state.dart`, `lib/features/overview/presentation/widgets/overview_empty_state.dart`).
+   - Error handling wrappers in UI vs Domain.
+   - Common chart rendering setups in `lib/features/income_projection/presentation/widgets/income_guardian_dashboard_card.dart` and others.
+   - Redundant currency conversion wrappers if not using the core service.
+   - Form field UI configurations (paddings, borders) across different screens.
+   - Loading skeleton components.
+   - Dialog wrappers (confirmation, information).
+   - List item dividers and spacing conventions.
+   - Date formatting utilities if not centralized.
+   - Number formatting if not using the core multi-currency rules.
 
----
+3. Top reusable abstractions worth introducing.
+   - `ReusableFormBuilder` for managing complex stateful forms.
+   - `BaseAsyncNotifier` to standardize loading/error/data states.
+   - `FirestoreBatchService` to abstract offline-safe batch writes.
+   - `ChartConfigurationFactory` for standardized FlChart setups.
+   - `AnimatedListWrapper` for performant, standardized list animations.
 
-### Top 10 highest-value fixes
-1. Split `add_investment_screen.dart` into modular sub-components.
-2. Apply `.timeout(Duration(seconds: 5))` to all missing Firestore write operations.
-3. Refactor `analytics_service.dart` to delegate responsibilities to focused implementation providers.
-4. Replace chained iterable operations (e.g., `.where().toList()`) with single-pass loops.
-5. Consolidate empty state UI implementations into a single `AppEmptyState` widget.
-6. Replace full-list sorting for extremum findings with O(N) linear scans.
-7. Centralize exception mapping using the core `ErrorHandler`.
-8. Split `notification_service.dart` to reduce its 1000+ line footprint.
-9. Verify all `Semantics` wrappers on interactive custom elements explicitly define `onTap`.
-10. Remove redundant `await` operations on synchronous data within loops to prevent event loop yielding.
+4. Files/components with highest technical debt.
+   - `lib/features/investment/presentation/screens/add_investment_screen.dart`
+   - `lib/core/analytics/analytics_service.dart`
+   - `lib/features/investment/presentation/screens/investment_detail_screen.dart`
+   - `lib/core/notifications/notification_service.dart`
+   - `lib/features/investment/presentation/providers/investment_notifier.dart`
 
-### Top 10 duplication-removal opportunities
-1. Empty state UI widgets (`GoalsEmptyState`, `OverviewEmptyState`, `InvestmentEmptyState`).
-2. Form field layout and validation logic across screens.
-3. Exception-catching and mapping blocks inside individual repositories.
-4. Loading skeletons and shimmering effect containers.
-5. Date and number formatting patterns duplicated across presentation widgets.
-6. Bottom sheet presentation configurations.
-7. Reused prompt/dialog structures for confirmations.
-8. Theme color extraction patterns across the app.
-9. Toast/Snackbar notification displays.
-10. API request retry handling loops.
-
-### Top reusable abstractions
-1. `AppEmptyState` for standardized empty states.
-2. `AppFormField` for standardized user inputs.
-3. `RiverpodAsyncValueWrapper` for unified loading/error handling.
-4. `FirestoreExceptionHandler` for uniform data errors.
-5. `CompactAmountText` to enforce multi-currency display standards.
-
-### Files/components with highest technical debt
-1. `lib/features/investment/presentation/screens/add_investment_screen.dart` (1523 lines)
-2. `lib/core/analytics/analytics_service.dart` (1439 lines)
-3. `lib/core/notifications/notification_service.dart` (1093 lines)
-4. `lib/features/investment/presentation/widgets/add_document_sheet.dart` (1020 lines)
-5. `lib/core/services/currency_conversion_service.dart` (978 lines)
-
-### Suggested engineering standards missing from the repository
-1. Strict file length constraints (Maximum 500 lines per file).
-2. Prohibit chaining functional collection operations (`.where().map().toList()`) in performance-critical paths.
-3. Mandatory usage of `.timeout(Duration(seconds: 5))` on all cloud database mutations.
-4. Enforce strict separation between UI `build` methods and data formatting/transformation logic.
-5. Centralized API and Firestore exception wrapper enforcement.
+5. Suggested engineering standards missing from the repository.
+   - Strict enforcement of 500-line file limit (Rule 14).
+   - Mandatory `.timeout()` on all external network/DB calls.
+   - Centralized validation standard for all user inputs.
+   - Strict separation of Riverpod `ref.watch` (UI) and `ref.read` (Callbacks).
+   - Comprehensive widget testing standards for reusable UI components.
