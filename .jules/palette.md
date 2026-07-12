@@ -45,3 +45,7 @@
 ## 2024-06-29 - Avoid Hardcoded Tooltips
 **Learning:** When developing UI, hardcoding tooltip texts like `tooltip: 'Close search'` bypasses the localization and internationalization system. This results in inaccessible experiences for users utilizing non-English languages, as screen readers will read the hardcoded English text.
 **Action:** Always add tooltip strings to the `lib/l10n/app_en.arb` file (e.g., `"tooltipCloseSearch": "Close search"`) and use the generated `AppLocalizations` instance in widgets (e.g., `tooltip: l10n.tooltipCloseSearch`) to ensure accessibility for all supported locales.
+
+## 2024-06-28 - Removed Hardcoded Tooltips
+**Learning:** When reviewing various components (`compact_amount_text.dart`, `investment_list_search_field.dart`, `add_document_sheet.dart`, `privacy_toggle_button.dart`), I found hardcoded accessibility tooltips like "Copy amount", "Close search", "Remove file", "Show amounts", and "Hide amounts". Screen readers read these tooltips to visually impaired users. Since the app supports multiple languages, hardcoded tooltips mean non-English users receive screen reader instructions in English, degrading their experience. This violates the localization rule.
+**Action:** Always localize tooltips, especially those on `IconButton` or icon-only elements used extensively for accessibility. Check `.arb` files and add missing keys to ensure the app is both accessible and fully localized. Used `AppLocalizations.of(context)` or `l10n` instances to retrieve the localized tooltip text.
