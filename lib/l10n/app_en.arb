@@ -2148,6 +2148,11 @@
     "description": "Tooltip for filter investments button"
   },
 
+  "tooltipCloseSearch": "Close search",
+  "@tooltipCloseSearch": {
+    "description": "Tooltip for close search button"
+  },
+
   "tooltipSearchInvestments": "Search investments",
   "@tooltipSearchInvestments": {
     "description": "Tooltip for search investments button"
@@ -2198,6 +2203,16 @@
   "tooltipDeleteLastDigit": "Delete last digit",
   "@tooltipDeleteLastDigit": {
     "description": "Tooltip for deleting the last digit on passcode screen"
+  },
+
+  "tooltipCopyAmount": "Copy amount",
+  "@tooltipCopyAmount": {
+    "description": "Tooltip for copy amount button"
+  },
+
+  "tooltipRemoveFile": "Remove file",
+  "@tooltipRemoveFile": {
+    "description": "Tooltip for remove file button"
   },
 
   "hintNoMaturityDateSet": "No maturity date set",
