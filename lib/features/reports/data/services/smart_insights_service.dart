@@ -223,7 +223,6 @@ class SmartInsightsService {
     if (investments.isEmpty || cashFlows.isEmpty) return insights;
 
     final now = DateTime.now();
-    final insightWithValues = <({double value, SmartInsight insight})>[];
     final monthAgo = now.subtract(const Duration(days: 30));
 
     // Optimization: Group cashflows by investmentId in a single pass (O(N))
@@ -288,14 +287,6 @@ class SmartInsightsService {
             generatedAt: now,
           ),
         );
-
-        // ⚡ Bolt: Maintain bounded top elements list using O(N) linear scan approach
-        // Replaced full O(N log N) list sort and .take(3) with bounded tracking.
-        topDeclines.add((decline: decline, insight: insight));
-        topDeclines.sort((a, b) => a.decline.compareTo(b.decline));
-        if (topDeclines.length > 3) {
-          topDeclines.removeLast();
-        }
       }
     }
 

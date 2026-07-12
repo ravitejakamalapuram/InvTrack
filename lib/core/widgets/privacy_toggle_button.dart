@@ -215,7 +215,7 @@ class CompactPrivacyToggle extends ConsumerWidget {
           color: effectiveColor,
         ),
       ),
-      tooltip: isPrivacyMode ? 'Show amounts' : 'Hide amounts',
+      tooltip: isPrivacyMode ? l10n.tooltipShowAmounts : l10n.tooltipHideAmounts,
     );
   }
 }
