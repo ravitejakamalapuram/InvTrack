@@ -152,3 +152,9 @@
 
 **Learning:** Chaining `.where()` operations on the same collection results in multiple closure contexts and redundant evaluations. Dart's `.where()` does not eagerly evaluate, but chaining it creates multiple contexts.
 **Action:** Replace chained `.where().toList()` calls with a single-pass `for` loop to evaluate all conditions at once, placing items in appropriate lists.
+
+## 2026-05-24 - Optimize Declining Investments Smart Insights
+
+**Learning:** When maintaining a bounded list inside a loop to extract top elements, pre-calculate and store the parsed sort keys (e.g., using Dart 3 records). Performing string replacements and `double.tryParse` inside a final bounded list `.sort()` comparator on every loop iteration causes severe de-optimization.
+**Action:** Use a single-pass O(N) linear scan maintaining a bounded list of pre-calculated keys (Dart 3 records) to eliminate intermediate object allocations and O(N log N) sorting overhead when extracting top items.
+
