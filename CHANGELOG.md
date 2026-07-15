@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [v3.70.18]
+
+## [3.70.18] - 2026-07-15
+
+### Miscellaneous
+
+- chore(release): v3.70.18
+
 ### ⚡ Performance
 
 - Replace O(N log N) sort with O(N) bounded list scan in FY report (#556)
