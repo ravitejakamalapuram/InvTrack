@@ -147,3 +147,7 @@
 ## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
+
+## 2026-07-10 - Bounded Lists for Extrema Tracking in Milestones
+**Learning:** Adding all possible values into an array and using `.sort()` followed by `.take(N)` incurs an O(K log K) time complexity, where K is the number of possible values generated during loops. This allocates unnecessary memory and computation for elements that are ultimately discarded.
+**Action:** When gathering a limited number of elements (like the top 10 most recent milestones), use an O(N) bounded insertion strategy directly within the generator loop, maintaining a sorted list of maximum size N to eliminate the overhead of full array sorting.

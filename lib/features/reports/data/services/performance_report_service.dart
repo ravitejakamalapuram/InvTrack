@@ -130,21 +130,31 @@ class PerformanceReportService {
       // For simplicity, assume milestones were achieved recently
       // In a real implementation, we'd track milestone achievement dates
       for (final milestone in achievedMilestones) {
-        milestones.add(
-          MilestoneAchievement(
-            investment: perf.investment,
-            milestonePercentage: milestone,
-            achievedAt: now.subtract(Duration(days: (milestone / 10).toInt())),
-            amountGained: perf.absoluteReturn,
-          ),
+        final achievement = MilestoneAchievement(
+          investment: perf.investment,
+          milestonePercentage: milestone,
+          achievedAt: now.subtract(Duration(days: (milestone / 10).toInt())),
+          amountGained: perf.absoluteReturn,
         );
+
+        bool inserted = false;
+        for (int i = 0; i < milestones.length; i++) {
+          if (achievement.achievedAt.isAfter(milestones[i].achievedAt)) {
+            milestones.insert(i, achievement);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted && milestones.length < 10) {
+          milestones.add(achievement);
+        }
+        if (milestones.length > 10) {
+          milestones.removeLast();
+        }
       }
     }
 
-    // Sort by achievement date (most recent first)
-    milestones.sort((a, b) => b.achievedAt.compareTo(a.achievedAt));
-
     // Return top 10 most recent milestones
-    return milestones.take(10).toList();
+    return milestones;
   }
 }
