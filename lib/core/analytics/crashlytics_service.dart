@@ -147,16 +147,28 @@ class CrashlyticsService {
         FlutterError.presentError(errorDetails);
       } else {
         // In release mode OR debug mode with override, send to Crashlytics
-        _crashlytics.recordFlutterFatalError(errorDetails);
-        LoggerService.error(
-          'Flutter framework error',
-          error: errorDetails.exception,
-          stackTrace: errorDetails.stack,
-          metadata: {
-            'library': errorDetails.library,
-            'context': errorDetails.context?.toString() ?? 'unknown',
-          },
-        );
+        final isFatal = !_isTransientError(errorDetails.exception, errorDetails.stack);
+
+        if (!isFatal) {
+          LoggerService.info(
+            'Transient error caught by FlutterError.onError (skipped Crashlytics)',
+            metadata: {
+              'library': errorDetails.library,
+              'error': errorDetails.exception.toString(),
+            },
+          );
+        } else {
+          _crashlytics.recordFlutterFatalError(errorDetails);
+          LoggerService.error(
+            'Flutter framework error',
+            error: errorDetails.exception,
+            stackTrace: errorDetails.stack,
+            metadata: {
+              'library': errorDetails.library,
+              'context': errorDetails.context?.toString() ?? 'unknown',
+            },
+          );
+        }
       }
 
       // Chain to previous handler if it exists
@@ -245,6 +257,20 @@ class CrashlyticsService {
           code == 'deadline-exceeded' ||
           code == 'cancelled' ||
           code == 'aborted') {
+        return true;
+      }
+    }
+
+    // Platform errors (e.g. Google Sign-In)
+    if (error.runtimeType.toString() == 'PlatformException') {
+      final code = (error as dynamic).code?.toString() ?? '';
+      if (code == 'sign_in_canceled' ||
+          code == 'canceled' ||
+          code.contains('canceled') ||
+          code == 'clientConfigurationError' ||
+          code.contains('clientConfigurationError') ||
+          code == 'providerConfigurationError' ||
+          code.contains('providerConfigurationError')) {
         return true;
       }
     }
