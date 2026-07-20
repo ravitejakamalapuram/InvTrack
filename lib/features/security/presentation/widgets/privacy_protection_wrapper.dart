@@ -43,10 +43,12 @@ class _PrivacyProtectionWrapperState extends State<PrivacyProtectionWrapper>
 
     // inactive: App is transitioning (app switcher, control center, biometric auth)
     // paused: App is in background
+    // hidden: App is in the background or minimized (Flutter 3.13+)
     // detached: App is detached from engine
     final shouldObscure =
         state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused;
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden;
 
     if (_shouldObscure != shouldObscure) {
       setState(() {
