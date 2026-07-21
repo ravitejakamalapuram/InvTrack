@@ -147,16 +147,25 @@ class CrashlyticsService {
         FlutterError.presentError(errorDetails);
       } else {
         // In release mode OR debug mode with override, send to Crashlytics
-        _crashlytics.recordFlutterFatalError(errorDetails);
-        LoggerService.error(
-          'Flutter framework error',
-          error: errorDetails.exception,
-          stackTrace: errorDetails.stack,
-          metadata: {
-            'library': errorDetails.library,
-            'context': errorDetails.context?.toString() ?? 'unknown',
-          },
-        );
+        final isFatal = !_isTransientError(errorDetails.exception, errorDetails.stack);
+
+        if (!isFatal) {
+          LoggerService.info(
+            'Transient framework error caught by FlutterError (skipped Crashlytics)',
+            metadata: {'source': 'FlutterError', 'error': errorDetails.exception.toString()},
+          );
+        } else {
+          _crashlytics.recordFlutterFatalError(errorDetails);
+          LoggerService.error(
+            'Flutter framework error',
+            error: errorDetails.exception,
+            stackTrace: errorDetails.stack,
+            metadata: {
+              'library': errorDetails.library,
+              'context': errorDetails.context?.toString() ?? 'unknown',
+            },
+          );
+        }
       }
 
       // Chain to previous handler if it exists
