@@ -41,21 +41,27 @@ class ExpectedIncomeSection extends ConsumerWidget {
 
         // Split into future and past payments
         final now = DateTime.now();
-        final futurePayments = expectedFlows.where((e) =>
-          e.expectedDate.isAfter(now) &&
-          (e.status == ExpectedCashFlowStatus.upcoming ||
-           e.status == ExpectedCashFlowStatus.dueSoon)
-        ).toList();
-        
-        final pastPayments = expectedFlows.where((e) =>
-          e.matchedCashFlowId != null ||
-          e.status == ExpectedCashFlowStatus.received
-        ).toList();
 
-        final overduePayments = expectedFlows.where((e) =>
-          e.status == ExpectedCashFlowStatus.overdue ||
-          e.status == ExpectedCashFlowStatus.gracePeriod
-        ).toList();
+        // Optimization: Single pass loop replacing multiple sequential .where().toList() calls
+        final futurePayments = <ExpectedCashFlowEntity>[];
+        final pastPayments = <ExpectedCashFlowEntity>[];
+        final overduePayments = <ExpectedCashFlowEntity>[];
+
+        for (final e in expectedFlows) {
+          if (e.expectedDate.isAfter(now) &&
+              (e.status == ExpectedCashFlowStatus.upcoming ||
+                  e.status == ExpectedCashFlowStatus.dueSoon)) {
+            futurePayments.add(e);
+          }
+          if (e.matchedCashFlowId != null ||
+              e.status == ExpectedCashFlowStatus.received) {
+            pastPayments.add(e);
+          }
+          if (e.status == ExpectedCashFlowStatus.overdue ||
+              e.status == ExpectedCashFlowStatus.gracePeriod) {
+            overduePayments.add(e);
+          }
+        }
 
         // Build all sections as a flat list
         final allSections = <Widget>[
@@ -73,14 +79,29 @@ class ExpectedIncomeSection extends ConsumerWidget {
         if (overduePayments.isNotEmpty) {
           allSections.addAll([
             SizedBox(height: AppSpacing.md),
-            _buildSectionHeader(l10n.expectedIncomeOverduePayments, AppColors.errorLight, isDark),
+            _buildSectionHeader(
+              l10n.expectedIncomeOverduePayments,
+              AppColors.errorLight,
+              isDark,
+            ),
             SizedBox(height: AppSpacing.sm),
           ]);
           for (final payment in overduePayments) {
-            allSections.add(Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _buildPaymentCard(ref, payment, baseCurrency, currencySymbol, locale, isDark, l10n, isOverdue: true),
-            ));
+            allSections.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _buildPaymentCard(
+                  ref,
+                  payment,
+                  baseCurrency,
+                  currencySymbol,
+                  locale,
+                  isDark,
+                  l10n,
+                  isOverdue: true,
+                ),
+              ),
+            );
           }
         }
 
@@ -88,14 +109,28 @@ class ExpectedIncomeSection extends ConsumerWidget {
         if (futurePayments.isNotEmpty) {
           allSections.addAll([
             SizedBox(height: AppSpacing.md),
-            _buildSectionHeader(l10n.expectedIncomeUpcomingPayments, AppColors.successLight, isDark),
+            _buildSectionHeader(
+              l10n.expectedIncomeUpcomingPayments,
+              AppColors.successLight,
+              isDark,
+            ),
             SizedBox(height: AppSpacing.sm),
           ]);
           for (final payment in futurePayments.take(5)) {
-            allSections.add(Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _buildPaymentCard(ref, payment, baseCurrency, currencySymbol, locale, isDark, l10n),
-            ));
+            allSections.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _buildPaymentCard(
+                  ref,
+                  payment,
+                  baseCurrency,
+                  currencySymbol,
+                  locale,
+                  isDark,
+                  l10n,
+                ),
+              ),
+            );
           }
         }
 
@@ -103,14 +138,29 @@ class ExpectedIncomeSection extends ConsumerWidget {
         if (pastPayments.isNotEmpty) {
           allSections.addAll([
             SizedBox(height: AppSpacing.md),
-            _buildSectionHeader(l10n.expectedIncomePaymentHistory, AppColors.graphCyan, isDark),
+            _buildSectionHeader(
+              l10n.expectedIncomePaymentHistory,
+              AppColors.graphCyan,
+              isDark,
+            ),
             SizedBox(height: AppSpacing.sm),
           ]);
           for (final payment in pastPayments.take(5)) {
-            allSections.add(Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _buildPaymentCard(ref, payment, baseCurrency, currencySymbol, locale, isDark, l10n, isPast: true),
-            ));
+            allSections.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _buildPaymentCard(
+                  ref,
+                  payment,
+                  baseCurrency,
+                  currencySymbol,
+                  locale,
+                  isDark,
+                  l10n,
+                  isPast: true,
+                ),
+              ),
+            );
           }
         }
 
@@ -145,20 +195,26 @@ class ExpectedIncomeSection extends ConsumerWidget {
             Icon(
               Icons.calendar_today_outlined,
               size: 64,
-              color: isDark ? AppColors.neutral600Dark : AppColors.neutral300Light,
+              color: isDark
+                  ? AppColors.neutral600Dark
+                  : AppColors.neutral300Light,
             ),
             SizedBox(height: AppSpacing.md),
             Text(
               l10n.expectedIncomeNoPayments,
               style: AppTypography.h3.copyWith(
-                color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                color: isDark
+                    ? AppColors.neutral400Dark
+                    : AppColors.neutral500Light,
               ),
             ),
             SizedBox(height: AppSpacing.xs),
             Text(
               l10n.expectedIncomeNoPaymentsSubtitle,
               style: AppTypography.small.copyWith(
-                color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                color: isDark
+                    ? AppColors.neutral500Dark
+                    : AppColors.neutral400Light,
               ),
               textAlign: TextAlign.center,
             ),
@@ -174,9 +230,7 @@ class ExpectedIncomeSection extends ConsumerWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           l10n.expectedIncomeLoadFailed,
-          style: AppTypography.body.copyWith(
-            color: AppColors.errorLight,
-          ),
+          style: AppTypography.body.copyWith(color: AppColors.errorLight),
         ),
       ),
     );
@@ -202,8 +256,8 @@ class ExpectedIncomeSection extends ConsumerWidget {
             color: reliabilityPercent >= 80
                 ? AppColors.successLight
                 : reliabilityPercent >= 50
-                    ? AppColors.warningLight
-                    : AppColors.errorLight,
+                ? AppColors.warningLight
+                : AppColors.errorLight,
             size: 32,
           ),
           SizedBox(width: AppSpacing.sm),
@@ -214,7 +268,9 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 Text(
                   l10n.expectedIncomePaymentReliability,
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -224,15 +280,17 @@ class ExpectedIncomeSection extends ConsumerWidget {
                     color: reliabilityPercent >= 80
                         ? AppColors.successLight
                         : reliabilityPercent >= 50
-                            ? AppColors.warningLight
-                            : AppColors.errorLight,
+                        ? AppColors.warningLight
+                        : AppColors.errorLight,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   l10n.paymentsReceived(receivedCount, totalCount),
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral500Dark : AppColors.neutral400Light,
+                    color: isDark
+                        ? AppColors.neutral500Dark
+                        : AppColors.neutral400Light,
                     fontSize: 11,
                   ),
                 ),
@@ -281,11 +339,13 @@ class ExpectedIncomeSection extends ConsumerWidget {
     final statusColor = isOverdue
         ? AppColors.errorLight
         : isPast
-            ? AppColors.graphCyan
-            : AppColors.successLight;
+        ? AppColors.graphCyan
+        : AppColors.successLight;
 
     final variance = payment.actualAmount != null
-        ? ((payment.actualAmount! - payment.expectedAmount) / payment.expectedAmount * 100)
+        ? ((payment.actualAmount! - payment.expectedAmount) /
+              payment.expectedAmount *
+              100)
         : 0.0;
 
     return GlassCard(
@@ -308,7 +368,15 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildConvertedAmount(ref, payment, baseCurrency, currencySymbol, locale, statusColor, isExpected: true),
+                      child: _buildConvertedAmount(
+                        ref,
+                        payment,
+                        baseCurrency,
+                        currencySymbol,
+                        locale,
+                        statusColor,
+                        isExpected: true,
+                      ),
                     ),
                     if (payment.actualAmount != null)
                       Icon(
@@ -326,12 +394,22 @@ class ExpectedIncomeSection extends ConsumerWidget {
                 Text(
                   DateFormat.yMMMd().format(payment.expectedDate),
                   style: AppTypography.small.copyWith(
-                    color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+                    color: isDark
+                        ? AppColors.neutral400Dark
+                        : AppColors.neutral500Light,
                   ),
                 ),
                 if (payment.actualAmount != null) ...[
                   SizedBox(height: 4),
-                  _buildConvertedAmount(ref, payment, baseCurrency, currencySymbol, locale, AppColors.graphCyan, isExpected: false),
+                  _buildConvertedAmount(
+                    ref,
+                    payment,
+                    baseCurrency,
+                    currencySymbol,
+                    locale,
+                    AppColors.graphCyan,
+                    isExpected: false,
+                  ),
                 ],
               ],
             ),
@@ -360,11 +438,27 @@ class ExpectedIncomeSection extends ConsumerWidget {
       return PrivacyProtectionWrapper(
         child: Text(
           isExpected
-              ? formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)
-              : l10n.expectedIncomeReceived(formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)),
+              ? formatCompactCurrency(
+                  amount,
+                  symbol: currencySymbol,
+                  locale: locale,
+                )
+              : l10n.expectedIncomeReceived(
+                  formatCompactCurrency(
+                    amount,
+                    symbol: currencySymbol,
+                    locale: locale,
+                  ),
+                ),
           style: isExpected
-              ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
-              : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+              ? AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                )
+              : AppTypography.small.copyWith(
+                  color: AppColors.graphCyan,
+                  fontSize: 10,
+                ),
         ),
       );
     }
@@ -377,11 +471,27 @@ class ExpectedIncomeSection extends ConsumerWidget {
       return PrivacyProtectionWrapper(
         child: Text(
           isExpected
-              ? formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)
-              : l10n.expectedIncomeReceived(formatCompactCurrency(amount, symbol: currencySymbol, locale: locale)),
+              ? formatCompactCurrency(
+                  amount,
+                  symbol: currencySymbol,
+                  locale: locale,
+                )
+              : l10n.expectedIncomeReceived(
+                  formatCompactCurrency(
+                    amount,
+                    symbol: currencySymbol,
+                    locale: locale,
+                  ),
+                ),
           style: isExpected
-              ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
-              : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+              ? AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                )
+              : AppTypography.small.copyWith(
+                  color: AppColors.graphCyan,
+                  fontSize: 10,
+                ),
         ),
       );
     }
@@ -399,8 +509,14 @@ class ExpectedIncomeSection extends ConsumerWidget {
           return Text(
             '...',
             style: isExpected
-                ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
-                : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+                ? AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  )
+                : AppTypography.small.copyWith(
+                    color: AppColors.graphCyan,
+                    fontSize: 10,
+                  ),
           );
         }
 
@@ -408,11 +524,27 @@ class ExpectedIncomeSection extends ConsumerWidget {
         return PrivacyProtectionWrapper(
           child: Text(
             isExpected
-                ? formatCompactCurrency(convertedAmount, symbol: currencySymbol, locale: locale)
-                : l10n.expectedIncomeReceived(formatCompactCurrency(convertedAmount, symbol: currencySymbol, locale: locale)),
+                ? formatCompactCurrency(
+                    convertedAmount,
+                    symbol: currencySymbol,
+                    locale: locale,
+                  )
+                : l10n.expectedIncomeReceived(
+                    formatCompactCurrency(
+                      convertedAmount,
+                      symbol: currencySymbol,
+                      locale: locale,
+                    ),
+                  ),
             style: isExpected
-                ? AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: statusColor)
-                : AppTypography.small.copyWith(color: AppColors.graphCyan, fontSize: 10),
+                ? AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  )
+                : AppTypography.small.copyWith(
+                    color: AppColors.graphCyan,
+                    fontSize: 10,
+                  ),
           ),
         );
       },
