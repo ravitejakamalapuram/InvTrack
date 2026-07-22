@@ -147,3 +147,7 @@
 ## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
+
+## 2024-05-20 - Optimize Sequential Filters
+**Learning:** Sequential `.where().toList()` calls on the same collection for UI state grouping result in O(K*N) complexity (where K is the number of groups) and excessive intermediate memory allocation. This is a common performance anti-pattern in Dart/Flutter when mapping domain entities to UI sections.
+**Action:** Replace multiple sequential `.where().toList()` operations with a single-pass `for` loop that routes elements into pre-allocated lists, reducing time complexity to O(N) and minimizing memory allocations.
