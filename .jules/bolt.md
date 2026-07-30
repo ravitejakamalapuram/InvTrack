@@ -147,3 +147,7 @@
 ## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
+
+## 2026-07-30 - Optimize Enum Filtering Iterables
+**Learning:** Chaining `.where().toList()` on enums like `ReportType.values` eagerly allocates intermediate closures and iterables, which can add unnecessary overhead when called frequently during report generation.
+**Action:** Replace `.where().toList()` chains with a manual, pre-allocated `for` loop to reduce memory allocations and improve execution speed.

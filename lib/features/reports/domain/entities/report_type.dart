@@ -47,19 +47,33 @@ enum ReportType {
   }
 
   /// Get all static report types
-  static List<ReportType> get staticReports =>
-      ReportType.values.where((type) => !type.isDynamic).toList();
+  static List<ReportType> get staticReports {
+    final result = <ReportType>[];
+    for (final type in ReportType.values) {
+      if (!type.isDynamic) {
+        result.add(type);
+      }
+    }
+    return result;
+  }
 
   /// Get all dynamic report types
-  static List<ReportType> get dynamicReports =>
-      ReportType.values.where((type) => type.isDynamic).toList();
+  static List<ReportType> get dynamicReports {
+    final result = <ReportType>[];
+    for (final type in ReportType.values) {
+      if (type.isDynamic) {
+        result.add(type);
+      }
+    }
+    return result;
+  }
 
   /// Get priority 0 reports (core reports shown first)
   static List<ReportType> get coreReports => [
-        weeklySummary,
-        monthlyIncome,
-        fyReport,
-        performance,
-        goalProgress,
-      ];
+    weeklySummary,
+    monthlyIncome,
+    fyReport,
+    performance,
+    goalProgress,
+  ];
 }
