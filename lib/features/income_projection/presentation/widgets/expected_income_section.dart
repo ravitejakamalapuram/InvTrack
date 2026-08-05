@@ -41,21 +41,25 @@ class ExpectedIncomeSection extends ConsumerWidget {
 
         // Split into future and past payments
         final now = DateTime.now();
-        final futurePayments = expectedFlows.where((e) =>
-          e.expectedDate.isAfter(now) &&
-          (e.status == ExpectedCashFlowStatus.upcoming ||
-           e.status == ExpectedCashFlowStatus.dueSoon)
-        ).toList();
         
-        final pastPayments = expectedFlows.where((e) =>
-          e.matchedCashFlowId != null ||
-          e.status == ExpectedCashFlowStatus.received
-        ).toList();
+        // Optimization: Single pass loop replacing multiple sequential .where().toList() calls
+        final futurePayments = <ExpectedCashFlowEntity>[];
+        final pastPayments = <ExpectedCashFlowEntity>[];
+        final overduePayments = <ExpectedCashFlowEntity>[];
 
-        final overduePayments = expectedFlows.where((e) =>
-          e.status == ExpectedCashFlowStatus.overdue ||
-          e.status == ExpectedCashFlowStatus.gracePeriod
-        ).toList();
+        for (final e in expectedFlows) {
+          if (e.expectedDate.isAfter(now) &&
+              (e.status == ExpectedCashFlowStatus.upcoming ||
+               e.status == ExpectedCashFlowStatus.dueSoon)) {
+            futurePayments.add(e);
+          } else if (e.matchedCashFlowId != null ||
+                     e.status == ExpectedCashFlowStatus.received) {
+            pastPayments.add(e);
+          } else if (e.status == ExpectedCashFlowStatus.overdue ||
+                     e.status == ExpectedCashFlowStatus.gracePeriod) {
+            overduePayments.add(e);
+          }
+        }
 
         // Build all sections as a flat list
         final allSections = <Widget>[
