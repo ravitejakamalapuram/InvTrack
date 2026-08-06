@@ -147,3 +147,7 @@
 ## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
+
+## 2026-08-06 - Cache static enum subset lists
+**Learning:** Defining static enum subset lists as getters re-allocates the iterable and performs iteration on every single access, which is inefficient.
+**Action:** Use static final variables to cache subset list allocations derived from enums to evaluate the filter only once.
