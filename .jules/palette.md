@@ -49,3 +49,7 @@
 ## 2024-06-28 - Removed Hardcoded Tooltips
 **Learning:** When reviewing various components (`compact_amount_text.dart`, `investment_list_search_field.dart`, `add_document_sheet.dart`, `privacy_toggle_button.dart`), I found hardcoded accessibility tooltips like "Copy amount", "Close search", "Remove file", "Show amounts", and "Hide amounts". Screen readers read these tooltips to visually impaired users. Since the app supports multiple languages, hardcoded tooltips mean non-English users receive screen reader instructions in English, degrading their experience. This violates the localization rule.
 **Action:** Always localize tooltips, especially those on `IconButton` or icon-only elements used extensively for accessibility. Check `.arb` files and add missing keys to ensure the app is both accessible and fully localized. Used `AppLocalizations.of(context)` or `l10n` instances to retrieve the localized tooltip text.
+
+## 2024-08-06 - Use excludeSemantics to hide redundant nested semantics
+**Learning:** When providing a custom overall `Semantics` label for a complex interactive widget (like a colored goal icon picker), ensure `excludeSemantics: true` is set. If omitted, screen readers will read both the custom label and the inner text content (e.g., the emoji), resulting in confusing and redundant audio output.
+**Action:** Always set `excludeSemantics: true` on the outer `Semantics` widget when you intend its `label` to completely replace the accessibility tree for its children.
