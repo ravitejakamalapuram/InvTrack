@@ -12,8 +12,9 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 // Dependencies
 final flutterSecureStorageProvider = Provider(
   (ref) => const FlutterSecureStorage(
-    // Security: Removed encryptedSharedPreferences parameter as Jetpack Security library is deprecated by Google.
-    aOptions: AndroidOptions(),
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
   ),
 );
 final localAuthProvider = Provider((ref) => LocalAuthentication());
