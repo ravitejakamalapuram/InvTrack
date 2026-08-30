@@ -71,10 +71,12 @@ final crashlyticsServiceProvider = Provider<CrashlyticsService>((ref) {
 
 /// Crashlytics service that wraps Firebase Crashlytics
 class CrashlyticsService {
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
+  final FirebaseCrashlytics? _injectedCrashlytics;
+  FirebaseCrashlytics get _crashlytics => _injectedCrashlytics ?? FirebaseCrashlytics.instance;
   final bool debugModeEnabled;
 
-  CrashlyticsService({required this.debugModeEnabled});
+  CrashlyticsService({required this.debugModeEnabled, FirebaseCrashlytics? crashlytics})
+      : _injectedCrashlytics = crashlytics;
 
   // Track whether handlers have been installed to make installation idempotent
   static bool _handlersInstalled = false;
@@ -152,17 +154,17 @@ class CrashlyticsService {
         if (!isFatal) {
           LoggerService.info(
             'Transient framework error caught by FlutterError (skipped Crashlytics)',
-            metadata: {'source': 'FlutterError', 'error': errorDetails.exception.toString()},
+            metadata: {'source': 'FlutterError', 'errorType': errorDetails.exception.runtimeType.toString()},
           );
         } else {
           _crashlytics.recordFlutterFatalError(errorDetails);
           LoggerService.error(
             'Flutter framework error',
-            error: errorDetails.exception,
+            error: errorDetails.exception.runtimeType.toString(),
             stackTrace: errorDetails.stack,
             metadata: {
               'library': errorDetails.library,
-              'context': errorDetails.context?.toString() ?? 'unknown',
+              'context': errorDetails.context?.name ?? 'unknown',
             },
           );
         }
@@ -223,6 +225,9 @@ class CrashlyticsService {
   /// BUG FIX: Use type-based checks instead of fragile string matching
   /// Returns true for network errors, timeouts, stream cancellations, etc.
   /// Returns false for logic errors, state errors, etc. (fatal)
+  @visibleForTesting
+  bool isTransientError(dynamic error, [StackTrace? stack]) => _isTransientError(error, stack);
+
   bool _isTransientError(dynamic error, StackTrace? stack) {
     // Check if error is an AppException (or subclass)
     if (error is AppException) {
