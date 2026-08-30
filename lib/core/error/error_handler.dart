@@ -74,6 +74,7 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 
 /// Centralized error handler for the application.
 ///
@@ -159,7 +160,7 @@ class ErrorHandler {
           code == 'clientConfigurationError' ||
           code == 'providerConfigurationError') {
          return AuthException(
-            userMessage: 'There is a configuration issue with Google Sign-In. Please contact support.',
+            userMessage: AppLocalizationsEn().googleSignInInitFailure,
             technicalMessage: 'PlatformException: $code',
             cause: error,
             stackTrace: stackTrace,
