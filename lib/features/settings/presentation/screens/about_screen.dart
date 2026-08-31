@@ -307,6 +307,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     label:
                         '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
                     button: true,
+                    excludeSemantics: true,
                     onTap: _handleVersionTap,
                     child: GestureDetector(
                       onTap: _handleVersionTap,
