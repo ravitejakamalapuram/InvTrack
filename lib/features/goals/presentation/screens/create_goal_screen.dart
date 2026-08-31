@@ -328,8 +328,6 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
           Semantics(
             button: true,
             label: 'Choose icon and color',
-            onTap: () => _showIconPicker(context),
-            excludeSemantics: true,
             child: GestureDetector(
               onTap: () => _showIconPicker(context),
               child: Container(
