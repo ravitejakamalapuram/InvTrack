@@ -84,61 +84,54 @@ class _FilterChip extends StatelessWidget {
         ? Colors.white
         : (isDark ? AppColors.neutral300Dark : AppColors.neutral600Light);
 
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      excludeSemantics: true,
+    return GestureDetector(
       onTap: onTap,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (isDark
+                    ? AppColors.neutral700Dark
+                    : AppColors.neutral200Light),
+            width: 1,
           ),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? Colors.transparent
-                  : (isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light),
-              width: 1,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isDark ? AppColors.primaryDark : AppColors.primaryLight)
+                        .withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: textColor,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: (isDark ? AppColors.primaryDark : AppColors.primaryLight)
-                          .withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: AppTypography.small.copyWith(
                 color: textColor,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: AppTypography.small.copyWith(
-                  color: textColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
