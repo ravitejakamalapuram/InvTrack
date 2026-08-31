@@ -151,14 +151,12 @@ class ErrorHandler {
       final code = (error as dynamic).code;
       final codeString = code?.toString() ?? '';
 
-      if (code == 'sign_in_canceled' || codeString.contains('canceled')) {
+      if (codeString.contains('canceled')) {
         return AuthException.signInCancelled();
       }
 
       if (codeString.contains('clientConfigurationError') ||
-          codeString.contains('providerConfigurationError') ||
-          code == 'clientConfigurationError' ||
-          code == 'providerConfigurationError') {
+          codeString.contains('providerConfigurationError')) {
          return AuthException(
             userMessage: AppLocalizationsEn().googleSignInInitFailure,
             technicalMessage: 'PlatformException: $code',
