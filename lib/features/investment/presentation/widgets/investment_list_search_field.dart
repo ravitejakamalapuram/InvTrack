@@ -152,7 +152,7 @@ class _InvestmentListSearchFieldState
           icon: const Icon(Icons.close_rounded),
           iconSize: 20,
           color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
-          tooltip: l10n.tooltipCloseSearch,
+          tooltip: 'Close search',
           onPressed: () {
             ref.read(investmentListStateProvider.notifier).toggleSearch();
           },
