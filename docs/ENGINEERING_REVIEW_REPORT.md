@@ -114,14 +114,14 @@
 4. `FirestoreExceptionHandler` for uniform data errors.
 5. `CompactAmountText` to enforce multi-currency display standards.
 
-4. Files/components with highest technical debt.
+#### Files/Components with Highest Technical Debt
 1. `lib/features/investment/presentation/screens/add_investment_screen.dart` (1523 lines)
 2. `lib/core/analytics/analytics_service.dart` (1439 lines)
 3. `lib/core/notifications/notification_service.dart` (1093 lines)
 4. `lib/features/investment/presentation/widgets/add_document_sheet.dart` (1020 lines)
 5. `lib/core/services/currency_conversion_service.dart` (978 lines)
 
-5. Suggested engineering standards missing from the repository.
+#### Suggested Engineering Standards Missing from the Repository
 1. Strict file length constraints (Maximum 500 lines per file).
 2. Prohibit chaining functional collection operations (`.where().map().toList()`) in performance-critical paths.
 3. Mandatory usage of `.timeout(Duration(seconds: 5))` on all cloud database mutations.
