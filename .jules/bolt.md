@@ -147,8 +147,6 @@
 ## 2024-06-28 - Pre-Compute Loops Bounded by Sequential Variables (Dates)
 **Learning:** In scenarios where multiple iterations over a single array are bounded by sequential variables (like months or dates in a loop), putting a date comparison (`isAfter`, `isBefore`) condition inside the loop introduces a heavy O(D*N) execution time and bottleneck.
 **Action:** Use a pre-computed dictionary to bucket or group values (e.g., by year-month strings `YYYY-MM`) outside of the loop in a single pass. This converts the complexity to O(N+D), dramatically enhancing loop execution times and avoiding redundant iterations.
-
-## 2026-07-25 - Optimize chained iterables in Dart
-
-**Learning:** Chaining `.where()` operations on the same collection results in multiple closure contexts and redundant evaluations. Dart's `.where()` does not eagerly evaluate, but chaining it creates multiple contexts.
-**Action:** Replace chained `.where().toList()` calls with a single-pass `for` loop to evaluate all conditions at once, placing items in appropriate lists.
+## 2024-08-10 - Cache Enum Filtering Results in static final properties
+**Learning:** In Dart, filtering enums using chained operations like `Enum.values.where(...).toList()` inside static getters eagerly allocates intermediate lists and iterables on every access. This introduces unnecessary memory allocation and CPU overhead upon each access.
+**Action:** Optimize this by converting the `static get` property into a `static final` variable to evaluate and cache the filtered subset only once.

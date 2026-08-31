@@ -47,15 +47,15 @@ enum ReportType {
   }
 
   /// Get all static report types
-  static List<ReportType> get staticReports =>
+  static final List<ReportType> staticReports =
       ReportType.values.where((type) => !type.isDynamic).toList();
 
   /// Get all dynamic report types
-  static List<ReportType> get dynamicReports =>
+  static final List<ReportType> dynamicReports =
       ReportType.values.where((type) => type.isDynamic).toList();
 
   /// Get priority 0 reports (core reports shown first)
-  static List<ReportType> get coreReports => [
+  static final List<ReportType> coreReports = [
         weeklySummary,
         monthlyIncome,
         fyReport,
