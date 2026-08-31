@@ -219,8 +219,7 @@ class SmartInsightsService {
     List<CashFlowEntity> cashFlows,
     AppLocalizations l10n,
   ) {
-    final insights = <SmartInsight>[];
-    if (investments.isEmpty || cashFlows.isEmpty) return insights;
+    if (investments.isEmpty || cashFlows.isEmpty) return [];
 
     final now = DateTime.now();
     final monthAgo = now.subtract(const Duration(days: 30));
@@ -230,6 +229,9 @@ class SmartInsightsService {
     for (final cf in cashFlows) {
       (cashFlowsByInvestment[cf.investmentId] ??= []).add(cf);
     }
+
+    // Track top 3 declining investments (using records to avoid string parsing later)
+    final topDeclining = <(InvestmentEntity, double)>[];
 
     for (final investment in investments) {
       // O(1) map lookup instead of O(N) .where() scan
@@ -272,32 +274,41 @@ class SmartInsightsService {
       final currentReturnPct = (currentValue / totalInvested) * 100;
       final decline = currentReturnPct - oldReturnPct;
 
-      // Alert if decline > 10% (significant drop in returns)
+      // Alert if decline < -10% (significant drop in returns)
+      // Note: A larger negative number means a bigger decline
       if (decline < -10) {
-        insights.add(
-          SmartInsight(
-            type: InsightType.decliningInvestment,
-            priority: decline < -20
-                ? InsightPriority.urgent
-                : InsightPriority.warning,
-            title: investment.name,
-            subtitle: l10n.decliningInValue,
-            value: '${decline.toStringAsFixed(1)}%',
-            icon: 'trending_down',
-            generatedAt: now,
-          ),
-        );
+        if (topDeclining.length < 3) {
+          topDeclining.add((investment, decline));
+          topDeclining.sort((a, b) => a.$2.compareTo(b.$2));
+        } else if (decline < topDeclining.last.$2) {
+          topDeclining.removeLast();
+          topDeclining.add((investment, decline));
+          topDeclining.sort((a, b) => a.$2.compareTo(b.$2));
+        }
       }
     }
 
-    // Return top 3 most declining investments
-    insights.sort((a, b) {
-      final aValue = double.tryParse(a.value.replaceAll('%', '')) ?? 0;
-      final bValue = double.tryParse(b.value.replaceAll('%', '')) ?? 0;
-      return aValue.compareTo(bValue);
-    });
+    // Convert the top 3 into SmartInsight objects
+    final insights = <SmartInsight>[];
+    for (final item in topDeclining) {
+      final investment = item.$1;
+      final decline = item.$2;
+      insights.add(
+        SmartInsight(
+          type: InsightType.decliningInvestment,
+          priority: decline < -20
+              ? InsightPriority.urgent
+              : InsightPriority.warning,
+          title: investment.name,
+          subtitle: l10n.decliningInValue,
+          value: '${decline.toStringAsFixed(1)}%',
+          icon: 'trending_down',
+          generatedAt: now,
+        ),
+      );
+    }
 
-    return insights.take(3).toList();
+    return insights;
   }
 
   /// Generate goal progress insights

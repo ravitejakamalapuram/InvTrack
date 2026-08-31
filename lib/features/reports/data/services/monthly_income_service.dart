@@ -89,31 +89,21 @@ class MonthlyIncomeService {
       }
     }
 
-    // ⚡ Bolt: Replaced O(N log N) sorting and full list allocation with an O(N) bounded list.
-    // Expected impact: Eliminates intermediate list allocation and sorting overhead for top earners.
-    final topEarners = <InvestmentWithIncome>[];
-    for (final e in investmentIncomeMap.entries) {
-      final investment = investmentMap[e.key];
-      if (investment == null) continue;
+    final topEarners =
+        investmentIncomeMap.entries
+            .map((e) {
+              final investment = investmentMap[e.key];
+              if (investment == null) return null;
 
-      // Skip object creation if we already have 5 and the income is too low
-      if (topEarners.length == 5 && e.value <= topEarners.last.income) continue;
-
-      final item = InvestmentWithIncome(
-        investment: investment,
-        income: e.value,
-        incomeType: investmentTypeMap[e.key] ?? 'Other',
-      );
-
-      if (topEarners.length < 5) {
-        topEarners.add(item);
-        topEarners.sort((a, b) => b.income.compareTo(a.income));
-      } else if (item.income > topEarners.last.income) {
-        topEarners.removeLast();
-        topEarners.add(item);
-        topEarners.sort((a, b) => b.income.compareTo(a.income));
-      }
-    }
+              return InvestmentWithIncome(
+                investment: investment,
+                income: e.value,
+                incomeType: investmentTypeMap[e.key] ?? 'Other',
+              );
+            })
+            .whereType<InvestmentWithIncome>()
+            .toList()
+          ..sort((a, b) => b.income.compareTo(a.income));
 
     return MonthlyIncomeReport(
       period: monthStart,
@@ -123,7 +113,7 @@ class MonthlyIncomeService {
       totalFees: totalFees,
       netCashFlow: (totalIncome + totalReturns) - (totalInvested + totalFees),
       incomeByType: incomeByType,
-      topEarners: topEarners,
+      topEarners: topEarners.take(5).toList(),
       transactions: transactions..sort((a, b) => b.date.compareTo(a.date)),
     );
   }
