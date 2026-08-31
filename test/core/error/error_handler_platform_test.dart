@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
-import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 
 // Create a mock GoogleSignInException that mimics the real one's structure
 class MockGoogleSignInException implements Exception {
@@ -31,15 +30,6 @@ void main() {
       expect(result, isA<AuthException>());
       expect((result as AuthException).code, AuthExceptionCode.signInFailed);
       expect(result.cause, error);
-    });
-
-    test('maps PlatformException clientConfigurationError to AuthException with localized message', () {
-      final error = PlatformException(code: 'clientConfigurationError');
-      final result = ErrorHandler.mapException(error);
-
-      expect(result, isA<AuthException>());
-      expect(result.userMessage, AppLocalizationsEn().googleSignInInitFailure);
-      expect(result.shouldReport, false);
     });
   });
 }

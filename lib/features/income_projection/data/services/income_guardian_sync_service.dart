@@ -79,13 +79,11 @@ class IncomeGuardianSyncService {
   Future<void> _handleNewCashFlows(
     List<CashFlowEntity> cashFlows,
   ) async {
-    // Filter for income cash flows only using single pass loop
-    final incomeCashFlows = <CashFlowEntity>[];
-    for (final cf in cashFlows) {
-      if (cf.type == CashFlowType.income && !_processedCashFlows.contains(cf.id)) {
-        incomeCashFlows.add(cf);
-      }
-    }
+    // Filter for income cash flows only
+    final incomeCashFlows = cashFlows
+        .where((cf) => cf.type == CashFlowType.income)
+        .where((cf) => !_processedCashFlows.contains(cf.id))
+        .toList();
 
     if (incomeCashFlows.isEmpty) return;
 
@@ -106,13 +104,10 @@ class IncomeGuardianSyncService {
         .watchExpectedCashFlowsByInvestment(cashFlow.investmentId)
         .first;
 
-    // Single pass loop to filter pending cash flows
-    final pendingCashFlows = <ExpectedCashFlowEntity>[];
-    for (final cf in allExpectedCashFlows) {
-      if (cf.status != ExpectedCashFlowStatus.received && cf.status != ExpectedCashFlowStatus.dismissed) {
-        pendingCashFlows.add(cf);
-      }
-    }
+    final pendingCashFlows = allExpectedCashFlows
+        .where((cf) => cf.status != ExpectedCashFlowStatus.received)
+        .where((cf) => cf.status != ExpectedCashFlowStatus.dismissed)
+        .toList();
 
     if (pendingCashFlows.isEmpty) return;
 
