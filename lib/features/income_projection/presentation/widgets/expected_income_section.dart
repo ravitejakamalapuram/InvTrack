@@ -52,11 +52,13 @@ class ExpectedIncomeSection extends ConsumerWidget {
               (e.status == ExpectedCashFlowStatus.upcoming ||
                e.status == ExpectedCashFlowStatus.dueSoon)) {
             futurePayments.add(e);
-          } else if (e.matchedCashFlowId != null ||
-                     e.status == ExpectedCashFlowStatus.received) {
+          }
+          if (e.matchedCashFlowId != null ||
+              e.status == ExpectedCashFlowStatus.received) {
             pastPayments.add(e);
-          } else if (e.status == ExpectedCashFlowStatus.overdue ||
-                     e.status == ExpectedCashFlowStatus.gracePeriod) {
+          }
+          if (e.status == ExpectedCashFlowStatus.overdue ||
+              e.status == ExpectedCashFlowStatus.gracePeriod) {
             overduePayments.add(e);
           }
         }
