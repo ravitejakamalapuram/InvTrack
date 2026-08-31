@@ -7,6 +7,7 @@
 * **Architecture Concerns**: Presentation layer handling complex data transformations and business logic (e.g., date/currency formatting logic in UI) rather than delegating to domain providers.
 
 ## Critical Issues
+
 * **God Components (Violates Rule 14 Anti-Pattern)**: Multiple files exceed acceptable limits for maintainable code:
   * `lib/features/investment/presentation/screens/add_investment_screen.dart` (1523 lines)
   * `lib/core/analytics/analytics_service.dart` (1439 lines)
@@ -52,7 +53,8 @@
 * **Coverage of Core Formatters**: Currency and numeric conversion edge cases (like zero, infinity, formatting boundaries) need exhaustive testing given the app's multi-currency mandate.
 
 ## Rules Compliance Findings
-* **Rule 14 (Anti-Pattern - God Classes)**: Discovered files > 500 lines (`lib/features/investment/presentation/screens/add_investment_screen.dart`, `lib/core/analytics/analytics_service.dart`).
+
+* **Rule 14 (Anti-Pattern - God Classes)**: Discovered files > 500 lines (`lib/features/investment/presentation/screens/add_investment_screen.dart`, `lib/core/analytics/analytics_service.dart`, `lib/core/notifications/notification_service.dart`, `lib/features/investment/presentation/widgets/add_document_sheet.dart`).
   * *Impact*: Maintenance nightmare.
   * *Suggestion*: Break `lib/features/investment/presentation/screens/add_investment_screen.dart` into composed sub-widgets for distinct form sections.
 * **Rule 19.5 (Offline Behavior)**: Missing `.timeout(Duration(seconds: 5))` on several Firestore writes in repositories.
@@ -79,7 +81,9 @@
 
 ---
 
-1. Top 10 highest-value fixes.
+### Priority Summary Lists
+
+#### Top 10 Highest-Value Fixes
 1. Split `lib/features/investment/presentation/screens/add_investment_screen.dart` into modular sub-components.
 2. Apply `.timeout(Duration(seconds: 5))` to all missing Firestore write operations.
 3. Refactor `lib/core/analytics/analytics_service.dart` to delegate responsibilities to focused implementation providers.
@@ -91,7 +95,7 @@
 9. Verify all `Semantics` wrappers on interactive custom elements explicitly define `onTap`.
 10. Remove redundant `await` operations on synchronous data within loops to prevent event loop yielding.
 
-2. Top 10 duplication-removal opportunities.
+#### Top 10 Duplication-Removal Opportunities
 1. Empty state UI widgets (`GoalsEmptyState`, `OverviewEmptyState`, `InvestmentEmptyState`).
 2. Form field layout and validation logic across screens.
 3. Exception-catching and mapping blocks inside individual repositories.
@@ -103,7 +107,7 @@
 9. Toast/Snackbar notification displays.
 10. API request retry handling loops.
 
-3. Top reusable abstractions worth introducing.
+#### Top Reusable Abstractions Worth Introducing
 1. `AppEmptyState` for standardized empty states.
 2. `AppFormField` for standardized user inputs.
 3. `RiverpodAsyncValueWrapper` for unified loading/error handling.
