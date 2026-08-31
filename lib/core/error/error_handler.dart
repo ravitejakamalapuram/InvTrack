@@ -148,41 +148,34 @@ class ErrorHandler {
     // Platform errors (e.g., Google Sign-In)
     if (error.runtimeType.toString() == 'PlatformException') {
       final code = (error as dynamic).code;
-      if (code == 'sign_in_canceled') {
+      final codeString = code?.toString() ?? '';
+
+      if (code == 'sign_in_canceled' || codeString.contains('canceled')) {
         return AuthException.signInCancelled();
       }
-      return AuthException.signInFailed(
-        cause: error,
-        stackTrace: stackTrace,
-      );
-    }
 
-    // Google Sign-In Exceptions
-    if (error.runtimeType.toString() == 'GoogleSignInException') {
-       final code = (error as dynamic).code;
-       final codeString = code?.toString() ?? '';
-
-       if (codeString.contains('canceled') || code == 'canceled') {
-           return AuthException.signInCancelled();
-       }
-       if (codeString.contains('clientConfigurationError') ||
-           codeString.contains('providerConfigurationError') ||
-           code == 'clientConfigurationError' ||
-           code == 'providerConfigurationError') {
+      if (codeString.contains('clientConfigurationError') ||
+          codeString.contains('providerConfigurationError') ||
+          code == 'clientConfigurationError' ||
+          code == 'providerConfigurationError') {
          return AuthException(
             userMessage: 'There is a configuration issue with Google Sign-In. Please contact support.',
-            technicalMessage: 'GoogleSignInException: $code',
+            technicalMessage: 'PlatformException: $code',
             cause: error,
             stackTrace: stackTrace,
             shouldReport: false,
          );
-       }
+      }
 
-       return AuthException.signInFailed(
-         cause: error,
-         stackTrace: stackTrace,
-         shouldReport: false, // Don't report generic google sign in errors to avoid spam
-       );
+      // Only suppress specific known Google Sign-In error codes.
+      // Other PlatformExceptions (e.g. from secure storage) should be reported.
+      final bool isGoogleSignInError = code == 'network_error' || code == 'sign_in_failed';
+
+      return AuthException.signInFailed(
+        cause: error,
+        stackTrace: stackTrace,
+        shouldReport: !isGoogleSignInError,
+      );
     }
 
     // Generic fallback
