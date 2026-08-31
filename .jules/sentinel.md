@@ -35,8 +35,7 @@
 **Vulnerability:** Firebase `apiKey` and `clientId` values were found hardcoded in `lib/firebase_options.dart`.
 **Learning:** Even generated files can accidentally check in sensitive configuration.
 **Prevention:** Remove hardcoded secrets from checked-in files and manage them via environment variables or a secure build process.
-
-## 2026-08-09 - Enforce Encrypted SharedPreferences for FlutterSecureStorage
-**Vulnerability:** FlutterSecureStorage was initialized without `encryptedSharedPreferences: true` on Android due to perceived deprecation of Jetpack Security.
-**Learning:** In Flutter applications using flutter_secure_storage, always explicitly set `encryptedSharedPreferences: true` within AndroidOptions() to ensure native encryption of both keys and values, preventing vulnerable legacy storage fallback.
-**Prevention:** Ensure `encryptedSharedPreferences: true` is always enabled when configuring FlutterSecureStorage for Android.
+## 2026-07-20 - AppLifecycleState.hidden Handling
+**Vulnerability:** Sensitive data may remain visible or the app might not auto-lock correctly because the 'hidden' lifecycle state (introduced in Flutter 3.13) was not handled.
+**Learning:** In newer Flutter versions, apps can enter a 'hidden' state before pausing (e.g. when minimized). Ignoring this state circumvents background security protections.
+**Prevention:** Always check for AppLifecycleState.hidden alongside paused and inactive when implementing app lifecycle-dependent security features.

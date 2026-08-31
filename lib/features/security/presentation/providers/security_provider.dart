@@ -12,9 +12,8 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 // Dependencies
 final flutterSecureStorageProvider = Provider(
   (ref) => const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    // Security: Removed encryptedSharedPreferences parameter as Jetpack Security library is deprecated by Google.
+    aOptions: AndroidOptions(),
   ),
 );
 final localAuthProvider = Provider((ref) => LocalAuthentication());
@@ -117,7 +116,7 @@ class SecurityNotifier extends Notifier<SecurityState>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       _lastPausedTime = DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
       _checkAutoLock();
