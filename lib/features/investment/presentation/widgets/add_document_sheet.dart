@@ -578,7 +578,7 @@ class _AddDocumentSheetState extends ConsumerState<AddDocumentSheet> {
                     if (!_isLoading)
                       IconButton(
                         icon: Icon(Icons.close, size: 20),
-                        tooltip: 'Remove file',
+                        tooltip: l10n.tooltipRemoveFile,
                         onPressed: () {
                           setState(() {
                             _multipleFiles.removeAt(index);
