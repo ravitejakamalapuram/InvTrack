@@ -27,7 +27,8 @@ class InAppReviewLauncher implements ReviewLauncher {
 /// Requests the Play in-app review sheet at most once per install, after a
 /// genuine success moment (recording a return/exit cash flow).
 ///
-/// See `docs/adr/0001-in-app-review-prompt.md` for the gating rationale.
+/// See `company-brain/decisions/0001-invtrack-in-app-review-prompt.md` for the
+/// gating rationale.
 class ReviewPromptService {
   ReviewPromptService({
     required SharedPreferences prefs,
