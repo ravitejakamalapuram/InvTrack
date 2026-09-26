@@ -1,0 +1,52 @@
+schema: appforge/permissions@1
+permissions:
+  - permission: android.permission.INTERNET
+    required: true
+    reason: "Firebase Firestore/Auth/Analytics/Crashlytics/Performance and exchange-rate API calls all require network access"
+    data_access: [network_traffic]
+    security_impact: low
+  - permission: com.google.android.gms.permission.AD_ID
+    required: true
+    reason: "Declared for Firebase Analytics attribution; AdMob code exists but is currently dormant in release builds (SDK never started, placeholder ad unit IDs, no ads actually shown)"
+    data_access: [advertising_id]
+    security_impact: medium
+  - permission: android.permission.USE_BIOMETRIC
+    required: true
+    reason: "Optional app-lock (biometric unlock) for the app itself"
+    data_access: [biometric_auth_local]
+    security_impact: low
+  - permission: android.permission.USE_FINGERPRINT
+    required: true
+    reason: "Legacy fingerprint-auth API for the app-lock feature on older Android versions"
+    data_access: [biometric_auth_local]
+    security_impact: low
+  - permission: android.permission.RECEIVE_BOOT_COMPLETED
+    required: true
+    reason: "Restore scheduled reminders/notifications after a device reboot"
+    data_access: []
+    security_impact: low
+  - permission: android.permission.POST_NOTIFICATIONS
+    required: true
+    reason: "Local reminders and app notifications"
+    data_access: []
+    security_impact: low
+  - permission: android.permission.VIBRATE
+    required: true
+    reason: "Haptic feedback for in-app interactions"
+    data_access: []
+    security_impact: low
+  - permission: android.permission.CAMERA
+    required: true
+    reason: "Scan/photograph investment documents to attach as metadata-only records (files stay on-device, per FINDINGS.md — no Firebase Storage upload)"
+    data_access: [camera_document_capture]
+    security_impact: medium
+  - permission: android.permission.READ_EXTERNAL_STORAGE
+    required: true
+    reason: "Read a user-selected document/image on Android <=12 (maxSdkVersion=32; replaced by the system photo picker on newer versions)"
+    data_access: [user_selected_files]
+    security_impact: low
+  - permission: android.permission.WRITE_EXTERNAL_STORAGE
+    required: true
+    reason: "Legacy write access on Android <=10 (maxSdkVersion=29) for exporting/saving a document the user picked"
+    data_access: [user_selected_files]
+    security_impact: low
