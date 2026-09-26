@@ -1,7 +1,11 @@
 /// Captures the Play Store screenshot set (POR-98) using curated,
 /// all-positive demo data so no real/loss-showing data ever reaches
-/// a screenshot. Screens: Overview, FIRE dashboard, Goals, Investment
-/// detail, Privacy Mode, Portfolio Health.
+/// a screenshot. Screens: Overview, FIRE dashboard, Goals, Investments
+/// list, Privacy Mode, Investment detail.
+///
+/// Run with `flutter drive --profile` (not the default debug build) - a
+/// debug build always renders Flutter's red "DEBUG" ribbon over the UI,
+/// which is not something we want on a real store listing.
 library;
 
 import 'package:firebase_core/firebase_core.dart';

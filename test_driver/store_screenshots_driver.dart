@@ -2,6 +2,9 @@
 // disk. The plain `integrationDriver()` used by test_driver/integration_test.dart
 // discards screenshot bytes; this one writes each to SCREENSHOT_OUTPUT_DIR
 // (falls back to build/store_screenshots) as `<name>.png`.
+//
+// Pair with `flutter drive --profile` (not the default debug build) so the
+// captures don't carry Flutter's debug-mode "DEBUG" ribbon.
 import 'dart:io';
 
 import 'package:integration_test/integration_test_driver_extended.dart';
