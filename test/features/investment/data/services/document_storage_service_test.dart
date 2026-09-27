@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:path/path.dart' as path_lib;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -81,5 +82,60 @@ void main() {
       ),
       throwsA(isA<FormatException>()),
     );
+  });
+
+  group('deleteAllUserDocuments', () {
+    test('removes every attachment across all investments for the user', () async {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      await service.saveDocument(
+        investmentId: 'inv-1',
+        documentId: 'doc-1',
+        fileName: 'a.pdf',
+        bytes: bytes,
+      );
+      await service.saveDocument(
+        investmentId: 'inv-2',
+        documentId: 'doc-2',
+        fileName: 'b.pdf',
+        bytes: bytes,
+      );
+
+      final userDir = Directory(
+        path_lib.join(mockAppDocPath, 'documents', 'test_user'),
+      );
+      expect(userDir.existsSync(), isTrue);
+
+      await service.deleteAllUserDocuments();
+
+      expect(userDir.existsSync(), isFalse);
+    });
+
+    test('does not throw when the user has no documents on disk', () async {
+      await expectLater(service.deleteAllUserDocuments(), completes);
+    });
+
+    test('does not affect another user\'s documents directory', () async {
+      final otherService = DocumentStorageService(userId: 'other_user');
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      await service.saveDocument(
+        investmentId: 'inv-1',
+        documentId: 'doc-1',
+        fileName: 'a.pdf',
+        bytes: bytes,
+      );
+      await otherService.saveDocument(
+        investmentId: 'inv-1',
+        documentId: 'doc-1',
+        fileName: 'a.pdf',
+        bytes: bytes,
+      );
+
+      await service.deleteAllUserDocuments();
+
+      final otherUserDir = Directory(
+        path_lib.join(mockAppDocPath, 'documents', 'other_user'),
+      );
+      expect(otherUserDir.existsSync(), isTrue);
+    });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
@@ -246,32 +247,48 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> deleteInvestment(String id) async {
-    // Delete all cash flows for this investment first
-    // Use timeout to handle offline scenario - Firestore will sync when back online
+    final cashFlows = await _getCashFlowDocsForDeletion(_cashFlowsRef, id);
+    final batch = _firestore.batch();
+    for (final doc in cashFlows.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_investmentsRef.doc(id));
+    await _executeWrite(() => batch.commit());
+  }
+
+  /// Finds every cash flow document for [investmentId] so it can be deleted
+  /// alongside the investment.
+  ///
+  /// Cache-first: the local Firestore cache is unlimited in size (see
+  /// `database_module.dart`), so it holds every cash flow this device has
+  /// ever synced, and reading it never needs the network. We only fall back
+  /// to a server query if the cache read itself fails.
+  ///
+  /// IMPORTANT: if we cannot determine which cash flows exist (cache
+  /// unusable and the device is offline), we deliberately throw instead of
+  /// proceeding to delete the investment anyway. Deleting the investment
+  /// without knowing which cash flows to remove would silently orphan them
+  /// forever - a real data-deletion bug, not an acceptable offline
+  /// fallback. Throwing here surfaces a clear error so the user can retry
+  /// once they're back online, rather than the app reporting success while
+  /// leaving data behind.
+  Future<QuerySnapshot<Map<String, dynamic>>> _getCashFlowDocsForDeletion(
+    CollectionReference<Map<String, dynamic>> cashFlowsRef,
+    String investmentId,
+  ) async {
     try {
-      final cashFlows = await _cashFlowsRef
-          .where('investmentId', isEqualTo: id)
-          .get(const GetOptions(source: Source.cache))
-          .timeout(
-            _writeTimeout,
-            onTimeout: () async {
-              // If cache query times out, try server with timeout
-              return await _cashFlowsRef
-                  .where('investmentId', isEqualTo: id)
-                  .get()
-                  .timeout(_writeTimeout);
-            },
-          );
-      final batch = _firestore.batch();
-      for (final doc in cashFlows.docs) {
-        batch.delete(doc.reference);
+      return await cashFlowsRef
+          .where('investmentId', isEqualTo: investmentId)
+          .get(const GetOptions(source: Source.cache));
+    } catch (_) {
+      try {
+        return await cashFlowsRef
+            .where('investmentId', isEqualTo: investmentId)
+            .get()
+            .timeout(_writeTimeout);
+      } on TimeoutException catch (e, st) {
+        throw NetworkException.noConnection(cause: e, stackTrace: st);
       }
-      batch.delete(_investmentsRef.doc(id));
-      await _executeWrite(() => batch.commit());
-    } on TimeoutException {
-      // Offline - just delete the investment document, cash flows will be orphaned
-      // but they're filtered out in the providers anyway
-      await _executeWrite(() => _investmentsRef.doc(id).delete());
     }
   }
 
@@ -307,20 +324,16 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Future<void> deleteArchivedInvestment(String id) async {
-    // Delete all archived cash flows for this investment first
-    try {
-      final cashFlows = await _archivedCashFlowsRef
-          .where('investmentId', isEqualTo: id)
-          .get();
-      final batch = _firestore.batch();
-      for (final doc in cashFlows.docs) {
-        batch.delete(doc.reference);
-      }
-      batch.delete(_archivedInvestmentsRef.doc(id));
-      await _executeWrite(() => batch.commit());
-    } on TimeoutException {
-      await _executeWrite(() => _archivedInvestmentsRef.doc(id).delete());
+    final cashFlows = await _getCashFlowDocsForDeletion(
+      _archivedCashFlowsRef,
+      id,
+    );
+    final batch = _firestore.batch();
+    for (final doc in cashFlows.docs) {
+      batch.delete(doc.reference);
     }
+    batch.delete(_archivedInvestmentsRef.doc(id));
+    await _executeWrite(() => batch.commit());
   }
 
   // ============ ACTIVE CASH FLOWS ============

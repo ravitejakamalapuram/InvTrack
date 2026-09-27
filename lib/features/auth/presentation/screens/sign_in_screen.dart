@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -12,6 +13,8 @@ import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -31,10 +34,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   late Animation<double> _floatAnimation;
   late Animation<double> _glowAnimation;
   bool _isLoading = false;
+  late final TapGestureRecognizer _termsOfServiceTapRecognizer;
+  late final TapGestureRecognizer _privacyPolicyTapRecognizer;
 
   @override
   void initState() {
     super.initState();
+
+    _termsOfServiceTapRecognizer = TapGestureRecognizer()
+      ..onTap = () => _openLegalScreen(
+        AppLocalizations.of(context).termsOfService,
+        termsOfServiceContent,
+      );
+    _privacyPolicyTapRecognizer = TapGestureRecognizer()
+      ..onTap = () => _openLegalScreen(
+        AppLocalizations.of(context).privacyPolicy,
+        privacyPolicyContent,
+      );
 
     // Main entrance animation
     _animationController = AnimationController(
@@ -81,7 +97,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     _animationController.dispose();
     _floatController.dispose();
     _glowController.dispose();
+    _termsOfServiceTapRecognizer.dispose();
+    _privacyPolicyTapRecognizer.dispose();
     super.dispose();
+  }
+
+  /// Opens the given legal document (Terms of Service / Privacy Policy) in
+  /// the same in-app screen used from Settings > About, so both entry
+  /// points show identical content.
+  void _openLegalScreen(String title, String content) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LegalScreen(title: title, content: content),
+      ),
+    );
   }
 
   Future<void> _signInWithGoogle() async {
@@ -400,16 +429,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                         _buildGuestButton(isDark),
                         SizedBox(height: AppSpacing.xl),
 
-                        // Terms text
-                        Text(
-                          l10n.signInTermsText,
-                          style: AppTypography.small.copyWith(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.5)
-                                : AppColors.neutral500Light,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        // Terms text (tappable Terms of Service / Privacy
+                        // Policy links, consistent with Settings > About)
+                        _buildTermsText(l10n, isDark),
                       ],
                     ),
                   ),
@@ -590,6 +612,62 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
           ),
         ),
       ),
+    );
+  }
+
+  /// Renders [AppLocalizations.signInTermsText] with "Terms of Service" and
+  /// "Privacy Policy" as tappable links to [LegalScreen], using the same
+  /// content shown from Settings > About for consistency.
+  Widget _buildTermsText(AppLocalizations l10n, bool isDark) {
+    final fullText = l10n.signInTermsText;
+    final tosText = l10n.termsOfService;
+    final privacyText = l10n.privacyPolicy;
+
+    final baseStyle = AppTypography.small.copyWith(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.5)
+          : AppColors.neutral500Light,
+    );
+    final linkStyle = baseStyle.copyWith(
+      color: isDark ? Colors.white.withValues(alpha: 0.85) : AppColors.neutral700Light,
+      decoration: TextDecoration.underline,
+      fontWeight: FontWeight.w600,
+    );
+
+    final tosIndex = fullText.indexOf(tosText);
+    final privacyIndex = fullText.indexOf(privacyText);
+
+    // Defensive fallback: if the copy doesn't contain both phrases in the
+    // expected order (e.g. a future translation rewords them), fall back to
+    // plain text instead of risking mangled spans.
+    if (tosIndex == -1 ||
+        privacyIndex == -1 ||
+        privacyIndex < tosIndex + tosText.length) {
+      return Text(fullText, style: baseStyle, textAlign: TextAlign.center);
+    }
+
+    return Text.rich(
+      TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: fullText.substring(0, tosIndex)),
+          TextSpan(
+            text: tosText,
+            style: linkStyle,
+            recognizer: _termsOfServiceTapRecognizer,
+          ),
+          TextSpan(
+            text: fullText.substring(tosIndex + tosText.length, privacyIndex),
+          ),
+          TextSpan(
+            text: privacyText,
+            style: linkStyle,
+            recognizer: _privacyPolicyTapRecognizer,
+          ),
+          TextSpan(text: fullText.substring(privacyIndex + privacyText.length)),
+        ],
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }
