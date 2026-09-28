@@ -23,6 +23,11 @@ abstract class DocumentRepository {
   /// Delete all documents for an investment
   Future<void> deleteDocumentsByInvestment(String investmentId);
 
+  /// Delete every document record for the current user, regardless of which
+  /// investment it is attached to. Used for full account/data deletion so no
+  /// document metadata is left behind.
+  Future<void> deleteAllDocuments();
+
   /// Get total document count for an investment
   Future<int> getDocumentCount(String investmentId);
 }

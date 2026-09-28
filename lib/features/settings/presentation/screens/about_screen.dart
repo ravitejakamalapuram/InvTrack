@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/help_faq_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
@@ -349,7 +350,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   onTap: () => _openLegalScreen(
                     context,
                     l10n.privacyPolicy,
-                    _privacyPolicy,
+                    privacyPolicyContent,
                   ),
                 ),
                 SettingsNavTile(
@@ -359,7 +360,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   onTap: () => _openLegalScreen(
                     context,
                     l10n.termsOfService,
-                    _termsOfService,
+                    termsOfServiceContent,
                   ),
                 ),
               ],
@@ -525,45 +526,3 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
         .join('&');
   }
 }
-
-const String _privacyPolicy = '''
-**Privacy Policy**
-
-Last updated: December 05, 2025
-
-1. **Introduction**
-   InvTracker ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by InvTracker.
-
-2. **Data Collection**
-   We do not collect any personal data on our servers. All your investment data is stored locally on your device. If you choose to sign in with Google, your authentication token is used solely to verify your identity and is not stored on our servers.
-
-3. **Data Usage**
-   Your data is used exclusively to provide you with investment tracking features. We do not sell, trade, or rent your personal identification information to others.
-
-4. **Security**
-   We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.
-
-5. **Contact Us**
-   If you have questions about this Privacy Policy, please contact us at invtrack_support@googlegroups.com.
-''';
-
-const String _termsOfService = '''
-**Terms of Service**
-
-Last updated: December 05, 2025
-
-1. **Agreement to Terms**
-   By using our mobile application, you agree to be bound by these Terms of Service.
-
-2. **Intellectual Property**
-   The Service and its original content, features, and functionality are the exclusive property of InvTracker.
-
-3. **Disclaimer**
-   Your use of the Service is at your sole risk. The Service is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind.
-
-4. **Investment Advice**
-   InvTracker is a tracking tool only. We do not provide financial, investment, or tax advice. Always consult with qualified professionals.
-
-5. **Governing Law**
-   These Terms shall be governed by the laws of California, United States.
-''';

@@ -56,7 +56,7 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 ### 🔒 Privacy & Security
 - **Privacy Mode** - Hide sensitive amounts with one tap
 - **Offline-First** - Works 100% without internet (Firestore offline persistence)
-- **Your Data, Your Control** - Data stored in your own Firebase account
+- **Your Data, Your Control** - Data isolated to your account via Firestore security rules (shared project, per-user access only)
 - **Encrypted Storage** - FlutterSecureStorage for sensitive data
 - **No PII Logging** - Privacy-compliant analytics (amount ranges only)
 - **OWASP MASVS Compliant** - Mobile Application Security Verification Standard

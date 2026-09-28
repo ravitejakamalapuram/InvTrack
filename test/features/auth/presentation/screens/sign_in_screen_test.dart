@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -161,5 +162,64 @@ void main() {
 
     // Cleanup
     container.dispose();
+  });
+
+  testWidgets(
+      'tapping "Terms of Service" in the sign-in footer opens the legal screen',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
+          notificationServiceProvider.overrideWithValue(mockNotificationService),
+          crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
+          googleSignInInitializedProvider.overrideWith((ref) async {}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SignInScreen(),
+        ),
+      ),
+    );
+
+    await tester.pump(const Duration(seconds: 2));
+
+    // The footer text is a RichText with "Terms of Service" and
+    // "Privacy Policy" as separate tappable spans - it must not render as
+    // plain, non-interactive text.
+    final richTextFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is RichText &&
+          widget.text.toPlainText().contains('Terms of Service') &&
+          widget.text.toPlainText().contains('Privacy Policy'),
+    );
+    expect(richTextFinder, findsOneWidget);
+
+    final richText = tester.widget<RichText>(richTextFinder);
+    final rootSpan = richText.text as TextSpan;
+    TapGestureRecognizer? tosRecognizer;
+    rootSpan.visitChildren((span) {
+      if (span is TextSpan &&
+          span.text == 'Terms of Service' &&
+          span.recognizer is TapGestureRecognizer) {
+        tosRecognizer = span.recognizer as TapGestureRecognizer;
+      }
+      return true;
+    });
+
+    expect(
+      tosRecognizer,
+      isNotNull,
+      reason: 'Terms of Service must be a tappable link, not plain text',
+    );
+
+    tosRecognizer!.onTap!();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Terms of Service'), findsWidgets);
+    expect(find.textContaining('Governing Law'), findsOneWidget);
   });
 }

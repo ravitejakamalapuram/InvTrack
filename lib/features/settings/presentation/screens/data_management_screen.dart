@@ -675,6 +675,20 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final healthScoreRepo = ref.read(healthScoreRepositoryProvider);
     await healthScoreRepo.deleteAllSnapshots();
 
+    // Delete expected/projected cash flows (income projection feature).
+    // These live in their own collection and are not touched by
+    // investmentRepo.deleteInvestment/deleteArchivedInvestment above.
+    final expectedCashFlowRepo = ref.read(expectedCashFlowRepositoryProvider);
+    await expectedCashFlowRepo.deleteAllExpectedCashFlows();
+
+    // Delete all document metadata and the locally-stored attachment files.
+    // Covers documents left behind by investments deleted before this fix,
+    // not just ones tied to the investments removed above.
+    final documentRepo = ref.read(documentRepositoryProvider);
+    await documentRepo.deleteAllDocuments();
+    final documentStorageService = ref.read(documentStorageServiceProvider);
+    await documentStorageService.deleteAllUserDocuments();
+
     // Clear sample data mode preferences (Rule 18: Data Lifecycle)
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove('sample_data_mode_active');
