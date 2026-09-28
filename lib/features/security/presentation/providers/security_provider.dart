@@ -117,7 +117,7 @@ class SecurityNotifier extends Notifier<SecurityState>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       _lastPausedTime = DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
       _checkAutoLock();

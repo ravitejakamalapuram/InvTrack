@@ -112,6 +112,30 @@ void main() {
       expect(findPrivacyOverlay(), findsOneWidget);
     });
 
+    testWidgets('shows overlay for hidden state (Flutter 3.13+)', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: PrivacyProtectionWrapper(
+            child: Scaffold(body: Center(child: Text('Content'))),
+          ),
+        ),
+      );
+
+      expect(findPrivacyOverlay(), findsNothing);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await tester.pump();
+
+      expect(findPrivacyOverlay(), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(findPrivacyOverlay(), findsNothing);
+    });
+
     testWidgets('responds to detached state', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
