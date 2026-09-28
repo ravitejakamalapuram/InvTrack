@@ -38,7 +38,12 @@ enum FeatureFlag {
   /// - Automatic overdue payment detection
   /// - Income trend analysis and forecasting
   /// - Disabled by default, enable via Debug Settings
-  incomeGuardian('income_guardian', 'Income Guardian');
+  incomeGuardian('income_guardian', 'Income Guardian'),
+
+  /// Play in-app review prompt after a first recorded return/exit.
+  /// - One-shot per install, gated on a genuine success moment
+  /// - Disabled by default, enable via Debug Settings (POR-91/POR-99)
+  reviewPrompt('review_prompt', 'Play Review Prompt');
 
   const FeatureFlag(this.key, this.displayName);
 
@@ -169,6 +174,15 @@ final isIncomeGuardianEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagsProvider.select(
       (flags) => flags[FeatureFlag.incomeGuardian] ?? false,
+    ),
+  );
+});
+
+/// Convenience provider for checking if the Play review prompt is enabled
+final isReviewPromptEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagsProvider.select(
+      (flags) => flags[FeatureFlag.reviewPrompt] ?? false,
     ),
   );
 });

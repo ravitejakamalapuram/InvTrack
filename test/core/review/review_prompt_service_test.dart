@@ -45,11 +45,13 @@ void main() {
     SharedPreferences prefs, {
     required ReviewLauncher launcher,
     bool isSupportedPlatform = true,
+    bool Function() isUpdatePending = _never,
   }) {
     return ReviewPromptService(
       prefs: prefs,
       launcher: launcher,
       analytics: fakeAnalytics,
+      isUpdatePending: isUpdatePending,
       isSupportedPlatform: () => isSupportedPlatform,
     );
   }
@@ -57,12 +59,14 @@ void main() {
   Future<ReviewPromptService> buildService({
     required ReviewLauncher launcher,
     bool isSupportedPlatform = true,
+    bool Function() isUpdatePending = _never,
   }) async {
     final prefs = await freshPrefs();
     return buildServiceFor(
       prefs,
       launcher: launcher,
       isSupportedPlatform: isSupportedPlatform,
+      isUpdatePending: isUpdatePending,
     );
   }
 
@@ -71,7 +75,7 @@ void main() {
       final launcher = FakeReviewLauncher();
       final service = await buildService(launcher: launcher);
 
-      await service.maybeRequestAfterExitRecorded(isUpdatePending: false);
+      await service.maybeRequestAfterExitRecorded();
 
       expect(launcher.requestReviewCalls, 1);
       expect(fakeAnalytics.loggedEvents, hasLength(1));
@@ -83,8 +87,8 @@ void main() {
       final launcher = FakeReviewLauncher();
       final service = await buildService(launcher: launcher);
 
-      await service.maybeRequestAfterExitRecorded(isUpdatePending: false);
-      await service.maybeRequestAfterExitRecorded(isUpdatePending: false);
+      await service.maybeRequestAfterExitRecorded();
+      await service.maybeRequestAfterExitRecorded();
 
       expect(launcher.requestReviewCalls, 1);
       expect(fakeAnalytics.loggedEvents, hasLength(1));
@@ -97,7 +101,7 @@ void main() {
         isSupportedPlatform: false,
       );
 
-      await service.maybeRequestAfterExitRecorded(isUpdatePending: false);
+      await service.maybeRequestAfterExitRecorded();
 
       expect(launcher.isAvailableCalls, 0);
       expect(launcher.requestReviewCalls, 0);
@@ -106,12 +110,17 @@ void main() {
 
     test('a pending in-app update suppresses without spending the shot', () async {
       final launcher = FakeReviewLauncher();
-      final service = await buildService(launcher: launcher);
+      var updatePending = true;
+      final service = await buildService(
+        launcher: launcher,
+        isUpdatePending: () => updatePending,
+      );
 
-      await service.maybeRequestAfterExitRecorded(isUpdatePending: true);
+      await service.maybeRequestAfterExitRecorded();
       expect(launcher.requestReviewCalls, 0);
 
-      await service.maybeRequestAfterExitRecorded(isUpdatePending: false);
+      updatePending = false;
+      await service.maybeRequestAfterExitRecorded();
       expect(launcher.requestReviewCalls, 1);
     });
 
@@ -121,7 +130,7 @@ void main() {
       await buildServiceFor(
         prefs,
         launcher: unavailableLauncher,
-      ).maybeRequestAfterExitRecorded(isUpdatePending: false);
+      ).maybeRequestAfterExitRecorded();
 
       expect(unavailableLauncher.requestReviewCalls, 0);
       expect(fakeAnalytics.loggedEvents, isEmpty);
@@ -132,7 +141,7 @@ void main() {
       await buildServiceFor(
         prefs,
         launcher: recoveredLauncher,
-      ).maybeRequestAfterExitRecorded(isUpdatePending: false);
+      ).maybeRequestAfterExitRecorded();
 
       expect(recoveredLauncher.requestReviewCalls, 1);
     });
@@ -142,10 +151,24 @@ void main() {
       final service = await buildService(launcher: launcher);
 
       await expectLater(
-        service.maybeRequestAfterExitRecorded(isUpdatePending: false),
+        service.maybeRequestAfterExitRecorded(),
         completes,
       );
       expect(launcher.requestReviewCalls, 1);
     });
+
+    test('overlapping calls only request once', () async {
+      final launcher = FakeReviewLauncher();
+      final service = await buildService(launcher: launcher);
+
+      await Future.wait([
+        service.maybeRequestAfterExitRecorded(),
+        service.maybeRequestAfterExitRecorded(),
+      ]);
+
+      expect(launcher.requestReviewCalls, 1);
+    });
   });
 }
+
+bool _never() => false;

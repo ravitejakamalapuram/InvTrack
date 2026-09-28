@@ -251,6 +251,26 @@ class DebugSettingsScreen extends ConsumerWidget {
           },
         ),
 
+        // Play review prompt feature flag
+        SettingsToggleTile(
+          icon: Icons.star_outline,
+          iconColor: Colors.amber,
+          title: FeatureFlag.reviewPrompt.displayName,
+          subtitle: 'Ask for a Play Store review after the first recorded exit',
+          value: featureFlags[FeatureFlag.reviewPrompt] ?? false,
+          onChanged: (value) async {
+            try {
+              await ref
+                  .read(featureFlagsProvider.notifier)
+                  .toggle(FeatureFlag.reviewPrompt);
+            } catch (e, stackTrace) {
+              if (context.mounted) {
+                ErrorHandler.handle(e, stackTrace, context: context);
+              }
+            }
+          },
+        ),
+
         // Future features (disabled - coming soon)
         Opacity(
           opacity: 0.5,

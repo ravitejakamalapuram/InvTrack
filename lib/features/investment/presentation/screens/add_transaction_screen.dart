@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
-import 'package:inv_tracker/core/providers/in_app_update_provider.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/review_prompt_provider.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
@@ -171,20 +171,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
         AppFeedback.showSuccess(context, message);
 
         if (isReviewPromptSuccessMoment(
-          isEditing: widget.isEditing,
-          type: _selectedType,
-        )) {
+              isEditing: widget.isEditing,
+              type: _selectedType,
+            ) &&
+            ref.read(isReviewPromptEnabledProvider)) {
           final reviewPromptService = ref.read(reviewPromptServiceProvider);
-          final updateState = ref.read(inAppUpdateProvider);
-          final isUpdatePending =
-              updateState.hasUpdate || updateState.isDownloaded;
           // Captured before safePop() disposes this widget's ref; the
-          // delayed callback below never touches ref/context.
+          // delayed callback below never touches ref/context. The service
+          // re-reads pending-update state itself when the delay elapses.
           unawaited(
             Future.delayed(const Duration(seconds: 1), () {
-              reviewPromptService.maybeRequestAfterExitRecorded(
-                isUpdatePending: isUpdatePending,
-              );
+              reviewPromptService.maybeRequestAfterExitRecorded();
             }),
           );
         }

@@ -34,10 +34,12 @@ class ReviewPromptService {
     required SharedPreferences prefs,
     required ReviewLauncher launcher,
     required AnalyticsService analytics,
+    required bool Function() isUpdatePending,
     bool Function()? isSupportedPlatform,
   }) : _prefs = prefs,
        _launcher = launcher,
        _analytics = analytics,
+       _isUpdatePending = isUpdatePending,
        _isSupportedPlatform =
            isSupportedPlatform ?? (() => !kIsWeb && Platform.isAndroid);
 
@@ -45,33 +47,33 @@ class ReviewPromptService {
   final ReviewLauncher _launcher;
   final AnalyticsService _analytics;
 
+  /// Re-read at request time rather than a value the caller captured ahead
+  /// of the scheduling delay, so an update that becomes pending during that
+  /// window is still honored.
+  final bool Function() _isUpdatePending;
+
   /// Defaults to the real `!kIsWeb && Platform.isAndroid` check; overridable
   /// so tests can exercise the Android path from a host test runner, where
   /// `Platform.isAndroid` is always false.
   final bool Function() _isSupportedPlatform;
 
   static const _requestedAtKey = 'review_prompt_v1_requested_at';
-  static const _successCountKey = 'review_prompt_v1_success_count';
+
+  /// Guards against two overlapping calls both reading `_requestedAtKey` as
+  /// unset before either has written it.
+  bool _isChecking = false;
 
   /// Call after a return/exit cash flow is recorded. Every check is local
   /// and every failure is swallowed; nothing here can throw into the caller.
-  ///
-  /// [isUpdatePending] should reflect whether an in-app update is currently
-  /// available or downloaded (`inAppUpdateProvider`); when true, the prompt
-  /// is skipped without spending the one shot.
-  Future<void> maybeRequestAfterExitRecorded({
-    required bool isUpdatePending,
-  }) async {
+  Future<void> maybeRequestAfterExitRecorded() async {
+    if (_isChecking) return;
+    _isChecking = true;
     try {
       if (!_isSupportedPlatform()) return;
 
       if (_prefs.containsKey(_requestedAtKey)) return;
 
-      final successCount = (_prefs.getInt(_successCountKey) ?? 0) + 1;
-      await _prefs.setInt(_successCountKey, successCount);
-      if (successCount < 1) return;
-
-      if (isUpdatePending) return;
+      if (_isUpdatePending()) return;
 
       final available = await _launcher.isAvailable();
       if (!available) return;
@@ -90,6 +92,8 @@ class ReviewPromptService {
         error: e,
         stackTrace: st,
       );
+    } finally {
+      _isChecking = false;
     }
   }
 }
