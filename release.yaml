@@ -9,7 +9,7 @@ test: flutter pub get && flutter gen-l10n && flutter analyze --fatal-warnings --
 targets:
   - type: android
     package: com.invtracker.inv_tracker
-    flutter: '3.32.0'
+    flutter: '3.38.4' # bundles Dart 3.10.3, satisfying pubspec's `sdk: ^3.10.1`
     java: '17'
     # PR checks only (app-ci.yml never has signing secrets): unsigned debug appbundle,
     # replacing the old flutter-ci.yml `dry-run-build` input.
