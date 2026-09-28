@@ -39,23 +39,31 @@ class ExpectedIncomeSection extends ConsumerWidget {
           return _buildEmptyState(l10n, isDark);
         }
 
-        // Split into future and past payments
+        // Split into future, past, and overdue payments in a single pass.
+        // These are independent memberships, not mutually exclusive - an
+        // entry can match more than one category (e.g. a matched cash flow
+        // that also carries an overdue status), so each condition is
+        // checked separately rather than via an else-if chain.
         final now = DateTime.now();
-        final futurePayments = expectedFlows.where((e) =>
-          e.expectedDate.isAfter(now) &&
-          (e.status == ExpectedCashFlowStatus.upcoming ||
-           e.status == ExpectedCashFlowStatus.dueSoon)
-        ).toList();
-        
-        final pastPayments = expectedFlows.where((e) =>
-          e.matchedCashFlowId != null ||
-          e.status == ExpectedCashFlowStatus.received
-        ).toList();
+        final futurePayments = <ExpectedCashFlowEntity>[];
+        final pastPayments = <ExpectedCashFlowEntity>[];
+        final overduePayments = <ExpectedCashFlowEntity>[];
 
-        final overduePayments = expectedFlows.where((e) =>
-          e.status == ExpectedCashFlowStatus.overdue ||
-          e.status == ExpectedCashFlowStatus.gracePeriod
-        ).toList();
+        for (final e in expectedFlows) {
+          if (e.expectedDate.isAfter(now) &&
+              (e.status == ExpectedCashFlowStatus.upcoming ||
+                  e.status == ExpectedCashFlowStatus.dueSoon)) {
+            futurePayments.add(e);
+          }
+          if (e.matchedCashFlowId != null ||
+              e.status == ExpectedCashFlowStatus.received) {
+            pastPayments.add(e);
+          }
+          if (e.status == ExpectedCashFlowStatus.overdue ||
+              e.status == ExpectedCashFlowStatus.gracePeriod) {
+            overduePayments.add(e);
+          }
+        }
 
         // Build all sections as a flat list
         final allSections = <Widget>[
