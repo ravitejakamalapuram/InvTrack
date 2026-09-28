@@ -3,9 +3,17 @@
 /// a screenshot. Screens: Overview, FIRE dashboard, Goals, Investments
 /// list, Privacy Mode, Investment detail.
 ///
-/// Run with `flutter drive --profile` (not the default debug build) - a
-/// debug build always renders Flutter's red "DEBUG" ribbon over the UI,
-/// which is not something we want on a real store listing.
+/// Run with:
+/// ```
+/// flutter drive --profile \
+///   --driver=test_driver/store_screenshots_driver.dart \
+///   --target=integration_test/flows/store_screenshots_test.dart
+/// ```
+/// `--profile` (not the default debug build) is required - a debug build
+/// always renders Flutter's red "DEBUG" ribbon over the UI, which is not
+/// something we want on a real store listing. Screenshots land in
+/// `build/store_screenshots/` by default, or `$SCREENSHOT_OUTPUT_DIR` when
+/// set (see `test_driver/store_screenshots_driver.dart`).
 library;
 
 import 'package:firebase_core/firebase_core.dart';
@@ -77,6 +85,7 @@ void main() {
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
         notes: notes,
+        currency: 'INR',
       );
       investments.add(inv);
       return inv;
@@ -96,6 +105,7 @@ void main() {
           type: type,
           amount: amount,
           createdAt: now,
+          currency: 'INR',
         ),
       );
     }
