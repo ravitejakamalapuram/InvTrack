@@ -108,6 +108,24 @@ class FirestoreDocumentRepository implements DocumentRepository {
   }
 
   @override
+  Future<void> deleteAllDocuments() async {
+    // Firestore batch has a limit of 500 operations per batch
+    const batchLimit = 500;
+
+    final snapshot = await _documentsRef.get();
+    final refs = snapshot.docs.map((doc) => doc.reference).toList();
+
+    for (var i = 0; i < refs.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final end = (i + batchLimit < refs.length) ? i + batchLimit : refs.length;
+      for (var j = i; j < end; j++) {
+        batch.delete(refs[j]);
+      }
+      await _executeWrite(() => batch.commit());
+    }
+  }
+
+  @override
   Future<int> getDocumentCount(String investmentId) async {
     final snapshot = await _documentsRef
         .where('investmentId', isEqualTo: investmentId)

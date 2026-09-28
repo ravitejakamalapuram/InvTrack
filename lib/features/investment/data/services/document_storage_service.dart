@@ -136,6 +136,16 @@ class DocumentStorageService {
     }
   }
 
+  /// Delete every locally-stored attachment for this user, across all
+  /// investments. Used for full account/data deletion so no attachment
+  /// files are left behind on the device.
+  Future<void> deleteAllUserDocuments() async {
+    final docsDir = await _documentsDirectory;
+    if (await docsDir.exists()) {
+      await docsDir.delete(recursive: true);
+    }
+  }
+
   /// Get the file size in bytes
   Future<int> getFileSize(String localPath) async {
     if (!await _isSafePath(localPath)) {

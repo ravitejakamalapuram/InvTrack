@@ -1,0 +1,69 @@
+# Backfilled by the AppForge factory (P1-07). Fields marked null are not yet knowable —
+# they depend on infrastructure (appforge-control, appforge-edge, Paperclip) not built yet.
+# InvTrack is the most sensitive product in the portfolio (real user financial data in
+# Firebase). Per standing house rules this file is a PR only — the founder reviews and
+# merges it, and this product stays outside any autonomous release flow (autonomy: L0).
+product_id: invtrack
+name: InvTrack
+description: "Investment tracker with Firebase-backed sync, goals, and portfolio health scoring."
+platform: [android]
+state: PRODUCTION
+portfolio_state: MATURE
+repository: ravitejakamalapuram/InvTrack
+owner: founder
+team: []
+architecture: null
+analytics_project: null
+store_ids:
+  play: com.invtracker.inv_tracker
+monetization:
+  model: freemium
+  provider: admob # dormant in current release builds — see notes
+permissions: .appforge/permissions.yaml
+data_collection:
+  # Sourced from the founder-approved draft privacy audit at
+  # ~/git-personal/.claude/invtrack-privacy/FINDINGS.md (2026-09-23), not re-derived here.
+  collected:
+    - investment_holdings_and_amounts
+    - cashflows_and_goals
+    - name_email_optional
+    - age_locale_country_language
+    - document_metadata_not_files
+    - app_interactions_analytics
+    - crash_logs_diagnostics
+    - device_id_firebase_installation_id
+    - advertising_id
+    - approximate_location_from_ip
+  stored:
+    local: [documents_dir_uid_scoped_attachment_files, app_lock_pin_pbkdf2_encrypted]
+    remote: [cloud_firestore_users_uid_investments_cashflows_archived_goals_expectedcashflows_documents_firesettings_profile_healthscores_exchangerates]
+  transmitted:
+    endpoints:
+      - "firestore.googleapis.com"
+      - "firebaseauth.googleapis.com" # Google Sign-In only, plus guest/anonymous accounts
+      - "frankfurter.dev" # exchange rates
+      - "exchangerate-api.com" # exchange rates
+  sensitive: [financial_holdings_and_amounts, personal_info_name_email_age_locale]
+  third_party: [firebase_google, admob_dormant]
+  retention: { firestore: "until account deletion (see known gaps below)", local_attachments: "until account deletion or app data clear" }
+  deletion: "In-app: Settings > Data & Account > Delete Account; a required web deletion link exists but per FINDINGS.md is not yet published"
+security_classification: high
+release_channel: default
+current_version: "3.70.18+274"
+kill_policy: null
+scale_policy: null
+notes: |
+  Known gaps from the founder-approved privacy audit (.claude/invtrack-privacy/FINDINGS.md,
+  2026-09-23), reproduced here for the record, not newly discovered by this backfill:
+  - The LIVE Play Store privacy policy currently understates data collection (says local
+    SQLite + Sheets sync; actual storage is Cloud Firestore, no Sheets integration at all).
+    A corrected draft policy exists at .claude/invtrack-privacy/privacy.html, awaiting the
+    founder's approval to publish (TASKS.md item L).
+  - Account deletion is incomplete: expectedCashFlows and document metadata are not deleted,
+    and local attachment files are not wiped.
+  - Only the app-lock PIN is encrypted (PBKDF2); Firestore data itself is not additionally
+    encrypted at the app layer (relies on Firebase's transport/at-rest encryption).
+  - Three inconsistent support emails exist across code/listings.
+  - AdMob code is present but dormant in release builds (SDK never started, test ad unit IDs,
+    consent flow is a stub) — Data Safety form language should reflect "declared but not
+    currently active" rather than "no ads" outright, given AD_ID is still requested.

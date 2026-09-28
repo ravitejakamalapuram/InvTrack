@@ -499,7 +499,7 @@
     "description": "Change PIN subtitle"
   },
 
-  "dataStoredLocallyMessage": "Your investment data is stored locally on this device and is never uploaded to external servers.",
+  "dataStoredLocallyMessage": "Your data is securely stored in your private, encrypted-in-transit cloud account, plus an offline copy on this device so InvTrack keeps working without a connection.",
   "@dataStoredLocallyMessage": {
     "description": "Security info message"
   },
@@ -659,7 +659,7 @@
     "description": "FAQ answer"
   },
 
-  "needMoreHelpContact": "Need more help? Contact support@invtracker.com",
+  "needMoreHelpContact": "Need more help? Contact support@invtracker.app",
   "@needMoreHelpContact": {
     "description": "Help contact message"
   },
@@ -1156,7 +1156,7 @@
     "description": "Contact support title"
   },
 
-  "supportEmail": "invtrack_support@googlegroups.com",
+  "supportEmail": "support@invtracker.app",
   "@supportEmail": {
     "description": "Support email address"
   },
