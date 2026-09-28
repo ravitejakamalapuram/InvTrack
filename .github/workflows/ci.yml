@@ -15,26 +15,138 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci-checks:
-    name: Code Quality and Tests
+  # release-platform's reusable PR-check workflow, driven by release.yaml at the repo root:
+  # validates release.yaml, runs the `test` command (pub get, l10n gen, analyzer, tests --
+  # see release.yaml for the exact command), and does an unsigned debug appbundle build
+  # (replaces the old dry-run-build input). Deliberately no `secrets:` and no `id-token`,
+  # matching every other product repo's ci.yml and release-platform's own documented
+  # security model ("no job that executes app-controlled code has secrets").
+  platform-ci:
+    name: release-platform CI checks
     if: |
-      github.event_name == 'push' || 
+      github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
-    uses: ravitejakamalapuram/.github-workflows-shared/.github/workflows/flutter-ci.yml@v1.1.9
-    with:
-      run-l10n: true
-      dry-run-build: true
-      slack-notify-failure: true
-      slack-app-name: 'InvTrack (PR Checks)'
-      exclude-tags: 'golden'
-      coverage: 'false'
-      fatal-warnings: 'true'
-      fatal-infos: 'false'
-      architecture-checks: 'true'
-      check-api-in-widgets: 'true'
-      check-navigation-in-domain: 'true'
-      security-checks: 'true'
-      runner-type: 'self-hosted'
-    secrets:
-      slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    permissions:
+      contents: read
+      actions: read # lets app-ci.yml find which release-platform commit it runs at
+    uses: ravitejakamalapuram/release-platform/.github/workflows/app-ci.yml@v2
+
+  # InvTrack-owned clean-architecture and security static-analysis checks. release-platform's
+  # app-ci.yml has no equivalent for these (it only validates release.yaml and runs the `test`
+  # command), so they're ported inline here from the old .github-workflows-shared composite
+  # action (composite-actions/flutter/analyze) instead of being dropped. Pure grep-based source
+  # checks: no Flutter toolchain needed.
+  ci-checks:
+    name: Architecture & Security Checks
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Security Checks
+        run: |
+          echo "::group::Security Checks"
+
+          VIOLATIONS=0
+
+          echo "Checking for disabled SSL verification..."
+          if grep -rn "badCertificateCallback\|allowInsecure" lib/ --include="*.dart" 2>/dev/null; then
+            echo "::error::Found disabled SSL verification"
+            echo "::error::SSL verification must not be disabled in production code"
+            VIOLATIONS=$((VIOLATIONS + 1))
+          else
+            echo "No disabled SSL verification found"
+          fi
+
+          echo "Checking for print statements in production code..."
+          if grep -rn "^[^/]*print(" lib/ --include="*.dart" | grep -v "_test.dart" | grep -v "debugPrint" 2>/dev/null; then
+            echo "::error::Found print statements in production code"
+            echo "::error::Use debugPrint, log, or a proper logging framework instead"
+            VIOLATIONS=$((VIOLATIONS + 1))
+          else
+            echo "No print statements in production code"
+          fi
+
+          echo "::endgroup::"
+
+          if [ $VIOLATIONS -gt 0 ]; then
+            echo "::error::Found $VIOLATIONS security violation(s)"
+            echo "## Security Violations" >> "$GITHUB_STEP_SUMMARY"
+            echo "Found **$VIOLATIONS** security issue(s). See logs for details." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "All security checks passed"
+        shell: bash
+
+      - name: Architecture Validation
+        run: |
+          echo "::group::Architecture Checks"
+
+          VIOLATIONS=0
+
+          echo "Checking for API calls in presentation/widgets..."
+          if grep -rn "FirebaseFirestore\|http\.\|dio\.\|Dio(" lib/features/*/presentation/widgets/ 2>/dev/null; then
+            echo "::error::Found direct API calls in presentation/widgets layer"
+            echo "::error::Widgets should not make direct API calls. Use repositories/services instead."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          else
+            echo "No API calls in presentation/widgets"
+          fi
+
+          echo "Checking for navigation logic in domain layer..."
+          if grep -rn "Navigator\|GoRouter\|context\.go\|context\.push" lib/features/*/domain/ 2>/dev/null; then
+            echo "::error::Found navigation logic in domain layer"
+            echo "::error::Domain layer should not contain navigation logic. Keep it in presentation layer."
+            VIOLATIONS=$((VIOLATIONS + 1))
+          else
+            echo "No navigation in domain layer"
+          fi
+
+          if grep -rn "import 'package:flutter/material.dart'" lib/features/*/domain/ 2>/dev/null; then
+            echo "::warning::Found Flutter UI imports in domain layer"
+            echo "::warning::Domain layer should be UI-framework agnostic"
+          fi
+
+          echo "::endgroup::"
+
+          if [ $VIOLATIONS -gt 0 ]; then
+            echo "::error::Found $VIOLATIONS architecture violation(s)"
+            echo "## Architecture Violations" >> "$GITHUB_STEP_SUMMARY"
+            echo "Found **$VIOLATIONS** violation(s). See logs for details." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "All architecture checks passed"
+          echo "## Architecture Checks" >> "$GITHUB_STEP_SUMMARY"
+          echo "All architecture checks passed successfully!" >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+
+  # Preserves the old workflow's single "notify Slack on any CI failure" behavior now that the
+  # checks are split across two jobs. Kept as its own job so the Slack webhook secret never
+  # reaches platform-ci (which must stay secret-free) or the PR-controlled analysis steps.
+  notify-failure:
+    name: Notify Slack of Failure
+    needs: [platform-ci, ci-checks]
+    if: |
+      always() &&
+      (needs.platform-ci.result == 'failure' || needs.ci-checks.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg text "❌ *CI Failed for InvTrack (PR Checks)*" \
+            '{ text: $text, attachments: [{ color: "#a30200", fields: [] }] }')
+
+          curl -k -s -o /dev/null -w "%{http_code}" -X POST -H 'Content-type: application/json' \
+            --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
+        shell: bash
