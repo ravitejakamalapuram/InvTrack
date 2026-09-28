@@ -145,44 +145,14 @@ class ErrorHandler {
       return NetworkException.timeout(cause: error, stackTrace: stackTrace);
     }
 
-    // Platform errors (e.g., Google Sign-In)
-    if (error.runtimeType.toString() == 'PlatformException') {
-      final code = (error as dynamic).code;
-      if (code == 'sign_in_canceled') {
-        return AuthException.signInCancelled();
-      }
-      return AuthException.signInFailed(
-        cause: error,
-        stackTrace: stackTrace,
-      );
-    }
-
-    // Google Sign-In Exceptions
-    if (error.runtimeType.toString() == 'GoogleSignInException') {
-       final code = (error as dynamic).code;
-       final codeString = code?.toString() ?? '';
-
-       if (codeString.contains('canceled') || code == 'canceled') {
-           return AuthException.signInCancelled();
-       }
-       if (codeString.contains('clientConfigurationError') ||
-           codeString.contains('providerConfigurationError') ||
-           code == 'clientConfigurationError' ||
-           code == 'providerConfigurationError') {
-         return AuthException(
-            userMessage: 'There is a configuration issue with Google Sign-In. Please contact support.',
-            technicalMessage: 'GoogleSignInException: $code',
-            cause: error,
-            stackTrace: stackTrace,
-            shouldReport: false,
-         );
-       }
-
-       return AuthException.signInFailed(
-         cause: error,
-         stackTrace: stackTrace,
-         shouldReport: false, // Don't report generic google sign in errors to avoid spam
-       );
+    // Platform errors (e.g., Google Sign-In). google_sign_in 7.x throws its
+    // own GoogleSignInException for some failures (config issues, plugin-side
+    // cancellation) while others still surface as a plain PlatformException
+    // from the platform channel, so both are mapped through the same logic.
+    final errorTypeName = error.runtimeType.toString();
+    if (errorTypeName == 'PlatformException' ||
+        errorTypeName == 'GoogleSignInException') {
+      return _mapGoogleSignInCode(error, stackTrace);
     }
 
     // Generic fallback
@@ -220,6 +190,42 @@ class ErrorHandler {
       default:
         return AuthException.signInFailed(cause: error, stackTrace: stackTrace);
     }
+  }
+
+  /// Shared code-based classification for both `PlatformException` and
+  /// `GoogleSignInException` (google_sign_in 7.x throws the latter directly
+  /// for some failures, while others still arrive as a platform-channel
+  /// `PlatformException`).
+  static AuthException _mapGoogleSignInCode(Object error, StackTrace? stackTrace) {
+    final code = (error as dynamic).code;
+    final codeString = code?.toString() ?? '';
+
+    if (codeString.contains('canceled')) {
+      return AuthException.signInCancelled();
+    }
+
+    if (codeString.contains('clientConfigurationError') ||
+        codeString.contains('providerConfigurationError')) {
+      return AuthException(
+        userMessage:
+            'There is a configuration issue with Google Sign-In. Please contact support.',
+        technicalMessage: '${error.runtimeType}: $code',
+        cause: error,
+        stackTrace: stackTrace,
+        shouldReport: false,
+      );
+    }
+
+    // Only suppress reporting for specific known Google Sign-In error codes;
+    // other PlatformExceptions arriving here should still be reported.
+    final isKnownGoogleSignInError =
+        codeString == 'network_error' || codeString == 'sign_in_failed';
+
+    return AuthException.signInFailed(
+      cause: error,
+      stackTrace: stackTrace,
+      shouldReport: !isKnownGoogleSignInError,
+    );
   }
 
   static AppException _mapFirebaseError(
