@@ -9,6 +9,11 @@ description: "Investment tracker with Firebase-backed sync, goals, and portfolio
 platform: [android]
 state: PRODUCTION
 portfolio_state: MATURE
+# §22.1 day-30/60/90 clock (APP-41). `first_published` is the
+# clock origin; `store_item_status` is one of
+# [published, draft, unlisted, internal_track, unpublished].
+store_item_status: published
+first_published: null
 repository: ravitejakamalapuram/InvTrack
 owner: founder
 team: []
