@@ -42,6 +42,30 @@ jobs:
       actions: read # lets app-ci.yml find which release-platform commit it runs at
     uses: ravitejakamalapuram/release-platform/.github/workflows/app-ci.yml@v2
 
+  # Cloud Functions (functions/): TypeScript build + Jest. The agent and founder machines cannot reach the
+  # public npm registry, so this job is the only place this code is ever built and tested.
+  functions-ci:
+    name: Cloud Functions tests
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - run: npm test
+
   # InvTrack-owned clean-architecture and security static-analysis checks. release-platform's
   # app-ci.yml has no equivalent for these (it only validates release.yaml and runs the `test`
   # command), so they're ported inline here from the old .github-workflows-shared composite
@@ -143,10 +167,10 @@ jobs:
   # reaches platform-ci (which must stay secret-free) or the PR-controlled analysis steps.
   notify-failure:
     name: Notify Slack of Failure
-    needs: [platform-ci, ci-checks]
+    needs: [platform-ci, functions-ci, ci-checks]
     if: |
       always() &&
-      (needs.platform-ci.result == 'failure' || needs.ci-checks.result == 'failure')
+      (needs.platform-ci.result == 'failure' || needs.functions-ci.result == 'failure' || needs.ci-checks.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
