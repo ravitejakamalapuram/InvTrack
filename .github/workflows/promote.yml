@@ -1,0 +1,34 @@
+# Create a "production" environment (Settings > Environments) with required reviewers to gate it.
+name: promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        type: choice
+        options: [promote, rollout, halt, complete]
+        default: promote
+      from_track:
+        type: string
+        default: internal
+      to_track:
+        type: string
+        default: production
+      user_fraction:
+        description: 'Staged rollout fraction, e.g. 0.2 (empty = 100%)'
+        type: string
+        default: '0.2'
+
+permissions: {}
+
+jobs:
+  promote:
+    permissions:
+      contents: read
+      id-token: write
+    uses: ravitejakamalapuram/release-platform/.github/workflows/promote.yml@v2
+    with:
+      action: ${{ inputs.action }}
+      from_track: ${{ inputs.from_track }}
+      to_track: ${{ inputs.to_track }}
+      user_fraction: ${{ inputs.user_fraction }}

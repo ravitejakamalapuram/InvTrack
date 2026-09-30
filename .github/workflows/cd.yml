@@ -1,12 +1,9 @@
 name: "CD: Release Automation"
 
+# NOTE 2026-09-30: no longer runs on push to main. It needs the self-hosted runner "Runner1", which is
+# offline, and an unattended push-to-main deploy to Play is not a safe default. Releases now go through
+# release.yml / promote.yml (release-platform v2). Kept as a manual fallback only.
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '*.md'
-      - 'docs/**'
   workflow_dispatch:
     inputs:
       action:

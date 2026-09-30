@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/ravitejakamalapuram/release-platform/main/schema/release.schema.json
 #
-# CI-only config consumed by release-platform's app-ci.yml (see .github/workflows/ci.yml,
-# job `platform-ci`). InvTrack's actual release/publish pipeline is cd.yml (self-hosted
-# version bump + git-cliff changelog + signed Google Play alpha upload) and does NOT go
-# through release-platform's release.yml — migrating cd.yml is explicitly out of scope here.
+# Consumed by release-platform: app-ci.yml on every PR (ci.yml) and release.yml / promote.yml on demand
+# (Actions -> release -> Run workflow; keyless, GitHub-hosted runners, no self-hosted machine).
+# Flow: release (dry run first) uploads a signed bundle to the INTERNAL track -> promote to production as a
+# staged rollout. The old self-hosted cd.yml (push-to-main alpha deploy) is now manual-only.
 app: invtrack
 test: flutter pub get && flutter gen-l10n && flutter analyze --fatal-warnings --no-fatal-infos && flutter test --exclude-tags=golden
 targets:
@@ -14,3 +14,10 @@ targets:
     # PR checks only (app-ci.yml never has signing secrets): unsigned debug appbundle,
     # replacing the old flutter-ci.yml `dry-run-build` input.
     ci_build: flutter pub get && flutter build appbundle --debug
+    # Release build: release-platform computes the version from the latest vX.Y.Z tag and exports it.
+    # Signing needs no Gradle changes (the workflow injects android.injected.signing.* from the
+    # ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD secrets).
+    build: flutter pub get && flutter gen-l10n && flutter build appbundle --release --build-name "$VERSION_NAME" --build-number "$VERSION_CODE"
+    aab: build/app/outputs/bundle/release/app-release.aab
+    track: internal
+    release_notes: CHANGELOG.md
