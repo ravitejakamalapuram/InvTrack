@@ -7,16 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
-import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
-import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
-import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
-import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
@@ -25,7 +22,6 @@ import 'package:inv_tracker/features/settings/presentation/providers/export_prov
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
-import 'package:inv_tracker/features/user_profile/presentation/providers/user_profile_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Unified screen for data import/export and account management.
@@ -469,7 +465,11 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(l10n.guestDataDeletionFailed),
+            content: Text(
+              e is NetworkException
+                  ? l10n.deletionNeedsInternet
+                  : l10n.guestDataDeletionFailed,
+            ),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -609,7 +609,12 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(l10n.error(e.toString())),
+            duration: const Duration(seconds: 8),
+            content: Text(
+              e is NetworkException
+                  ? l10n.deletionNeedsInternet
+                  : l10n.error(e.toString()),
+            ),
             backgroundColor: AppColors.errorLight,
           ),
         );
@@ -629,71 +634,18 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       throw StateError('User not authenticated');
     }
 
-    // Delete all investments (which cascades to cash flows and documents)
-    final investmentRepo = ref.read(investmentRepositoryProvider);
-    final investments = await investmentRepo.getAllInvestments();
-    final archivedInvestments = await investmentRepo
-        .watchArchivedInvestments()
-        .first;
-
-    for (final inv in [...investments, ...archivedInvestments]) {
-      if (inv.isArchived) {
-        await investmentRepo.deleteArchivedInvestment(inv.id);
-      } else {
-        await investmentRepo.deleteInvestment(inv.id);
-      }
-    }
-
-    // Delete all goals
-    final goalRepo = ref.read(goalRepositoryProvider);
-    final goals = await goalRepo.getAllGoals();
-    final archivedGoals = await goalRepo.watchArchivedGoals().first;
-
-    for (final goal in [...goals, ...archivedGoals]) {
-      if (goal.isArchived) {
-        await goalRepo.deleteArchivedGoal(goal.id);
-      } else {
-        await goalRepo.deleteGoal(goal.id);
-      }
-    }
-
-    // Delete user profile (Rule 18: Data Lifecycle)
-    final userProfileRepo = ref.read(userProfileRepositoryProvider(user.id));
-    await userProfileRepo.deleteProfile();
-
-    // Delete FIRE settings (Rule 18: Data Lifecycle)
-    await ref.read(fireSettingsNotifierProvider.notifier).resetSettings();
-
-    // Delete exchange rate cache (Rule 21.6: Data Lifecycle - Multi-Currency)
-    // ARCHITECTURE FIX: Use CurrencyConversionService instead of direct Firestore access
-    final currencyService = ref.read(currencyConversionServiceProvider);
-    if (currencyService != null) {
-      await currencyService.clearCache();
-    }
-
-    // Delete portfolio health score snapshots (Week 2: Portfolio Health Score)
-    final healthScoreRepo = ref.read(healthScoreRepositoryProvider);
-    await healthScoreRepo.deleteAllSnapshots();
-
-    // Delete expected/projected cash flows (income projection feature).
-    // These live in their own collection and are not touched by
-    // investmentRepo.deleteInvestment/deleteArchivedInvestment above.
-    final expectedCashFlowRepo = ref.read(expectedCashFlowRepositoryProvider);
-    await expectedCashFlowRepo.deleteAllExpectedCashFlows();
-
-    // Delete all document metadata and the locally-stored attachment files.
-    // Covers documents left behind by investments deleted before this fix,
-    // not just ones tied to the investments removed above.
-    final documentRepo = ref.read(documentRepositoryProvider);
-    await documentRepo.deleteAllDocuments();
+    // Server-confirmed wipe of every users/{uid} collection (investments,
+    // cashflows, archived items, goals, expectedCashFlows, documents,
+    // healthScores, fireSettings, profile, exchangeRates), then the local
+    // attachment files and per-user preferences. Throws (NetworkException when
+    // offline) if the server cannot confirm, in which case the caller must
+    // NOT delete the Auth account or report success.
+    final deletionService = ref.read(accountDataDeletionServiceProvider);
     final documentStorageService = ref.read(documentStorageServiceProvider);
-    await documentStorageService.deleteAllUserDocuments();
-
-    // Clear sample data mode preferences (Rule 18: Data Lifecycle)
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.remove('sample_data_mode_active');
-    await prefs.remove('sample_data_investment_ids');
-    await prefs.remove('sample_data_goal_ids');
+    await deletionService.deleteEverything(
+      deleteLocalFiles: documentStorageService.deleteAllUserDocuments,
+      prefs: ref.read(sharedPreferencesProvider),
+    );
   }
 }
 
