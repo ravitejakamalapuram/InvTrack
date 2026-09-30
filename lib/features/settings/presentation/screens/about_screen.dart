@@ -190,7 +190,9 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
           FilledButton(
             onPressed: () async {
               Navigator.of(dialogCtx).pop();
-              await ref.read(inAppUpdateProvider.notifier).completeFlexibleUpdate();
+              await ref
+                  .read(inAppUpdateProvider.notifier)
+                  .completeFlexibleUpdate();
             },
             child: Text(l10n.inAppUpdateInstallButton),
           ),
@@ -223,10 +225,14 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
               if (state.isHighPriority && state.immediateUpdateAllowed) {
                 // Critical update: immediate (blocking)
-                await ref.read(inAppUpdateProvider.notifier).startImmediateUpdate();
+                await ref
+                    .read(inAppUpdateProvider.notifier)
+                    .startImmediateUpdate();
               } else if (state.flexibleUpdateAllowed) {
                 // Non-critical: flexible (background)
-                await ref.read(inAppUpdateProvider.notifier).startFlexibleUpdate();
+                await ref
+                    .read(inAppUpdateProvider.notifier)
+                    .startFlexibleUpdate();
 
                 final scaffoldContext = rootNavigatorKey.currentContext;
                 if (scaffoldContext != null && scaffoldContext.mounted) {
@@ -351,6 +357,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                     context,
                     l10n.privacyPolicy,
                     privacyPolicyContent,
+                    linkUri: Uri.parse(hostedPrivacyPolicyUrl),
+                    linkLabel: l10n.viewFullPrivacyPolicy,
                   ),
                 ),
                 SettingsNavTile(
@@ -443,10 +451,21 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     );
   }
 
-  void _openLegalScreen(BuildContext context, String title, String content) {
+  void _openLegalScreen(
+    BuildContext context,
+    String title,
+    String content, {
+    Uri? linkUri,
+    String? linkLabel,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => LegalScreen(title: title, content: content),
+        builder: (context) => LegalScreen(
+          title: title,
+          content: content,
+          linkUri: linkUri,
+          linkLabel: linkLabel,
+        ),
       ),
     );
   }

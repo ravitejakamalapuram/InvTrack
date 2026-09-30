@@ -499,9 +499,14 @@
     "description": "Change PIN subtitle"
   },
 
-  "dataStoredLocallyMessage": "Your data is securely stored in your private, encrypted-in-transit cloud account, plus an offline copy on this device so InvTrack keeps working without a connection.",
+  "dataStoredLocallyMessage": "The app lock protects access to InvTrack on this device. Your data is synced to your private cloud storage (Google Firebase) and is protected by your account, plus an offline copy on this device so InvTrack keeps working without a connection.",
   "@dataStoredLocallyMessage": {
     "description": "Security info message"
+  },
+
+  "viewFullPrivacyPolicy": "View full privacy policy online",
+  "@viewFullPrivacyPolicy": {
+    "description": "Button on the Privacy Policy screen that opens the hosted policy in the browser"
   },
 
   "helpFaqTitle": "Help & FAQ",
