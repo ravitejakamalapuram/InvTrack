@@ -1,7 +1,8 @@
 name: CI
 
-# Changes that cannot affect the app (docs, markdown, and the release/deploy workflows) skip the ~12 minute
-# full test suite. ci.yml itself is NOT in this list, so editing the CI still runs the CI.
+# Pushes to main that cannot affect the app (docs, markdown, release workflows) skip the ~12 minute test suite.
+# Pull requests always run CI, so a required status check can never be left pending on a docs-only PR.
+# ci.yml itself is NOT in the ignore list, so editing the CI still runs the CI.
 on:
   push:
     branches: [main, develop]
@@ -14,13 +15,6 @@ on:
       - '.github/workflows/cd.yml'
   pull_request:
     types: [opened, ready_for_review, synchronize]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.github/workflows/auto-release.yml'
-      - '.github/workflows/release.yml'
-      - '.github/workflows/promote.yml'
-      - '.github/workflows/cd.yml'
   workflow_dispatch: {}
 
 env:
