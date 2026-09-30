@@ -21,7 +21,7 @@ InvTrack is a mobile-first investment tracking application designed for alternat
 ### 💰 Investment Management
 - **Cash Flow Ledger** - Track INVEST, RETURN, INCOME, and FEE transactions
 - **Lifecycle Management** - Open → Closed status for investments with end dates
-- **Document Attachments** - Store investment documents securely in Firebase Storage
+- **Document Attachments** - Attach investment documents (files stay on your device; only metadata syncs to Firestore)
 - **Bulk Import** - Import historical data via CSV files
 
 ### 🌍 Localization & Internationalization
@@ -58,7 +58,7 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 - **Offline-First** - Works 100% without internet (Firestore offline persistence)
 - **Your Data, Your Control** - Data isolated to your account via Firestore security rules (shared project, per-user access only)
 - **Encrypted Storage** - FlutterSecureStorage for sensitive data
-- **No PII Logging** - Privacy-compliant analytics (amount ranges only)
+- **No PII Logging** - Analytics report amount ranges only, never exact values
 - **OWASP MASVS Compliant** - Mobile Application Security Verification Standard
 
 ### 🌐 Multi-Device Sync
@@ -99,7 +99,6 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
    - Create a new Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
    - Enable Google Sign-In in Authentication
    - Enable Firestore Database
-   - Enable Firebase Storage
    - Download `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
    - Place them in the appropriate directories:
      - Android: `android/app/google-services.json`
@@ -166,8 +165,8 @@ lib/
 - **State Management**: Riverpod
 - **Database**: Firebase Firestore (offline-first)
 - **Authentication**: Firebase Auth (Google Sign-In)
-- **Storage**: Firebase Storage (documents)
-- **Analytics**: Firebase Analytics
+- **Documents**: stored on-device (metadata in Firestore)
+- **Analytics**: Firebase Analytics and Performance Monitoring (tied to user ID, no opt-out yet)
 - **Crash Reporting**: Firebase Crashlytics
 - **Routing**: GoRouter
 - **Charts**: fl_chart

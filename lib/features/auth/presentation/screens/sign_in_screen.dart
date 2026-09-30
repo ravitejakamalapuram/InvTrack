@@ -50,6 +50,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       ..onTap = () => _openLegalScreen(
         AppLocalizations.of(context).privacyPolicy,
         privacyPolicyContent,
+        linkUri: Uri.parse(hostedPrivacyPolicyUrl),
+        linkLabel: AppLocalizations.of(context).viewFullPrivacyPolicy,
       );
 
     // Main entrance animation
@@ -105,10 +107,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   /// Opens the given legal document (Terms of Service / Privacy Policy) in
   /// the same in-app screen used from Settings > About, so both entry
   /// points show identical content.
-  void _openLegalScreen(String title, String content) {
+  void _openLegalScreen(
+    String title,
+    String content, {
+    Uri? linkUri,
+    String? linkLabel,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => LegalScreen(title: title, content: content),
+        builder: (context) => LegalScreen(
+          title: title,
+          content: content,
+          linkUri: linkUri,
+          linkLabel: linkLabel,
+        ),
       ),
     );
   }
@@ -212,11 +224,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   Future<void> _requestNotificationPermissionsIfNeeded() async {
     try {
       final prefs = ref.read(sharedPreferencesProvider);
-      final hasRequestedPermissions = prefs.getBool('notification_permissions_requested') ?? false;
+      final hasRequestedPermissions =
+          prefs.getBool('notification_permissions_requested') ?? false;
 
       // Only request permissions once per install
       if (!hasRequestedPermissions) {
-        LoggerService.info('Requesting notification permissions on first sign-in');
+        LoggerService.info(
+          'Requesting notification permissions on first sign-in',
+        );
 
         final notificationService = ref.read(notificationServiceProvider);
         final granted = await notificationService.requestPermissions();
@@ -629,7 +644,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
           : AppColors.neutral500Light,
     );
     final linkStyle = baseStyle.copyWith(
-      color: isDark ? Colors.white.withValues(alpha: 0.85) : AppColors.neutral700Light,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.85)
+          : AppColors.neutral700Light,
       decoration: TextDecoration.underline,
       fontWeight: FontWeight.w600,
     );

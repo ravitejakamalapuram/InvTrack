@@ -109,7 +109,7 @@
 
 ### Core Principles
 
-1. **Privacy-First**: User data stays in their own Firebase account
+1. **Privacy-First**: User data lives in one shared Firebase project, isolated per user by Firestore security rules
 2. **Offline-First**: Works 100% without internet
 3. **Simple Input, Maximum Insight**: Minimal data entry, powerful analytics
 4. **Beautiful Design**: Premium UI/UX inspired by CRED, Mercury
