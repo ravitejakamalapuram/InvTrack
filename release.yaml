@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ravitejakamalapuram/release-platform/main/schema/release.schema.json
+#
+# CI-only config consumed by release-platform's app-ci.yml (see .github/workflows/ci.yml,
+# job `platform-ci`). InvTrack's actual release/publish pipeline is cd.yml (self-hosted
+# version bump + git-cliff changelog + signed Google Play alpha upload) and does NOT go
+# through release-platform's release.yml — migrating cd.yml is explicitly out of scope here.
+app: invtrack
+test: flutter pub get && flutter gen-l10n && flutter analyze --fatal-warnings --no-fatal-infos && flutter test --exclude-tags=golden
+targets:
+  - type: android
+    package: com.invtracker.inv_tracker
+    flutter: '3.38.4' # bundles Dart 3.10.3, satisfying pubspec's `sdk: ^3.10.1`
+    java: '17'
+    # PR checks only (app-ci.yml never has signing secrets): unsigned debug appbundle,
+    # replacing the old flutter-ci.yml `dry-run-build` input.
+    ci_build: flutter pub get && flutter build appbundle --debug
