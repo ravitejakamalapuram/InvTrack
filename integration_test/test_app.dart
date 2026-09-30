@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/app/app.dart';
@@ -170,7 +171,10 @@ class TestApp {
   }
 
   /// Pump the app with all mocked providers
-  Future<void> pumpApp({bool showOnboarding = false}) async {
+  Future<void> pumpApp({
+    bool showOnboarding = false,
+    List<Override> extraOverrides = const [],
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -193,6 +197,7 @@ class TestApp {
           goalRepositoryProvider.overrideWithValue(goalRepository),
           analyticsServiceProvider.overrideWithValue(analyticsService),
           notificationServiceProvider.overrideWithValue(notificationService),
+          ...extraOverrides,
         ],
         child: const InvTrackerApp(),
       ),
