@@ -1,8 +1,8 @@
 # Backfilled by the AppForge factory (P1-07). Fields marked null are not yet knowable —
 # they depend on infrastructure (appforge-control, appforge-edge, Paperclip) not built yet.
-# InvTrack is the most sensitive product in the portfolio (real user financial data in
-# Firebase). Per standing house rules this file is a PR only — the founder reviews and
-# merges it, and this product stays outside any autonomous release flow (autonomy: L0).
+# InvTrack handles real user financial data in Firebase, so review it with care - but since
+# 2026-09-30 it is an ordinary product repo with no special status (founder decision): the same
+# review, approval and release flow as every other product applies.
 product_id: invtrack
 name: InvTrack
 description: "Investment tracker with Firebase-backed sync, goals, and portfolio health scoring."
