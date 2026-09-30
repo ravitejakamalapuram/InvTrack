@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/ravitejakamalapuram/release-platform/main/schema/release.schema.json
 #
-# Consumed by release-platform: app-ci.yml on every PR (ci.yml) and release.yml / promote.yml on demand
-# (Actions -> release -> Run workflow; keyless, GitHub-hosted runners, no self-hosted machine).
-# Flow: release (dry run first) uploads a signed bundle to the INTERNAL track -> promote to production as a
-# staged rollout. The old self-hosted cd.yml (push-to-main alpha deploy) is now manual-only.
+# Consumed by release-platform: app-ci.yml on every PR (ci.yml), auto-release.yml (hourly release window), and
+# release.yml / promote.yml on demand (Actions -> release -> Run workflow; keyless, GitHub-hosted runners).
+# Flow: release uploads a signed bundle to the INTERNAL track -> promote to production. The old self-hosted
+# cd.yml was removed (it stays in git history).
 app: invtrack
 test: flutter pub get && flutter gen-l10n && flutter analyze --fatal-warnings --no-fatal-infos && flutter test --exclude-tags=golden
 targets:
