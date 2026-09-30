@@ -2478,6 +2478,11 @@
     "description": "Error message when guest data deletion fails"
   },
 
+  "deletionNeedsInternet": "Couldn't confirm deletion because you're offline or the connection is unstable. Nothing was deleted and your account is still active. Please connect to the internet and try again.",
+  "@deletionNeedsInternet": {
+    "description": "Error shown when account or guest data deletion cannot be confirmed by the server (offline/timeout). The account is NOT deleted."
+  },
+
   "guestModeSection": "Guest Mode",
   "@guestModeSection": {
     "description": "Guest mode section title in Help & FAQ"

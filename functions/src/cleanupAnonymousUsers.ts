@@ -91,6 +91,7 @@ export const cleanupOldAnonymousUsers = functions.pubsub
  * - archivedInvestments
  * - archivedCashflows
  * - archivedGoals
+ * - expectedCashFlows
  * - documents
  * - fireSettings
  * - profile
@@ -153,6 +154,7 @@ async function deleteUserData(userId: string): Promise<void> {
     'archivedInvestments',
     'archivedCashflows',
     'archivedGoals',
+    'expectedCashFlows',
     'documents',
     'fireSettings',
     'profile',
