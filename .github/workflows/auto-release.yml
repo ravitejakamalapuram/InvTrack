@@ -1,0 +1,31 @@
+# Automatic releases for InvTrack, from the shared release-platform policy (see its README).
+# Every feat/fix/perf/revert merged to main is released automatically (see README "Automatic releases").
+# Kill switch: set the repository variable RELEASE_HOLD to "true".
+name: auto-release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md', 'docs/**']
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Release the current main even though the last commit is not feat/fix'
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  auto:
+    permissions:
+      contents: write
+      id-token: write
+    uses: ravitejakamalapuram/release-platform/.github/workflows/auto-release.yml@v2
+    with:
+      commit_message: ${{ github.event.head_commit.message }}
+      hold: ${{ vars.RELEASE_HOLD }}
+      force: ${{ github.event.inputs.force == 'true' }}
+      # Early stage: 100% rollout. For a staged rollout use e.g. rollout_fraction: '0.2'.
+      rollout_fraction: '1'
+    secrets: inherit
