@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
+import 'package:inv_tracker/core/providers/review_prompt_provider.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/mixins/screen_animation_mixin.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
@@ -20,6 +24,16 @@ import 'package:inv_tracker/core/widgets/type_selector.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+
+/// Whether recording this cash flow is the "genuine success moment" that
+/// earns a one-shot Play review prompt: a brand-new (non-editing) exit.
+/// A pure, unit-testable seam so invest/income/fee and edit flows can be
+/// verified without pumping the full screen widget.
+@visibleForTesting
+bool isReviewPromptSuccessMoment({
+  required bool isEditing,
+  required CashFlowType type,
+}) => !isEditing && type == CashFlowType.returnFlow;
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   final String investmentId;
@@ -155,6 +169,23 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ? 'Transaction updated successfully'
             : 'Transaction added successfully';
         AppFeedback.showSuccess(context, message);
+
+        if (isReviewPromptSuccessMoment(
+              isEditing: widget.isEditing,
+              type: _selectedType,
+            ) &&
+            ref.read(isReviewPromptEnabledProvider)) {
+          final reviewPromptService = ref.read(reviewPromptServiceProvider);
+          // Captured before safePop() disposes this widget's ref; the
+          // delayed callback below never touches ref/context. The service
+          // re-reads pending-update state itself when the delay elapses.
+          unawaited(
+            Future.delayed(const Duration(seconds: 1), () {
+              reviewPromptService.maybeRequestAfterExitRecorded();
+            }),
+          );
+        }
+
         context.safePop();
       }
     } catch (e) {
