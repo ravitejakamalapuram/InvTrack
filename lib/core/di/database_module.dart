@@ -10,6 +10,7 @@ import 'package:inv_tracker/features/investment/data/services/document_storage_s
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
+import 'package:inv_tracker/features/settings/data/services/callable_account_data_deleter.dart';
 
 /// Provider for FirebaseFirestore instance with offline persistence enabled
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -104,6 +105,7 @@ final accountDataDeletionServiceProvider = Provider<AccountDataDeletionService>(
     return AccountDataDeletionService(
       firestore: ref.watch(firestoreProvider),
       userId: user.id,
+      serverDelete: CallableAccountDataDeleter().call,
     );
   },
 );

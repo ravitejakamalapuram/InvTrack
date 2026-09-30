@@ -239,6 +239,95 @@ void main() {
     },
   );
 
+  group('server-side deletion (deleteUserData function)', () {
+    AccountDataDeletionService withServer(
+      FakeUserTree tree,
+      Future<void> Function() serverDelete,
+    ) => AccountDataDeletionService(
+      firestore: tree.firestore,
+      userId: FakeUserTree.uid,
+      serverDelete: serverDelete,
+      confirmTimeout: const Duration(milliseconds: 50),
+    );
+
+    test('uses the function and skips the client loop on success', () async {
+      final tree = FakeUserTree({'investments': 2});
+      var calls = 0;
+
+      await withServer(tree, () async => calls++).deleteAllServerData();
+
+      expect(calls, 1);
+      verifyNever(() => tree.firestore.batch());
+    });
+
+    test(
+      'falls back to client-side deletion when the function is not deployed',
+      () async {
+        final tree = FakeUserTree({
+          for (final c in AccountDataDeletionService.userCollections) c: 2,
+        });
+
+        await withServer(
+          tree,
+          () async =>
+              throw const ServerDeletionUnavailableException('not-found'),
+        ).deleteAllServerData();
+
+        expect(tree.totalRemaining, 0);
+        expect(tree.userDocExists, isFalse);
+      },
+    );
+
+    test('offline: throws NetworkException and does NOT fall back', () async {
+      final tree = FakeUserTree({'investments': 2});
+
+      await expectLater(
+        withServer(
+          tree,
+          () async => throw NetworkException.noConnection(),
+        ).deleteAllServerData(),
+        throwsA(isA<NetworkException>()),
+      );
+
+      verifyNever(() => tree.firestore.batch());
+      expect(tree.remaining('investments'), 2);
+    });
+
+    test('other function errors propagate without fallback', () async {
+      final tree = FakeUserTree({'investments': 1});
+
+      await expectLater(
+        withServer(
+          tree,
+          () async => throw StateError('internal'),
+        ).deleteAllServerData(),
+        throwsStateError,
+      );
+      verifyNever(() => tree.firestore.batch());
+    });
+
+    test('on function failure nothing local is deleted', () async {
+      SharedPreferences.setMockInitialValues({'sample_data_mode_active': true});
+      final prefs = await SharedPreferences.getInstance();
+      final tree = FakeUserTree({'investments': 1});
+      var filesDeleted = false;
+
+      await expectLater(
+        withServer(
+          tree,
+          () async => throw NetworkException.noConnection(),
+        ).deleteEverything(
+          deleteLocalFiles: () async => filesDeleted = true,
+          prefs: prefs,
+        ),
+        throwsA(isA<NetworkException>()),
+      );
+
+      expect(filesDeleted, isFalse);
+      expect(prefs.getBool('sample_data_mode_active'), isTrue);
+    });
+  });
+
   group('deleteEverything', () {
     setUp(() => SharedPreferences.setMockInitialValues({}));
 

@@ -16,7 +16,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// deletion still queued offline could never be applied afterwards and the
 /// data would stay on the server forever.
 ///
-/// This service therefore:
+/// Preferred path: [serverDelete] calls the `deleteUserData` Cloud Function,
+/// which recursively deletes `users/{uid}` on the server (including
+/// subcollections this client does not know about) and runs to completion even
+/// if the phone disconnects; retrying it resumes where it stopped. If that
+/// function is not deployed ([ServerDeletionUnavailableException]), the
+/// client-side path below is used instead, exactly as before.
+///
+/// The client-side fallback:
 ///  * reads each collection from the SERVER (not the local cache), so it also
 ///    finds documents this device never synced (e.g. orphaned cash flows);
 ///  * deletes in batches of at most [batchSize] (Firestore limit is 500);
@@ -30,14 +37,22 @@ class AccountDataDeletionService {
   AccountDataDeletionService({
     required FirebaseFirestore firestore,
     required String userId,
+    Future<void> Function()? serverDelete,
     this.batchSize = 500,
     this.confirmTimeout = const Duration(seconds: 20),
   }) : assert(batchSize > 0 && batchSize <= 500),
        _firestore = firestore,
-       _userId = userId;
+       _userId = userId,
+       _serverDelete = serverDelete;
 
   final FirebaseFirestore _firestore;
   final String _userId;
+
+  /// Server-side recursive delete (see [CallableAccountDataDeleter]). Must
+  /// complete only once the server confirmed, throw [NetworkException] when
+  /// unreachable, and throw [ServerDeletionUnavailableException] when the
+  /// function is not deployed. Null = client-side deletion only.
+  final Future<void> Function()? _serverDelete;
 
   /// Max writes per batch (Firestore hard limit is 500).
   final int batchSize;
@@ -94,6 +109,22 @@ class AccountDataDeletionService {
   /// Deletes all user data on the server. Throws on any failure or when the
   /// server cannot be reached; completes only when everything is confirmed.
   Future<void> deleteAllServerData() async {
+    final serverDelete = _serverDelete;
+    if (serverDelete != null) {
+      try {
+        await serverDelete();
+        LoggerService.info('Account data deletion complete on server');
+        return;
+      } on ServerDeletionUnavailableException {
+        LoggerService.warn(
+          'deleteUserData function unavailable; deleting from the client',
+        );
+      }
+    }
+    await _deleteFromClient();
+  }
+
+  Future<void> _deleteFromClient() async {
     final userDoc = _firestore.collection('users').doc(_userId);
 
     for (final name in userCollections) {
@@ -140,4 +171,14 @@ class AccountDataDeletionService {
       rethrow;
     }
   }
+}
+
+/// The server-side deletion function is not deployed (or not reachable by
+/// name), so the caller should fall back to client-side deletion.
+class ServerDeletionUnavailableException implements Exception {
+  const ServerDeletionUnavailableException(this.code);
+  final String code;
+
+  @override
+  String toString() => 'ServerDeletionUnavailableException($code)';
 }
