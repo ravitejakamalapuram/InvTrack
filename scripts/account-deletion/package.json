@@ -5,8 +5,8 @@
   "description": "Daily account-data deletion job for InvTrack (Firestore rules tests live here too).",
   "engines": { "node": ">=22" },
   "scripts": {
-    "test": "node --test test/",
-    "test:emulator": "firebase emulators:exec --only firestore --project demo-invtrack \"node --test test/\""
+    "test": "node --test test/*.test.mjs",
+    "test:emulator": "firebase emulators:exec --only firestore --project demo-invtrack \"node --test test/*.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",
