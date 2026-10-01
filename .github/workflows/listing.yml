@@ -1,0 +1,30 @@
+# Syncs the repo-owned Play listing (android/fastlane/metadata/android: text + phone screenshots) to Google Play
+# through release-platform's `listing` workflow (keyless OIDC -> release-bot; no store password anywhere).
+# Run manually AFTER merging listing changes; start with dry_run to see exactly what would change.
+# See appforge-control/docs/store-listing-sync.md.
+name: listing
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (validate and show what would change; no Play commit)'
+        type: boolean
+        default: true
+      targets:
+        description: 'Only these target types (comma list: android). Empty = all.'
+        type: string
+        default: ''
+
+permissions: {}
+
+jobs:
+  listing:
+    permissions:
+      contents: read
+      issues: write
+      id-token: write   # Play: keyless Google auth (OIDC -> Workload Identity Federation)
+    uses: ravitejakamalapuram/release-platform/.github/workflows/listing.yml@v2
+    with:
+      dry_run: ${{ inputs.dry_run || false }}
+      targets: ${{ inputs.targets || '' }}

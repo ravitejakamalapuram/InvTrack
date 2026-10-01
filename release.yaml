@@ -21,3 +21,7 @@ targets:
     aab: build/app/outputs/bundle/release/app-release.aab
     track: internal
     release_notes: CHANGELOG.md
+    # Store listing (text + phone screenshots) owned by this repo; PR checks validate it and the
+    # `listing` workflow syncs it to Play. Image types not in the folder (icon, feature graphic,
+    # tablet shots) are left as they are on Play.
+    listing: android/fastlane/metadata/android
