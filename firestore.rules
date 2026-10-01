@@ -5,6 +5,26 @@ service cloud.firestore {
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Account-deletion queue. A signed-in user may file ONE request for their own uid,
+    // read it back (to show "scheduled") and withdraw it before it is processed.
+    // No client may create a request for another uid, edit one, or list the queue.
+    // Processing is done by the daily GitHub Actions job with the Admin SDK (bypasses rules).
+    match /deletionRequests/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['requestedAt', 'source', 'version'])
+        && request.resource.data.keys().hasAll(['requestedAt', 'source', 'version'])
+        && request.resource.data.requestedAt == request.time
+        && request.resource.data.source in ['web', 'app']
+        && request.resource.data.version == 1;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow list, update: if false;
+    }
+
+    // Written only by the job (Admin SDK). Never readable from a client.
+    match /deletionAudit/{entry} { allow read, write: if false; }
+    match /deletionRuns/{run}   { allow read, write: if false; }
   }
 }
-
