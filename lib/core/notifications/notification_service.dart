@@ -584,6 +584,14 @@ class NotificationService with NotificationPreferencesMixin {
     }
   }
 
+  /// Cancel every pending income and maturity reminder, e.g. when the
+  /// signed-in user no longer has any investments.
+  Future<void> cancelInvestmentReminders() => _cancelPendingWhere(
+    (id) =>
+        NotificationIds.isIncomeReminderId(id) ||
+        NotificationIds.isMaturityReminderId(id),
+  );
+
   /// Cancel every pending notification whose id matches [test].
   Future<void> _cancelPendingWhere(bool Function(int id) test) async {
     await _ensureInitialized();

@@ -209,5 +209,42 @@ void main() {
 
       expect(incomeReminderDate(), DateTime(2026, 10, 15, 9));
     });
+
+    testWidgets(
+      'deleting the last investment cancels its income and maturity reminders',
+      (tester) async {
+        final bond = InvestmentEntity(
+          id: 'inv-bond',
+          name: 'Bond',
+          type: InvestmentType.bonds,
+          status: InvestmentStatus.open,
+          createdAt: DateTime(2026, 1, 1),
+          updatedAt: DateTime(2026, 1, 1),
+          startDate: DateTime(2026, 1, 15),
+          maturityDate: DateTime(2027, 1, 15),
+          incomeFrequency: IncomeFrequency.monthly,
+        );
+        final bondIds = {
+          NotificationIds.incomeReminder('inv-bond'),
+          NotificationIds.maturityReminder7Days('inv-bond'),
+          NotificationIds.maturityReminder1Day('inv-bond'),
+        };
+        Set<int> pendingIds() =>
+            fakePlugin.scheduledNotifications.map((n) => n.id).toSet();
+
+        await pumpInitializer(tester);
+        auth.add(user('uid-a'));
+        investments.add([bond]);
+        cashFlows.add(const []);
+        await settle(tester);
+        expect(pendingIds(), containsAll(bondIds));
+
+        // Bulk delete, clearing sample data, or a delete on another device.
+        investments.add(const []);
+        await settle(tester);
+
+        expect(pendingIds().intersection(bondIds), isEmpty);
+      },
+    );
   });
 }

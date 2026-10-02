@@ -149,7 +149,14 @@ class _NotificationSyncInitializerState
   /// Fire-and-forget async notification scheduling
   void _scheduleNotificationsAsync() {
     final investments = ref.read(allInvestmentsProvider).value;
-    if (investments == null || investments.isEmpty) return;
+    if (investments == null) return;
+    if (investments.isEmpty) {
+      // The last investment was deleted (here, on another device, by bulk
+      // delete or by clearing sample data): drop its reminders. Sign-out is
+      // handled by _clearForAccountChange.
+      if (_signedInUid != null) _cancelInvestmentReminders();
+      return;
+    }
 
     // Wait for cash flows so income reminders anchor on the last payout. If
     // they failed to load, fall back to each investment's start date.
@@ -170,6 +177,21 @@ class _NotificationSyncInitializerState
           );
         } catch (e) {
           LoggerService.warn('Error rescheduling notifications', error: e);
+        }
+      });
+    } catch (e) {
+      LoggerService.debug('NotificationService not available yet');
+    }
+  }
+
+  void _cancelInvestmentReminders() {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+      Future(() async {
+        try {
+          await notificationService.cancelInvestmentReminders();
+        } catch (e) {
+          LoggerService.warn('Error cancelling investment reminders', error: e);
         }
       });
     } catch (e) {
@@ -205,6 +227,8 @@ class _NotificationSyncInitializerState
           // User has investments, cancel activation nudges
           _cancelActivationSequenceIfNeeded();
         } else {
+          // Cancels reminders left by a deleted last investment.
+          _scheduleNotificationsDebounced();
           // User has no investments, schedule activation nudges for new users
           _scheduleActivationSequenceIfNeeded();
         }
