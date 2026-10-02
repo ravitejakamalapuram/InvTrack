@@ -720,7 +720,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             investmentName: investment.name,
             monthsBetweenPayments:
                 investment.incomeFrequency!.monthsBetweenPayments,
-            lastIncomeDate: lastIncomeDate,
+            // Same anchor as the notification sync, so both give one date.
+            lastIncomeDate:
+                lastIncomeDate ?? investment.startDate ?? investment.createdAt,
           );
     } catch (e) {
       // Don't fail the main operation if notification scheduling fails
