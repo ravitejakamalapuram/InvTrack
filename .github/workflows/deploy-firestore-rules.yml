@@ -1,0 +1,31 @@
+name: Deploy Firestore rules
+
+# Manual only. Deploys firestore.rules from main to the production Firebase project.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-rules:
+    name: deploy-rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Write service account key (runner temp only)
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+        run: |
+          umask 077
+          printf '%s' "$FIREBASE_CREDENTIALS" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Deploy rules
+        run: npx --yes firebase-tools@13 deploy --only firestore:rules --project invtracker-b19d1 --non-interactive
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
