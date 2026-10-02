@@ -22,6 +22,6 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: projects/784857267556/locations/global/workloadIdentityPools/github/providers/github-oidc
-          service_account: account-deletion-bot@invtracker-b19d1.iam.gserviceaccount.com
+          service_account: admin-bot@invtracker-b19d1.iam.gserviceaccount.com
       - name: Deploy rules
         run: npx --yes firebase-tools@13 deploy --only firestore:rules --project invtracker-b19d1 --non-interactive
