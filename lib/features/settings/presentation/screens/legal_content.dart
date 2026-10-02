@@ -8,6 +8,9 @@ library;
 const String hostedPrivacyPolicyUrl =
     'https://ravitejakamalapuram.github.io/privacy/invtrack.html';
 
+/// The one support address shown anywhere in the app.
+const String supportEmailAddress = 'support@invtracker.app';
+
 const String privacyPolicyContent =
     '''
 **Privacy Policy**
@@ -29,7 +32,7 @@ Last updated: September 30, 2026
    We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.
 
 5. **Contact Us**
-   If you have questions about this Privacy Policy, please contact us at support@invtracker.app.
+   If you have questions about this Privacy Policy, please contact us at $supportEmailAddress.
 
    The full, current policy is available at $hostedPrivacyPolicyUrl
 ''';

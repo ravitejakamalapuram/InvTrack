@@ -388,7 +388,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   icon: Icons.email_outlined,
                   iconColor: Colors.teal,
                   title: l10n.contactSupport,
-                  subtitle: l10n.supportEmail,
+                  subtitle: supportEmailAddress,
                   onTap: () => _openSupportEmail(context, packageInfo.version),
                 ),
                 SettingsNavTile(
@@ -483,7 +483,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     String appVersion,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final supportEmail = l10n.supportEmail;
+    const supportEmail = supportEmailAddress;
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
