@@ -29,16 +29,19 @@ void main() {
       maturityDate: DateTime(2024, 1, 1),
     );
 
+    // An open investment only has a meaningful XIRR once its payouts have
+    // returned the amount invested; with nothing received it shows
+    // "Awaiting first payout" instead (see investment_card_return_display_test).
     final stats = InvestmentStats(
       totalInvested: 10000,
-      totalReturned: 0,
-      netCashFlow: -10000,
-      absoluteReturn: 0,
-      moic: 1.0,
+      totalReturned: 11250,
+      netCashFlow: 1250,
+      absoluteReturn: 12.5,
+      moic: 1.125,
       xirr: 0.0, // Basic stats have 0 XIRR
-      cashFlowCount: 1,
+      cashFlowCount: 2,
       firstCashFlowDate: DateTime(2023, 1, 1),
-      lastCashFlowDate: DateTime(2023, 1, 1),
+      lastCashFlowDate: DateTime(2024, 1, 1),
     );
 
     final xirrValue = 0.125; // 12.5%

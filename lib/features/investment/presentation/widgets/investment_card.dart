@@ -16,8 +16,10 @@ import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// A card displaying an investment's summary information.
@@ -61,11 +63,25 @@ class InvestmentCard extends ConsumerWidget {
         ? ref.watch(archivedInvestmentXirrProvider(investment.id))
         : ref.watch(investmentXirrProvider(investment.id));
 
+    final l10n = AppLocalizations.of(context);
+
     // Build accessibility label
     final baseLabel = statsAsync.maybeWhen(
       data: (stats) {
         // Use XIRR from async provider if available, otherwise fallback to stats (usually 0)
         final xirrValue = xirrAsync.value ?? stats.xirr;
+        final display = ReturnDisplay.resolve(
+          stats: stats,
+          openStats: isClosed ? null : stats,
+          xirr: xirrValue,
+          xirrMethod: XirrMethod.exact,
+        );
+        final double? returnPercent = switch (display.kind) {
+          ReturnDisplayKind.annualised =>
+            xirrValue != 0 ? xirrValue * 100 : null,
+          ReturnDisplayKind.shortHolding => stats.absoluteReturn,
+          _ => null,
+        };
 
         return AccessibilityUtils.investmentCardLabel(
           name: investment.name,
@@ -73,7 +89,8 @@ class InvestmentCard extends ConsumerWidget {
           currentValue: stats.netCashFlow,
           // XIRR might be 0.0 if not calculated, which is acceptable for semantic label
           // rather than blocking UI for calculation
-          returnPercent: xirrValue != 0 ? xirrValue * 100 : null,
+          returnPercent: returnPercent,
+          returnStatus: display.statusLabel(l10n),
           currencySymbol: currencySymbol,
           isClosed: isClosed,
           maturityDate: investment.maturityDate,
@@ -137,6 +154,7 @@ class InvestmentCard extends ConsumerWidget {
                   // Stats
                   _InvestmentValueColumn(
                     xirrAsync: xirrAsync,
+                    isClosed: isClosed,
                     isDark: isDark,
                     statsAsync: statsAsync,
                     currencyFormat: currencyFormat,
@@ -379,6 +397,7 @@ class _MaturityInfo {
 /// Displays the investment value and return percentage.
 class _InvestmentValueColumn extends StatelessWidget {
   final AsyncValue<double> xirrAsync;
+  final bool isClosed;
   final bool isDark;
   final AsyncValue<InvestmentStats> statsAsync;
   final NumberFormat currencyFormat;
@@ -386,6 +405,7 @@ class _InvestmentValueColumn extends StatelessWidget {
 
   const _InvestmentValueColumn({
     required this.xirrAsync,
+    required this.isClosed,
     required this.isDark,
     required this.statsAsync,
     required this.currencyFormat,
@@ -405,8 +425,21 @@ class _InvestmentValueColumn extends StatelessWidget {
           );
         }
 
+        final l10n = AppLocalizations.of(context);
+        final openStats = isClosed ? null : stats;
+        final status = ReturnDisplay.resolve(
+          stats: stats,
+          openStats: openStats,
+        ).statusLabel(l10n);
+        final neutralColor = isDark
+            ? AppColors.neutral400Dark
+            : AppColors.neutral500Light;
         final isPositive = stats.netCashFlow >= 0;
-        final plColor = isPositive
+        // Neutral while the investment has no terminal value: a negative net
+        // cash flow is money still invested, not a loss.
+        final plColor = status != null
+            ? neutralColor
+            : isPositive
             ? AppColors.graphEmerald
             : AppColors.errorLight;
 
@@ -436,45 +469,78 @@ class _InvestmentValueColumn extends StatelessWidget {
                   ),
             SizedBox(height: AppSpacing.xxs),
 
-            // XIRR - only show if valid and loaded
-            xirrAsync.when(
-              data: (xirr) {
-                final xirrColor = xirr >= 0
-                    ? AppColors.graphEmerald
-                    : AppColors.errorLight;
-                final xirrFormatted = formatXirr(xirr);
+            // Open with no terminal value: neutral status instead of an IRR
+            if (status != null)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: neutralColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  status,
+                  style: AppTypography.small.copyWith(
+                    color: neutralColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              )
+            else
+              // XIRR - only show if valid and loaded
+              xirrAsync.when(
+                data: (xirr) {
+                  final display = ReturnDisplay.resolve(
+                    stats: stats,
+                    openStats: openStats,
+                    xirr: xirr,
+                    xirrMethod: XirrMethod.exact,
+                  );
+                  final isShortHolding =
+                      display.kind == ReturnDisplayKind.shortHolding;
+                  final isAboveMax =
+                      xirr * 100 >
+                      XirrFormatConfig.defaultConfig.maxDisplayPercent;
+                  if (!isShortHolding && !isValidXirr(xirr) && !isAboveMax) {
+                    return const SizedBox.shrink();
+                  }
+                  final xirrColor =
+                      (isShortHolding ? stats.absoluteReturn : xirr) >= 0
+                      ? AppColors.graphEmerald
+                      : AppColors.errorLight;
+                  final xirrFormatted = isShortHolding
+                      ? display.primaryText(l10n)
+                      : '${display.primaryText(l10n)} IRR';
 
-                if (xirrFormatted == null) return const SizedBox.shrink();
-
-                return AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: isPrivacyMode ? 0.0 : 1.0,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: xirrColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '$xirrFormatted IRR',
-                      style: AppTypography.small.copyWith(
-                        color: xirrColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
+                  return AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: isPrivacyMode ? 0.0 : 1.0,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: xirrColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        xirrFormatted,
+                        style: AppTypography.small.copyWith(
+                          color: xirrColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-              loading: () => SizedBox(
-                height: 14,
-                width: 40,
-                // Optional: show skeleton or nothing while loading XIRR
-                // Showing nothing avoids UI jumping if it loads fast
-                child: const SizedBox.shrink(),
+                  );
+                },
+                loading: () => SizedBox(
+                  height: 14,
+                  width: 40,
+                  // Optional: show skeleton or nothing while loading XIRR
+                  // Showing nothing avoids UI jumping if it loads fast
+                  child: const SizedBox.shrink(),
+                ),
+                error: (_, _) => const SizedBox.shrink(),
               ),
-              error: (_, _) => const SizedBox.shrink(),
-            ),
           ],
         );
       },

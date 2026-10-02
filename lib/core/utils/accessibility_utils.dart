@@ -65,7 +65,10 @@ class AccessibilityUtils {
     return _dateFormatter.format(date);
   }
 
-  /// Creates a semantic label for investment cards
+  /// Creates a semantic label for investment cards.
+  ///
+  /// [returnStatus] (e.g. "Awaiting first payout") replaces [returnPercent]
+  /// when the return cannot be calculated yet.
   static String investmentCardLabel({
     required String name,
     required String type,
@@ -73,6 +76,7 @@ class AccessibilityUtils {
     required double? returnPercent,
     required String currencySymbol,
     required bool isClosed,
+    String? returnStatus,
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
@@ -85,7 +89,9 @@ class AccessibilityUtils {
     final invested = totalInvested != null && totalInvested > 0
         ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
         : '';
-    final returns = returnPercent != null
+    final returns = returnStatus != null
+        ? 'Returns: $returnStatus'
+        : returnPercent != null
         ? 'Returns: ${shouldMask ? "Hidden percentage" : formatPercentageForScreenReader(returnPercent)}'
         : '';
     final lastActivity = lastActivityDate != null
