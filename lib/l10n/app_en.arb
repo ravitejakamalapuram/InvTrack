@@ -1351,9 +1351,19 @@
     "description": "Delete everything button label"
   },
 
-  "accountDeletionCancelled": "Account deletion cancelled",
+  "accountDeletionCancelled": "Account deletion cancelled. Nothing was deleted.",
   "@accountDeletionCancelled": {
-    "description": "Account deletion cancelled message"
+    "description": "Shown when the user cancels the Google re-authentication that account deletion asks for. Nothing has been deleted at that point."
+  },
+
+  "accountDeletionScheduled": "We couldn''t confirm your sign-in, so your account and data are scheduled for deletion. This finishes within 7 days.",
+  "@accountDeletionScheduled": {
+    "description": "Shown when re-authentication for account deletion failed and a server-side deletion request was filed instead. The user is signed out."
+  },
+
+  "accountDeletionNotStarted": "We couldn''t confirm your sign-in, so nothing was deleted. Check your connection and try again.",
+  "@accountDeletionNotStarted": {
+    "description": "Shown when re-authentication for account deletion failed and no deletion request could be filed. Nothing has been deleted."
   },
 
   "accountDeletedSuccessfully": "Account deleted successfully",
