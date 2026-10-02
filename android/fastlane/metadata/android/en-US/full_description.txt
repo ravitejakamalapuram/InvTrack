@@ -19,28 +19,6 @@ That's it. Simple but powerful.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🆕 NEW IN VERSION 3.6.0
-
-📄 Document Viewer
-View PDFs and images directly in the app. Open in external apps when needed. Full document management for your investments.
-
-📥 Data Export & Import
-Backup your entire portfolio with one tap. Export to ZIP and import on any device. Your data, fully portable.
-
-📊 Enhanced Analytics
-Comprehensive tracking for your investment lifecycle. Better insights into your portfolio performance.
-
-🔒 Privacy Mode
-Check your portfolio anywhere without revealing sensitive data. One tap to hide all amounts.
-
-🎯 Financial Goals
-Set targets and track progress with beautiful progress rings and milestone celebrations.
-
-🔔 Smart Notifications
-Never miss income payments or maturity dates. Get timely reminders.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 📈 SMART METRICS
 
 XIRR - Your True Annual Return
@@ -54,13 +32,19 @@ Invested ₹1 lakh and got ₹1.5 lakh back? That's 1.5x MOIC. Simple way to see
 ✨ KEY FEATURES
 
 ✅ Works Offline
-Use the app without internet. Your data syncs automatically when you're back online.
+Works offline after first sign-in. Your data syncs automatically when you're back online.
 
 ☁️ Cloud Backup
 Sign in with Google to backup your data. Access it from any device.
 
 🔒 Your Data, Your Control
-We don't store your financial data on our servers. It stays with you.
+Your data is stored in your InvTrack account on Google Firebase. It is private to your account and never sold, and no ads are shown. Attached documents stay on your phone. Delete your account and data any time from Settings.
+
+📄 Documents
+Attach PDFs and images to your investments and view them in the app.
+
+📥 Export & Import
+Export your whole portfolio to a ZIP file and import it on any device.
 
 📊 Clean Dashboard
 See your total position, monthly trends, and investment breakdown at a glance.
