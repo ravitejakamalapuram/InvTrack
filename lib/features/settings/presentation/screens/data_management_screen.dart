@@ -527,7 +527,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       final authRepo = ref.read(authRepositoryProvider);
 
       // Delete all Firestore data first (before any auth operations)
-      await _deleteAllUserData();
+      final filedRequest = await _deleteAllUserData();
 
       // Try to delete the Firebase Auth account
       try {
@@ -545,7 +545,12 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
               // Retry deletion after re-authentication
               await authRepo.deleteAccount();
             } else {
-              // User cancelled re-auth
+              // User cancelled re-auth: they are told deletion was cancelled,
+              // so take back the server-side request we filed. A request that
+              // already existed (e.g. from the web) is left alone.
+              if (filedRequest) {
+                await ref.read(deletionRequestServiceProvider).withdraw();
+              }
               if (mounted) {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
@@ -626,13 +631,21 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     }
   }
 
-  Future<void> _deleteAllUserData() async {
+  /// Returns true when this call filed a new `deletionRequests/{uid}` doc.
+  Future<bool> _deleteAllUserData() async {
     // Get current user ID
     final authState = ref.read(authStateProvider);
     final user = authState.value;
     if (user == null) {
       throw StateError('User not authenticated');
     }
+
+    // File the same server-side request the web page uses BEFORE the client
+    // deletion (the user is still signed in, so the rules allow it). If the
+    // client path fails halfway, the daily job finishes the deletion.
+    final filedRequest = await ref
+        .read(deletionRequestServiceProvider)
+        .requestDeletion();
 
     // Server-confirmed wipe of every users/{uid} collection (investments,
     // cashflows, archived items, goals, expectedCashFlows, documents,
@@ -646,6 +659,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       deleteLocalFiles: documentStorageService.deleteAllUserDocuments,
       prefs: ref.read(sharedPreferencesProvider),
     );
+    return filedRequest;
   }
 }
 

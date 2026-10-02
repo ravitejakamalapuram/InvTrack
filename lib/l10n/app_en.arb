@@ -2483,6 +2483,27 @@
     "description": "Error message when guest data deletion fails"
   },
 
+  "deletionScheduledTitle": "Account scheduled for deletion",
+  "@deletionScheduledTitle": {
+    "description": "Title of the notice shown at sign-in when a deletion request exists for the account"
+  },
+  "deletionScheduledMessage": "A request to delete this account and all its data is pending. It will be completed soon and cannot be undone afterwards. If you did not request this, or changed your mind, withdraw the request now.",
+  "@deletionScheduledMessage": {
+    "description": "Body of the scheduled-for-deletion notice"
+  },
+  "deletionScheduledWithdraw": "Withdraw request",
+  "@deletionScheduledWithdraw": {
+    "description": "Button that withdraws the pending account deletion request"
+  },
+  "deletionRequestWithdrawn": "Deletion request withdrawn. Your account is kept.",
+  "@deletionRequestWithdrawn": {
+    "description": "Snackbar after the deletion request was withdrawn"
+  },
+  "deletionRequestWithdrawFailed": "Couldn't withdraw the request. Check your connection and try again.",
+  "@deletionRequestWithdrawFailed": {
+    "description": "Snackbar when withdrawing the deletion request failed"
+  },
+
   "deletionNeedsInternet": "Couldn't finish deleting because you're offline or the connection is unstable. Some of your data may already have been removed, but your account is still active. Please connect to the internet and try again to finish.",
   "@deletionNeedsInternet": {
     "description": "Error shown when account or guest data deletion cannot be confirmed by the server (offline/timeout). The account is NOT deleted."
