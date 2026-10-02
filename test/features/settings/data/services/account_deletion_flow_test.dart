@@ -22,8 +22,9 @@ void main() {
   late Future<void> Function() prepareGoogleSignIn;
   late Future<void> Function() deleteUserData;
 
-  AccountDeletionFlow flow() => AccountDeletionFlow(
+  AccountDeletionFlow flow({bool isAnonymous = false}) => AccountDeletionFlow(
     auth: auth,
+    isAnonymous: isAnonymous,
     requests: requests,
     prepareGoogleSignIn: prepareGoogleSignIn,
     deleteUserData: deleteUserData,
@@ -219,6 +220,38 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('guest (anonymous) user with a stale session', () {
+    // A guest's last sign-in is when they first opened the app, and they have
+    // no Google account to re-authenticate with.
+    setUp(() => signedInAgo(const Duration(days: 30)));
+
+    test('files the request, wipes the data and deletes the Auth user '
+        'without asking for Google sign-in', () async {
+      sessionFresh = true;
+      reauthReturns(true);
+
+      expect(
+        await flow(isAnonymous: true).run(),
+        AccountDeletionOutcome.deleted,
+      );
+      expect(calls, ['request', 'wipe', 'deleteAuth']);
+      verifyNever(() => auth.reauthenticateWithGoogle());
+    });
+
+    test('Firebase asking for a recent login after the wipe keeps the '
+        'request for the server job and never offers Google sign-in', () async {
+      reauthReturns(true);
+
+      expect(
+        await flow(isAnonymous: true).run(),
+        AccountDeletionOutcome.scheduled,
+      );
+      expect(calls, ['request', 'wipe', 'deleteAuth']);
+      verifyNever(() => auth.reauthenticateWithGoogle());
+      verifyNever(() => requests.withdraw());
     });
   });
 }

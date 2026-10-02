@@ -91,13 +91,16 @@ void main() {
     ).thenAnswer((_) async => calls.add('wipe'));
   });
 
-  Future<AppLocalizations> pumpScreen(WidgetTester tester) async {
+  Future<AppLocalizations> pumpScreen(
+    WidgetTester tester, {
+    UserEntity signedInUser = user,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(800, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          authStateProvider.overrideWith((ref) => Stream.value(user)),
+          authStateProvider.overrideWith((ref) => Stream.value(signedInUser)),
           authRepositoryProvider.overrideWithValue(auth),
           googleSignInInitializedProvider.overrideWith(
             (ref) async => calls.add('init'),
@@ -226,5 +229,29 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('guest: deletes the data and the anonymous user without asking '
+      'for Google sign-in', (tester) async {
+    when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+      calls.add('reauth');
+      return true;
+    });
+    // Firebase lets an anonymous user delete itself.
+    reauthenticated = true;
+    final l10n = await pumpScreen(
+      tester,
+      signedInUser: const UserEntity(
+        id: 'guest-1',
+        email: '',
+        isAnonymous: true,
+      ),
+    );
+
+    await confirmDeletion(tester, l10n);
+
+    expect(calls, ['request', 'wipe', 'deleteAuth', 'signOut']);
+    verifyNever(() => auth.reauthenticateWithGoogle());
+    expect(find.text('Account deleted successfully'), findsOneWidget);
   });
 }

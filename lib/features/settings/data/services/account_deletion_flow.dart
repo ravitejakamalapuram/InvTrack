@@ -11,9 +11,9 @@ enum AccountDeletionOutcome {
   /// The user cancelled re-authentication. Nothing was deleted or filed.
   cancelled,
 
-  /// Re-authentication failed or was cancelled after the data was wiped. A
-  /// `deletionRequests/{uid}` request is filed and kept, so the server job
-  /// finishes the deletion.
+  /// Re-authentication failed or was cancelled, or Firebase refused to delete
+  /// a guest, after the data was wiped. A `deletionRequests/{uid}` request is
+  /// filed and kept, so the server job finishes the deletion.
   scheduled,
 
   /// Re-authentication failed and the request could not be filed (e.g.
@@ -21,21 +21,25 @@ enum AccountDeletionOutcome {
   notDeleted,
 }
 
-/// Runs Delete Account for a signed-in (non-guest) user in a safe order.
+/// Runs Delete Account in a safe order.
 ///
 /// Firebase refuses to delete an Auth user whose sign-in is not recent, so a
 /// stale session is re-authenticated FIRST: a cancel then deletes nothing.
 /// Only after that is the server-side request filed, the data wiped and the
 /// Auth user deleted. Every path that gives up after filing keeps the request
-/// so the scheduled job completes the deletion.
+/// so the scheduled job completes the deletion. A guest ([isAnonymous]) is
+/// never sent to Google re-auth: the request is filed, the data wiped and the
+/// anonymous user deleted, or left to the job if Firebase refuses.
 class AccountDeletionFlow {
   AccountDeletionFlow({
     required AuthRepository auth,
+    required bool isAnonymous,
     required DeletionRequestService requests,
     required Future<void> Function() prepareGoogleSignIn,
     required Future<void> Function() deleteUserData,
     DateTime Function() now = DateTime.now,
   }) : _auth = auth,
+       _isAnonymous = isAnonymous,
        _requests = requests,
        _prepareGoogleSignIn = prepareGoogleSignIn,
        _deleteUserData = deleteUserData,
@@ -45,13 +49,16 @@ class AccountDeletionFlow {
   static const recentLoginWindow = Duration(minutes: 4);
 
   final AuthRepository _auth;
+  final bool _isAnonymous;
   final DeletionRequestService _requests;
   final Future<void> Function() _prepareGoogleSignIn;
   final Future<void> Function() _deleteUserData;
   final DateTime Function() _now;
 
   Future<AccountDeletionOutcome> run() async {
-    if (_sessionIsStale) {
+    // A guest has no Google account to re-authenticate with, and calling
+    // Google re-auth on an anonymous user always fails.
+    if (!_isAnonymous && _sessionIsStale) {
       switch (await _reauthenticate()) {
         case _Reauth.cancelled:
           return AccountDeletionOutcome.cancelled;
@@ -72,7 +79,7 @@ class AccountDeletionFlow {
     } on FirebaseAuthException catch (e) {
       if (e.code != 'requires-recent-login') rethrow;
       // The data is already gone: keep the request whatever happens here.
-      if (await _reauthenticate() != _Reauth.succeeded) {
+      if (_isAnonymous || await _reauthenticate() != _Reauth.succeeded) {
         return AccountDeletionOutcome.scheduled;
       }
       await _auth.deleteAccount();

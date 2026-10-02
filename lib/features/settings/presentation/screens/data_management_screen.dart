@@ -531,6 +531,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
 
       final outcome = await AccountDeletionFlow(
         auth: authRepo,
+        isAnonymous: ref.read(authStateProvider).value?.isAnonymous ?? false,
         requests: ref.read(deletionRequestServiceProvider),
         prepareGoogleSignIn: () =>
             ref.read(googleSignInInitializedProvider.future),
@@ -556,6 +557,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         // A scheduled deletion signs the user out; the sign-in notice offers
         // to withdraw the request if they come back.
         if (outcome == AccountDeletionOutcome.scheduled) {
+          ref.read(analyticsServiceProvider).setUserId(null);
           await authRepo.signOut();
         }
         return;
