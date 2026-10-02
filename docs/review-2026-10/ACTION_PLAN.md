@@ -2,7 +2,7 @@
 
 This plan comes from a full review of the InvTrack codebase, store listing and docs as of `f08e452` (v3.70.18). It covers the questions asked: issues, improvements, formula corrections, marketing, user adoption, and a plan of action items.
 
-**At a glance:** 280 verified findings (8 critical, 54 high, 121 medium, 97 low) are grouped into **68 action items** across 8 phases. The full evidence (file:line, worked numbers, verifier notes) for every finding is in [FINDINGS.md](FINDINGS.md).
+**At a glance:** 282 verified findings (8 critical, 49 high, 117 medium, 108 low) are grouped into **68 action items** across 8 phases. The full evidence (file:line, worked numbers, verifier notes) for every finding is in [FINDINGS.md](FINDINGS.md).
 
 **The short version.** The engineering foundations are good: the analyzer is clean, all 1,477 tests pass, and the XIRR solver itself is correct. But the numbers users see are wrong for the app's core use case. Open investments have no current value, so healthy FDs show −95% returns. A silent USD default inflates INR data about 88×. FIRE and goal progress use the wrong inputs. Meanwhile the live store listing makes a false privacy claim, guest and deletion flows can lose data or leave PII behind, and the features that would retain and monetise users ship switched off. Fix trust and correctness first (P0–P1, about 5 weeks), then relaunch the listing and activation flow, then launch Premium before the 2027 tax season.
 
@@ -113,7 +113,7 @@ _Goal: Nothing false on the store, and no flow that silently destroys or inflate
 
 **Done when:** No user-money code path falls back to 'USD', and the regression tests pass.
 
-**Findings:** ARCH-01, CALC-05, INV-01, INV-02, INV-17, INV-V1, PLAT-07, QA-03, PLAN-V1, ADOPT-V1, CALC-V01, UX-14, GAP2-07
+**Findings:** ARCH-01, CALC-05, INV-01, INV-02, INV-17, INV-V1, PLAT-07, QA-03, PLAN-V1, ADOPT-V1, CALC-V01, UX-14, GAP2-07, GAP2-V01
 
 #### A04 · Offer a one-tap repair for data already tagged USD · effort M
 
@@ -181,7 +181,7 @@ _Goal: Nothing false on the store, and no flow that silently destroys or inflate
 
 **Done when:** A unit test shows two launches a week apart do not move the next reminder date, and toggling off removes pending alarms.
 
-**Findings:** INV-06, PLAT-10, GAP3-01, GAP3-02, PLAT-03, INV-12
+**Findings:** INV-06, PLAT-10, GAP3-01, GAP3-02, PLAT-03, INV-12, GAP3-V01
 
 #### A09 · Stop showing −100% for healthy open investments (bridge fix) · effort S
 
@@ -260,13 +260,13 @@ _Goal: Every figure on every screen comes from one correct, converted, tested ca
 
 #### A14 · Harden the FX pipeline · effort M
 
-**Why:** One missing rate makes the whole batch fall back to an arbitrary cached rate or to raw foreign amounts (an implicit 1.0 rate). AED and SAR, the main NRI currencies, have no historical source. A currency switch costs about 1,100 reads.
+**Why:** One missing rate makes the whole batch fall back to an arbitrary cached rate or to raw foreign amounts (an implicit 1.0 rate). AED and SAR, the main NRI currencies, have no historical source. A currency switch wipes the whole FX cache and re-fetches it.
 
 **Do:**
 - Return partial results plus a failures list from batchConvertHistorical, and fall back only for the failed keys: nearest-date cached rate, then live rate.
 - Never sum an unconverted amount. Exclude it, set isApproximate, and show a banner.
 - Derive AED (3.6725) and SAR (3.75) from USD crosses, or move to Frankfurter v2. Restrict the selectable base currencies to supported ones.
-- Coalesce historical lookups, keep the latest rate per pair, add the exchangeRates (from, to, fetchedAt) index, parse with (x as num).toDouble(), and stop wiping the cache on a switch.
+- Route historical lookups through the coalescing getRate path, cap HTTP concurrency, fetch date ranges in one call per pair, make the cache a true LRU keyed by latest rate per pair, add the exchangeRates (from, to, fetchedAt) index, parse with (x as num).toDouble(), and stop wiping the cache on a currency switch.
 
 **Done when:** A test with an AED flow among INR and USD flows converts every flow at its own date's rate.
 
@@ -300,17 +300,19 @@ _Goal: Every figure on every screen comes from one correct, converted, tested ca
 
 **Findings:** CALC-08, PLAN-15
 
-#### A17 · Make archive hide, not erase history · effort M
+#### A17 · Make archive's effect explicit · effort S
 
-**Why:** Archived investments vanish from lifetime totals, realised P&L, YoY, goals (often down to 0% / ‘Not Started’), FIRE, Health and the FY/tax report, but the dialog says it only hides them.
+**Why:** Archiving moves an investment out of every total: Overview ‘Net Position (All)’, realised P&L, year-over-year, goal progress (often down to 0% / ‘Not Started’) and Health. The exclusion is deliberate in the code, but the dialog only says the item will be hidden. The archived detail screen also shows unconverted foreign amounts.
 
 **Do:**
-- Add lifetime providers (active ∪ archived) for historical aggregates. Keep current-holdings views on active-open data.
-- Warn before archiving an investment that is linked to a goal.
-- Change the dialog copy to: “Archive hides this investment from your lists and reminders. Its history still counts in totals, goals and reports.”
-- Do not re-schedule reminders when a closed investment is unarchived, and sort ‘Recently closed’ by closedAt.
+- Change the archive dialog (moved into the ARB file) to: “Archived investments are hidden from your lists and reminders and are not counted in Overview totals, goals or FIRE.”
+- Add an “excludes N archived” footnote to the hero, or rename ‘Net Position (All)’.
+- Before archiving an investment that is linked to a goal, show which goals change and by how much.
+- Convert archived stats with batchConvert, as active investments do, and delete the comment saying no conversion is needed.
+- Keep current-holdings views (FIRE, liquidity, diversification) active-only. Optionally add a ‘lifetime’ toggle for history views (YoY, realised, recently closed). Include archived cash flows when the FY/tax report is built (A60).
+- Show the Investments list, not the first-run empty state, when every investment is archived. Don't re-schedule reminders on unarchive, and sort ‘Recently closed’ by closedAt.
 
-**Done when:** A test shows totals, goal % and the FY report are unchanged before and after archiving.
+**Done when:** A user can tell before and after archiving what changes in their totals and goals, and archived amounts are converted.
 
 **Findings:** GAP1-01, GAP1-02, GAP1-04, GAP1-05, GAP1-11, GAP1-12, GAP1-13
 
@@ -394,7 +396,7 @@ _Goal: No edit, import, merge, archive or restore can lose or corrupt data, and 
 
 **Done when:** An emulator test with 300 flows archives, unarchives and deletes with no orphans.
 
-**Findings:** INV-04, INV-07, INV-09, INV-10, ARCH-20, QA-05, INV-14
+**Findings:** INV-04, INV-07, INV-09, INV-10, ARCH-20, QA-05, INV-14, GAP1-V01
 
 #### A24 · Make backup and restore lossless and safe · effort M
 
@@ -466,12 +468,13 @@ _Goal: No edit, import, merge, archive or restore can lose or corrupt data, and 
 **Do:**
 - Handle getNotificationAppLaunchDetails, and don't schedule summaries for routes that are disabled.
 - Give every type a toggle (store prefs per account), use deterministic non-colliding IDs, use default importance for nudges, and respect privacy mode in notification text.
+- Schedule tax, check-in, FY and activation notifications only after sign-in, and send the India tax reminders only to INR-base users.
 - Use flexible in-app updates with staleness thresholds.
 - Delete the dead risk and idle alerts, and remove the unverified ‘thousands of investors’ claim.
 
 **Done when:** Each notification type has an off switch that works, and every tap lands on a real screen.
 
-**Findings:** PLAT-11, PLAT-12, PLAT-17, GAP3-03, GAP3-04, GAP3-06, GAP3-08, GAP3-10, GAP3-11, GAP3-12, GAP3-13, ADOPT-09, SEC-17, UX-05, MKT-V-01, GAP2-08, UX-09
+**Findings:** PLAT-11, PLAT-12, PLAT-17, GAP3-03, GAP3-04, GAP3-06, GAP3-08, GAP3-10, GAP3-11, GAP3-12, GAP3-13, ADOPT-09, SEC-17, UX-05, MKT-V-01, UX-09
 
 #### A30 · Make Crashlytics signal honest · effort S
 
@@ -641,7 +644,7 @@ _Goal: A new user reaches a correct, positive real-return number within about tw
 - Review prompt: turn it on now and widen the trigger to INCOME as well as RETURN, keeping the one-shot gate.
 - Health Score: turn it on after A10 and A21.
 - Reports: ship only the FY report (A62) and remove the 7 placeholder cards. Delete orphaned report services.
-- Income Guardian: hide it, including its settings screen, until something generates expected cash flows. Don't run its background services.
+- Income Guardian: hide it, including its Settings tile and the Expected Income tab on every investment, until something generates expected cash flows. Don't run its background services.
 - Use code defaults per release (Remote Config later), never SharedPreferences, for anything gated.
 
 **Done when:** Every visible feature works end to end, and review_prompt_requested appears in production analytics.
@@ -898,14 +901,15 @@ _Goal: A paid tier built on new value, launched before the March advance-tax and
 
 #### A62 · Cut Firestore cost per user · effort M
 
-**Why:** A typical active day costs about 1,750 reads: 25 per-investment listeners, one query per INCOME flow on every start, FIFO FX cache churn and full-history reads. Cost grows with each user's history while revenue stays flat.
+**Why:** Overview stays mounted, and its Health card opens one cash-flow listener per investment, so every cold start after the 30-minute resume window bills all cash flows twice. Income Guardian services start for every user although the feature is off. There is no App Check, budget alert or cost metric.
 
 **Do:**
-- Ship ARCH-06/10/11/13 first (about −69% reads), then delta-sync on cash flows.
-- Guardrail: Firestore reads per DAU-day ≤ 700, tracked weekly as read_ops_count ÷ DAU.
-- Confirm the Firestore location, and add a TTL on healthScores.
+- Ship ARCH-13 first: derive per-investment cash flows from the existing all-cash-flows stream. That removes about 300 reads per cold start for a typical 300-flow user (roughly 40%).
+- Stop Income Guardian services while the feature is hidden (ARCH-10), and keep FX rates in a device-local store (ARCH-11).
+- Guardrail: Firestore reads per DAU-day ≤ 700, tracked weekly as Cloud Monitoring read_ops_count ÷ DAU, with GCP budget alerts at $10, $50 and $200.
+- Confirm the Firestore location, add a TTL on healthScores, and close non-autoDispose per-entity listeners.
 
-**Done when:** Reads per DAU-day stay at or under 700, with budget alerts live.
+**Done when:** Reads per DAU-day stay at or under 700, and budget alerts are live.
 
 **Findings:** GAP4-01, GAP4-03, GAP4-07, GAP4-09, ARCH-13, ARCH-21
 
@@ -1035,8 +1039,7 @@ Each funnel stage, what breaks there today, and the action items that fix it. In
 ## How this review was done
 
 - Twelve independent reviewers covered core return formulae, planning formulae (FIRE, goals, income), aggregate analytics and currency, investment-feature bugs, platform bugs (auth, import/export, notifications), security/privacy/compliance, architecture/performance/cost, UX/accessibility/localisation, tests/CI/docs, monetization, marketing/ASO, and adoption/growth. A completeness critic then commissioned four extra probes: archive semantics, money stored without a currency, notification opt-outs, and unit economics.
-- Every finding went to a separate adversarial verifier told to refute it. Formula claims were re-computed with Python ports of the Dart code. Of 281 candidate findings, 1 were refuted and 84 were confirmed with corrected severity or details.
+- Every finding went to a separate adversarial verifier told to refute it. Formula claims were re-computed with Python ports of the Dart code. Of 284 candidate findings, 2 were refuted and 108 were confirmed with corrected severity or details.
 - `flutter analyze` (Flutter 3.38.4, the version CI pins): 0 errors, 0 warnings, 2 infos. `flutter test --exclude-tags=golden`: 1,477 passed, 4 skipped, 0 failed.
 - Web claims (pricing benchmarks, Play policy, tax rules, API coverage) were checked with search where the sandbox allowed. Re-confirm prices and policy text before publishing anything that relies on them.
-- 45 probe findings could not be independently verified and are marked as such in FINDINGS.md.
 
