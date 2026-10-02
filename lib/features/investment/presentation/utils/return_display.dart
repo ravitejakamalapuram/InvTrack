@@ -68,6 +68,10 @@ class ReturnDisplay {
   /// investments have returned less than was invested, they have no terminal
   /// value and any return figure would be a fake loss.
   ///
+  /// For a portfolio this checks the open subset as a whole, so one open
+  /// investment with a large payout can unmask the figure while others still
+  /// count as total losses. That is accepted until current values exist.
+  ///
   /// [xirr] and [xirrMethod] override the values in [stats], for callers that
   /// compute XIRR separately.
   factory ReturnDisplay.resolve({
@@ -88,6 +92,10 @@ class ReturnDisplay {
           ? ReturnDisplayKind.awaitingFirstPayout
           : ReturnDisplayKind.awaitingCurrentValue;
     } else if (stats.totalInvested > 0 &&
+        // Without any inflow there is no holding period to report a return
+        // over: a closed investment with a single INVEST flow would otherwise
+        // read "-100.0% in under a day".
+        stats.totalReturned > 0 &&
         days != null &&
         days < shortHoldingDays) {
       kind = ReturnDisplayKind.shortHolding;

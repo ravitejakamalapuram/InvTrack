@@ -107,6 +107,44 @@ void main() {
       expect(display.statusLabel(l10n), isNull);
     });
 
+    test(
+      'closed investment with a single INVEST flow is not a short holding',
+      () {
+        // Closed with zero inflow: first and last cash flow are the same day, so
+        // there is no holding period to report "in under a day" against.
+        final stats = _stats(
+          invested: 100000,
+          returned: 0,
+          first: DateTime(2023, 1, 1),
+          last: DateTime(2023, 1, 1),
+          xirrMethod: XirrMethod.undefined,
+          count: 1,
+        );
+
+        final display = ReturnDisplay.resolve(stats: stats);
+
+        expect(display.kind, ReturnDisplayKind.undefined);
+        expect(display.metricLabel(l10n), 'XIRR');
+        expect(display.primaryText(l10n), '—');
+        expect(display.secondaryText(l10n), isNull);
+      },
+    );
+
+    test('closed same-day round trip with a payout keeps its real return', () {
+      final stats = _stats(
+        invested: 100000,
+        returned: 101000,
+        first: DateTime(2026, 1, 1),
+        last: DateTime(2026, 1, 1),
+        xirrMethod: XirrMethod.undefined,
+      );
+
+      final display = ReturnDisplay.resolve(stats: stats);
+
+      expect(display.kind, ReturnDisplayKind.shortHolding);
+      expect(display.primaryText(l10n), '+1.0% in under a day');
+    });
+
     test('3-day holding shows absolute return as the primary figure', () {
       final stats = _stats(
         invested: 100000,
