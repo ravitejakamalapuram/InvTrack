@@ -57,6 +57,12 @@ class NotificationIds {
   static int maturityReminder1Day(String investmentId) =>
       (investmentId.hashCode.abs() % 25000) + 125000;
 
+  /// Whether [id] lies in the income-reminder range (see [incomeReminder]).
+  static bool isIncomeReminderId(int id) => id >= 50000 && id < 100000;
+
+  /// Whether [id] lies in the maturity-reminder ranges (7-day and 1-day).
+  static bool isMaturityReminderId(int id) => id >= 100000 && id < 150000;
+
   /// Milestone notification ID based on investment ID and milestone type
   static int milestone(String investmentId, double moic) =>
       (investmentId.hashCode.abs() % 20000) + 150000 + (moic * 100).toInt();

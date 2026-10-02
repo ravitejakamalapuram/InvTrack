@@ -575,7 +575,10 @@ void main() {
         ),
       ];
 
-      await service.rescheduleAllNotifications(investments);
+      await service.rescheduleAllNotifications(
+        investments,
+        lastIncomeDates: const {},
+      );
 
       // Should have: weekly + monthly + maturity reminders for inv-1 + income reminder for inv-1
       // Weekly: 1, Monthly: 1, Maturity (7d + 1d): 2, Income: 1 = 5 total
@@ -597,7 +600,10 @@ void main() {
         ),
       ];
 
-      await service.rescheduleAllNotifications(investments);
+      await service.rescheduleAllNotifications(
+        investments,
+        lastIncomeDates: const {},
+      );
 
       // Only weekly and monthly summaries, no investment-specific reminders
       expect(fakePlugin.scheduledNotifications.length, 2);
@@ -1419,5 +1425,228 @@ void main() {
 
       expect(fakePlugin.shownNotifications.length, 1);
     });
+  });
+
+  // A08 (#751): income reminders must stay anchored to the payout schedule
+  // across launches, switching a reminder type off must remove its pending
+  // alarms, and alarms for closed or removed investments must not linger.
+  group('NotificationService - Reminder schedule stability (A08)', () {
+    late DateTime fakeNow;
+    late NotificationService clockedService;
+
+    setUp(() {
+      fakeNow = DateTime(2026, 10, 2, 10);
+      clockedService = NotificationService(
+        fakePlugin,
+        prefs,
+        clock: () => fakeNow,
+      );
+    });
+
+    InvestmentEntity investment({
+      String id = 'inv-p2p',
+      DateTime? startDate,
+      IncomeFrequency? incomeFrequency = IncomeFrequency.monthly,
+      DateTime? maturityDate,
+      InvestmentStatus status = InvestmentStatus.open,
+    }) => InvestmentEntity(
+      id: id,
+      name: 'P2P Monthly',
+      type: InvestmentType.p2pLending,
+      status: status,
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      startDate: startDate,
+      incomeFrequency: incomeFrequency,
+      maturityDate: maturityDate,
+    );
+
+    DateTime incomeReminderDate(String investmentId) {
+      final matches = fakePlugin.scheduledNotifications
+          .where((n) => n.id == NotificationIds.incomeReminder(investmentId))
+          .toList();
+      expect(matches, hasLength(1));
+      // Plain local DateTime (TZDateTime never equals a DateTime).
+      return DateTime.fromMillisecondsSinceEpoch(
+        matches.single.scheduledDate.millisecondsSinceEpoch,
+      );
+    }
+
+    Future<Set<int>> pendingIds() async =>
+        (await fakePlugin.pendingNotificationRequests())
+            .map((p) => p.id)
+            .toSet();
+
+    test(
+      'two launches a week apart keep the reminder anchored on the last INCOME date',
+      () async {
+        final inv = investment(startDate: DateTime(2026, 1, 15));
+        final lastIncomeDates = {'inv-p2p': DateTime(2026, 9, 20)};
+
+        await clockedService.rescheduleAllNotifications([
+          inv,
+        ], lastIncomeDates: lastIncomeDates);
+        expect(incomeReminderDate('inv-p2p'), DateTime(2026, 10, 20, 9));
+
+        fakeNow = DateTime(2026, 10, 9, 10);
+        await clockedService.rescheduleAllNotifications([
+          inv,
+        ], lastIncomeDates: lastIncomeDates);
+        expect(incomeReminderDate('inv-p2p'), DateTime(2026, 10, 20, 9));
+      },
+    );
+
+    test(
+      'two launches a week apart keep the reminder on startDate + k * period when there is no income yet',
+      () async {
+        final inv = investment(
+          startDate: DateTime(2026, 3, 10),
+          incomeFrequency: IncomeFrequency.quarterly,
+        );
+
+        await clockedService.rescheduleAllNotifications([
+          inv,
+        ], lastIncomeDates: const {});
+        expect(incomeReminderDate('inv-p2p'), DateTime(2026, 12, 10, 9));
+
+        fakeNow = DateTime(2026, 10, 9, 10);
+        await clockedService.rescheduleAllNotifications([
+          inv,
+        ], lastIncomeDates: const {});
+        expect(incomeReminderDate('inv-p2p'), DateTime(2026, 12, 10, 9));
+      },
+    );
+
+    test('month-end anchor does not drift to an earlier day', () async {
+      await clockedService.scheduleIncomeReminder(
+        investmentId: 'inv-p2p',
+        investmentName: 'P2P Monthly',
+        monthsBetweenPayments: 1,
+        lastIncomeDate: DateTime(2026, 1, 31),
+      );
+
+      // Jan 31 + 9 months = Oct 31 (not Oct 28 via Feb 28, Mar 28, ...).
+      expect(incomeReminderDate('inv-p2p'), DateTime(2026, 10, 31, 9));
+    });
+
+    test(
+      'turning income reminders off cancels the pending income alarms only',
+      () async {
+        await clockedService.scheduleWeeklySummary();
+        await clockedService.scheduleIncomeReminder(
+          investmentId: 'inv-a',
+          investmentName: 'A',
+          monthsBetweenPayments: 1,
+          lastIncomeDate: DateTime(2026, 9, 20),
+        );
+        await clockedService.scheduleIncomeReminder(
+          investmentId: 'inv-b',
+          investmentName: 'B',
+          monthsBetweenPayments: 3,
+          lastIncomeDate: DateTime(2026, 8, 1),
+        );
+        expect(await pendingIds(), {
+          NotificationIds.weeklySummary,
+          NotificationIds.incomeReminder('inv-a'),
+          NotificationIds.incomeReminder('inv-b'),
+        });
+
+        await clockedService.setIncomeRemindersEnabled(false);
+
+        expect(await pendingIds(), {NotificationIds.weeklySummary});
+      },
+    );
+
+    test(
+      'turning maturity reminders off cancels the pending maturity alarms only',
+      () async {
+        await clockedService.scheduleIncomeReminder(
+          investmentId: 'inv-a',
+          investmentName: 'A',
+          monthsBetweenPayments: 1,
+          lastIncomeDate: DateTime(2026, 9, 20),
+        );
+        await clockedService.scheduleMaturityReminders(
+          investmentId: 'inv-fd',
+          investmentName: 'FD',
+          maturityDate: DateTime(2027, 3, 31),
+        );
+        expect(await pendingIds(), {
+          NotificationIds.incomeReminder('inv-a'),
+          NotificationIds.maturityReminder7Days('inv-fd'),
+          NotificationIds.maturityReminder1Day('inv-fd'),
+        });
+
+        await clockedService.setMaturityRemindersEnabled(false);
+
+        expect(await pendingIds(), {NotificationIds.incomeReminder('inv-a')});
+      },
+    );
+
+    test(
+      'reschedule cancels pending alarms when the reminder type is already off',
+      () async {
+        await clockedService.scheduleIncomeReminder(
+          investmentId: 'inv-p2p',
+          investmentName: 'P2P Monthly',
+          monthsBetweenPayments: 1,
+          lastIncomeDate: DateTime(2026, 9, 20),
+        );
+        // Preference written without the side effect, as by an older build.
+        await prefs.setBool(
+          NotificationPrefsKeys.incomeRemindersEnabled,
+          false,
+        );
+
+        await clockedService.rescheduleAllNotifications([
+          investment(startDate: DateTime(2026, 1, 15)),
+        ], lastIncomeDates: const {});
+
+        expect(
+          await pendingIds(),
+          isNot(contains(NotificationIds.incomeReminder('inv-p2p'))),
+        );
+      },
+    );
+
+    test(
+      'reschedule cancels alarms for closed and removed investments',
+      () async {
+        final fd = investment(
+          id: 'inv-fd',
+          maturityDate: DateTime(2027, 3, 31),
+          startDate: DateTime(2026, 1, 15),
+        );
+        final p2p = investment(startDate: DateTime(2026, 1, 15));
+        await clockedService.rescheduleAllNotifications([
+          fd,
+          p2p,
+        ], lastIncomeDates: const {});
+        expect(
+          await pendingIds(),
+          containsAll([
+            NotificationIds.incomeReminder('inv-fd'),
+            NotificationIds.maturityReminder7Days('inv-fd'),
+            NotificationIds.maturityReminder1Day('inv-fd'),
+            NotificationIds.incomeReminder('inv-p2p'),
+          ]),
+        );
+
+        // inv-fd is closed (e.g. on another device); inv-p2p was deleted.
+        await clockedService.rescheduleAllNotifications([
+          investment(
+            id: 'inv-fd',
+            maturityDate: DateTime(2027, 3, 31),
+            startDate: DateTime(2026, 1, 15),
+            status: InvestmentStatus.closed,
+          ),
+        ], lastIncomeDates: const {});
+
+        expect(await pendingIds(), {
+          NotificationIds.weeklySummary,
+          NotificationIds.monthlySummary,
+        });
+      },
+    );
   });
 }

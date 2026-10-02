@@ -165,6 +165,24 @@ class NotificationNavigator {
     return true;
   }
 
+  /// Builds the Add Cash Flow screen opened from a notification tap.
+  @visibleForTesting
+  static AddTransactionScreen addCashFlowScreen(
+    String investmentId,
+    Map<String, String> params,
+  ) {
+    // An income reminder sends flowType=income; preselect it so a payout is
+    // not recorded as money invested.
+    final flowType = params['flowType'];
+    final initialType = CashFlowType.values
+        .where((type) => type.name == flowType)
+        .firstOrNull;
+    return AddTransactionScreen(
+      investmentId: investmentId,
+      initialType: initialType,
+    );
+  }
+
   Future<bool> _navigateToAddCashFlow(
     String? investmentId,
     Map<String, String> params,
@@ -201,7 +219,7 @@ class NotificationNavigator {
     try {
       navigatorState.push(
         MaterialPageRoute(
-          builder: (ctx) => AddTransactionScreen(investmentId: investmentId),
+          builder: (ctx) => addCashFlowScreen(investmentId, params),
         ),
       );
     } catch (e, stack) {
