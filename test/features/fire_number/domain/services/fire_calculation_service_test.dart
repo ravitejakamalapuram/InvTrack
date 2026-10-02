@@ -406,6 +406,34 @@ void main() {
     });
   });
 
+  // Golden values from the October 2026 review (PLAN-16), computed
+  // independently in Python. Money is pinned to the paisa.
+  group('FireCalculationService.calculate golden values', () {
+    test('FIRE number for Rs 50,000/month is Rs 1.83 Cr', () {
+      // 50,000 x 12 x 25 = 1,50,00,000 core corpus
+      // + 6 months emergency (3,00,000) + 20% healthcare (30,00,000)
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 0,
+      );
+
+      expect(result.fireNumber, closeTo(18300000.00, 0.01));
+    });
+
+    test('required savings from zero over 15 years is Rs 64,767.48/month', () {
+      // Real return r = 1.12 / 1.06 - 1, monthly rate i = r / 12, n = 180.
+      // PMT = 1,83,00,000 x i / ((1 + i)^180 - 1) = 64,767.4788...
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 0,
+      );
+
+      expect(result.requiredMonthlySavings, closeTo(64767.48, 0.01));
+    });
+  });
+
   group('FireCalculationService.generateProjections', () {
     test('generates correct number of projection points', () {
       final result = service.calculate(
