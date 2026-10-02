@@ -46,6 +46,7 @@ class _DeletionRequestNoticeState extends ConsumerState<DeletionRequestNotice> {
     final context = rootNavigatorKey.currentContext;
     if (!mounted || context == null || !context.mounted) return;
     final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
 
     final withdraw = await showDialog<bool>(
       context: context,
@@ -73,7 +74,6 @@ class _DeletionRequestNoticeState extends ConsumerState<DeletionRequestNotice> {
     if (!mounted) return;
     if (withdraw == true) {
       final ok = await service.withdraw();
-      final messenger = ScaffoldMessenger.maybeOf(context);
       messenger?.showSnackBar(
         SnackBar(
           content: Text(
