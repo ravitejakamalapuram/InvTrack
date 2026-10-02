@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
@@ -75,14 +76,15 @@ class _RecordingImportService extends Fake implements DataImportService {
 
   final Object? error;
   final ZipImportResult result;
-  final calls = <(Uint8List, ImportStrategy)>[];
+  final calls = <(Uint8List, ImportStrategy, String)>[];
 
   @override
   Future<ZipImportResult> importFromZip(
     Uint8List zipBytes,
-    ImportStrategy strategy,
-  ) async {
-    calls.add((zipBytes, strategy));
+    ImportStrategy strategy, {
+    required String baseCurrency,
+  }) async {
+    calls.add((zipBytes, strategy, baseCurrency));
     if (error != null) throw error!;
     return result;
   }
@@ -154,6 +156,7 @@ void main() {
           authRepositoryProvider.overrideWithValue(authRepo),
           analyticsServiceProvider.overrideWithValue(analytics),
           googleSignInInitializedProvider.overrideWith((ref) async {}),
+          currencyCodeProvider.overrideWithValue('EUR'),
           dataExportServiceProvider.overrideWith((ref) => exportService),
           // One import service per signed-in user, like the real provider,
           // so the test can tell which account the backup was imported into.
@@ -232,6 +235,11 @@ void main() {
       expect(googleImports, hasLength(1));
       expect(googleImports.single.$1, _backupBytes);
       expect(googleImports.single.$2, ImportStrategy.merge);
+      expect(
+        googleImports.single.$3,
+        'EUR',
+        reason: "rows without a currency take the guest's base currency",
+      );
       expect(
         importersByUid[guestUser.id]?.calls ?? [],
         isEmpty,

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
@@ -74,6 +75,9 @@ class GuestBackupMergeService {
     }
     final export = await exportService.exportAsZipBytes();
     final backup = export.bytes;
+    // The guest's base currency, read before the session switch, applies to
+    // backup rows that carry no currency of their own.
+    final baseCurrency = _ref.read(currencyCodeProvider);
 
     final analytics = _ref.read(analyticsServiceProvider);
     await analytics.logEvent(
@@ -103,6 +107,7 @@ class GuestBackupMergeService {
       final result = await importService.importFromZip(
         backup,
         ImportStrategy.merge,
+        baseCurrency: baseCurrency,
       );
       if (!_isComplete(result, export)) {
         // Counts only: warnings and errors contain investment and goal names.
