@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -66,54 +67,66 @@ final activeInvestmentBasicStatsMapProvider =
     });
 
 /// Top-level function for calculating XIRR for multiple investments in a single isolate.
-Map<String, double> _calculateAllXirrs(List<CashFlowEntity> allFlows) {
+Map<String, XirrResult> _calculateAllXirrs(List<CashFlowEntity> allFlows) {
   final grouped = <String, List<CashFlowEntity>>{};
   for (final cf in allFlows) {
     grouped.putIfAbsent(cf.investmentId, () => []).add(cf);
   }
 
-  final results = <String, double>{};
+  final results = <String, XirrResult>{};
   for (final entry in grouped.entries) {
-    results[entry.key] = FinancialCalculator.calculateXirrFromCashFlows(
+    results[entry.key] = FinancialCalculator.solveXirrFromCashFlows(
       entry.value,
     );
   }
   return results;
 }
 
-/// Map of all active investment XIRRs, computed in a single isolate batch.
-/// This prevents N+1 isolate overhead when rendering lists.
+/// Map of all active investment XIRRs with how each was obtained, computed in
+/// a single isolate batch. This prevents N+1 isolate overhead when rendering
+/// lists.
+final activeInvestmentXirrResultMapProvider =
+    FutureProvider<Map<String, XirrResult>>((ref) async {
+      // Wait for valid cash flows to be available
+      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+      if (cashFlowsAsync.isLoading) {
+        return Completer<Map<String, XirrResult>>().future;
+      }
+
+      if (cashFlowsAsync.hasError) {
+        throw cashFlowsAsync.error ??
+            Exception('Unknown error loading cash flows for XIRR calculation');
+      }
+
+      final cashFlows = cashFlowsAsync.value ?? [];
+
+      if (cashFlows.isEmpty) {
+        return {};
+      }
+
+      // Track performance of bulk XIRR calculation
+      return ref
+          .read(performanceServiceProvider)
+          .trackOperation(
+            'bulk_xirr_calculation',
+            () => compute<List<CashFlowEntity>, Map<String, XirrResult>>(
+              _calculateAllXirrs,
+              cashFlows,
+            ),
+            metrics: {'total_cash_flows': cashFlows.length},
+          );
+    });
+
+/// Map of all active investment XIRRs as bare numbers (0.0 when undefined),
+/// for callers that do not label approximate values.
 final activeInvestmentXirrMapProvider = FutureProvider<Map<String, double>>((
   ref,
 ) async {
-  // Wait for valid cash flows to be available
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  if (cashFlowsAsync.isLoading) {
-    return Completer<Map<String, double>>().future;
-  }
-
-  if (cashFlowsAsync.hasError) {
-    throw cashFlowsAsync.error ?? Exception('Unknown error loading cash flows for XIRR calculation');
-  }
-
-  final cashFlows = cashFlowsAsync.value ?? [];
-
-  if (cashFlows.isEmpty) {
-    return {};
-  }
-
-  // Track performance of bulk XIRR calculation
-  return ref
-      .read(performanceServiceProvider)
-      .trackOperation(
-        'bulk_xirr_calculation',
-        () => compute<List<CashFlowEntity>, Map<String, double>>(
-          _calculateAllXirrs,
-          cashFlows,
-        ),
-        metrics: {'total_cash_flows': cashFlows.length},
-      );
+  final results = await ref.watch(activeInvestmentXirrResultMapProvider.future);
+  return {
+    for (final entry in results.entries) entry.key: entry.value.value ?? 0.0,
+  };
 });
 
 /// Calculate stats for a single active investment (reactive - watches the stream)
@@ -212,45 +225,47 @@ final archivedInvestmentBasicStatsProvider =
 
 /// XIRR ONLY provider for active investments (isolates expensive calculation).
 /// Use this in conjunction with basic stats to avoid re-calculating totals.
-/// Offloads calculation to a background isolate using [compute].
-final investmentXirrProvider = FutureProvider.family<double, String>((
+/// Offloads calculation to a background isolate using [compute]. The result
+/// says whether the rate is approximate, so the UI can label it.
+final investmentXirrProvider = FutureProvider.family<XirrResult, String>((
   ref,
   investmentId,
 ) async {
   // Use the bulk calculation provider to avoid N+1 isolate overhead.
   // This waits for the single batch calculation to complete and then
   // returns the specific value for this investment.
-  final xirrMap = await ref.watch(activeInvestmentXirrMapProvider.future);
+  final xirrMap = await ref.watch(activeInvestmentXirrResultMapProvider.future);
 
-  return xirrMap[investmentId] ?? 0.0;
+  return xirrMap[investmentId] ??
+      const XirrResult.undefined(XirrUndefinedReason.insufficientFlows);
 });
 
 /// XIRR ONLY provider for archived investments.
 /// Offloads calculation to a background isolate using [compute].
-final archivedInvestmentXirrProvider = FutureProvider.family<double, String>((
-  ref,
-  investmentId,
-) async {
-  final cashFlows = await ref.watch(
-    archivedCashFlowsByInvestmentProvider(
-      investmentId,
-    ).selectAsync((data) => data),
-  );
-
-  if (cashFlows.isEmpty) {
-    return 0.0;
-  }
-
-  // Track performance of XIRR calculation for archived investments
-  return ref
-      .read(performanceServiceProvider)
-      .trackOperation(
-        'xirr_calculation_archived',
-        () =>
-            compute(FinancialCalculator.calculateXirrFromCashFlows, cashFlows),
-        metrics: {'cash_flow_count': cashFlows.length},
+final archivedInvestmentXirrProvider =
+    FutureProvider.family<XirrResult, String>((ref, investmentId) async {
+      final cashFlows = await ref.watch(
+        archivedCashFlowsByInvestmentProvider(
+          investmentId,
+        ).selectAsync((data) => data),
       );
-});
+
+      if (cashFlows.isEmpty) {
+        return const XirrResult.undefined(
+          XirrUndefinedReason.insufficientFlows,
+        );
+      }
+
+      // Track performance of XIRR calculation for archived investments
+      return ref
+          .read(performanceServiceProvider)
+          .trackOperation(
+            'xirr_calculation_archived',
+            () =>
+                compute(FinancialCalculator.solveXirrFromCashFlows, cashFlows),
+            metrics: {'cash_flow_count': cashFlows.length},
+          );
+    });
 
 // ============ AGGREGATE STATS PROVIDERS ============
 

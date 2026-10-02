@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -57,7 +58,7 @@ void main() {
           // XIRR provider returns actual XIRR
           investmentXirrProvider(
             investment.id,
-          ).overrideWith((ref) => Future.value(xirrValue)),
+          ).overrideWith((ref) => Future.value(XirrResult.exact(xirrValue))),
           // Mock other dependencies
           currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(
@@ -129,7 +130,7 @@ void main() {
           ).overrideWith((ref) => AsyncValue.data(stats)),
           // XIRR provider is loading
           investmentXirrProvider(investment.id).overrideWith(
-            (ref) => Future<double>.delayed(const Duration(seconds: 10)),
+            (ref) => Future<XirrResult>.delayed(const Duration(seconds: 10)),
           ),
           currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(

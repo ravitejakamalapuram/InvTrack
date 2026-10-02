@@ -68,7 +68,8 @@ class AccessibilityUtils {
   /// Creates a semantic label for investment cards.
   ///
   /// [returnStatus] (e.g. "Awaiting first payout") replaces [returnPercent]
-  /// when the return cannot be calculated yet.
+  /// when the return cannot be calculated yet. [returnIsApproximate] reads
+  /// [returnPercent] as approximate.
   static String investmentCardLabel({
     required String name,
     required String type,
@@ -77,6 +78,7 @@ class AccessibilityUtils {
     required String currencySymbol,
     required bool isClosed,
     String? returnStatus,
+    bool returnIsApproximate = false,
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
@@ -89,10 +91,11 @@ class AccessibilityUtils {
     final invested = totalInvested != null && totalInvested > 0
         ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
         : '';
+    final approx = returnIsApproximate ? 'approximately ' : '';
     final returns = returnStatus != null
         ? 'Returns: $returnStatus'
         : returnPercent != null
-        ? 'Returns: ${shouldMask ? "Hidden percentage" : formatPercentageForScreenReader(returnPercent)}'
+        ? 'Returns: ${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}'
         : '';
     final lastActivity = lastActivityDate != null
         ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
@@ -18,17 +19,26 @@ Future<void> _pumpCard(
   WidgetTester tester, {
   required InvestmentEntity investment,
   required InvestmentStats stats,
-  required double xirr,
+  required XirrResult xirr,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        investmentBasicStatsProvider(
-          investment.id,
-        ).overrideWith((ref) => AsyncValue.data(stats)),
-        investmentXirrProvider(
-          investment.id,
-        ).overrideWith((ref) => Future.value(xirr)),
+        if (investment.isArchived) ...[
+          archivedInvestmentBasicStatsProvider(
+            investment.id,
+          ).overrideWith((ref) => AsyncValue.data(stats)),
+          archivedInvestmentXirrProvider(
+            investment.id,
+          ).overrideWith((ref) => Future.value(xirr)),
+        ] else ...[
+          investmentBasicStatsProvider(
+            investment.id,
+          ).overrideWith((ref) => AsyncValue.data(stats)),
+          investmentXirrProvider(
+            investment.id,
+          ).overrideWith((ref) => Future.value(xirr)),
+        ],
         currencySymbolProvider.overrideWith((ref) => '₹'),
         currencyFormatProvider.overrideWith(
           (ref) => NumberFormat.currency(
@@ -56,7 +66,10 @@ Future<void> _pumpCard(
   await tester.pumpAndSettle();
 }
 
-InvestmentEntity _investment(InvestmentStatus status) => InvestmentEntity(
+InvestmentEntity _investment(
+  InvestmentStatus status, {
+  bool isArchived = false,
+}) => InvestmentEntity(
   id: 'inv-1',
   name: 'Cumulative FD',
   type: InvestmentType.fixedDeposit,
@@ -64,6 +77,7 @@ InvestmentEntity _investment(InvestmentStatus status) => InvestmentEntity(
   createdAt: DateTime(2026, 1, 1),
   updatedAt: DateTime(2026, 1, 1),
   currency: 'INR',
+  isArchived: isArchived,
 );
 
 void main() {
@@ -71,7 +85,7 @@ void main() {
     'open investment with only an INVEST flow shows Awaiting first payout',
     (tester) async {
       // Basic stats (no XIRR) for a single INVEST of Rs1,00,000, and the XIRR
-      // the bulk provider returns for it today (0.0).
+      // the bulk provider returns for it (undefined: a single cash flow).
       final stats = InvestmentStats(
         totalInvested: 100000,
         totalReturned: 0,
@@ -88,7 +102,7 @@ void main() {
         tester,
         investment: _investment(InvestmentStatus.open),
         stats: stats,
-        xirr: 0.0,
+        xirr: const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
       );
 
       expect(find.text('Awaiting first payout'), findsOneWidget);
@@ -120,7 +134,7 @@ void main() {
       tester,
       investment: _investment(InvestmentStatus.open),
       stats: stats,
-      xirr: -0.9932,
+      xirr: const XirrResult.exact(-0.9932),
     );
 
     expect(find.text('Awaiting current value'), findsOneWidget);
@@ -146,9 +160,90 @@ void main() {
       tester,
       investment: _investment(InvestmentStatus.closed),
       stats: stats,
-      xirr: 10.126388779444367,
+      xirr: const XirrResult.approximate(10.126388779444367),
     );
 
     expect(find.text('+2.0% in 3 days'), findsOneWidget);
+  });
+
+  // Two years from -Rs1,00,000 to Rs22,500 back, with the rate taken from the
+  // timing-blind fallback rather than a solved root.
+  final approxStats = InvestmentStats(
+    totalInvested: 100000,
+    totalReturned: 22500,
+    netCashFlow: -77500,
+    absoluteReturn: -77.5,
+    moic: 0.225,
+    xirr: 0,
+    xirrMethod: XirrMethod.undefined,
+    cashFlowCount: 2,
+    firstCashFlowDate: DateTime(2024, 1, 1),
+    lastCashFlowDate: DateTime(2026, 1, 1),
+  );
+
+  testWidgets('approximate XIRR is labelled approx. on the card', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.closed),
+      stats: approxStats,
+      xirr: const XirrResult.approximate(-0.526),
+    );
+
+    expect(find.text('-52.6% approx. IRR'), findsOneWidget);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, contains('Returns: approximately'));
+  });
+
+  testWidgets('approximate XIRR is labelled approx. on an archived card', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.closed, isArchived: true),
+      stats: approxStats,
+      xirr: const XirrResult.approximate(-0.526),
+    );
+
+    expect(find.text('-52.6% approx. IRR'), findsOneWidget);
+  });
+
+  testWidgets('exact XIRR has no approx. label', (tester) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.closed),
+      stats: approxStats,
+      xirr: const XirrResult.exact(-0.526),
+    );
+
+    expect(find.text('-52.6% IRR'), findsOneWidget);
+    expect(find.textContaining('approx'), findsNothing);
+  });
+
+  testWidgets('closed investment with a single INVEST flow is not "in under a '
+      'day"', (tester) async {
+    final stats = InvestmentStats(
+      totalInvested: 100000,
+      totalReturned: 0,
+      netCashFlow: -100000,
+      absoluteReturn: -100,
+      moic: 0,
+      xirr: 0,
+      xirrMethod: XirrMethod.undefined,
+      cashFlowCount: 1,
+      firstCashFlowDate: DateTime(2023, 1, 1),
+      lastCashFlowDate: DateTime(2023, 1, 1),
+    );
+
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.closed),
+      stats: stats,
+      xirr: const XirrResult.undefined(XirrUndefinedReason.insufficientFlows),
+    );
+
+    expect(find.textContaining('under a day'), findsNothing);
+    expect(find.textContaining('IRR'), findsNothing);
   });
 }

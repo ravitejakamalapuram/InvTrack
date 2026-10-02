@@ -69,12 +69,13 @@ class InvestmentCard extends ConsumerWidget {
     final baseLabel = statsAsync.maybeWhen(
       data: (stats) {
         // Use XIRR from async provider if available, otherwise fallback to stats (usually 0)
-        final xirrValue = xirrAsync.value ?? stats.xirr;
+        final xirrResult = xirrAsync.value;
+        final xirrValue = xirrResult?.value ?? stats.xirr;
         final display = ReturnDisplay.resolve(
           stats: stats,
           openStats: isClosed ? null : stats,
           xirr: xirrValue,
-          xirrMethod: XirrMethod.exact,
+          xirrMethod: xirrResult?.method ?? stats.xirrMethod,
         );
         final double? returnPercent = switch (display.kind) {
           ReturnDisplayKind.annualised =>
@@ -90,6 +91,9 @@ class InvestmentCard extends ConsumerWidget {
           // XIRR might be 0.0 if not calculated, which is acceptable for semantic label
           // rather than blocking UI for calculation
           returnPercent: returnPercent,
+          returnIsApproximate:
+              display.kind == ReturnDisplayKind.annualised &&
+              display.xirrMethod == XirrMethod.approximate,
           returnStatus: display.statusLabel(l10n),
           currencySymbol: currencySymbol,
           isClosed: isClosed,
@@ -396,7 +400,7 @@ class _MaturityInfo {
 
 /// Displays the investment value and return percentage.
 class _InvestmentValueColumn extends StatelessWidget {
-  final AsyncValue<double> xirrAsync;
+  final AsyncValue<XirrResult> xirrAsync;
   final bool isClosed;
   final bool isDark;
   final AsyncValue<InvestmentStats> statsAsync;
@@ -489,12 +493,13 @@ class _InvestmentValueColumn extends StatelessWidget {
             else
               // XIRR - only show if valid and loaded
               xirrAsync.when(
-                data: (xirr) {
+                data: (result) {
+                  final xirr = result.value ?? 0.0;
                   final display = ReturnDisplay.resolve(
                     stats: stats,
                     openStats: openStats,
                     xirr: xirr,
-                    xirrMethod: XirrMethod.exact,
+                    xirrMethod: result.method,
                   );
                   final isShortHolding =
                       display.kind == ReturnDisplayKind.shortHolding;
