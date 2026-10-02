@@ -89,6 +89,7 @@ void main() {
     repository = FirestoreInvestmentRepository(
       firestore: mockFirestore,
       userId: testUserId,
+      baseCurrency: () => 'INR',
     );
   });
 

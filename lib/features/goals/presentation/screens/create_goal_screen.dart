@@ -216,7 +216,8 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   }
 
   Widget _buildBody(bool isDark, AppLocalizations l10n) {
-    final currencySymbol = ref.watch(currencySymbolProvider);
+    // Amounts are entered in the goal's currency, not the base currency
+    final currencySymbol = getCurrencySymbol(_selectedCurrency);
 
     return Form(
       key: _formKey,

@@ -64,6 +64,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   bool _isLoading = false;
   late String _selectedCurrency;
 
+  /// Set once the user picks a currency, so the investment's currency no
+  /// longer overrides it.
+  bool _currencyPickedByUser = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,8 +81,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
       _selectedType = cf.type;
       _selectedCurrency = cf.currency;
     } else {
-      // Default to investment's currency for new cash flows
-      // We'll fetch this from the investment in the build method
+      // New cash flows default to the investment's currency, applied in
+      // build() once the investment loads; the base currency until then.
       _selectedCurrency = ref.read(currencyCodeProvider);
 
       if (widget.initialType != null) {
@@ -206,8 +210,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencySymbol = ref.watch(currencySymbolProvider);
-    final currencyFormat = ref.watch(currencyFormatPreciseProvider);
+    if (!widget.isEditing && !_currencyPickedByUser) {
+      final investmentCurrency = ref
+          .watch(investmentByIdProvider(widget.investmentId))
+          .value
+          ?.currency;
+      if (investmentCurrency != null) _selectedCurrency = investmentCurrency;
+    }
+    // The amount is entered in the selected currency, so show its symbol
+    final currencySymbol = getCurrencySymbol(_selectedCurrency);
+    final currencyLocale = getCurrencyLocale(_selectedCurrency);
 
     return Scaffold(
       backgroundColor: isDark
@@ -385,7 +397,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
               CurrencySelector(
                 selectedCurrency: _selectedCurrency,
                 onCurrencySelected: (code) {
-                  setState(() => _selectedCurrency = code);
+                  setState(() {
+                    _selectedCurrency = code;
+                    _currencyPickedByUser = true;
+                  });
                   // Track currency selection
                   ref
                       .read(analyticsServiceProvider)
@@ -422,8 +437,11 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
                                 double.tryParse(_amountController.text) ?? 0;
                             // Format with prefix and proper currency formatting
                             final prefix = _selectedType.isOutflow ? '-' : '+';
-                            final formattedAmount = currencyFormat.format(
+                            final formattedAmount = formatCurrency(
                               amount,
+                              currencySymbol,
+                              currencyLocale,
+                              decimalDigits: 2,
                             );
                             final color = _selectedType.isOutflow
                                 ? (isDark

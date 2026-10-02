@@ -251,6 +251,7 @@ void main() {
       final result = await importService.importFromZip(
         zipBytes,
         ImportStrategy.replace,
+        baseCurrency: 'INR',
       );
 
       // Assert: Verify import success
@@ -297,10 +298,11 @@ void main() {
         'cashflows.csv': csvContent,
       });
 
-      // Act: Import
+      // Act: Import for a user whose base currency is INR
       final result = await importService.importFromZip(
         zipBytes,
         ImportStrategy.merge,
+        baseCurrency: 'INR',
       );
 
       // Assert: Verify import success with default currency
@@ -310,11 +312,60 @@ void main() {
       final importedCashFlows = investmentRepository.cashFlows;
       expect(importedCashFlows.length, 2);
 
-      // Verify default currency is USD (backward compatibility)
+      // A missing currency is the user's base currency, never USD; otherwise
+      // the INR 1,00,000 would be converted as USD 100,000 (about 88x).
       for (final cf in importedCashFlows) {
-        expect(cf.currency, 'USD');
+        expect(cf.currency, 'INR');
       }
+      expect(investmentRepository.investments.single.currency, 'INR');
     });
+
+    test('imported investment takes the currency of its rows', () async {
+      final metadata = {'version': '2.0'};
+      const csvContent = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-15,US Treasury,INVEST,1000,USD,
+2024-07-15,US Treasury,INCOME,25,USD,''';
+
+      final zipBytes = createZipArchive({
+        'metadata.json': jsonEncode(metadata),
+        'cashflows.csv': csvContent,
+      });
+
+      await importService.importFromZip(
+        zipBytes,
+        ImportStrategy.merge,
+        baseCurrency: 'INR',
+      );
+
+      expect(investmentRepository.investments.single.currency, 'USD');
+      expect(investmentRepository.cashFlows.map((cf) => cf.currency).toSet(), {
+        'USD',
+      });
+    });
+
+    test(
+      'legacy goals CSV without a currency column uses the base currency',
+      () async {
+        final metadata = {'version': '1.0'};
+        const goalsCsv = '''Name,Type,Target Amount,Tracking Mode
+Retirement,targetAmount,1000000,all''';
+
+        final zipBytes = createZipArchive({
+          'metadata.json': jsonEncode(metadata),
+          'goals.csv': goalsCsv,
+        });
+
+        await importService.importFromZip(
+          zipBytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
+
+        final goals = await goalRepository.getAllGoals();
+        expect(goals.single.currency, 'INR');
+        expect(goals.single.targetAmount, 1000000.0);
+      },
+    );
 
     test('preserves currency across multiple investments', () async {
       // Arrange: Create multiple investments with different currencies
@@ -376,6 +427,7 @@ void main() {
       final result = await importService.importFromZip(
         zipBytes,
         ImportStrategy.replace,
+        baseCurrency: 'INR',
       );
 
       // Assert

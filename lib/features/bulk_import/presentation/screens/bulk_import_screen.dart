@@ -6,6 +6,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/core/utils/app_feedback.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/csv_template_service.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
@@ -73,7 +74,11 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
 
     try {
       // Parse the CSV
-      final parseResult = SimpleCsvParser.parse(selectedFile.bytes!);
+      // Rows without a currency take the user's base currency
+      final parseResult = SimpleCsvParser.parse(
+        selectedFile.bytes!,
+        baseCurrency: ref.read(currencyCodeProvider),
+      );
 
       if (parseResult.validRows == 0) {
         if (mounted) {

@@ -23,11 +23,15 @@ class UserProfileModel {
     };
   }
 
-  /// Convert Firestore document to UserProfileEntity
+  /// Convert Firestore document to UserProfileEntity.
+  ///
+  /// A missing `preferredCurrency` takes [baseCurrency] (the currency already
+  /// in use on this device), never USD.
   static UserProfileEntity fromFirestore(
     Map<String, dynamic> data,
-    String userId,
-  ) {
+    String userId, {
+    required String baseCurrency,
+  }) {
     // Parse date format pattern
     final dateFormatStr = data['dateFormatPattern'] as String? ?? 'mdy';
     final dateFormat = DateFormatPattern.values.firstWhere(
@@ -42,7 +46,7 @@ class UserProfileModel {
 
     return UserProfileEntity(
       userId: userId,
-      preferredCurrency: data['preferredCurrency'] as String? ?? 'USD',
+      preferredCurrency: data['preferredCurrency'] as String? ?? baseCurrency,
       preferredLocale: data['preferredLocale'] as String? ?? 'en_US',
       countryCode: data['countryCode'] as String? ?? 'US',
       languageCode: data['languageCode'] as String? ?? 'en',

@@ -114,6 +114,7 @@ void main() {
         final result = await service.importFromZip(
           Uint8List.fromList([1, 2, 3]),
           ImportStrategy.merge,
+          baseCurrency: 'INR',
         );
 
         expect(result.isSuccess, false);
@@ -125,7 +126,11 @@ void main() {
         final encoded = ZipEncoder().encode(archive);
         final bytes = Uint8List.fromList(encoded!);
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, false);
         // Empty archive returns "metadata.json not found" error
@@ -138,7 +143,11 @@ void main() {
               'Date,Investment Name,Type,Amount\n2024-01-01,Test,invest,1000',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, false);
         expect(result.errors, contains(contains('metadata.json')));
@@ -155,7 +164,11 @@ void main() {
 2024-02-15,Test Investment,INCOME,1500,Monthly interest''',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, true);
         expect(result.cashflowsImported, 2);
@@ -173,7 +186,11 @@ void main() {
 2024-03-15,Investment A,INCOME,1000''',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, true);
         expect(result.cashflowsImported, 3);
@@ -191,7 +208,11 @@ void main() {
 Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765''',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, true);
         expect(result.goalsImported, 1);
@@ -209,7 +230,11 @@ Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765''',
 2024-01-15,Archived Investment,INVEST,50000''',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, true);
         expect(result.cashflowsImported, 1);
@@ -223,7 +248,11 @@ Retirement Fund,targetAmount,1000000,,,all,,,🎯,4282339765''',
 Archived Goal,targetAmount,25000''',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, true);
         expect(result.goalsImported, 1);
@@ -279,6 +308,7 @@ Archived Goal,targetAmount,25000''',
         final result = await serviceWithFire.importFromZip(
           bytes,
           ImportStrategy.merge,
+          baseCurrency: 'INR',
         );
 
         expect(result.isSuccess, true);
@@ -298,6 +328,7 @@ Archived Goal,targetAmount,25000''',
         final result = await serviceWithFire.importFromZip(
           bytes,
           ImportStrategy.merge,
+          baseCurrency: 'INR',
         );
 
         expect(result.isSuccess, true);
@@ -314,6 +345,7 @@ Archived Goal,targetAmount,25000''',
         final result = await serviceWithFire.importFromZip(
           bytes,
           ImportStrategy.merge,
+          baseCurrency: 'INR',
         );
 
         expect(result.isSuccess, true);
@@ -329,7 +361,11 @@ Archived Goal,targetAmount,25000''',
         });
 
         // Use the original service without FIRE repository
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.isSuccess, true);
         expect(result.fireSettingsImported, false);

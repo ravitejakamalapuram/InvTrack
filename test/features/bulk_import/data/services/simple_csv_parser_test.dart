@@ -390,16 +390,29 @@ bad-date,Bad,invest,1000
           expect(result.rows.first.currency, 'SGD');
         });
 
-        test('handles empty currency field', () {
+        test('blank currency cell gives the base currency, not USD', () {
           const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
 2024-01-01,Test,INVEST,1000,,No currency specified''';
 
-          final result = SimpleCsvParser.parseString(csv);
+          final result = SimpleCsvParser.parseString(csv, baseCurrency: 'INR');
 
           expect(result.validRows, 1);
-          // Empty currency defaults to USD (backward compatibility)
-          expect(result.rows.first.currency, 'USD');
+          expect(result.rows.first.currency, 'INR');
         });
+
+        test(
+          'blank currency cell without a base currency stays unresolved',
+          () {
+            const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
+2024-01-01,Test,INVEST,1000,,No currency specified''';
+
+            final result = SimpleCsvParser.parseString(csv);
+
+            expect(result.validRows, 1);
+            // The caller resolves it to the user's base currency; never USD.
+            expect(result.rows.first.currency, isNull);
+          },
+        );
 
         test('trims whitespace from currency codes', () {
           const csv = '''Date,Investment Name,Type,Amount,Currency,Notes
@@ -424,16 +437,21 @@ bad-date,Bad,invest,1000
       });
 
       group('5-Column Format (Backward Compatibility)', () {
-        test('defaults to USD when Currency column is missing', () {
-          const csv = '''Date,Investment Name,Type,Amount,Notes
+        test(
+          'defaults to the base currency when Currency column is missing',
+          () {
+            const csv = '''Date,Investment Name,Type,Amount,Notes
 2024-01-15,Test Investment,INVEST,1000,No currency column''';
 
-          final result = SimpleCsvParser.parseString(csv);
+            final result = SimpleCsvParser.parseString(
+              csv,
+              baseCurrency: 'INR',
+            );
 
-          expect(result.validRows, 1);
-          // Should default to USD for backward compatibility
-          expect(result.rows.first.currency, 'USD');
-        });
+            expect(result.validRows, 1);
+            expect(result.rows.first.currency, 'INR');
+          },
+        );
 
         test('handles old 5-column format without errors', () {
           const csv = '''Date,Investment Name,Type,Amount,Notes
@@ -441,15 +459,44 @@ bad-date,Bad,invest,1000
 2024-01-02,Investment 2,INCOME,50,Note 2
 2024-01-03,Investment 3,RETURN,500,Note 3''';
 
-          final result = SimpleCsvParser.parseString(csv);
+          final result = SimpleCsvParser.parseString(csv, baseCurrency: 'INR');
 
           expect(result.validRows, 3);
           expect(result.hasErrors, false);
 
-          // All should default to USD
+          // Every row takes the user's base currency
           for (final row in result.rows) {
-            expect(row.currency, 'USD');
+            expect(row.currency, 'INR');
           }
+        });
+
+        test('a CSV with no Currency column never becomes USD', () {
+          const csv = '''Date,Investment Name,Type,Amount
+2024-01-15,HDFC FD,INVEST,100000
+2024-06-01,HDFC FD,INCOME,3500''';
+
+          final withBase = SimpleCsvParser.parseString(
+            csv,
+            baseCurrency: 'INR',
+          );
+          final withoutBase = SimpleCsvParser.parseString(csv);
+
+          expect(withBase.rows.map((r) => r.currency), ['INR', 'INR']);
+          expect(withBase.rows.map((r) => r.amount), [100000.0, 3500.0]);
+          expect(withoutBase.rows.map((r) => r.currency), [null, null]);
+        });
+
+        test('bytes entry point passes the base currency through', () {
+          final bytes = Uint8List.fromList(
+            utf8.encode(
+              'Date,Investment Name,Type,Amount\n'
+              '2024-01-15,HDFC FD,INVEST,100000',
+            ),
+          );
+
+          final result = SimpleCsvParser.parse(bytes, baseCurrency: 'INR');
+
+          expect(result.rows.single.currency, 'INR');
         });
       });
 

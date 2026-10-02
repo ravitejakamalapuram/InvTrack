@@ -2,6 +2,7 @@
 library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 
@@ -10,11 +11,16 @@ class FirestoreExpectedCashFlowRepository implements ExpectedCashFlowRepository 
   final FirebaseFirestore _firestore;
   final String _userId;
 
+  /// The user's base currency, for documents with no `currency` field.
+  final String Function() _baseCurrency;
+
   FirestoreExpectedCashFlowRepository({
     required FirebaseFirestore firestore,
     required String userId,
+    required String Function() baseCurrency,
   })  : _firestore = firestore,
-        _userId = userId;
+        _userId = userId,
+        _baseCurrency = baseCurrency;
 
   // Collection reference
   CollectionReference<Map<String, dynamic>> get _expectedCashFlowsRef =>
@@ -317,13 +323,22 @@ class FirestoreExpectedCashFlowRepository implements ExpectedCashFlowRepository 
   ExpectedCashFlowEntity _expectedCashFlowFromFirestore(
     Map<String, dynamic> data,
     String id,
-  ) {
+  ) => expectedCashFlowFromFirestore(data, id, baseCurrency: _baseCurrency());
+
+  /// Maps an expected cash flow document. A missing `currency` takes
+  /// [baseCurrency], never USD.
+  @visibleForTesting
+  static ExpectedCashFlowEntity expectedCashFlowFromFirestore(
+    Map<String, dynamic> data,
+    String id, {
+    required String baseCurrency,
+  }) {
     return ExpectedCashFlowEntity(
       id: id,
       investmentId: data['investmentId'] as String,
       expectedDate: (data['expectedDate'] as Timestamp).toDate(),
       expectedAmount: (data['expectedAmount'] as num).toDouble(),
-      currency: data['currency'] as String? ?? 'USD',
+      currency: data['currency'] as String? ?? baseCurrency,
       predictionSource: PredictionSource.values.firstWhere(
         (s) => s.name == (data['predictionSource'] as String? ?? 'wma'),
         orElse: () => PredictionSource.wma,
