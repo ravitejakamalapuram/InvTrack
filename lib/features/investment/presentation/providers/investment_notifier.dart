@@ -10,6 +10,7 @@ import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -76,8 +77,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
-        // Multi-currency (defaults to USD if not provided)
-        currency: currency ?? 'USD',
+        // Multi-currency (defaults to the user's base currency)
+        currency: currency ?? ref.read(currencyCodeProvider),
       );
 
       // Track performance of investment creation
@@ -437,7 +438,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         notes: notes?.trim(),
         createdAt: DateTime.now(),
-        currency: currency ?? 'USD',
+        currency: currency ?? ref.read(currencyCodeProvider),
       );
       await ref.read(investmentRepositoryProvider).addCashFlow(cashFlow);
 
@@ -491,7 +492,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         notes: notes?.trim(),
         createdAt: createdAt,
-        currency: currency ?? 'USD',
+        currency: currency ?? ref.read(currencyCodeProvider),
       );
       await ref.read(investmentRepositoryProvider).updateCashFlow(cashFlow);
 
@@ -560,9 +561,34 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         finalType = mostCommonType ?? InvestmentType.other;
       }
 
-      // Create new merged investment
+      // Create new merged investment, keeping the sources' currency (base
+      // currency if they differ) and their terms. Start = earliest start,
+      // maturity = latest maturity; other terms come from the first source
+      // that has them.
       final now = DateTime.now();
       final newInvestmentId = const Uuid().v4();
+      DateTime? earliestStart;
+      DateTime? latestMaturity;
+      for (final inv in toMerge) {
+        final start = inv.startDate;
+        if (start != null &&
+            (earliestStart == null || start.isBefore(earliestStart))) {
+          earliestStart = start;
+        }
+        final maturity = inv.maturityDate;
+        if (maturity != null &&
+            (latestMaturity == null || maturity.isAfter(latestMaturity))) {
+          latestMaturity = maturity;
+        }
+      }
+      T? firstSet<T>(T? Function(InvestmentEntity) field) {
+        for (final inv in toMerge) {
+          final value = field(inv);
+          if (value != null) return value;
+        }
+        return null;
+      }
+
       final newInvestment = InvestmentEntity(
         id: newInvestmentId,
         name: newName,
@@ -573,6 +599,15 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         notes: 'Merged from: ${toMerge.map((i) => i.name).join(', ')}',
         createdAt: now,
         updatedAt: now,
+        currency: resolveSharedCurrency(
+          toMerge.map((i) => i.currency),
+          ref.read(currencyCodeProvider),
+        ),
+        startDate: earliestStart,
+        maturityDate: latestMaturity,
+        expectedRate: firstSet((i) => i.expectedRate),
+        incomeFrequency: firstSet((i) => i.incomeFrequency),
+        platform: firstSet((i) => i.platform),
       );
 
       // Collect all cash flows from merged investments
@@ -591,6 +626,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
                   ? '${cf.notes} (from ${inv.name})'
                   : 'From ${inv.name}',
               createdAt: now,
+              currency: cf.currency,
             ),
           );
         }
