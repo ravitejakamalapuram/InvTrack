@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/providers/debug_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/income_projection/presentation/screens/income_guardian_settings_screen.dart';
@@ -197,30 +200,109 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // Currency picker moved to _CurrencyTile widget to avoid full-screen rebuilds
 
-  void _handleSignOut(BuildContext context, WidgetRef ref) {
+  Future<void> _handleSignOut(BuildContext context, WidgetRef ref) async {
+    final isGuest = ref.read(authStateProvider).value?.isAnonymous ?? false;
+    if (isGuest) return _handleGuestSignOut(context, ref);
+
     final l10n = AppLocalizations.of(context);
-    showDialog(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.signOutConfirmTitle),
         content: Text(l10n.signOutConfirmMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(l10n.cancel),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Clear user identity from Analytics and Crashlytics
-              ref.read(analyticsServiceProvider).setUserId(null);
-              ref.read(crashlyticsServiceProvider).clearUserIdentifier();
-              ref.read(authRepositoryProvider).signOut();
-            },
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(l10n.signOut),
           ),
         ],
       ),
+    );
+    if (confirmed ?? false) await _signOut(ref);
+  }
+
+  /// A guest cannot sign back in to an anonymous account, so signing out
+  /// loses their data. Offer linking and a backup first.
+  Future<void> _handleGuestSignOut(BuildContext context, WidgetRef ref) async {
+    final choice = await showDialog<_GuestSignOutChoice>(
+      context: context,
+      builder: (_) => const _GuestSignOutDialog(),
+    );
+    if (choice == null || !context.mounted) return;
+
+    switch (choice) {
+      case _GuestSignOutChoice.linkGoogle:
+        await GoogleSignInHandler(ref: ref, context: context).handleSignIn();
+      case _GuestSignOutChoice.exportBackup:
+        try {
+          await ref.read(dataExportServiceProvider)?.exportAndShare();
+        } catch (e, st) {
+          if (!context.mounted) return;
+          ErrorHandler.handle(e, st, context: context, showFeedback: true);
+        }
+      case _GuestSignOutChoice.signOut:
+        await _signOut(ref);
+    }
+  }
+
+  Future<void> _signOut(WidgetRef ref) async {
+    // Clear user identity from Analytics and Crashlytics
+    ref.read(analyticsServiceProvider).setUserId(null);
+    ref.read(crashlyticsServiceProvider).clearUserIdentifier();
+    await ref.read(authRepositoryProvider).signOut();
+  }
+}
+
+enum _GuestSignOutChoice { linkGoogle, exportBackup, signOut }
+
+/// Sign-out dialog for guest (anonymous) users. Linking is the primary
+/// action, export the secondary one, and plain sign-out is styled as
+/// destructive.
+class _GuestSignOutDialog extends StatelessWidget {
+  const _GuestSignOutDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+    void choose(_GuestSignOutChoice choice) => Navigator.pop(context, choice);
+
+    return AlertDialog(
+      icon: Icon(Icons.warning_amber_rounded, color: errorColor),
+      title: Text(l10n.guestSignOutTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.guestSignOutMessage),
+          SizedBox(height: AppSpacing.lg),
+          FilledButton(
+            onPressed: () => choose(_GuestSignOutChoice.linkGoogle),
+            child: Text(l10n.guestSignOutLinkGoogle),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            onPressed: () => choose(_GuestSignOutChoice.exportBackup),
+            child: Text(l10n.guestSignOutExportBackup),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: errorColor),
+            onPressed: () => choose(_GuestSignOutChoice.signOut),
+            child: Text(l10n.guestSignOutConfirm),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+      ],
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
+import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mocks
@@ -437,5 +438,74 @@ void main() {
         verify(() => mockFirebaseAuth.signInAnonymously()).called(1);
       },
     );
+  });
+
+  // A05 / PLAT-13: FirebaseAuth.authStateChanges() only fires on sign-in and
+  // sign-out. Linking a guest to Google keeps the UID and is reported only by
+  // userChanges(), so the app kept showing "Guest" until it was restarted.
+  group('FirebaseAuthRepository - authStateChanges after account linking', () {
+    MockUser firebaseUser({
+      required bool isAnonymous,
+      String? email,
+      String? displayName,
+    }) {
+      final user = MockUser();
+      when(() => user.uid).thenReturn('guest-uid');
+      when(() => user.email).thenReturn(email);
+      when(() => user.displayName).thenReturn(displayName);
+      when(() => user.photoURL).thenReturn(null);
+      when(() => user.isAnonymous).thenReturn(isAnonymous);
+      return user;
+    }
+
+    test('emits the linked Google user without a restart', () async {
+      final guest = firebaseUser(isAnonymous: true);
+      final linked = firebaseUser(
+        isAnonymous: false,
+        email: 'linked@example.com',
+        displayName: 'Linked User',
+      );
+      // What FlutterFire does: authStateChanges stays on the guest, while
+      // userChanges reports the link.
+      when(
+        () => mockFirebaseAuth.authStateChanges(),
+      ).thenAnswer((_) => Stream.value(guest));
+      when(
+        () => mockFirebaseAuth.userChanges(),
+      ).thenAnswer((_) => Stream.fromIterable([guest, linked]));
+
+      await expectLater(
+        repository.authStateChanges,
+        emitsInOrder([
+          const UserEntity(id: 'guest-uid', email: '', isAnonymous: true),
+          const UserEntity(
+            id: 'guest-uid',
+            email: 'linked@example.com',
+            displayName: 'Linked User',
+          ),
+          emitsDone,
+        ]),
+      );
+    });
+
+    test('does not re-emit an unchanged user (token refresh)', () async {
+      final guest = firebaseUser(isAnonymous: true);
+      // userChanges also fires on every ID-token refresh (about hourly).
+      // Re-emitting an equal user would rebuild everything that watches auth.
+      when(
+        () => mockFirebaseAuth.authStateChanges(),
+      ).thenAnswer((_) => Stream.value(guest));
+      when(
+        () => mockFirebaseAuth.userChanges(),
+      ).thenAnswer((_) => Stream.fromIterable([guest, guest, guest]));
+
+      await expectLater(
+        repository.authStateChanges,
+        emitsInOrder([
+          const UserEntity(id: 'guest-uid', email: '', isAnonymous: true),
+          emitsDone,
+        ]),
+      );
+    });
   });
 }

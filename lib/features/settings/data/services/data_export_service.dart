@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
@@ -50,12 +51,17 @@ class DataExportService {
   Future<String> exportAsZip() async {
     return _performanceService.trackOperation(
       'data_export',
-      () => _exportAsZipInternal(),
+      () async => _saveToTempFile(await _buildZipBytes()),
     );
   }
 
-  /// Internal export implementation with performance tracking
-  Future<String> _exportAsZipInternal() async {
+  /// Export all user data as ZIP bytes held in memory, without writing a file.
+  Future<Uint8List> exportAsZipBytes() async {
+    return _performanceService.trackOperation('data_export', _buildZipBytes);
+  }
+
+  /// Builds the export ZIP in memory.
+  Future<Uint8List> _buildZipBytes() async {
     LoggerService.info('Starting data export');
 
     // 1. Fetch all data
@@ -214,8 +220,11 @@ class DataExportService {
     if (zipData == null) {
       throw Exception('Failed to create ZIP archive');
     }
+    return Uint8List.fromList(zipData);
+  }
 
-    // 6. Save to temp directory
+  /// Saves export ZIP bytes to the temp directory and returns the file path.
+  Future<String> _saveToTempFile(Uint8List zipData) async {
     final directory = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final fileName = 'InvTrack_Export_$timestamp.zip';
@@ -236,8 +245,15 @@ class DataExportService {
 
   /// Export and share the ZIP file
   Future<void> exportAndShare() async {
-    final filePath = await exportAsZip();
+    await _shareZipFile(await exportAsZip());
+  }
 
+  /// Share export ZIP bytes produced earlier by [exportAsZipBytes].
+  Future<void> shareZipBytes(Uint8List zipData) async {
+    await _shareZipFile(await _saveToTempFile(zipData));
+  }
+
+  Future<void> _shareZipFile(String filePath) async {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(filePath)],

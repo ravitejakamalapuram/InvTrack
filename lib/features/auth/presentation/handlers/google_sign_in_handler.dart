@@ -17,7 +17,8 @@ final linkAccountUseCaseProvider = Provider<LinkAccountUseCase>((ref) {
 /// This handler:
 /// 1. Checks if user is anonymous
 /// 2. Attempts to link anonymous account to Google
-/// 3. If linking fails (Google account exists), shows backup & merge dialog
+/// 3. If linking fails (Google account exists), offers to back up the guest
+///    data, sign in to that account and merge the backup into it
 /// 4. Handles all error cases with proper user feedback
 class GoogleSignInHandler {
   final WidgetRef ref;
@@ -114,10 +115,10 @@ class GoogleSignInHandler {
 
     if (!context.mounted) return false;
 
-    // Show backup & merge dialog
-    final result = await showBackupMergeDialog(context, ref);
+    final confirmed = await showBackupMergeDialog(context);
+    if (!confirmed || !context.mounted) return false;
 
-    return result ?? false;
+    return backupAndMergeGuestData(context, ref);
   }
 
   bool _handleNotAnonymous() {
