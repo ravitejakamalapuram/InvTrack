@@ -1,0 +1,33 @@
+name: nightly
+
+# Tests that PR CI skips (A63). release.yaml runs `flutter test --exclude-tags=golden`, so the golden
+# tests in test/golden only run here: every night and on demand. Emulator integration tests are not
+# run yet.
+on:
+  schedule:
+    - cron: '37 1 * * *' # 01:37 UTC = 07:07 IST
+  workflow_dispatch: {}
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  goldens:
+    name: Golden tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.4' # keep in step with release.yaml
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get && flutter gen-l10n
+      - name: Golden tests
+        run: flutter test --tags golden test/golden

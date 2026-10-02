@@ -1,4 +1,5 @@
 # Create a "production" environment (Settings > Environments) with required reviewers to gate it.
+# Staged rollout: auto-release starts at 5%; run `rollout` 0.2, then `complete` after 48 h (see the guard job).
 name: promote
 
 on:
@@ -18,11 +19,42 @@ on:
         description: 'Staged rollout fraction, e.g. 0.2 (empty = 100%)'
         type: string
         default: '0.2'
+      crash_free_users:
+        description: 'Crashlytics crash-free users % for this release, e.g. 99.7 (needed to widen or complete a production rollout)'
+        type: string
+        default: ''
 
 permissions: {}
 
 jobs:
+  # A63: no release reaches 100% of production without 48 h at a partial rollout and at least 99.5%
+  # crash-free users (scripts/promotion_guard.dart). Halt is never blocked. The 48 h clock starts at
+  # the latest GitHub Release, which auto-release creates just before it promotes at 5%.
+  guard:
+    name: Release safety guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Check rollout soak time and crash-free users
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTION: ${{ inputs.action }}
+          TO_TRACK: ${{ inputs.to_track }}
+          USER_FRACTION: ${{ inputs.user_fraction }}
+          CRASH_FREE_USERS: ${{ inputs.crash_free_users }}
+        run: |
+          RELEASED_AT="$(gh release view --repo "$GITHUB_REPOSITORY" --json publishedAt --jq .publishedAt 2>/dev/null || true)"
+          echo "Latest GitHub Release published at: ${RELEASED_AT:-unknown}"
+          # Run outside the Flutter package so plain Dart does not try to resolve Flutter dependencies.
+          cp scripts/promotion_guard.dart "$RUNNER_TEMP/promotion_guard.dart"
+          RELEASED_AT="$RELEASED_AT" dart run "$RUNNER_TEMP/promotion_guard.dart"
+
   promote:
+    needs: guard
     permissions:
       contents: read
       id-token: write
