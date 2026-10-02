@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_impor
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
+import 'package:inv_tracker/features/settings/data/services/account_deletion_flow.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -433,7 +434,9 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     try {
       final authRepo = ref.read(authRepositoryProvider);
 
-      // Delete all Firestore data first
+      // File the server-side request first so the job finishes a deletion
+      // that fails halfway, then delete all Firestore data
+      await ref.read(deletionRequestServiceProvider).requestDeletion();
       await _deleteAllUserData();
 
       // Delete Firebase Auth anonymous user
@@ -526,63 +529,36 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     try {
       final authRepo = ref.read(authRepositoryProvider);
 
-      // Delete all Firestore data first (before any auth operations)
-      final filedRequest = await _deleteAllUserData();
+      final outcome = await AccountDeletionFlow(
+        auth: authRepo,
+        requests: ref.read(deletionRequestServiceProvider),
+        prepareGoogleSignIn: () =>
+            ref.read(googleSignInInitializedProvider.future),
+        deleteUserData: _deleteAllUserData,
+      ).run();
 
-      // Try to delete the Firebase Auth account
-      try {
-        await authRepo.deleteAccount();
-      } on FirebaseAuthException catch (e) {
-        // If requires-recent-login, try to re-authenticate and retry
-        if (e.code == 'requires-recent-login') {
-          LoggerService.info(
-            'Account deletion requires recent login, attempting re-auth',
+      if (outcome != AccountDeletionOutcome.deleted) {
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(switch (outcome) {
+                AccountDeletionOutcome.scheduled =>
+                  l10n.accountDeletionScheduled,
+                AccountDeletionOutcome.notDeleted =>
+                  l10n.accountDeletionNotStarted,
+                _ => l10n.accountDeletionCancelled,
+              }),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 8),
+            ),
           );
-
-          try {
-            final reauthenticated = await authRepo.reauthenticateWithGoogle();
-            if (reauthenticated) {
-              // Retry deletion after re-authentication
-              await authRepo.deleteAccount();
-            } else {
-              // User cancelled re-auth: they are told deletion was cancelled,
-              // so take back the server-side request we filed. A request that
-              // already existed (e.g. from the web) is left alone.
-              if (filedRequest) {
-                await ref.read(deletionRequestServiceProvider).withdraw();
-              }
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.accountDeletionCancelled),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-              // Data is already deleted, sign out the user
-              await authRepo.signOut();
-              return;
-            }
-          } catch (reauthError) {
-            LoggerService.error('Re-authentication failed', error: reauthError);
-            if (mounted) {
-              scaffoldMessenger.showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Re-authentication failed. Your data has been deleted. Please sign out.',
-                  ),
-                  backgroundColor: Colors.orange,
-                  duration: Duration(seconds: 5),
-                ),
-              );
-            }
-            // Data is already deleted, sign out the user
-            await authRepo.signOut();
-            return;
-          }
-        } else {
-          rethrow;
         }
+        // A scheduled deletion signs the user out; the sign-in notice offers
+        // to withdraw the request if they come back.
+        if (outcome == AccountDeletionOutcome.scheduled) {
+          await authRepo.signOut();
+        }
+        return;
       }
 
       // Log analytics
@@ -631,21 +607,13 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     }
   }
 
-  /// Returns true when this call filed a new `deletionRequests/{uid}` doc.
-  Future<bool> _deleteAllUserData() async {
+  Future<void> _deleteAllUserData() async {
     // Get current user ID
     final authState = ref.read(authStateProvider);
     final user = authState.value;
     if (user == null) {
       throw StateError('User not authenticated');
     }
-
-    // File the same server-side request the web page uses BEFORE the client
-    // deletion (the user is still signed in, so the rules allow it). If the
-    // client path fails halfway, the daily job finishes the deletion.
-    final filedRequest = await ref
-        .read(deletionRequestServiceProvider)
-        .requestDeletion();
 
     // Server-confirmed wipe of every users/{uid} collection (investments,
     // cashflows, archived items, goals, expectedCashFlows, documents,
@@ -659,7 +627,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
       deleteLocalFiles: documentStorageService.deleteAllUserDocuments,
       prefs: ref.read(sharedPreferencesProvider),
     );
-    return filedRequest;
   }
 }
 

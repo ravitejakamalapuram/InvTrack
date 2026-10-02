@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,6 +20,8 @@ class MockUserCredential extends Mock implements UserCredential {}
 class MockUser extends Mock implements User {}
 
 class MockAuthCredential extends Mock implements AuthCredential {}
+
+class MockUserMetadata extends Mock implements UserMetadata {}
 
 void main() {
   late FirebaseAuthRepository repository;
@@ -280,6 +283,59 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    // Account deletion must tell a cancel (delete nothing) apart from a
+    // failure (schedule the deletion), so only a cancel may return false.
+    test(
+      'reauthenticateWithGoogle returns false when the user cancels',
+      () async {
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+        when(() => mockGoogleSignIn.authenticate()).thenThrow(
+          const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
+        );
+
+        expect(await repository.reauthenticateWithGoogle(), isFalse);
+      },
+    );
+
+    test('lastSignInTime is the Firebase user sign-in time', () {
+      final metadata = MockUserMetadata();
+      final signedIn = DateTime.utc(2026, 10, 2, 11, 50);
+      when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.metadata).thenReturn(metadata);
+      when(() => metadata.lastSignInTime).thenReturn(signedIn);
+
+      expect(repository.lastSignInTime, signedIn);
+    });
+
+    test('lastSignInTime is null when nobody is signed in', () {
+      when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+      expect(repository.lastSignInTime, isNull);
+    });
+
+    for (final code in [
+      GoogleSignInExceptionCode.clientConfigurationError,
+      GoogleSignInExceptionCode.providerConfigurationError,
+      GoogleSignInExceptionCode.interrupted,
+    ]) {
+      test(
+        'reauthenticateWithGoogle throws AuthException on ${code.name}',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+          when(
+            () => mockGoogleSignIn.authenticate(),
+          ).thenThrow(GoogleSignInException(code: code));
+
+          await expectLater(
+            repository.reauthenticateWithGoogle(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
+    }
   });
 
   group('FirebaseAuthRepository - Other Methods', () {
