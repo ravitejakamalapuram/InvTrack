@@ -138,6 +138,17 @@ jobs:
           echo "All architecture checks passed successfully!" >> "$GITHUB_STEP_SUMMARY"
         shell: bash
 
+      # Any PR (including Bolt/Sentinel/Palette bot PRs) that changes money-calculation code under
+      # lib/core/calculations, goals, fire_number or reports must add or update a *_test.dart file.
+      # Diffs the PR merge commit against its first parent (the base branch), so only this PR's
+      # files count. Rules live in scripts/ci/check_calculation_tests.sh.
+      - name: Money-code test guard
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=2 origin "$GITHUB_REF"
+          git diff --name-status FETCH_HEAD^1 FETCH_HEAD | bash scripts/ci/check_calculation_tests.sh
+        shell: bash
+
   # Preserves the old workflow's single "notify Slack on any CI failure" behavior now that the
   # checks are split across two jobs. Kept as its own job so the Slack webhook secret never
   # reaches platform-ci (which must stay secret-free) or the PR-controlled analysis steps.
