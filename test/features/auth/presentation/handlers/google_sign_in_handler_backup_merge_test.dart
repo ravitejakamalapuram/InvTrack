@@ -18,6 +18,14 @@ import '../../../../mocks/mock_analytics_service.dart';
 /// The guest's data as a ZIP, held in memory by the merge flow.
 final _backupBytes = Uint8List.fromList([0x50, 0x4B, 0x03, 0x04, 1, 2, 3]);
 
+/// An import that added every record in the guest backup.
+const _completeImport = ZipImportResult(
+  investmentsImported: 2,
+  cashflowsImported: 5,
+  goalsImported: 1,
+  documentsImported: 0,
+);
+
 class _FakeExportService extends Fake implements DataExportService {
   int exportCalls = 0;
   final sharedBackups = <Uint8List>[];
@@ -29,9 +37,16 @@ class _FakeExportService extends Fake implements DataExportService {
   }
 
   @override
-  Future<Uint8List> exportAsZipBytes() async {
+  Future<ZipExport> exportAsZipBytes() async {
     exportCalls++;
-    return _backupBytes;
+    return ZipExport(
+      bytes: _backupBytes,
+      investments: _completeImport.investmentsImported,
+      cashFlows: _completeImport.cashflowsImported,
+      goals: _completeImport.goalsImported,
+      documents: _completeImport.documentsImported,
+      hasFireSettings: false,
+    );
   }
 
   @override
@@ -41,9 +56,10 @@ class _FakeExportService extends Fake implements DataExportService {
 }
 
 class _RecordingImportService extends Fake implements DataImportService {
-  _RecordingImportService({this.error});
+  _RecordingImportService({this.error, this.result = _completeImport});
 
   final Object? error;
+  final ZipImportResult result;
   final calls = <(Uint8List, ImportStrategy)>[];
 
   @override
@@ -53,12 +69,7 @@ class _RecordingImportService extends Fake implements DataImportService {
   ) async {
     calls.add((zipBytes, strategy));
     if (error != null) throw error!;
-    return const ZipImportResult(
-      investmentsImported: 2,
-      cashflowsImported: 5,
-      goalsImported: 1,
-      documentsImported: 0,
-    );
+    return result;
   }
 }
 
@@ -89,6 +100,7 @@ void main() {
   late _FakeExportService exportService;
   late Map<String, _RecordingImportService> importersByUid;
   Object? importError;
+  ZipImportResult importResult = _completeImport;
   bool? handlerResult;
 
   setUp(() {
@@ -97,6 +109,7 @@ void main() {
     exportService = _FakeExportService();
     importersByUid = {};
     importError = null;
+    importResult = _completeImport;
     handlerResult = null;
   });
 
@@ -115,7 +128,10 @@ void main() {
             if (user == null) return null;
             return importersByUid.putIfAbsent(
               user.id,
-              () => _RecordingImportService(error: importError),
+              () => _RecordingImportService(
+                error: importError,
+                result: importResult,
+              ),
             );
           }),
         ],
@@ -225,4 +241,73 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     },
   );
+
+  // Merge skips guest records the Google account already has by name, and
+  // the export leaves out investments that have no cash flows. Either way
+  // the guest account can no longer be reached, so anything short of a full
+  // import must offer the backup instead of reporting success.
+  final incompleteImports = <String, ZipImportResult>{
+    'an investment with the same name already exists': const ZipImportResult(
+      investmentsImported: 1,
+      cashflowsImported: 3,
+      goalsImported: 1,
+      documentsImported: 0,
+      warnings: ['Skipped "SBI FD" - already exists'],
+    ),
+    'a document could not be imported': const ZipImportResult(
+      investmentsImported: 2,
+      cashflowsImported: 5,
+      goalsImported: 1,
+      documentsImported: 0,
+      warnings: ['Failed to import document: bad signature'],
+    ),
+    'fewer investments were imported than the backup holds':
+        const ZipImportResult(
+          investmentsImported: 1,
+          cashflowsImported: 5,
+          goalsImported: 1,
+          documentsImported: 0,
+        ),
+  };
+
+  for (final MapEntry(key: reason, value: result)
+      in incompleteImports.entries) {
+    testWidgets(
+      'when $reason, the merge is not reported as done and the backup is '
+      'offered',
+      (tester) async {
+        importResult = result;
+        authRepo.onSignInWithGoogle = () async {
+          authRepo.emit(googleUser);
+          return googleUser;
+        };
+
+        await pumpAndStartBackupMerge(tester);
+
+        expect(importersByUid[googleUser.id]?.calls, hasLength(1));
+        expect(
+          find.text('Your guest data has been added to your Google account.'),
+          findsNothing,
+        );
+        expect(find.text('Save your guest backup'), findsOneWidget);
+        expect(
+          find.text(
+            'You are now signed in with Google, but not all of your guest data '
+            'could be added to that account, for example an investment '
+            'or goal whose name it already uses. Share the backup file to '
+            'save it somewhere safe. To add the rest, rename those items in '
+            'your Google account and import the backup from Settings > '
+            'Data & Account.',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
+        await tester.pumpAndSettle();
+
+        expect(exportService.sharedBackups, [_backupBytes]);
+        expect(handlerResult, isFalse);
+      },
+    );
+  }
 }

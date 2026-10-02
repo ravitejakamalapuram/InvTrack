@@ -182,6 +182,7 @@ class DataImportService {
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
+      errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
     }
@@ -210,6 +211,7 @@ class DataImportService {
         investmentNameToIdMap: investmentNameToIdMap,
       );
       goalsImported += result.imported;
+      errors.addAll(result.errors);
       warnings.addAll(result.warnings);
     }
 

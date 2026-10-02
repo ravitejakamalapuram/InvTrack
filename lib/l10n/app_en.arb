@@ -2554,7 +2554,7 @@
     "description": "FAQ question about linking guest account"
   },
 
-  "howToLinkGuestAccountAnswer": "Tap the ''Sign In to Link Account'' button in Settings. If your Google account already exists, we''ll create a backup of your guest data first, then you can import it after signing in.",
+  "howToLinkGuestAccountAnswer": "Tap the ''Sign In to Link Account'' button in Settings. If that Google account already exists, InvTrack backs up your guest data, signs you in to the Google account and adds your guest data to it. If some of it cannot be added, you are offered the backup file to save.",
   "@howToLinkGuestAccountAnswer": {
     "description": "FAQ answer about linking guest account"
   },
@@ -4226,9 +4226,9 @@
     "description": "Title shown when the guest data could not be imported into the Google account after sign-in"
   },
 
-  "guestMergeImportFailedMessage": "You are now signed in with Google, but your guest data could not be added automatically. Share the backup file to save it somewhere safe, then import it from Settings > Data & Account.",
+  "guestMergeImportFailedMessage": "You are now signed in with Google, but not all of your guest data could be added to that account, for example an investment or goal whose name it already uses. Share the backup file to save it somewhere safe. To add the rest, rename those items in your Google account and import the backup from Settings > Data & Account.",
   "@guestMergeImportFailedMessage": {
-    "description": "Explains that the guest backup must be saved by the user because the automatic import failed"
+    "description": "Explains that the guest backup must be saved by the user because the automatic import failed or skipped some records"
   },
 
   "shareBackup": "Share backup",

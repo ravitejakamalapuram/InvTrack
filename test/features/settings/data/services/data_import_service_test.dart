@@ -228,6 +228,26 @@ Archived Goal,targetAmount,25000''',
         expect(result.isSuccess, true);
         expect(result.goalsImported, 1);
       });
+
+      test('reports archived cash flow and goal rows that cannot be read as '
+          'errors instead of dropping them silently', () async {
+        final bytes = createZipArchive({
+          'metadata.json': '{"version":"1.0","files":[]}',
+          'cashflows_archived.csv': '''Date,Investment Name,Type,Amount
+2024-01-15,Archived Investment,INVEST,50000
+2024-02-15,Archived Investment,INVEST,''',
+          'goals_archived.csv': '''Name,Type,Target Amount
+Archived Goal,targetAmount,25000
+,targetAmount,10000''',
+        });
+
+        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+
+        expect(result.cashflowsImported, 1);
+        expect(result.goalsImported, 1);
+        expect(result.isSuccess, isFalse);
+        expect(result.errors, hasLength(2));
+      });
     });
 
     group('importFromZip - FIRE Settings Import', () {

@@ -8,6 +8,7 @@ import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
+import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 
 /// Result of [GuestBackupMergeService.backupAndSignIn].
@@ -28,7 +29,9 @@ class GuestMergeSucceeded extends GuestMergeOutcome {
   final ZipImportResult result;
 }
 
-/// Signed in to Google, but the guest data was not fully imported.
+/// Signed in to Google, but the guest data was not fully imported: the
+/// import failed, or it skipped or could not add some records (for example
+/// an investment or goal whose name the Google account already uses).
 ///
 /// The guest account can no longer be reached, so [backup] is the only full
 /// copy of the guest data and the user must be offered it
@@ -45,8 +48,11 @@ class GuestMergeImportFailed extends GuestMergeOutcome {
 /// This runs in a provider, not in a widget, because signing in to another
 /// account rebuilds the router and disposes the screen that started it.
 ///
-/// The guest's own Firestore data is not deleted here: once the Google
-/// session starts, the client can no longer act as the anonymous user.
+/// The guest's own Firestore data is not deleted here. The backup does not
+/// yet carry every investment field (maturity date, rate, notes and others),
+/// so deleting the guest copy after a merge would destroy them for good.
+/// Once the Google session starts, the client also can no longer act as the
+/// anonymous user.
 class GuestBackupMergeService {
   GuestBackupMergeService(this._ref);
 
@@ -66,7 +72,8 @@ class GuestBackupMergeService {
     if (exportService == null) {
       throw StateError('No signed-in guest to back up');
     }
-    final backup = await exportService.exportAsZipBytes();
+    final export = await exportService.exportAsZipBytes();
+    final backup = export.bytes;
 
     final analytics = _ref.read(analyticsServiceProvider);
     await analytics.logEvent(
@@ -97,10 +104,19 @@ class GuestBackupMergeService {
         backup,
         ImportStrategy.merge,
       );
-      if (result.hasErrors) {
+      if (!_isComplete(result, export)) {
+        // Counts only: warnings and errors contain investment and goal names.
         LoggerService.warn(
-          'Guest backup merge imported with errors',
-          metadata: {'errorCount': result.errors.length},
+          'Guest backup merge did not import every record',
+          metadata: {
+            'errorCount': result.errors.length,
+            'warningCount': result.warnings.length,
+            'investmentsMissing':
+                export.investments - result.investmentsImported,
+            'cashFlowsMissing': export.cashFlows - result.cashflowsImported,
+            'goalsMissing': export.goals - result.goalsImported,
+            'documentsMissing': export.documents - result.documentsImported,
+          },
         );
         return GuestMergeImportFailed(backup);
       }
@@ -115,6 +131,19 @@ class GuestBackupMergeService {
       return GuestMergeImportFailed(backup);
     }
   }
+
+  /// Whether [result] added every record of [export]. Merge reports skipped
+  /// duplicates and failed documents or FIRE settings only as warnings, and
+  /// the export can hold investments the import does not recreate, so the
+  /// counts are compared as well.
+  static bool _isComplete(ZipImportResult result, ZipExport export) =>
+      !result.hasErrors &&
+      result.warnings.isEmpty &&
+      result.investmentsImported == export.investments &&
+      result.cashflowsImported == export.cashFlows &&
+      result.goalsImported == export.goals &&
+      result.documentsImported == export.documents &&
+      (!export.hasFireSettings || result.fireSettingsImported);
 
   /// Opens the share sheet for a backup returned in [GuestMergeImportFailed].
   Future<void> shareBackup(Uint8List backup) async {

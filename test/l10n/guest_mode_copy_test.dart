@@ -18,6 +18,16 @@ void main() {
     );
   });
 
+  test('FAQ answer about linking describes the automatic merge', () {
+    expect(
+      l10n.howToLinkGuestAccountAnswer,
+      "Tap the 'Sign In to Link Account' button in Settings. If that Google "
+      'account already exists, InvTrack backs up your guest data, signs you '
+      'in to the Google account and adds your guest data to it. If some of '
+      'it cannot be added, you are offered the backup file to save.',
+    );
+  });
+
   test('guest mode notice warns about sign-out and uninstall', () {
     expect(l10n.guestModeNotice, isNot(contains('across devices')));
     expect(
