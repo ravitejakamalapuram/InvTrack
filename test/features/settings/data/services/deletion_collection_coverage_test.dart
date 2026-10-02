@@ -22,6 +22,9 @@ void main() {
     }
     // 'users' is the parent collection; its document is deleted explicitly.
     referenced.remove('users');
+    // 'deletionRequests' is the top-level deletion queue (not under users/{uid});
+    // the server job removes the request doc after deleting the account.
+    referenced.remove('deletionRequests');
 
     final missing = referenced.difference(
       AccountDataDeletionService.userCollections.toSet(),
