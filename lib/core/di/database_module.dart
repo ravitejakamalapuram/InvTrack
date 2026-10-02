@@ -10,6 +10,7 @@ import 'package:inv_tracker/features/investment/data/services/document_storage_s
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
+import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
 
 /// Provider for FirebaseFirestore instance with offline persistence enabled
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -107,3 +108,16 @@ final accountDataDeletionServiceProvider = Provider<AccountDataDeletionService>(
     );
   },
 );
+
+/// Provider for the account-deletion request queue (`deletionRequests/{uid}`).
+/// Throws AuthException.notAuthenticated if user is not authenticated.
+final deletionRequestServiceProvider = Provider<DeletionRequestService>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    throw AuthException.notAuthenticated();
+  }
+  return DeletionRequestService(
+    firestore: ref.watch(firestoreProvider),
+    userId: user.id,
+  );
+});
