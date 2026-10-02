@@ -23,6 +23,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   final Future<bool> Function() ensurePermissionsForShow;
   final Future<void> Function() scheduleWeeklySummary;
   final Future<void> Function() scheduleMonthlySummary;
+  final DateTime Function() _clock;
 
   InvestmentNotificationHandler({
     required FlutterLocalNotificationsPlugin plugin,
@@ -31,8 +32,10 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     required this.ensurePermissionsForShow,
     required this.scheduleWeeklySummary,
     required this.scheduleMonthlySummary,
+    DateTime Function()? clock,
   }) : _plugin = plugin,
-       _prefs = prefs;
+       _prefs = prefs,
+       _clock = clock ?? DateTime.now;
 
   @override
   SharedPreferences get prefs => _prefs;
@@ -43,6 +46,12 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   // ============ Income Reminders ============
 
   /// Schedule income reminder notification for an investment.
+  ///
+  /// [lastIncomeDate] anchors the payout schedule (pass the start date when
+  /// there is no income yet): the reminder fires on the first
+  /// `anchor + k * monthsBetweenPayments` (k >= 1) that is not in the past.
+  /// The same inputs always give the same date, so calling this on every
+  /// launch does not push the reminder out.
   Future<void> scheduleIncomeReminder({
     required String investmentId,
     required String investmentName,
@@ -50,23 +59,28 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     DateTime? lastIncomeDate,
   }) async {
     await ensureInitialized();
+    // Cancel first so that a reminder scheduled before the type was turned
+    // off does not keep firing.
+    await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
     if (!incomeRemindersEnabled) return;
 
-    await _plugin.cancel(id: NotificationIds.incomeReminder(investmentId));
-
-    final now = DateTime.now();
+    final now = _clock();
     DateTime nextIncomeDate;
 
     if (lastIncomeDate != null) {
+      // Step from the anchor each time so a month-end anchor (Jan 31) does
+      // not drift to an earlier day (Feb 28, Mar 28, ...).
+      var periods = 1;
       nextIncomeDate = _addMonthsSafely(
         lastIncomeDate,
         monthsBetweenPayments,
         hour: 9,
       );
       while (nextIncomeDate.isBefore(now)) {
+        periods++;
         nextIncomeDate = _addMonthsSafely(
-          nextIncomeDate,
-          monthsBetweenPayments,
+          lastIncomeDate,
+          monthsBetweenPayments * periods,
           hour: 9,
         );
       }
@@ -141,11 +155,12 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     String currency = 'INR',
   }) async {
     await ensureInitialized();
+    // Cancel first so that reminders scheduled before the type was turned
+    // off do not keep firing.
+    await cancelMaturityReminders(investmentId);
     if (!maturityRemindersEnabled) return;
 
-    await cancelMaturityReminders(investmentId);
-
-    final now = DateTime.now();
+    final now = _clock();
     final sevenDaysBefore = maturityDate.subtract(const Duration(days: 7));
     final oneDayBefore = maturityDate.subtract(const Duration(days: 1));
 
@@ -308,9 +323,14 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   /// Re-schedule all notifications for the given investments.
   ///
   /// Call when app launches or investments sync from another device.
+  /// [lastIncomeDates] maps investment id to its latest INCOME cash-flow
+  /// date; investments without one are anchored on their start date. Pending
+  /// income and maturity reminders for investments that are closed or no
+  /// longer present are cancelled.
   Future<void> rescheduleAllNotifications(
-    List<InvestmentEntity> investments,
-  ) async {
+    List<InvestmentEntity> investments, {
+    required Map<String, DateTime> lastIncomeDates,
+  }) async {
     LoggerService.info(
       'Re-scheduling notifications',
       metadata: {'investmentCount': investments.length},
@@ -319,10 +339,14 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     await scheduleWeeklySummary();
     await scheduleMonthlySummary();
 
+    final wantedIds = <int>{};
     for (final investment in investments) {
       if (!investment.isOpen) continue;
 
       if (investment.maturityDate != null) {
+        wantedIds
+          ..add(NotificationIds.maturityReminder7Days(investment.id))
+          ..add(NotificationIds.maturityReminder1Day(investment.id));
         await scheduleMaturityReminders(
           investmentId: investment.id,
           investmentName: investment.name,
@@ -331,12 +355,28 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       }
 
       if (investment.incomeFrequency != null) {
+        wantedIds.add(NotificationIds.incomeReminder(investment.id));
         await scheduleIncomeReminder(
           investmentId: investment.id,
           investmentName: investment.name,
           monthsBetweenPayments:
               investment.incomeFrequency!.monthsBetweenPayments,
+          lastIncomeDate:
+              lastIncomeDates[investment.id] ??
+              investment.startDate ??
+              investment.createdAt,
         );
+      }
+    }
+
+    // Drop reminders for investments closed, deleted or archived elsewhere.
+    final pending = await _plugin.pendingNotificationRequests();
+    for (final request in pending) {
+      final isInvestmentReminder =
+          NotificationIds.isIncomeReminderId(request.id) ||
+          NotificationIds.isMaturityReminderId(request.id);
+      if (isInvestmentReminder && !wantedIds.contains(request.id)) {
+        await _plugin.cancel(id: request.id);
       }
     }
 

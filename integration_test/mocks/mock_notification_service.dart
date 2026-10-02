@@ -65,8 +65,9 @@ class FakeNotificationService implements NotificationService {
 
   @override
   Future<void> rescheduleAllNotifications(
-    List<InvestmentEntity> investments,
-  ) async {
+    List<InvestmentEntity> investments, {
+    required Map<String, DateTime> lastIncomeDates,
+  }) async {
     _logScheduled('reschedule_all');
   }
 

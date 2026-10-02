@@ -41,6 +41,10 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
+  DateTime? get lastSignInTime =>
+      _firebaseAuth.currentUser?.metadata.lastSignInTime;
+
+  @override
   Future<UserEntity?> signInWithGoogle() async {
     try {
       LoggerService.info('Starting Google Sign-In');
@@ -215,7 +219,8 @@ class FirebaseAuthRepository implements AuthRepository {
         return false;
       }
 
-      // Configuration errors should NOT crash the app - return false instead
+      // Configuration and other errors throw (not reported to Crashlytics) so
+      // callers can tell a failure from a cancel; they must not crash the app.
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
         final authException = AuthException(
@@ -233,7 +238,7 @@ class FirebaseAuthRepository implements AuthRepository {
             'description': e.description,
           },
         );
-        return false; // Re-auth failed, but don't crash
+        throw authException;
       }
 
       // Other GoogleSignInExceptions
@@ -253,7 +258,7 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      return false; // Don't crash on sign-in errors
+      throw authException;
     } catch (e, stackTrace) {
       if (e is PlatformException && e.code == 'sign_in_canceled') {
         LoggerService.info('User cancelled re-authentication (PlatformException)');
