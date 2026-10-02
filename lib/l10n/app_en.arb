@@ -2499,7 +2499,7 @@
   "@deletionRequestWithdrawn": {
     "description": "Snackbar after the deletion request was withdrawn"
   },
-  "deletionRequestWithdrawFailed": "Couldn't withdraw the request. Check your connection and try again.",
+  "deletionRequestWithdrawFailed": "Could not withdraw the request. Check your connection and try again.",
   "@deletionRequestWithdrawFailed": {
     "description": "Snackbar when withdrawing the deletion request failed"
   },
