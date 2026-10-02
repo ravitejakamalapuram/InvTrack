@@ -264,6 +264,13 @@ class DataImportService {
       final fireSettingsFile = archive.findFile('fire_settings.json');
       if (fireSettingsFile != null) {
         try {
+          // Merge must not overwrite settings the account already has: FIRE
+          // amounts carry no currency, and the guest merge imports into the
+          // user's main account without asking.
+          if (strategy == ImportStrategy.merge &&
+              await _fireSettingsRepository.getSettings() != null) {
+            throw const _ExistingFireSettings();
+          }
           final fireSettingsJson =
               jsonDecode(utf8.decode(fireSettingsFile.content as List<int>))
                   as Map<String, dynamic>;
@@ -314,6 +321,11 @@ class DataImportService {
           await _fireSettingsRepository.saveSettings(fireSettings);
           fireSettingsImported = true;
           LoggerService.info('FIRE settings imported successfully');
+        } on _ExistingFireSettings {
+          warnings.add(
+            'FIRE settings not imported: this account already has FIRE '
+            'settings',
+          );
         } catch (e) {
           warnings.add('Failed to import FIRE settings: $e');
         }
@@ -645,4 +657,9 @@ class _CsvImportResult {
     required this.warnings,
     this.investmentNameToIdMap = const {},
   });
+}
+
+/// Thrown to skip a merge import of FIRE settings the account already has.
+class _ExistingFireSettings implements Exception {
+  const _ExistingFireSettings();
 }

@@ -1,16 +1,27 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
+import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/data_export_service.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../fire_number/data/repositories/mock_fire_settings_repository.dart';
+import '../../../goals/data/repositories/mock_goal_repository.dart';
+import '../../../investment/data/repositories/mock_investment_repository.dart';
 
 import '../../../../mocks/fake_auth_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
@@ -30,6 +41,9 @@ class _FakeExportService extends Fake implements DataExportService {
   int exportCalls = 0;
   final sharedBackups = <Uint8List>[];
 
+  /// Replaces the default in-memory backup when set.
+  ZipExport? export;
+
   @override
   Future<String> exportAsZip() async {
     exportCalls++;
@@ -39,14 +53,15 @@ class _FakeExportService extends Fake implements DataExportService {
   @override
   Future<ZipExport> exportAsZipBytes() async {
     exportCalls++;
-    return ZipExport(
-      bytes: _backupBytes,
-      investments: _completeImport.investmentsImported,
-      cashFlows: _completeImport.cashflowsImported,
-      goals: _completeImport.goalsImported,
-      documents: _completeImport.documentsImported,
-      hasFireSettings: false,
-    );
+    return export ??
+        ZipExport(
+          bytes: _backupBytes,
+          investments: _completeImport.investmentsImported,
+          cashFlows: _completeImport.cashflowsImported,
+          goals: _completeImport.goalsImported,
+          documents: _completeImport.documentsImported,
+          hasFireSettings: false,
+        );
   }
 
   @override
@@ -71,6 +86,23 @@ class _RecordingImportService extends Fake implements DataImportService {
     if (error != null) throw error!;
     return result;
   }
+}
+
+class _MockDocumentRepository extends Mock implements DocumentRepository {}
+
+class _MockDocumentStorageService extends Mock
+    implements DocumentStorageService {}
+
+/// Runs the tracked operation without measuring it.
+class _PassThroughPerformanceService extends Fake
+    implements PerformanceService {
+  @override
+  Future<T> trackOperation<T>(
+    String operationName,
+    Future<T> Function() operation, {
+    Map<String, int>? metrics,
+    Map<String, String>? attributes,
+  }) => operation();
 }
 
 class _LinkButton extends ConsumerWidget {
@@ -101,6 +133,7 @@ void main() {
   late Map<String, _RecordingImportService> importersByUid;
   Object? importError;
   ZipImportResult importResult = _completeImport;
+  DataImportService? googleImportService;
   bool? handlerResult;
 
   setUp(() {
@@ -110,6 +143,7 @@ void main() {
     importersByUid = {};
     importError = null;
     importResult = _completeImport;
+    googleImportService = null;
     handlerResult = null;
   });
 
@@ -126,6 +160,9 @@ void main() {
           dataImportServiceProvider.overrideWith((ref) {
             final user = ref.watch(authStateProvider).value;
             if (user == null) return null;
+            if (user.id == googleUser.id && googleImportService != null) {
+              return googleImportService;
+            }
             return importersByUid.putIfAbsent(
               user.id,
               () => _RecordingImportService(
@@ -310,4 +347,68 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'when the Google account already has FIRE settings, the merge keeps '
+    'them and offers the backup instead of reporting success',
+    (tester) async {
+      final accountSettings = FireSettingsEntity(
+        id: 'account',
+        monthlyExpenses: 200000,
+        currentAge: 40,
+        targetFireAge: 55,
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+      );
+      final googleFireSettings = FakeFireSettingsRepository()
+        ..seed(accountSettings);
+      addTearDown(googleFireSettings.dispose);
+      googleImportService = DataImportService(
+        investmentRepository: FakeInvestmentRepository(),
+        goalRepository: FakeGoalRepository(),
+        documentRepository: _MockDocumentRepository(),
+        documentStorageService: _MockDocumentStorageService(),
+        fireSettingsRepository: googleFireSettings,
+        performanceService: _PassThroughPerformanceService(),
+      );
+
+      final archive = Archive();
+      for (final MapEntry(:key, :value) in {
+        'metadata.json': '{"version":"1.0","files":[]}',
+        'fire_settings.json':
+            '{"monthlyExpenses":30000,"currentAge":25,"targetFireAge":45}',
+      }.entries) {
+        final bytes = utf8.encode(value);
+        archive.addFile(ArchiveFile(key, bytes.length, bytes));
+      }
+      final guestBackup = Uint8List.fromList(ZipEncoder().encode(archive)!);
+      exportService.export = ZipExport(
+        bytes: guestBackup,
+        investments: 0,
+        cashFlows: 0,
+        goals: 0,
+        documents: 0,
+        hasFireSettings: true,
+      );
+      authRepo.onSignInWithGoogle = () async {
+        authRepo.emit(googleUser);
+        return googleUser;
+      };
+
+      await pumpAndStartBackupMerge(tester);
+
+      expect(googleFireSettings.settings, same(accountSettings));
+      expect(
+        find.text('Your guest data has been added to your Google account.'),
+        findsNothing,
+      );
+      expect(find.text('Save your guest backup'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
+      await tester.pumpAndSettle();
+
+      expect(exportService.sharedBackups, [guestBackup]);
+      expect(handlerResult, isFalse);
+    },
+  );
 }
