@@ -1,24 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:inv_tracker/core/analytics/analytics_service.dart';
-import 'package:inv_tracker/core/logging/logger_service.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
-import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
-import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
-/// Shows a dialog for backing up guest data before signing in with an existing Google account.
-///
-/// Flow:
-/// 1. User taps "Backup & Sign In"
-/// 2. Create ZIP backup of anonymous data
-/// 3. Sign in with Google (new session)
-/// 4. Show success with import option
-Future<bool?> showBackupMergeDialog(BuildContext context, WidgetRef ref) async {
+/// Asks a guest whether to back up their data and sign in to a Google
+/// account that already exists. Returns true if they chose to continue.
+Future<bool> showBackupMergeDialog(BuildContext context) async {
   final l10n = AppLocalizations.of(context);
 
-  return showDialog<bool>(
+  final confirmed = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => AlertDialog(
@@ -38,113 +32,133 @@ Future<bool?> showBackupMergeDialog(BuildContext context, WidgetRef ref) async {
           child: Text(l10n.cancel),
         ),
         FilledButton(
-          onPressed: () async {
-            Navigator.pop(dialogContext); // Close dialog
-            await _handleBackupAndSignIn(context, ref);
-          },
+          onPressed: () => Navigator.pop(dialogContext, true),
           child: Text(l10n.backupAndSignIn),
         ),
       ],
     ),
   );
+  return confirmed ?? false;
 }
 
-Future<void> _handleBackupAndSignIn(BuildContext context, WidgetRef ref) async {
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
+/// Backs up the guest's data, signs in to Google and merges the backup into
+/// that account, showing progress and the result.
+///
+/// The work runs in [guestBackupMergeServiceProvider], because the sign-in
+/// rebuilds the router and can dispose [context] before it finishes. Only
+/// app-level objects captured up front are used afterwards.
+///
+/// Returns true if the guest data now lives in the Google account.
+Future<bool> backupAndMergeGuestData(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final service = ref.read(guestBackupMergeServiceProvider);
 
-  // Show loading
-  showDialog(
+  final loading = DialogRoute<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => const Center(child: CircularProgressIndicator()),
+    builder: (_) => const Center(child: CircularProgressIndicator()),
   );
+  navigator.push(loading);
+  void hideLoading() {
+    if (loading.isActive) loading.navigator?.removeRoute(loading);
+  }
 
+  final GuestMergeOutcome outcome;
   try {
-    // 1. Create ZIP backup
-    LoggerService.info('Creating ZIP backup before sign-in');
-    final exportService = ref.read(dataExportServiceProvider);
-    if (exportService == null) {
-      throw Exception('User not authenticated');
-    }
-    final backupPath = await exportService.exportAsZip();
-
-    // Track analytics
-    final analytics = ref.read(analyticsServiceProvider);
-    await analytics.logEvent(
-      name: 'backup_created',
-      parameters: {'trigger': 'account_linking_failure'},
-    );
-
-    // 2. Sign in with Google (creates new session)
-    LoggerService.info('Signing in with Google after backup');
-    final authRepo = ref.read(authRepositoryProvider);
-    await authRepo.signInWithGoogle();
-
-    // Track analytics
-    await analytics.logEvent(
-      name: 'account_link_failure',
-      parameters: {'reason': 'google_account_exists'},
-    );
-
-    // Hide loading
-    if (context.mounted) Navigator.pop(context);
-
-    // 3. Show success with import option
-    if (context.mounted) {
-      final import = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          final dialogL10n = AppLocalizations.of(dialogContext);
-          return AlertDialog(
-            title: Text(dialogL10n.backupCreated),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 64),
-                const SizedBox(height: 16),
-                Text(dialogL10n.guestDataBackedUp),
-                const SizedBox(height: 8),
-                Text(
-                  dialogL10n.backupLocation(backupPath),
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 16),
-                Text(dialogL10n.importNowQuestion),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: Text(dialogL10n.later),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: Text(dialogL10n.importNow),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (import == true && context.mounted) {
-        // Navigate to import screen
-        context.go('/settings/data-management/import');
-      }
-    }
+    outcome = await service.backupAndSignIn();
   } catch (e, st) {
-    LoggerService.error('Backup and sign-in failed', error: e, stackTrace: st);
+    hideLoading();
+    // Backup or sign-in failed before the session changed: the guest is
+    // still signed in with all of their data.
+    ErrorHandler.handle(
+      e,
+      st,
+      context: context.mounted ? context : null,
+      showFeedback: true,
+    );
+    return false;
+  }
+  hideLoading();
 
-    // Hide loading
-    if (context.mounted) Navigator.pop(context);
+  switch (outcome) {
+    case GuestMergeCancelled():
+      return false;
+    case GuestMergeSucceeded():
+      if (messenger.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.guestDataMerged),
+            backgroundColor: AppColors.successLight,
+          ),
+        );
+      }
+      return true;
+    case GuestMergeImportFailed(:final backup):
+      await _offerBackup(navigator, messenger, l10n, service, backup);
+      return false;
+  }
+}
 
-    if (context.mounted) {
-      final l10n = AppLocalizations.of(context);
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(l10n.backupFailed(e.toString())),
-          backgroundColor: AppColors.errorLight,
-        ),
+/// Lets the user save the only full copy of their guest data.
+Future<void> _offerBackup(
+  NavigatorState navigator,
+  ScaffoldMessengerState messenger,
+  AppLocalizations l10n,
+  GuestBackupMergeService service,
+  Uint8List backup,
+) async {
+  Future<void> share(BuildContext? context) async {
+    try {
+      await service.shareBackup(backup);
+    } catch (e, st) {
+      ErrorHandler.handle(
+        e,
+        st,
+        context: context != null && context.mounted ? context : null,
+        showFeedback: true,
       );
     }
   }
+
+  if (!navigator.mounted) {
+    if (!messenger.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l10n.guestMergeImportFailedMessage),
+        duration: const Duration(minutes: 1),
+        action: SnackBarAction(
+          label: l10n.shareBackup,
+          onPressed: () => share(null),
+        ),
+      ),
+    );
+    return;
+  }
+
+  await showDialog<void>(
+    context: navigator.context,
+    barrierDismissible: false,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l10n.guestMergeImportFailedTitle),
+      content: Text(l10n.guestMergeImportFailedMessage),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(l10n.close),
+        ),
+        FilledButton(
+          onPressed: () async {
+            await share(dialogContext);
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+          },
+          child: Text(l10n.shareBackup),
+        ),
+      ],
+    ),
+  );
 }

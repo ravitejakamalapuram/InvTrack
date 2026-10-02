@@ -257,6 +257,26 @@ Archived Goal,targetAmount,25000''',
         expect(result.isSuccess, true);
         expect(result.goalsImported, 1);
       });
+
+      test('reports archived cash flow and goal rows that cannot be read as '
+          'errors instead of dropping them silently', () async {
+        final bytes = createZipArchive({
+          'metadata.json': '{"version":"1.0","files":[]}',
+          'cashflows_archived.csv': '''Date,Investment Name,Type,Amount
+2024-01-15,Archived Investment,INVEST,50000
+2024-02-15,Archived Investment,INVEST,''',
+          'goals_archived.csv': '''Name,Type,Target Amount
+Archived Goal,targetAmount,25000
+,targetAmount,10000''',
+        });
+
+        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+
+        expect(result.cashflowsImported, 1);
+        expect(result.goalsImported, 1);
+        expect(result.isSuccess, isFalse);
+        expect(result.errors, hasLength(2));
+      });
     });
 
     group('importFromZip - FIRE Settings Import', () {
@@ -318,6 +338,60 @@ Archived Goal,targetAmount,25000''',
         expect(fireSettingsRepository.settings!.currentAge, 30);
         expect(fireSettingsRepository.settings!.targetFireAge, 45);
         expect(fireSettingsRepository.settings!.fireType, FireType.regular);
+      });
+
+      // FIRE amounts carry no currency, and the guest merge runs this import
+      // against the user's main account, so merge must never overwrite FIRE
+      // settings the account already has.
+      FireSettingsEntity existingSettings() => FireSettingsEntity(
+        id: 'existing',
+        monthlyExpenses: 200000,
+        currentAge: 40,
+        targetFireAge: 55,
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+      );
+
+      Uint8List backupWithFireSettings() => createZipArchive({
+        'metadata.json': '{"version":"1.0","files":[]}',
+        'fire_settings.json':
+            '{"monthlyExpenses":30000,"currentAge":25,"targetFireAge":45}',
+      });
+
+      test(
+        'merge keeps existing FIRE settings and reports a warning',
+        () async {
+          final existing = existingSettings();
+          fireSettingsRepository.seed(existing);
+
+          final result = await serviceWithFire.importFromZip(
+            backupWithFireSettings(),
+            ImportStrategy.merge,
+          );
+
+          expect(result.fireSettingsImported, false);
+          expect(fireSettingsRepository.settings, same(existing));
+          expect(fireSettingsRepository.settings!.monthlyExpenses, 200000.0);
+          expect(fireSettingsRepository.settings!.currentAge, 40);
+          const warning =
+              'FIRE settings not imported: this account already has FIRE '
+              'settings';
+          expect(result.warnings, [warning]);
+        },
+      );
+
+      test('replace overwrites existing FIRE settings', () async {
+        fireSettingsRepository.seed(existingSettings());
+
+        final result = await serviceWithFire.importFromZip(
+          backupWithFireSettings(),
+          ImportStrategy.replace,
+        );
+
+        expect(result.fireSettingsImported, true);
+        expect(fireSettingsRepository.settings!.monthlyExpenses, 30000.0);
+        expect(fireSettingsRepository.settings!.currentAge, 25);
+        expect(result.warnings, isEmpty);
       });
 
       test('handles missing FIRE settings gracefully', () async {

@@ -269,192 +269,217 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
                 ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenPaddingHorizontal,
-            ),
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
+          // Fills the screen when there is room and scrolls when there is
+          // not (small screens, large text), so the guest notice always fits.
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPaddingHorizontal,
+                  ),
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 2),
 
-                // Animated Logo Section with floating effect
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      children: [
-                        // Floating App Icon with animated glow
-                        AnimatedBuilder(
-                          animation: Listenable.merge([
-                            _floatAnimation,
-                            _glowAnimation,
-                          ]),
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: Offset(0, _floatAnimation.value),
-                              child: Container(
-                                width: AppSizes.signInLogoSize,
-                                height: AppSizes.signInLogoSize,
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.heroGradient,
-                                  borderRadius: BorderRadius.circular(
-                                    AppSizes.signInLogoRadius,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primaryLight.withValues(
-                                        alpha: _glowAnimation.value,
-                                      ),
-                                      blurRadius: 40,
-                                      spreadRadius: 2,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    // Inner glow
-                                    Container(
-                                      width: 80,
-                                      height: 80,
+                      // Animated Logo Section with floating effect
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: SlideTransition(
+                          position: _slideAnimation,
+                          child: Column(
+                            children: [
+                              // Floating App Icon with animated glow
+                              AnimatedBuilder(
+                                animation: Listenable.merge([
+                                  _floatAnimation,
+                                  _glowAnimation,
+                                ]),
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, _floatAnimation.value),
+                                    child: Container(
+                                      width: AppSizes.signInLogoSize,
+                                      height: AppSizes.signInLogoSize,
                                       decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: RadialGradient(
-                                          colors: [
-                                            Colors.white.withValues(alpha: 0.3),
-                                            Colors.transparent,
-                                          ],
+                                        gradient: AppColors.heroGradient,
+                                        borderRadius: BorderRadius.circular(
+                                          AppSizes.signInLogoRadius,
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.primaryLight
+                                                .withValues(
+                                                  alpha: _glowAnimation.value,
+                                                ),
+                                            blurRadius: 40,
+                                            spreadRadius: 2,
+                                            offset: const Offset(0, 8),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          // Inner glow
+                                          Container(
+                                            width: 80,
+                                            height: 80,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: RadialGradient(
+                                                colors: [
+                                                  Colors.white.withValues(
+                                                    alpha: 0.3,
+                                                  ),
+                                                  Colors.transparent,
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          Semantics(
+                                            label: 'Investment tracking icon',
+                                            child: const Icon(
+                                              Icons.trending_up_rounded,
+                                              size: 52,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    Semantics(
-                                      label: 'Investment tracking icon',
-                                      child: const Icon(
-                                        Icons.trending_up_rounded,
-                                        size: 52,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                                  );
+                                },
+                              ),
+                              SizedBox(height: AppSpacing.xxxl),
+
+                              // App Name with gradient
+                              ShaderMask(
+                                shaderCallback: (bounds) =>
+                                    AppColors.heroGradient.createShader(bounds),
+                                child: Text(
+                                  'InvTracker',
+                                  style: AppTypography.displayLarge.copyWith(
+                                    color: Colors.white,
+                                    letterSpacing: -1,
+                                  ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: AppSpacing.xxxl),
+                              SizedBox(height: AppSpacing.sm),
 
-                        // App Name with gradient
-                        ShaderMask(
-                          shaderCallback: (bounds) =>
-                              AppColors.heroGradient.createShader(bounds),
-                          child: Text(
-                            'InvTracker',
-                            style: AppTypography.displayLarge.copyWith(
-                              color: Colors.white,
-                              letterSpacing: -1,
-                            ),
+                              // Tagline with subtle animation
+                              Text(
+                                l10n.signInTagline,
+                                style: AppTypography.bodyLarge.copyWith(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.7)
+                                      : AppColors.neutral600Light,
+                                  letterSpacing: 0.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
-                        SizedBox(height: AppSpacing.sm),
+                      ),
 
-                        // Tagline with subtle animation
-                        Text(
-                          l10n.signInTagline,
-                          style: AppTypography.bodyLarge.copyWith(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : AppColors.neutral600Light,
-                            letterSpacing: 0.5,
-                          ),
-                          textAlign: TextAlign.center,
+                      const Spacer(flex: 2),
+
+                      // Feature Pills
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: [
+                            _buildFeaturePill('📊', 'XIRR & MOIC', isDark),
+                            _buildFeaturePill('🔒', 'Offline-first', isDark),
+                            _buildFeaturePill('☁️', 'Cloud Sync', isDark),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ),
+                      ),
 
-                const Spacer(flex: 2),
+                      const Spacer(),
 
-                // Feature Pills
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: AppSpacing.xs,
-                    runSpacing: AppSpacing.xs,
-                    children: [
-                      _buildFeaturePill('📊', 'XIRR & MOIC', isDark),
-                      _buildFeaturePill('🔒', 'Offline-first', isDark),
-                      _buildFeaturePill('☁️', 'Cloud Sync', isDark),
+                      // Buttons Section
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: SlideTransition(
+                          position: _slideAnimation,
+                          child: Column(
+                            children: [
+                              // Google Sign In Button
+                              _buildGoogleButton(isDark),
+                              SizedBox(height: AppSpacing.lg),
+
+                              // OR Divider
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.2)
+                                          : AppColors.neutral300Light,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                    ),
+                                    child: Text(
+                                      'OR',
+                                      style: AppTypography.small.copyWith(
+                                        color: isDark
+                                            ? Colors.white.withValues(
+                                                alpha: 0.5,
+                                              )
+                                            : AppColors.neutral500Light,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.2)
+                                          : AppColors.neutral300Light,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: AppSpacing.lg),
+
+                              // Continue as Guest Button
+                              _buildGuestButton(isDark),
+                              SizedBox(height: AppSpacing.sm),
+                              // Visible to everyone, not only screen readers
+                              Text(
+                                l10n.guestModeNotice,
+                                textAlign: TextAlign.center,
+                                style: AppTypography.small.copyWith(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.7)
+                                      : AppColors.neutral600Light,
+                                ),
+                              ),
+                              SizedBox(height: AppSpacing.xl),
+
+                              // Terms text (tappable Terms of Service / Privacy
+                              // Policy links, consistent with Settings > About)
+                              _buildTermsText(l10n, isDark),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
                 ),
-
-                const Spacer(),
-
-                // Buttons Section
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      children: [
-                        // Google Sign In Button
-                        _buildGoogleButton(isDark),
-                        SizedBox(height: AppSpacing.lg),
-
-                        // OR Divider
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.2)
-                                    : AppColors.neutral300Light,
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                              ),
-                              child: Text(
-                                'OR',
-                                style: AppTypography.small.copyWith(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.5)
-                                      : AppColors.neutral500Light,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.2)
-                                    : AppColors.neutral300Light,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: AppSpacing.lg),
-
-                        // Continue as Guest Button
-                        _buildGuestButton(isDark),
-                        SizedBox(height: AppSpacing.xl),
-
-                        // Terms text (tappable Terms of Service / Privacy
-                        // Policy links, consistent with Settings > About)
-                        _buildTermsText(l10n, isDark),
-                      ],
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: AppSpacing.xxl),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -589,7 +614,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       button: true,
       enabled: !_isLoading,
       label: l10n.continueAsGuest,
-      hint: l10n.guestModeNotice,
       excludeSemantics: true,
       onTap: _isLoading ? null : _signInAnonymously,
       child: Container(

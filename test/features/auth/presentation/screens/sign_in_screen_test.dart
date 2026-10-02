@@ -222,4 +222,42 @@ void main() {
     expect(find.text('Terms of Service'), findsWidgets);
     expect(find.textContaining('Governing Law'), findsOneWidget);
   });
+
+  // A05 / UX-01: the guest data-loss warning was only a screen-reader hint,
+  // so sighted users never saw it before choosing guest mode.
+  testWidgets('guest data-loss notice is visible text under the guest button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          analyticsServiceProvider.overrideWithValue(mockAnalyticsService),
+          notificationServiceProvider.overrideWithValue(
+            mockNotificationService,
+          ),
+          crashlyticsServiceProvider.overrideWithValue(mockCrashlyticsService),
+          googleSignInInitializedProvider.overrideWith((ref) async {}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SignInScreen(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+
+    const notice =
+        'As a guest, your data can only be reached from this device. If you '
+        'sign out or uninstall the app, it is lost for good. Link a Google '
+        'account in Settings to keep it.';
+    expect(find.text(notice), findsOneWidget);
+
+    // The notice sits below the guest button.
+    final guestButton = tester.getRect(find.text('Continue as Guest'));
+    final noticeRect = tester.getRect(find.text(notice));
+    expect(noticeRect.top, greaterThan(guestButton.bottom));
+  });
 }

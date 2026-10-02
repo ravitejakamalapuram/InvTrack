@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:csv/csv.dart';
@@ -21,6 +22,33 @@ import 'package:inv_tracker/features/investment/data/services/document_storage_s
 
 /// File types for metadata.json
 enum ExportFileType { cashflows, cashflowsArchived, goals, goalsArchived }
+
+/// An export ZIP held in memory, with the number of records it was built
+/// from, so a caller can check that an import of it was complete.
+class ZipExport {
+  const ZipExport({
+    required this.bytes,
+    required this.investments,
+    required this.cashFlows,
+    required this.goals,
+    required this.documents,
+    required this.hasFireSettings,
+  });
+
+  final Uint8List bytes;
+
+  /// Active and archived investments, including any without cash flows.
+  final int investments;
+
+  /// Active and archived cash flows.
+  final int cashFlows;
+
+  /// Active and archived goals.
+  final int goals;
+
+  final int documents;
+  final bool hasFireSettings;
+}
 
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
@@ -50,12 +78,17 @@ class DataExportService {
   Future<String> exportAsZip() async {
     return _performanceService.trackOperation(
       'data_export',
-      () => _exportAsZipInternal(),
+      () async => _saveToTempFile((await _buildZip()).bytes),
     );
   }
 
-  /// Internal export implementation with performance tracking
-  Future<String> _exportAsZipInternal() async {
+  /// Export all user data as a ZIP held in memory, without writing a file.
+  Future<ZipExport> exportAsZipBytes() async {
+    return _performanceService.trackOperation('data_export', _buildZip);
+  }
+
+  /// Builds the export ZIP in memory.
+  Future<ZipExport> _buildZip() async {
     LoggerService.info('Starting data export');
 
     // 1. Fetch all data
@@ -192,9 +225,11 @@ class DataExportService {
     );
 
     // Add FIRE settings if available (Rule 18: Data Lifecycle)
+    var hasFireSettings = false;
     if (_fireSettingsRepository != null) {
       final fireSettings = await _fireSettingsRepository.getSettings();
       if (fireSettings != null) {
+        hasFireSettings = true;
         final fireSettingsBytes = utf8.encode(
           jsonEncode(fireSettings.toJson()),
         );
@@ -214,8 +249,18 @@ class DataExportService {
     if (zipData == null) {
       throw Exception('Failed to create ZIP archive');
     }
+    return ZipExport(
+      bytes: Uint8List.fromList(zipData),
+      investments: allInvestments.length,
+      cashFlows: activeCashFlows.length + archivedCashFlows.length,
+      goals: goals.length + archivedGoals.length,
+      documents: allDocuments.length,
+      hasFireSettings: hasFireSettings,
+    );
+  }
 
-    // 6. Save to temp directory
+  /// Saves export ZIP bytes to the temp directory and returns the file path.
+  Future<String> _saveToTempFile(Uint8List zipData) async {
     final directory = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final fileName = 'InvTrack_Export_$timestamp.zip';
@@ -236,8 +281,15 @@ class DataExportService {
 
   /// Export and share the ZIP file
   Future<void> exportAndShare() async {
-    final filePath = await exportAsZip();
+    await _shareZipFile(await exportAsZip());
+  }
 
+  /// Share export ZIP bytes produced earlier by [exportAsZipBytes].
+  Future<void> shareZipBytes(Uint8List zipData) async {
+    await _shareZipFile(await _saveToTempFile(zipData));
+  }
+
+  Future<void> _shareZipFile(String filePath) async {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(filePath)],

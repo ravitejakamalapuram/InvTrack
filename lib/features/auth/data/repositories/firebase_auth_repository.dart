@@ -18,14 +18,17 @@ class FirebaseAuthRepository implements AuthRepository {
   }) : _firebaseAuth = firebaseAuth,
        _googleSignIn = googleSignIn;
 
+  /// Uses userChanges() rather than authStateChanges(): linking a guest to
+  /// Google keeps the UID, so only userChanges() reports it. userChanges()
+  /// also fires on every ID-token refresh, so unchanged users are dropped.
   @override
   Stream<UserEntity?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().map((firebaseUser) {
+    return _firebaseAuth.userChanges().map((firebaseUser) {
       if (firebaseUser != null) {
         return _mapFirebaseUserToEntity(firebaseUser);
       }
       return null;
-    });
+    }).distinct();
   }
 
   @override
