@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 
+// Expected rates are exact (actual/365 day count, as Excel's XIRR), computed
+// independently with a Python bisection solver. See
+// xirr_excel_parity_test.dart for the method and the wider golden suite.
+const double _tol = 1e-6;
+
 void main() {
   group('XirrSolver', () {
     group('calculateXirr - Basic Scenarios', () {
@@ -17,7 +22,7 @@ void main() {
 
           // Should be approximately 10% (0.10)
           expect(xirr, isNotNull);
-          expect(xirr, closeTo(0.10, 0.01)); // Within 1% tolerance
+          expect(xirr, closeTo(0.1000000000, _tol));
         },
       );
 
@@ -26,15 +31,15 @@ void main() {
         () {
           // Scenario: Invest ₹1,00,000 on Jan 1, 2023
           //           Get back ₹1,50,000 on Jan 1, 2025 (2 years)
-          //           Expected: ~22.47% annual return (CAGR)
+          //           Expected: 22.44% annual return (731 days)
           final dates = [DateTime(2023, 1, 1), DateTime(2025, 1, 1)];
           final amounts = [-100000.0, 150000.0];
 
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
-          // CAGR = (1.50)^(1/2) - 1 = 0.2247 = 22.47%
+          // XIRR = 1.50^(365/731) - 1 = 0.2244052527
           expect(xirr, isNotNull);
-          expect(xirr, closeTo(0.2247, 0.01));
+          expect(xirr, closeTo(0.2244052527, _tol)); // 731 days
         },
       );
 
@@ -43,15 +48,15 @@ void main() {
         () {
           // Scenario: Invest ₹1,00,000 on Jan 1, 2024
           //           Get back ₹1,05,000 on July 1, 2024 (6 months)
-          //           Expected: ~10.25% annualized return
+          //           Expected: 10.28% annualized return (182 days)
           final dates = [DateTime(2024, 1, 1), DateTime(2024, 7, 1)];
           final amounts = [-100000.0, 105000.0];
 
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
-          // CAGR = (1.05)^(1/0.5) - 1 = (1.05)^2 - 1 = 0.1025 = 10.25%
+          // XIRR = 1.05^(365/182) - 1 = 0.1027955954
           expect(xirr, isNotNull);
-          expect(xirr, closeTo(0.1025, 0.01));
+          expect(xirr, closeTo(0.1027955954, _tol)); // 182 days
         },
       );
 
@@ -60,15 +65,15 @@ void main() {
         () {
           // Scenario: Invest ₹1,00,000 on Jan 1, 2024
           //           Get back ₹1,02,000 on April 1, 2024 (3 months)
-          //           Expected: ~8.24% annualized return
+          //           Expected: 8.27% annualized return (91 days)
           final dates = [DateTime(2024, 1, 1), DateTime(2024, 4, 1)];
           final amounts = [-100000.0, 102000.0];
 
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
-          // CAGR = (1.02)^(1/0.25) - 1 = (1.02)^4 - 1 = 0.0824 = 8.24%
+          // XIRR = 1.02^(365/91) - 1 = 0.0826677351
           expect(xirr, isNotNull);
-          expect(xirr, closeTo(0.0824, 0.01));
+          expect(xirr, closeTo(0.0826677351, _tol)); // 91 days
         },
       );
 
@@ -77,15 +82,15 @@ void main() {
         () {
           // Scenario: Invest ₹1,00,000 on Jan 1, 2020
           //           Get back ₹2,00,000 on Jan 1, 2025 (5 years)
-          //           Expected: ~14.87% annual return
+          //           Expected: 14.85% annual return (1,827 days)
           final dates = [DateTime(2020, 1, 1), DateTime(2025, 1, 1)];
           final amounts = [-100000.0, 200000.0];
 
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
-          // CAGR = (2.00)^(1/5) - 1 = 0.1487 = 14.87%
+          // XIRR = 2.00^(365/1827) - 1 = 0.1485240459
           expect(xirr, isNotNull);
-          expect(xirr, closeTo(0.1487, 0.01));
+          expect(xirr, closeTo(0.1485240459, _tol)); // 1,827 days
         },
       );
     });
@@ -113,8 +118,7 @@ void main() {
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
           expect(xirr, isNotNull);
-          expect(xirr, greaterThan(0)); // Should be positive
-          expect(xirr, lessThan(0.5)); // Should be reasonable (<50%)
+          expect(xirr, closeTo(0.1566983509, _tol));
         },
       );
 
@@ -133,7 +137,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, greaterThan(0)); // Positive return
+        expect(xirr, closeTo(0.1624285055, _tol));
       });
     });
 
@@ -180,7 +184,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, closeTo(0.0, 0.01)); // Should be ~0%
+        expect(xirr, closeTo(0.0, _tol));
       });
 
       test('should handle negative return (loss)', () {
@@ -191,7 +195,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, closeTo(-0.10, 0.01)); // Should be ~-10%
+        expect(xirr, closeTo(-0.1000000000, _tol));
       });
 
       test('should handle total loss', () {
@@ -225,7 +229,7 @@ void main() {
           expect(xirr, isNotNull);
           // The key assertion: should be 10%, NOT 0.0267%
           expect(xirr, greaterThan(0.05)); // At least 5%
-          expect(xirr, closeTo(0.10, 0.02)); // Close to 10%
+          expect(xirr, closeTo(0.1000000000, _tol));
 
           // Verify it's NOT the buggy value
           expect(xirr, isNot(closeTo(0.000267, 0.0001)));
@@ -233,10 +237,10 @@ void main() {
       );
 
       test(
-        'REGRESSION TEST: 2-year investment should show 22.47% not 0.0558%',
+        'REGRESSION TEST: 2-year investment should show 22.44% not 0.0558%',
         () {
           // Before fix: Would show 0.0558% (402x too small)
-          // After fix: Should show 22.47%
+          // After fix: Should show 22.44%
 
           final dates = [DateTime(2023, 1, 1), DateTime(2025, 1, 1)];
           final amounts = [-100000.0, 150000.0];
@@ -244,9 +248,9 @@ void main() {
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
           expect(xirr, isNotNull);
-          // Should be ~22.47%, NOT 0.0558%
+          // Should be 22.44%, NOT 0.0558%
           expect(xirr, greaterThan(0.15)); // At least 15%
-          expect(xirr, closeTo(0.2247, 0.02)); // Close to 22.47%
+          expect(xirr, closeTo(0.2244052527, _tol)); // 731 days
 
           // Verify it's NOT the buggy value
           expect(xirr, isNot(closeTo(0.000558, 0.0001)));
@@ -254,10 +258,10 @@ void main() {
       );
 
       test(
-        'REGRESSION TEST: 6-month investment should show 10.25% not 0.0268%',
+        'REGRESSION TEST: 6-month investment should show 10.28% not 0.0268%',
         () {
           // Before fix: Would show 0.0268%
-          // After fix: Should show 10.25%
+          // After fix: Should show 10.28%
 
           final dates = [DateTime(2024, 1, 1), DateTime(2024, 7, 1)];
           final amounts = [-100000.0, 105000.0];
@@ -265,9 +269,9 @@ void main() {
           final xirr = XirrSolver.calculateXirr(dates, amounts);
 
           expect(xirr, isNotNull);
-          // Should be ~10.25%, NOT 0.0268%
+          // Should be 10.28%, NOT 0.0268%
           expect(xirr, greaterThan(0.05)); // At least 5%
-          expect(xirr, closeTo(0.1025, 0.02)); // Close to 10.25%
+          expect(xirr, closeTo(0.1027955954, _tol)); // 182 days
 
           // Verify it's NOT the buggy value
           expect(xirr, isNot(closeTo(0.000268, 0.0001)));
@@ -288,8 +292,7 @@ void main() {
 
           expect(xirr, isNotNull);
           // 1% in 30 days = (1.01)^(365/30) - 1 = 12.68%
-          expect(xirr, greaterThan(0.10)); // At least 10%
-          expect(xirr, lessThan(0.15)); // Less than 15%
+          expect(xirr, closeTo(0.1286952942, _tol));
         },
       );
 
@@ -308,7 +311,7 @@ void main() {
           expect(xirr, isNotNull);
           // 200% in 10 years = (3.00)^(1/10) - 1 = 11.61%
           expect(xirr, greaterThan(0.10)); // At least 10%
-          expect(xirr, closeTo(0.1161, 0.02)); // Close to 11.61%
+          expect(xirr, closeTo(0.1160560245, _tol));
         },
       );
 
@@ -322,7 +325,7 @@ void main() {
 
         expect(xirr, isNotNull);
         expect(xirr, lessThan(0)); // Should be negative
-        expect(xirr, closeTo(-0.20, 0.02)); // Close to -20%
+        expect(xirr, closeTo(-0.2000000000, _tol));
 
         // Verify it's NOT the buggy value
         expect(xirr, isNot(closeTo(-0.000055, 0.0001)));
@@ -338,7 +341,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, closeTo(0.08, 0.01)); // Should be ~8%
+        expect(xirr, closeTo(0.0800000000, _tol));
       });
 
       test('Recurring Deposit: Monthly deposits with 7% annual return', () {
@@ -359,8 +362,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, greaterThan(0.05)); // At least 5%
-        expect(xirr, lessThan(0.10)); // Less than 10%
+        expect(xirr, closeTo(0.0649793821, _tol));
       });
 
       test('Mutual Fund SIP: Monthly SIP with market volatility', () {
@@ -382,7 +384,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, greaterThan(0)); // Positive return
+        expect(xirr, closeTo(0.1277932068, _tol));
       });
 
       test('P2P Lending: Quarterly interest payments', () {
@@ -405,7 +407,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, closeTo(0.08, 0.02)); // Should be ~8%
+        expect(xirr, closeTo(0.0824484906, _tol));
       });
 
       test('Stock Investment: Buy and sell with dividend', () {
@@ -424,7 +426,7 @@ void main() {
         final xirr = XirrSolver.calculateXirr(dates, amounts);
 
         expect(xirr, isNotNull);
-        expect(xirr, greaterThan(0.15)); // Should be >15%
+        expect(xirr, closeTo(0.1719498447, _tol));
       });
     });
 
