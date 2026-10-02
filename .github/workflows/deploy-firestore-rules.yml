@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   deploy-rules:
@@ -17,15 +18,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Write service account key (runner temp only)
-        env:
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
-        run: |
-          umask 077
-          printf '%s' "$FIREBASE_CREDENTIALS" > "$RUNNER_TEMP/sa.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Authenticate to Google Cloud (keyless)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/784857267556/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: admin-bot@invtracker-b19d1.iam.gserviceaccount.com
       - name: Deploy rules
         run: npx --yes firebase-tools@13 deploy --only firestore:rules --project invtracker-b19d1 --non-interactive
-      - name: Remove key
-        if: always()
-        run: rm -f "$RUNNER_TEMP/sa.json"
