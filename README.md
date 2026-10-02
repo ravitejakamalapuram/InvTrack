@@ -275,6 +275,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Developer**: Ravi Teja Kamalapuram
 - **GitHub**: [@ravitejakamalapuram](https://github.com/ravitejakamalapuram)
 - **Issues**: [GitHub Issues](https://github.com/ravitejakamalapuram/InvTrack/issues)
+- **Support email**: [support@invtracker.app](mailto:support@invtracker.app)
+- **Privacy policy**: https://ravitejakamalapuram.github.io/privacy/invtrack.html
+- **Delete your account**: in the app, Settings > Data & Account > Delete Account, or email the support address from the email you sign in with
 
 ---
 

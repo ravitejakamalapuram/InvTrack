@@ -664,9 +664,14 @@
     "description": "FAQ answer"
   },
 
-  "needMoreHelpContact": "Need more help? Contact support@invtracker.app",
+  "needMoreHelpContact": "Need more help? Contact {email}",
   "@needMoreHelpContact": {
-    "description": "Help contact message"
+    "description": "Help contact message",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
 
   "incomeGuardianSection": "Income Guardian",
@@ -1159,11 +1164,6 @@
   "contactSupport": "Contact Support",
   "@contactSupport": {
     "description": "Contact support title"
-  },
-
-  "supportEmail": "support@invtracker.app",
-  "@supportEmail": {
-    "description": "Support email address"
   },
 
   "supportEmailSubject": "InvTrack Support Request (v{version})",
