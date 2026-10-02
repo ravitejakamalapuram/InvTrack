@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/data/repositories/firestore_goal_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -25,7 +26,11 @@ final goalRepositoryProvider = Provider<GoalRepository>((ref) {
     throw AuthException.notAuthenticated();
   }
 
-  return FirestoreGoalRepository(firestore: firestore, userId: user.id);
+  return FirestoreGoalRepository(
+    firestore: firestore,
+    userId: user.id,
+    baseCurrency: baseCurrencyReader(ref),
+  );
 });
 
 /// Stream provider for all active goals
@@ -150,9 +155,8 @@ class GoalNotifier extends Notifier<AsyncValue<void>> {
             linkedTypes: linkedTypes,
             icon: icon ?? GoalIcons.defaultIcon,
             colorValue: colorValue ?? GoalColors.defaultColor.toARGB32(),
-            currency:
-                currency ??
-                'USD', // Default to USD if not specified (Rule 21.2)
+            // Default to the user's base currency (Rule 21.2)
+            currency: currency ?? ref.read(currencyCodeProvider),
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );

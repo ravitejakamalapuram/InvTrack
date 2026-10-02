@@ -324,6 +324,26 @@ final currencyCodeProvider = Provider<String>((ref) {
   return settings.currency;
 });
 
+/// Gives repositories the user's base currency for stored documents that have
+/// no `currency` field (written before multi-currency support).
+///
+/// The returned function always reads the current base currency, but the
+/// calling provider is not rebuilt when it changes, which would re-subscribe
+/// every Firestore stream.
+String Function() baseCurrencyReader(Ref ref) {
+  var current = ref.read(currencyCodeProvider);
+  ref.listen<String>(currencyCodeProvider, (_, next) => current = next);
+  return () => current;
+}
+
+/// The currency of an investment built from several sources (its imported
+/// rows, or the investments being merged): the one they share, or
+/// [baseCurrency] when they disagree or there are none.
+String resolveSharedCurrency(Iterable<String> currencies, String baseCurrency) {
+  final distinct = currencies.toSet();
+  return distinct.length == 1 ? distinct.single : baseCurrency;
+}
+
 /// Provider for the current currency symbol based on settings
 final currencySymbolProvider = Provider<String>((ref) {
   final currencyCode = ref.watch(currencyCodeProvider);

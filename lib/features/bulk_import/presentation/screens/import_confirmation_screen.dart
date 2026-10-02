@@ -50,6 +50,26 @@ class _ImportConfirmationScreenState
     return name.trim();
   }
 
+  /// A row's currency: from the CSV, or the user's base currency when the
+  /// CSV has none (never USD).
+  String _rowCurrency(ParsedCashFlowRow row, String baseCurrency) =>
+      row.currency ?? baseCurrency;
+
+  /// The investment's currency: the one its rows share, else the base.
+  String _investmentCurrency(
+    List<ParsedCashFlowRow> rows,
+    String baseCurrency,
+  ) => resolveSharedCurrency(
+    rows.map((r) => _rowCurrency(r, baseCurrency)),
+    baseCurrency,
+  );
+
+  String _formatIn(double amount, String currency) => formatCompactCurrency(
+    amount,
+    symbol: getCurrencySymbol(currency),
+    locale: getCurrencyLocale(currency),
+  );
+
   Future<void> _importAll() async {
     HapticFeedback.mediumImpact();
     setState(() => _isImporting = true);
@@ -57,6 +77,7 @@ class _ImportConfirmationScreenState
     try {
       final notifier = ref.read(investmentNotifierProvider.notifier);
       final grouped = _groupedByInvestment;
+      final baseCurrency = ref.read(currencyCodeProvider);
       const uuid = Uuid();
       final now = DateTime.now();
 
@@ -85,6 +106,7 @@ class _ImportConfirmationScreenState
             status: investmentStatus,
             createdAt: now,
             updatedAt: now,
+            currency: _investmentCurrency(rows, baseCurrency),
           ),
         );
 
@@ -96,8 +118,7 @@ class _ImportConfirmationScreenState
               investmentId: investmentId,
               type: row.type,
               amount: row.amount,
-              currency:
-                  row.currency ?? 'USD', // Multi-currency support (Rule 21.4)
+              currency: _rowCurrency(row, baseCurrency), // Rule 21.4
               date: row.date,
               notes: row.notes,
               createdAt: now,
@@ -141,7 +162,7 @@ class _ImportConfirmationScreenState
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final grouped = _groupedByInvestment;
-    final currencyFormat = ref.watch(currencyFormatProvider);
+    final baseCurrency = ref.watch(currencyCodeProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.confirmImport), centerTitle: true),
@@ -179,7 +200,7 @@ class _ImportConfirmationScreenState
               itemBuilder: (context, index) {
                 final name = grouped.keys.elementAt(index);
                 final rows = grouped[name]!;
-                return _buildInvestmentCard(name, rows, isDark, currencyFormat);
+                return _buildInvestmentCard(name, rows, isDark, baseCurrency);
               },
             ),
           ),
@@ -205,8 +226,13 @@ class _ImportConfirmationScreenState
     String name,
     List<ParsedCashFlowRow> rows,
     bool isDark,
-    NumberFormat currencyFormat,
+    String baseCurrency,
   ) {
+    final currency = _investmentCurrency(rows, baseCurrency);
+    // Totals are only meaningful when every row is in the same currency
+    final singleCurrency = rows.every(
+      (r) => _rowCurrency(r, baseCurrency) == currency,
+    );
     double totalInvested = 0;
     double totalIncome = 0;
     double totalReturned = 0;
@@ -230,7 +256,7 @@ class _ImportConfirmationScreenState
       child: ExpansionTile(
         title: Text(name, style: AppTypography.h4),
         subtitle: Text(
-          '${rows.length} cash flows',
+          '${rows.length} cash flows • $currency',
           style: AppTypography.caption,
         ),
         children: [
@@ -241,21 +267,18 @@ class _ImportConfirmationScreenState
               children: [
                 _buildSummaryItem(
                   'Invested',
-                  totalInvested,
+                  singleCurrency ? _formatIn(totalInvested, currency) : '—',
                   Colors.red,
-                  currencyFormat,
                 ),
                 _buildSummaryItem(
                   'Income',
-                  totalIncome,
+                  singleCurrency ? _formatIn(totalIncome, currency) : '—',
                   Colors.green,
-                  currencyFormat,
                 ),
                 _buildSummaryItem(
                   'Returned',
-                  totalReturned,
+                  singleCurrency ? _formatIn(totalReturned, currency) : '—',
                   Colors.blue,
-                  currencyFormat,
                 ),
               ],
             ),
@@ -266,8 +289,9 @@ class _ImportConfirmationScreenState
               dense: true,
               leading: _buildTypeChip(row.type),
               title: Text(_dateFormat.format(row.date)),
+              subtitle: Text(_rowCurrency(row, baseCurrency)),
               trailing: Text(
-                currencyFormat.formatCompact(row.amount),
+                _formatIn(row.amount, _rowCurrency(row, baseCurrency)),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color:
@@ -284,17 +308,12 @@ class _ImportConfirmationScreenState
     );
   }
 
-  Widget _buildSummaryItem(
-    String label,
-    double amount,
-    Color color,
-    NumberFormat currencyFormat,
-  ) {
+  Widget _buildSummaryItem(String label, String formattedAmount, Color color) {
     return Column(
       children: [
         Text(label, style: AppTypography.caption),
         Text(
-          currencyFormat.formatCompact(amount),
+          formattedAmount,
           style: TextStyle(fontWeight: FontWeight.bold, color: color),
         ),
       ],

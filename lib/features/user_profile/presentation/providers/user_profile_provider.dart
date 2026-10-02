@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/services/locale_detection_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/user_profile/data/repositories/firestore_user_profile_repository.dart';
 import 'package:inv_tracker/features/user_profile/domain/entities/user_profile_entity.dart';
@@ -13,6 +14,7 @@ final userProfileRepositoryProvider =
       return FirestoreUserProfileRepository(
         firestore: firestore,
         userId: userId,
+        baseCurrency: baseCurrencyReader(ref),
       );
     });
 
