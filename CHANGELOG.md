@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### ✨ Features
+
+- **deletion**: Record an account deletion request when deleting your account in the app so it can still finish if your connection drops, and show an "Account scheduled for deletion" notice at sign-in with options to withdraw the request or sign out (#735)
+
 ### ⚡ Performance
 
 - Replace O(N log N) sort with O(N) bounded list scan in FY report (#556)
