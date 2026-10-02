@@ -6,6 +6,8 @@ This plan comes from a full review of the InvTrack codebase, store listing and d
 
 **The short version.** The engineering foundations are good: the analyzer is clean, all 1,477 tests pass, and the XIRR solver itself is correct. But the numbers users see are wrong for the app's core use case. Open investments have no current value, so healthy FDs show −95% returns. A silent USD default inflates INR data about 88×. FIRE and goal progress use the wrong inputs. Meanwhile the live store listing makes a false privacy claim, guest and deletion flows can lose data or leave PII behind, and the features that would retain and monetise users ship switched off. Fix trust and correctness first (P0–P1, about 5 weeks), then relaunch the listing and activation flow, then launch Premium before the 2027 tax season.
 
+**Since the review.** Main gained the account-deletion job (#731, APP-332) and in-app deletion requests (#735, APP-334) after the review ran at `f08e452`. A02, A06 and A36 were rewritten to build on that work. Decisions on 2 Oct 2026: archived investments stay excluded from totals with explicit warnings (A17); iOS is deferred. Each action item is tracked as a GitHub issue labelled `review-2026-10` (roadmap #745), and `CLAUDE.md` describes how every ticket is worked.
+
 ## The ten things that matter most
 
 | # | Severity | Issue | What is happening | Findings |
@@ -88,15 +90,15 @@ _Goal: Nothing false on the store, and no flow that silently destroys or inflate
 
 #### A02 · One privacy policy, one support email, and a web deletion page · effort S
 
-**Why:** There are two policy URLs and two support emails, and the founder's own notes say the live policy still describes SQLite + Sheets. Play requires a web account-deletion link, and the deletionRequests queue has no processor.
+**Why:** There are two policy URLs and two support emails, and the founder's own notes say the live policy still describes SQLite + Sheets. Play requires a web account-deletion link. Since the review, main gained the processing job (#731, APP-332) and in-app requests (#735, APP-334), but no web request page is published and the job's schedule is not enabled yet.
 
 **Do:**
 - Publish the corrected policy at one GitHub Pages URL and point the app, app-metadata.json and Play Console at it.
-- Pick one monitored support address and use it everywhere.
-- Publish a static “Delete your InvTrack account” page (in-app steps, the email address, what is deleted and what is kept, a 30-day SLA) and enter it in Play Console → Data safety.
-- Do not ship a web form that writes deletionRequests until the processor job exists (A36).
+- Pick one monitored support address and use it everywhere in the app (one constant, used by legal_content.dart and the About screen).
+- Publish a “Delete your InvTrack account” page (in-app steps, the email address, what is deleted and what is kept, the 7-day promise the job enforces) and enter it in Play Console → Data safety.
+- Only add a web form that writes deletionRequests once the job's schedule is enabled (A36).
 
-**Done when:** Play Console, app and README all show the same policy URL and support email, and the deletion URL is registered.
+**Done when:** Play Console, the app and README show the same policy URL and support email, and the deletion URL is registered.
 
 **Findings:** SEC-14, SEC-02, QA-16, QA-21
 
@@ -144,15 +146,15 @@ _Goal: Nothing false on the store, and no flow that silently destroys or inflate
 
 #### A06 · Make ‘Delete account’ delete the account · effort S
 
-**Why:** Data is wiped first. Re-authentication then fails because Google Sign-In is never initialised on this path, so the Auth record (email, name, photo) survives and the app says “cancelled”.
+**Why:** Since #735 the app files a server-side request before wiping, so the scheduled job can finish deletions later. But data is still wiped before re-authentication, Google Sign-In is still never initialised on this path (so re-auth usually fails), and a cancelled re-auth withdraws the request after the data is already gone.
 
 **Do:**
 - Await googleSignInInitializedProvider before re-authenticating.
-- Re-authenticate before any destructive step, then delete the data, then delete the Auth user.
-- Show accurate success and failure messages.
-- Later: move deletion server-side (Admin SDK recursiveDelete + deleteUser) through the deletionRequests job.
+- Re-authenticate first when the session is older than about 4 minutes. Only after that file the request, delete the data and delete the Auth user.
+- If re-auth is cancelled, delete nothing and say so. If re-auth fails, keep the filed request so the job completes the deletion, and tell the user it is scheduled.
+- Keep the APP-334 request/withdraw behaviour and its tests green.
 
-**Done when:** An integration test with a stale session deletes both the data and the Auth user.
+**Done when:** A test with a stale session shows re-auth happens before any deletion, a cancelled re-auth deletes nothing, and a failed re-auth leaves the request for the job.
 
 **Findings:** PLAT-04, SEC-15, UX-21
 
@@ -553,15 +555,17 @@ _Goal: The app is safe to scale. It meets Play's User Data rules now and India's
 
 **Findings:** GAP3-09, PLAT-16
 
-#### A36 · Finish the deletion and guest-cleanup pipelines · effort M
+#### A36 · Finish the deletion pipeline and the guest cleanup · effort M
 
-**Why:** The anonymous-cleanup function cannot be deployed (no package.json or index.ts, no functions block), and its 30-day purge is undisclosed. The deletionRequests processor described in the rules does not exist.
+**Why:** The processing job now exists (scripts/account-deletion, #731) but its schedule is not enabled (its README lists that as a follow-up), so requests filed in the app (#735) wait indefinitely. functions/cleanupAnonymousUsers.ts cannot be deployed (no package.json, index.ts or functions block) while the job already has a guest sweep. Guest retention is not disclosed anywhere.
 
 **Do:**
-- Either set up functions/ properly and disclose the retention period (consider 180 days), or delete the dead source.
-- Build the scheduled deletion job (recursiveDelete users/{uid}, deleteUser, audit entry) with emulator tests.
+- Add the scheduled workflow that runs the job from main (dry-run first, then live), as planned in the job README.
+- Decide the guest-inactivity threshold (consider 180 days rather than 30), enable the job's SWEEP_INACTIVE_GUESTS, and delete the dead functions/ source.
+- Disclose guest retention in the guest notice, FAQ and privacy policy.
+- Add the 12-month purge of deletionAudit entries.
 
-**Done when:** A queued deletion request is processed end to end in the emulator.
+**Done when:** A filed request is processed by the scheduled job within 7 days in a dry-run log, functions/ is gone, and the retention period is disclosed in-app.
 
 **Findings:** SEC-04, QA-16, SEC-02, GAP4-10
 
