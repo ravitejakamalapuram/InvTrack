@@ -68,7 +68,9 @@ void main() {
       calls.add('request');
       return true;
     });
-    when(() => requests.hasRequest()).thenAnswer((_) async => true);
+    when(
+      () => requests.requestStatus(),
+    ).thenAnswer((_) async => DeletionRequestStatus.confirmed);
     when(() => requests.withdraw()).thenAnswer((_) async {
       calls.add('withdraw');
       return true;
@@ -126,7 +128,9 @@ void main() {
         calls.add('request');
         return false;
       });
-      when(() => requests.hasRequest()).thenAnswer((_) async => true);
+      when(
+        () => requests.requestStatus(),
+      ).thenAnswer((_) async => DeletionRequestStatus.confirmed);
 
       expect(await flow().run(), AccountDeletionOutcome.scheduled);
     });
@@ -139,12 +143,30 @@ void main() {
           calls.add('request');
           return false;
         });
-        when(() => requests.hasRequest()).thenAnswer((_) async => false);
+        when(
+          () => requests.requestStatus(),
+        ).thenAnswer((_) async => DeletionRequestStatus.none);
 
         expect(await flow().run(), AccountDeletionOutcome.notDeleted);
         expect(calls, ['init', 'reauth', 'request']);
       },
     );
+
+    test('failed re-auth with a request still waiting on this device (offline '
+        'or the write timed out) is queued, never scheduled', () async {
+      reauthThrows();
+      when(() => requests.requestDeletion()).thenAnswer((_) async {
+        calls.add('request');
+        return false;
+      });
+      when(
+        () => requests.requestStatus(),
+      ).thenAnswer((_) async => DeletionRequestStatus.pending);
+
+      expect(await flow().run(), AccountDeletionOutcome.queued);
+      expect(calls, ['init', 'reauth', 'request']);
+      verifyNever(() => requests.withdraw());
+    });
   });
 
   test('unknown sign-in time is treated as stale', () async {
@@ -188,6 +210,53 @@ void main() {
       expect(await flow().run(), AccountDeletionOutcome.scheduled);
       expect(calls, ['request', 'wipe', 'deleteAuth', 'init', 'reauth']);
       verifyNever(() => requests.withdraw());
+    });
+
+    test('a request that never reached the server stops the deletion before '
+        'any data is wiped', () async {
+      sessionFresh = true;
+      when(() => requests.requestDeletion()).thenAnswer((_) async {
+        calls.add('request');
+        return false;
+      });
+      when(
+        () => requests.requestStatus(),
+      ).thenAnswer((_) async => DeletionRequestStatus.none);
+
+      expect(await flow().run(), AccountDeletionOutcome.notDeleted);
+      expect(calls, ['request']);
+      verifyNever(() => auth.deleteAccount());
+    });
+
+    test('a request that never reached the server is never reported as '
+        'scheduled when Firebase then asks for a recent login', () async {
+      reauthReturns(false);
+      when(() => requests.requestDeletion()).thenAnswer((_) async {
+        calls.add('request');
+        return false;
+      });
+      when(
+        () => requests.requestStatus(),
+      ).thenAnswer((_) async => DeletionRequestStatus.none);
+
+      expect(await flow().run(), AccountDeletionOutcome.notDeleted);
+      expect(calls, ['request']);
+    });
+
+    test('a request still waiting on this device is queued and nothing is '
+        'wiped', () async {
+      sessionFresh = true;
+      when(() => requests.requestDeletion()).thenAnswer((_) async {
+        calls.add('request');
+        return false;
+      });
+      when(
+        () => requests.requestStatus(),
+      ).thenAnswer((_) async => DeletionRequestStatus.pending);
+
+      expect(await flow().run(), AccountDeletionOutcome.queued);
+      expect(calls, ['request']);
+      verifyNever(() => auth.deleteAccount());
     });
 
     test('re-auth failing after the wipe keeps the request', () async {

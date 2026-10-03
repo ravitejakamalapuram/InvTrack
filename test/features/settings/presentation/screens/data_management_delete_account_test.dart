@@ -78,7 +78,9 @@ void main() {
       calls.add('request');
       return true;
     });
-    when(() => requests.hasRequest()).thenAnswer((_) async => true);
+    when(
+      () => requests.requestStatus(),
+    ).thenAnswer((_) async => DeletionRequestStatus.confirmed);
     when(() => requests.withdraw()).thenAnswer((_) async {
       calls.add('withdraw');
       return true;
@@ -216,7 +218,9 @@ void main() {
       calls.add('request');
       return false;
     });
-    when(() => requests.hasRequest()).thenAnswer((_) async => false);
+    when(
+      () => requests.requestStatus(),
+    ).thenAnswer((_) async => DeletionRequestStatus.none);
     final l10n = await pumpScreen(tester);
 
     await confirmDeletion(tester, l10n);
@@ -224,11 +228,45 @@ void main() {
     expect(calls, ['init', 'reauth', 'request']);
     expect(
       find.text(
-        "We couldn't confirm your sign-in, so nothing was deleted. "
+        "We couldn't file your deletion request, so nothing was deleted. "
         'Check your connection and try again.',
       ),
       findsOneWidget,
     );
+    verifyNever(() => auth.signOut());
+  });
+
+  testWidgets('failed re-auth with the request still waiting on this device '
+      'says it will be filed when back online and keeps the user signed in', (
+    tester,
+  ) async {
+    when(() => auth.reauthenticateWithGoogle()).thenAnswer((_) async {
+      calls.add('reauth');
+      throw AuthException(technicalMessage: 'GoogleSignInException: unknown');
+    });
+    when(() => requests.requestDeletion()).thenAnswer((_) async {
+      calls.add('request');
+      return false;
+    });
+    when(
+      () => requests.requestStatus(),
+    ).thenAnswer((_) async => DeletionRequestStatus.pending);
+    final l10n = await pumpScreen(tester);
+
+    await confirmDeletion(tester, l10n);
+
+    expect(calls, ['init', 'reauth', 'request']);
+    verifyNever(() => auth.signOut());
+    verifyNever(() => requests.withdraw());
+    expect(
+      find.text(
+        'You seem to be offline. Your deletion request will be filed when '
+        'you are back online, and your account and data are then deleted '
+        'within 7 days. Nothing has been deleted yet.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('scheduled for deletion'), findsNothing);
   });
 
   testWidgets('guest: deletes the data and the anonymous user without asking '

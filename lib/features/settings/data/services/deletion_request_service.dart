@@ -3,6 +3,21 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 
+/// Where a `deletionRequests/{uid}` document stands, as far as this device can
+/// tell.
+enum DeletionRequestStatus {
+  /// The server holds the request: the deletion job will act on it.
+  confirmed,
+
+  /// The request is only in this device's Firestore cache (offline, or the
+  /// write has not been acknowledged yet). It is sent when the device is back
+  /// online and this user is signed in.
+  pending,
+
+  /// No request was found.
+  none,
+}
+
 /// Reads, files and withdraws the account-deletion request document
 /// `deletionRequests/{uid}`.
 ///
@@ -43,10 +58,31 @@ class DeletionRequestService {
     }
   }
 
+  /// Asks the server whether the request exists. A cached document, or one
+  /// with a local write the server has not acknowledged, is only [pending]:
+  /// Firestore resolves offline writes locally, so a default read would
+  /// report a request the server has never seen. Never throws.
+  Future<DeletionRequestStatus> requestStatus() async {
+    try {
+      final snap = await _doc
+          .get(const GetOptions(source: Source.server))
+          .timeout(timeout);
+      if (snap.exists && !snap.metadata.hasPendingWrites) {
+        return DeletionRequestStatus.confirmed;
+      }
+    } catch (e) {
+      LoggerService.warn('Could not confirm deletion request: $e');
+    }
+    return await hasRequest()
+        ? DeletionRequestStatus.pending
+        : DeletionRequestStatus.none;
+  }
+
   /// Files a request with source `app`. Returns true only when THIS call
-  /// created it, so the caller knows whether it may withdraw it later (an
-  /// existing request, e.g. from the web, must be left alone). Never throws:
-  /// a failure is logged and deletion proceeds on the client path.
+  /// created it and the server acknowledged the write, so the caller knows
+  /// whether it may withdraw it later (an existing request, e.g. from the
+  /// web, must be left alone). Never throws: on false, use [requestStatus]
+  /// to learn whether a request reached the server.
   Future<bool> requestDeletion() async {
     try {
       if ((await _doc.get().timeout(timeout)).exists) return false;

@@ -1361,9 +1361,14 @@
     "description": "Shown when re-authentication for account deletion failed and a server-side deletion request was filed instead. The user is signed out."
   },
 
-  "accountDeletionNotStarted": "We couldn''t confirm your sign-in, so nothing was deleted. Check your connection and try again.",
+  "accountDeletionNotStarted": "We couldn''t file your deletion request, so nothing was deleted. Check your connection and try again.",
   "@accountDeletionNotStarted": {
-    "description": "Shown when re-authentication for account deletion failed and no deletion request could be filed. Nothing has been deleted."
+    "description": "Shown when the server-side account deletion request could not be filed. Nothing has been deleted and the user stays signed in."
+  },
+
+  "accountDeletionQueued": "You seem to be offline. Your deletion request will be filed when you are back online, and your account and data are then deleted within 7 days. Nothing has been deleted yet.",
+  "@accountDeletionQueued": {
+    "description": "Shown when the account deletion request is saved on the device but the server has not confirmed it yet. Nothing has been deleted and the user stays signed in."
   },
 
   "accountDeletedSuccessfully": "Account deleted successfully",
