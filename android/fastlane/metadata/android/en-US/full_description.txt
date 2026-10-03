@@ -1,106 +1,59 @@
-📊 InvTracker - Simple Investment Tracker
+Track the investments your broker app can't see: fixed deposits, P2P lending, bonds, chit funds and gold. Record money in and out, and see your real return (XIRR).
 
-Finally, a simple way to track where your money went and what came back.
+WHAT YOU CAN TRACK
+• Fixed deposits (FDs)
+• P2P lending
+• Bonds, NCDs and debentures
+• Chit funds
+• Gold, including Sovereign Gold Bonds
+• Real estate
+• Invoice discounting
+• Private equity and angel investments
+• Crypto
+• Anything else where money goes in and comes back later
 
-No complicated charts. No stock tickers. Just record what you invested and what you got back. InvTracker calculates your real returns automatically.
+InvTrack is a ledger, not a price feed. You record what you put in and what came back (returns, interest, fees). It does not fetch market prices.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REAL RETURNS, WORKED OUT FOR YOU
+A simple percentage ignores time. InvTrack uses XIRR, the annual-return formula behind Excel's XIRR, so the date of every payment counts.
 
-🎯 WHAT IT DOES
+Example: you put ₹1,00,000 into an FD on 1 April 2025 and get ₹1,07,100 back on 1 April 2026. That is 7.1% a year. Get the same ₹1,07,100 back on 1 October 2025 instead, and it is about 14.7% a year, because your money did the same work in half the time.
 
-• Record money going out (investments, fees)
-• Record money coming back (returns, income)
-• See your actual profit or loss
-• Get professional return metrics (XIRR & MOIC)
-• Set financial goals and track progress
-• Get smart notifications for income & maturity dates
+You also see total invested, total returned, net profit and how many times your money has multiplied (MOIC).
 
-That's it. Simple but powerful.
+NEVER MISS A PAYOUT
+• Reminders 7 days and 1 day before an investment matures
+• Reminders when a regular payout is due, based on the payout schedule you set
+• Turn each kind of reminder on or off in Settings
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GOALS AND FIRE IN TODAY'S RUPEES
+• Set savings goals and track your progress
+• Work out your FIRE number from your monthly expenses, with inflation built in, so the target is in today's money
+• See how far your portfolio has got you
 
-📈 SMART METRICS
+MADE FOR INDIA, WORKS GLOBALLY
+• Amounts in lakh and crore (₹1,00,000) when your base currency is INR
+• Record each investment in its own currency: INR, USD, EUR, GBP, AED, SGD and more
+• Totals are converted to your base currency
 
-XIRR - Your True Annual Return
-Most apps show basic percentage returns. XIRR accounts for WHEN you invested and WHEN you got money back. This is what banks and professionals use.
+DATA IN AND OUT
+• Add many investments at once from a CSV file, using the template in the app
+• Export your whole portfolio as a ZIP file of CSVs, and import it on another device
+• Attach PDFs and photos, such as FD receipts and statements, to an investment
 
-MOIC - Your Money Multiple
-Invested ₹1 lakh and got ₹1.5 lakh back? That's 1.5x MOIC. Simple way to see how much your money multiplied.
+PRIVACY AND SECURITY
+• Your data is stored in your InvTrack account on Google Firebase. It is private to your account and never sold.
+• No ads.
+• Attached documents stay on your phone.
+• Lock the app with a PIN or fingerprint.
+• Privacy mode hides amounts on screen with one tap.
+• Works offline after first sign-in. Changes sync when you are back online.
+• Delete your account and data any time from Settings.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT INVTRACK IS NOT
+• Not a broker. You cannot buy or sell anything in the app.
+• Not an investment adviser. It shows your numbers; it does not tell you what to buy.
+• No bank or SMS access. InvTrack does not read your bank account or your messages. You enter your own data.
 
-✨ KEY FEATURES
-
-✅ Works Offline
-Works offline after first sign-in. Your data syncs automatically when you're back online.
-
-☁️ Cloud Backup
-Sign in with Google to backup your data. Access it from any device.
-
-🔒 Your Data, Your Control
-Your data is stored in your InvTrack account on Google Firebase. It is private to your account and never sold, and no ads are shown. Attached documents stay on your phone. Delete your account and data any time from Settings.
-
-📄 Documents
-Attach PDFs and images to your investments and view them in the app.
-
-📥 Export & Import
-Export your whole portfolio to a ZIP file and import it on any device.
-
-📊 Clean Dashboard
-See your total position, monthly trends, and investment breakdown at a glance.
-
-🎯 Goal Tracking
-Set and track your financial goals with visual progress indicators.
-
-🔔 Smart Reminders
-Get notified about income payments and maturity dates.
-
-👁️ Privacy Mode
-Hide all amounts with one tap. Check your portfolio in public places.
-
-🌙 Dark Mode
-Easy on the eyes, especially at night.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💼 PERFECT FOR TRACKING
-
-• Fixed Deposits (FDs)
-• P2P Lending (LenDenClub, Faircent, etc.)
-• Bonds & NCDs
-• Real Estate investments
-• Chit Funds
-• Gold investments
-• Crypto holdings
-• Private investments
-• Angel investments
-• Or any investment with cash in and cash out
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤔 WHY INVTRACKER?
-
-Regular portfolio apps track stocks and mutual funds with daily prices. But what about your FD? Your P2P loans? That property you invested in?
-
-InvTracker is built for these "other" investments where you put money in today and get money back later - maybe in months or years.
-
-Just record:
-1. What you invested and when
-2. What you got back and when
-
-We calculate the rest.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📱 SIMPLE TO USE
-
-1. Add an investment (give it a name)
-2. Record your cash flows (money out, money in)
-3. Set goals to track your progress
-4. See your returns
-
-No learning curve. No confusing features.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Download InvTracker and finally know how your investments are really doing.
+START IN 10 SECONDS
+Tap Continue as Guest. No sign-up needed. Guest data can only be reached from this device and is lost if you sign out or uninstall, so link a Google account later to keep it. Or sign in with Google from the start to back up your data and use InvTrack on more than one device.
