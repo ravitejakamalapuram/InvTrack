@@ -1,5 +1,6 @@
 # Create a "production" environment (Settings > Environments) with required reviewers to gate it.
-# Staged rollout: auto-release starts at 5%; run `rollout` 0.2, then `complete` after 48 h (see the guard job).
+# Also limit that environment's deployment branches to main: this file and the guard come from the dispatched ref.
+# Staged rollout: auto-release starts at 5%; after 48 h run `rollout` 0.2 or `complete` (see the guard job).
 name: promote
 # The guard reads this title back from earlier runs to find when a partial production rollout began.
 run-name: promote action=${{ inputs.action }} to=${{ inputs.to_track }} fraction=${{ inputs.user_fraction }}
@@ -18,9 +19,9 @@ on:
         type: string
         default: production
       user_fraction:
-        description: 'Staged rollout fraction, e.g. 0.2 (empty = 100%, refused for promote to production)'
+        description: 'Rollout fraction, e.g. 0.05 (empty = 100%). Promote to production allows at most 0.05'
         type: string
-        default: '0.2'
+        default: '0.05'
       crash_free_users:
         description: 'Crashlytics crash-free users % for this release, e.g. 99.7 (needed to widen or complete a production rollout)'
         type: string
@@ -29,12 +30,12 @@ on:
 permissions: {}
 
 jobs:
-  # A63: no release reaches 100% of production without 48 h at a partial rollout and at least 99.5%
-  # crash-free users (scripts/promotion_guard.dart). Halt is never blocked. `promote` to production
-  # must use a fraction below 1. The 48 h clock starts at the later of the latest GitHub Release
-  # (auto-release creates it just before it promotes at 5%) and the latest successful run of this
-  # workflow that promoted to production at a partial fraction. If either cannot be read, 100% is
-  # refused.
+  # A63: `promote` to production starts at 5% or less, and no release goes above 5% without 48 h at a
+  # partial rollout and at least 99.5% crash-free users (scripts/promotion_guard.dart). Halt is never
+  # blocked. The 48 h clock starts when the Play call for the latest GitHub Release finished: the end
+  # of the auto-release run that created it, or of a later successful partial `promote` run of this
+  # workflow, whichever is later. If that cannot be found, going above 5% is refused. Only a first
+  # attempt dispatched from main may run: a re-run would reuse old inputs and an old guard result.
   guard:
     name: Release safety guard
     runs-on: ubuntu-latest
@@ -43,8 +44,10 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
       - name: Check rollout soak time and crash-free users
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,14 +58,21 @@ jobs:
         run: |
           RELEASED_AT="$(gh release view --repo "$GITHUB_REPOSITORY" --json publishedAt --jq .publishedAt 2>/dev/null || true)"
           echo "Latest GitHub Release published at: ${RELEASED_AT:-unknown}"
-          PROMOTE_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow promote.yml --status success \
-            --limit 200 --json displayTitle,createdAt 2>/dev/null || true)"
+          PROMOTE_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow promote.yml --branch main \
+            --status success --limit 200 --json displayTitle,createdAt,updatedAt 2>/dev/null || true)"
+          # The auto-release run that created the release finishes after its 5% Play call.
+          AUTO_RELEASE_RUNS="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow auto-release.yml --branch main \
+            --status success --created "<=$RELEASED_AT" --limit 50 --json createdAt,updatedAt 2>/dev/null || true)"
           # Run outside the Flutter package so plain Dart does not try to resolve Flutter dependencies.
           cp scripts/promotion_guard.dart "$RUNNER_TEMP/promotion_guard.dart"
-          RELEASED_AT="$RELEASED_AT" PROMOTE_RUNS="$PROMOTE_RUNS" dart run "$RUNNER_TEMP/promotion_guard.dart"
+          RELEASED_AT="$RELEASED_AT" PROMOTE_RUNS="$PROMOTE_RUNS" AUTO_RELEASE_RUNS="$AUTO_RELEASE_RUNS" \
+            dart run "$RUNNER_TEMP/promotion_guard.dart"
 
   promote:
     needs: guard
+    # Re-running only this job would reuse the guard's old pass, so it runs only on a first attempt from
+    # main. A halt may be re-run or dispatched from anywhere.
+    if: inputs.action == 'halt' || (github.ref == 'refs/heads/main' && github.run_attempt == '1')
     permissions:
       contents: read
       id-token: write
