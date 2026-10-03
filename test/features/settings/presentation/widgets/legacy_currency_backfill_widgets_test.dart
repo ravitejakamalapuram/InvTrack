@@ -450,6 +450,42 @@ void main() {
       expect(service().promptDismissals, 1);
       expect(cashFlowStamped(), isFalse);
     });
+
+    testWidgets('a base-currency change starts while the prompt is open: Not '
+        'Now is not counted as a dismissal', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            legacyCurrencyBackfillServiceProvider.overrideWithValue(service()),
+            currencySwitchProvider.overrideWith(_LateSwitch.new),
+          ],
+          child: MaterialApp(
+            navigatorKey: rootNavigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const LegacyCurrencyBackfillInitializer(child: SizedBox()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+
+      // A change queued before the prompt opened starts now and is still
+      // checking records, so the base currency is still INR.
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LegacyCurrencyBackfillInitializer)),
+      );
+      (container.read(currencySwitchProvider.notifier) as _LateSwitch)
+          .startChecking();
+      await tester.tap(find.text('Not Now'));
+      await tester.pumpAndSettle();
+
+      expect(service().promptDismissals, 0);
+      expect(service().mayPromptAtStart, isTrue);
+      expect(cashFlowStamped(), isFalse);
+      expect(service().confirmedCurrency, isNull);
+    });
   });
 
   group('askLegacyCurrencyBeforeSwitch', () {
@@ -545,4 +581,13 @@ class _BusySwitch extends CurrencySwitch {
   @override
   CurrencySwitchStatus build() =>
       const CurrencySwitchStatus.checkingRecords(targetCurrency: 'USD');
+}
+
+/// A base-currency change that starts after the start-up question opened.
+class _LateSwitch extends CurrencySwitch {
+  @override
+  CurrencySwitchStatus build() => const CurrencySwitchStatus.idle();
+
+  void startChecking() =>
+      state = const CurrencySwitchStatus.checkingRecords(targetCurrency: 'USD');
 }

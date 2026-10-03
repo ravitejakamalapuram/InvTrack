@@ -125,6 +125,9 @@ class _LegacyCurrencyBackfillInitializerState
     // again.
     if (!_stillCurrent(service, currency)) return;
     if (confirmed != true) {
+      // A base-currency change that started while the question was open asks
+      // this itself, so this answer is not counted against later starts.
+      if (ref.read(currencySwitchProvider).isBusy) return;
       await service.recordPromptDismissed();
       return;
     }
