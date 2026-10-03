@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -77,6 +78,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isClosed = widget.investment.status == InvestmentStatus.closed;
     final isPrivacyMode = ref.watch(privacyModeProvider);
+    // The Upcoming (expected income) tab is hidden with Income Guardian, as
+    // nothing generates expected cash flows yet (A42).
+    final showExpectedIncome = ref.watch(isIncomeGuardianEnabledProvider);
+    final selectedSegment = !showExpectedIncome && _selectedSegment == 1
+        ? 0
+        : _selectedSegment;
 
     final primaryColor = isClosed ? Colors.grey : widget.investment.type.color;
 
@@ -329,16 +336,20 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: InvestmentDetailSegmentControl(
                 isDark: isDark,
-                selectedSegment: _selectedSegment,
+                selectedSegment: selectedSegment,
                 transactionCount: cashFlowsAsync.value?.length ?? 0,
-                expectedIncomeCount:
-                    ref
-                        .watch(
-                          expectedCashFlowsByInvestmentProvider(widget.investment.id),
-                        )
-                        .value
-                        ?.length ??
-                    0,
+                showExpectedIncome: showExpectedIncome,
+                expectedIncomeCount: showExpectedIncome
+                    ? ref
+                              .watch(
+                                expectedCashFlowsByInvestmentProvider(
+                                  widget.investment.id,
+                                ),
+                              )
+                              .value
+                              ?.length ??
+                          0
+                    : 0,
                 documentCount:
                     ref
                         .watch(
@@ -354,7 +365,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
           ),
 
           // Content based on selected segment
-          if (_selectedSegment == 0) ...[
+          if (selectedSegment == 0) ...[
             // Cash Flows List (Transactions)
             cashFlowsAsync.when(
               data: (cashFlows) {
@@ -408,7 +419,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                 child: _buildErrorState(isDark, err.toString()),
               ),
             ),
-          ] else if (_selectedSegment == 1) ...[
+          ] else if (selectedSegment == 1) ...[
             // Expected Income Section
             SliverToBoxAdapter(
               child: Padding(
@@ -438,14 +449,14 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
       ),
       floatingActionButton: isClosed
           ? null
-          : _selectedSegment == 0
-              ? TransactionFab(
-                  hasTransactions: cashFlowsAsync.value?.isNotEmpty ?? false,
-                  onTap: () => _navigateToAddTransaction(cashFlowsAsync),
-                )
-              : _selectedSegment == 2
-                  ? DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark))
-                  : null, // No FAB for Expected Income tab
+          : selectedSegment == 0
+          ? TransactionFab(
+              hasTransactions: cashFlowsAsync.value?.isNotEmpty ?? false,
+              onTap: () => _navigateToAddTransaction(cashFlowsAsync),
+            )
+          : selectedSegment == 2
+          ? DocumentFab(onTap: () => _showAddDocumentSheet(context, isDark))
+          : null, // No FAB for Expected Income tab
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
