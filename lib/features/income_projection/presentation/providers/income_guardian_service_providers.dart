@@ -4,6 +4,7 @@ library;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/notifications/handlers/income_guardian_notification_handler.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -83,7 +84,13 @@ final incomeGuardianSyncServiceProvider = Provider<IncomeGuardianSyncService>((r
 /// 
 /// This should be called once when the user is authenticated.
 /// It starts both the monitor service (notifications) and sync service (auto-matching).
+///
+/// Nothing starts while [FeatureFlag.incomeGuardian] is off: the feature is
+/// hidden, and the sync would otherwise query Firestore once per INCOME cash
+/// flow on every launch. Turning the flag off stops running services.
 final incomeGuardianServiceInitializerProvider = Provider<void>((ref) {
+  if (!ref.watch(isIncomeGuardianEnabledProvider)) return;
+
   // Get services
   final monitorService = ref.watch(incomeGuardianMonitorServiceProvider);
   final syncService = ref.watch(incomeGuardianSyncServiceProvider);
