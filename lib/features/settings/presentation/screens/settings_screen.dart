@@ -24,6 +24,7 @@ import 'package:inv_tracker/features/settings/presentation/screens/data_manageme
 import 'package:inv_tracker/features/settings/presentation/screens/debug_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/notifications_settings_screen.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/security_settings_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/user_profile_card.dart';
@@ -317,6 +318,25 @@ class _CurrencyTile extends ConsumerStatefulWidget {
 }
 
 class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
+  /// Starts a base-currency change. If older records without a currency were
+  /// never confirmed, the user is asked first, on this tile's context (the
+  /// currency sheet is already closed by then).
+  void _switchCurrency(String newCurrency) {
+    ref
+        .read(currencySwitchProvider.notifier)
+        .switchCurrencyDebounced(
+          newCurrency,
+          askLegacyCurrency: (currency) async {
+            if (!mounted) return null;
+            return askLegacyCurrencyBeforeSwitch(
+              context,
+              currency: currency,
+              newCurrency: newCurrency,
+            );
+          },
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -331,9 +351,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
       if (next.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              l10n.currencySwitchedSuccessfully(targetCurrency),
-            ),
+            content: Text(l10n.currencySwitchedSuccessfully(targetCurrency)),
             backgroundColor: AppColors.successLight,
             duration: const Duration(seconds: 2),
           ),
@@ -359,9 +377,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
               onPressed: () {
                 // Only retry if targetCurrency is not null
                 if (next.targetCurrency != null) {
-                  ref
-                      .read(currencySwitchProvider.notifier)
-                      .switchCurrencyDebounced(next.targetCurrency!);
+                  _switchCurrency(next.targetCurrency!);
                 }
               },
             ),
@@ -478,9 +494,7 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
                   // Close the bottom sheet
                   Navigator.pop(context);
                   // Trigger currency switch with debouncing (prevents race conditions)
-                  ref
-                      .read(currencySwitchProvider.notifier)
-                      .switchCurrencyDebounced(code);
+                  _switchCurrency(code);
                 },
               );
             }),

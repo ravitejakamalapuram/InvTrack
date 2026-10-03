@@ -113,6 +113,11 @@ class CurrencySwitchStatus {
   }
 }
 
+/// Asks whether records saved without a currency were entered in [currency],
+/// the current base currency. Returns true for yes, false for no, and null
+/// when the user cancelled the currency change.
+typedef LegacyCurrencyQuestion = Future<bool?> Function(String currency);
+
 /// Provider for currency switch status
 @riverpod
 class CurrencySwitch extends _$CurrencySwitch {
@@ -133,7 +138,14 @@ class CurrencySwitch extends _$CurrencySwitch {
   ///
   /// This is the public API that should be called from UI.
   /// It debounces rapid currency changes to prevent race conditions.
-  void switchCurrencyDebounced(String newCurrency) {
+  ///
+  /// [askLegacyCurrency] is called before the change when this user still has
+  /// records without a currency and has not confirmed which currency they are
+  /// in. Without it, such a change is not applied.
+  void switchCurrencyDebounced(
+    String newCurrency, {
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  }) {
     // Cancel any pending switch
     _debounceTimer?.cancel();
 
@@ -143,7 +155,7 @@ class CurrencySwitch extends _$CurrencySwitch {
     // Schedule switch after 300ms of inactivity
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (_pendingCurrency != null) {
-        _switchCurrencyImmediate(_pendingCurrency!);
+        _switchCurrencyImmediate(_pendingCurrency!, askLegacyCurrency);
         _pendingCurrency = null;
       }
     });
@@ -154,8 +166,11 @@ class CurrencySwitch extends _$CurrencySwitch {
   /// This method is exposed for testing purposes to avoid dealing with Timer delays.
   /// In production code, use switchCurrencyDebounced() instead.
   @visibleForTesting
-  Future<void> switchCurrencyImmediate(String newCurrency) async {
-    return _switchCurrencyImmediate(newCurrency);
+  Future<void> switchCurrencyImmediate(
+    String newCurrency, {
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  }) async {
+    return _switchCurrencyImmediate(newCurrency, askLegacyCurrency);
   }
 
   /// Internal method: Switch currency with optimistic UI updates and parallel rate fetching
@@ -173,7 +188,10 @@ class CurrencySwitch extends _$CurrencySwitch {
   /// - Real-time progress feedback (updates as each rate completes)
   ///
   /// Note: This is an internal method. Use switchCurrencyDebounced() from UI.
-  Future<void> _switchCurrencyImmediate(String newCurrency) async {
+  Future<void> _switchCurrencyImmediate(
+    String newCurrency,
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  ) async {
     final currentCurrency = ref.read(currencyCodeProvider);
 
     // Same currency - no-op
@@ -204,11 +222,14 @@ class CurrencySwitch extends _$CurrencySwitch {
       }
 
       // Step 0b: Stamp records saved without a currency with the CURRENT
-      // base currency before switching, if the user confirmed it (A03-F1).
+      // base currency before switching, once the user confirmed it (A03-F1).
       // Otherwise the repositories would label them with the new currency and
       // their amounts would change currency without conversion. If this
-      // fails, the switch is not applied.
-      await _stampLegacyRecords(currentCurrency);
+      // fails, the switch is not applied; if the user cancels, nothing is.
+      if (!await _stampLegacyRecords(currentCurrency, askLegacyCurrency)) {
+        state = const CurrencySwitchStatus.idle();
+        return;
+      }
 
       // Analytics: Track currency switch attempt
       final analytics = ref.read(analyticsServiceProvider);
@@ -390,15 +411,32 @@ class CurrencySwitch extends _$CurrencySwitch {
     }
   }
 
-  Future<void> _stampLegacyRecords(String currency) async {
+  /// Returns false when the change must not go ahead (the user cancelled,
+  /// or could not be asked). Throws [LegacyCurrencyStampException] when the
+  /// records could not be checked or stamped.
+  Future<bool> _stampLegacyRecords(
+    String currency,
+    LegacyCurrencyQuestion? ask,
+  ) async {
     final backfill = ref.read(legacyCurrencyBackfillServiceProvider);
-    // Stamp only a currency this user confirmed for their account. On a fresh
-    // install the device currency is the default INR, and on a shared device
-    // it is the previous user's; stamping that would be permanent. Without a
-    // confirmation the records keep following the base currency.
-    if (backfill == null || !backfill.isConfirmedFor(currency)) return;
+    if (backfill == null) return true;
     try {
+      // Stamp only a currency this user confirmed for their account. On a
+      // fresh install the device currency is the default INR, and on a shared
+      // device it is the previous user's, so without a confirmation the user
+      // is asked now. A launch-time "Not Now" or an offline launch must not
+      // let the records silently take the new currency.
+      if (!backfill.isConfirmedFor(currency)) {
+        if (!await backfill.hasUnstampedRecords()) return true;
+        final enteredInCurrency = ask == null ? null : await ask(currency);
+        if (enteredInCurrency == null) return false;
+        // No: they were not entered in this currency, so they follow the new
+        // base currency as before.
+        if (!enteredInCurrency) return true;
+        await backfill.confirm(currency);
+      }
       await backfill.backfill(currency);
+      return true;
     } catch (e) {
       throw LegacyCurrencyStampException(e.runtimeType.toString());
     }

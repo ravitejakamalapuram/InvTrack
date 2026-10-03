@@ -1,6 +1,7 @@
 // A03-F1: the one-time stamp runs after sign-in, only with a currency the
 // user confirmed for their account, and a base-currency change
 // that could not stamp legacy records tells the user why it was not applied.
+// A user who never confirmed is asked again when changing currency.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -219,6 +220,71 @@ void main() {
       await tester.pumpWidget(app(null));
       await tester.pumpAndSettle();
       expect(firestore.readOptions, isEmpty);
+    });
+  });
+
+  group('askLegacyCurrencyBeforeSwitch', () {
+    const message =
+        'Your older records are shown in INR. Were they entered in INR? If '
+        'yes, they stay in INR after you change to USD. If no, they will be '
+        'shown in USD.';
+
+    Future<List<bool?>> ask(
+      WidgetTester tester,
+      Future<void> Function() respond,
+    ) async {
+      final answers = <bool?>[];
+      await tester.pumpWidget(
+        _localized(
+          (_) => Builder(
+            builder: (context) => TextButton(
+              onPressed: () async => answers.add(
+                await askLegacyCurrencyBeforeSwitch(
+                  context,
+                  currency: 'INR',
+                  newCurrency: 'USD',
+                ),
+              ),
+              child: const Text('change'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('change'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Older records have no currency'), findsOneWidget);
+      expect(find.text(message), findsOneWidget);
+      expect(find.bySemanticsLabel(message), findsOneWidget);
+      expect(find.text('Yes, INR'), findsOneWidget);
+      expect(find.text('No, show in USD'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      await respond();
+      await tester.pumpAndSettle();
+      expect(find.text(message), findsNothing);
+      return answers;
+    }
+
+    testWidgets('yes', (tester) async {
+      expect(await ask(tester, () => tester.tap(find.text('Yes, INR'))), [
+        true,
+      ]);
+    });
+
+    testWidgets('no', (tester) async {
+      expect(
+        await ask(tester, () => tester.tap(find.text('No, show in USD'))),
+        [false],
+      );
+    });
+
+    testWidgets('cancel', (tester) async {
+      expect(await ask(tester, () => tester.tap(find.text('Cancel'))), [null]);
+    });
+
+    testWidgets('tapping outside cancels the change', (tester) async {
+      expect(await ask(tester, () => tester.tapAt(const Offset(5, 5))), [null]);
     });
   });
 }

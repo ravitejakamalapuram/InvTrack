@@ -102,3 +102,39 @@ class _LegacyCurrencyBackfillInitializerState
   @override
   Widget build(BuildContext context) => widget.child;
 }
+
+/// Asks, before a base-currency change to [newCurrency], whether records saved
+/// without a currency were entered in [currency], the current base currency.
+/// Used when the user never confirmed it at start-up (Not Now, dismissed, or
+/// offline then). Returns true for yes, false for no, and null when the change
+/// is cancelled, including by tapping outside the dialog.
+Future<bool?> askLegacyCurrencyBeforeSwitch(
+  BuildContext context, {
+  required String currency,
+  required String newCurrency,
+}) {
+  final l10n = AppLocalizations.of(context);
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.legacyCurrencyPromptTitle),
+      content: Text(
+        l10n.legacyCurrencySwitchPromptMessage(currency, newCurrency),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(l10n.cancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(l10n.legacyCurrencySwitchPromptNo(newCurrency)),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(l10n.legacyCurrencySwitchPromptYes(currency)),
+        ),
+      ],
+    ),
+  );
+}

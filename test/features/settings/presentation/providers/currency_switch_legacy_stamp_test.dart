@@ -185,33 +185,142 @@ void main() {
     },
   );
 
-  test('fresh install: the device default INR was never confirmed for this '
-      'account, so a USD user switching to USD gets no INR stamp', () async {
-    SharedPreferences.setMockInitialValues({});
-    prefs = await SharedPreferences.getInstance();
-    container.dispose();
-    container = makeContainer();
-    expect(container.read(currencyCodeProvider), 'INR');
+  group('not yet confirmed: the user is asked at switch time', () {
+    late List<String> asked;
 
-    await container
-        .read(currencySwitchProvider.notifier)
-        .switchCurrencyImmediate('USD');
+    setUp(() async {
+      // Prefs hold INR, but the user never confirmed it for their older
+      // records: they tapped Not Now, dismissed the dialog, or were offline
+      // at launch.
+      SharedPreferences.setMockInitialValues({
+        'currency': 'INR',
+        'locale': 'en_IN',
+      });
+      prefs = await SharedPreferences.getInstance();
+      container.dispose();
+      container = makeContainer();
+      asked = [];
+    });
 
-    expect(container.read(currencySwitchProvider).isSuccess, isTrue);
-    expect(container.read(currencyCodeProvider), 'USD');
-    expect(firestore.readOptions, isEmpty);
-    expect(
-      firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
-      isFalse,
-    );
-    // The record is relabelled, not converted: it reads as USD 10,00,000.
-    final mapped = FirestoreInvestmentRepository.cashFlowFromFirestore(
-      firestore.stored('cashflows', 'cf-1')!,
-      'cf-1',
-      baseCurrency: container.read(currencyCodeProvider),
-    );
-    expect(mapped.currency, 'USD');
-    expect(mapped.amount, 1000000.0);
+    LegacyCurrencyQuestion answer(bool? reply) => (currency) async {
+      asked.add(currency);
+      return reply;
+    };
+
+    test('yes: records are confirmed and stamped INR before USD applies, so '
+        'the FD still reads as INR 10,00,000', () async {
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: answer(true));
+
+      expect(asked, ['INR']);
+      expect(container.read(currencySwitchProvider).isSuccess, isTrue);
+      expect(container.read(currencyCodeProvider), 'USD');
+      expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'INR');
+      expect(firestore.stored('investments', 'fd')!['currency'], 'INR');
+      expect(
+        container
+            .read(legacyCurrencyBackfillServiceProvider)!
+            .isConfirmedFor('INR'),
+        isTrue,
+      );
+      final mapped = FirestoreInvestmentRepository.cashFlowFromFirestore(
+        firestore.stored('cashflows', 'cf-1')!,
+        'cf-1',
+        baseCurrency: container.read(currencyCodeProvider),
+      );
+      expect(mapped.currency, 'INR');
+      expect(mapped.amount, 1000000.0);
+    });
+
+    test('no (fresh install, device default INR is wrong): the change applies '
+        'without an INR stamp', () async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      container.dispose();
+      container = makeContainer();
+      expect(container.read(currencyCodeProvider), 'INR');
+
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: answer(false));
+
+      expect(asked, ['INR']);
+      expect(container.read(currencySwitchProvider).isSuccess, isTrue);
+      expect(container.read(currencyCodeProvider), 'USD');
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+      // The user said the records are not INR: they follow the new currency.
+      final mapped = FirestoreInvestmentRepository.cashFlowFromFirestore(
+        firestore.stored('cashflows', 'cf-1')!,
+        'cf-1',
+        baseCurrency: container.read(currencyCodeProvider),
+      );
+      expect(mapped.currency, 'USD');
+    });
+
+    test('cancel: the change is not applied and nothing is stamped', () async {
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: answer(null));
+
+      expect(asked, ['INR']);
+      expect(container.read(currencySwitchProvider).isFailed, isFalse);
+      expect(container.read(currencySwitchProvider).isSuccess, isFalse);
+      expect(container.read(currencyCodeProvider), 'INR');
+      expect(prefs.getString('currency'), 'INR');
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+    });
+
+    test('no way to ask: the change is not applied', () async {
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD');
+
+      expect(container.read(currencyCodeProvider), 'INR');
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+    });
+
+    test('no records without a currency: nothing is asked', () async {
+      firestore.put('cashflows', 'cf-1', {
+        ...legacyFdInvest(),
+        'currency': 'INR',
+      });
+      firestore.put('investments', 'fd', {'name': 'FD', 'currency': 'INR'});
+
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: answer(true));
+
+      expect(asked, isEmpty);
+      expect(container.read(currencySwitchProvider).isSuccess, isTrue);
+      expect(container.read(currencyCodeProvider), 'USD');
+    });
+
+    test('the check for such records fails: the change is blocked', () async {
+      firestore.readError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: answer(true));
+
+      expect(asked, isEmpty);
+      final status = container.read(currencySwitchProvider);
+      expect(status.isFailed, isTrue);
+      expect(status.unstampedLegacyCurrency, 'INR');
+      expect(container.read(currencyCodeProvider), 'INR');
+    });
   });
 
   test(
@@ -227,10 +336,19 @@ void main() {
       container.dispose();
       container = makeContainer();
 
+      final asked = <String>[];
       await container
           .read(currencySwitchProvider.notifier)
-          .switchCurrencyImmediate('EUR');
+          .switchCurrencyImmediate(
+            'EUR',
+            askLegacyCurrency: (currency) async {
+              asked.add(currency);
+              return false;
+            },
+          );
 
+      // This user is asked instead of inheriting the other user's answer.
+      expect(asked, ['USD']);
       expect(container.read(currencySwitchProvider).isSuccess, isTrue);
       expect(
         firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),

@@ -2642,6 +2642,39 @@
     }
   },
 
+  "legacyCurrencySwitchPromptMessage": "Your older records are shown in {currency}. Were they entered in {currency}? If yes, they stay in {currency} after you change to {newCurrency}. If no, they will be shown in {newCurrency}.",
+  "@legacyCurrencySwitchPromptMessage": {
+    "description": "Asked before a base-currency change when records saved without a currency were never confirmed; currency is the current base currency, newCurrency the chosen one",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "newCurrency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencySwitchPromptYes": "Yes, {currency}",
+  "@legacyCurrencySwitchPromptYes": {
+    "description": "Answer that records saved without a currency were entered in the current base currency; they are stamped with it before the change",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencySwitchPromptNo": "No, show in {newCurrency}",
+  "@legacyCurrencySwitchPromptNo": {
+    "description": "Answer that records saved without a currency were not entered in the current base currency; they follow the new base currency",
+    "placeholders": {
+      "newCurrency": {
+        "type": "String"
+      }
+    }
+  },
+
   "loadingProgress": "Loading: {fetched} of {total}",
   "@loadingProgress": {
     "description": "Loading progress indicator with counts",
