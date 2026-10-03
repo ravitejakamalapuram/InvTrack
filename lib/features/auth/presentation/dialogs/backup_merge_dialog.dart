@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
@@ -58,19 +56,56 @@ Future<bool> backupAndMergeGuestData(
   final navigator = Navigator.of(context, rootNavigator: true);
   final service = ref.read(guestBackupMergeServiceProvider);
 
-  final loading = DialogRoute<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(child: CircularProgressIndicator()),
-  );
-  navigator.push(loading);
-  void hideLoading() {
-    if (loading.isActive) loading.navigator?.removeRoute(loading);
+  DialogRoute<void>? loading;
+  void showLoading() {
+    if (!navigator.mounted) return;
+    loading = DialogRoute<void>(
+      context: navigator.context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    navigator.push(loading!);
   }
 
+  void hideLoading() {
+    final route = loading;
+    if (route != null && route.isActive) route.navigator?.removeRoute(route);
+    loading = null;
+  }
+
+  // Asked before the sign-in, while the guest can still stop and keep
+  // everything.
+  Future<bool> confirmDetailsNotMoved(_) async {
+    hideLoading();
+    if (!navigator.mounted) return false;
+    final goAhead = await showDialog<bool>(
+      context: navigator.context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.guestMergeDetailsWillNotMoveTitle),
+        content: Text(l10n.guestMergeDetailsWillNotMoveMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.guestMergeSignInWithoutDetails),
+          ),
+        ],
+      ),
+    );
+    if (goAhead == true) showLoading();
+    return goAhead == true;
+  }
+
+  showLoading();
   final GuestMergeOutcome outcome;
   try {
-    outcome = await service.backupAndSignIn();
+    outcome = await service.backupAndSignIn(
+      confirmDetailsNotMoved: confirmDetailsNotMoved,
+    );
   } catch (e, st) {
     hideLoading();
     // Backup or sign-in failed before the session changed: the guest is
@@ -98,23 +133,77 @@ Future<bool> backupAndMergeGuestData(
         );
       }
       return true;
-    case GuestMergeImportFailed(:final backup):
-      await _offerBackup(navigator, messenger, l10n, service, backup);
+    case GuestMergeImportFailed(:final backupPath):
+      await _offerBackup(
+        navigator,
+        messenger,
+        service,
+        backupPath,
+        title: l10n.guestMergeImportFailedTitle,
+        message: l10n.guestMergeImportFailedMessage,
+        l10n: l10n,
+      );
+      return false;
+    case GuestMergeDetailsNotMoved():
+      await _showNotice(
+        navigator,
+        messenger,
+        title: l10n.guestMergeDetailsNotMovedTitle,
+        message: l10n.guestMergeDetailsNotMovedMessage,
+        l10n: l10n,
+      );
       return false;
   }
 }
 
-/// Lets the user save the only full copy of their guest data.
+/// Tells the user what the merge left behind, in a dialog, or in a snackbar
+/// if the sign-in already replaced the screen.
+Future<void> _showNotice(
+  NavigatorState navigator,
+  ScaffoldMessengerState messenger, {
+  required String title,
+  required String message,
+  required AppLocalizations l10n,
+}) async {
+  if (!navigator.mounted) {
+    if (messenger.mounted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 30)),
+      );
+    }
+    return;
+  }
+  await showDialog<void>(
+    context: navigator.context,
+    barrierDismissible: false,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(l10n.ok),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Tells the user what was not moved and offers the backup kept on the
+/// device. Closing this keeps the backup; it can be shared or deleted later
+/// in Settings > Data & Account.
 Future<void> _offerBackup(
   NavigatorState navigator,
   ScaffoldMessengerState messenger,
-  AppLocalizations l10n,
   GuestBackupMergeService service,
-  Uint8List backup,
-) async {
+  String backupPath, {
+  required String title,
+  required String message,
+  required AppLocalizations l10n,
+}) async {
   Future<void> share(BuildContext? context) async {
     try {
-      await service.shareBackup(backup);
+      await service.shareBackup(backupPath);
     } catch (e, st) {
       ErrorHandler.handle(
         e,
@@ -129,7 +218,7 @@ Future<void> _offerBackup(
     if (!messenger.mounted) return;
     messenger.showSnackBar(
       SnackBar(
-        content: Text(l10n.guestMergeImportFailedMessage),
+        content: Text(message),
         duration: const Duration(minutes: 1),
         action: SnackBarAction(
           label: l10n.shareBackup,
@@ -144,8 +233,8 @@ Future<void> _offerBackup(
     context: navigator.context,
     barrierDismissible: false,
     builder: (dialogContext) => AlertDialog(
-      title: Text(l10n.guestMergeImportFailedTitle),
-      content: Text(l10n.guestMergeImportFailedMessage),
+      title: Text(title),
+      content: Text(message),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext),

@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
 import 'package:inv_tracker/features/bulk_import/presentation/screens/bulk_import_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
@@ -21,6 +22,7 @@ import 'package:inv_tracker/features/settings/data/services/account_deletion_flo
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/saved_guest_backup_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -46,6 +48,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final authState = ref.watch(authStateProvider);
     final isAnonymous = authState.value?.isAnonymous ?? false;
+    final hasSavedGuestBackup =
+        ref.watch(savedGuestBackupsProvider).value?.isNotEmpty ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.dataAndAccount, style: AppTypography.h3)),
@@ -57,6 +61,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           SettingsSection(
             title: 'Export',
             children: [
+              if (hasSavedGuestBackup) const SavedGuestBackupTile(),
               SettingsNavTile(
                 icon: Icons.description,
                 iconColor: AppColors.successLight,
@@ -622,13 +627,19 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Server-confirmed wipe of every users/{uid} collection (investments,
     // cashflows, archived items, goals, expectedCashFlows, documents,
     // healthScores, fireSettings, profile, exchangeRates), then the local
-    // attachment files and per-user preferences. Throws (NetworkException when
-    // offline) if the server cannot confirm, in which case the caller must
-    // NOT delete the Auth account or report success.
+    // attachment files, any guest backups this account owns, and per-user
+    // preferences. Throws (NetworkException when offline) if the server
+    // cannot confirm, in which case the caller must NOT delete the Auth
+    // account or report success.
     final deletionService = ref.read(accountDataDeletionServiceProvider);
     final documentStorageService = ref.read(documentStorageServiceProvider);
+    final guestBackupStore = ref.read(guestBackupStoreProvider);
     await deletionService.deleteEverything(
-      deleteLocalFiles: documentStorageService.deleteAllUserDocuments,
+      deleteLocalFiles: () async {
+        await documentStorageService.deleteAllUserDocuments();
+        await guestBackupStore.deleteAll(ownerId: user.id);
+        if (mounted) ref.invalidate(savedGuestBackupsProvider);
+      },
       prefs: ref.read(sharedPreferencesProvider),
     );
   }
