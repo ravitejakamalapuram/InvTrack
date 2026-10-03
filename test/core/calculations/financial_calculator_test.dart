@@ -7,7 +7,7 @@ void main() {
   group('XirrSolver', () {
     test('should calculate XIRR correctly for simple case', () {
       // -1000 investment, 1100 return after 1 year -> 10% return
-      final dates = [DateTime(2023, 1, 1), DateTime(2024, 1, 1)];
+      final dates = [DateTime.utc(2023, 1, 1), DateTime.utc(2024, 1, 1)];
       final amounts = [-1000.0, 1100.0];
 
       final xirr = XirrSolver.calculateXirr(dates, amounts);
@@ -18,22 +18,18 @@ void main() {
       // -1000 on Jan 1
       // -1000 on July 1
       // Value 2200 on Jan 1 next year
-      // Approx return should be around 10-20%?
-      // Let's rely on the solver's consistency.
       final dates = [
-        DateTime(2023, 1, 1),
-        DateTime(2023, 7, 1),
-        DateTime(2024, 1, 1),
+        DateTime.utc(2023, 1, 1),
+        DateTime.utc(2023, 7, 1),
+        DateTime.utc(2024, 1, 1),
       ];
       final amounts = [-1000.0, -1000.0, 2200.0];
 
       final xirr = XirrSolver.calculateXirr(dates, amounts);
-      // Using an online XIRR calculator:
-      // -1000 1/1/23
-      // -1000 7/1/23
-      // 2200 1/1/24
-      // Result is approx 13.06%
-      expect(xirr, closeTo(0.1343, 0.001));
+      // Exact actual/365 XIRR (Excel convention), computed independently
+      // with a Python bisection solver: 0.1343767484. UTC dates keep the
+      // day count right in daylight-saving time zones.
+      expect(xirr, closeTo(0.1343767484, 1e-6));
     });
   });
 
