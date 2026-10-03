@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
@@ -162,8 +163,10 @@ final archivedCashFlowsByInvestmentProvider =
 final validCashFlowsProvider = Provider<AsyncValue<List<CashFlowEntity>>>((
   ref,
 ) {
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
+  // errorFirst: an error Riverpod is retrying must reach the screens as an
+  // error, not as loading, or they show skeletons while the retries last.
+  final investmentsAsync = errorFirst(ref.watch(activeInvestmentsProvider));
+  final cashFlowsAsync = errorFirst(ref.watch(allCashFlowsStreamProvider));
 
   return investmentsAsync.when(
     data: (investments) {

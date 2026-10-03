@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
@@ -46,7 +47,11 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
     // Use multi-currency stats providers (Rule 21.3 compliance)
     // Convert all amounts to base currency before displaying
-    final globalStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
+    // errorFirst: while Riverpod retries a failed load, show the error and
+    // its retry action, not skeletons for as long as the retries last.
+    final globalStatsAsync = errorFirst(
+      ref.watch(multiCurrencyGlobalStatsProvider),
+    );
     final globalStats = globalStatsAsync.when<AsyncValue<InvestmentStats>>(
       data: (stats) => AsyncValue.data(stats),
       loading: () => const AsyncValue.loading(),
@@ -67,10 +72,13 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
       error: (e, st) => AsyncValue.error(e, st),
     );
 
-    // Only an account with no active investments is new; one with investments
-    // but no cash flows yet must not be offered sample data.
+    // Only an account with no active and no archived investments is new; one
+    // with investments but no cash flows yet, or only archived investments,
+    // must not be offered sample data. Archived investments live in their own
+    // collection, so both must have loaded.
     final isNewAccount =
-        ref.watch(activeInvestmentsProvider).value?.isEmpty ?? false;
+        (ref.watch(activeInvestmentsProvider).value?.isEmpty ?? false) &&
+        (ref.watch(archivedInvestmentsProvider).value?.isEmpty ?? false);
 
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;

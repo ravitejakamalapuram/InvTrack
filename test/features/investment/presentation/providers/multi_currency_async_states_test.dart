@@ -43,13 +43,15 @@ final _closedInvestment = InvestmentEntity(
 ProviderContainer _container({
   required Stream<List<InvestmentEntity>> Function() investments,
   required Stream<List<CashFlowEntity>> Function() cashFlows,
+  bool productionRetry = false,
 }) {
   final container = ProviderContainer(
     overrides: [
       allInvestmentsProvider.overrideWith((ref) => investments()),
       allCashFlowsStreamProvider.overrideWith((ref) => cashFlows()),
     ],
-    retry: (_, _) => null,
+    // Production (main.dart) keeps Riverpod's default retry policy.
+    retry: productionRetry ? null : (_, _) => null,
   );
   addTearDown(container.dispose);
   return container;
@@ -114,6 +116,24 @@ void main() {
         expect(sub.read().hasError, isTrue);
         expect(sub.read().hasValue, isFalse);
       });
+
+      test(
+        'reports the error promptly under the default retry policy',
+        () async {
+          final container = _container(
+            productionRetry: true,
+            investments: () => Stream.error(_loadError),
+            cashFlows: () => Stream.value(const []),
+          );
+
+          final sub = container.listen(entry.value, (_, _) {});
+          await pumpEventQueue();
+
+          expect(sub.read().hasError, isTrue);
+          expect(sub.read().error, same(_loadError));
+          expect(sub.read().hasValue, isFalse);
+        },
+      );
 
       test('resolves to empty stats when the account has no data', () async {
         final container = _container(

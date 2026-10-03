@@ -40,13 +40,16 @@ Future<void> _pumpOverview(
   required FakeAnalyticsService analytics,
   required Stream<List<InvestmentEntity>> Function() investments,
   required Stream<List<CashFlowEntity>> Function() cashFlows,
+  Stream<List<InvestmentEntity>> Function()? archivedInvestments,
+  bool productionRetry = false,
 }) async {
   SharedPreferences.setMockInitialValues({'privacy_mode_enabled': false});
   final prefs = await SharedPreferences.getInstance();
 
   await tester.pumpWidget(
     ProviderScope(
-      retry: (_, _) => null,
+      // Production (main.dart) keeps Riverpod's default retry policy.
+      retry: productionRetry ? null : (_, _) => null,
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         analyticsServiceProvider.overrideWithValue(analytics),
@@ -55,6 +58,9 @@ Future<void> _pumpOverview(
         currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
         allInvestmentsProvider.overrideWith((ref) => investments()),
         allCashFlowsStreamProvider.overrideWith((ref) => cashFlows()),
+        archivedInvestmentsProvider.overrideWith(
+          (ref) => archivedInvestments?.call() ?? Stream.value(const []),
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -143,6 +149,30 @@ void main() {
   );
 
   testWidgets(
+    'with the default retry policy, a load failure shows the retry message '
+    'promptly instead of skeletons',
+    (tester) async {
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        productionRetry: true,
+        investments: () => Stream.error(Exception('unavailable')),
+        cashFlows: () => Stream.value(const []),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text("Couldn't load your portfolio"), findsOneWidget);
+      expect(find.byType(HeroCardSkeleton), findsNothing);
+      expect(find.byType(OverviewEmptyState), findsNothing);
+      expect(find.text('Try Sample Data'), findsNothing);
+      expect(_emptyStateEvents(analytics), 0);
+
+      // Unmount so Riverpod cancels its pending retry timers.
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
     'an account with no investments sees the empty state with sample data, '
     'and empty_state_viewed is logged once across rebuilds',
     (tester) async {
@@ -191,4 +221,48 @@ void main() {
       expect(_emptyStateEvents(analytics), 0);
     },
   );
+
+  testWidgets(
+    'an account whose investments are all archived is not offered sample '
+    'data and is not counted as an empty state view',
+    (tester) async {
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+        archivedInvestments: () => Stream.value([_investment]),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Try Sample Data'), findsNothing);
+      expect(_emptyStateEvents(analytics), 0);
+    },
+  );
+
+  testWidgets('sample data waits until archived investments have loaded', (
+    tester,
+  ) async {
+    final archived = StreamController<List<InvestmentEntity>>();
+    addTearDown(() => unawaited(archived.close()));
+
+    await _pumpOverview(
+      tester,
+      analytics: analytics,
+      investments: () => Stream.value(const []),
+      cashFlows: () => Stream.value(const []),
+      archivedInvestments: () => archived.stream,
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Try Sample Data'), findsNothing);
+    expect(_emptyStateEvents(analytics), 0);
+
+    archived.add(const []);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Try Sample Data'), findsOneWidget);
+    expect(_emptyStateEvents(analytics), 1);
+  });
 }
