@@ -1,6 +1,7 @@
 // In-memory stand-in for the `users/{uid}` tree, just large enough for
-// LegacyCurrencyBackfillService: collection reads (with the GetOptions used)
-// and transactions (get + update, applied on commit like the server).
+// LegacyCurrencyBackfillService and UsdTagRepairService: collection reads
+// (with the GetOptions used), document references by id, and transactions
+// (get + update, applied on commit like the server).
 //
 // The project has no fake_cloud_firestore dependency, so this is hand-built.
 
@@ -110,6 +111,10 @@ class _DataCollection extends Fake
         _FakeQueryDoc(_FakeDocRef(name, e.key), Map.of(e.value)),
     ]);
   }
+
+  @override
+  DocumentReference<Map<String, dynamic>> doc([String? path]) =>
+      _FakeDocRef(name, path!);
 }
 
 class _FakeDocRef extends Fake
