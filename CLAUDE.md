@@ -49,7 +49,8 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 6. **Verify before saying done** (`superpowers:verification-before-completion`):
    1. Run `flutter analyze` and the full `flutter test`.
    2. Check every acceptance criterion in the issue.
-   3. Put the command output summary in the PR.
+   3. If you changed `.github/`, run `zizmor --offline .github/` and `actionlint` on the changed workflows, and compare with `main`. If you changed a shell script, run `shellcheck` on it. Add no new findings. (`pip install --user zizmor actionlint-py shellcheck-py` if they are missing.)
+   4. Put the command output summary in the PR.
 7. **Open the PR:**
    - Use one ticket per branch and PR. Name the branch `review/a03-usd-default`.
    - Use conventional-commit titles, e.g. `fix(currency): default missing currency to base currency [A03]`. The changelog and Play release notes are generated from these, so write the subject for users.
@@ -61,6 +62,12 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
      - migration or rollback notes;
      - follow-ups.
    - Run `superpowers:requesting-code-review` before marking the PR ready. Handle review feedback with `superpowers:receiving-code-review`.
+   - The review covers more than correctness and tests. It must also check:
+     - **Security and privacy:** workflow token permissions, checkout credentials, untrusted `${{ }}` in `run:`, secrets, auth and deletion flows, and PII or amounts in logs.
+     - **Bypass:** for every guard, check or gate, how it could pass falsely, for example on deleted, renamed or symlinked files, re-runs, time zones, process death or offline.
+     - **Integration:** merge the other open PRs of the same wave together with this one and run the full suite.
+   - Before calling a PR ready or done, read its GitHub reviews, review comments and PR comments (CodeRabbit included). Treat every unresolved finding as yours to fix or answer.
+   - In a wave, list the merge order whenever one PR changes a signature or default that another PR relies on.
 8. **Leave a trail.** Tick the issue's checklist and post progress there, so another session can pick up where you stopped.
 
 ## Decisions already made
