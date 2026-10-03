@@ -49,7 +49,7 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 6. **Verify before saying done** (`superpowers:verification-before-completion`):
    1. Run `flutter analyze` and the full `flutter test`.
    2. Check every acceptance criterion in the issue.
-   3. If you changed `.github/`, run `zizmor --offline` and `actionlint` on the changed workflows. If you changed a shell script, run `shellcheck` on it. Add no new findings. (`pip install --user zizmor actionlint-py shellcheck-py` if they are missing.)
+   3. If you changed `.github/`, run `zizmor --offline .github/` and `actionlint` on the changed workflows, and compare with `main`. If you changed a shell script, run `shellcheck` on it. Add no new findings. (`pip install --user zizmor actionlint-py shellcheck-py` if they are missing.)
    4. Put the command output summary in the PR.
 7. **Open the PR:**
    - Use one ticket per branch and PR. Name the branch `review/a03-usd-default`.
