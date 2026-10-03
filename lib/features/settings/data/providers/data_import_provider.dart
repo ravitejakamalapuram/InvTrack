@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
@@ -60,7 +61,11 @@ class ZipImportNotifier extends Notifier<AsyncValue<ZipImportResult?>> {
       if (service == null) {
         throw Exception('User not authenticated');
       }
-      final result = await service.importFromZip(zipBytes, strategy);
+      final result = await service.importFromZip(
+        zipBytes,
+        strategy,
+        baseCurrency: ref.read(currencyCodeProvider),
+      );
       state = AsyncValue.data(result);
       return result;
     } catch (e, st) {

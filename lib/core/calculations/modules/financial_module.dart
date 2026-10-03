@@ -102,9 +102,11 @@ class FinancialCalculatorModule implements CalculationModule {
     final absoluteReturn = calculateAbsoluteReturn(totalInvested, totalReturned);
     final moic = calculateMOIC(totalInvested, totalReturned);
 
-    final xirr = includeXirr
-        ? (XirrSolver.calculateXirr(xirrDates!, xirrAmounts!) ?? 0.0)
-        : 0.0;
+    final xirrResult = includeXirr
+        ? XirrSolver.solve(xirrDates!, xirrAmounts!)
+        : const XirrResult.undefined(XirrUndefinedReason.noSolution);
+    // Same number as XirrSolver.calculateXirr(...) ?? 0.0.
+    final xirr = xirrResult.value ?? 0.0;
 
     return InvestmentStats(
       totalInvested: totalInvested,
@@ -113,6 +115,7 @@ class FinancialCalculatorModule implements CalculationModule {
       absoluteReturn: absoluteReturn,
       moic: moic,
       xirr: xirr,
+      xirrMethod: xirrResult.method,
       cashFlowCount: cashFlows.length,
       firstCashFlowDate: firstDate,
       lastCashFlowDate: lastDate,

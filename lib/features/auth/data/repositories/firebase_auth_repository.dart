@@ -18,14 +18,17 @@ class FirebaseAuthRepository implements AuthRepository {
   }) : _firebaseAuth = firebaseAuth,
        _googleSignIn = googleSignIn;
 
+  /// Uses userChanges() rather than authStateChanges(): linking a guest to
+  /// Google keeps the UID, so only userChanges() reports it. userChanges()
+  /// also fires on every ID-token refresh, so unchanged users are dropped.
   @override
   Stream<UserEntity?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().map((firebaseUser) {
+    return _firebaseAuth.userChanges().map((firebaseUser) {
       if (firebaseUser != null) {
         return _mapFirebaseUserToEntity(firebaseUser);
       }
       return null;
-    });
+    }).distinct();
   }
 
   @override
@@ -36,6 +39,10 @@ class FirebaseAuthRepository implements AuthRepository {
     }
     return null;
   }
+
+  @override
+  DateTime? get lastSignInTime =>
+      _firebaseAuth.currentUser?.metadata.lastSignInTime;
 
   @override
   Future<UserEntity?> signInWithGoogle() async {
@@ -212,7 +219,8 @@ class FirebaseAuthRepository implements AuthRepository {
         return false;
       }
 
-      // Configuration errors should NOT crash the app - return false instead
+      // Configuration and other errors throw (not reported to Crashlytics) so
+      // callers can tell a failure from a cancel; they must not crash the app.
       if (e.code == GoogleSignInExceptionCode.clientConfigurationError ||
           e.code == GoogleSignInExceptionCode.providerConfigurationError) {
         final authException = AuthException(
@@ -230,7 +238,7 @@ class FirebaseAuthRepository implements AuthRepository {
             'description': e.description,
           },
         );
-        return false; // Re-auth failed, but don't crash
+        throw authException;
       }
 
       // Other GoogleSignInExceptions
@@ -250,7 +258,7 @@ class FirebaseAuthRepository implements AuthRepository {
           'details': e.details.toString(),
         },
       );
-      return false; // Don't crash on sign-in errors
+      throw authException;
     } catch (e, stackTrace) {
       if (e is PlatformException && e.code == 'sign_in_canceled') {
         LoggerService.info('User cancelled re-authentication (PlatformException)');

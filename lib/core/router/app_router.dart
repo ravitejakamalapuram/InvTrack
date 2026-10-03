@@ -31,7 +31,14 @@ import 'package:inv_tracker/features/income_projection/presentation/screens/inco
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // Rebuild only when who is signed in changes. Linking a guest to Google
+  // keeps the UID and must not reset navigation; redirect() uses only these
+  // fields of the auth state.
+  final (authLoading, authFailed, signedInUserId) = ref.watch(
+    authStateProvider.select(
+      (state) => (state.isLoading, state.hasError, state.value?.id),
+    ),
+  );
   final securityState = ref.watch(securityProvider);
   final onboardingComplete = ref.watch(onboardingCompleteProvider);
   final analyticsObserver = ref.watch(analyticsObserverProvider);
@@ -44,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: [...?analyticsObserver != null ? [analyticsObserver] : null],
     redirect: (context, state) {
       // If auth or onboarding state is loading, we don't redirect yet
-      if (authState.isLoading || authState.hasError) return null;
+      if (authLoading || authFailed) return null;
       if (onboardingComplete.isLoading) return null;
 
       final hasCompletedOnboarding = onboardingComplete.value ?? false;
@@ -55,7 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/onboarding';
       }
 
-      final isLoggedIn = authState.value != null;
+      final isLoggedIn = signedInUserId != null;
       final isLoggingIn = state.uri.toString() == '/auth/signin';
 
       if (!isLoggedIn && !isLoggingIn && hasCompletedOnboarding) {

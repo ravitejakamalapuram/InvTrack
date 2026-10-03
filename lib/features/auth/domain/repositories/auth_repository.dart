@@ -7,6 +7,10 @@ abstract class AuthRepository {
   /// The current signed-in user, or null.
   UserEntity? get currentUser;
 
+  /// When the current user last signed in, or null if unknown. Firebase asks
+  /// for a recent login before sensitive operations such as account deletion.
+  DateTime? get lastSignInTime;
+
   /// Signs in with Google.
   Future<UserEntity?> signInWithGoogle();
 
@@ -36,6 +40,8 @@ abstract class AuthRepository {
 
   /// Re-authenticates the user with Google.
   /// Required before sensitive operations like account deletion.
-  /// Returns true if re-authentication was successful.
+  /// Returns true if re-authentication was successful and false only when the
+  /// user cancelled it (or nobody is signed in). Throws when it failed, so
+  /// callers can tell a cancel from a failure.
   Future<bool> reauthenticateWithGoogle();
 }

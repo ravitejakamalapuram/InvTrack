@@ -13,11 +13,17 @@ class FirestoreUserProfileRepository implements UserProfileRepository {
   /// Timeout for write operations (offline-first pattern)
   static const _writeTimeout = Duration(seconds: 5);
 
+  /// The base currency in use on this device, for a profile document with no
+  /// `preferredCurrency` field.
+  final String Function() _baseCurrency;
+
   FirestoreUserProfileRepository({
     required FirebaseFirestore firestore,
     required String userId,
+    required String Function() baseCurrency,
   }) : _firestore = firestore,
-       _userId = userId;
+       _userId = userId,
+       _baseCurrency = baseCurrency;
 
   /// User profile document reference
   DocumentReference<Map<String, dynamic>> get _profileRef => _firestore
@@ -41,7 +47,11 @@ class FirestoreUserProfileRepository implements UserProfileRepository {
       if (!snapshot.exists || snapshot.data() == null) {
         return null;
       }
-      return UserProfileModel.fromFirestore(snapshot.data()!, _userId);
+      return UserProfileModel.fromFirestore(
+        snapshot.data()!,
+        _userId,
+        baseCurrency: _baseCurrency(),
+      );
     });
   }
 
@@ -51,7 +61,11 @@ class FirestoreUserProfileRepository implements UserProfileRepository {
     if (!snapshot.exists || snapshot.data() == null) {
       return null;
     }
-    return UserProfileModel.fromFirestore(snapshot.data()!, _userId);
+    return UserProfileModel.fromFirestore(
+      snapshot.data()!,
+      _userId,
+      baseCurrency: _baseCurrency(),
+    );
   }
 
   @override

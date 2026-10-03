@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
@@ -12,14 +13,19 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   final FirebaseFirestore _firestore;
   final String _userId;
 
+  /// The user's base currency, for documents with no `currency` field.
+  final String Function() _baseCurrency;
+
   /// Timeout for write operations - allows offline writes to complete quickly
   static const Duration _writeTimeout = Duration(seconds: 3);
 
   FirestoreInvestmentRepository({
     required FirebaseFirestore firestore,
     required String userId,
+    required String Function() baseCurrency,
   }) : _firestore = firestore,
-       _userId = userId;
+       _userId = userId,
+       _baseCurrency = baseCurrency;
 
   /// Execute a write operation with timeout
   /// If the operation times out (likely offline), we consider it successful
@@ -621,7 +627,16 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
   InvestmentEntity _investmentFromFirestore(
     Map<String, dynamic> data,
     String id,
-  ) {
+  ) => investmentFromFirestore(data, id, baseCurrency: _baseCurrency());
+
+  /// Maps an investment document. Documents written before multi-currency
+  /// support have no `currency` and take [baseCurrency], never USD.
+  @visibleForTesting
+  static InvestmentEntity investmentFromFirestore(
+    Map<String, dynamic> data,
+    String id, {
+    required String baseCurrency,
+  }) {
     return InvestmentEntity(
       id: id,
       name: data['name'] as String,
@@ -657,8 +672,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       compoundingFrequency: CompoundingFrequency.fromString(
         data['compoundingFrequency'] as String?,
       ),
-      // Multi-currency support (default to USD for backward compatibility)
-      currency: data['currency'] as String? ?? 'USD',
+      // Multi-currency support; legacy documents use the base currency
+      currency: data['currency'] as String? ?? baseCurrency,
     );
   }
 
@@ -675,7 +690,17 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     };
   }
 
-  CashFlowEntity _cashFlowFromFirestore(Map<String, dynamic> data, String id) {
+  CashFlowEntity _cashFlowFromFirestore(Map<String, dynamic> data, String id) =>
+      cashFlowFromFirestore(data, id, baseCurrency: _baseCurrency());
+
+  /// Maps a cash flow document. Documents written before multi-currency
+  /// support have no `currency` and take [baseCurrency], never USD.
+  @visibleForTesting
+  static CashFlowEntity cashFlowFromFirestore(
+    Map<String, dynamic> data,
+    String id, {
+    required String baseCurrency,
+  }) {
     return CashFlowEntity(
       id: id,
       investmentId: data['investmentId'] as String,
@@ -684,8 +709,8 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       amount: (data['amount'] as num).toDouble(),
       notes: data['notes'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      // Multi-currency support (default to USD for backward compatibility)
-      currency: data['currency'] as String? ?? 'USD',
+      // Multi-currency support; legacy documents use the base currency
+      currency: data['currency'] as String? ?? baseCurrency,
     );
   }
 }

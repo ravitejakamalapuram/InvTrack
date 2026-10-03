@@ -89,7 +89,11 @@ void main() {
           'updatedAt': testTimestamp,
         };
 
-        final entity = UserProfileModel.fromFirestore(doc, 'test_user');
+        final entity = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         expect(entity.userId, 'test_user');
         expect(entity.preferredCurrency, 'USD');
@@ -105,10 +109,15 @@ void main() {
       test('handles missing optional fields with defaults', () {
         final doc = {'userId': 'test_user'};
 
-        final entity = UserProfileModel.fromFirestore(doc, 'test_user');
+        final entity = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         expect(entity.userId, 'test_user');
-        expect(entity.preferredCurrency, 'USD');
+        // A missing currency follows the user's base currency, never USD
+        expect(entity.preferredCurrency, 'INR');
         expect(entity.preferredLocale, 'en_US');
         expect(entity.countryCode, 'US');
         expect(entity.languageCode, 'en');
@@ -126,7 +135,11 @@ void main() {
           'languageCode': 'en',
         };
 
-        final entity = UserProfileModel.fromFirestore(doc, 'test_user');
+        final entity = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         expect(entity.dateFormatPattern, DateFormatPattern.dmy);
       });
@@ -141,7 +154,11 @@ void main() {
           'languageCode': 'ja',
         };
 
-        final entity = UserProfileModel.fromFirestore(doc, 'test_user');
+        final entity = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         expect(entity.dateFormatPattern, DateFormatPattern.ymd);
       });
@@ -149,7 +166,11 @@ void main() {
       test('handles invalid date format with default', () {
         final doc = {'userId': 'test_user', 'dateFormatPattern': 'invalid'};
 
-        final entity = UserProfileModel.fromFirestore(doc, 'test_user');
+        final entity = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         expect(entity.dateFormatPattern, DateFormatPattern.mdy);
       });
@@ -157,7 +178,11 @@ void main() {
       test('handles missing timestamps with current time', () {
         final doc = {'userId': 'test_user'};
 
-        final entity = UserProfileModel.fromFirestore(doc, 'test_user');
+        final entity = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         // Should be close to current time
         final now = DateTime.now();
@@ -184,7 +209,11 @@ void main() {
         // Simulate Firestore by replacing FieldValue.serverTimestamp()
         doc['updatedAt'] = testTimestamp;
 
-        final restored = UserProfileModel.fromFirestore(doc, 'test_user');
+        final restored = UserProfileModel.fromFirestore(
+          doc,
+          'test_user',
+          baseCurrency: 'INR',
+        );
 
         expect(restored.userId, original.userId);
         expect(restored.preferredCurrency, original.preferredCurrency);

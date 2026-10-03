@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/features/auth/data/repositories/firebase_auth_repository.dart';
+import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Mocks
@@ -19,6 +21,8 @@ class MockUserCredential extends Mock implements UserCredential {}
 class MockUser extends Mock implements User {}
 
 class MockAuthCredential extends Mock implements AuthCredential {}
+
+class MockUserMetadata extends Mock implements UserMetadata {}
 
 void main() {
   late FirebaseAuthRepository repository;
@@ -280,6 +284,59 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    // Account deletion must tell a cancel (delete nothing) apart from a
+    // failure (schedule the deletion), so only a cancel may return false.
+    test(
+      'reauthenticateWithGoogle returns false when the user cancels',
+      () async {
+        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+        when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+        when(() => mockGoogleSignIn.authenticate()).thenThrow(
+          const GoogleSignInException(code: GoogleSignInExceptionCode.canceled),
+        );
+
+        expect(await repository.reauthenticateWithGoogle(), isFalse);
+      },
+    );
+
+    test('lastSignInTime is the Firebase user sign-in time', () {
+      final metadata = MockUserMetadata();
+      final signedIn = DateTime.utc(2026, 10, 2, 11, 50);
+      when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.metadata).thenReturn(metadata);
+      when(() => metadata.lastSignInTime).thenReturn(signedIn);
+
+      expect(repository.lastSignInTime, signedIn);
+    });
+
+    test('lastSignInTime is null when nobody is signed in', () {
+      when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+      expect(repository.lastSignInTime, isNull);
+    });
+
+    for (final code in [
+      GoogleSignInExceptionCode.clientConfigurationError,
+      GoogleSignInExceptionCode.providerConfigurationError,
+      GoogleSignInExceptionCode.interrupted,
+    ]) {
+      test(
+        'reauthenticateWithGoogle throws AuthException on ${code.name}',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(() => mockGoogleSignIn.signOut()).thenAnswer((_) async {});
+          when(
+            () => mockGoogleSignIn.authenticate(),
+          ).thenThrow(GoogleSignInException(code: code));
+
+          await expectLater(
+            repository.reauthenticateWithGoogle(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
+    }
   });
 
   group('FirebaseAuthRepository - Other Methods', () {
@@ -437,5 +494,74 @@ void main() {
         verify(() => mockFirebaseAuth.signInAnonymously()).called(1);
       },
     );
+  });
+
+  // A05 / PLAT-13: FirebaseAuth.authStateChanges() only fires on sign-in and
+  // sign-out. Linking a guest to Google keeps the UID and is reported only by
+  // userChanges(), so the app kept showing "Guest" until it was restarted.
+  group('FirebaseAuthRepository - authStateChanges after account linking', () {
+    MockUser firebaseUser({
+      required bool isAnonymous,
+      String? email,
+      String? displayName,
+    }) {
+      final user = MockUser();
+      when(() => user.uid).thenReturn('guest-uid');
+      when(() => user.email).thenReturn(email);
+      when(() => user.displayName).thenReturn(displayName);
+      when(() => user.photoURL).thenReturn(null);
+      when(() => user.isAnonymous).thenReturn(isAnonymous);
+      return user;
+    }
+
+    test('emits the linked Google user without a restart', () async {
+      final guest = firebaseUser(isAnonymous: true);
+      final linked = firebaseUser(
+        isAnonymous: false,
+        email: 'linked@example.com',
+        displayName: 'Linked User',
+      );
+      // What FlutterFire does: authStateChanges stays on the guest, while
+      // userChanges reports the link.
+      when(
+        () => mockFirebaseAuth.authStateChanges(),
+      ).thenAnswer((_) => Stream.value(guest));
+      when(
+        () => mockFirebaseAuth.userChanges(),
+      ).thenAnswer((_) => Stream.fromIterable([guest, linked]));
+
+      await expectLater(
+        repository.authStateChanges,
+        emitsInOrder([
+          const UserEntity(id: 'guest-uid', email: '', isAnonymous: true),
+          const UserEntity(
+            id: 'guest-uid',
+            email: 'linked@example.com',
+            displayName: 'Linked User',
+          ),
+          emitsDone,
+        ]),
+      );
+    });
+
+    test('does not re-emit an unchanged user (token refresh)', () async {
+      final guest = firebaseUser(isAnonymous: true);
+      // userChanges also fires on every ID-token refresh (about hourly).
+      // Re-emitting an equal user would rebuild everything that watches auth.
+      when(
+        () => mockFirebaseAuth.authStateChanges(),
+      ).thenAnswer((_) => Stream.value(guest));
+      when(
+        () => mockFirebaseAuth.userChanges(),
+      ).thenAnswer((_) => Stream.fromIterable([guest, guest, guest]));
+
+      await expectLater(
+        repository.authStateChanges,
+        emitsInOrder([
+          const UserEntity(id: 'guest-uid', email: '', isAnonymous: true),
+          emitsDone,
+        ]),
+      );
+    });
   });
 }

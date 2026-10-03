@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/bulk_import/data/services/simple_csv_parser.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
@@ -79,14 +80,18 @@ class DataImportService {
        _fireSettingsRepository = fireSettingsRepository,
        _performanceService = performanceService;
 
-  /// Import data from a ZIP file
+  /// Import data from a ZIP file.
+  ///
+  /// Rows, investments and goals with no currency (backups made before
+  /// multi-currency support) take [baseCurrency], the user's base currency.
   Future<ZipImportResult> importFromZip(
     Uint8List zipBytes,
-    ImportStrategy strategy,
-  ) async {
+    ImportStrategy strategy, {
+    required String baseCurrency,
+  }) async {
     return _performanceService.trackOperation(
       'data_import',
-      () => _importFromZipInternal(zipBytes, strategy),
+      () => _importFromZipInternal(zipBytes, strategy, baseCurrency),
       metrics: {'zip_size_kb': (zipBytes.length / 1024).round()},
       attributes: {'strategy': strategy.name},
     );
@@ -96,6 +101,7 @@ class DataImportService {
   Future<ZipImportResult> _importFromZipInternal(
     Uint8List zipBytes,
     ImportStrategy strategy,
+    String baseCurrency,
   ) async {
     LoggerService.info(
       'Starting ZIP import',
@@ -164,6 +170,7 @@ class DataImportService {
         utf8.decode(cashflowsFile.content as List<int>),
         isArchived: false,
         strategy: strategy,
+        baseCurrency: baseCurrency,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -179,9 +186,11 @@ class DataImportService {
         utf8.decode(cashflowsArchivedFile.content as List<int>),
         isArchived: true,
         strategy: strategy,
+        baseCurrency: baseCurrency,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
+      errors.addAll(result.errors);
       warnings.addAll(result.warnings);
       investmentNameToIdMap.addAll(result.investmentNameToIdMap);
     }
@@ -194,6 +203,7 @@ class DataImportService {
         isArchived: false,
         strategy: strategy,
         investmentNameToIdMap: investmentNameToIdMap,
+        baseCurrency: baseCurrency,
       );
       goalsImported += result.imported;
       errors.addAll(result.errors);
@@ -208,8 +218,10 @@ class DataImportService {
         isArchived: true,
         strategy: strategy,
         investmentNameToIdMap: investmentNameToIdMap,
+        baseCurrency: baseCurrency,
       );
       goalsImported += result.imported;
+      errors.addAll(result.errors);
       warnings.addAll(result.warnings);
     }
 
@@ -262,6 +274,13 @@ class DataImportService {
       final fireSettingsFile = archive.findFile('fire_settings.json');
       if (fireSettingsFile != null) {
         try {
+          // Merge must not overwrite settings the account already has: FIRE
+          // amounts carry no currency, and the guest merge imports into the
+          // user's main account without asking.
+          if (strategy == ImportStrategy.merge &&
+              await _fireSettingsRepository.getSettings() != null) {
+            throw const _ExistingFireSettings();
+          }
           final fireSettingsJson =
               jsonDecode(utf8.decode(fireSettingsFile.content as List<int>))
                   as Map<String, dynamic>;
@@ -312,6 +331,11 @@ class DataImportService {
           await _fireSettingsRepository.saveSettings(fireSettings);
           fireSettingsImported = true;
           LoggerService.info('FIRE settings imported successfully');
+        } on _ExistingFireSettings {
+          warnings.add(
+            'FIRE settings not imported: this account already has FIRE '
+            'settings',
+          );
         } catch (e) {
           warnings.add('Failed to import FIRE settings: $e');
         }
@@ -380,8 +404,12 @@ class DataImportService {
     String csvContent, {
     required bool isArchived,
     required ImportStrategy strategy,
+    required String baseCurrency,
   }) async {
-    final parseResult = SimpleCsvParser.parseString(csvContent);
+    final parseResult = SimpleCsvParser.parseString(
+      csvContent,
+      baseCurrency: baseCurrency,
+    );
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
@@ -442,6 +470,10 @@ class DataImportService {
           createdAt: now,
           updatedAt: now,
           isArchived: isArchived,
+          currency: resolveSharedCurrency(
+            rows.map((r) => r.currency ?? baseCurrency),
+            baseCurrency,
+          ),
         ),
       );
 
@@ -458,8 +490,7 @@ class DataImportService {
             date: row.date,
             notes: row.notes,
             createdAt: now,
-            currency:
-                row.currency ?? 'USD', // Multi-currency support (Rule 21.4)
+            currency: row.currency ?? baseCurrency, // Rule 21.4
           ),
         );
       }
@@ -495,8 +526,12 @@ class DataImportService {
     required bool isArchived,
     required ImportStrategy strategy,
     required Map<String, String> investmentNameToIdMap,
+    required String baseCurrency,
   }) async {
-    final parseResult = GoalsCsvParser.parseString(csvContent);
+    final parseResult = GoalsCsvParser.parseString(
+      csvContent,
+      baseCurrency: baseCurrency,
+    );
     if (parseResult.validRows == 0) {
       return _CsvImportResult(
         imported: 0,
@@ -554,7 +589,8 @@ class DataImportService {
             .toList(),
         icon: row.icon,
         colorValue: row.colorValue,
-        currency: row.currency, // Preserve original currency (Rule 21.2)
+        // Preserve original currency; legacy goals use the base (Rule 21.2)
+        currency: row.currency ?? baseCurrency,
         isArchived: isArchived,
         createdAt: now,
         updatedAt: now,
@@ -643,4 +679,9 @@ class _CsvImportResult {
     required this.warnings,
     this.investmentNameToIdMap = const {},
   });
+}
+
+/// Thrown to skip a merge import of FIRE settings the account already has.
+class _ExistingFireSettings implements Exception {
+  const _ExistingFireSettings();
 }

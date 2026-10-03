@@ -11,14 +11,22 @@ class FirestoreGoalRepository implements GoalRepository {
   final FirebaseFirestore _firestore;
   final String _userId;
 
+  /// The user's base currency, for goal documents with no `currency` field.
+  final String Function() _baseCurrency;
+
   /// Timeout for write operations
   static const Duration _writeTimeout = Duration(seconds: 3);
 
   FirestoreGoalRepository({
     required FirebaseFirestore firestore,
     required String userId,
+    required String Function() baseCurrency,
   }) : _firestore = firestore,
-       _userId = userId;
+       _userId = userId,
+       _baseCurrency = baseCurrency;
+
+  GoalEntity _fromFirestore(Map<String, dynamic> data, String id) =>
+      GoalModel.fromFirestore(data, id, baseCurrency: _baseCurrency());
 
   /// Active goals collection reference
   CollectionReference<Map<String, dynamic>> get _goalsRef =>
@@ -46,7 +54,7 @@ class FirestoreGoalRepository implements GoalRepository {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+              .map((doc) => _fromFirestore(doc.data(), doc.id))
               .toList(),
         );
   }
@@ -63,7 +71,7 @@ class FirestoreGoalRepository implements GoalRepository {
         .orderBy('createdAt', descending: true)
         .get();
     return snapshot.docs
-        .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+        .map((doc) => _fromFirestore(doc.data(), doc.id))
         .toList();
   }
 
@@ -72,12 +80,12 @@ class FirestoreGoalRepository implements GoalRepository {
     // Search active first
     final doc = await _goalsRef.doc(id).get();
     if (doc.exists) {
-      return GoalModel.fromFirestore(doc.data()!, doc.id);
+      return _fromFirestore(doc.data()!, doc.id);
     }
     // Fall back to archived
     final archivedDoc = await _archivedGoalsRef.doc(id).get();
     if (archivedDoc.exists) {
-      return GoalModel.fromFirestore(archivedDoc.data()!, archivedDoc.id);
+      return _fromFirestore(archivedDoc.data()!, archivedDoc.id);
     }
     return null;
   }
@@ -87,12 +95,12 @@ class FirestoreGoalRepository implements GoalRepository {
     // Watch both collections and merge
     return _goalsRef.doc(id).snapshots().asyncMap((activeDoc) async {
       if (activeDoc.exists && activeDoc.data() != null) {
-        return GoalModel.fromFirestore(activeDoc.data()!, activeDoc.id);
+        return _fromFirestore(activeDoc.data()!, activeDoc.id);
       }
       // Check archived
       final archivedDoc = await _archivedGoalsRef.doc(id).get();
       if (archivedDoc.exists && archivedDoc.data() != null) {
-        return GoalModel.fromFirestore(archivedDoc.data()!, archivedDoc.id);
+        return _fromFirestore(archivedDoc.data()!, archivedDoc.id);
       }
       return null;
     });
@@ -165,7 +173,7 @@ class FirestoreGoalRepository implements GoalRepository {
         .where('linkedInvestmentIds', arrayContains: investmentId)
         .get();
     return snapshot.docs
-        .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+        .map((doc) => _fromFirestore(doc.data(), doc.id))
         .toList();
   }
 
@@ -178,7 +186,7 @@ class FirestoreGoalRepository implements GoalRepository {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => GoalModel.fromFirestore(doc.data(), doc.id))
+              .map((doc) => _fromFirestore(doc.data(), doc.id))
               .toList(),
         );
   }
@@ -187,7 +195,7 @@ class FirestoreGoalRepository implements GoalRepository {
   Future<GoalEntity?> getArchivedGoalById(String id) async {
     final doc = await _archivedGoalsRef.doc(id).get();
     if (!doc.exists) return null;
-    return GoalModel.fromFirestore(doc.data()!, doc.id);
+    return _fromFirestore(doc.data()!, doc.id);
   }
 
   @override

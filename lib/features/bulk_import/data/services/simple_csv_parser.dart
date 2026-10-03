@@ -20,8 +20,9 @@ class ParsedCashFlowRow {
   final InvestmentType? investmentType;
   final InvestmentStatus? investmentStatus;
 
-  /// Optional currency code (for multi-currency support)
-  /// Defaults to base currency if not specified
+  /// Currency code from the CSV, or the user's base currency when the cell
+  /// is blank or the column is missing. Null only when the parser was not
+  /// given a base currency; callers must then use the base currency.
   final String? currency;
 
   const ParsedCashFlowRow({
@@ -99,15 +100,19 @@ class SimpleCsvParser {
     // Excel serial date handled separately
   ];
 
-  /// Parse CSV bytes into structured data
-  static ParsedCsvResult parse(Uint8List bytes) {
+  /// Parse CSV bytes into structured data.
+  ///
+  /// A missing or blank Currency becomes [baseCurrency] (the user's base
+  /// currency). Without one, [ParsedCashFlowRow.currency] stays null and the
+  /// caller must resolve it; it is never assumed to be USD.
+  static ParsedCsvResult parse(Uint8List bytes, {String? baseCurrency}) {
     final content = utf8.decode(bytes);
-    return parseString(content);
+    return parseString(content, baseCurrency: baseCurrency);
   }
 
-  /// Parse CSV string content
-  static ParsedCsvResult parseString(String content) {
-    return _CsvParserSession(content).parse();
+  /// Parse CSV string content. See [parse] for [baseCurrency].
+  static ParsedCsvResult parseString(String content, {String? baseCurrency}) {
+    return _CsvParserSession(content, baseCurrency).parse();
   }
 
   /// Parse a single CSV line handling quotes
@@ -153,7 +158,10 @@ class _CsvParserSession {
     });
   }
 
-  _CsvParserSession(this.content);
+  /// Currency for rows whose Currency column is missing or blank.
+  final String? baseCurrency;
+
+  _CsvParserSession(this.content, this.baseCurrency);
 
   ParsedCsvResult parse() {
     final lines = const LineSplitter().convert(content);
@@ -266,13 +274,14 @@ class _CsvParserSession {
           ? _getValue(values, columnMap['investmentStatus']!)
           : null;
 
-      // Optional currency (for multi-currency support)
-      // Default to 'USD' if column is missing or empty (backward compatibility)
+      // Optional currency (for multi-currency support). A missing column or
+      // blank cell is the user's base currency, never USD (null when the
+      // caller resolves it later).
       final currencyRaw = columnMap.containsKey('currency')
           ? _getValue(values, columnMap['currency']!)
           : null;
       final currency = (currencyRaw == null || currencyRaw.isEmpty)
-          ? 'USD'
+          ? baseCurrency
           : currencyRaw.toUpperCase();
 
       // Validate required fields
@@ -351,7 +360,7 @@ class _CsvParserSession {
         investmentName: investmentName.trim(),
         type: type,
         amount: amount,
-        currency: currency, // Already processed above (defaults to 'USD')
+        currency: currency, // Already resolved above
         notes: notes?.isNotEmpty == true ? notes : null,
         investmentType: investmentType,
         investmentStatus: investmentStatus,
@@ -507,7 +516,11 @@ class ParsedGoalRow {
   final List<String> linkedTypes;
   final String icon;
   final int colorValue;
-  final String currency; // Multi-currency support (Rule 21.2)
+
+  /// Currency code (Rule 21.2). Null only when the CSV has none and the
+  /// parser was not given a base currency; callers then use the base
+  /// currency.
+  final String? currency;
   final String? error;
 
   const ParsedGoalRow({
@@ -539,7 +552,7 @@ class ParsedGoalRow {
       linkedTypes = const [],
       icon = '🎯',
       colorValue = 0xFF4CAF50,
-      currency = 'USD'; // Default for error case
+      currency = null;
 }
 
 /// Result of parsing a Goals CSV file
@@ -568,8 +581,11 @@ class ParsedGoalsResult {
 
 /// Parser for Goals CSV files
 class GoalsCsvParser {
-  /// Parse Goals CSV string content
-  static ParsedGoalsResult parseString(String content) {
+  /// Parse Goals CSV string content.
+  ///
+  /// A missing or blank Currency becomes [baseCurrency]; without one,
+  /// [ParsedGoalRow.currency] stays null for the caller to resolve.
+  static ParsedGoalsResult parseString(String content, {String? baseCurrency}) {
     final lines = const LineSplitter().convert(content);
     if (lines.isEmpty) {
       return const ParsedGoalsResult(
@@ -606,7 +622,7 @@ class GoalsCsvParser {
       if (line.isEmpty) continue;
 
       final values = SimpleCsvParser._parseCSVLine(line);
-      final result = _parseRow(i + 1, values, columnMap);
+      final result = _parseRow(i + 1, values, columnMap, baseCurrency);
 
       if (result.isValid) {
         rows.add(result);
@@ -668,6 +684,7 @@ class GoalsCsvParser {
     int rowNum,
     List<String> values,
     Map<String, int> columnMap,
+    String? baseCurrency,
   ) {
     try {
       final name = _getValue(values, columnMap['name']!);
@@ -754,22 +771,20 @@ class GoalsCsvParser {
       }
 
       // Currency (Rule 21.4 - backward compatibility with validation)
-      var currency = columnMap.containsKey('currency')
+      final currencyRaw = columnMap.containsKey('currency')
           ? _getValue(values, columnMap['currency']!).trim().toUpperCase()
-          : 'USD'; // Default for old exports without currency column
+          : '';
 
       // Validate currency code (ISO 4217)
-      if (currency.isNotEmpty && !_isValidCurrency(currency)) {
+      if (currencyRaw.isNotEmpty && !_isValidCurrency(currencyRaw)) {
         return ParsedGoalRow.withError(
           rowNumber: rowNum,
-          error: 'Invalid currency code: $currency',
+          error: 'Invalid currency code: $currencyRaw',
         );
       }
 
-      // Use USD as fallback for empty currency
-      if (currency.isEmpty) {
-        currency = 'USD';
-      }
+      // Old exports have no currency column: use the base currency, not USD
+      final currency = currencyRaw.isEmpty ? baseCurrency : currencyRaw;
 
       return ParsedGoalRow(
         rowNumber: rowNum,

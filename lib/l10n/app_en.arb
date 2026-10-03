@@ -289,6 +289,31 @@
     "description": "Sign out confirmation dialog message"
   },
 
+  "guestSignOutTitle": "Sign out of guest account?",
+  "@guestSignOutTitle": {
+    "description": "Title of the sign-out dialog shown to guest (anonymous) users"
+  },
+
+  "guestSignOutMessage": "You are using a guest account. If you sign out, you cannot sign back in to it, and your investments, cash flows, goals and documents will be lost permanently.",
+  "@guestSignOutMessage": {
+    "description": "Warning in the guest sign-out dialog that signing out permanently loses guest data"
+  },
+
+  "guestSignOutLinkGoogle": "Link Google account",
+  "@guestSignOutLinkGoogle": {
+    "description": "Primary action in the guest sign-out dialog: link the guest account to Google to keep the data"
+  },
+
+  "guestSignOutExportBackup": "Export backup",
+  "@guestSignOutExportBackup": {
+    "description": "Secondary action in the guest sign-out dialog: export a ZIP backup of the guest data"
+  },
+
+  "guestSignOutConfirm": "Sign out and lose data",
+  "@guestSignOutConfirm": {
+    "description": "Destructive action in the guest sign-out dialog: sign out and lose all guest data"
+  },
+
   "notificationsSectionTitle": "Notifications",
   "@notificationsSectionTitle": {
     "description": "Notifications screen title"
@@ -664,9 +689,14 @@
     "description": "FAQ answer"
   },
 
-  "needMoreHelpContact": "Need more help? Contact support@invtracker.app",
+  "needMoreHelpContact": "Need more help? Contact {email}",
   "@needMoreHelpContact": {
-    "description": "Help contact message"
+    "description": "Help contact message",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
 
   "incomeGuardianSection": "Income Guardian",
@@ -1161,11 +1191,6 @@
     "description": "Contact support title"
   },
 
-  "supportEmail": "support@invtracker.app",
-  "@supportEmail": {
-    "description": "Support email address"
-  },
-
   "supportEmailSubject": "InvTrack Support Request (v{version})",
   "@supportEmailSubject": {
     "description": "Subject line for support email",
@@ -1326,9 +1351,19 @@
     "description": "Delete everything button label"
   },
 
-  "accountDeletionCancelled": "Account deletion cancelled",
+  "accountDeletionCancelled": "Account deletion cancelled. Nothing was deleted.",
   "@accountDeletionCancelled": {
-    "description": "Account deletion cancelled message"
+    "description": "Shown when the user cancels the Google re-authentication that account deletion asks for. Nothing has been deleted at that point."
+  },
+
+  "accountDeletionScheduled": "We couldn''t confirm your sign-in, so your account and data are scheduled for deletion. This finishes within 7 days.",
+  "@accountDeletionScheduled": {
+    "description": "Shown when re-authentication for account deletion failed and a server-side deletion request was filed instead. The user is signed out."
+  },
+
+  "accountDeletionNotStarted": "We couldn''t confirm your sign-in, so nothing was deleted. Check your connection and try again.",
+  "@accountDeletionNotStarted": {
+    "description": "Shown when re-authentication for account deletion failed and no deletion request could be filed. Nothing has been deleted."
   },
 
   "accountDeletedSuccessfully": "Account deleted successfully",
@@ -2448,9 +2483,9 @@
     "description": "Button text to continue using the app without signing in"
   },
 
-  "guestModeNotice": "Your data is saved to the cloud as a guest. Sign in to secure it across devices — uninstalling the app may cause data loss.",
+  "guestModeNotice": "As a guest, your data can only be reached from this device. If you sign out or uninstall the app, it is lost for good. Link a Google account in Settings to keep it.",
   "@guestModeNotice": {
-    "description": "Notice shown when user enters guest mode explaining anonymous cloud storage and uninstall data-loss risk (GDPR Article 13)"
+    "description": "Visible notice under the Continue as Guest button: guest data is reachable only from this device and is lost on sign-out or uninstall (GDPR Article 13)"
   },
 
   "guestModeIndicator": "Guest Mode (Anonymous Account)",
@@ -2519,7 +2554,7 @@
     "description": "FAQ question about guest mode"
   },
 
-  "whatIsGuestModeAnswer": "Guest Mode lets you use InvTrack without signing in. Your data is stored in the cloud under an anonymous account, so you can access it across devices. You can sign in later to link this data to your Google account.",
+  "whatIsGuestModeAnswer": "Guest Mode lets you use InvTrack without signing in. Your data is stored under an anonymous guest account that only this device can reach. You cannot open it on another device, and signing out or uninstalling the app loses it permanently. To keep your data, tap \"Sign In to Link Account\" in Settings to link a Google account.",
   "@whatIsGuestModeAnswer": {
     "description": "FAQ answer about guest mode"
   },
@@ -2529,7 +2564,7 @@
     "description": "FAQ question about linking guest account"
   },
 
-  "howToLinkGuestAccountAnswer": "Tap the ''Sign In to Link Account'' button in Settings. If your Google account already exists, we''ll create a backup of your guest data first, then you can import it after signing in.",
+  "howToLinkGuestAccountAnswer": "Tap the ''Sign In to Link Account'' button in Settings. If that Google account already exists, InvTrack backs up your guest data, signs you in to the Google account and adds your guest data to it. If some of it cannot be added, you are offered the backup file to save.",
   "@howToLinkGuestAccountAnswer": {
     "description": "FAQ answer about linking guest account"
   },
@@ -3836,6 +3871,88 @@
     "description": "XIRR label"
   },
 
+  "returnLabel": "Return",
+  "@returnLabel": {
+    "description": "Label for the return figure when a holding is too short to annualise"
+  },
+
+  "returnAwaitingFirstPayout": "Awaiting first payout",
+  "@returnAwaitingFirstPayout": {
+    "description": "Neutral chip shown instead of a return percentage for an open investment that has not paid anything out yet"
+  },
+
+  "returnAwaitingCurrentValue": "Awaiting current value",
+  "@returnAwaitingCurrentValue": {
+    "description": "Neutral chip shown instead of a return percentage for an open investment whose payouts have not yet returned the amount invested"
+  },
+
+  "returnNeedsValueHint": "Add a payout or current value to calculate",
+  "@returnNeedsValueHint": {
+    "description": "Hint under a dash shown in place of XIRR when an open investment has no terminal value yet"
+  },
+
+  "netCashFlowSoFar": "Net cash flow so far",
+  "@netCashFlowSoFar": {
+    "description": "Headline for money received minus money invested while investments are still open"
+  },
+
+  "projectedAtMaturity": "Projected at maturity {amount} ({rate} p.a.)",
+  "@projectedAtMaturity": {
+    "description": "Projected maturity value of an open investment from its expected rate, e.g. 'Projected at maturity ₹1,23,144 (7.19% p.a.)'",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "₹1,23,144"
+      },
+      "rate": {
+        "type": "String",
+        "example": "7.19%"
+      }
+    }
+  },
+
+  "xirrApproximate": "{value} approx.",
+  "@xirrApproximate": {
+    "description": "XIRR value that comes from an approximation rather than an exact solution",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "-52.6%"
+      }
+    }
+  },
+
+  "xirrAboveMax": ">1000%",
+  "@xirrAboveMax": {
+    "description": "Shown instead of an XIRR value above 1000%"
+  },
+
+  "returnInDays": "{percent} in {days, plural, =0{under a day} =1{1 day} other{{days} days}}",
+  "@returnInDays": {
+    "description": "Absolute return over a short holding period, e.g. '+2.0% in 3 days'",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "+2.0%"
+      },
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "returnAnnualised": "annualised {value}",
+  "@returnAnnualised": {
+    "description": "Secondary line showing the annualised rate under a short-holding return",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": ">1000%"
+      }
+    }
+  },
+
   "monthlyBreakdown": "Monthly Breakdown",
   "@monthlyBreakdown": {
     "description": "Monthly breakdown section title"
@@ -4181,7 +4298,7 @@
     "description": "Message explaining the account already exists"
   },
 
-  "guestDataBackupMessage": "Your guest data will be backed up as a ZIP file. After signing in, you can import it to merge with existing data.",
+  "guestDataBackupMessage": "We will back up your guest data, sign you in to that Google account and add your guest data to it. Your guest account cannot be used after this.",
   "@guestDataBackupMessage": {
     "description": "Explanation of the backup process before signing in"
   },
@@ -4191,44 +4308,24 @@
     "description": "Button label to backup data and sign in"
   },
 
-  "backupCreated": "Backup Created",
-  "@backupCreated": {
-    "description": "Alert title when backup is successfully created"
+  "guestDataMerged": "Your guest data has been added to your Google account.",
+  "@guestDataMerged": {
+    "description": "Shown after guest data was backed up and imported into an existing Google account"
   },
 
-  "guestDataBackedUp": "Your guest data has been backed up.",
-  "@guestDataBackedUp": {
-    "description": "Success message after creating backup"
+  "guestMergeImportFailedTitle": "Save your guest backup",
+  "@guestMergeImportFailedTitle": {
+    "description": "Title shown when the guest data could not be imported into the Google account after sign-in"
   },
 
-  "backupLocation": "Location: {path}",
-  "@backupLocation": {
-    "description": "Shows the file path where backup was saved",
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
+  "guestMergeImportFailedMessage": "You are now signed in with Google, but not all of your guest data could be added to that account, for example an investment or goal whose name it already uses. Share the backup file to save it somewhere safe. To add the rest, rename those items in your Google account and import the backup from Settings > Data & Account.",
+  "@guestMergeImportFailedMessage": {
+    "description": "Explains that the guest backup must be saved by the user because the automatic import failed or skipped some records"
   },
 
-  "importNowQuestion": "Would you like to import it now?",
-  "@importNowQuestion": {
-    "description": "Asks user if they want to import the backup immediately"
-  },
-
-  "importNow": "Import Now",
-  "@importNow": {
-    "description": "Button label to import backup immediately"
-  },
-
-  "backupFailed": "Backup failed: {error}",
-  "@backupFailed": {
-    "description": "Error message when backup fails",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
+  "shareBackup": "Share backup",
+  "@shareBackup": {
+    "description": "Button that opens the share sheet for the guest data backup ZIP"
   },
 
   "reportPdfDailyCashflows": "Daily Cashflows",

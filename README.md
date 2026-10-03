@@ -35,7 +35,7 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 ### 🎯 Goal Tracking
 - **Target Amount Goals** - Track progress towards financial targets
 - **Monthly Income Goals** - Plan for passive income streams
-- **Smart Projections** - AI-powered goal completion predictions
+- **Smart Projections** - Estimated goal completion dates based on your average monthly progress
 - **Progress Milestones** - Celebrate 25%, 50%, 75%, 100% achievements
 
 ### 🔥 FIRE Number Calculator
@@ -55,11 +55,11 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 
 ### 🔒 Privacy & Security
 - **Privacy Mode** - Hide sensitive amounts with one tap
-- **Offline-First** - Works 100% without internet (Firestore offline persistence)
+- **Offline-First** - Works offline after first sign-in (Firestore offline persistence); changes sync when you're back online
 - **Your Data, Your Control** - Data isolated to your account via Firestore security rules (shared project, per-user access only)
-- **Encrypted Storage** - FlutterSecureStorage for sensitive data
-- **No PII Logging** - Analytics report amount ranges only, never exact values
-- **OWASP MASVS Compliant** - Mobile Application Security Verification Standard
+- **Secure PIN Storage** - App-lock PIN hash kept in Keystore-backed FlutterSecureStorage (the offline data cache is not encrypted by the app)
+- **Analytics Privacy** - Analytics events are designed to send amount ranges, never exact values (analytics is tied to your user ID; see Tech Stack)
+- **Security Practices** - Designed with reference to the OWASP Mobile Application Security Verification Standard (MASVS); not independently audited or certified
 
 ### 🌐 Multi-Device Sync
 - **Real-time Sync** - Automatic sync across all your devices
@@ -69,7 +69,7 @@ See [LOCALIZATION.md](docs/LOCALIZATION.md) for detailed documentation.
 ### 🎨 Beautiful UI/UX
 - **Premium Design** - Inspired by modern fintech apps
 - **Dark Mode** - Full dark theme support
-- **Accessibility** - WCAG compliant with screen reader support
+- **Accessibility** - Screen reader support, designed with reference to WCAG; not independently audited
 - **Smooth Animations** - Delightful micro-interactions
 
 ---
@@ -275,6 +275,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Developer**: Ravi Teja Kamalapuram
 - **GitHub**: [@ravitejakamalapuram](https://github.com/ravitejakamalapuram)
 - **Issues**: [GitHub Issues](https://github.com/ravitejakamalapuram/InvTrack/issues)
+- **Support email**: [support@invtracker.app](mailto:support@invtracker.app)
+- **Privacy policy**: https://ravitejakamalapuram.github.io/privacy/invtrack.html
+- **Delete your account**: in the app, Settings > Data & Account > Delete Account, or email the support address from the email you sign in with
 
 ---
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying help and frequently asked questions about using the app
@@ -185,7 +186,7 @@ class HelpFaqScreen extends StatelessWidget {
           SizedBox(height: AppSpacing.xl),
           Center(
             child: Text(
-              l10n.needMoreHelpContact,
+              l10n.needMoreHelpContact(supportEmailAddress),
               style: AppTypography.small.copyWith(
                 color: isDark
                     ? AppColors.neutral400Dark

@@ -99,6 +99,12 @@ jobs:
           echo "All security checks passed"
         shell: bash
 
+      # The `listing` workflow pushes android/fastlane/metadata/android to Play, so false
+      # data-handling or compliance claims and over-long text are blocked here first.
+      - name: Store Listing Claims & Lengths
+        run: bash scripts/check_store_listing.sh
+        shell: bash
+
       - name: Architecture Validation
         run: |
           echo "::group::Architecture Checks"

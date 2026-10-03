@@ -147,6 +147,37 @@ Type Goal,targetAmount,50000,stock;bond;mutualFund''';
         expect(result.rows.first.linkedTypes, ['stock', 'bond', 'mutualFund']);
       });
 
+      test('missing Currency column gives the base currency, not USD', () {
+        const csv = '''Name,Type,Target Amount
+Old Export Goal,targetAmount,1000000''';
+
+        final withBase = GoalsCsvParser.parseString(csv, baseCurrency: 'INR');
+        final withoutBase = GoalsCsvParser.parseString(csv);
+
+        expect(withBase.rows.single.currency, 'INR');
+        expect(withBase.rows.single.targetAmount, 1000000.0);
+        // Without a base currency the caller resolves it; never USD.
+        expect(withoutBase.rows.single.currency, isNull);
+      });
+
+      test('blank Currency cell gives the base currency', () {
+        const csv = '''Name,Type,Target Amount,Currency
+Blank Currency Goal,targetAmount,500000,''';
+
+        final result = GoalsCsvParser.parseString(csv, baseCurrency: 'INR');
+
+        expect(result.rows.single.currency, 'INR');
+      });
+
+      test('explicit Currency cell is kept', () {
+        const csv = '''Name,Type,Target Amount,Currency
+Dollar Goal,targetAmount,50000,usd''';
+
+        final result = GoalsCsvParser.parseString(csv, baseCurrency: 'INR');
+
+        expect(result.rows.single.currency, 'USD');
+      });
+
       test('handles empty linked fields', () {
         const csv =
             '''Name,Type,Target Amount,Linked Investment IDs,Linked Types

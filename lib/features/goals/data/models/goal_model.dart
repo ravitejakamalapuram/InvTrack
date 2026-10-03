@@ -27,8 +27,15 @@ class GoalModel {
     };
   }
 
-  /// Convert Firestore document to GoalEntity
-  static GoalEntity fromFirestore(Map<String, dynamic> data, String id) {
+  /// Convert Firestore document to GoalEntity.
+  ///
+  /// Goals saved before multi-currency support have no `currency` and take
+  /// [baseCurrency], never USD.
+  static GoalEntity fromFirestore(
+    Map<String, dynamic> data,
+    String id, {
+    required String baseCurrency,
+  }) {
     return GoalEntity(
       id: id,
       name: data['name'] as String,
@@ -51,7 +58,7 @@ class GoalModel {
       colorValue:
           data['colorValue'] as int? ?? GoalColors.defaultColor.toARGB32(),
       isArchived: data['isArchived'] as bool? ?? false,
-      currency: data['currency'] as String? ?? 'USD', // Backward compatibility
+      currency: data['currency'] as String? ?? baseCurrency,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()

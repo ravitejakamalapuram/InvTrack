@@ -187,7 +187,13 @@ class NotificationService with NotificationPreferencesMixin {
   late final GoalNotificationHandler _goalHandler;
   late final AlertNotificationHandler _alertHandler;
 
-  NotificationService(this._plugin, this._prefs) {
+  /// [clock] supplies "now" for reminder scheduling; tests inject a fixed
+  /// time. Defaults to [DateTime.now].
+  NotificationService(
+    this._plugin,
+    this._prefs, {
+    DateTime Function()? clock,
+  }) {
     // Initialize handlers with required dependencies
     _scheduledHandler = ScheduledNotificationHandler(
       plugin: _plugin,
@@ -204,6 +210,7 @@ class NotificationService with NotificationPreferencesMixin {
       ensurePermissionsForShow: _ensurePermissionsForShow,
       scheduleWeeklySummary: () => _scheduledHandler.scheduleWeeklySummary(),
       scheduleMonthlySummary: () => _scheduledHandler.scheduleMonthlySummary(),
+      clock: clock,
     );
 
     _goalHandler = GoalNotificationHandler(
@@ -557,6 +564,45 @@ class NotificationService with NotificationPreferencesMixin {
     }
   }
 
+  /// Override to cancel pending income reminders when turned off.
+  /// Turning them back on is handled by the notification sync, which knows
+  /// the investments to schedule for.
+  @override
+  Future<void> setIncomeRemindersEnabled(bool enabled) async {
+    await super.setIncomeRemindersEnabled(enabled);
+    if (!enabled) {
+      await _cancelPendingWhere(NotificationIds.isIncomeReminderId);
+    }
+  }
+
+  /// Override to cancel pending maturity reminders when turned off.
+  @override
+  Future<void> setMaturityRemindersEnabled(bool enabled) async {
+    await super.setMaturityRemindersEnabled(enabled);
+    if (!enabled) {
+      await _cancelPendingWhere(NotificationIds.isMaturityReminderId);
+    }
+  }
+
+  /// Cancel every pending income and maturity reminder, e.g. when the
+  /// signed-in user no longer has any investments.
+  Future<void> cancelInvestmentReminders() => _cancelPendingWhere(
+    (id) =>
+        NotificationIds.isIncomeReminderId(id) ||
+        NotificationIds.isMaturityReminderId(id),
+  );
+
+  /// Cancel every pending notification whose id matches [test].
+  Future<void> _cancelPendingWhere(bool Function(int id) test) async {
+    await _ensureInitialized();
+    final pending = await _plugin.pendingNotificationRequests();
+    for (final request in pending) {
+      if (test(request.id)) {
+        await _plugin.cancel(id: request.id);
+      }
+    }
+  }
+
   // ============ Delegated Notification Methods ============
   //
   // These methods delegate to specialized handler classes for better
@@ -606,6 +652,15 @@ class NotificationService with NotificationPreferencesMixin {
   /// Cancel all notifications
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
+  }
+
+  /// Schedule the app-wide recurring reminders (tax deadlines, weekly
+  /// check-in, FY summary), as done at app start. Used to restore them after
+  /// [cancelAll] when another account signs in. Each respects its preference.
+  Future<void> scheduleAppWideReminders() async {
+    await scheduleTaxReminders();
+    await scheduleWeeklyCheckIn();
+    await scheduleFYSummary();
   }
 
   /// Format currency value for display
@@ -769,8 +824,13 @@ class NotificationService with NotificationPreferencesMixin {
       _investmentHandler.cancelMaturityReminders(investmentId);
 
   /// Re-schedule all notifications for the given investments
-  Future<void> rescheduleAllNotifications(List<InvestmentEntity> investments) =>
-      _investmentHandler.rescheduleAllNotifications(investments);
+  Future<void> rescheduleAllNotifications(
+    List<InvestmentEntity> investments, {
+    required Map<String, DateTime> lastIncomeDates,
+  }) => _investmentHandler.rescheduleAllNotifications(
+    investments,
+    lastIncomeDates: lastIncomeDates,
+  );
 
   /// Show grouped summary notification for income reminders
   Future<void> showIncomeRemindersSummary(List<String> investmentNames) =>

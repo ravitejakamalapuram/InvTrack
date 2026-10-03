@@ -50,6 +50,7 @@ class SeedDataService {
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
         notes: notes,
+        currency: baseCurrency,
       );
       investments.add(inv);
       return inv;
@@ -70,6 +71,7 @@ class SeedDataService {
           type: type,
           amount: amount,
           createdAt: now,
+          currency: baseCurrency,
         ),
       );
     }

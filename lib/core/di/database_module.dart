@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
@@ -46,7 +47,11 @@ final investmentRepositoryProvider = Provider<InvestmentRepository>((ref) {
     throw AuthException.notAuthenticated();
   }
 
-  return FirestoreInvestmentRepository(firestore: firestore, userId: user.id);
+  return FirestoreInvestmentRepository(
+    firestore: firestore,
+    userId: user.id,
+    baseCurrency: baseCurrencyReader(ref),
+  );
 });
 
 /// Provider for the document repository using Firestore
@@ -91,6 +96,7 @@ final expectedCashFlowRepositoryProvider =
   return FirestoreExpectedCashFlowRepository(
     firestore: firestore,
     userId: user.id,
+    baseCurrency: baseCurrencyReader(ref),
   );
 });
 

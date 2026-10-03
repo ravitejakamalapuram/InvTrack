@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -29,16 +30,19 @@ void main() {
       maturityDate: DateTime(2024, 1, 1),
     );
 
+    // An open investment only has a meaningful XIRR once its payouts have
+    // returned the amount invested; with nothing received it shows
+    // "Awaiting first payout" instead (see investment_card_return_display_test).
     final stats = InvestmentStats(
       totalInvested: 10000,
-      totalReturned: 0,
-      netCashFlow: -10000,
-      absoluteReturn: 0,
-      moic: 1.0,
+      totalReturned: 11250,
+      netCashFlow: 1250,
+      absoluteReturn: 12.5,
+      moic: 1.125,
       xirr: 0.0, // Basic stats have 0 XIRR
-      cashFlowCount: 1,
+      cashFlowCount: 2,
       firstCashFlowDate: DateTime(2023, 1, 1),
-      lastCashFlowDate: DateTime(2023, 1, 1),
+      lastCashFlowDate: DateTime(2024, 1, 1),
     );
 
     final xirrValue = 0.125; // 12.5%
@@ -54,7 +58,7 @@ void main() {
           // XIRR provider returns actual XIRR
           investmentXirrProvider(
             investment.id,
-          ).overrideWith((ref) => Future.value(xirrValue)),
+          ).overrideWith((ref) => Future.value(XirrResult.exact(xirrValue))),
           // Mock other dependencies
           currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(
@@ -126,7 +130,7 @@ void main() {
           ).overrideWith((ref) => AsyncValue.data(stats)),
           // XIRR provider is loading
           investmentXirrProvider(investment.id).overrideWith(
-            (ref) => Future<double>.delayed(const Duration(seconds: 10)),
+            (ref) => Future<XirrResult>.delayed(const Duration(seconds: 10)),
           ),
           currencySymbolProvider.overrideWith((ref) => '\$'),
           currencyFormatProvider.overrideWith(
