@@ -25,6 +25,7 @@ import 'package:inv_tracker/features/settings/presentation/providers/settings_pr
 import 'package:inv_tracker/features/settings/presentation/widgets/saved_guest_backup_tile.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_section.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/settings_tile.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Unified screen for data import/export and account management.
@@ -124,6 +125,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                     : null,
                 onTap: () => _handleZipImport(context, ref),
               ),
+              // Undoes the fix for imports and merges saved in US dollars.
+              const UsdTagRepairUndoTile(),
             ],
           ),
 

@@ -2680,6 +2680,125 @@
     }
   },
 
+  "usdTagRepairTitle": "Investments recorded in US dollars",
+  "@usdTagRepairTitle": {
+    "description": "Title of the one-time question about investments that older versions saved as US dollars by mistake"
+  },
+
+  "usdTagRepairMessage": "{count, plural, =1{We found 1 investment recorded in US dollars. Was it in {symbol} ({currency})?} other{We found {count} investments recorded in US dollars. Were these in {symbol} ({currency})?}}",
+  "@usdTagRepairMessage": {
+    "description": "Question naming how many investments are stored as US dollars and the base currency they may really be in; symbol is the base currency symbol, currency its code",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "symbol": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "usdTagRepairDetail": "Older versions of the app could save amounts as US dollars by mistake when importing, merging or restoring. Changing the currency keeps every amount as it is. You can undo it in Settings > Data & Account.",
+  "@usdTagRepairDetail": {
+    "description": "Explains why investments may be stored as US dollars and that the fix keeps amounts and can be undone"
+  },
+
+  "usdTagRepairCashFlows": "{count, plural, =1{1 cash flow} other{{count} cash flows}}",
+  "@usdTagRepairCashFlows": {
+    "description": "Number of cash flows of an investment listed in the US dollar question",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "usdTagRepairMerged": "Merged",
+  "@usdTagRepairMerged": {
+    "description": "Label for an investment made by merging investments, in the US dollar question"
+  },
+
+  "usdTagRepairArchived": "Archived",
+  "@usdTagRepairArchived": {
+    "description": "Label for an archived investment, in the US dollar question"
+  },
+
+  "usdTagRepairKeep": "Keep in US dollars",
+  "@usdTagRepairKeep": {
+    "description": "Answer that the listed investments really are in US dollars; nothing is changed"
+  },
+
+  "usdTagRepairFix": "Change to {currency}",
+  "@usdTagRepairFix": {
+    "description": "Button that relabels the ticked investments with the base currency, keeping their amounts",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "usdTagRepairDone": "{count, plural, =1{1 investment changed to {currency}.} other{{count} investments changed to {currency}.}}",
+  "@usdTagRepairDone": {
+    "description": "Shown after investments were relabelled from US dollars to the base currency",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "usdTagRepairFailed": "Could not finish changing the currency. Check your connection. We will ask again next time you open the app.",
+  "@usdTagRepairFailed": {
+    "description": "Shown when relabelling investments from US dollars could not finish"
+  },
+
+  "usdTagRepairUndo": "Undo",
+  "@usdTagRepairUndo": {
+    "description": "Action that puts US dollars back on investments the fix changed"
+  },
+
+  "usdTagRepairUndoTitle": "Undo the US dollar fix",
+  "@usdTagRepairUndoTitle": {
+    "description": "Settings item and dialog title for undoing the US dollar fix"
+  },
+
+  "usdTagRepairUndoSubtitle": "{count, plural, =1{Show 1 investment in US dollars again} other{Show {count} investments in US dollars again}}",
+  "@usdTagRepairUndoSubtitle": {
+    "description": "Subtitle of the Settings item that undoes the US dollar fix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "usdTagRepairUndoMessage": "{count, plural, =1{1 investment will be shown in US dollars again. Its amounts do not change.} other{{count} investments will be shown in US dollars again. Their amounts do not change.}}",
+  "@usdTagRepairUndoMessage": {
+    "description": "Confirmation before undoing the US dollar fix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "usdTagRepairUndone": "The US dollar fix was undone.",
+  "@usdTagRepairUndone": {
+    "description": "Shown after the US dollar fix was undone"
+  },
+
+  "usdTagRepairUndoFailed": "Could not undo the fix. Check your connection and try again.",
+  "@usdTagRepairUndoFailed": {
+    "description": "Shown when undoing the US dollar fix failed"
+  },
+
   "loadingProgress": "Loading: {fetched} of {total}",
   "@loadingProgress": {
     "description": "Loading progress indicator with counts",
