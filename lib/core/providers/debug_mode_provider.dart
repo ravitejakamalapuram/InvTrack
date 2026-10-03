@@ -4,12 +4,21 @@
 /// number 7 times on the About screen. When enabled, it reveals developer tools
 /// and diagnostics in the Settings screen.
 ///
-/// This is separate from Flutter's kDebugMode (build configuration) - this is
-/// a runtime toggle that works in both debug and release builds.
+/// This is separate from Flutter's kDebugMode (build configuration). It is a
+/// runtime toggle, but only in debug and profile builds: release builds have no
+/// way to turn it on (see [developerToolsAvailableProvider]).
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+
+/// Whether this build offers developer tools at all.
+///
+/// False in release builds, so production users cannot reach the debug menu
+/// (fatal-crash button, demo-data seeding, feature-flag toggles). Tests
+/// override it to check the release behaviour.
+final developerToolsAvailableProvider = Provider<bool>((ref) => !kReleaseMode);
 
 /// Provider for debug mode state.
 ///
@@ -30,6 +39,8 @@ class DebugModeNotifier extends Notifier<bool> {
 
   @override
   bool build() {
+    // A flag persisted by an older release build must not reopen the tools.
+    if (!ref.watch(developerToolsAvailableProvider)) return false;
     final prefs = ref.watch(sharedPreferencesProvider);
     return prefs.getBool(_prefKey) ?? false;
   }
@@ -38,6 +49,7 @@ class DebugModeNotifier extends Notifier<bool> {
   ///
   /// Returns the new state (true if enabled, false if disabled).
   Future<bool> toggle() async {
+    if (!ref.read(developerToolsAvailableProvider)) return false;
     final prefs = ref.read(sharedPreferencesProvider);
     final newValue = !state;
     await prefs.setBool(_prefKey, newValue);
@@ -51,6 +63,7 @@ class DebugModeNotifier extends Notifier<bool> {
   /// rather than toggling it.
   Future<void> setEnabled(bool enabled) async {
     if (state == enabled) return; // No change needed
+    if (!ref.read(developerToolsAvailableProvider)) return;
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool(_prefKey, enabled);
     state = enabled;
