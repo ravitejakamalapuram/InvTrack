@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -46,7 +48,7 @@ enum LogLevel {
 /// LoggerService.debug('User tapped button', metadata: {'screen': 'home'});
 /// LoggerService.info('Investment created', metadata: {'id': investmentId, 'type': type.name});
 /// LoggerService.warn('API rate limit approaching', metadata: {'remaining': 10});
-/// LoggerService.error('Failed to save data', error: e, stackTrace: st, metadata: {'userId': userId});
+/// LoggerService.error('Failed to save data', error: e, stackTrace: st, metadata: {'investmentId': id});
 /// ```
 class LoggerService {
   LoggerService._();
@@ -54,6 +56,72 @@ class LoggerService {
   /// Static instance of CrashlyticsService to avoid provider errors
   /// This is initialized lazily and reused across all log calls
   static CrashlyticsService? _crashlyticsService;
+
+  /// Replaces the Crashlytics service used for reporting. Tests only.
+  @visibleForTesting
+  static set crashlyticsServiceForTesting(CrashlyticsService? service) =>
+      _crashlyticsService = service;
+
+  /// Metadata keys that may be sent to Crashlytics.
+  ///
+  /// Only ids, counts, codes, type names and developer-chosen labels belong
+  /// here. Never add keys whose values can hold user-entered names, amounts,
+  /// file names, paths, emails or free-text error messages (CLAUDE.md rule 7).
+  /// Other keys are still printed to the debug console.
+  @visibleForTesting
+  static const Set<String> crashlyticsMetadataAllowlist = {
+    // Ids
+    'documentId',
+    'goalId',
+    'investmentId',
+    'reportType',
+    // Counts
+    'cashFlowsMissing',
+    'documentsMissing',
+    'errorCount',
+    'expectedCashFlows',
+    'goalsMissing',
+    'investmentsMissing',
+    'investmentsNotInExport',
+    'investmentsWithDetailsNotInExport',
+    'warningCount',
+    // Codes, types and labels
+    'code',
+    'context_type',
+    'debugModeEnabled',
+    'errorCode',
+    'errorType',
+    'event',
+    'fatal',
+    'from',
+    'operation',
+    'placement',
+    'platform',
+    'property',
+    'rolledBack',
+    'screen',
+    'service',
+    'source',
+    'to',
+    'trace',
+    'widget',
+  };
+
+  /// Builds the Crashlytics `reason` from [message] and the allowlisted
+  /// entries of [metadata].
+  @visibleForTesting
+  static String crashlyticsReason(
+    String message,
+    Map<String, dynamic>? metadata,
+  ) {
+    final safe = metadata?.entries
+        .where((e) => crashlyticsMetadataAllowlist.contains(e.key))
+        .map((e) => '${e.key}=${e.value}')
+        .join(', ');
+    return safe == null || safe.isEmpty
+        ? message
+        : '$message | Metadata: $safe';
+  }
 
   /// Log a debug message (only in debug mode)
   static void debug(String message, {Map<String, dynamic>? metadata}) {
@@ -147,19 +215,25 @@ class LoggerService {
         // CRITICAL: Wrap Crashlytics reporting in try-catch to prevent crash loops
         // If Crashlytics fails, we must NOT throw or call LoggerService.error again
         try {
-          final reason = metadata != null
-              ? '$message | Metadata: ${metadata.entries.map((e) => '${e.key}=${e.value}').join(', ')}'
-              : message;
+          final reason = crashlyticsReason(message, metadata);
 
           // Initialize Crashlytics service lazily to avoid provider errors
           _crashlyticsService ??= CrashlyticsService(
             debugModeEnabled: CrashlyticsService.enableInDebugMode,
           );
-          _crashlyticsService!.recordError(
-            error ?? Exception(message),
-            stackTrace,
-            reason: reason,
-            fatal: level == LogLevel.error,
+          // Logged errors are handled, so they are never fatal: only real
+          // crashes may count against the crash-free rate. A failed upload
+          // must not escape as an uncaught error, which the zone handler
+          // would then record as a crash.
+          unawaited(
+            _crashlyticsService!
+                .recordError(
+                  error ?? Exception(message),
+                  stackTrace,
+                  reason: reason,
+                  fatal: false,
+                )
+                .catchError((Object _) {}),
           );
         } catch (crashlyticsError, crashlyticsStack) {
           // CRITICAL: Do NOT call LoggerService.error here - it would create infinite loop

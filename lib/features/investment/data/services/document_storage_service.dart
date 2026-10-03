@@ -91,10 +91,8 @@ class DocumentStorageService {
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
     if (!await _isSafePath(localPath)) {
-      LoggerService.warn(
-        'Security: Blocked access to unsafe path',
-        metadata: {'path': localPath},
-      );
+      // No path in the log: it holds the user id and the file name.
+      LoggerService.warn('Security: Blocked access to unsafe path');
       return null;
     }
 
@@ -115,10 +113,8 @@ class DocumentStorageService {
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
     if (!await _isSafePath(localPath)) {
-      LoggerService.warn(
-        'Security: Blocked deletion of unsafe path',
-        metadata: {'path': localPath},
-      );
+      // No path in the log: it holds the user id and the file name.
+      LoggerService.warn('Security: Blocked deletion of unsafe path');
       return;
     }
 
