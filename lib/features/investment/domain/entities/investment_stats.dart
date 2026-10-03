@@ -1,3 +1,4 @@
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// Investment statistics for display.
@@ -18,8 +19,12 @@ class InvestmentStats {
   /// Multiple on Invested Capital
   final double moic;
 
-  /// Annualized return (XIRR)
+  /// Annualized return (XIRR). 0.0 when [xirrMethod] is undefined.
   final double xirr;
+
+  /// How [xirr] was obtained. Show "approx." for approximate values and "—"
+  /// for undefined ones instead of the 0.0 placeholder.
+  final XirrMethod xirrMethod;
 
   /// Number of cash flow transactions
   final int cashFlowCount;
@@ -37,6 +42,7 @@ class InvestmentStats {
     required this.absoluteReturn,
     required this.moic,
     required this.xirr,
+    this.xirrMethod = XirrMethod.exact,
     required this.cashFlowCount,
     this.firstCashFlowDate,
     this.lastCashFlowDate,
@@ -50,6 +56,7 @@ class InvestmentStats {
     absoluteReturn: 0,
     moic: 0,
     xirr: 0,
+    xirrMethod: XirrMethod.undefined,
     cashFlowCount: 0,
   );
 
@@ -87,6 +94,7 @@ class InvestmentStats {
     double? absoluteReturn,
     double? moic,
     double? xirr,
+    XirrMethod? xirrMethod,
     int? cashFlowCount,
     DateTime? firstCashFlowDate,
     DateTime? lastCashFlowDate,
@@ -98,6 +106,7 @@ class InvestmentStats {
       absoluteReturn: absoluteReturn ?? this.absoluteReturn,
       moic: moic ?? this.moic,
       xirr: xirr ?? this.xirr,
+      xirrMethod: xirrMethod ?? this.xirrMethod,
       cashFlowCount: cashFlowCount ?? this.cashFlowCount,
       firstCashFlowDate: firstCashFlowDate ?? this.firstCashFlowDate,
       lastCashFlowDate: lastCashFlowDate ?? this.lastCashFlowDate,
@@ -115,6 +124,7 @@ class InvestmentStats {
         other.absoluteReturn == absoluteReturn &&
         other.moic == moic &&
         other.xirr == xirr &&
+        other.xirrMethod == xirrMethod &&
         other.cashFlowCount == cashFlowCount &&
         other.firstCashFlowDate == firstCashFlowDate &&
         other.lastCashFlowDate == lastCashFlowDate;
@@ -128,6 +138,7 @@ class InvestmentStats {
         absoluteReturn.hashCode ^
         moic.hashCode ^
         xirr.hashCode ^
+        xirrMethod.hashCode ^
         cashFlowCount.hashCode ^
         firstCashFlowDate.hashCode ^
         lastCashFlowDate.hashCode;

@@ -163,6 +163,7 @@ class OverviewScreen extends ConsumerWidget {
         // Hero Card - Global Summary with toggle
         HeroCardWithToggle(
           globalStats: globalStats,
+          openStats: openStats,
           closedStats: closedStats,
           currencyFormat: currencyFormat,
           errorBuilder: (error) => OverviewErrorCard(error: error),
@@ -269,6 +270,8 @@ class OverviewScreen extends ConsumerWidget {
         // Hero Card - shows zeros
         HeroCardWithToggle(
           globalStats: globalStats,
+          // Empty state: there are no cash flows, so nothing is open.
+          openStats: globalStats,
           closedStats: closedStats,
           currencyFormat: currencyFormat,
           errorBuilder: (error) => OverviewErrorCard(error: error),

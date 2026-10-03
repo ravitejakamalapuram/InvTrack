@@ -3871,6 +3871,88 @@
     "description": "XIRR label"
   },
 
+  "returnLabel": "Return",
+  "@returnLabel": {
+    "description": "Label for the return figure when a holding is too short to annualise"
+  },
+
+  "returnAwaitingFirstPayout": "Awaiting first payout",
+  "@returnAwaitingFirstPayout": {
+    "description": "Neutral chip shown instead of a return percentage for an open investment that has not paid anything out yet"
+  },
+
+  "returnAwaitingCurrentValue": "Awaiting current value",
+  "@returnAwaitingCurrentValue": {
+    "description": "Neutral chip shown instead of a return percentage for an open investment whose payouts have not yet returned the amount invested"
+  },
+
+  "returnNeedsValueHint": "Add a payout or current value to calculate",
+  "@returnNeedsValueHint": {
+    "description": "Hint under a dash shown in place of XIRR when an open investment has no terminal value yet"
+  },
+
+  "netCashFlowSoFar": "Net cash flow so far",
+  "@netCashFlowSoFar": {
+    "description": "Headline for money received minus money invested while investments are still open"
+  },
+
+  "projectedAtMaturity": "Projected at maturity {amount} ({rate} p.a.)",
+  "@projectedAtMaturity": {
+    "description": "Projected maturity value of an open investment from its expected rate, e.g. 'Projected at maturity ₹1,23,144 (7.19% p.a.)'",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "₹1,23,144"
+      },
+      "rate": {
+        "type": "String",
+        "example": "7.19%"
+      }
+    }
+  },
+
+  "xirrApproximate": "{value} approx.",
+  "@xirrApproximate": {
+    "description": "XIRR value that comes from an approximation rather than an exact solution",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "-52.6%"
+      }
+    }
+  },
+
+  "xirrAboveMax": ">1000%",
+  "@xirrAboveMax": {
+    "description": "Shown instead of an XIRR value above 1000%"
+  },
+
+  "returnInDays": "{percent} in {days, plural, =0{under a day} =1{1 day} other{{days} days}}",
+  "@returnInDays": {
+    "description": "Absolute return over a short holding period, e.g. '+2.0% in 3 days'",
+    "placeholders": {
+      "percent": {
+        "type": "String",
+        "example": "+2.0%"
+      },
+      "days": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+
+  "returnAnnualised": "annualised {value}",
+  "@returnAnnualised": {
+    "description": "Secondary line showing the annualised rate under a short-holding return",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": ">1000%"
+      }
+    }
+  },
+
   "monthlyBreakdown": "Monthly Breakdown",
   "@monthlyBreakdown": {
     "description": "Monthly breakdown section title"

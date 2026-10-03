@@ -46,11 +46,14 @@
 ///
 /// ## Edge Cases Handled
 ///
-/// 1. **Total loss**: Returns approximate annualized loss rate
+/// 1. **No root in [-99%, 1000%]**: Falls back to a timing-blind CAGR on
+///    total inflows over total outflows. [solve] flags this as
+///    [XirrMethod.approximate]; [calculateXirr] returns the bare number.
 /// 2. **All inflows or all outflows**: Returns null (invalid scenario)
 /// 3. **Single cash flow**: Returns 0.0 (no return)
 /// 4. **Same-day transactions**: Normalized to years from first date
-/// 5. **Extreme returns**: Capped at 1000% (x ≤ 10.0)
+/// 5. **Extreme returns**: The solvers search up to 1000% (x ≤ 10.0); higher
+///    rates come from the approximate fallback.
 ///
 /// ## Usage Example
 ///
@@ -75,6 +78,71 @@
 library;
 
 import 'dart:math';
+
+/// How an [XirrResult] was obtained.
+enum XirrMethod {
+  /// A root of the NPV equation was found (Newton-Raphson or bisection).
+  exact,
+
+  /// No root was found, so the value is a timing-blind CAGR on total inflows
+  /// over total outflows. Show it labelled as approximate.
+  approximate,
+
+  /// No XIRR exists for these cash flows. Show "—", never 0%.
+  undefined,
+}
+
+/// Why an [XirrResult] is [XirrMethod.undefined].
+enum XirrUndefinedReason {
+  /// Fewer than two cash flows.
+  insufficientFlows,
+
+  /// All flows have the same sign, so there is nothing to solve.
+  noSignChange,
+
+  /// Neither the solvers nor the approximation produced a value.
+  noSolution,
+}
+
+/// The XIRR of a set of cash flows, with how it was obtained.
+class XirrResult {
+  /// XIRR as a decimal (0.15 = 15%), or null when [method] is undefined.
+  final double? value;
+
+  /// Whether [value] is exact, approximate or missing.
+  final XirrMethod method;
+
+  /// Set only when [method] is [XirrMethod.undefined].
+  final XirrUndefinedReason? reason;
+
+  const XirrResult.exact(double this.value)
+    : method = XirrMethod.exact,
+      reason = null;
+
+  const XirrResult.approximate(double this.value)
+    : method = XirrMethod.approximate,
+      reason = null;
+
+  const XirrResult.undefined(XirrUndefinedReason this.reason)
+    : value = null,
+      method = XirrMethod.undefined;
+
+  bool get isDefined => method != XirrMethod.undefined;
+  bool get isApproximate => method == XirrMethod.approximate;
+
+  @override
+  bool operator ==(Object other) =>
+      other is XirrResult &&
+      other.value == value &&
+      other.method == method &&
+      other.reason == reason;
+
+  @override
+  int get hashCode => Object.hash(value, method, reason);
+
+  @override
+  String toString() => 'XirrResult($method, $value, $reason)';
+}
 
 /// Solver for calculating XIRR (Extended Internal Rate of Return) using numerical methods.
 ///
@@ -144,11 +212,32 @@ class XirrSolver {
   ///
   /// - [ArgumentError]: If [dates] and [amounts] have different lengths
   static double? calculateXirr(List<DateTime> dates, List<double> amounts) {
+    final result = solve(dates, amounts);
+    switch (result.reason) {
+      case null:
+        return result.value;
+      case XirrUndefinedReason.noSignChange:
+        return null;
+      case XirrUndefinedReason.insufficientFlows:
+      case XirrUndefinedReason.noSolution:
+        return 0.0;
+    }
+  }
+
+  /// Calculates XIRR like [calculateXirr], but says how the value was found.
+  ///
+  /// Use this in the UI: an [XirrMethod.approximate] result must be labelled
+  /// as such, and an [XirrMethod.undefined] result must be shown as "—"
+  /// rather than 0%.
+  ///
+  /// Throws [ArgumentError] if [dates] and [amounts] have different lengths.
+  static XirrResult solve(List<DateTime> dates, List<double> amounts) {
     if (dates.length != amounts.length) {
       throw ArgumentError('Dates and amounts must have the same length');
     }
-    if (dates.isEmpty) return 0.0;
-    if (dates.length == 1) return 0.0;
+    if (dates.length < 2) {
+      return const XirrResult.undefined(XirrUndefinedReason.insufficientFlows);
+    }
 
     // Normalize dates to years from the first date
     // Optimization: Use a loop to find min milliseconds directly instead of
@@ -203,7 +292,7 @@ class XirrSolver {
     // Invalid scenarios: all inflows or all outflows
     // Note: 0.0 is treated as a valid inflow (e.g., total loss scenario)
     if (!hasNonNegativeAmount || !hasNegativeAmount) {
-      return null;
+      return const XirrResult.undefined(XirrUndefinedReason.noSignChange);
     }
 
     // Try Newton-Raphson with multiple initial guesses
@@ -246,17 +335,26 @@ class XirrSolver {
     for (final guess in initialGuesses) {
       final result = _newtonRaphson(guess, yearsFromStart, groupedAmounts);
       if (result != null && result > -1.0 && result.isFinite) {
-        return result;
+        return XirrResult.exact(result);
       }
     }
 
     // Fallback: bisection method for stubborn cases
     final bisectionResult = _bisection(yearsFromStart, groupedAmounts);
     if (bisectionResult != null) {
-      return bisectionResult;
+      return XirrResult.exact(bisectionResult);
     }
 
-    return 0.0; // Failed to find solution
+    // No root in range: timing-blind approximation, flagged as such.
+    final approximate = _calculateApproximateReturn(
+      yearsFromStart,
+      groupedAmounts,
+    );
+    if (approximate != null) {
+      return XirrResult.approximate(approximate);
+    }
+
+    return const XirrResult.undefined(XirrUndefinedReason.noSolution);
   }
 
   /// Newton-Raphson iterative solver for finding XIRR.
@@ -343,14 +441,14 @@ class XirrSolver {
   /// ## Returns
   ///
   /// - **double**: XIRR value found by bisection
-  /// - **null**: No root exists in search interval (falls back to approximate return)
+  /// - **null**: No root exists in the search interval
   ///
   /// ## Algorithm
   ///
   /// 1. Start with interval [-0.99, 5.0] (i.e., -99% to 500% return)
   /// 2. Check if f(low) and f(high) have opposite signs (root exists)
   /// 3. If not, expand range to [-0.99, 10.0] and try again
-  /// 4. If still no root, calculate approximate annualized return
+  /// 4. If still no root, return null
   /// 5. Otherwise, repeatedly bisect interval until convergence
   ///
   /// ## Convergence Criteria
@@ -373,8 +471,7 @@ class XirrSolver {
       high = 10.0;
       final fHigh2 = _f(high, yearsFromStart, amounts);
       if (fLow.sign == fHigh2.sign) {
-        // No root exists - calculate approximate annualized return
-        return _calculateApproximateReturn(yearsFromStart, amounts);
+        return null; // No root in range
       }
     }
 
@@ -417,14 +514,15 @@ class XirrSolver {
   /// 1. Calculate simple return: `(totalInflows - totalOutflows) / totalOutflows`
   /// 2. Find time span in years
   /// 3. Annualize using CAGR formula: `(1 + simpleReturn)^(1/years) - 1`
-  /// 4. For total loss (simpleReturn < -1), use linear annualization
+  ///
+  /// Inflows are never negative, so simpleReturn is always >= -1.
   ///
   /// ## Example
   ///
   /// ```dart
-  /// // Total loss scenario: Invested ₹10,000, current value ₹0
+  /// // Total loss scenario: Invested ₹10,000, nothing back after 2 years
   /// // Simple return = (0 - 10000) / 10000 = -1.0 (100% loss)
-  /// // Over 2 years: annualized = -1.0 / 2 = -0.5 (50% loss per year)
+  /// // Annualized = (1 - 1)^(1/2) - 1 = -1.0
   /// ```
   static double? _calculateApproximateReturn(
     List<double> yearsFromStart,
@@ -463,15 +561,8 @@ class XirrSolver {
 
     if (timeSpanYears <= 0) return simpleReturn;
 
-    // Annualize the return
-    // For losses, we use a different formula since (1 + r)^(1/n) doesn't work for r < -1
-    if (simpleReturn >= -1) {
-      // Standard CAGR formula
-      return pow(1 + simpleReturn, 1 / timeSpanYears) - 1;
-    } else {
-      // Total loss scenario - annualize the loss rate
-      return simpleReturn / timeSpanYears;
-    }
+    // Annualize the return with the CAGR formula
+    return pow(1 + simpleReturn, 1 / timeSpanYears) - 1;
   }
 
   /// NPV (Net Present Value) function for XIRR calculation.

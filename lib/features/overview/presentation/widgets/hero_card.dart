@@ -8,12 +8,13 @@ import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
-import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/core/widgets/privacy_toggle_button.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+import 'package:inv_tracker/features/investment/presentation/utils/return_display.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Notifier for toggling between all and realized-only net position
 class ShowRealizedOnlyNotifier extends Notifier<bool> {
@@ -32,6 +33,7 @@ final showRealizedOnlyProvider =
 /// Hero card with toggle for showing all vs realized-only stats.
 class HeroCardWithToggle extends ConsumerWidget {
   final AsyncValue<InvestmentStats> globalStats;
+  final AsyncValue<InvestmentStats> openStats;
   final AsyncValue<InvestmentStats> closedStats;
   final NumberFormat currencyFormat;
   final Widget Function(String error) errorBuilder;
@@ -39,6 +41,7 @@ class HeroCardWithToggle extends ConsumerWidget {
   const HeroCardWithToggle({
     super.key,
     required this.globalStats,
+    required this.openStats,
     required this.closedStats,
     required this.currencyFormat,
     required this.errorBuilder,
@@ -51,26 +54,34 @@ class HeroCardWithToggle extends ConsumerWidget {
     return globalStats.when(
       loading: () => const LoadingHeroCard(),
       error: (e, _) => errorBuilder(e.toString()),
-      data: (global) => closedStats.when(
-        loading: () => HeroCardContent(
-          globalStats: global,
-          closedStats: global,
-          currencyFormat: currencyFormat,
-          showRealizedOnly: showRealizedOnly,
-        ),
-        error: (e, s) => HeroCardContent(
-          globalStats: global,
-          closedStats: global,
-          currencyFormat: currencyFormat,
-          showRealizedOnly: showRealizedOnly,
-        ),
-        data: (closed) => HeroCardContent(
-          globalStats: global,
-          closedStats: closed,
-          currencyFormat: currencyFormat,
-          showRealizedOnly: showRealizedOnly,
-        ),
-      ),
+      data: (global) {
+        // Until the open subset is known, assume everything may be open so a
+        // missing terminal value is never shown as a loss.
+        final open = openStats.hasValue ? openStats.requireValue : global;
+        return closedStats.when(
+          loading: () => HeroCardContent(
+            globalStats: global,
+            openStats: open,
+            closedStats: global,
+            currencyFormat: currencyFormat,
+            showRealizedOnly: showRealizedOnly,
+          ),
+          error: (e, s) => HeroCardContent(
+            globalStats: global,
+            openStats: open,
+            closedStats: global,
+            currencyFormat: currencyFormat,
+            showRealizedOnly: showRealizedOnly,
+          ),
+          data: (closed) => HeroCardContent(
+            globalStats: global,
+            openStats: open,
+            closedStats: closed,
+            currencyFormat: currencyFormat,
+            showRealizedOnly: showRealizedOnly,
+          ),
+        );
+      },
     );
   }
 }
@@ -78,6 +89,10 @@ class HeroCardWithToggle extends ConsumerWidget {
 /// Content of the hero card showing net position and stats.
 class HeroCardContent extends ConsumerWidget {
   final InvestmentStats globalStats;
+
+  /// Stats of the open investments within [globalStats]. They have no
+  /// terminal value yet, which decides whether returns can be shown.
+  final InvestmentStats openStats;
   final InvestmentStats closedStats;
   final NumberFormat currencyFormat;
   final bool showRealizedOnly;
@@ -85,6 +100,7 @@ class HeroCardContent extends ConsumerWidget {
   const HeroCardContent({
     super.key,
     required this.globalStats,
+    required this.openStats,
     required this.closedStats,
     required this.currencyFormat,
     required this.showRealizedOnly,
@@ -92,21 +108,27 @@ class HeroCardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final stats = showRealizedOnly ? closedStats : globalStats;
+    final display = ReturnDisplay.resolve(
+      stats: stats,
+      openStats: showRealizedOnly ? null : openStats,
+    );
     final netPosition = stats.netCashFlow;
     final isPositive = netPosition >= 0;
+    final status = display.statusLabel(l10n);
 
     final semanticLabel = AccessibilityUtils.statCardLabel(
-      title: showRealizedOnly
-          ? 'Realized Net Position'
-          : 'Net Position All Investments',
+      title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
       value: AccessibilityUtils.formatCurrencyForScreenReader(
         netPosition,
         currencyFormat.currencySymbol,
       ),
-      subtitle: stats.hasData
-          ? 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}'
-          : null,
+      subtitle: !stats.hasData
+          ? null
+          : status != null
+          ? 'Return: $status'
+          : 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}',
     );
 
     return Semantics(
@@ -117,9 +139,19 @@ class HeroCardContent extends ConsumerWidget {
           children: [
             _buildTitleRow(context, ref),
             const SizedBox(height: 8),
-            _buildValueRow(netPosition, isPositive, stats, ref),
+            _buildValueRow(netPosition, isPositive, stats, status, ref),
             const SizedBox(height: 16),
-            _buildStatsRow(stats, ref),
+            _buildStatsRow(stats, display, l10n, ref),
+            if (display.isAwaitingValue) ...[
+              const SizedBox(height: 6),
+              Text(
+                display.secondaryText(l10n)!,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             _buildCurrencyIndicator(ref),
             if (showRealizedOnly) ...[
@@ -144,7 +176,9 @@ class HeroCardContent extends ConsumerWidget {
       children: [
         Expanded(
           child: Text(
-            showRealizedOnly ? 'Realized Net Position' : 'Net Position (All)',
+            showRealizedOnly
+                ? 'Realized Net Position'
+                : AppLocalizations.of(context).netCashFlowSoFar,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
@@ -216,9 +250,22 @@ class HeroCardContent extends ConsumerWidget {
     double netPosition,
     bool isPositive,
     InvestmentStats stats,
+    String? status,
     WidgetRef ref,
   ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
+    // A neutral chip replaces the return % while open investments have no
+    // terminal value; otherwise the badge would show a fake loss.
+    final badgeColor = status != null
+        ? Colors.white.withValues(alpha: 0.15)
+        : isPositive
+        ? Colors.green.withValues(alpha: 0.3)
+        : Colors.red.withValues(alpha: 0.3);
+    final badgeTextColor = status != null
+        ? Colors.white.withValues(alpha: 0.9)
+        : isPositive
+        ? Colors.greenAccent
+        : Colors.redAccent;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -248,15 +295,14 @@ class HeroCardContent extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: isPositive
-                    ? Colors.green.withValues(alpha: 0.3)
-                    : Colors.red.withValues(alpha: 0.3),
+                color: badgeColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
+                status ??
+                    '${stats.absoluteReturn >= 0 ? '+' : ''}${stats.absoluteReturn.toStringAsFixed(1)}%',
                 style: TextStyle(
-                  color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                  color: badgeTextColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -268,7 +314,12 @@ class HeroCardContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(InvestmentStats stats, WidgetRef ref) {
+  Widget _buildStatsRow(
+    InvestmentStats stats,
+    ReturnDisplay display,
+    AppLocalizations l10n,
+    WidgetRef ref,
+  ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
 
     return Row(
@@ -296,7 +347,7 @@ class HeroCardContent extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              'XIRR',
+              display.metricLabel(l10n),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 12,
@@ -304,7 +355,7 @@ class HeroCardContent extends ConsumerWidget {
             ),
             const SizedBox(height: 2),
             MaskedAmountText(
-              text: formatXirr(stats.xirr, showSign: false) ?? '0.0%',
+              text: display.primaryText(l10n, showSign: false),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,

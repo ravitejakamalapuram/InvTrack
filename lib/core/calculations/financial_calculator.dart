@@ -98,6 +98,16 @@ class FinancialCalculator {
     return XirrSolver.calculateXirr(dates, amounts) ?? 0.0;
   }
 
+  /// Like [calculateXirrFromCashFlows], but says whether the rate is exact,
+  /// approximate or undefined, so the UI can label it. Its value, or 0.0 when
+  /// undefined, is the number [calculateXirrFromCashFlows] returns.
+  static XirrResult solveXirrFromCashFlows(List<ICashFlow> cashFlows) {
+    return XirrSolver.solve(
+      [for (final cf in cashFlows) cf.date],
+      [for (final cf in cashFlows) cf.signedAmount],
+    );
+  }
+
   /// Calculates CAGR (Compound Annual Growth Rate).
   ///
   /// CAGR is the annualized rate of return for a single investment over a period of time.
