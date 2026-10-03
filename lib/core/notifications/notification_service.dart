@@ -654,6 +654,20 @@ class NotificationService with NotificationPreferencesMixin {
     await _plugin.cancelAll();
   }
 
+  /// Uid of the account whose reminders are scheduled on this device, kept
+  /// across restarts so a sign-out that was not cleared before the app
+  /// stopped is cleared on the next start.
+  String? get remindersOwnerUid =>
+      _prefs.getString(NotificationPrefsKeys.remindersOwnerUid);
+
+  Future<void> setRemindersOwnerUid(String? uid) async {
+    if (uid == null) {
+      await _prefs.remove(NotificationPrefsKeys.remindersOwnerUid);
+    } else {
+      await _prefs.setString(NotificationPrefsKeys.remindersOwnerUid, uid);
+    }
+  }
+
   /// Schedule the app-wide recurring reminders (tax deadlines, weekly
   /// check-in, FY summary), as done at app start. Used to restore them after
   /// [cancelAll] when another account signs in. Each respects its preference.
@@ -827,9 +841,11 @@ class NotificationService with NotificationPreferencesMixin {
   Future<void> rescheduleAllNotifications(
     List<InvestmentEntity> investments, {
     required Map<String, DateTime> lastIncomeDates,
+    bool Function()? isCancelled,
   }) => _investmentHandler.rescheduleAllNotifications(
     investments,
     lastIncomeDates: lastIncomeDates,
+    isCancelled: isCancelled,
   );
 
   /// Show grouped summary notification for income reminders

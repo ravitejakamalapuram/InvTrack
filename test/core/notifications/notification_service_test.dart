@@ -1648,5 +1648,83 @@ void main() {
         });
       },
     );
+
+    // A08-F1: one investment that cannot be scheduled must not stop the
+    // rest of the reschedule or the sweep of stale reminders.
+    DateTime scheduledAt(int id) => DateTime.fromMillisecondsSinceEpoch(
+      fakePlugin.scheduledNotifications
+          .singleWhere((n) => n.id == id)
+          .scheduledDate
+          .millisecondsSinceEpoch,
+    );
+
+    test('a maturity reminder whose 09:00 fire time has passed is skipped, '
+        'and later investments and the stale sweep still run', () async {
+      fakeNow = DateTime(2026, 10, 8, 10);
+      fakePlugin.now = () => fakeNow;
+      // Reminder left by an investment deleted on another device.
+      await clockedService.scheduleIncomeReminder(
+        investmentId: 'inv-gone',
+        investmentName: 'Gone',
+        monthsBetweenPayments: 1,
+        lastIncomeDate: DateTime(2026, 9, 20),
+      );
+      // Saved as midnight IST, read in the Gulf as 22:30 the day before:
+      // the 7-day reminder (8 Oct 09:00) is already past at 10:00.
+      final gulfFd = investment(
+        id: 'inv-gulf-fd',
+        incomeFrequency: null,
+        maturityDate: DateTime(2026, 10, 15, 22, 30),
+      );
+      final p2p = investment(startDate: DateTime(2026, 1, 15));
+
+      await clockedService.rescheduleAllNotifications([
+        gulfFd,
+        p2p,
+      ], lastIncomeDates: const {});
+
+      expect(await pendingIds(), {
+        NotificationIds.weeklySummary,
+        NotificationIds.monthlySummary,
+        NotificationIds.maturityReminder1Day('inv-gulf-fd'),
+        NotificationIds.incomeReminder('inv-p2p'),
+      });
+      expect(
+        scheduledAt(NotificationIds.maturityReminder1Day('inv-gulf-fd')),
+        DateTime(2026, 10, 14, 9),
+      );
+      expect(
+        scheduledAt(NotificationIds.incomeReminder('inv-p2p')),
+        DateTime(2026, 10, 15, 9),
+      );
+    });
+
+    test('an investment whose scheduling throws does not abort the others '
+        'or the stale sweep', () async {
+      await clockedService.scheduleIncomeReminder(
+        investmentId: 'inv-gone',
+        investmentName: 'Gone',
+        monthsBetweenPayments: 1,
+        lastIncomeDate: DateTime(2026, 9, 20),
+      );
+      fakePlugin.failingScheduleIds.add(
+        NotificationIds.incomeReminder('inv-bad'),
+      );
+
+      await clockedService.rescheduleAllNotifications([
+        investment(id: 'inv-bad', startDate: DateTime(2026, 1, 15)),
+        investment(startDate: DateTime(2026, 1, 15)),
+      ], lastIncomeDates: const {});
+
+      expect(await pendingIds(), {
+        NotificationIds.weeklySummary,
+        NotificationIds.monthlySummary,
+        NotificationIds.incomeReminder('inv-p2p'),
+      });
+      expect(
+        scheduledAt(NotificationIds.incomeReminder('inv-p2p')),
+        DateTime(2026, 10, 15, 9),
+      );
+    });
   });
 }

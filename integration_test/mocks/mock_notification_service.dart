@@ -67,9 +67,16 @@ class FakeNotificationService implements NotificationService {
   Future<void> rescheduleAllNotifications(
     List<InvestmentEntity> investments, {
     required Map<String, DateTime> lastIncomeDates,
+    bool Function()? isCancelled,
   }) async {
     _logScheduled('reschedule_all');
   }
+
+  @override
+  String? get remindersOwnerUid => null;
+
+  @override
+  Future<void> setRemindersOwnerUid(String? uid) async {}
 
   @override
   Future<void> checkAndShowGoalMilestone({
