@@ -167,6 +167,20 @@ void main() {
       expect(r.exitCode, 1, reason: _output(r));
       expect(_output(r), contains('hi-IN'));
     });
+
+    // Guard: the script runs grep with -I, which skips binary files. A text
+    // file with one invalid UTF-8 byte must still be checked, not skipped.
+    test('fails on a claim in a listing file with invalid UTF-8', () async {
+      final root = _fixture({});
+      File('${root.path}/$_listing/full_description.txt').writeAsBytesSync([
+        ...'${_cleanFull}We don\'t store your data.'.codeUnits,
+        0xff,
+        0x0a,
+      ]);
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('Banned claim'));
+    });
   });
 
   group('stale version header', () {
