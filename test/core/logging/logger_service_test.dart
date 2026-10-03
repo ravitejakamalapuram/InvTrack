@@ -161,8 +161,9 @@ void main() {
     });
 
     test('the allowlist holds no key that can carry PII or amounts', () {
+      // `platform` and `notes` are also user-entered investment fields.
       final risky = RegExp(
-        r'name|path|file|amount|value|email|phone|message|description|^details$|error$|^user',
+        r'name|path|file|amount|value|email|phone|message|description|^details$|error$|^user|^platform$|notes',
         caseSensitive: false,
       );
       expect(

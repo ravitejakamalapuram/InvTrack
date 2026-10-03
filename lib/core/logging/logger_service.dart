@@ -96,7 +96,6 @@ class LoggerService {
     'from',
     'operation',
     'placement',
-    'platform',
     'property',
     'rolledBack',
     'screen',

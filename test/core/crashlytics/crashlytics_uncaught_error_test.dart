@@ -137,6 +137,38 @@ void main() {
     });
   });
 
+  group('a rejected Crashlytics upload', () {
+    final handlers = <String, void Function(CrashlyticsService, Object)>{
+      'runZonedGuarded handler': (s, e) =>
+          s.handleZoneError(e, StackTrace.current),
+      'PlatformDispatcher.onError': (s, e) =>
+          s.handlePlatformError(e, StackTrace.current),
+    };
+
+    handlers.forEach((name, handle) {
+      test('from the $name does not surface as a new uncaught error', () async {
+        when(
+          () => firebase.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+            fatal: any(named: 'fatal'),
+            information: any(named: 'information'),
+          ),
+        ).thenAnswer((_) => Future<void>.error(StateError('upload failed')));
+
+        final uncaught = <Object>[];
+        await runZonedGuarded(() async {
+          handle(service, StateError('real crash'));
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        }, (error, _) => uncaught.add(error));
+
+        expect(uncaught, isEmpty);
+      });
+    });
+  });
+
   group('FlutterError.onError', () {
     test('records one framework crash exactly once, as fatal', () {
       service.handleFlutterError(
