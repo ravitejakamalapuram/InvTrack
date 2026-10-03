@@ -128,6 +128,14 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
   }
 
+  /// Pumps frames for [duration] without waiting for animations to end.
+  Future<void> pumpFor(WidgetTester tester, Duration duration) async {
+    const step = Duration(milliseconds: 50);
+    for (var t = Duration.zero; t < duration; t += step) {
+      await tester.pump(step);
+    }
+  }
+
   String location() => container
       .read(routerProvider)
       .routerDelegate
@@ -267,7 +275,9 @@ void main() {
     final security =
         container.read(securityProvider.notifier) as _LockedSecurity;
     security.unlock();
-    await tester.pumpAndSettle();
+    // The investments have not loaded, so the Overview shows a progress
+    // indicator that never settles: pump a bounded time instead.
+    await pumpFor(tester, const Duration(seconds: 1));
 
     final result = container
         .read(notificationNavigatorProvider)
@@ -276,7 +286,7 @@ void main() {
         );
     await tester.pump();
     security.lock();
-    await tester.pumpAndSettle();
+    await pumpFor(tester, const Duration(seconds: 1));
     investments.add([_fd]);
     await tester.pumpAndSettle();
     expect(await result, isFalse);

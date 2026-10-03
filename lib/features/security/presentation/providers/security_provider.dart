@@ -105,6 +105,7 @@ class SecurityNotifier extends Notifier<SecurityState>
     return SecurityState(
       hasPin: hasPinMirror ?? false,
       isLocked: hasPinMirror ?? true,
+      isBiometricEnabled: _readBiometricEnabled(),
     );
   }
 
@@ -118,6 +119,15 @@ class SecurityNotifier extends Notifier<SecurityState>
     } catch (e) {
       LoggerService.warn('Could not read the PIN mirror', error: e);
       return null;
+    }
+  }
+
+  bool _readBiometricEnabled() {
+    try {
+      return _service.isBiometricEnabled;
+    } catch (e) {
+      LoggerService.warn('Could not read the biometric setting', error: e);
+      return false;
     }
   }
 

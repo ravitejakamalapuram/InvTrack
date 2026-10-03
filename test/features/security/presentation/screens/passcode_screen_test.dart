@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/security/data/services/security_service.dart';
 import 'package:inv_tracker/features/security/presentation/screens/passcode_screen.dart';
 import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../mocks/mock_security_service.dart';
 
 // Mock SecurityNotifier
 class MockSecurityNotifier extends SecurityNotifier {
@@ -15,6 +21,28 @@ class MockSecurityNotifier extends SecurityNotifier {
           false, // Disable biometrics to avoid further async calls
       isBiometricAvailable: false,
     );
+  }
+}
+
+/// Secure storage that answers after [delay], like a slow keystore at cold
+/// start.
+class _SlowSecureStorage extends FakeFlutterSecureStorage {
+  _SlowSecureStorage(this.delay);
+
+  final Duration delay;
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    await Future<void>.delayed(delay);
+    return super.read(key: key);
   }
 }
 
@@ -81,4 +109,55 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  // A07: the app now shows the lock screen from the first frame, before
+  // secure storage has said whether biometrics are available. The automatic
+  // fingerprint prompt must wait for that answer instead of being spent.
+  group('automatic fingerprint prompt at cold start', () {
+    Future<FakeLocalAuthentication> pumpLockScreen(
+      WidgetTester tester,
+      Duration storageDelay,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1080, 1920));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      SharedPreferences.setMockInitialValues({
+        'has_pin': true,
+        'biometric_enabled': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final storage = _SlowSecureStorage(storageDelay);
+      await storage.write(key: 'user_pin', value: 'hash');
+      final localAuth = FakeLocalAuthentication();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            securityServiceProvider.overrideWithValue(
+              SecurityService(storage, localAuth, prefs),
+            ),
+          ],
+          child: const MaterialApp(
+            home: PasscodeScreen(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      return localAuth;
+    }
+
+    for (final delay in const [Duration.zero, Duration(milliseconds: 800)]) {
+      testWidgets('prompts exactly once when storage answers after '
+          '${delay.inMilliseconds} ms', (tester) async {
+        final localAuth = await pumpLockScreen(tester, delay);
+
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(delay);
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(seconds: 3));
+
+        expect(localAuth.authenticateCallCount, 1);
+      });
+    }
+  });
 }

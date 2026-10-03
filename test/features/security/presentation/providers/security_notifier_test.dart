@@ -131,6 +131,19 @@ void main() {
         expect(container.read(securityProvider).isLocked, isFalse);
       });
 
+      // A07: the lock screen shows from the first frame, so it must know
+      // biometrics are on before secure storage answers.
+      test('reads the biometric setting on the first read', () async {
+        SharedPreferences.setMockInitialValues({
+          'has_pin': true,
+          'biometric_enabled': true,
+        });
+        prefs = await SharedPreferences.getInstance();
+        container = createContainer();
+
+        expect(container.read(securityProvider).isBiometricEnabled, isTrue);
+      });
+
       test('a PIN found in storage locks and fixes a stale mirror', () async {
         SharedPreferences.setMockInitialValues({'has_pin': false});
         prefs = await SharedPreferences.getInstance();
@@ -526,6 +539,33 @@ void main() {
         notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
         // The monotonic clock stops while the phone sleeps.
         clock.moveWallClock(const Duration(minutes: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('locks when the phone slept and the clock was then moved back '
+          'past the pause', () async {
+        final notifier = await unlockedWithPin();
+        clock.advance(const Duration(seconds: 10));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        // Asleep: the monotonic clock stops, only the wall clock moves.
+        clock.moveWallClock(const Duration(minutes: 10));
+        // Then the clock is set back to before the pause.
+        clock.moveWallClock(const Duration(hours: -1));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('a sleep and a clock moved back past the unlock do not stretch '
+          'the grace period', () async {
+        final notifier = await unlockedWithPin();
+        // Leave inside the 5 s grace; monotonic time stays under 5 s.
+        clock.advance(const Duration(seconds: 2));
+        notifier.didChangeAppLifecycleState(AppLifecycleState.paused);
+        clock.moveWallClock(const Duration(minutes: 10));
+        clock.moveWallClock(const Duration(hours: -1));
         notifier.didChangeAppLifecycleState(AppLifecycleState.resumed);
 
         expect(container.read(securityProvider).isLocked, isTrue);
