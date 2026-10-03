@@ -24,7 +24,29 @@ void main() {
       "Tap the 'Sign In to Link Account' button in Settings. If that Google "
       'account already exists, InvTrack backs up your guest data, signs you '
       'in to the Google account and adds your guest data to it. If some of '
-      'it cannot be added, you are offered the backup file to save.',
+      'it cannot be added, a backup is kept on this device and you can '
+      'share it from Settings > Data & Account.',
+    );
+  });
+
+  // A05-F1 / integration-11: the merge is automatic, so the FAQ must not
+  // tell guests to import a ZIP by hand, and must be honest about what the
+  // merge cannot move yet.
+  test('FAQ answer about guest data describes the automatic merge', () {
+    expect(
+      l10n.whatHappensToGuestDataAnswer,
+      isNot(contains('which you can import to merge')),
+    );
+    expect(
+      l10n.whatHappensToGuestDataAnswer,
+      'If your Google account is new, your guest data is linked to it '
+      'automatically. If your Google account already exists, InvTrack backs '
+      'up your guest data and adds it to that account for you, so there is '
+      'nothing to import by hand. Some investment details, such as maturity '
+      'dates, interest rates, payout frequency and notes, cannot be moved '
+      'yet, and InvTrack tells you when any were left behind. If some data '
+      'cannot be added, a backup is kept on this device until you delete it '
+      'in Settings > Data & Account.',
     );
   });
 

@@ -20,6 +20,9 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
   final documentRepository = ref.watch(documentRepositoryProvider);
   final documentStorageService = ref.watch(documentStorageServiceProvider);
   final fireSettingsRepository = ref.watch(fireSettingsRepositoryProvider);
+  final expectedCashFlowRepository = ref.watch(
+    expectedCashFlowRepositoryProvider,
+  );
   final performanceService = ref.watch(performanceServiceProvider);
 
   return DataExportService(
@@ -28,6 +31,7 @@ final dataExportServiceProvider = Provider<DataExportService?>((ref) {
     documentRepository: documentRepository,
     documentStorageService: documentStorageService,
     fireSettingsRepository: fireSettingsRepository,
+    expectedCashFlowRepository: expectedCashFlowRepository,
     performanceService: performanceService,
   );
 });

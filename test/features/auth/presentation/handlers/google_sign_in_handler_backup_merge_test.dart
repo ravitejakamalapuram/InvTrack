@@ -8,8 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:inv_tracker/features/auth/presentation/handlers/google_sign_in_handler.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/guest_backup_merge_provider.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/document_repository.dart';
@@ -27,7 +29,7 @@ import '../../../investment/data/repositories/mock_investment_repository.dart';
 import '../../../../mocks/fake_auth_repository.dart';
 import '../../../../mocks/mock_analytics_service.dart';
 
-/// The guest's data as a ZIP, held in memory by the merge flow.
+/// The guest's data as a ZIP, as built by the merge flow.
 final _backupBytes = Uint8List.fromList([0x50, 0x4B, 0x03, 0x04, 1, 2, 3]);
 
 /// An import that added every record in the guest backup.
@@ -38,9 +40,47 @@ const _completeImport = ZipImportResult(
   documentsImported: 0,
 );
 
+const _importFailedMessage =
+    'You are now signed in with Google, but not all of your guest data could '
+    'be added to that account, for example an investment or goal whose name '
+    'it already uses. A backup of your guest data is kept on this device '
+    'until you delete it in Settings > Data & Account. Share it to save it '
+    'somewhere safe. To add the rest, rename those items in your Google '
+    'account and import the backup from Settings > Data & Account.';
+
+const _detailsNotMovedMessage =
+    'Your investments, cash flows and goals are now in your Google account, '
+    'but some investment details could not be moved: maturity dates, '
+    'interest rates, payout frequency, notes and similar fields, and '
+    'expected payouts. Reminders for those investments stay off until you '
+    'add the details again. A backup of your guest data is kept on this '
+    'device until you delete it in Settings > Data & Account.';
+
+/// In-memory stand-in for the app-private backup folder.
+class _FakeBackupStore implements GuestBackupStore {
+  final files = <String, Uint8List>{};
+  var _next = 0;
+
+  @override
+  Future<String> save(Uint8List bytes) async {
+    final path = '/data/app/files/guest_backups/backup_${_next++}.zip';
+    files[path] = bytes;
+    return path;
+  }
+
+  @override
+  Future<List<String>> list() async => files.keys.toList();
+
+  @override
+  Future<void> delete(String filePath) async => files.remove(filePath);
+
+  @override
+  Future<void> deleteAll() async => files.clear();
+}
+
 class _FakeExportService extends Fake implements DataExportService {
   int exportCalls = 0;
-  final sharedBackups = <Uint8List>[];
+  final sharedFiles = <List<String>>[];
 
   /// Replaces the default in-memory backup when set.
   ZipExport? export;
@@ -62,12 +102,14 @@ class _FakeExportService extends Fake implements DataExportService {
           goals: _completeImport.goalsImported,
           documents: _completeImport.documentsImported,
           hasFireSettings: false,
+          investmentsWithDetailsNotInExport: 0,
+          expectedCashFlows: 0,
         );
   }
 
   @override
-  Future<void> shareZipBytes(Uint8List bytes) async {
-    sharedBackups.add(bytes);
+  Future<void> shareZipFiles(List<String> filePaths) async {
+    sharedFiles.add(filePaths);
   }
 }
 
@@ -132,6 +174,7 @@ void main() {
   late FakeAuthRepository authRepo;
   late FakeAnalyticsService analytics;
   late _FakeExportService exportService;
+  late _FakeBackupStore backupStore;
   late Map<String, _RecordingImportService> importersByUid;
   Object? importError;
   ZipImportResult importResult = _completeImport;
@@ -142,6 +185,7 @@ void main() {
     authRepo = FakeAuthRepository(guestUser);
     analytics = FakeAnalyticsService();
     exportService = _FakeExportService();
+    backupStore = _FakeBackupStore();
     importersByUid = {};
     importError = null;
     importResult = _completeImport;
@@ -158,6 +202,7 @@ void main() {
           googleSignInInitializedProvider.overrideWith((ref) async {}),
           currencyCodeProvider.overrideWithValue('EUR'),
           dataExportServiceProvider.overrideWith((ref) => exportService),
+          guestBackupStoreProvider.overrideWithValue(backupStore),
           // One import service per signed-in user, like the real provider,
           // so the test can tell which account the backup was imported into.
           dataImportServiceProvider.overrideWith((ref) {
@@ -215,6 +260,11 @@ void main() {
         isEmpty,
         reason: 'nothing may be imported when sign-in was cancelled',
       );
+      expect(
+        backupStore.files,
+        isEmpty,
+        reason: 'the guest is still signed in with all of their data',
+      );
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(handlerResult, isFalse);
     },
@@ -224,12 +274,25 @@ void main() {
     'on Google sign-in the in-memory backup is merged into the Google '
     'account automatically, without an "Import now" route',
     (tester) async {
+      Map<String, Uint8List>? savedAtSignIn;
       authRepo.onSignInWithGoogle = () async {
+        savedAtSignIn = Map.of(backupStore.files);
         authRepo.emit(googleUser); // Firebase reports the new session
         return googleUser;
       };
 
       await pumpAndStartBackupMerge(tester);
+
+      expect(
+        savedAtSignIn?.values,
+        [_backupBytes],
+        reason: 'the backup must be on disk before the guest session ends',
+      );
+      expect(
+        backupStore.files,
+        isEmpty,
+        reason: 'a full merge needs no leftover copy of the guest data',
+      );
 
       final googleImports = importersByUid[googleUser.id]?.calls ?? [];
       expect(googleImports, hasLength(1));
@@ -277,13 +340,41 @@ void main() {
 
       expect(importersByUid[googleUser.id]?.calls, hasLength(1));
       expect(find.text('Save your guest backup'), findsOneWidget);
-      expect(exportService.sharedBackups, isEmpty);
+      expect(find.text(_importFailedMessage), findsOneWidget);
+      expect(exportService.sharedFiles, isEmpty);
+      expect(backupStore.files.values, [_backupBytes]);
 
       await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
       await tester.pumpAndSettle();
 
-      expect(exportService.sharedBackups, [_backupBytes]);
+      expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
+      expect(
+        backupStore.files.values,
+        [_backupBytes],
+        reason: 'sharing does not prove the user saved it',
+      );
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'closing the backup prompt keeps the backup on the device, so the only '
+    'copy of the guest data outlives the dialog and the process',
+    (tester) async {
+      importError = Exception('Firestore unavailable');
+      authRepo.onSignInWithGoogle = () async {
+        authRepo.emit(googleUser);
+        return googleUser;
+      };
+
+      await pumpAndStartBackupMerge(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save your guest backup'), findsNothing);
+      expect(exportService.sharedFiles, isEmpty);
+      expect(backupStore.files.values, [_backupBytes]);
+      expect(handlerResult, isFalse);
     },
   );
 
@@ -335,22 +426,13 @@ void main() {
           findsNothing,
         );
         expect(find.text('Save your guest backup'), findsOneWidget);
-        expect(
-          find.text(
-            'You are now signed in with Google, but not all of your guest data '
-            'could be added to that account, for example an investment '
-            'or goal whose name it already uses. Share the backup file to '
-            'save it somewhere safe. To add the rest, rename those items in '
-            'your Google account and import the backup from Settings > '
-            'Data & Account.',
-          ),
-          findsOneWidget,
-        );
+        expect(find.text(_importFailedMessage), findsOneWidget);
 
         await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
         await tester.pumpAndSettle();
 
-        expect(exportService.sharedBackups, [_backupBytes]);
+        expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
+        expect(backupStore.files.values, [_backupBytes]);
         expect(handlerResult, isFalse);
       },
     );
@@ -397,6 +479,8 @@ void main() {
         goals: 0,
         documents: 0,
         hasFireSettings: true,
+        investmentsWithDetailsNotInExport: 0,
+        expectedCashFlows: 0,
       );
       authRepo.onSignInWithGoogle = () async {
         authRepo.emit(googleUser);
@@ -415,8 +499,68 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
       await tester.pumpAndSettle();
 
-      expect(exportService.sharedBackups, [guestBackup]);
+      expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
+      expect(backupStore.files.values, [guestBackup]);
       expect(handlerResult, isFalse);
     },
   );
+
+  // The backup ZIP carries only name, type, status and cash flows per
+  // investment, and no expected cash flows. When every record is added but
+  // such details are left behind, the merge must say so, not report success.
+  final detailsLeftBehind = <String, ZipExport>{
+    'an investment has details the backup cannot carry': ZipExport(
+      bytes: _backupBytes,
+      investments: 2,
+      cashFlows: 5,
+      goals: 1,
+      documents: 0,
+      hasFireSettings: false,
+      investmentsWithDetailsNotInExport: 1,
+      expectedCashFlows: 0,
+    ),
+    'the guest has expected cash flows': ZipExport(
+      bytes: _backupBytes,
+      investments: 2,
+      cashFlows: 5,
+      goals: 1,
+      documents: 0,
+      hasFireSettings: false,
+      investmentsWithDetailsNotInExport: 0,
+      expectedCashFlows: 2,
+    ),
+  };
+
+  for (final MapEntry(key: reason, value: export)
+      in detailsLeftBehind.entries) {
+    testWidgets(
+      'when $reason, a full record import is reported as partial and the '
+      'backup is kept and offered',
+      (tester) async {
+        exportService.export = export;
+        authRepo.onSignInWithGoogle = () async {
+          authRepo.emit(googleUser);
+          return googleUser;
+        };
+
+        await pumpAndStartBackupMerge(tester);
+
+        expect(importersByUid[googleUser.id]?.calls, hasLength(1));
+        expect(
+          find.text('Your guest data has been added to your Google account.'),
+          findsNothing,
+        );
+        expect(find.text('Some details were not moved'), findsOneWidget);
+        expect(find.text(_detailsNotMovedMessage), findsOneWidget);
+        expect(backupStore.files.values, [_backupBytes]);
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
+        await tester.pumpAndSettle();
+
+        expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
+        expect(backupStore.files.values, [_backupBytes]);
+        expect(handlerResult, isFalse);
+      },
+    );
+  }
 }

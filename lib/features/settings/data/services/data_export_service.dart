@@ -13,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:inv_tracker/features/fire_number/domain/repositories/fire_settings_repository.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/repositories/goal_repository.dart';
+import 'package:inv_tracker/features/income_projection/domain/repositories/expected_cash_flow_repository.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/document_entity.dart';
@@ -33,6 +34,8 @@ class ZipExport {
     required this.goals,
     required this.documents,
     required this.hasFireSettings,
+    required this.investmentsWithDetailsNotInExport,
+    required this.expectedCashFlows,
   });
 
   final Uint8List bytes;
@@ -48,7 +51,36 @@ class ZipExport {
 
   final int documents;
   final bool hasFireSettings;
+
+  /// Investments holding details the ZIP does not carry (see
+  /// [investmentHasDetailsNotInExport]); an import recreates them without.
+  final int investmentsWithDetailsNotInExport;
+
+  /// Expected cash flows, which the ZIP does not carry at all.
+  final int expectedCashFlows;
+
+  /// Whether an import of [bytes] can recreate everything counted here.
+  bool get carriesEverything =>
+      investmentsWithDetailsNotInExport == 0 && expectedCashFlows == 0;
 }
+
+/// Whether [investment] holds details the export ZIP does not carry. The ZIP
+/// keeps only name, type, status, currency and cash flows per investment, so
+/// an import recreates it without these (and without the maturity and income
+/// reminders that depend on them).
+bool investmentHasDetailsNotInExport(InvestmentEntity investment) =>
+    (investment.notes?.isNotEmpty ?? false) ||
+    investment.closedAt != null ||
+    investment.maturityDate != null ||
+    investment.incomeFrequency != null ||
+    investment.startDate != null ||
+    investment.expectedRate != null ||
+    investment.tenureMonths != null ||
+    investment.platform != null ||
+    investment.interestPayoutMode != null ||
+    investment.autoRenewal != null ||
+    investment.riskLevel != null ||
+    investment.compoundingFrequency != null;
 
 /// Service for exporting all user data as a ZIP file with CSV data files
 class DataExportService {
@@ -57,6 +89,7 @@ class DataExportService {
   final DocumentRepository _documentRepository;
   final DocumentStorageService _documentStorageService;
   final FireSettingsRepository? _fireSettingsRepository;
+  final ExpectedCashFlowRepository? _expectedCashFlowRepository;
   final PerformanceService _performanceService;
 
   DataExportService({
@@ -65,12 +98,14 @@ class DataExportService {
     required DocumentRepository documentRepository,
     required DocumentStorageService documentStorageService,
     FireSettingsRepository? fireSettingsRepository,
+    ExpectedCashFlowRepository? expectedCashFlowRepository,
     required PerformanceService performanceService,
   }) : _investmentRepository = investmentRepository,
        _goalRepository = goalRepository,
        _documentRepository = documentRepository,
        _documentStorageService = documentStorageService,
        _fireSettingsRepository = fireSettingsRepository,
+       _expectedCashFlowRepository = expectedCashFlowRepository,
        _performanceService = performanceService;
 
   /// Export all user data as a ZIP file
@@ -244,6 +279,13 @@ class DataExportService {
       }
     }
 
+    // Not in the ZIP; counted so a caller can tell the user what an import
+    // of it leaves behind.
+    final expectedCashFlows =
+        (await _expectedCashFlowRepository?.getAllExpectedCashFlows())
+            ?.length ??
+        0;
+
     // 5. Encode to ZIP
     final zipData = ZipEncoder().encode(archive);
     if (zipData == null) {
@@ -256,6 +298,10 @@ class DataExportService {
       goals: goals.length + archivedGoals.length,
       documents: allDocuments.length,
       hasFireSettings: hasFireSettings,
+      investmentsWithDetailsNotInExport: allInvestments
+          .where(investmentHasDetailsNotInExport)
+          .length,
+      expectedCashFlows: expectedCashFlows,
     );
   }
 
@@ -281,18 +327,14 @@ class DataExportService {
 
   /// Export and share the ZIP file
   Future<void> exportAndShare() async {
-    await _shareZipFile(await exportAsZip());
+    await shareZipFiles([await exportAsZip()]);
   }
 
-  /// Share export ZIP bytes produced earlier by [exportAsZipBytes].
-  Future<void> shareZipBytes(Uint8List zipData) async {
-    await _shareZipFile(await _saveToTempFile(zipData));
-  }
-
-  Future<void> _shareZipFile(String filePath) async {
+  /// Shares export ZIP files already on disk, such as kept guest backups.
+  Future<void> shareZipFiles(List<String> filePaths) async {
     await SharePlus.instance.share(
       ShareParams(
-        files: [XFile(filePath)],
+        files: [for (final filePath in filePaths) XFile(filePath)],
         text: 'InvTrack data export. Keep this file safe for backup or import.',
         subject: 'InvTrack Data Export',
       ),
