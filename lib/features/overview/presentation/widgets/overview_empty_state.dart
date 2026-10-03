@@ -682,3 +682,55 @@ class OverviewErrorCard extends StatelessWidget {
     );
   }
 }
+
+/// Shown in place of the Overview when the portfolio fails to load.
+///
+/// It deliberately offers no add, import or sample-data actions: the account
+/// may well have data, and sample data would be written into it.
+class OverviewLoadErrorState extends StatelessWidget {
+  /// Called when the user taps Retry.
+  final VoidCallback onRetry;
+
+  const OverviewLoadErrorState({super.key, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GlassCard(
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: AppColors.errorLight,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Semantics(
+            liveRegion: true,
+            header: true,
+            child: Text(
+              l10n.overviewLoadErrorTitle,
+              style: AppTypography.h4,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.overviewLoadErrorMessage,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              onRetry();
+            },
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.retry),
+          ),
+        ],
+      ),
+    );
+  }
+}

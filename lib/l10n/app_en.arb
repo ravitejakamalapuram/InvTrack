@@ -1541,6 +1541,21 @@
     "description": "Generic retry message"
   },
 
+  "overviewLoadingPortfolio": "Loading your portfolio",
+  "@overviewLoadingPortfolio": {
+    "description": "Screen reader label for the Overview skeletons shown while the portfolio loads"
+  },
+
+  "overviewLoadErrorTitle": "Couldn''t load your portfolio",
+  "@overviewLoadErrorTitle": {
+    "description": "Overview title when investments or cash flows fail to load. Must not suggest the account is empty."
+  },
+
+  "overviewLoadErrorMessage": "Your data is safe. Check your connection and try again.",
+  "@overviewLoadErrorMessage": {
+    "description": "Overview message under the load error title, reassuring the user their data was not lost"
+  },
+
   "connectionError": "Connection Error",
   "@connectionError": {
     "description": "Connection error title"
