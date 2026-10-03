@@ -19,6 +19,7 @@ import '../../../../mocks/mock_notification_service.dart';
 void main() {
   late FakeFlutterLocalNotificationsPlugin fakePlugin;
   late NotificationService service;
+  late SharedPreferences prefs;
   late StreamController<UserEntity?> auth;
   late StreamController<List<InvestmentEntity>> investments;
   late StreamController<List<CashFlowEntity>> cashFlows;
@@ -26,7 +27,7 @@ void main() {
   setUp(() async {
     tz_data.initializeTimeZones();
     SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
+    prefs = await SharedPreferences.getInstance();
     fakePlugin = FakeFlutterLocalNotificationsPlugin();
     service = NotificationService(
       fakePlugin,
@@ -150,6 +151,103 @@ void main() {
       final ids = fakePlugin.scheduledNotifications.map((n) => n.id);
       expect(ids, contains(NotificationIds.weeklyCheckIn));
       expect(ids, contains(NotificationIds.fySummary));
+    });
+  });
+
+  // A08-F1: clearing on sign-out must not race a reschedule that is already
+  // running, and must still happen if the app died before it finished.
+  group('NotificationSyncInitializer - account change robustness', () {
+    // Persisted uid of the account whose reminders are scheduled.
+    const ownerKey = 'notifications_reminders_owner_uid';
+
+    final bond = InvestmentEntity(
+      id: 'inv-bond',
+      name: 'Bond',
+      type: InvestmentType.bonds,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      startDate: DateTime(2026, 1, 15),
+      maturityDate: DateTime(2027, 1, 15),
+      incomeFrequency: IncomeFrequency.monthly,
+    );
+
+    testWidgets(
+      'signing out while a reschedule is in flight leaves no reminders',
+      (tester) async {
+        await pumpInitializer(tester);
+        auth.add(user('uid-a'));
+        investments.add([p2p, bond]);
+        cashFlows.add(const []);
+        // The reschedule starts after the debounce and blocks on its first
+        // alarm, as a slow platform call would.
+        final hold = fakePlugin.holdSchedules = Completer<void>();
+        await tester.pump(const Duration(seconds: 3));
+
+        // Sign-out or account deletion while it is still running.
+        auth.add(null);
+        await tester.pump(const Duration(seconds: 1));
+        hold.complete();
+        fakePlugin.holdSchedules = null;
+        await settle(tester);
+
+        expect(fakePlugin.allCancelled, isTrue);
+        expect(fakePlugin.scheduledNotifications.map((n) => n.id), isEmpty);
+      },
+    );
+
+    testWidgets('signing in records whose reminders are scheduled', (
+      tester,
+    ) async {
+      await pumpInitializer(tester);
+      auth.add(user('uid-a'));
+      await settle(tester);
+
+      expect(prefs.getString(ownerKey), 'uid-a');
+      expect(fakePlugin.allCancelled, isFalse);
+
+      auth.add(null);
+      await settle(tester);
+
+      expect(prefs.getString(ownerKey), isNull);
+    });
+
+    testWidgets(
+      'a sign-out the app did not finish clearing is cleared on next start',
+      (tester) async {
+        // The previous run scheduled uid-a's reminders, then the session
+        // ended (sign-out, deletion elsewhere, process killed) before
+        // they were cleared.
+        await prefs.setString(ownerKey, 'uid-a');
+        await service.scheduleIncomeReminder(
+          investmentId: 'inv-p2p',
+          investmentName: 'P2P Monthly',
+          monthsBetweenPayments: 1,
+          lastIncomeDate: DateTime(2026, 9, 20),
+        );
+        expect(incomeReminderDate(), isNotNull);
+
+        await pumpInitializer(tester);
+        auth.add(null);
+        await settle(tester);
+
+        expect(fakePlugin.allCancelled, isTrue);
+        expect(incomeReminderDate(), isNull);
+        expect(prefs.getString(ownerKey), isNull);
+      },
+    );
+
+    testWidgets('starting as the same user who owns the reminders keeps them', (
+      tester,
+    ) async {
+      await prefs.setString(ownerKey, 'uid-a');
+
+      await pumpInitializer(tester);
+      auth.add(user('uid-a'));
+      await settle(tester);
+
+      expect(fakePlugin.allCancelled, isFalse);
+      expect(prefs.getString(ownerKey), 'uid-a');
     });
   });
 

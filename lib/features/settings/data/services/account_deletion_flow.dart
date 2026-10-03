@@ -16,9 +16,14 @@ enum AccountDeletionOutcome {
   /// filed and kept, so the server job finishes the deletion.
   scheduled,
 
-  /// Re-authentication failed and the request could not be filed (e.g.
-  /// offline). Nothing was deleted.
+  /// The request could not be filed (e.g. offline, or rejected). Nothing was
+  /// deleted.
   notDeleted,
+
+  /// The request is saved on this device but the server has not confirmed
+  /// it (offline, or the write timed out). Nothing was deleted; the request
+  /// is sent once the device is back online, so the user stays signed in.
+  queued,
 }
 
 /// Runs Delete Account in a safe order.
@@ -26,8 +31,9 @@ enum AccountDeletionOutcome {
 /// Firebase refuses to delete an Auth user whose sign-in is not recent, so a
 /// stale session is re-authenticated FIRST: a cancel then deletes nothing.
 /// Only after that is the server-side request filed, the data wiped and the
-/// Auth user deleted. Every path that gives up after filing keeps the request
-/// so the scheduled job completes the deletion. A guest ([isAnonymous]) is
+/// Auth user deleted. Nothing is wiped, and nothing is reported as scheduled,
+/// until the server has confirmed the request. Every path that gives up after
+/// filing keeps the request so the scheduled job completes the deletion. A guest ([isAnonymous]) is
 /// never sent to Google re-auth: the request is filed, the data wiped and the
 /// anonymous user deleted, or left to the job if Firebase refuses.
 class AccountDeletionFlow {
@@ -63,15 +69,20 @@ class AccountDeletionFlow {
         case _Reauth.cancelled:
           return AccountDeletionOutcome.cancelled;
         case _Reauth.failed:
-          return _scheduleOnServer();
+          // The user confirmed twice, but we could not prove a recent login.
+          // Leave the deletion to the server job (it also deletes the Auth
+          // user).
+          return _fileRequest();
         case _Reauth.succeeded:
           break;
       }
     }
 
     // File the request before the client wipe (APP-334): if anything below
-    // fails, the job finishes the deletion.
-    await _requests.requestDeletion();
+    // fails, the job finishes the deletion. Without a request the server
+    // holds, that promise cannot be kept, so wipe nothing.
+    final filed = await _fileRequest();
+    if (filed != AccountDeletionOutcome.scheduled) return filed;
     await _deleteUserData();
 
     try {
@@ -112,14 +123,18 @@ class AccountDeletionFlow {
     }
   }
 
-  /// The user confirmed twice, but we could not prove a recent login. Leave
-  /// the deletion to the server job (it also deletes the Auth user).
-  Future<AccountDeletionOutcome> _scheduleOnServer() async {
-    final filed =
-        await _requests.requestDeletion() || await _requests.hasRequest();
-    return filed
-        ? AccountDeletionOutcome.scheduled
-        : AccountDeletionOutcome.notDeleted;
+  /// Files the request and reports [AccountDeletionOutcome.scheduled] only
+  /// when the server holds it (written now, or already there, e.g. from the
+  /// web).
+  Future<AccountDeletionOutcome> _fileRequest() async {
+    if (await _requests.requestDeletion()) {
+      return AccountDeletionOutcome.scheduled;
+    }
+    return switch (await _requests.requestStatus()) {
+      DeletionRequestStatus.confirmed => AccountDeletionOutcome.scheduled,
+      DeletionRequestStatus.pending => AccountDeletionOutcome.queued,
+      DeletionRequestStatus.none => AccountDeletionOutcome.notDeleted,
+    };
   }
 }
 
