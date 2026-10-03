@@ -8,7 +8,6 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,13 +18,24 @@ import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/screens/add_transaction_screen.dart';
-import 'package:inv_tracker/features/investment/presentation/screens/investment_detail_screen.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_configuration.dart';
 import 'package:inv_tracker/features/reports/domain/entities/report_type.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 
 /// Provider for the notification navigator
 final notificationNavigatorProvider = Provider<NotificationNavigator>((ref) {
-  return NotificationNavigator(ref);
+  final navigator = NotificationNavigator(ref);
+  // A tap that arrived while the app was locked opens once it is unlocked.
+  ref.listen<bool>(securityProvider.select((s) => s.isLocked), (
+    wasLocked,
+    isLocked,
+  ) {
+    if (wasLocked == true && !isLocked) {
+      unawaited(navigator.replayAfterUnlock());
+    }
+  });
+  return navigator;
 });
 
 /// Stream controller for pending navigation (when app is opened from notification)
@@ -50,11 +60,41 @@ class NotificationNavigator {
 
   NotificationNavigator(this._ref);
 
+  /// The latest tap that arrived while the app was locked, and who was
+  /// signed in then.
+  String? _pendingPayload;
+  String? _pendingUserId;
+
+  /// Keeps [payload] for after unlock if the app is locked (or its lock
+  /// state is not known yet). Returns true when it did.
+  bool _deferIfLocked(String payload) {
+    if (!_ref.read(securityProvider).isLocked) return false;
+    _pendingPayload = payload;
+    _pendingUserId = _ref.read(authStateProvider).value?.id;
+    LoggerService.debug('Notification navigation deferred until unlock');
+    return true;
+  }
+
+  /// Opens the screen a tap asked for while the app was locked. Dropped if
+  /// someone else is signed in by now.
+  Future<bool> replayAfterUnlock() async {
+    final payload = _pendingPayload;
+    final userId = _pendingUserId;
+    _pendingPayload = null;
+    _pendingUserId = null;
+    if (payload == null || userId == null) return false;
+    if (_ref.read(authStateProvider).value?.id != userId) return false;
+    // Let the router built for the unlocked state take over first.
+    await SchedulerBinding.instance.endOfFrame;
+    return handleNotificationTap(payload);
+  }
+
   /// Handle a notification tap by navigating to the appropriate screen
   Future<bool> handleNotificationTap(String? payloadString) async {
     if (payloadString == null || payloadString.isEmpty) {
       return false;
     }
+    if (_deferIfLocked(payloadString)) return false;
 
     final payload = NotificationPayload.parse(payloadString);
     LoggerService.debug(
@@ -64,13 +104,14 @@ class NotificationNavigator {
 
     switch (payload.type) {
       case NotificationPayloadType.investmentDetail:
-        return _navigateToInvestmentDetail(
+        return _navigateToInvestmentDetail(payloadString, payload.investmentId);
+
+      case NotificationPayloadType.addCashFlow:
+        return _navigateToAddCashFlow(
+          payloadString,
           payload.investmentId,
           payload.params,
         );
-
-      case NotificationPayloadType.addCashFlow:
-        return _navigateToAddCashFlow(payload.investmentId, payload.params);
 
       case NotificationPayloadType.overview:
         return _navigateToOverview();
@@ -90,10 +131,7 @@ class NotificationNavigator {
 
       case NotificationPayloadType.incomeGuardian:
         // Navigate to investment detail with expected cash flow highlighted
-        return _navigateToInvestmentDetail(
-          payload.investmentId,
-          payload.params,
-        );
+        return _navigateToInvestmentDetail(payloadString, payload.investmentId);
 
       case NotificationPayloadType.unknown:
         return false;
@@ -101,8 +139,8 @@ class NotificationNavigator {
   }
 
   Future<bool> _navigateToInvestmentDetail(
+    String payloadString,
     String? investmentId,
-    Map<String, String> params,
   ) async {
     if (investmentId == null) return false;
 
@@ -122,31 +160,15 @@ class NotificationNavigator {
       return false;
     }
 
-    // Use GoRouter's navigation with investment entity passed via extra
+    // The app may have locked while the investment loaded.
+    if (_deferIfLocked(payloadString)) return false;
     if (!context.mounted) return false;
 
-    // Navigate to investments tab first, then push detail screen
-    context.go('/investments');
-
-    // Wait for frame to complete using deterministic frame-sync
-    await SchedulerBinding.instance.endOfFrame;
-
-    if (!context.mounted) return false;
-
-    // Push investment detail using GoRouter's imperative navigation
-    // Since we don't have a route defined for investment detail in GoRouter,
-    // we need to use the root navigator to push it imperatively
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) {
-      LoggerService.warn('Navigator state unavailable after tab navigation');
-      return false;
-    }
-
+    // A route, so the lock redirect applies; the investment goes via extra.
     try {
-      navigatorState.push(
-        MaterialPageRoute(
-          builder: (ctx) => InvestmentDetailScreen(investment: investment),
-        ),
+      context.go(
+        '/investments/${Uri.encodeComponent(investmentId)}',
+        extra: investment,
       );
     } catch (e, stack) {
       LoggerService.error(
@@ -165,8 +187,8 @@ class NotificationNavigator {
     return true;
   }
 
-  /// Builds the Add Cash Flow screen opened from a notification tap.
-  @visibleForTesting
+  /// Builds the Add Cash Flow screen opened from a notification tap (the
+  /// router's add-cash-flow route).
   static AddTransactionScreen addCashFlowScreen(
     String investmentId,
     Map<String, String> params,
@@ -184,6 +206,7 @@ class NotificationNavigator {
   }
 
   Future<bool> _navigateToAddCashFlow(
+    String payloadString,
     String? investmentId,
     Map<String, String> params,
   ) async {
@@ -200,28 +223,18 @@ class NotificationNavigator {
     final investment = await _findInvestment(investmentId);
     if (investment == null) return false;
 
-    // Navigate to investments tab first
-    if (!context.mounted) return false;
-    context.go('/investments');
-
-    // Wait for frame to complete using deterministic frame-sync
-    await SchedulerBinding.instance.endOfFrame;
-
+    // The app may have locked while the investment loaded.
+    if (_deferIfLocked(payloadString)) return false;
     if (!context.mounted) return false;
 
-    // Push add transaction screen
-    final navigatorState = rootNavigatorKey.currentState;
-    if (navigatorState == null) {
-      LoggerService.warn('Navigator state unavailable after tab navigation');
-      return false;
-    }
-
+    // A route, so the lock redirect applies.
+    final flowType = params['flowType'];
+    final location = Uri(
+      path: '/investments/${Uri.encodeComponent(investmentId)}/add-cash-flow',
+      queryParameters: flowType == null ? null : {'flowType': flowType},
+    );
     try {
-      navigatorState.push(
-        MaterialPageRoute(
-          builder: (ctx) => addCashFlowScreen(investmentId, params),
-        ),
-      );
+      context.go(location.toString());
     } catch (e, stack) {
       LoggerService.error(
         'Failed to push add transaction screen',
