@@ -60,38 +60,42 @@ class QuickStatCard extends ConsumerWidget {
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-                shouldMask
-                    ? MaskedAmountText(
-                        text: value,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      )
-                    : Text(
-                        value,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                if (subtitle != null)
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: shouldMask ? 0.0 : 1.0,
-                    child: Text(
-                      subtitle!,
-                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                    ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
-              ],
+                  shouldMask
+                      ? MaskedAmountText(
+                          text: value,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        )
+                      : Text(
+                          value,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                  if (subtitle != null)
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: shouldMask ? 0.0 : 1.0,
+                      child: Text(
+                        subtitle!,
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),

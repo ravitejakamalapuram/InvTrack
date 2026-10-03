@@ -65,10 +65,12 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
         ? ref.watch(archivedCashFlowsByInvestmentProvider(widget.investment.id))
         : ref.watch(cashFlowsByInvestmentProvider(widget.investment.id));
 
-    // Use multi-currency stats provider for active investments (Rule 21.3 compliance)
-    // Archived investments still use old provider (no currency conversion needed for historical data)
+    // Amounts are shown under the base-currency symbol, so archived
+    // investments need converted stats too (CLAUDE.md money rule 2).
     final statsAsync = isArchived
-        ? ref.watch(archivedInvestmentStatsProvider(widget.investment.id))
+        ? ref.watch(
+            multiCurrencyArchivedInvestmentStatsProvider(widget.investment.id),
+          )
         : ref.watch(multiCurrencyInvestmentStatsProvider(widget.investment.id));
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
