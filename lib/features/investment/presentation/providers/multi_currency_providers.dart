@@ -223,7 +223,16 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
   final cashFlows = await ref.watch(
     cashFlowsByInvestmentProvider(investmentId).future,
   );
+  return _convertedStats(ref, cashFlows);
+}
 
+/// Converts [cashFlows] to the user's base currency and calculates their
+/// stats, or returns empty stats when there is nothing to convert or no
+/// converter.
+Future<InvestmentStats> _convertedStats(
+  Ref ref,
+  List<CashFlowEntity> cashFlows,
+) async {
   if (cashFlows.isEmpty) {
     return InvestmentStats.empty();
   }
@@ -242,6 +251,22 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
 
   // Use engine's financial module to calculate stats
   return engine.financial.calculateStats(convertedCashFlows);
+}
+
+/// Stats for one archived investment, in the user's base currency.
+///
+/// Archived investments are left out of totals, but their detail screen still
+/// shows amounts under the base-currency symbol, so their cash flows must be
+/// converted like those of active investments.
+@riverpod
+Future<InvestmentStats> multiCurrencyArchivedInvestmentStats(
+  Ref ref,
+  String investmentId,
+) async {
+  final cashFlows = await ref.watch(
+    archivedCashFlowsByInvestmentProvider(investmentId).future,
+  );
+  return _convertedStats(ref, cashFlows);
 }
 
 /// Provider for multi-currency global stats
