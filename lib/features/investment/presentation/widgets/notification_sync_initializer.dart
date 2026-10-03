@@ -48,6 +48,14 @@ class _NotificationSyncInitializerState
 
   ProviderSubscription<AsyncValue<UserEntity?>>? _authSubscription;
 
+  /// Bumped on every account change. A reschedule started for an earlier
+  /// account stops as soon as it sees the number move.
+  int _accountGeneration = 0;
+
+  /// Reschedules and clears run one after another through this chain, so
+  /// clearing on sign-out always runs after an in-flight reschedule ends.
+  Future<void> _notificationWork = Future<void>.value();
+
   /// Debounce duration to prevent rapid re-scheduling
   static const _debounceDuration = Duration(seconds: 2);
 
@@ -78,29 +86,68 @@ class _NotificationSyncInitializerState
     if (data == null) return; // Ignore loading and error states.
 
     final uid = data.value?.id;
-    final previousUid = _signedInUid;
+    // After a restart, the persisted owner tells whose reminders are still
+    // scheduled if the last sign-out was not cleared before the app stopped.
+    final previousUid = _signedInUid ?? _persistedOwnerUid();
     _signedInUid = uid;
 
     if (previousUid != null && previousUid != uid) {
       _clearForAccountChange(signedInUid: uid);
-    } else if (uid != null && _restoreAppWideRemindersOnSignIn) {
-      _restoreAppWideRemindersOnSignIn = false;
-      _restoreAppWideReminders();
+    } else if (uid != null) {
+      if (_restoreAppWideRemindersOnSignIn) {
+        _restoreAppWideRemindersOnSignIn = false;
+        _restoreAppWideReminders();
+      }
+      if (previousUid == null) _recordOwner(uid);
+    }
+  }
+
+  String? _persistedOwnerUid() {
+    try {
+      return ref.read(notificationServiceProvider).remindersOwnerUid;
+    } catch (e) {
+      LoggerService.debug('NotificationService not available for owner');
+      return null;
+    }
+  }
+
+  /// Run [task] after every reschedule or clear queued before it.
+  void _enqueue(Future<void> Function() task) {
+    _notificationWork = _notificationWork.then((_) => task()).catchError((
+      Object e,
+    ) {
+      LoggerService.warn('Error updating notifications', error: e);
+    });
+  }
+
+  void _recordOwner(String uid) {
+    try {
+      final notificationService = ref.read(notificationServiceProvider);
+      _enqueue(() => notificationService.setRemindersOwnerUid(uid));
+    } catch (e) {
+      LoggerService.debug('NotificationService not available for owner');
     }
   }
 
   /// Cancel every scheduled notification when the signed-in account goes
   /// away or changes, because reminders name the previous user's
   /// investments. Guest-to-Google linking keeps the uid and keeps them.
+  ///
+  /// The clear waits for any reschedule already running (which stops early
+  /// because the generation moved), so nothing it schedules survives. The
+  /// persisted owner is updated only after the clear, so if the app stops
+  /// first the clear runs again on the next start.
   void _clearForAccountChange({required String? signedInUid}) {
     _debounceTimer?.cancel();
-    if (signedInUid == null) _restoreAppWideRemindersOnSignIn = true;
+    _accountGeneration++;
+    _restoreAppWideRemindersOnSignIn = signedInUid == null;
     try {
       final notificationService = ref.read(notificationServiceProvider);
-      Future(() async {
+      _enqueue(() async {
         try {
           await notificationService.cancelAll();
           LoggerService.info('Notifications cleared after account change');
+          await notificationService.setRemindersOwnerUid(signedInUid);
           if (signedInUid != null) {
             await notificationService.scheduleAppWideReminders();
           }
@@ -149,12 +196,13 @@ class _NotificationSyncInitializerState
   /// Fire-and-forget async notification scheduling
   void _scheduleNotificationsAsync() {
     final investments = ref.read(allInvestmentsProvider).value;
-    if (investments == null) return;
+    // Never schedule while signed out; sign-out is handled by
+    // _clearForAccountChange.
+    if (investments == null || _signedInUid == null) return;
     if (investments.isEmpty) {
       // The last investment was deleted (here, on another device, by bulk
-      // delete or by clearing sample data): drop its reminders. Sign-out is
-      // handled by _clearForAccountChange.
-      if (_signedInUid != null) _cancelInvestmentReminders();
+      // delete or by clearing sample data): drop its reminders.
+      _cancelInvestmentReminders();
       return;
     }
 
@@ -167,13 +215,17 @@ class _NotificationSyncInitializerState
     // Get notification service (might throw if not initialized yet)
     try {
       final notificationService = ref.read(notificationServiceProvider);
+      final generation = _accountGeneration;
+      bool isStale() => generation != _accountGeneration;
 
       // Schedule in background - don't await, fire and forget
-      Future(() async {
+      _enqueue(() async {
+        if (isStale()) return;
         try {
           await notificationService.rescheduleAllNotifications(
             investments,
             lastIncomeDates: lastIncomeDates,
+            isCancelled: isStale,
           );
         } catch (e) {
           LoggerService.warn('Error rescheduling notifications', error: e);
@@ -187,7 +239,9 @@ class _NotificationSyncInitializerState
   void _cancelInvestmentReminders() {
     try {
       final notificationService = ref.read(notificationServiceProvider);
-      Future(() async {
+      final generation = _accountGeneration;
+      _enqueue(() async {
+        if (generation != _accountGeneration) return;
         try {
           await notificationService.cancelInvestmentReminders();
         } catch (e) {

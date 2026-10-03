@@ -194,15 +194,26 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       iOS: iosDetails,
     );
 
+    // Each reminder fires at 09:00 on its day. Guard on that fire time, not
+    // on the maturity date's time of day, or a maturity read as late evening
+    // (saved in a timezone east of this device) passes the guard after
+    // 09:00 has gone and the plugin rejects the past date.
+    final sevenDayFireTime = DateTime(
+      sevenDaysBefore.year,
+      sevenDaysBefore.month,
+      sevenDaysBefore.day,
+      9,
+    );
+    final oneDayFireTime = DateTime(
+      oneDayBefore.year,
+      oneDayBefore.month,
+      oneDayBefore.day,
+      9,
+    );
+
     // Schedule 7-day reminder
-    if (sevenDaysBefore.isAfter(now)) {
-      final scheduledDate = DateTime(
-        sevenDaysBefore.year,
-        sevenDaysBefore.month,
-        sevenDaysBefore.day,
-        9,
-        0,
-      );
+    if (sevenDayFireTime.isAfter(now)) {
+      final scheduledDate = sevenDayFireTime;
 
       await _plugin.zonedSchedule(
         id: NotificationIds.maturityReminder7Days(investmentId),
@@ -233,14 +244,8 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
     }
 
     // Schedule 1-day reminder
-    if (oneDayBefore.isAfter(now)) {
-      final scheduledDate = DateTime(
-        oneDayBefore.year,
-        oneDayBefore.month,
-        oneDayBefore.day,
-        9,
-        0,
-      );
+    if (oneDayFireTime.isAfter(now)) {
+      final scheduledDate = oneDayFireTime;
 
       await _plugin.zonedSchedule(
         id: NotificationIds.maturityReminder1Day(investmentId),
@@ -327,47 +332,70 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
   /// date; investments without one are anchored on their start date. Pending
   /// income and maturity reminders for investments that are closed or no
   /// longer present are cancelled.
+  ///
+  /// One investment that fails to schedule is logged and skipped, so it
+  /// cannot block the others or the stale-reminder sweep. When [isCancelled]
+  /// returns true (the account changed), the remaining work is dropped.
   Future<void> rescheduleAllNotifications(
     List<InvestmentEntity> investments, {
     required Map<String, DateTime> lastIncomeDates,
+    bool Function()? isCancelled,
   }) async {
+    bool cancelled() => isCancelled?.call() ?? false;
+
     LoggerService.info(
       'Re-scheduling notifications',
       metadata: {'investmentCount': investments.length},
     );
 
-    await scheduleWeeklySummary();
-    await scheduleMonthlySummary();
+    try {
+      await scheduleWeeklySummary();
+      await scheduleMonthlySummary();
+    } catch (e) {
+      LoggerService.warn('Error scheduling summary notifications', error: e);
+    }
 
     final wantedIds = <int>{};
     for (final investment in investments) {
+      if (cancelled()) return;
       if (!investment.isOpen) continue;
 
       if (investment.maturityDate != null) {
         wantedIds
           ..add(NotificationIds.maturityReminder7Days(investment.id))
           ..add(NotificationIds.maturityReminder1Day(investment.id));
-        await scheduleMaturityReminders(
-          investmentId: investment.id,
-          investmentName: investment.name,
-          maturityDate: investment.maturityDate!,
-        );
       }
-
       if (investment.incomeFrequency != null) {
         wantedIds.add(NotificationIds.incomeReminder(investment.id));
-        await scheduleIncomeReminder(
-          investmentId: investment.id,
-          investmentName: investment.name,
-          monthsBetweenPayments:
-              investment.incomeFrequency!.monthsBetweenPayments,
-          lastIncomeDate:
-              lastIncomeDates[investment.id] ??
-              investment.startDate ??
-              investment.createdAt,
-        );
+      }
+
+      try {
+        if (investment.maturityDate != null) {
+          await scheduleMaturityReminders(
+            investmentId: investment.id,
+            investmentName: investment.name,
+            maturityDate: investment.maturityDate!,
+          );
+        }
+
+        if (investment.incomeFrequency != null) {
+          await scheduleIncomeReminder(
+            investmentId: investment.id,
+            investmentName: investment.name,
+            monthsBetweenPayments:
+                investment.incomeFrequency!.monthsBetweenPayments,
+            lastIncomeDate:
+                lastIncomeDates[investment.id] ??
+                investment.startDate ??
+                investment.createdAt,
+          );
+        }
+      } catch (e) {
+        LoggerService.warn('Error scheduling investment reminders', error: e);
       }
     }
+
+    if (cancelled()) return;
 
     // Drop reminders for investments closed, deleted or archived elsewhere.
     final pending = await _plugin.pendingNotificationRequests();

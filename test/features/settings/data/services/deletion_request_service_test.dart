@@ -14,10 +14,20 @@ class MockCollection extends Mock
 class MockDoc extends Mock implements DocumentReference<Map<String, dynamic>> {}
 
 class FakeSnap extends Fake implements DocumentSnapshot<Map<String, dynamic>> {
-  FakeSnap(this._exists);
+  FakeSnap(this._exists, {bool pendingWrites = false})
+    : _metadata = FakeMetadata(pendingWrites);
   final bool _exists;
+  final SnapshotMetadata _metadata;
   @override
   bool get exists => _exists;
+  @override
+  SnapshotMetadata get metadata => _metadata;
+}
+
+class FakeMetadata extends Fake implements SnapshotMetadata {
+  FakeMetadata(this.hasPendingWrites);
+  @override
+  final bool hasPendingWrites;
 }
 
 void main() {
@@ -25,6 +35,8 @@ void main() {
   late MockCollection collection;
   late MockDoc doc;
   late DeletionRequestService service;
+
+  setUpAll(() => registerFallbackValue(const GetOptions()));
 
   setUp(() {
     firestore = MockFirestore();
@@ -115,6 +127,60 @@ void main() {
         () => doc.get(),
       ).thenThrow(FirebaseException(plugin: 'firestore', code: 'unavailable'));
       expect(await service.hasRequest(), isFalse);
+    });
+  });
+
+  group('requestStatus', () {
+    // Evaluated inside when() so mocktail records the matcher.
+    GetOptions fromServer() => any(
+      that: isA<GetOptions>().having((o) => o.source, 'source', Source.server),
+    );
+
+    test('confirmed only when the server has the doc with no pending local '
+        'write', () async {
+      when(() => doc.get(fromServer())).thenAnswer((_) async => FakeSnap(true));
+
+      expect(await service.requestStatus(), DeletionRequestStatus.confirmed);
+    });
+
+    test('a write the server has not acknowledged yet is pending, not '
+        'confirmed', () async {
+      when(
+        () => doc.get(fromServer()),
+      ).thenAnswer((_) async => FakeSnap(true, pendingWrites: true));
+      stubExists(true);
+
+      expect(await service.requestStatus(), DeletionRequestStatus.pending);
+    });
+
+    test(
+      'offline with the request only in the local cache is pending',
+      () async {
+        when(() => doc.get(fromServer())).thenThrow(
+          FirebaseException(plugin: 'firestore', code: 'unavailable'),
+        );
+        stubExists(true);
+
+        expect(await service.requestStatus(), DeletionRequestStatus.pending);
+      },
+    );
+
+    test('a server read that never answers falls back to the cache', () async {
+      when(
+        () => doc.get(fromServer()),
+      ).thenAnswer((_) => Completer<FakeSnap>().future);
+      stubExists(false);
+
+      expect(await service.requestStatus(), DeletionRequestStatus.none);
+    });
+
+    test('none when neither the server nor the cache has it', () async {
+      when(
+        () => doc.get(fromServer()),
+      ).thenAnswer((_) async => FakeSnap(false));
+      stubExists(false);
+
+      expect(await service.requestStatus(), DeletionRequestStatus.none);
     });
   });
 }

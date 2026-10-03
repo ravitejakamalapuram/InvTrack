@@ -23,7 +23,7 @@ import 'package:inv_tracker/features/overview/presentation/widgets/hero_card.dar
 import 'package:inv_tracker/features/portfolio_health/presentation/widgets/portfolio_health_dashboard_card.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_analytics.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/overview_empty_state.dart';
-import 'package:inv_tracker/features/overview/presentation/widgets/quick_stat_card.dart';
+import 'package:inv_tracker/features/overview/presentation/widgets/overview_quick_stats.dart';
 import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_banner.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -194,7 +194,12 @@ class OverviewScreen extends ConsumerWidget {
 
         // Quick Stats Grid
         globalStats.when(
-          data: (stats) => _buildQuickStats(context, stats, currencyFormat, l10n),
+          data: (stats) => OverviewQuickStats(
+            stats: stats,
+            // Until the open subset is known, assume everything may be open
+            // so a missing terminal value is never shown as a loss.
+            openStats: openStats.hasValue ? openStats.requireValue : stats,
+          ),
           loading: () => const SizedBox.shrink(),
           error: (e, s) => const SizedBox.shrink(),
         ),
@@ -517,39 +522,6 @@ class OverviewScreen extends ConsumerWidget {
                 ),
         ],
       ),
-    );
-  }
-
-  Widget _buildQuickStats(
-    BuildContext context,
-    InvestmentStats stats,
-    NumberFormat currencyFormat,
-    AppLocalizations l10n,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: QuickStatCard(
-            icon: Icons.trending_up,
-            label: l10n.moicLabel,
-            value: '${NumberFormat('#,##0.00').format(stats.moic)}x',
-            color: AppColors.successLight,
-            subtitle: stats.durationFormatted != null
-                ? l10n.overDuration(stats.durationFormatted!)
-                : null,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: QuickStatCard(
-            icon: Icons.receipt_long,
-            label: l10n.cashFlowsLabel,
-            value: '${stats.cashFlowCount}',
-            color: AppColors.primaryLight,
-            isSensitive: false, // Count is not sensitive
-          ),
-        ),
-      ],
     );
   }
 
