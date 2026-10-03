@@ -5,6 +5,8 @@
 // The project has no fake_cloud_firestore dependency, so this is hand-built.
 
 // ignore_for_file: subtype_of_sealed_class
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +26,9 @@ class FakeLegacyCurrencyFirestore extends Fake implements FirebaseFirestore {
 
   /// Thrown by collection reads (simulates offline or permission errors).
   Object? readError;
+
+  /// When set, collection reads wait for it (simulates a slow server scan).
+  Completer<void>? readGate;
 
   /// Thrown by runTransaction (simulates offline or a rejected write).
   Object? transactionError;
@@ -96,6 +101,8 @@ class _DataCollection extends Fake
   @override
   Future<QuerySnapshot<Map<String, dynamic>>> get([GetOptions? options]) async {
     store.readOptions.add(options);
+    final gate = store.readGate;
+    if (gate != null) await gate.future;
     if (store.readError != null) throw store.readError!;
     final docs = store.data[name] ?? {};
     return _FakeQuerySnapshot([

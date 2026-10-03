@@ -2,12 +2,15 @@
 // user confirmed for their account, and a base-currency change
 // that could not stamp legacy records tells the user why it was not applied.
 // A user who never confirmed is asked again when changing currency.
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -221,6 +224,147 @@ void main() {
       await tester.pumpAndSettle();
       expect(firestore.readOptions, isEmpty);
     });
+
+    // A base currency the test can change while the start-up check runs,
+    // standing in for a switch made in Settings.
+    final testCurrency = NotifierProvider<_TestCurrency, String>(
+      _TestCurrency.new,
+    );
+    Widget appWithCurrency(LegacyCurrencyBackfillService service) =>
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            legacyCurrencyBackfillServiceProvider.overrideWithValue(service),
+            currencyCodeProvider.overrideWith((ref) => ref.watch(testCurrency)),
+          ],
+          child: MaterialApp(
+            navigatorKey: rootNavigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const LegacyCurrencyBackfillInitializer(child: SizedBox()),
+          ),
+        );
+    void switchTo(WidgetTester tester, String currency) =>
+        ProviderScope.containerOf(
+          tester.element(find.byType(SizedBox).first),
+        ).read(testCurrency.notifier).set(currency);
+
+    testWidgets('a currency change during the server scan: does not ask about, '
+        'or stamp, the old currency', (tester) async {
+      firestore.readGate = Completer<void>();
+      await tester.pumpWidget(appWithCurrency(service()));
+      await tester.pump();
+
+      // The user switches INR to USD in Settings while the scan is running.
+      switchTo(tester, 'USD');
+      await tester.pump();
+      firestore.readGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mark as INR'), findsNothing);
+      expect(find.text(message('INR')), findsNothing);
+      expect(cashFlowStamped(), isFalse);
+      expect(service().confirmedCurrency, isNull);
+    });
+
+    testWidgets('a currency change while the prompt is open: confirming the '
+        'old currency stamps nothing', (tester) async {
+      await tester.pumpWidget(appWithCurrency(service()));
+      await tester.pumpAndSettle();
+      expect(find.text('Mark as INR'), findsOneWidget);
+
+      switchTo(tester, 'USD');
+      await tester.pump();
+      await tester.tap(find.text('Mark as INR'));
+      await tester.pumpAndSettle();
+
+      expect(cashFlowStamped(), isFalse);
+      expect(service().confirmedCurrency, isNull);
+      expect(service().isComplete, isFalse);
+    });
+
+    testWidgets('asks at most once per app session, even after signing out '
+        'and in again', (tester) async {
+      final holder =
+          NotifierProvider<_ServiceHolder, LegacyCurrencyBackfillService?>(
+            _ServiceHolder.new,
+          );
+      _ServiceHolder.initial = service();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            legacyCurrencyBackfillServiceProvider.overrideWith(
+              (ref) => ref.watch(holder),
+            ),
+          ],
+          child: MaterialApp(
+            navigatorKey: rootNavigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const LegacyCurrencyBackfillInitializer(child: SizedBox()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Not Now'));
+      await tester.pumpAndSettle();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SizedBox).first),
+      );
+      container.read(holder.notifier).set(null);
+      await tester.pumpAndSettle();
+      container.read(holder.notifier).set(service());
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+    });
+
+    testWidgets('stops asking at start after 3 dismissals, per user', (
+      tester,
+    ) async {
+      for (var i = 0; i < 2; i++) {
+        await service().recordPromptDismissed();
+      }
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Not Now'));
+      await tester.pumpAndSettle();
+      expect(service().promptDismissals, 3);
+      expect(service().mayPromptAtStart, isFalse);
+
+      // Next start: no prompt and no server scan.
+      final reads = firestore.readOptions.length;
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsNothing);
+      expect(firestore.readOptions.length, reads);
+      expect(cashFlowStamped(), isFalse);
+
+      // Another user on this device still gets asked.
+      expect(
+        LegacyCurrencyBackfillService(
+          firestore: firestore,
+          userId: 'uid-b',
+          prefs: prefs,
+        ).mayPromptAtStart,
+        isTrue,
+      );
+    });
+
+    testWidgets('tapping outside the prompt counts as a dismissal', (
+      tester,
+    ) async {
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsNothing);
+      expect(service().promptDismissals, 1);
+      expect(cashFlowStamped(), isFalse);
+    });
   });
 
   group('askLegacyCurrencyBeforeSwitch', () {
@@ -287,4 +431,20 @@ void main() {
       expect(await ask(tester, () => tester.tapAt(const Offset(5, 5))), [null]);
     });
   });
+}
+
+class _TestCurrency extends Notifier<String> {
+  @override
+  String build() => 'INR';
+
+  void set(String currency) => state = currency;
+}
+
+class _ServiceHolder extends Notifier<LegacyCurrencyBackfillService?> {
+  static LegacyCurrencyBackfillService? initial;
+
+  @override
+  LegacyCurrencyBackfillService? build() => initial;
+
+  void set(LegacyCurrencyBackfillService? service) => state = service;
 }

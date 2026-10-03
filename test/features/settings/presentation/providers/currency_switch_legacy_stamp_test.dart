@@ -233,6 +233,23 @@ void main() {
       expect(mapped.amount, 1000000.0);
     });
 
+    test('after the start-up prompt was dismissed 3 times, a change still '
+        'asks first and stamps only on yes', () async {
+      final backfill = container.read(legacyCurrencyBackfillServiceProvider)!;
+      for (var i = 0; i < 3; i++) {
+        await backfill.recordPromptDismissed();
+      }
+      expect(backfill.mayPromptAtStart, isFalse);
+
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: answer(true));
+
+      expect(asked, ['INR']);
+      expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'INR');
+      expect(container.read(currencyCodeProvider), 'USD');
+    });
+
     test('no (fresh install, device default INR is wrong): the change applies '
         'without an INR stamp', () async {
       SharedPreferences.setMockInitialValues({});

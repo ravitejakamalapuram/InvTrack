@@ -68,7 +68,31 @@ class LegacyCurrencyBackfillService {
 
   static const String _field = 'currency';
 
+  /// The start-up question stops after this many dismissals. A base-currency
+  /// change still asks, since it would otherwise relabel the records.
+  static const int maxPromptDismissals = 3;
+
+  /// Every SharedPreferences key this service keeps for [userId]. Removed on
+  /// account deletion.
+  static List<String> prefsKeysFor(String userId) => [
+    'legacy_currency_backfill_done_$userId',
+    'legacy_currency_confirmed_$userId',
+    'legacy_currency_prompt_dismissals_$userId',
+  ];
+
   String get _doneKey => 'legacy_currency_backfill_done_$_userId';
+
+  String get _dismissalsKey => 'legacy_currency_prompt_dismissals_$_userId';
+
+  /// How often this user dismissed the start-up question on this device.
+  int get promptDismissals => _prefs.getInt(_dismissalsKey) ?? 0;
+
+  /// Whether the start-up question may still be shown to this user.
+  bool get mayPromptAtStart => promptDismissals < maxPromptDismissals;
+
+  /// Counts one dismissal of the start-up question (Not Now or tap outside).
+  Future<void> recordPromptDismissed() =>
+      _prefs.setInt(_dismissalsKey, promptDismissals + 1);
 
   /// Whether this user's records were already stamped on this device.
   bool get isComplete => _prefs.getBool(_doneKey) ?? false;

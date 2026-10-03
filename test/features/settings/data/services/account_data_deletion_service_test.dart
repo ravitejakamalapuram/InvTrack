@@ -252,6 +252,10 @@ void main() {
           'last_live_cache_refresh': 'x',
           'currency_live_cache_last_refresh': 1,
           'themeMode': 1,
+          'legacy_currency_backfill_done_${FakeUserTree.uid}': true,
+          'legacy_currency_confirmed_${FakeUserTree.uid}': 'INR',
+          'legacy_currency_prompt_dismissals_${FakeUserTree.uid}': 2,
+          'legacy_currency_confirmed_other-user': 'USD',
         });
         final prefs = await SharedPreferences.getInstance();
         final tree = FakeUserTree({'investments': 1});
@@ -267,6 +271,16 @@ void main() {
           expect(prefs.containsKey(k), isFalse, reason: k);
         }
         expect(prefs.getInt('themeMode'), 1, reason: 'app settings are kept');
+        // A03-F1: this user's legacy-currency answers go with the account;
+        // another user's on the same device are kept.
+        for (final k in [
+          'legacy_currency_backfill_done_${FakeUserTree.uid}',
+          'legacy_currency_confirmed_${FakeUserTree.uid}',
+          'legacy_currency_prompt_dismissals_${FakeUserTree.uid}',
+        ]) {
+          expect(prefs.containsKey(k), isFalse, reason: k);
+        }
+        expect(prefs.getString('legacy_currency_confirmed_other-user'), 'USD');
       },
     );
 

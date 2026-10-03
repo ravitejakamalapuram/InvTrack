@@ -9,6 +9,12 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
+/// Users asked the start-up question in this app session (process lifetime),
+/// so signing out and in again does not ask twice.
+final legacyCurrencyPromptedUsersProvider = Provider<Set<String>>(
+  (ref) => <String>{},
+);
+
 /// Stamps records saved without a currency with the base currency, once per
 /// signed-in user (guests included), after the user confirmed that currency
 /// for their account (A03-F1).
@@ -16,9 +22,12 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 /// The device currency alone is not proof: on a fresh install it is the
 /// default INR, and on a shared device it is the previous user's. So when this
 /// user has records without a currency and has not confirmed one yet, they
-/// are asked once per start. Until they confirm, nothing is written and the
-/// repositories keep their read-time fallback. A failure (for example
-/// offline) is retried on the next start.
+/// are asked at most once per app session, and no longer at start-up after
+/// [LegacyCurrencyBackfillService.maxPromptDismissals] dismissals (a
+/// base-currency change still asks). Until they confirm, nothing is written
+/// and the repositories keep their read-time fallback. If the base currency
+/// changes during the check or while the question is open, nothing is
+/// written. A failure (for example offline) is retried on the next start.
 class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
   const LegacyCurrencyBackfillInitializer({super.key, required this.child});
 
@@ -58,6 +67,11 @@ class _LegacyCurrencyBackfillInitializerState
       await service.runOnce(currency);
       return;
     }
+    final askedThisSession = ref.read(legacyCurrencyPromptedUsersProvider);
+    if (!service.mayPromptAtStart ||
+        askedThisSession.contains(service.userId)) {
+      return;
+    }
 
     final bool pending;
     try {
@@ -69,10 +83,17 @@ class _LegacyCurrencyBackfillInitializerState
       );
       return;
     }
-    if (!pending || !mounted) return;
+    // The base currency may have changed in Settings during the scan; then
+    // the question would name a currency that is no longer shown. Ask again
+    // on a later start instead.
+    if (!pending || !mounted || ref.read(currencyCodeProvider) != currency) {
+      return;
+    }
 
     final context = rootNavigatorKey.currentContext;
     if (context == null || !context.mounted) return;
+    // add() is false when another run already asked this user this session.
+    if (!askedThisSession.add(service.userId)) return;
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -92,9 +113,15 @@ class _LegacyCurrencyBackfillInitializerState
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) {
+      await service.recordPromptDismissed();
+      return;
+    }
 
-    // Stamp the currency the user saw and confirmed.
+    // Stamp only the currency the user saw and confirmed, and only while it
+    // is still the base currency (it may have changed while the dialog was
+    // open). Otherwise nothing is written and a later start asks again.
+    if (!mounted || ref.read(currencyCodeProvider) != currency) return;
     await service.confirm(currency);
     await service.runOnce(currency);
   }
