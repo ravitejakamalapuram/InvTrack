@@ -15,6 +15,7 @@ class SecurityService {
   final SharedPreferences _prefs;
 
   static const String _pinKey = 'user_pin';
+  static const String _hasPinMirrorKey = 'has_pin';
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _autoLockDurationKey = 'auto_lock_duration';
   static const String _failedAttemptsKey = 'pin_failed_attempts';
@@ -41,7 +42,18 @@ class SecurityService {
     return _hasPinFuture!;
   }
 
+  /// Whether a PIN is set, as last seen. Unlike [hasPin] it is read
+  /// synchronously, so the app's first frame can already be the lock screen.
+  /// Null when not known yet (first start after an update or a data clear).
+  bool? get hasPinMirror => _prefs.getBool(_hasPinMirrorKey);
+
   Future<bool> _hasPinInternal() async {
+    final hasPin = await _readHasPin();
+    await _prefs.setBool(_hasPinMirrorKey, hasPin);
+    return hasPin;
+  }
+
+  Future<bool> _readHasPin() async {
     // Check Secure Storage first
     final pin = await _secureStorage.read(
       key: _pinKey,
@@ -92,6 +104,9 @@ class SecurityService {
     final salt = _generateSalt();
     // Use PBKDF2 with 100,000 iterations (v3 format: salt:iterations:hash)
     final hashedPin = SecurityUtils.hashPin(pin, salt, iterations: 100000);
+    // Mirror first: if the app dies between the two writes, the next start
+    // shows the lock instead of the portfolio.
+    await _prefs.setBool(_hasPinMirrorKey, true);
     await _secureStorage.write(
       key: _pinKey,
       value: hashedPin,
@@ -317,6 +332,9 @@ class SecurityService {
         aOptions: _getAndroidOptions(),
         iOptions: _getIOSOptions(),
       );
+      // Only once the PIN is gone, so the mirror never says "no PIN" while
+      // one is still set.
+      await _prefs.setBool(_hasPinMirrorKey, false);
     } finally {
       // Always disable biometrics even if PIN removal fails
       await setBiometricEnabled(false);
