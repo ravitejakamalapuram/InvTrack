@@ -353,6 +353,19 @@ void main() {
       expect(reason, contains('Cannot confirm'));
     });
 
+    test('a partial promote that finished before the release belongs to an '
+        'older build and does not start the count', () {
+      // The latest release's 5% job failed, so no auto-release run counts.
+      // The only partial promote on record is days older than the release.
+      final reason = check(
+        crashFree: '99.9',
+        partialStarts: [releasedAt.subtract(const Duration(days: 3))],
+        autoRuns: const [],
+      );
+      expect(reason, isNotNull);
+      expect(reason, contains('Cannot confirm'));
+    });
+
     test('is blocked when the auto-release history cannot be read', () {
       expect(check(crashFree: '99.9', noAutoRuns: true), isNotNull);
     });
