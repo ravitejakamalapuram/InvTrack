@@ -57,6 +57,16 @@ void main() {
       'MASVS compliant': 'MASVS compliant app.',
       'WCAG compliant': 'Accessibility - WCAG compliant',
       'WCAG 2.1 AA compliant': 'WCAG 2.1 AA compliant screens',
+      // Variants of the same claims (re-audit finding ci-release-6).
+      "doesn't store": "InvTrack doesn't store your data on any server.",
+      'does not store': 'InvTrack does not store your data.',
+      'never store': 'We never store your financial data.',
+      'never leaves': 'Your data never leaves your phone.',
+      "don't<NBSP>store": "We don't\u00a0store your data.",
+      "don't store split across a line break": "We don't\nstore your data.",
+      'OWASP-compliant': 'OWASP-compliant security.',
+      'MASVS-compliant': 'MASVS-compliant app.',
+      'WCAG 2.1 AA-compliant': 'WCAG 2.1 AA-compliant screens',
     };
 
     claims.forEach((name, text) {
@@ -87,6 +97,75 @@ void main() {
       );
       expect(r.exitCode, 1, reason: _output(r));
       expect(_output(r), contains('changelogs/300.txt'));
+    });
+  });
+
+  test('allows the accurate data-handling wording', () async {
+    // The wording that replaced the banned claims must keep passing.
+    final r = await _check(
+      _fixture({
+        '$_listing/full_description.txt':
+            '${_cleanFull}Your data is stored in your InvTrack account on '
+            'Google Firebase. It is private to your account and never sold. '
+            'Attached documents stay on your phone.\n',
+        'README.md':
+            '# InvTrack\nAttach documents (files stay on your device; only '
+            'metadata syncs to Firestore).\n',
+      }).path,
+    );
+    expect(r.exitCode, 0, reason: _output(r));
+  });
+
+  group('files the check cannot skip', () {
+    // Re-audit finding ci-release-5: a missing README.md made grep exit 2,
+    // which the script read as "no match" for the listing too.
+    test('fails when README.md is missing', () async {
+      final root = _fixture({});
+      File('${root.path}/README.md').deleteSync();
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('README.md'));
+    });
+
+    test('still reports a listing claim when README.md is missing', () async {
+      final root = _fixture({
+        '$_listing/full_description.txt':
+            "${_cleanFull}We don't store your data. It stays with you.\n",
+      });
+      File('${root.path}/README.md').deleteSync();
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('full_description.txt'));
+    });
+
+    // Re-audit finding integration-5: grep -r skipped symlinks, while the
+    // length check and the Play upload follow them.
+    test('fails when a listing file is a symlink', () async {
+      final root = _fixture({
+        'docs/listing_full.txt':
+            "We don't store your data on any server. Your data stays with "
+            'you.\n',
+      });
+      final file = File('${root.path}/$_listing/full_description.txt')
+        ..deleteSync();
+      Link(file.path).createSync('${root.path}/docs/listing_full.txt');
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('full_description.txt'));
+    });
+
+    test('fails when a locale folder is a symlink', () async {
+      final root = _fixture({
+        'docs/listing/title.txt': 'InvTrack - Investment Tracker\n',
+        'docs/listing/short_description.txt': 'Track investments.\n',
+        'docs/listing/full_description.txt': 'Your data stays with you.\n',
+      });
+      Link(
+        '${root.path}/android/fastlane/metadata/android/hi-IN',
+      ).createSync('${root.path}/docs/listing');
+      final r = await _check(root.path);
+      expect(r.exitCode, 1, reason: _output(r));
+      expect(_output(r), contains('hi-IN'));
     });
   });
 
