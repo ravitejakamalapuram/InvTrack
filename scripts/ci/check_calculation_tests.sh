@@ -20,7 +20,10 @@ while IFS=$'\t' read -r status path1 path2 || [[ -n "${status:-}" ]]; do
   # Renames and copies (R100, C075) list the old path then the new path.
   path="${path2:-$path1}"
 
-  if [[ "$status" != D* && "$path" =~ ^(test|integration_test)/.*_test\.dart$ ]]; then
+  # A deleted test, or one renamed or copied without edits (R100, C100), adds
+  # no test coverage.
+  if [[ "$status" != D* && "$status" != R100 && "$status" != C100 \
+    && "$path" =~ ^(test|integration_test)/.*_test\.dart$ ]]; then
     test_changed=1
   fi
 

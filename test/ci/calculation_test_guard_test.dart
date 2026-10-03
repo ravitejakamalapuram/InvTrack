@@ -101,6 +101,27 @@ void main() {
       expect(result.stdout, contains('lib/core/calculations/old.dart'));
     });
 
+    test(
+      'a content-identical test rename does not count as a test change',
+      () async {
+        final result = await _runGuard(
+          'M\tlib/core/calculations/xirr_solver.dart\n'
+          'R100\ttest/core/calculations/old_test.dart\t'
+          'test/core/calculations/new_test.dart\n',
+        );
+        expect(result.exitCode, 1);
+      },
+    );
+
+    test('a test renamed with edits counts as a test change', () async {
+      final result = await _runGuard(
+        'M\tlib/core/calculations/xirr_solver.dart\n'
+        'R087\ttest/core/calculations/old_test.dart\t'
+        'test/core/calculations/new_test.dart\n',
+      );
+      expect(result.exitCode, 0, reason: '${result.stdout}');
+    });
+
     test('deleting a test does not count as a test change', () async {
       final result = await _runGuard(
         'M\tlib/core/calculations/xirr_solver.dart\n'
