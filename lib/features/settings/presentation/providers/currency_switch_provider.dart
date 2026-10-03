@@ -4,11 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/di/database_module.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/logging/logger_service.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/services/currency_conversion_service.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../investment/presentation/providers/investment_providers.dart';
 import 'settings_provider.dart';
 
@@ -25,6 +27,10 @@ class CurrencySwitchStatus {
   final int? totalRates;
   final int? fetchedRates;
 
+  /// Set when the switch was blocked because records saved without a
+  /// currency could not first be stamped with this (the old) base currency.
+  final String? unstampedLegacyCurrency;
+
   /// Cached progress value (pre-calculated to avoid repeated division on every frame)
   final double? _cachedProgress;
 
@@ -34,7 +40,8 @@ class CurrencySwitchStatus {
     this.targetCurrency,
     this.totalRates,
     this.fetchedRates,
-  }) : _cachedProgress = null;
+  }) : unstampedLegacyCurrency = null,
+       _cachedProgress = null;
 
   const CurrencySwitchStatus.idle()
     : state = CurrencySwitchState.idle,
@@ -42,6 +49,7 @@ class CurrencySwitchStatus {
       targetCurrency = null,
       totalRates = null,
       fetchedRates = null,
+      unstampedLegacyCurrency = null,
       _cachedProgress = null;
 
   CurrencySwitchStatus.fetchingRates({
@@ -50,6 +58,7 @@ class CurrencySwitchStatus {
     required int this.fetchedRates,
   }) : state = CurrencySwitchState.fetchingRates,
        errorMessage = null,
+       unstampedLegacyCurrency = null,
        // Pre-calculate progress to avoid repeated division on every frame
        _cachedProgress = totalRates > 0 ? fetchedRates / totalRates : 0.0;
 
@@ -58,11 +67,13 @@ class CurrencySwitchStatus {
       errorMessage = null,
       totalRates = null,
       fetchedRates = null,
+      unstampedLegacyCurrency = null,
       _cachedProgress = null;
 
   const CurrencySwitchStatus.failed({
     this.errorMessage,
     required this.targetCurrency,
+    this.unstampedLegacyCurrency,
   }) : state = CurrencySwitchState.failed,
        totalRates = null,
        fetchedRates = null,
@@ -85,7 +96,8 @@ class CurrencySwitchStatus {
         other.errorMessage == errorMessage &&
         other.targetCurrency == targetCurrency &&
         other.totalRates == totalRates &&
-        other.fetchedRates == fetchedRates;
+        other.fetchedRates == fetchedRates &&
+        other.unstampedLegacyCurrency == unstampedLegacyCurrency;
   }
 
   @override
@@ -96,6 +108,7 @@ class CurrencySwitchStatus {
       targetCurrency,
       totalRates,
       fetchedRates,
+      unstampedLegacyCurrency,
     );
   }
 }
@@ -190,6 +203,12 @@ class CurrencySwitch extends _$CurrencySwitch {
         throw NetworkException.noConnection();
       }
 
+      // Step 0b: Stamp records saved without a currency with the CURRENT
+      // base currency before switching (A03-F1). Otherwise the repositories
+      // would label them with the new currency and their amounts would change
+      // currency without conversion. If this fails, the switch is not applied.
+      await _stampLegacyRecords(currentCurrency);
+
       // Analytics: Track currency switch attempt
       final analytics = ref.read(analyticsServiceProvider);
       await analytics.logEvent(
@@ -279,7 +298,9 @@ class CurrencySwitch extends _$CurrencySwitch {
 
       // BUG FIX (2026-05-04): Handle null service when user is not authenticated
       if (conversionService == null) {
-        throw Exception('Currency conversion service unavailable. Please sign in.');
+        throw Exception(
+          'Currency conversion service unavailable. Please sign in.',
+        );
       }
 
       int fetchedCount = 0;
@@ -339,6 +360,9 @@ class CurrencySwitch extends _$CurrencySwitch {
       state = CurrencySwitchStatus.failed(
         errorMessage: null,
         targetCurrency: newCurrency,
+        unstampedLegacyCurrency: e is LegacyCurrencyStampException
+            ? currentCurrency
+            : null,
       );
 
       // Analytics: Track currency switch failure
@@ -365,8 +389,42 @@ class CurrencySwitch extends _$CurrencySwitch {
     }
   }
 
+  Future<void> _stampLegacyRecords(String currency) async {
+    final backfill = ref.read(legacyCurrencyBackfillServiceProvider);
+    if (backfill == null) return;
+    try {
+      await backfill.backfill(currency);
+    } catch (e) {
+      throw LegacyCurrencyStampException(e.runtimeType.toString());
+    }
+  }
+
   /// Reset state to idle
   void reset() {
     state = const CurrencySwitchStatus.idle();
   }
+}
+
+/// Thrown when records saved without a currency could not be stamped with the
+/// current base currency, so a base-currency change must not be applied.
+/// Carries only the cause's type, never document paths or values.
+class LegacyCurrencyStampException implements Exception {
+  const LegacyCurrencyStampException(this.causeType);
+  final String causeType;
+
+  @override
+  String toString() => 'LegacyCurrencyStampException($causeType)';
+}
+
+/// The message shown when a currency switch failed.
+String currencySwitchFailureMessage(
+  AppLocalizations l10n,
+  CurrencySwitchStatus status,
+) {
+  final target = status.targetCurrency ?? 'Unknown';
+  final unstamped = status.unstampedLegacyCurrency;
+  if (unstamped != null) {
+    return l10n.currencySwitchBlockedLegacyRecords(unstamped, target);
+  }
+  return l10n.currencySwitchFailed(target);
 }

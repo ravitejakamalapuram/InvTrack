@@ -347,9 +347,12 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
       } else if (next.isFailed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.currencySwitchFailed(targetCurrency)),
+            content: Text(currencySwitchFailureMessage(l10n, next)),
             backgroundColor: AppColors.errorLight,
-            duration: const Duration(seconds: 3),
+            // The blocked-switch explanation is longer; give time to read it.
+            duration: Duration(
+              seconds: next.unstampedLegacyCurrency != null ? 8 : 3,
+            ),
             action: SnackBarAction(
               label: l10n.retry,
               textColor: Colors.white,

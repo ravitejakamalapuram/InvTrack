@@ -2604,6 +2604,19 @@
     }
   },
 
+  "currencySwitchBlockedLegacyRecords": "Currency not changed to {newCurrency}. Older records saved without a currency must first be marked as {oldCurrency} so their amounts stay correct, and that could not be finished. Connect to the internet and try again.",
+  "@currencySwitchBlockedLegacyRecords": {
+    "description": "Shown when a base-currency change was not applied because records saved without a currency could not first be stamped with the current base currency",
+    "placeholders": {
+      "oldCurrency": {
+        "type": "String"
+      },
+      "newCurrency": {
+        "type": "String"
+      }
+    }
+  },
+
   "loadingProgress": "Loading: {fetched} of {total}",
   "@loadingProgress": {
     "description": "Loading progress indicator with counts",

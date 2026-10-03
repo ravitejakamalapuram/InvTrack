@@ -67,6 +67,7 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
 
 - 2026-10-02: archived investments stay excluded from totals; add explicit warnings and disclosure (A17).
 - 2026-10-02: iOS is deferred until Android activation and retention targets are met.
+- 2026-10-03: records saved without a currency are stamped once with the user's base currency at that time (A03-F1).
 - Plan defaults that hold until the founder says otherwise: Premium is built from new features only, and nothing free today becomes paid (A58); the dormant ads SDK is removed (A34, A57); Income Guardian is hidden until something generates expected payouts (A42).
 - Account deletion builds on the existing pipeline: `deletionRequests` rules (APP-331), the processing job in `scripts/account-deletion` (APP-332) and in-app requests (APP-334). Extend that work; don't replace it.
 
