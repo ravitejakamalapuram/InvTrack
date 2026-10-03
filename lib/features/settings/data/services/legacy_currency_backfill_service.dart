@@ -6,7 +6,8 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Writes the user's base currency, once, into records saved before
-/// multi-currency support (no `currency` field).
+/// multi-currency support (no `currency` field), after the user confirmed
+/// that currency for their account.
 ///
 /// The repositories label such records with the base currency at read time.
 /// Without this stamp, changing the base currency would relabel their amounts
@@ -41,6 +42,9 @@ class LegacyCurrencyBackfillService {
 
   final FirebaseFirestore _firestore;
   final String _userId;
+
+  /// The signed-in user whose records this service stamps.
+  String get userId => _userId;
   final SharedPreferences _prefs;
   final int _chunkSize;
   final Duration _readTimeout;
@@ -68,6 +72,38 @@ class LegacyCurrencyBackfillService {
 
   /// Whether this user's records were already stamped on this device.
   bool get isComplete => _prefs.getBool(_doneKey) ?? false;
+
+  String get _confirmedKey => 'legacy_currency_confirmed_$_userId';
+
+  /// The currency this user confirmed, on this device, for their records
+  /// saved without one. Null until they confirm.
+  String? get confirmedCurrency => _prefs.getString(_confirmedKey);
+
+  /// Whether this user confirmed [currency] for their records without one.
+  bool isConfirmedFor(String currency) => confirmedCurrency == currency;
+
+  /// Records that this user confirmed their records without a currency are
+  /// in [currency].
+  Future<void> confirm(String currency) async {
+    await _prefs.setString(_confirmedKey, currency);
+  }
+
+  /// Whether any record still has no currency, read from the server. Writes
+  /// nothing. Records completion when there are none. Throws offline.
+  Future<bool> hasUnstampedRecords() async {
+    final userDoc = _firestore.collection('users').doc(_userId);
+    for (final name in collections) {
+      final snapshot = await userDoc
+          .collection(name)
+          .get(const GetOptions(source: Source.server))
+          .timeout(_readTimeout);
+      if (snapshot.docs.any((doc) => isMissingCurrency(doc.data()))) {
+        return true;
+      }
+    }
+    await _prefs.setBool(_doneKey, true);
+    return false;
+  }
 
   /// True when [data] has no usable currency: absent, null or blank.
   static bool isMissingCurrency(Map<String, dynamic>? data) {
@@ -107,10 +143,14 @@ class LegacyCurrencyBackfillService {
     return stamped;
   }
 
-  /// Runs [backfill] once per user. Returns false when it failed; the
+  /// Runs [backfill] once per user, and only with a [currency] this user
+  /// confirmed ([confirm]). The device currency alone is not enough: on a
+  /// fresh install it is the default INR, and on a shared device it is the
+  /// previous user's. Returns false when it did not run or failed; the
   /// read-time fallback then stays in place and the next call retries.
   Future<bool> runOnce(String currency) {
     if (isComplete) return Future.value(true);
+    if (!isConfirmedFor(currency)) return Future.value(false);
     return _running ??= _runGuarded(currency).whenComplete(() {
       _running = null;
     });

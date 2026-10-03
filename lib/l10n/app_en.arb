@@ -2617,6 +2617,31 @@
     }
   },
 
+  "legacyCurrencyPromptTitle": "Older records have no currency",
+  "@legacyCurrencyPromptTitle": {
+    "description": "Title of the one-time question asking which currency records saved without a currency are in"
+  },
+
+  "legacyCurrencyPromptMessage": "Some records were saved before the app supported currencies. They are shown in {currency} now. If they were entered in {currency}, mark them so they stay in {currency} when you change your currency. If not, choose Not Now and change your currency in Settings first.",
+  "@legacyCurrencyPromptMessage": {
+    "description": "Body of the one-time question about records saved without a currency; currency is the current base currency code",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencyPromptConfirm": "Mark as {currency}",
+  "@legacyCurrencyPromptConfirm": {
+    "description": "Button that stamps records saved without a currency with the current base currency",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
   "loadingProgress": "Loading: {fetched} of {total}",
   "@loadingProgress": {
     "description": "Loading progress indicator with counts",

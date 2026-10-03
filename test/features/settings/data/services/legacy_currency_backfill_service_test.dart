@@ -183,7 +183,98 @@ void main() {
     },
   );
 
+  group('ownership of the currency (fresh install, shared device)', () {
+    test(
+      'runOnce stamps nothing until the user confirmed the currency for '
+      'this account: a fresh install only has the device default INR',
+      () async {
+        firestore.put('cashflows', 'a', legacyCashFlow());
+        final service = build();
+
+        expect(service.confirmedCurrency, isNull);
+        expect(await service.runOnce('INR'), isFalse);
+        expect(firestore.readOptions, isEmpty);
+        expect(
+          firestore.stored('cashflows', 'a')!.containsKey('currency'),
+          isFalse,
+        );
+        expect(service.isComplete, isFalse);
+      },
+    );
+
+    test('runOnce stamps nothing when the confirmed currency is not the one '
+        'passed', () async {
+      firestore.put('cashflows', 'a', legacyCashFlow());
+      final service = build();
+      await service.confirm('USD');
+
+      expect(await service.runOnce('INR'), isFalse);
+      expect(
+        firestore.stored('cashflows', 'a')!.containsKey('currency'),
+        isFalse,
+      );
+
+      expect(await service.runOnce('USD'), isTrue);
+      expect(firestore.stored('cashflows', 'a')!['currency'], 'USD');
+    });
+
+    test('a confirmation belongs to one user only', () async {
+      await build().confirm('USD');
+      final otherUser = LegacyCurrencyBackfillService(
+        firestore: FakeLegacyCurrencyFirestore(uid: 'uid-2'),
+        userId: 'uid-2',
+        prefs: prefs,
+      );
+      expect(build().isConfirmedFor('USD'), isTrue);
+      expect(otherUser.confirmedCurrency, isNull);
+      expect(otherUser.isConfirmedFor('USD'), isFalse);
+    });
+
+    test('hasUnstampedRecords reads the server and writes nothing', () async {
+      firestore
+        ..put('goals', 'g', {'name': 'x', 'currency': 'INR'})
+        ..put('cashflows', 'a', legacyCashFlow());
+      final service = build();
+
+      expect(await service.hasUnstampedRecords(), isTrue);
+      expect(
+        firestore.readOptions.every((o) => o?.source == Source.server),
+        isTrue,
+      );
+      expect(
+        firestore.stored('cashflows', 'a')!.containsKey('currency'),
+        isFalse,
+      );
+      expect(service.isComplete, isFalse);
+    });
+
+    test(
+      'hasUnstampedRecords records completion when there are none',
+      () async {
+        firestore.put('goals', 'g', {'name': 'x', 'currency': 'INR'});
+        final service = build();
+
+        expect(await service.hasUnstampedRecords(), isFalse);
+        expect(service.isComplete, isTrue);
+      },
+    );
+
+    test('hasUnstampedRecords throws offline and records nothing', () async {
+      firestore.readError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+      final service = build();
+
+      await expectLater(service.hasUnstampedRecords(), throwsA(anything));
+      expect(service.isComplete, isFalse);
+    });
+  });
+
   group('runOnce', () {
+    // runOnce only stamps a currency the user confirmed for this account.
+    setUp(() => build().confirm('INR'));
+
     test('records completion per user and does not rescan', () async {
       firestore.put('cashflows', 'a', legacyCashFlow());
       final service = build();

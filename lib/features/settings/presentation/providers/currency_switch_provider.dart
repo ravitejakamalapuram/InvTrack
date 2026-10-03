@@ -204,9 +204,10 @@ class CurrencySwitch extends _$CurrencySwitch {
       }
 
       // Step 0b: Stamp records saved without a currency with the CURRENT
-      // base currency before switching (A03-F1). Otherwise the repositories
-      // would label them with the new currency and their amounts would change
-      // currency without conversion. If this fails, the switch is not applied.
+      // base currency before switching, if the user confirmed it (A03-F1).
+      // Otherwise the repositories would label them with the new currency and
+      // their amounts would change currency without conversion. If this
+      // fails, the switch is not applied.
       await _stampLegacyRecords(currentCurrency);
 
       // Analytics: Track currency switch attempt
@@ -391,7 +392,11 @@ class CurrencySwitch extends _$CurrencySwitch {
 
   Future<void> _stampLegacyRecords(String currency) async {
     final backfill = ref.read(legacyCurrencyBackfillServiceProvider);
-    if (backfill == null) return;
+    // Stamp only a currency this user confirmed for their account. On a fresh
+    // install the device currency is the default INR, and on a shared device
+    // it is the previous user's; stamping that would be permanent. Without a
+    // confirmation the records keep following the base currency.
+    if (backfill == null || !backfill.isConfirmedFor(currency)) return;
     try {
       await backfill.backfill(currency);
     } catch (e) {

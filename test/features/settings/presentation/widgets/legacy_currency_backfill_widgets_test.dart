@@ -1,10 +1,12 @@
-// A03-F1: the one-time stamp runs after sign-in, and a base-currency change
+// A03-F1: the one-time stamp runs after sign-in, only with a currency the
+// user confirmed for their account, and a base-currency change
 // that could not stamp legacy records tells the user why it was not applied.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
@@ -60,9 +62,20 @@ void main() {
     late FakeLegacyCurrencyFirestore firestore;
     late SharedPreferences prefs;
 
-    setUp(() async {
-      SharedPreferences.setMockInitialValues({'currency': 'GBP'});
+    const title = 'Older records have no currency';
+    String message(String c) =>
+        'Some records were saved before the app supported currencies. They '
+        'are shown in $c now. If they were entered in $c, mark them so they '
+        'stay in $c when you change your currency. If not, choose Not Now '
+        'and change your currency in Settings first.';
+
+    Future<void> startWith(Map<String, Object> initialPrefs) async {
+      SharedPreferences.setMockInitialValues(initialPrefs);
       prefs = await SharedPreferences.getInstance();
+    }
+
+    setUp(() async {
+      await startWith({});
       firestore = FakeLegacyCurrencyFirestore()
         ..put('cashflows', 'cf-1', {'amount': 10.0})
         ..put('goals', 'g-1', {'name': 'x', 'currency': 'USD'});
@@ -73,8 +86,11 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         legacyCurrencyBackfillServiceProvider.overrideWithValue(service),
       ],
-      child: const MaterialApp(
-        home: LegacyCurrencyBackfillInitializer(child: SizedBox()),
+      child: MaterialApp(
+        navigatorKey: rootNavigatorKey,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const LegacyCurrencyBackfillInitializer(child: SizedBox()),
       ),
     );
 
@@ -84,43 +100,119 @@ void main() {
       prefs: prefs,
     );
 
-    testWidgets('stamps with the base currency shown today, once per user', (
+    bool cashFlowStamped() =>
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency');
+
+    testWidgets('fresh install: stamps nothing with the device default INR '
+        'and asks first', (tester) async {
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+
+      expect(cashFlowStamped(), isFalse);
+      expect(service().isComplete, isFalse);
+      expect(find.text(title), findsOneWidget);
+      expect(find.text(message('INR')), findsOneWidget);
+      expect(find.bySemanticsLabel(message('INR')), findsOneWidget);
+      expect(find.text('Mark as INR'), findsOneWidget);
+    });
+
+    testWidgets('Not Now stamps nothing and asks again on the next start', (
       tester,
     ) async {
       await tester.pumpWidget(app(service()));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Not Now'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+      expect(cashFlowStamped(), isFalse);
+      expect(service().confirmedCurrency, isNull);
+      expect(service().isComplete, isFalse);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+    });
+
+    testWidgets('confirming stamps the shown currency once', (tester) async {
+      await startWith({'currency': 'GBP'});
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+      expect(find.text(message('GBP')), findsOneWidget);
+
+      await tester.tap(find.text('Mark as GBP'));
+      await tester.pumpAndSettle();
 
       expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'GBP');
       expect(firestore.stored('goals', 'g-1')!['currency'], 'USD');
+      expect(service().confirmedCurrency, 'GBP');
       expect(service().isComplete, isTrue);
 
-      // A later start does not rescan.
+      // A later start neither asks nor rescans.
       final reads = firestore.readOptions.length;
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(app(service()));
       await tester.pumpAndSettle();
+      expect(find.text(title), findsNothing);
       expect(firestore.readOptions.length, reads);
     });
 
-    testWidgets('offline: keeps the read-time fallback and retries on the '
-        'next start', (tester) async {
+    testWidgets('a confirmed user is stamped without asking again', (
+      tester,
+    ) async {
+      await startWith({'currency': 'GBP'});
+      await service().confirm('GBP');
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+      expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'GBP');
+    });
+
+    testWidgets("shared device: another user's confirmation is not used", (
+      tester,
+    ) async {
+      await startWith({'currency': 'USD'});
+      await LegacyCurrencyBackfillService(
+        firestore: FakeLegacyCurrencyFirestore(uid: 'uid-a'),
+        userId: 'uid-a',
+        prefs: prefs,
+      ).confirm('USD');
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+
+      expect(cashFlowStamped(), isFalse);
+      expect(find.text(message('USD')), findsOneWidget);
+    });
+
+    testWidgets('no legacy records: never asks', (tester) async {
+      firestore = FakeLegacyCurrencyFirestore()
+        ..put('goals', 'g-1', {'name': 'x', 'currency': 'USD'});
+      await tester.pumpWidget(app(service()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+      expect(service().isComplete, isTrue);
+    });
+
+    testWidgets('offline: neither asks nor stamps, and retries on the next '
+        'start', (tester) async {
       firestore.readError = FirebaseException(
         plugin: 'cloud_firestore',
         code: 'unavailable',
       );
       await tester.pumpWidget(app(service()));
       await tester.pumpAndSettle();
-      expect(
-        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
-        isFalse,
-      );
+      expect(find.text(title), findsNothing);
+      expect(cashFlowStamped(), isFalse);
       expect(service().isComplete, isFalse);
 
       firestore.readError = null;
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(app(service()));
       await tester.pumpAndSettle();
-      expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'GBP');
+      expect(find.text(title), findsOneWidget);
     });
 
     testWidgets('signed out: does nothing', (tester) async {

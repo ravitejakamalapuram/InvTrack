@@ -71,6 +71,12 @@ void main() {
     firestore = FakeLegacyCurrencyFirestore()
       ..put('investments', 'fd', {'name': 'FD'})
       ..put('cashflows', 'cf-1', legacyFdInvest());
+    // This user confirmed that their older records are in INR.
+    await LegacyCurrencyBackfillService(
+      firestore: firestore,
+      userId: firestore.uid,
+      prefs: prefs,
+    ).confirm('INR');
 
     conversion = _MockConversion();
     when(() => conversion.clearCache()).thenAnswer((_) async {});
@@ -176,6 +182,60 @@ void main() {
       expect(status.unstampedLegacyCurrency, isNull);
       // Stamping had already succeeded and is kept: INR is still correct.
       expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'INR');
+    },
+  );
+
+  test('fresh install: the device default INR was never confirmed for this '
+      'account, so a USD user switching to USD gets no INR stamp', () async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+    container.dispose();
+    container = makeContainer();
+    expect(container.read(currencyCodeProvider), 'INR');
+
+    await container
+        .read(currencySwitchProvider.notifier)
+        .switchCurrencyImmediate('USD');
+
+    expect(container.read(currencySwitchProvider).isSuccess, isTrue);
+    expect(container.read(currencyCodeProvider), 'USD');
+    expect(firestore.readOptions, isEmpty);
+    expect(
+      firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+      isFalse,
+    );
+    // The record is relabelled, not converted: it reads as USD 10,00,000.
+    final mapped = FirestoreInvestmentRepository.cashFlowFromFirestore(
+      firestore.stored('cashflows', 'cf-1')!,
+      'cf-1',
+      baseCurrency: container.read(currencyCodeProvider),
+    );
+    expect(mapped.currency, 'USD');
+    expect(mapped.amount, 1000000.0);
+  });
+
+  test(
+    'a currency confirmed by another user on this device is not used',
+    () async {
+      SharedPreferences.setMockInitialValues({'currency': 'USD'});
+      prefs = await SharedPreferences.getInstance();
+      await LegacyCurrencyBackfillService(
+        firestore: FakeLegacyCurrencyFirestore(uid: 'uid-a'),
+        userId: 'uid-a',
+        prefs: prefs,
+      ).confirm('USD');
+      container.dispose();
+      container = makeContainer();
+
+      await container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('EUR');
+
+      expect(container.read(currencySwitchProvider).isSuccess, isTrue);
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
     },
   );
 
