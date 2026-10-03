@@ -1,0 +1,72 @@
+name: nightly
+
+# Tests that PR CI skips (A63). release.yaml runs `flutter test --exclude-tags=golden`, so the golden
+# tests in test/golden and the emulator integration tests in integration_test only run here: every
+# night and on demand. A failure does not block auto-release; GitHub emails it only to whoever last
+# changed the cron line, so check the Actions tab.
+on:
+  schedule:
+    - cron: '37 1 * * *' # 01:37 UTC = 07:07 IST
+  workflow_dispatch: {}
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  goldens:
+    name: Golden tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.4' # keep in step with release.yaml
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get && flutter gen-l10n
+      - name: Golden tests
+        run: flutter test --tags golden test/golden
+
+  integration:
+    name: Integration tests (Android emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.4' # keep in step with release.yaml
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get && flutter gen-l10n
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      # Critical flows: app start and tabs, add an investment, add cash flows, and the export/import
+      # screen. Each line runs on its own; the first failure fails the job.
+      - name: Integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            flutter test integration_test/app_test.dart -d emulator-5554
+            flutter test integration_test/flows/investment_form_flow_test.dart -d emulator-5554
+            flutter test integration_test/flows/cash_flow_crud_test.dart -d emulator-5554
+            flutter test integration_test/flows/data_management_flow_test.dart -d emulator-5554
