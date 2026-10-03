@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +44,7 @@ ProviderContainer _container({
   Stream<List<GoalEntity>> Function()? goals,
   required Stream<List<InvestmentEntity>> Function() investments,
   required Stream<List<CashFlowEntity>> Function() cashFlows,
+  bool productionRetry = false,
 }) {
   final container = ProviderContainer(
     overrides: [
@@ -58,7 +60,8 @@ ProviderContainer _container({
       // what a swallowed loading or error state used to look like.
       batchCurrencyConverterProvider.overrideWithValue(null),
     ],
-    retry: (_, _) => null,
+    // Production (main.dart) keeps Riverpod's default retry policy.
+    retry: productionRetry ? null : (_, _) => null,
   );
   addTearDown(container.dispose);
   return container;
@@ -141,6 +144,81 @@ void main() {
 
         expect(state.hasError, isTrue);
         expect(state.hasValue, isFalse);
+      });
+    });
+  }
+
+  // GoalCard, the goal details screen and GoalsDashboardCard read these
+  // providers with `.when`, which takes the loading branch for an error that
+  // Riverpod is retrying. Under the production retry policy a load failure
+  // must still reach the error branch instead of spinning indefinitely.
+  final shownWithWhen = <String, ProviderListenable<AsyncValue<Object?>>>{
+    ...providers,
+    'multiCurrencyGoalsSummaryProvider': multiCurrencyGoalsSummaryProvider,
+  };
+  for (final entry in shownWithWhen.entries) {
+    group('${entry.key} under the default retry policy', () {
+      for (final failGoal in [false, true]) {
+        final source = failGoal ? 'the goal' : 'cash flows';
+        testWidgets(
+          'shows the error, not loading, when loading $source fails',
+          (tester) async {
+            final container = _container(
+              productionRetry: true,
+              goal: failGoal ? () => Stream.error(_loadError) : null,
+              goals: failGoal ? () => Stream.error(_loadError) : null,
+              investments: () => Stream.value([_investment]),
+              cashFlows: failGoal
+                  ? () => Stream.value(const [])
+                  : () => Stream.error(_loadError),
+            );
+            final sub = container.listen(entry.value, (_, _) {});
+            await tester.pump();
+
+            // Sample once a second for two minutes, past every retry.
+            final seen = <String>{};
+            for (var second = 0; second < 120; second++) {
+              await tester.pump(const Duration(seconds: 1));
+              seen.add(
+                sub.read().when(
+                  data: (_) => 'data',
+                  loading: () => 'loading',
+                  error: (_, _) => 'error',
+                ),
+              );
+            }
+
+            expect(seen, {'error'});
+            // Dispose now so Riverpod cancels its pending retry timers.
+            container.dispose();
+            await tester.pumpWidget(const SizedBox());
+          },
+        );
+      }
+
+      testWidgets('recovers once cash flows load after an error', (
+        tester,
+      ) async {
+        // Broadcast: Riverpod's retries listen to the stream again.
+        final cashFlows = StreamController<List<CashFlowEntity>>.broadcast();
+        addTearDown(() => unawaited(cashFlows.close()));
+        final container = _container(
+          productionRetry: true,
+          investments: () => Stream.value([_investment]),
+          cashFlows: () => cashFlows.stream,
+        );
+        final sub = container.listen(entry.value, (_, _) {});
+        cashFlows.addError(_loadError);
+        await tester.pump(const Duration(seconds: 1));
+        expect(sub.read().hasError, isTrue);
+
+        cashFlows.add(const []);
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(sub.read().hasError, isFalse);
+        expect(sub.read().hasValue, isTrue);
+        container.dispose();
+        await tester.pumpWidget(const SizedBox());
       });
     });
   }

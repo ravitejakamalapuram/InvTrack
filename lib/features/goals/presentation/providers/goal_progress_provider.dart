@@ -556,6 +556,14 @@ class GoalsSummary {
   ];
 }
 
+/// Retry policy for the goal progress providers below: never retry them.
+///
+/// They only compute from their sources, which Riverpod retries on its own
+/// and which rebuild them when they change. Retrying them as well would keep
+/// a load error in an `AsyncLoading` that `.when` shows as loading, so goal
+/// screens would spin indefinitely instead of showing the error.
+Duration? _noRetry(int retryCount, Object error) => null;
+
 /// Multi-currency provider for a single goal's progress
 ///
 /// Converts all cash flows to base currency before calculating progress.
@@ -608,7 +616,7 @@ final multiCurrencyGoalProgressProvider =
         batchConverter: batchConverter,
         baseCurrency: baseCurrency,
       );
-    });
+    }, retry: _noRetry);
 
 /// Multi-currency provider for all goals with their progress
 ///
@@ -667,7 +675,7 @@ final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>
   );
 
   return progressList;
-});
+}, retry: _noRetry);
 
 /// Multi-currency provider for goals summary (for dashboard card)
 ///
@@ -747,4 +755,4 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
     activeGoals: activeGoalsList, // Pass all active goals for carousel
     completedGoals: recentCompletedGoals, // Pass recent completed goals
   );
-});
+}, retry: _noRetry);
