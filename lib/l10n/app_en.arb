@@ -2574,7 +2574,7 @@
     "description": "FAQ question about guest data after sign-in"
   },
 
-  "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is linked to it automatically. If your Google account already exists, InvTrack backs up your guest data and adds it to that account for you, so there is nothing to import by hand. Some investment details, such as maturity dates, interest rates, payout frequency and notes, cannot be moved yet, and InvTrack tells you when any were left behind. If some data cannot be added, a backup is kept on this device until you delete it in Settings > Data & Account.",
+  "whatHappensToGuestDataAnswer": "If your Google account is new, your guest data is linked to it automatically. If your Google account already exists, InvTrack backs up your guest data and adds it to that account for you, so there is nothing to import by hand. Some investment details, such as maturity dates, interest rates, payout frequency and notes, cannot be moved yet and are not in the backup, so InvTrack tells you before you sign in if any would be lost. If some investments, cash flows or goals cannot be added, a backup of them is kept on this device until you delete it in Settings > Data & Account.",
   "@whatHappensToGuestDataAnswer": {
     "description": "FAQ answer about guest data after sign-in"
   },
@@ -4318,9 +4318,24 @@
     "description": "Title shown when the guest data could not be imported into the Google account after sign-in"
   },
 
-  "guestMergeImportFailedMessage": "You are now signed in with Google, but not all of your guest data could be added to that account, for example an investment or goal whose name it already uses. A backup of your guest data is kept on this device until you delete it in Settings > Data & Account. Share it to save it somewhere safe. To add the rest, rename those items in your Google account and import the backup from Settings > Data & Account.",
+  "guestMergeImportFailedMessage": "You are now signed in with Google, but not all of your guest data could be added to that account, for example an investment or goal whose name it already uses. A backup of your guest investments, cash flows and goals is kept on this device until you delete it in Settings > Data & Account. Share it to save it somewhere safe. To add the rest, rename those items in your Google account and import the backup from Settings > Data & Account.",
   "@guestMergeImportFailedMessage": {
     "description": "Explains that the guest backup must be saved by the user because the automatic import failed or skipped some records, and that a copy is kept on the device"
+  },
+
+  "guestMergeDetailsWillNotMoveTitle": "Some details will not move",
+  "@guestMergeDetailsWillNotMoveTitle": {
+    "description": "Title of the warning shown before signing in to an existing Google account when some guest investment details cannot be moved"
+  },
+
+  "guestMergeDetailsWillNotMoveMessage": "Your investments, cash flows and goals will be added to your Google account, but some investment details cannot be moved yet: maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts. They are not in the backup either, so they will be lost. Reminders for those investments stay off until you add the details again. To keep them, cancel and write them down first.",
+  "@guestMergeDetailsWillNotMoveMessage": {
+    "description": "Warning shown before the irreversible sign-in: which guest details the merge cannot move and that the backup does not hold them either"
+  },
+
+  "guestMergeSignInWithoutDetails": "Sign in without them",
+  "@guestMergeSignInWithoutDetails": {
+    "description": "Button that goes ahead with the Google sign-in and merge although some guest investment details will be lost"
   },
 
   "guestMergeDetailsNotMovedTitle": "Some details were not moved",
@@ -4328,9 +4343,9 @@
     "description": "Title shown when every guest record was added to the Google account but some investment details could not be moved"
   },
 
-  "guestMergeDetailsNotMovedMessage": "Your investments, cash flows and goals are now in your Google account, but some investment details could not be moved: maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts. Reminders for those investments stay off until you add the details again. A backup of your guest data is kept on this device until you delete it in Settings > Data & Account.",
+  "guestMergeDetailsNotMovedMessage": "Your investments, cash flows and goals are now in your Google account. Maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts were not moved. Reminders for those investments stay off until you add the details again.",
   "@guestMergeDetailsNotMovedMessage": {
-    "description": "Explains which guest data the automatic merge could not move into the Google account, and that a backup is kept on the device"
+    "description": "Explains which guest data the automatic merge did not move into the Google account, after the user agreed to it"
   },
 
   "savedGuestBackupTitle": "Saved guest backup",
@@ -4338,7 +4353,7 @@
     "description": "Settings tile title for a guest data backup kept on the device after signing in to Google"
   },
 
-  "savedGuestBackupSubtitle": "A copy of your guest data from before you signed in, kept on this device. Share it to keep it safe.",
+  "savedGuestBackupSubtitle": "Your guest investments, cash flows and goals from before you signed in, kept on this device because not all of them could be added to your Google account. Share it to keep it safe.",
   "@savedGuestBackupSubtitle": {
     "description": "Settings tile subtitle for the guest data backup kept on the device"
   },

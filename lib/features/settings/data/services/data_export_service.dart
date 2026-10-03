@@ -56,8 +56,9 @@ class ZipExport {
   /// [investmentHasDetailsNotInExport]); an import recreates them without.
   final int investmentsWithDetailsNotInExport;
 
-  /// Expected cash flows, which the ZIP does not carry at all.
-  final int expectedCashFlows;
+  /// Expected cash flows, which the ZIP does not carry at all; null if they
+  /// could not be counted.
+  final int? expectedCashFlows;
 
   /// Whether an import of [bytes] can recreate everything counted here.
   bool get carriesEverything =>
@@ -280,11 +281,21 @@ class DataExportService {
     }
 
     // Not in the ZIP; counted so a caller can tell the user what an import
-    // of it leaves behind.
-    final expectedCashFlows =
-        (await _expectedCashFlowRepository?.getAllExpectedCashFlows())
-            ?.length ??
-        0;
+    // of it leaves behind. A failed count must not fail the export itself;
+    // it is reported as unknown (null).
+    int? expectedCashFlows;
+    try {
+      expectedCashFlows =
+          (await _expectedCashFlowRepository?.getAllExpectedCashFlows())
+              ?.length ??
+          0;
+    } catch (e, st) {
+      LoggerService.error(
+        'Could not count expected cash flows for export',
+        error: e,
+        stackTrace: st,
+      );
+    }
 
     // 5. Encode to ZIP
     final zipData = ZipEncoder().encode(archive);

@@ -7,24 +7,31 @@ import 'package:path/path.dart' as path;
 /// guest's data survives a closed dialog, a timed-out snackbar and process
 /// death until the user saves or deletes it.
 ///
+/// Every backup belongs to one account (its owner's user id). A backup holds
+/// that person's investments and amounts, so it is listed, shared and
+/// deleted only for its owner, never for another account on the same device.
+///
 /// Android Auto Backup is off for this app, so these files stay on the
 /// device and are not reachable by other apps.
 abstract class GuestBackupStore {
-  /// Writes [bytes] as a new backup and returns its file path.
-  Future<String> save(Uint8List bytes);
+  /// Writes [bytes] as a new backup owned by [ownerId] and returns its path.
+  Future<String> save(Uint8List bytes, {required String ownerId});
 
-  /// Paths of every backup kept on this device, oldest first.
-  Future<List<String>> list();
+  /// Hands the backup at [filePath] to [toOwnerId] and returns its new path.
+  Future<String> transfer(String filePath, {required String toOwnerId});
+
+  /// Paths of every backup owned by [ownerId], oldest first.
+  Future<List<String>> list({required String ownerId});
 
   /// Deletes the backup at [filePath], if it still exists.
   Future<void> delete(String filePath);
 
-  /// Deletes every backup kept on this device.
-  Future<void> deleteAll();
+  /// Deletes every backup owned by [ownerId].
+  Future<void> deleteAll({required String ownerId});
 }
 
 /// [GuestBackupStore] that writes ZIP files under
-/// `<baseDirectory>/guest_backups`.
+/// `<baseDirectory>/guest_backups/<ownerId>`.
 class FileGuestBackupStore implements GuestBackupStore {
   FileGuestBackupStore(this._baseDirectory);
 
@@ -34,12 +41,23 @@ class FileGuestBackupStore implements GuestBackupStore {
 
   static const _folder = 'guest_backups';
 
-  Future<Directory> get _directory async =>
+  /// Firebase user ids are letters and digits; anything that could name
+  /// another folder is refused.
+  static final _validOwnerId = RegExp(r'^[A-Za-z0-9_-]+$');
+
+  Future<Directory> get _root async =>
       Directory(path.join((await _baseDirectory()).path, _folder));
 
+  Future<Directory> _ownerDirectory(String ownerId) async {
+    if (!_validOwnerId.hasMatch(ownerId)) {
+      throw ArgumentError.value(ownerId, 'ownerId', 'Not a valid user id');
+    }
+    return Directory(path.join((await _root).path, ownerId));
+  }
+
   @override
-  Future<String> save(Uint8List bytes) async {
-    final directory = await _directory;
+  Future<String> save(Uint8List bytes, {required String ownerId}) async {
+    final directory = await _ownerDirectory(ownerId);
     await directory.create(recursive: true);
     final stamp = DateTime.now().microsecondsSinceEpoch;
     final file = File(
@@ -54,8 +72,21 @@ class FileGuestBackupStore implements GuestBackupStore {
   }
 
   @override
-  Future<List<String>> list() async {
-    final directory = await _directory;
+  Future<String> transfer(String filePath, {required String toOwnerId}) async {
+    final directory = await _ownerDirectory(toOwnerId);
+    if (!path.isWithin((await _root).path, filePath)) {
+      throw ArgumentError.value(filePath, 'filePath', 'Not a guest backup');
+    }
+    await directory.create(recursive: true);
+    final moved = await File(
+      filePath,
+    ).rename(path.join(directory.path, path.basename(filePath)));
+    return moved.path;
+  }
+
+  @override
+  Future<List<String>> list({required String ownerId}) async {
+    final directory = await _ownerDirectory(ownerId);
     if (!await directory.exists()) return const [];
     final paths = await directory
         .list()
@@ -67,16 +98,15 @@ class FileGuestBackupStore implements GuestBackupStore {
 
   @override
   Future<void> delete(String filePath) async {
-    final directory = await _directory;
     // Only ever delete files this store wrote.
-    if (!path.isWithin(directory.path, filePath)) return;
+    if (!path.isWithin((await _root).path, filePath)) return;
     final file = File(filePath);
     if (await file.exists()) await file.delete();
   }
 
   @override
-  Future<void> deleteAll() async {
-    final directory = await _directory;
+  Future<void> deleteAll({required String ownerId}) async {
+    final directory = await _ownerDirectory(ownerId);
     if (await directory.exists()) await directory.delete(recursive: true);
   }
 }

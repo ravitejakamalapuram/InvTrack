@@ -44,9 +44,10 @@ void main() {
       'up your guest data and adds it to that account for you, so there is '
       'nothing to import by hand. Some investment details, such as maturity '
       'dates, interest rates, payout frequency and notes, cannot be moved '
-      'yet, and InvTrack tells you when any were left behind. If some data '
-      'cannot be added, a backup is kept on this device until you delete it '
-      'in Settings > Data & Account.',
+      'yet and are not in the backup, so InvTrack tells you before you sign '
+      'in if any would be lost. If some investments, cash flows or goals '
+      'cannot be added, a backup of them is kept on this device until you '
+      'delete it in Settings > Data & Account.',
     );
   });
 

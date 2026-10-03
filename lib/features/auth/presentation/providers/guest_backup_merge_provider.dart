@@ -49,15 +49,15 @@ class GuestMergeImportFailed extends GuestMergeOutcome {
 /// Signed in to Google and every guest record was imported, but some guest
 /// data was left behind because the backup cannot carry it: investment
 /// details such as maturity date, rate, payout frequency and notes (and the
-/// reminders that depend on them), or expected cash flows.
+/// reminders that depend on them), or expected cash flows. The guest agreed
+/// to this before the sign-in.
 ///
-/// This is not a full move and must not be reported as one. The backup at
-/// [backupPath] is kept in [GuestBackupStore] and offered as well.
+/// This is not a full move and must not be reported as one. The backup holds
+/// nothing the Google account lacks, so it is not kept.
 class GuestMergeDetailsNotMoved extends GuestMergeOutcome {
-  const GuestMergeDetailsNotMoved(this.result, this.backupPath);
+  const GuestMergeDetailsNotMoved(this.result);
 
   final ZipImportResult result;
-  final String backupPath;
 }
 
 /// Moves a guest's data into a Google account that already exists, used when
@@ -83,18 +83,34 @@ class GuestBackupMergeService {
   /// Backs up the guest's data to app-private storage, signs in with Google
   /// and imports the backup into that account with [ImportStrategy.merge].
   ///
-  /// The backup file is deleted only after a full merge, or when the user
-  /// cancels the Google sign-in. Otherwise it stays on the device, because
-  /// the guest account cannot be reached after the sign-in.
+  /// The backup cannot carry some investment details and expected cash flows
+  /// (see [ZipExport.carriesEverything]), and they cannot be reached once
+  /// the guest session ends. If the guest has any, [confirmDetailsNotMoved]
+  /// is asked first, before anything is saved or signed in; if it returns
+  /// false the merge stops with [GuestMergeCancelled].
   ///
-  /// Throws if the backup cannot be created or saved; the guest is then still
-  /// signed in and nothing has changed.
-  Future<GuestMergeOutcome> backupAndSignIn() async {
+  /// The backup belongs to the guest until the sign-in and to the Google
+  /// account after it, so no other account on the device can see it. It is
+  /// deleted after a merge that added every record, or when the sign-in did
+  /// not happen. Otherwise it stays on the device, because the guest account
+  /// cannot be reached after the sign-in.
+  ///
+  /// Throws if the backup cannot be created or saved, or the sign-in fails;
+  /// the guest is then still signed in and nothing has changed.
+  Future<GuestMergeOutcome> backupAndSignIn({
+    required Future<bool> Function(ZipExport export) confirmDetailsNotMoved,
+  }) async {
     final exportService = _ref.read(dataExportServiceProvider);
-    if (exportService == null) {
+    final authRepository = _ref.read(authRepositoryProvider);
+    final guestId = authRepository.currentUser?.id;
+    if (exportService == null || guestId == null) {
       throw StateError('No signed-in guest to back up');
     }
     final export = await exportService.exportAsZipBytes();
+    if (!export.carriesEverything && !await confirmDetailsNotMoved(export)) {
+      LoggerService.info('Guest backup merge cancelled: details not movable');
+      return const GuestMergeCancelled();
+    }
     final backup = export.bytes;
     // The guest's base currency, read before the session switch, applies to
     // backup rows that carry no currency of their own.
@@ -103,7 +119,7 @@ class GuestBackupMergeService {
     // On disk before the guest session ends, so the only copy of the guest
     // data survives a closed prompt, a timed-out snackbar and process death.
     final store = _ref.read(guestBackupStoreProvider);
-    final backupPath = await store.save(backup);
+    var backupPath = await store.save(backup, ownerId: guestId);
     _ref.invalidate(savedGuestBackupsProvider);
 
     final analytics = _ref.read(analyticsServiceProvider);
@@ -112,15 +128,27 @@ class GuestBackupMergeService {
       parameters: {'trigger': 'account_linking_failure'},
     );
 
-    final googleUser = await _ref
-        .read(authRepositoryProvider)
-        .signInWithGoogle();
+    final UserEntity? googleUser;
+    try {
+      googleUser = await authRepository.signInWithGoogle();
+    } catch (_) {
+      final signedIn = authRepository.currentUser?.id;
+      if (signedIn == guestId) {
+        // Nothing changed, so the backup is redundant; a retry makes a new one.
+        await _deleteBackup(backupPath);
+      } else if (signedIn != null) {
+        await _transferBackup(backupPath, signedIn);
+      }
+      rethrow;
+    }
     if (googleUser == null) {
       LoggerService.info('Guest backup merge cancelled at Google sign-in');
       // The guest is still signed in with all of their data.
       await _deleteBackup(backupPath);
       return const GuestMergeCancelled();
     }
+    // From here only the Google account may see the backup.
+    backupPath = await _transferBackup(backupPath, googleUser.id);
 
     await analytics.logEvent(
       name: 'account_link_failure',
@@ -163,7 +191,9 @@ class GuestBackupMergeService {
             'expectedCashFlows': export.expectedCashFlows,
           },
         );
-        return GuestMergeDetailsNotMoved(result, backupPath);
+        // Every record the backup holds is now in the Google account.
+        await _deleteBackup(backupPath);
+        return GuestMergeDetailsNotMoved(result);
       }
       LoggerService.info('Guest backup merged into Google account');
       await _deleteBackup(backupPath);
@@ -186,11 +216,32 @@ class GuestBackupMergeService {
     } catch (e, st) {
       LoggerService.error(
         'Could not delete redundant guest backup',
-        error: e,
+        // The type only: file errors carry the backup's path.
+        metadata: {'errorType': e.runtimeType.toString()},
         stackTrace: st,
       );
     }
     _ref.invalidate(savedGuestBackupsProvider);
+  }
+
+  /// Hands the backup to [ownerId] and returns its new path. If that fails
+  /// the backup stays where it is and can still be shared from the prompt.
+  Future<String> _transferBackup(String backupPath, String ownerId) async {
+    try {
+      return await _ref
+          .read(guestBackupStoreProvider)
+          .transfer(backupPath, toOwnerId: ownerId);
+    } catch (e, st) {
+      LoggerService.error(
+        'Could not hand the guest backup to the signed-in account',
+        // The type only: file errors carry the backup's path.
+        metadata: {'errorType': e.runtimeType.toString()},
+        stackTrace: st,
+      );
+      return backupPath;
+    } finally {
+      _ref.invalidate(savedGuestBackupsProvider);
+    }
   }
 
   /// Whether [result] added every record of [export]. Merge reports skipped
@@ -206,22 +257,32 @@ class GuestBackupMergeService {
       result.documentsImported == export.documents &&
       (!export.hasFireSettings || result.fireSettingsImported);
 
-  /// Opens the share sheet for the backup of a [GuestMergeImportFailed] or
-  /// [GuestMergeDetailsNotMoved]. Sharing does not delete it: only the user
-  /// can say they have saved it ([deleteSavedBackups]).
+  /// Opens the share sheet for the backup of a [GuestMergeImportFailed].
+  /// Sharing does not delete it: only the user can say they have saved it
+  /// ([deleteSavedBackups]).
   Future<void> shareBackup(String backupPath) => _share([backupPath]);
 
-  /// Opens the share sheet for every guest backup kept on this device.
+  /// Opens the share sheet for every guest backup the signed-in account owns.
   Future<void> shareSavedBackups() async {
-    final paths = await _ref.read(guestBackupStoreProvider).list();
+    final paths = await _ref
+        .read(guestBackupStoreProvider)
+        .list(ownerId: _signedInUserId());
     if (paths.isNotEmpty) await _share(paths);
   }
 
-  /// Deletes every guest backup kept on this device, after the user
+  /// Deletes every guest backup the signed-in account owns, after the user
   /// confirmed it.
   Future<void> deleteSavedBackups() async {
-    await _ref.read(guestBackupStoreProvider).deleteAll();
+    await _ref
+        .read(guestBackupStoreProvider)
+        .deleteAll(ownerId: _signedInUserId());
     _ref.invalidate(savedGuestBackupsProvider);
+  }
+
+  String _signedInUserId() {
+    final userId = _ref.read(authStateProvider).value?.id;
+    if (userId == null) throw StateError('No signed-in user');
+    return userId;
   }
 
   Future<void> _share(List<String> paths) async {
@@ -265,7 +326,13 @@ final guestBackupStoreProvider = Provider<GuestBackupStore>(
   (ref) => FileGuestBackupStore(getApplicationSupportDirectory),
 );
 
-/// Paths of the guest backups kept on this device, for Settings.
-final savedGuestBackupsProvider = FutureProvider.autoDispose<List<String>>(
-  (ref) => ref.watch(guestBackupStoreProvider).list(),
-);
+/// Paths of the guest backups the signed-in account owns on this device, for
+/// Settings. Empty when no one is signed in; another account's backups are
+/// never listed.
+final savedGuestBackupsProvider = FutureProvider.autoDispose<List<String>>((
+  ref,
+) async {
+  final userId = ref.watch(authStateProvider.select((s) => s.value?.id));
+  if (userId == null) return const [];
+  return ref.watch(guestBackupStoreProvider).list(ownerId: userId);
+});

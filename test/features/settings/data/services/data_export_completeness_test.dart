@@ -139,4 +139,32 @@ void main() {
     expect(export.expectedCashFlows, 3);
     expect(export.carriesEverything, isFalse);
   });
+
+  test('if expected cash flows cannot be counted, the export still works and '
+      'does not claim to carry everything', () async {
+    final investments = FakeInvestmentRepository();
+    await investments.createInvestment(plain);
+    final documents = _MockDocumentRepository();
+    when(
+      () => documents.getDocumentsByInvestment(any()),
+    ).thenAnswer((_) async => []);
+    final expected = _MockExpectedCashFlowRepository();
+    when(
+      () => expected.getAllExpectedCashFlows(),
+    ).thenThrow(Exception('Firestore unavailable'));
+
+    final export = await DataExportService(
+      investmentRepository: investments,
+      goalRepository: FakeGoalRepository(),
+      documentRepository: documents,
+      documentStorageService: DocumentStorageService(userId: 'u'),
+      expectedCashFlowRepository: expected,
+      performanceService: _PassThroughPerformanceService(),
+    ).exportAsZipBytes();
+
+    expect(export.investments, 1);
+    expect(export.investmentsWithDetailsNotInExport, 0);
+    expect(export.expectedCashFlows, isNull);
+    expect(export.carriesEverything, isFalse);
+  });
 }

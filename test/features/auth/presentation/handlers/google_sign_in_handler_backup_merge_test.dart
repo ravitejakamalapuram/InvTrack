@@ -43,39 +43,72 @@ const _completeImport = ZipImportResult(
 const _importFailedMessage =
     'You are now signed in with Google, but not all of your guest data could '
     'be added to that account, for example an investment or goal whose name '
-    'it already uses. A backup of your guest data is kept on this device '
-    'until you delete it in Settings > Data & Account. Share it to save it '
+    'it already uses. A backup of your guest investments, cash flows and '
+    'goals is kept on this device until you delete it in Settings > Data & '
+    'Account. Share it to save it '
     'somewhere safe. To add the rest, rename those items in your Google '
     'account and import the backup from Settings > Data & Account.';
 
+const _detailsWillNotMoveMessage =
+    'Your investments, cash flows and goals will be added to your Google '
+    'account, but some investment details cannot be moved yet: maturity '
+    'dates, interest rates, payout frequency, notes and similar fields, and '
+    'expected payouts. They are not in the backup either, so they will be '
+    'lost. Reminders for those investments stay off until you add the '
+    'details again. To keep them, cancel and write them down first.';
+
 const _detailsNotMovedMessage =
-    'Your investments, cash flows and goals are now in your Google account, '
-    'but some investment details could not be moved: maturity dates, '
-    'interest rates, payout frequency, notes and similar fields, and '
-    'expected payouts. Reminders for those investments stay off until you '
-    'add the details again. A backup of your guest data is kept on this '
-    'device until you delete it in Settings > Data & Account.';
+    'Your investments, cash flows and goals are now in your Google account. '
+    'Maturity dates, interest rates, payout frequency, notes and similar '
+    'fields, and expected payouts were not moved. Reminders for those '
+    'investments stay off until you add the details again.';
 
 /// In-memory stand-in for the app-private backup folder.
 class _FakeBackupStore implements GuestBackupStore {
   final files = <String, Uint8List>{};
+
+  /// Owner user id of each file in [files].
+  final owners = <String, String>{};
   var _next = 0;
 
+  String _path(String ownerId, String name) =>
+      '/data/app/files/guest_backups/$ownerId/$name';
+
   @override
-  Future<String> save(Uint8List bytes) async {
-    final path = '/data/app/files/guest_backups/backup_${_next++}.zip';
+  Future<String> save(Uint8List bytes, {required String ownerId}) async {
+    final path = _path(ownerId, 'backup_${_next++}.zip');
     files[path] = bytes;
+    owners[path] = ownerId;
     return path;
   }
 
   @override
-  Future<List<String>> list() async => files.keys.toList();
+  Future<String> transfer(String filePath, {required String toOwnerId}) async {
+    final moved = _path(toOwnerId, filePath.split('/').last);
+    files[moved] = files.remove(filePath)!;
+    owners.remove(filePath);
+    owners[moved] = toOwnerId;
+    return moved;
+  }
 
   @override
-  Future<void> delete(String filePath) async => files.remove(filePath);
+  Future<List<String>> list({required String ownerId}) async => [
+    for (final MapEntry(:key, :value) in owners.entries)
+      if (value == ownerId) key,
+  ];
 
   @override
-  Future<void> deleteAll() async => files.clear();
+  Future<void> delete(String filePath) async {
+    files.remove(filePath);
+    owners.remove(filePath);
+  }
+
+  @override
+  Future<void> deleteAll({required String ownerId}) async {
+    for (final path in await list(ownerId: ownerId)) {
+      await delete(path);
+    }
+  }
 }
 
 class _FakeExportService extends Fake implements DataExportService {
@@ -275,8 +308,10 @@ void main() {
     'account automatically, without an "Import now" route',
     (tester) async {
       Map<String, Uint8List>? savedAtSignIn;
+      Map<String, String>? ownersAtSignIn;
       authRepo.onSignInWithGoogle = () async {
         savedAtSignIn = Map.of(backupStore.files);
+        ownersAtSignIn = Map.of(backupStore.owners);
         authRepo.emit(googleUser); // Firebase reports the new session
         return googleUser;
       };
@@ -287,6 +322,11 @@ void main() {
         savedAtSignIn?.values,
         [_backupBytes],
         reason: 'the backup must be on disk before the guest session ends',
+      );
+      expect(
+        ownersAtSignIn?.values,
+        [guestUser.id],
+        reason: 'until the sign-in, the backup belongs to the guest',
       );
       expect(
         backupStore.files,
@@ -343,6 +383,13 @@ void main() {
       expect(find.text(_importFailedMessage), findsOneWidget);
       expect(exportService.sharedFiles, isEmpty);
       expect(backupStore.files.values, [_backupBytes]);
+      expect(
+        backupStore.owners.values,
+        [googleUser.id],
+        reason:
+            'the kept backup belongs to the Google account it was meant '
+            'for, so no other account on the device can see it',
+      );
 
       await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
       await tester.pumpAndSettle();
@@ -506,8 +553,9 @@ void main() {
   );
 
   // The backup ZIP carries only name, type, status and cash flows per
-  // investment, and no expected cash flows. When every record is added but
-  // such details are left behind, the merge must say so, not report success.
+  // investment, and no expected cash flows. Those details cannot be recovered
+  // once the guest session ends, so the guest must be told before signing in
+  // and be able to stop.
   final detailsLeftBehind = <String, ZipExport>{
     'an investment has details the backup cannot carry': ZipExport(
       bytes: _backupBytes,
@@ -534,8 +582,8 @@ void main() {
   for (final MapEntry(key: reason, value: export)
       in detailsLeftBehind.entries) {
     testWidgets(
-      'when $reason, a full record import is reported as partial and the '
-      'backup is kept and offered',
+      'when $reason, the guest is warned before signing in and cancelling '
+      'changes nothing',
       (tester) async {
         exportService.export = export;
         authRepo.onSignInWithGoogle = () async {
@@ -545,6 +593,44 @@ void main() {
 
         await pumpAndStartBackupMerge(tester);
 
+        expect(find.text('Some details will not move'), findsOneWidget);
+        expect(find.text(_detailsWillNotMoveMessage), findsOneWidget);
+        expect(
+          authRepo.signInWithGoogleCalls,
+          0,
+          reason: 'the warning must come before the irreversible sign-in',
+        );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(authRepo.signInWithGoogleCalls, 0);
+        expect(authRepo.currentUser, guestUser);
+        expect(backupStore.files, isEmpty);
+        expect(importersByUid.values.expand((s) => s.calls), isEmpty);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(handlerResult, isFalse);
+      },
+    );
+
+    testWidgets(
+      'when $reason and the guest goes ahead, the merge is reported as '
+      'partial without implying the backup holds the lost details',
+      (tester) async {
+        exportService.export = export;
+        authRepo.onSignInWithGoogle = () async {
+          authRepo.emit(googleUser);
+          return googleUser;
+        };
+
+        await pumpAndStartBackupMerge(tester);
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Sign in without them'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(authRepo.signInWithGoogleCalls, 1);
         expect(importersByUid[googleUser.id]?.calls, hasLength(1));
         expect(
           find.text('Your guest data has been added to your Google account.'),
@@ -552,15 +638,39 @@ void main() {
         );
         expect(find.text('Some details were not moved'), findsOneWidget);
         expect(find.text(_detailsNotMovedMessage), findsOneWidget);
-        expect(backupStore.files.values, [_backupBytes]);
+        expect(find.text('Share backup'), findsNothing);
+        expect(
+          backupStore.files,
+          isEmpty,
+          reason:
+              'every record the backup holds is in the Google account, so '
+              'keeping it would only leave financial data on the device',
+        );
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Share backup'));
+        await tester.tap(find.widgetWithText(TextButton, 'OK'));
         await tester.pumpAndSettle();
 
-        expect(exportService.sharedFiles, [backupStore.files.keys.toList()]);
-        expect(backupStore.files.values, [_backupBytes]);
+        expect(find.text('Some details were not moved'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(handlerResult, isFalse);
       },
     );
   }
+
+  testWidgets(
+    'if the Google sign-in throws while the guest is still signed in, the '
+    'backup is removed so retries do not pile up copies',
+    (tester) async {
+      authRepo.onSignInWithGoogle = () async =>
+          throw Exception('network error');
+
+      await pumpAndStartBackupMerge(tester);
+
+      expect(authRepo.signInWithGoogleCalls, 1);
+      expect(authRepo.currentUser, guestUser);
+      expect(backupStore.files, isEmpty);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(handlerResult, isFalse);
+    },
+  );
 }
