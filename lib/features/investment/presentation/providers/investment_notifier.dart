@@ -154,13 +154,22 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
 
-      final updated = existing.copyWith(
+      // Built explicitly, not with copyWith: the edit form sends every
+      // optional field, and null means the user cleared it. copyWith would
+      // keep the old value (and its reminders would return on next launch).
+      // Only identity and lifecycle fields come from the stored investment.
+      final updated = InvestmentEntity(
+        id: existing.id,
         name: name.trim(),
         type: type,
+        status: existing.status,
         notes: notes?.trim(),
+        createdAt: existing.createdAt,
+        closedAt: existing.closedAt,
         updatedAt: DateTime.now(),
         maturityDate: maturityDate,
         incomeFrequency: incomeFrequency,
+        isArchived: existing.isArchived,
         // New enhanced data capture fields
         startDate: startDate,
         expectedRate: expectedRate,
@@ -170,8 +179,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         autoRenewal: autoRenewal,
         riskLevel: riskLevel,
         compoundingFrequency: compoundingFrequency,
-        // Multi-currency
-        currency: currency,
+        // Multi-currency: no currency from the form keeps the stored one
+        currency: currency ?? existing.currency,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
@@ -954,12 +963,14 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
     // Check if we're close to any milestone OR crossed one
     for (final milestone in milestones) {
       // Near boundary check (original logic)
-      final isNearBoundary = currentPercent >= milestone - threshold &&
+      final isNearBoundary =
+          currentPercent >= milestone - threshold &&
           currentPercent <= milestone + threshold;
 
       // CodeRabbit fix: Detect milestone crossing even when jumping past
       // Example: was 22%, now 30% → should trigger 25% notification
-      final crossedSinceLast = previousPercent != null &&
+      final crossedSinceLast =
+          previousPercent != null &&
           previousPercent < milestone &&
           currentPercent >= milestone;
 
