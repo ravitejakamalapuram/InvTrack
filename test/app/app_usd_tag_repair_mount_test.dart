@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/security/presentation/providers/security_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
@@ -49,6 +50,9 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          // No PIN set: the question waits for the app lock, which starts
+          // locked until the PIN status is known (A07).
+          securityProvider.overrideWith(_Unlocked.new),
           authStateProvider.overrideWith((ref) => Stream.value(null)),
           routerProvider.overrideWithValue(
             GoRouter(
@@ -72,4 +76,9 @@ void main() {
     expect(find.text('Investments recorded in US dollars'), findsOneWidget);
     expect(find.text('Change to INR'), findsOneWidget);
   });
+}
+
+class _Unlocked extends SecurityNotifier {
+  @override
+  SecurityState build() => const SecurityState();
 }
