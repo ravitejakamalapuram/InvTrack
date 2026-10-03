@@ -1,6 +1,7 @@
 /// Main settings screen - hub for all settings sub-screens.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -149,8 +150,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
 
-          // Developer (only visible when debug mode is enabled)
-          if (isDebugEnabled)
+          // Developer (only visible when debug mode is enabled). The
+          // kReleaseMode check compiles the debug screen out of release builds.
+          if (!kReleaseMode && isDebugEnabled)
             SettingsSection(
               title: l10n.developer,
               children: [

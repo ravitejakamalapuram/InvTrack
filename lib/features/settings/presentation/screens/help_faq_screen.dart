@@ -1,6 +1,7 @@
 /// Help & FAQ screen with app usage information
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -10,7 +11,10 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying help and frequently asked questions about using the app
 class HelpFaqScreen extends StatelessWidget {
-  const HelpFaqScreen({super.key});
+  const HelpFaqScreen({super.key, this.showDeveloperFaq = !kReleaseMode});
+
+  /// Whether to explain the developer tools. Release builds have none.
+  final bool showDeveloperFaq;
 
   @override
   Widget build(BuildContext context) {
@@ -166,23 +170,24 @@ class HelpFaqScreen extends StatelessWidget {
               isDark,
             ),
           ]),
-          _buildSection(l10n.advancedFeatures, [
-            _buildFaqItem(
-              l10n.howToEnableDebugMode,
-              l10n.howToEnableDebugModeAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.whatIsDebugModeFor,
-              l10n.whatIsDebugModeForAnswer,
-              isDark,
-            ),
-            _buildFaqItem(
-              l10n.howToDisableDebugMode,
-              l10n.howToDisableDebugModeAnswer,
-              isDark,
-            ),
-          ]),
+          if (showDeveloperFaq)
+            _buildSection(l10n.advancedFeatures, [
+              _buildFaqItem(
+                l10n.howToEnableDebugMode,
+                l10n.howToEnableDebugModeAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.whatIsDebugModeFor,
+                l10n.whatIsDebugModeForAnswer,
+                isDark,
+              ),
+              _buildFaqItem(
+                l10n.howToDisableDebugMode,
+                l10n.howToDisableDebugModeAnswer,
+                isDark,
+              ),
+            ]),
           SizedBox(height: AppSpacing.xl),
           Center(
             child: Text(

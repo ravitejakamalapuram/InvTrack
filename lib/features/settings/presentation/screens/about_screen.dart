@@ -269,6 +269,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context);
     final packageInfoAsync = ref.watch(packageInfoProvider);
+    // Release builds have no debug tools, so no 7-tap unlock (A35).
+    final toolsAvailable = ref.watch(developerToolsAvailableProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about, style: AppTypography.h3)),
@@ -311,13 +313,17 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
                   ),
                   SizedBox(height: AppSpacing.xxs),
                   Semantics(
-                    label:
-                        '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}',
-                    button: true,
+                    label: toolsAvailable
+                        ? '${l10n.version(packageInfo.version, packageInfo.buildNumber)}. ${l10n.tapVersionToEnable}'
+                        : l10n.version(
+                            packageInfo.version,
+                            packageInfo.buildNumber,
+                          ),
+                    button: toolsAvailable,
                     excludeSemantics: true,
-                    onTap: _handleVersionTap,
+                    onTap: toolsAvailable ? _handleVersionTap : null,
                     child: GestureDetector(
-                      onTap: _handleVersionTap,
+                      onTap: toolsAvailable ? _handleVersionTap : null,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                           minWidth: 44,
