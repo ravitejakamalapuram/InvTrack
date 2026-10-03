@@ -83,8 +83,9 @@ class GuestBackupMergeService {
   /// Backs up the guest's data to app-private storage, signs in with Google
   /// and imports the backup into that account with [ImportStrategy.merge].
   ///
-  /// The backup cannot carry some investment details and expected cash flows
-  /// (see [ZipExport.carriesEverything]), and they cannot be reached once
+  /// The backup cannot carry investments without cash flows, some investment
+  /// details and expected cash flows (see [ZipExport.carriesEverything]),
+  /// and they cannot be reached once
   /// the guest session ends. If the guest has any, [confirmDetailsNotMoved]
   /// is asked first, before anything is saved or signed in; if it returns
   /// false the merge stops with [GuestMergeCancelled].
@@ -174,7 +175,7 @@ class GuestBackupMergeService {
             'errorCount': result.errors.length,
             'warningCount': result.warnings.length,
             'investmentsMissing':
-                export.investments - result.investmentsImported,
+                export.investmentsInExport - result.investmentsImported,
             'cashFlowsMissing': export.cashFlows - result.cashflowsImported,
             'goalsMissing': export.goals - result.goalsImported,
             'documentsMissing': export.documents - result.documentsImported,
@@ -188,6 +189,7 @@ class GuestBackupMergeService {
           metadata: {
             'investmentsWithDetailsNotInExport':
                 export.investmentsWithDetailsNotInExport,
+            'investmentsNotInExport': export.investmentsNotInExport,
             'expectedCashFlows': export.expectedCashFlows,
           },
         );
@@ -245,13 +247,14 @@ class GuestBackupMergeService {
   }
 
   /// Whether [result] added every record of [export]. Merge reports skipped
-  /// duplicates and failed documents or FIRE settings only as warnings, and
-  /// the export can hold investments the import does not recreate, so the
-  /// counts are compared as well.
+  /// duplicates and failed documents or FIRE settings only as warnings, so
+  /// the counts are compared as well. Investments without cash flows are not
+  /// in the backup (the guest was warned about them), so they are not
+  /// expected.
   static bool _isComplete(ZipImportResult result, ZipExport export) =>
       !result.hasErrors &&
       result.warnings.isEmpty &&
-      result.investmentsImported == export.investments &&
+      result.investmentsImported == export.investmentsInExport &&
       result.cashflowsImported == export.cashFlows &&
       result.goalsImported == export.goals &&
       result.documentsImported == export.documents &&

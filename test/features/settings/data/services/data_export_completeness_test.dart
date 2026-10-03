@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/features/income_projection/domain/entities/expected_cash_flow_entity.dart';
@@ -16,6 +19,9 @@ class _MockDocumentRepository extends Mock implements DocumentRepository {}
 
 class _MockExpectedCashFlowRepository extends Mock
     implements ExpectedCashFlowRepository {}
+
+class _MockDocumentStorageService extends Mock
+    implements DocumentStorageService {}
 
 class _FakeExpectedCashFlow extends Fake implements ExpectedCashFlowEntity {}
 
@@ -165,6 +171,56 @@ void main() {
     expect(export.investments, 1);
     expect(export.investmentsWithDetailsNotInExport, 0);
     expect(export.expectedCashFlows, isNull);
+    expect(export.carriesEverything, isFalse);
+  });
+
+  test('an investment with no cash flows is not in the ZIP, so the export '
+      'does not claim to carry it', () async {
+    final investments = FakeInvestmentRepository();
+    final empty = plain.copyWith(id: 'inv-empty', name: 'Chit fund');
+    final archivedEmpty = plain.copyWith(id: 'inv-old', name: 'Old bond');
+    await investments.createInvestment(plain);
+    await investments.createInvestment(empty);
+    investments.seed(archivedInvestments: [archivedEmpty]);
+    await investments.addCashFlow(
+      CashFlowEntity(
+        id: 'cf-plain',
+        investmentId: plain.id,
+        type: CashFlowType.invest,
+        amount: 100000,
+        date: DateTime(2026, 4, 1),
+        createdAt: created,
+        currency: 'INR',
+      ),
+    );
+    final documents = _MockDocumentRepository();
+    when(
+      () => documents.getDocumentsByInvestment(any()),
+    ).thenAnswer((_) async => []);
+    final expected = _MockExpectedCashFlowRepository();
+    when(() => expected.getAllExpectedCashFlows()).thenAnswer((_) async => []);
+
+    final export = await DataExportService(
+      investmentRepository: investments,
+      goalRepository: FakeGoalRepository(),
+      documentRepository: documents,
+      documentStorageService: _MockDocumentStorageService(),
+      expectedCashFlowRepository: expected,
+      performanceService: _PassThroughPerformanceService(),
+    ).exportAsZipBytes();
+
+    final zip = ZipDecoder().decodeBytes(export.bytes);
+    final csvText = ['cashflows.csv', 'cashflows_archived.csv']
+        .map((name) => utf8.decode(zip.findFile(name)!.content as List<int>))
+        .join();
+    expect(csvText, contains('P2P loan'));
+    expect(csvText, isNot(contains('Chit fund')));
+    expect(csvText, isNot(contains('Old bond')));
+    expect(export.investments, 3);
+    expect(export.cashFlows, 1);
+    expect(export.investmentsWithDetailsNotInExport, 0);
+    expect(export.expectedCashFlows, 0);
+    expect(export.investmentsNotInExport, 2);
     expect(export.carriesEverything, isFalse);
   });
 }

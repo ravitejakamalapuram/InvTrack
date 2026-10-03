@@ -47,21 +47,24 @@ const _importFailedMessage =
     'goals is kept on this device until you delete it in Settings > Data & '
     'Account. Share it to save it '
     'somewhere safe. To add the rest, rename those items in your Google '
-    'account and import the backup from Settings > Data & Account.';
+    'account, share the backup to your files and import it from Settings > '
+    'Data & Account.';
 
 const _detailsWillNotMoveMessage =
     'Your investments, cash flows and goals will be added to your Google '
-    'account, but some investment details cannot be moved yet: maturity '
-    'dates, interest rates, payout frequency, notes and similar fields, and '
-    'expected payouts. They are not in the backup either, so they will be '
-    'lost. Reminders for those investments stay off until you add the '
-    'details again. To keep them, cancel and write them down first.';
+    'account, but some things cannot be moved yet: investments with no cash '
+    'flows and their documents, maturity dates, interest rates, payout '
+    'frequency, notes and similar fields, and expected payouts. They are not '
+    'in the backup either, so they will be lost. Reminders for those '
+    'investments stay off until you add the details again. To keep them, '
+    'cancel and add a cash flow or write them down first.';
 
 const _detailsNotMovedMessage =
     'Your investments, cash flows and goals are now in your Google account. '
-    'Maturity dates, interest rates, payout frequency, notes and similar '
-    'fields, and expected payouts were not moved. Reminders for those '
-    'investments stay off until you add the details again.';
+    'Investments with no cash flows and their documents, maturity dates, '
+    'interest rates, payout frequency, notes and similar fields, and '
+    'expected payouts were not moved. Reminders for those investments stay '
+    'off until you add the details again.';
 
 /// In-memory stand-in for the app-private backup folder.
 class _FakeBackupStore implements GuestBackupStore {
@@ -136,6 +139,7 @@ class _FakeExportService extends Fake implements DataExportService {
           documents: _completeImport.documentsImported,
           hasFireSettings: false,
           investmentsWithDetailsNotInExport: 0,
+          investmentsNotInExport: 0,
           expectedCashFlows: 0,
         );
   }
@@ -527,6 +531,7 @@ void main() {
         documents: 0,
         hasFireSettings: true,
         investmentsWithDetailsNotInExport: 0,
+        investmentsNotInExport: 0,
         expectedCashFlows: 0,
       );
       authRepo.onSignInWithGoogle = () async {
@@ -565,6 +570,7 @@ void main() {
       documents: 0,
       hasFireSettings: false,
       investmentsWithDetailsNotInExport: 1,
+      investmentsNotInExport: 0,
       expectedCashFlows: 0,
     ),
     'the guest has expected cash flows': ZipExport(
@@ -575,7 +581,21 @@ void main() {
       documents: 0,
       hasFireSettings: false,
       investmentsWithDetailsNotInExport: 0,
+      investmentsNotInExport: 0,
       expectedCashFlows: 2,
+    ),
+    // The backup holds investments only as cash flow rows, so the import
+    // adds the other 2 of these 3 and the merge is still complete.
+    'an investment has no cash flows': ZipExport(
+      bytes: _backupBytes,
+      investments: 3,
+      cashFlows: 5,
+      goals: 1,
+      documents: 0,
+      hasFireSettings: false,
+      investmentsWithDetailsNotInExport: 0,
+      investmentsNotInExport: 1,
+      expectedCashFlows: 0,
     ),
   };
 

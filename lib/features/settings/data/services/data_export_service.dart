@@ -35,6 +35,7 @@ class ZipExport {
     required this.documents,
     required this.hasFireSettings,
     required this.investmentsWithDetailsNotInExport,
+    required this.investmentsNotInExport,
     required this.expectedCashFlows,
   });
 
@@ -56,13 +57,23 @@ class ZipExport {
   /// [investmentHasDetailsNotInExport]); an import recreates them without.
   final int investmentsWithDetailsNotInExport;
 
+  /// Investments with no cash flows. The ZIP holds investments only as cash
+  /// flow rows, so it does not hold these at all (nor can an import attach
+  /// their documents to them).
+  final int investmentsNotInExport;
+
   /// Expected cash flows, which the ZIP does not carry at all; null if they
   /// could not be counted.
   final int? expectedCashFlows;
 
   /// Whether an import of [bytes] can recreate everything counted here.
   bool get carriesEverything =>
-      investmentsWithDetailsNotInExport == 0 && expectedCashFlows == 0;
+      investmentsWithDetailsNotInExport == 0 &&
+      investmentsNotInExport == 0 &&
+      expectedCashFlows == 0;
+
+  /// The investments an import of [bytes] can recreate.
+  int get investmentsInExport => investments - investmentsNotInExport;
 }
 
 /// Whether [investment] holds details the export ZIP does not carry. The ZIP
@@ -136,11 +147,14 @@ class DataExportService {
     // Separate active and archived cashflows
     final activeCashFlows = <_CashFlowWithInvestment>[];
     final archivedCashFlows = <_CashFlowWithInvestment>[];
+    // The ZIP holds an investment only as its cash flow rows.
+    var investmentsWithoutCashFlows = 0;
 
     for (final inv in investments) {
       final cashFlows = await _investmentRepository.getCashFlowsByInvestment(
         inv.id,
       );
+      if (cashFlows.isEmpty) investmentsWithoutCashFlows++;
       for (final cf in cashFlows) {
         activeCashFlows.add(_CashFlowWithInvestment(cf, inv));
       }
@@ -149,6 +163,7 @@ class DataExportService {
     for (final inv in archivedInvestments) {
       final cashFlows = await _investmentRepository
           .getArchivedCashFlowsByInvestment(inv.id);
+      if (cashFlows.isEmpty) investmentsWithoutCashFlows++;
       for (final cf in cashFlows) {
         archivedCashFlows.add(_CashFlowWithInvestment(cf, inv));
       }
@@ -312,6 +327,7 @@ class DataExportService {
       investmentsWithDetailsNotInExport: allInvestments
           .where(investmentHasDetailsNotInExport)
           .length,
+      investmentsNotInExport: investmentsWithoutCashFlows,
       expectedCashFlows: expectedCashFlows,
     );
   }

@@ -4318,7 +4318,7 @@
     "description": "Title shown when the guest data could not be imported into the Google account after sign-in"
   },
 
-  "guestMergeImportFailedMessage": "You are now signed in with Google, but not all of your guest data could be added to that account, for example an investment or goal whose name it already uses. A backup of your guest investments, cash flows and goals is kept on this device until you delete it in Settings > Data & Account. Share it to save it somewhere safe. To add the rest, rename those items in your Google account and import the backup from Settings > Data & Account.",
+  "guestMergeImportFailedMessage": "You are now signed in with Google, but not all of your guest data could be added to that account, for example an investment or goal whose name it already uses. A backup of your guest investments, cash flows and goals is kept on this device until you delete it in Settings > Data & Account. Share it to save it somewhere safe. To add the rest, rename those items in your Google account, share the backup to your files and import it from Settings > Data & Account.",
   "@guestMergeImportFailedMessage": {
     "description": "Explains that the guest backup must be saved by the user because the automatic import failed or skipped some records, and that a copy is kept on the device"
   },
@@ -4328,7 +4328,7 @@
     "description": "Title of the warning shown before signing in to an existing Google account when some guest investment details cannot be moved"
   },
 
-  "guestMergeDetailsWillNotMoveMessage": "Your investments, cash flows and goals will be added to your Google account, but some investment details cannot be moved yet: maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts. They are not in the backup either, so they will be lost. Reminders for those investments stay off until you add the details again. To keep them, cancel and write them down first.",
+  "guestMergeDetailsWillNotMoveMessage": "Your investments, cash flows and goals will be added to your Google account, but some things cannot be moved yet: investments with no cash flows and their documents, maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts. They are not in the backup either, so they will be lost. Reminders for those investments stay off until you add the details again. To keep them, cancel and add a cash flow or write them down first.",
   "@guestMergeDetailsWillNotMoveMessage": {
     "description": "Warning shown before the irreversible sign-in: which guest details the merge cannot move and that the backup does not hold them either"
   },
@@ -4343,7 +4343,7 @@
     "description": "Title shown when every guest record was added to the Google account but some investment details could not be moved"
   },
 
-  "guestMergeDetailsNotMovedMessage": "Your investments, cash flows and goals are now in your Google account. Maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts were not moved. Reminders for those investments stay off until you add the details again.",
+  "guestMergeDetailsNotMovedMessage": "Your investments, cash flows and goals are now in your Google account. Investments with no cash flows and their documents, maturity dates, interest rates, payout frequency, notes and similar fields, and expected payouts were not moved. Reminders for those investments stay off until you add the details again.",
   "@guestMergeDetailsNotMovedMessage": {
     "description": "Explains which guest data the automatic merge did not move into the Google account, after the user agreed to it"
   },
