@@ -121,7 +121,6 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       'Income reminder scheduled',
       metadata: {
         'investmentId': investmentId,
-        'investmentName': investmentName,
         'nextIncomeDate': nextIncomeDate.toString(),
       },
     );
@@ -237,7 +236,6 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         '7-day maturity reminder scheduled',
         metadata: {
           'investmentId': investmentId,
-          'investmentName': investmentName,
           'scheduledDate': scheduledDate.toString(),
         },
       );
@@ -269,7 +267,6 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
         '1-day maturity reminder scheduled',
         metadata: {
           'investmentId': investmentId,
-          'investmentName': investmentName,
           'scheduledDate': scheduledDate.toString(),
         },
       );
@@ -572,7 +569,6 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
       'Milestone notification shown',
       metadata: {
         'investmentId': investmentId,
-        'investmentName': investmentName,
         'milestone': reachedMilestone,
       },
     );

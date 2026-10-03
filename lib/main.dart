@@ -58,15 +58,9 @@ void main() async {
         _initializeNonCriticalServices(notificationService, sharedPreferences);
       });
     },
-    (error, stack) {
-      // Catch any errors that escape the Flutter framework
-      LoggerService.error(
-        'Uncaught error in Flutter framework',
-        error: error,
-        stackTrace: stack,
-        metadata: {'fatal': 'true'},
-      );
-    },
+    (error, stack) => CrashlyticsService(
+      debugModeEnabled: CrashlyticsService.enableInDebugMode,
+    ).handleZoneError(error, stack),
   );
 }
 
