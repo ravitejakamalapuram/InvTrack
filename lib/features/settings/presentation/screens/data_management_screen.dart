@@ -63,7 +63,6 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
             title: 'Export',
             children: [
               if (hasSavedGuestBackup) const SavedGuestBackupTile(),
-              const UsdTagRepairUndoTile(),
               SettingsNavTile(
                 icon: Icons.description,
                 iconColor: AppColors.successLight,
@@ -126,6 +125,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                     : null,
                 onTap: () => _handleZipImport(context, ref),
               ),
+              // Undoes the fix for imports and merges saved in US dollars.
+              const UsdTagRepairUndoTile(),
             ],
           ),
 

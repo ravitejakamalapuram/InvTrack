@@ -25,8 +25,19 @@ class FakeLegacyCurrencyFirestore extends Fake implements FirebaseFirestore {
   /// Number of documents updated by each committed transaction.
   final commitSizes = <int>[];
 
-  /// Thrown by collection reads (simulates offline or permission errors).
+  /// Fields of the `users/{uid}` document itself; null while it does not
+  /// exist.
+  Map<String, dynamic>? userFields;
+
+  /// Every GetOptions passed to a read of the `users/{uid}` document itself.
+  final userDocReadOptions = <GetOptions?>[];
+
+  /// Thrown by reads of collections and of the `users/{uid}` document
+  /// (simulates offline or permission errors).
   Object? readError;
+
+  /// Thrown by writes to the `users/{uid}` document itself.
+  Object? userDocWriteError;
 
   /// When set, collection reads wait for it (simulates a slow server scan).
   Completer<void>? readGate;
@@ -91,6 +102,26 @@ class _UserDoc extends Fake implements DocumentReference<Map<String, dynamic>> {
   @override
   CollectionReference<Map<String, dynamic>> collection(String path) =>
       _DataCollection(store, path);
+
+  @override
+  Future<DocumentSnapshot<Map<String, dynamic>>> get([
+    GetOptions? options,
+  ]) async {
+    store.userDocReadOptions.add(options);
+    final gate = store.readGate;
+    if (gate != null) await gate.future;
+    if (store.readError != null) throw store.readError!;
+    return _FakeDocSnapshot(store.userFields);
+  }
+
+  @override
+  Future<void> set(Map<String, dynamic> data, [SetOptions? options]) async {
+    if (store.userDocWriteError != null) throw store.userDocWriteError!;
+    store.userFields = {
+      if (options?.merge ?? false) ...?store.userFields,
+      ...data,
+    };
+  }
 }
 
 class _DataCollection extends Fake

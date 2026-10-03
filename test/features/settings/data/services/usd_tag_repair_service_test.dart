@@ -408,6 +408,63 @@ void main() {
     expect(firestore.transactionCount, 0);
   });
 
+  group('the answer is kept for the account, not only this device', () {
+    test('markResolved saves it on users/{uid}', () async {
+      await service().markResolved();
+
+      expect(firestore.userFields, contains(UsdTagRepairService.resolvedField));
+    });
+
+    test('a repair saves it on users/{uid}', () async {
+      await service().repair({'inv-merged'}, 'INR');
+
+      expect(firestore.userFields, contains(UsdTagRepairService.resolvedField));
+    });
+
+    test('a new install (empty preferences) finds it on the server and '
+        'remembers it', () async {
+      await service().markResolved();
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      expect(service().isResolved, isFalse);
+
+      expect(await service().checkResolved(), isTrue);
+      expect(firestore.userDocReadOptions.single?.source, Source.server);
+      expect(service().isResolved, isTrue);
+
+      // Remembered here: no second server read.
+      expect(await service().checkResolved(), isTrue);
+      expect(firestore.userDocReadOptions, hasLength(1));
+    });
+
+    test('not answered anywhere: false, and nothing is recorded', () async {
+      expect(await service().checkResolved(), isFalse);
+      expect(service().isResolved, isFalse);
+      expect(firestore.userFields, isNull);
+    });
+
+    test('checkResolved throws when the server cannot be reached', () async {
+      firestore.readError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+
+      await expectLater(service().checkResolved(), throwsA(anything));
+      expect(service().isResolved, isFalse);
+    });
+
+    test('a failed server write still records the answer here', () async {
+      firestore.userDocWriteError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'permission-denied',
+      );
+
+      await service().markResolved();
+
+      expect(service().isResolved, isTrue);
+    });
+  });
+
   test('keeps its state per user', () async {
     await service().markResolved();
 

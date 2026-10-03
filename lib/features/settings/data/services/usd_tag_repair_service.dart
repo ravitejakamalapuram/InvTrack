@@ -64,6 +64,8 @@ class UsdTagRepairService {
   final int _chunkSize;
   final Duration _readTimeout;
 
+  static const Duration _writeTimeout = Duration(seconds: 5);
+
   /// The signed-in user whose investments this service checks.
   String get userId => _userId;
 
@@ -98,12 +100,51 @@ class UsdTagRepairService {
   String get _resolvedKey => 'usd_tag_repair_resolved_$_userId';
   String get _backupKey => 'usd_tag_repair_backup_$_userId';
 
-  /// Whether this user answered the question (or had nothing to fix).
+  /// Whether this device has recorded the answer (or that there was nothing
+  /// to fix). See [checkResolved] for the account-wide answer.
   bool get isResolved => _prefs.getBool(_resolvedKey) ?? false;
 
-  /// Records the answer (Keep, or nothing found) so the start-up question is
-  /// not asked again.
-  Future<void> markResolved() => _prefs.setBool(_resolvedKey, true);
+  /// Field on the `users/{uid}` document that records the answer for the
+  /// account, so a new install or another phone is not asked again. Removed
+  /// with that document on account deletion.
+  static const String resolvedField = 'usdTagRepairResolvedAt';
+
+  DocumentReference<Map<String, dynamic>> get _userDoc =>
+      _firestore.collection('users').doc(_userId);
+
+  /// Whether this user answered on any device (or had nothing to fix). Asks
+  /// the server only when this device has no answer, and remembers a server
+  /// answer here. Throws when the server cannot be reached.
+  Future<bool> checkResolved() async {
+    if (isResolved) return true;
+    final snapshot = await _userDoc
+        .get(const GetOptions(source: Source.server))
+        .timeout(_readTimeout);
+    if (snapshot.data()?[resolvedField] == null) return false;
+    await _prefs.setBool(_resolvedKey, true);
+    return true;
+  }
+
+  /// Records the answer (Keep, a repair, or nothing found) on this device and
+  /// for the account, so the start-up question is not asked again. Offline,
+  /// Firestore sends the account record when the connection is back.
+  Future<void> markResolved() async {
+    await _prefs.setBool(_resolvedKey, true);
+    try {
+      await _userDoc
+          .set({
+            resolvedField: FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true))
+          .timeout(_writeTimeout);
+    } on TimeoutException {
+      // Queued by Firestore; sent when back online.
+    } catch (e) {
+      LoggerService.warn(
+        'USD tag answer not saved for the account',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+    }
+  }
 
   /// Whether a repair can still be undone on this device.
   bool get hasBackup => _backup().isNotEmpty;
@@ -139,7 +180,7 @@ class UsdTagRepairService {
 
   Future<List<_Scanned>> _scan(String baseCurrency) async {
     if (baseCurrency == taggedCurrency) return const [];
-    final userDoc = _firestore.collection('users').doc(_userId);
+    final userDoc = _userDoc;
     // Sample data includes a US dollar investment on purpose.
     final sampleIds = {...?_prefs.getStringList(_sampleInvestmentIdsKey)};
     final found = <_Scanned>[];
@@ -293,7 +334,7 @@ class UsdTagRepairService {
   Future<int> undo() async {
     final entries = _backup();
     if (entries.isEmpty) return 0;
-    final userDoc = _firestore.collection('users').doc(_userId);
+    final userDoc = _userDoc;
     var restored = 0;
     for (var i = 0; i < entries.length; i += _chunkSize) {
       final chunk = entries.sublist(

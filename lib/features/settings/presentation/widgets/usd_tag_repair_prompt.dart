@@ -95,6 +95,8 @@ class _UsdTagRepairInitializerState
 
     final List<UsdTagCandidate> candidates;
     try {
+      // Answered on another device or before a reinstall.
+      if (await service.checkResolved()) return;
       candidates = await service.findCandidates(currency);
     } catch (e) {
       LoggerService.warn(
@@ -296,8 +298,12 @@ class _UsdTagRepairDialog extends StatefulWidget {
 }
 
 class _UsdTagRepairDialogState extends State<_UsdTagRepairDialog> {
+  // Only merged investments start ticked: older merges always wrote US
+  // dollars. An imported investment may really be in US dollars (or the base
+  // currency on this device may not be set yet), so the user ticks it.
   late final Set<String> _selected = {
-    for (final c in widget.candidates) c.investmentId,
+    for (final c in widget.candidates)
+      if (c.isMerged) c.investmentId,
   };
 
   @override

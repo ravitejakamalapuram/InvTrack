@@ -147,6 +147,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  bool? ticked(WidgetTester tester, String name) => tester
+      .widget<CheckboxListTile>(find.widgetWithText(CheckboxListTile, name))
+      .value;
+
   ProviderContainer container(WidgetTester tester) =>
       ProviderScope.containerOf(tester.element(find.byType(SizedBox).first));
 
@@ -167,6 +171,11 @@ void main() {
       expect(find.text('SBI FD'), findsNothing);
       expect(find.text('Keep in US dollars'), findsOneWidget);
       expect(find.text('Change to INR'), findsOneWidget);
+      // Only merged investments start ticked: the app's own merge is the one
+      // case known to have written US dollars. An imported investment may
+      // really be in US dollars, so the user ticks it.
+      expect(ticked(tester, 'Merged FD'), isTrue);
+      expect(ticked(tester, 'Imported bond'), isFalse);
       // No amount appears in the preview, so privacy mode has nothing to
       // hide here.
       expect(find.textContaining(RegExp(r'\d{3}')), findsNothing);
@@ -186,8 +195,6 @@ void main() {
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Imported bond'));
-      await tester.pump();
       await tester.tap(find.text('Change to INR'));
       await tester.pumpAndSettle();
 
@@ -219,6 +226,8 @@ void main() {
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();
 
+      await tester.tap(find.text('Imported bond'));
+      await tester.pump();
       // Another device sets the imported bond's cash flow to INR while the
       // question is open; the repair re-reads it and leaves that investment
       // alone.
@@ -245,7 +254,6 @@ void main() {
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Imported bond'));
       await tester.tap(find.text('Merged FD'));
       await tester.pump();
       await tester.tap(find.text('Change to INR'));
@@ -258,6 +266,8 @@ void main() {
     testWidgets('Undo in the snackbar puts back US dollars', (tester) async {
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Imported bond'));
+      await tester.pump();
       await tester.tap(find.text('Change to INR'));
       await tester.pumpAndSettle();
       expect(find.text('2 investments changed to INR.'), findsOneWidget);
@@ -297,6 +307,38 @@ void main() {
       await restart(tester, app(repair: service()));
       expect(find.text(title), findsNothing);
       expect(firestore.readOptions.length, reads);
+    });
+
+    testWidgets('Keep is remembered for the account: a new install or phone '
+        'is not asked again', (tester) async {
+      await tester.pumpWidget(app(repair: service()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Keep in US dollars'));
+      await tester.pumpAndSettle();
+      expect(firestore.userFields, contains(UsdTagRepairService.resolvedField));
+
+      // Reinstall: this device's preferences are gone (allowBackup is off).
+      await startWith({});
+      await restart(tester, app(repair: service()));
+
+      expect(find.text(title), findsNothing);
+      expect(find.text('Merged FD'), findsNothing);
+      expect(firestore.transactionCount, 0);
+      expect(service().isResolved, isTrue);
+    });
+
+    testWidgets('answered on another device: one read of the answer, no '
+        'scan, no question', (tester) async {
+      firestore.userFields = {
+        UsdTagRepairService.resolvedField: DateTime.utc(2026, 10, 2),
+      };
+      await tester.pumpWidget(app(repair: service()));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+      expect(firestore.userDocReadOptions, hasLength(1));
+      expect(firestore.userDocReadOptions.single?.source, Source.server);
+      expect(firestore.readOptions, isEmpty);
     });
 
     testWidgets('closing the question without an answer asks again on the '
@@ -550,6 +592,25 @@ void main() {
       expect(service().isResolved, isFalse);
     });
 
+    testWidgets('a currency change during a scan that finds nothing: the '
+        'old currency is not recorded as checked', (tester) async {
+      firestore.data.remove('investments');
+      firestore.data.remove('cashflows');
+      firestore.readGate = Completer<void>();
+      await tester.pumpWidget(
+        app(repair: service(), controllableCurrency: true),
+      );
+      await tester.pump();
+
+      container(tester).read(testCurrency.notifier).set('EUR');
+      await tester.pump();
+      firestore.readGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(service().isResolved, isFalse);
+      expect(firestore.userFields, isNull);
+    });
+
     testWidgets('a currency change while the question is open: Change '
         'writes nothing', (tester) async {
       await tester.pumpWidget(
@@ -643,6 +704,41 @@ void main() {
       expect(currencyOf('cashflows', 'cf-i1'), 'USD');
       expect(find.text('Undo the US dollar fix'), findsNothing);
       expect(find.text('The US dollar fix was undone.'), findsOneWidget);
+    });
+
+    testWidgets('another user signs in while the confirmation is open: '
+        'nothing is undone', (tester) async {
+      await service().repair({'inv-merged'}, 'INR');
+      _ServiceHolder.initial = service();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            analyticsServiceProvider.overrideWithValue(analytics),
+            usdTagRepairServiceProvider.overrideWith(
+              (ref) => ref.watch(_ServiceHolder.provider),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: UsdTagRepairUndoTile()),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Undo the US dollar fix'));
+      await tester.pumpAndSettle();
+
+      ProviderScope.containerOf(
+        tester.element(find.byType(UsdTagRepairUndoTile)),
+      ).read(_ServiceHolder.provider.notifier).set(service('uid-b'));
+      await tester.pump();
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(currencyOf('cashflows', 'cf-m1'), 'INR');
+      expect(firestore.transactionCount, 1);
+      expect(service().hasBackup, isTrue);
     });
 
     testWidgets('a failed undo says so and keeps the tile', (tester) async {
