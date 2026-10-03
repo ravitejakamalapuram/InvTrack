@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:path/path.dart' as path;
 
@@ -123,4 +125,33 @@ void main() {
       expect(base.listSync(), isEmpty);
     });
   }
+
+  test('file errors carry no path or user id, so nothing private reaches '
+      'Crashlytics (CLAUDE.md rule 7)', () async {
+    // A file where the store expects its base directory makes every
+    // filesystem call fail with a FileSystemException naming the path.
+    final blocker = File(path.join(base.path, 'not_a_directory'))
+      ..writeAsStringSync('x');
+    final store = FileGuestBackupStore(() async => Directory(blocker.path));
+
+    Object? error;
+    try {
+      await store.save(zip, ownerId: owner);
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error, isA<DataException>());
+    final mapped = ErrorHandler.mapException(error!);
+    for (final text in [
+      error.toString(),
+      mapped.technicalMessage,
+      mapped.userMessage,
+    ]) {
+      expect(text, isNot(contains(owner)));
+      expect(text, isNot(contains('guest_backups')));
+      expect(text, isNot(contains(base.path)));
+    }
+    expect(mapped.cause, isNull, reason: 'the cause would be recorded too');
+  });
 }

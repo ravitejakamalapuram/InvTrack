@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:path/path.dart' as path;
 
 /// Keeps guest-data backups in app-private storage, so the only copy of a
@@ -55,58 +56,85 @@ class FileGuestBackupStore implements GuestBackupStore {
     return Directory(path.join((await _root).path, ownerId));
   }
 
+  /// Runs a filesystem [operation], replacing any [FileSystemException] with
+  /// one that names no path. Paths hold the user id and file names, and
+  /// errors reach Crashlytics (CLAUDE.md rule 7), so the original exception
+  /// is not kept as the cause either.
+  Future<T> _guard<T>(String operation, Future<T> Function() body) async {
+    try {
+      return await body();
+    } on FileSystemException catch (e, st) {
+      throw DataException(
+        userMessage: 'Could not access the saved guest backup on this device.',
+        technicalMessage:
+            'Guest backup $operation failed (os error ${e.osError?.errorCode})',
+        stackTrace: st,
+      );
+    }
+  }
+
   @override
   Future<String> save(Uint8List bytes, {required String ownerId}) async {
-    final directory = await _ownerDirectory(ownerId);
-    await directory.create(recursive: true);
-    final stamp = DateTime.now().microsecondsSinceEpoch;
-    final file = File(
-      path.join(directory.path, 'InvTrack_Guest_Backup_$stamp.zip'),
-    );
-    // Write to a temporary name first so a crash mid-write never leaves a
-    // truncated file that looks like a complete backup.
-    final partial = File('${file.path}.part');
-    await partial.writeAsBytes(bytes, flush: true);
-    await partial.rename(file.path);
-    return file.path;
+    return _guard('save', () async {
+      final directory = await _ownerDirectory(ownerId);
+      await directory.create(recursive: true);
+      final stamp = DateTime.now().microsecondsSinceEpoch;
+      final file = File(
+        path.join(directory.path, 'InvTrack_Guest_Backup_$stamp.zip'),
+      );
+      // Write to a temporary name first so a crash mid-write never leaves a
+      // truncated file that looks like a complete backup.
+      final partial = File('${file.path}.part');
+      await partial.writeAsBytes(bytes, flush: true);
+      await partial.rename(file.path);
+      return file.path;
+    });
   }
 
   @override
   Future<String> transfer(String filePath, {required String toOwnerId}) async {
-    final directory = await _ownerDirectory(toOwnerId);
-    if (!path.isWithin((await _root).path, filePath)) {
-      throw ArgumentError.value(filePath, 'filePath', 'Not a guest backup');
-    }
-    await directory.create(recursive: true);
-    final moved = await File(
-      filePath,
-    ).rename(path.join(directory.path, path.basename(filePath)));
-    return moved.path;
+    return _guard('transfer', () async {
+      final directory = await _ownerDirectory(toOwnerId);
+      if (!path.isWithin((await _root).path, filePath)) {
+        throw ArgumentError.value(filePath, 'filePath', 'Not a guest backup');
+      }
+      await directory.create(recursive: true);
+      final moved = await File(
+        filePath,
+      ).rename(path.join(directory.path, path.basename(filePath)));
+      return moved.path;
+    });
   }
 
   @override
   Future<List<String>> list({required String ownerId}) async {
-    final directory = await _ownerDirectory(ownerId);
-    if (!await directory.exists()) return const [];
-    final paths = await directory
-        .list()
-        .where((e) => e is File && e.path.endsWith('.zip'))
-        .map((e) => e.path)
-        .toList();
-    return paths..sort();
+    return _guard('list', () async {
+      final directory = await _ownerDirectory(ownerId);
+      if (!await directory.exists()) return const [];
+      final paths = await directory
+          .list()
+          .where((e) => e is File && e.path.endsWith('.zip'))
+          .map((e) => e.path)
+          .toList();
+      return paths..sort();
+    });
   }
 
   @override
   Future<void> delete(String filePath) async {
-    // Only ever delete files this store wrote.
-    if (!path.isWithin((await _root).path, filePath)) return;
-    final file = File(filePath);
-    if (await file.exists()) await file.delete();
+    return _guard('delete', () async {
+      // Only ever delete files this store wrote.
+      if (!path.isWithin((await _root).path, filePath)) return;
+      final file = File(filePath);
+      if (await file.exists()) await file.delete();
+    });
   }
 
   @override
   Future<void> deleteAll({required String ownerId}) async {
-    final directory = await _ownerDirectory(ownerId);
-    if (await directory.exists()) await directory.delete(recursive: true);
+    return _guard('deleteAll', () async {
+      final directory = await _ownerDirectory(ownerId);
+      if (await directory.exists()) await directory.delete(recursive: true);
+    });
   }
 }

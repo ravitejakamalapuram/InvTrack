@@ -237,7 +237,12 @@ void main() {
           authRepositoryProvider.overrideWithValue(authRepo),
           analyticsServiceProvider.overrideWithValue(analytics),
           googleSignInInitializedProvider.overrideWith((ref) async {}),
-          currencyCodeProvider.overrideWithValue('EUR'),
+          // The guest and the Google account use different base currencies,
+          // so the test fails if the currency is read after the switch.
+          currencyCodeProvider.overrideWith((ref) {
+            final user = ref.watch(authStateProvider).value;
+            return user?.id == googleUser.id ? 'USD' : 'EUR';
+          }),
           dataExportServiceProvider.overrideWith((ref) => exportService),
           guestBackupStoreProvider.overrideWithValue(backupStore),
           // One import service per signed-in user, like the real provider,
