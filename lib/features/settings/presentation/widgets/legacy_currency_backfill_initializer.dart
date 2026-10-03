@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Users asked the start-up question in this app session (process lifetime),
@@ -27,7 +28,9 @@ final legacyCurrencyPromptedUsersProvider = Provider<Set<String>>(
 /// base-currency change still asks). Until they confirm, nothing is written
 /// and the repositories keep their read-time fallback. If the base currency
 /// or the signed-in user changes during the check or while the question is
-/// open, nothing is written or recorded. A failure (for example offline) is retried on the next start.
+/// open, nothing is written or recorded. While a base-currency change is
+/// running (it asks this itself), the start-up question is not shown. A
+/// failure (for example offline) is retried on the next start.
 class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
   const LegacyCurrencyBackfillInitializer({super.key, required this.child});
 
@@ -88,6 +91,10 @@ class _LegacyCurrencyBackfillInitializerState
     // on a later start instead. The user may also have signed out (or another
     // user in) meanwhile; then this question is not theirs to answer.
     if (!pending || !_stillCurrent(service, currency)) return;
+    // A base-currency change is running and asks this itself; a second
+    // dialog stacked over it would make its promise untrue. Ask on a later
+    // start instead.
+    if (ref.read(currencySwitchProvider).isBusy) return;
 
     final context = rootNavigatorKey.currentContext;
     if (context == null || !context.mounted) return;

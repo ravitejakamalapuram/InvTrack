@@ -1,6 +1,8 @@
 // A03-F1: a base-currency change must first stamp records that have no
 // currency with the OLD base currency. Otherwise they are relabelled with the
 // new one at read time and their amounts change currency without conversion.
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,6 +44,7 @@ void main() {
 
   ProviderContainer makeContainer({
     List<CashFlowEntity> cashFlows = const [],
+    LegacyCurrencyBackfillService Function()? backfill,
   }) => ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
@@ -52,13 +55,16 @@ void main() {
       allInvestmentsProvider.overrideWith((ref) => Stream.value(const [])),
       allCashFlowsStreamProvider.overrideWith((ref) => Stream.value(cashFlows)),
       validCashFlowsProvider.overrideWithValue(AsyncValue.data(cashFlows)),
-      legacyCurrencyBackfillServiceProvider.overrideWithValue(
-        LegacyCurrencyBackfillService(
-          firestore: firestore,
-          userId: firestore.uid,
-          prefs: prefs,
+      if (backfill != null)
+        legacyCurrencyBackfillServiceProvider.overrideWith((ref) => backfill())
+      else
+        legacyCurrencyBackfillServiceProvider.overrideWithValue(
+          LegacyCurrencyBackfillService(
+            firestore: firestore,
+            userId: firestore.uid,
+            prefs: prefs,
+          ),
         ),
-      ),
     ],
   );
 
@@ -94,6 +100,9 @@ void main() {
   });
 
   tearDown(() => container.dispose());
+
+  // The provider is auto-dispose; the Settings tile keeps it alive in the app.
+  void keepAlive() => container.listen(currencySwitchProvider, (_, _) {});
 
   test('INR to USD: legacy records are stamped INR before USD applies, so '
       'the FD still reads as INR 10,00,000', () async {
@@ -322,6 +331,131 @@ void main() {
       expect(container.read(currencyCodeProvider), 'USD');
     });
 
+    // Each question waits until the test answers it.
+    final gates = <Completer<bool?>>[];
+    Future<bool?> gated(String currency) {
+      asked.add(currency);
+      final gate = Completer<bool?>();
+      gates.add(gate);
+      return gate.future;
+    }
+
+    test('overlapping changes: a second change is refused while the first '
+        'asks, so a stale question can never override the answer', () async {
+      gates.clear();
+      keepAlive();
+      final notifier = container.read(currencySwitchProvider.notifier);
+      final first = notifier.switchCurrencyImmediate(
+        'USD',
+        askLegacyCurrency: gated,
+      );
+      await pumpEventQueue();
+      expect(asked, ['INR']);
+      // The tile is disabled while the question is open.
+      expect(container.read(currencySwitchProvider).isBusy, isTrue);
+
+      final second = notifier.switchCurrencyImmediate(
+        'EUR',
+        askLegacyCurrency: gated,
+      );
+      await pumpEventQueue();
+      expect(asked, ['INR'], reason: 'the second change must not ask');
+
+      // No: the records are not INR, so they follow USD.
+      gates[0].complete(false);
+      await first;
+      // If a stale "shown in INR" question was asked anyway, answer it yes.
+      for (final gate in gates.skip(1)) {
+        gate.complete(true);
+      }
+      await second;
+
+      expect(asked, ['INR']);
+      expect(container.read(currencyCodeProvider), 'USD');
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+      expect(
+        container
+            .read(legacyCurrencyBackfillServiceProvider)!
+            .confirmedCurrency,
+        isNull,
+      );
+    });
+
+    test('base currency changed elsewhere while the question is open: the '
+        'answer about INR stamps and confirms nothing', () async {
+      gates.clear();
+      keepAlive();
+      final first = container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: gated);
+      await pumpEventQueue();
+      expect(asked, ['INR']);
+
+      await container.read(settingsProvider.notifier).setCurrency('GBP');
+      gates[0].complete(true);
+      await first;
+
+      expect(container.read(currencyCodeProvider), 'GBP');
+      expect(container.read(currencySwitchProvider).isSuccess, isFalse);
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+      expect(
+        container
+            .read(legacyCurrencyBackfillServiceProvider)!
+            .confirmedCurrency,
+        isNull,
+      );
+    });
+
+    test('another user signed in while the question is open: the answer is '
+        'not saved or used for either user', () async {
+      gates.clear();
+      final userA = LegacyCurrencyBackfillService(
+        firestore: firestore,
+        userId: firestore.uid,
+        prefs: prefs,
+      );
+      final firestoreB = FakeLegacyCurrencyFirestore(uid: 'uid-b')
+        ..put('cashflows', 'cf-b', legacyFdInvest());
+      final userB = LegacyCurrencyBackfillService(
+        firestore: firestoreB,
+        userId: 'uid-b',
+        prefs: prefs,
+      );
+      var current = userA;
+      container.dispose();
+      container = makeContainer(backfill: () => current);
+      keepAlive();
+
+      final first = container
+          .read(currencySwitchProvider.notifier)
+          .switchCurrencyImmediate('USD', askLegacyCurrency: gated);
+      await pumpEventQueue();
+      expect(asked, ['INR']);
+
+      current = userB;
+      container.invalidate(legacyCurrencyBackfillServiceProvider);
+      gates[0].complete(true);
+      await first;
+
+      expect(userA.confirmedCurrency, isNull);
+      expect(userB.confirmedCurrency, isNull);
+      expect(
+        firestore.stored('cashflows', 'cf-1')!.containsKey('currency'),
+        isFalse,
+      );
+      expect(
+        firestoreB.stored('cashflows', 'cf-b')!.containsKey('currency'),
+        isFalse,
+      );
+      expect(container.read(currencyCodeProvider), 'INR');
+    });
+
     test('the check for such records fails: the change is blocked', () async {
       firestore.readError = FirebaseException(
         plugin: 'cloud_firestore',
@@ -338,6 +472,25 @@ void main() {
       expect(status.unstampedLegacyCurrency, 'INR');
       expect(container.read(currencyCodeProvider), 'INR');
     });
+  });
+
+  test('base currency changed elsewhere during stamping: the change does not '
+      'overwrite it', () async {
+    firestore.readGate = Completer<void>();
+    keepAlive();
+    final first = container
+        .read(currencySwitchProvider.notifier)
+        .switchCurrencyImmediate('USD');
+    await pumpEventQueue();
+
+    await container.read(settingsProvider.notifier).setCurrency('GBP');
+    firestore.readGate!.complete();
+    await first;
+
+    expect(container.read(currencyCodeProvider), 'GBP');
+    expect(container.read(currencySwitchProvider).isSuccess, isFalse);
+    // The user confirmed INR for these records, so the stamp itself is right.
+    expect(firestore.stored('cashflows', 'cf-1')!['currency'], 'INR');
   });
 
   test(

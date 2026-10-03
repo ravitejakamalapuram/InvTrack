@@ -396,10 +396,8 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
       icon: Icons.currency_exchange_rounded,
       iconColor: AppColors.successLight,
       title: l10n.currency,
-      value: currencySwitchStatus.isFetchingRates
-          ? '${l10n.loading}...'
-          : currency,
-      trailing: currencySwitchStatus.isFetchingRates
+      value: currencySwitchStatus.isBusy ? '${l10n.loading}...' : currency,
+      trailing: currencySwitchStatus.isBusy
           ? Semantics(
               label:
                   currencySwitchStatus.fetchedRates != null &&
@@ -422,13 +420,13 @@ class _CurrencyTileState extends ConsumerState<_CurrencyTile> {
               ),
             )
           : null,
-      onTap: currencySwitchStatus.isFetchingRates
+      onTap: currencySwitchStatus.isBusy
           ? null
           : () => _showCurrencyPicker(context, ref),
     );
 
     // Wrap in Semantics when disabled to announce disabled state to screen readers
-    if (currencySwitchStatus.isFetchingRates) {
+    if (currencySwitchStatus.isBusy) {
       return Semantics(
         button: true,
         enabled: false,

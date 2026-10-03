@@ -85,10 +85,14 @@ void main() {
         ..put('goals', 'g-1', {'name': 'x', 'currency': 'USD'});
     });
 
-    Widget app(LegacyCurrencyBackfillService? service) => ProviderScope(
+    Widget app(
+      LegacyCurrencyBackfillService? service, {
+      bool switchRunning = false,
+    }) => ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         legacyCurrencyBackfillServiceProvider.overrideWithValue(service),
+        if (switchRunning) currencySwitchProvider.overrideWith(_BusySwitch.new),
       ],
       child: MaterialApp(
         navigatorKey: rootNavigatorKey,
@@ -188,6 +192,17 @@ void main() {
 
       expect(cashFlowStamped(), isFalse);
       expect(find.text(message('USD')), findsOneWidget);
+    });
+
+    testWidgets('a base-currency change is running: the start-up question is '
+        'not stacked over its own question', (tester) async {
+      await tester.pumpWidget(app(service(), switchRunning: true));
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+      expect(cashFlowStamped(), isFalse);
+      expect(service().confirmedCurrency, isNull);
+      expect(service().promptDismissals, 0);
     });
 
     testWidgets('no legacy records: never asks', (tester) async {
@@ -522,4 +537,12 @@ class _ServiceHolder extends Notifier<LegacyCurrencyBackfillService?> {
   LegacyCurrencyBackfillService? build() => initial;
 
   void set(LegacyCurrencyBackfillService? service) => state = service;
+}
+
+/// A base-currency change that is checking older records (its own question
+/// may be open).
+class _BusySwitch extends CurrencySwitch {
+  @override
+  CurrencySwitchStatus build() =>
+      const CurrencySwitchStatus.checkingRecords(targetCurrency: 'USD');
 }

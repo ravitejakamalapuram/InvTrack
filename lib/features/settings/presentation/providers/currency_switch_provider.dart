@@ -17,7 +17,16 @@ import 'settings_provider.dart';
 part 'currency_switch_provider.g.dart';
 
 /// State for currency switch operation
-enum CurrencySwitchState { idle, fetchingRates, success, failed }
+enum CurrencySwitchState {
+  idle,
+
+  /// Checking, asking about and stamping records saved without a currency,
+  /// before the new base currency is applied.
+  checkingRecords,
+  fetchingRates,
+  success,
+  failed,
+}
 
 /// Currency switch status
 class CurrencySwitchStatus {
@@ -47,6 +56,14 @@ class CurrencySwitchStatus {
     : state = CurrencySwitchState.idle,
       errorMessage = null,
       targetCurrency = null,
+      totalRates = null,
+      fetchedRates = null,
+      unstampedLegacyCurrency = null,
+      _cachedProgress = null;
+
+  const CurrencySwitchStatus.checkingRecords({required this.targetCurrency})
+    : state = CurrencySwitchState.checkingRecords,
+      errorMessage = null,
       totalRates = null,
       fetchedRates = null,
       unstampedLegacyCurrency = null,
@@ -83,6 +100,11 @@ class CurrencySwitchStatus {
   bool get isFetchingRates => state == CurrencySwitchState.fetchingRates;
   bool get isSuccess => state == CurrencySwitchState.success;
   bool get isFailed => state == CurrencySwitchState.failed;
+
+  bool get isCheckingRecords => state == CurrencySwitchState.checkingRecords;
+
+  /// Whether a change is running; the currency tile is disabled meanwhile.
+  bool get isBusy => isCheckingRecords || isFetchingRates;
 
   /// Get progress value (0.0 to 1.0)
   /// Returns cached value to avoid repeated division on every frame during animation
@@ -123,6 +145,11 @@ typedef LegacyCurrencyQuestion = Future<bool?> Function(String currency);
 class CurrencySwitch extends _$CurrencySwitch {
   Timer? _debounceTimer;
   String? _pendingCurrency;
+
+  /// True while a change runs. Only one change runs at a time: a second one
+  /// would ask about the same records with a currency that the first may
+  /// be about to replace, and its answer could override the first answer.
+  bool _inFlight = false;
 
   @override
   CurrencySwitchStatus build() {
@@ -199,6 +226,32 @@ class CurrencySwitch extends _$CurrencySwitch {
       return;
     }
 
+    // Single flight: the tile is disabled while a change runs, so this only
+    // refuses a change started another way (debounce timer, Retry).
+    if (_inFlight) {
+      LoggerService.warn(
+        'Currency switch refused - another switch is running',
+        metadata: {'from': currentCurrency, 'to': newCurrency},
+      );
+      return;
+    }
+    _inFlight = true;
+    try {
+      await _runSwitch(currentCurrency, newCurrency, askLegacyCurrency);
+    } finally {
+      _inFlight = false;
+    }
+  }
+
+  Future<void> _runSwitch(
+    String currentCurrency,
+    String newCurrency,
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  ) async {
+    // The user whose records step 0b checks and stamps.
+    final userId = ref.read(legacyCurrencyBackfillServiceProvider)?.userId;
+    state = CurrencySwitchStatus.checkingRecords(targetCurrency: newCurrency);
+
     try {
       // Step 0: Check connectivity before attempting switch
       // This provides better error messages for offline users
@@ -226,7 +279,12 @@ class CurrencySwitch extends _$CurrencySwitch {
       // Otherwise the repositories would label them with the new currency and
       // their amounts would change currency without conversion. If this
       // fails, the switch is not applied; if the user cancels, nothing is.
-      if (!await _stampLegacyRecords(currentCurrency, askLegacyCurrency)) {
+      if (!await _stampLegacyRecords(
+            currentCurrency,
+            userId,
+            askLegacyCurrency,
+          ) ||
+          !_stillCurrent(currentCurrency, userId)) {
         state = const CurrencySwitchStatus.idle();
         return;
       }
@@ -374,8 +432,11 @@ class CurrencySwitch extends _$CurrencySwitch {
       );
     } catch (e, st) {
       // Step 7: ROLLBACK - Revert to old currency on failure
-      // This ensures UI consistency when rate fetching fails
-      await ref.read(settingsProvider.notifier).setCurrency(currentCurrency);
+      // This ensures UI consistency when rate fetching fails. Only this
+      // change is undone, never a currency set elsewhere meanwhile.
+      if (ref.read(currencyCodeProvider) == newCurrency) {
+        await ref.read(settingsProvider.notifier).setCurrency(currentCurrency);
+      }
 
       // Step 8: Set failed state
       // Use null for errorMessage - UI will show localized l10n.currencySwitchFailed
@@ -411,11 +472,21 @@ class CurrencySwitch extends _$CurrencySwitch {
     }
   }
 
+  /// Whether the base currency is still [currency] and the signed-in user is
+  /// still [userId], as when the change started. If either changed while the
+  /// records were checked or the question was open, the answer and the
+  /// change no longer apply.
+  bool _stillCurrent(String currency, String? userId) =>
+      ref.read(currencyCodeProvider) == currency &&
+      ref.read(legacyCurrencyBackfillServiceProvider)?.userId == userId;
+
   /// Returns false when the change must not go ahead (the user cancelled,
-  /// or could not be asked). Throws [LegacyCurrencyStampException] when the
-  /// records could not be checked or stamped.
+  /// could not be asked, or the base currency or user changed meanwhile).
+  /// Throws [LegacyCurrencyStampException] when the records could not be
+  /// checked or stamped.
   Future<bool> _stampLegacyRecords(
     String currency,
+    String? userId,
     LegacyCurrencyQuestion? ask,
   ) async {
     final backfill = ref.read(legacyCurrencyBackfillServiceProvider);
@@ -428,8 +499,12 @@ class CurrencySwitch extends _$CurrencySwitch {
       // let the records silently take the new currency.
       if (!backfill.isConfirmedFor(currency)) {
         if (!await backfill.hasUnstampedRecords()) return true;
+        if (!_stillCurrent(currency, userId)) return false;
         final enteredInCurrency = ask == null ? null : await ask(currency);
         if (enteredInCurrency == null) return false;
+        // The question named [currency] for this user; if either changed
+        // while it was open, the answer is about something no longer shown.
+        if (!_stillCurrent(currency, userId)) return false;
         // No: they were not entered in this currency, so they follow the new
         // base currency as before.
         if (!enteredInCurrency) return true;
