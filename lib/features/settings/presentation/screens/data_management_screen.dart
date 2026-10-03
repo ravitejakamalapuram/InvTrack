@@ -547,6 +547,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                   l10n.accountDeletionScheduled,
                 AccountDeletionOutcome.notDeleted =>
                   l10n.accountDeletionNotStarted,
+                AccountDeletionOutcome.queued => l10n.accountDeletionQueued,
                 _ => l10n.accountDeletionCancelled,
               }),
               backgroundColor: Colors.orange,
@@ -555,7 +556,8 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
           );
         }
         // A scheduled deletion signs the user out; the sign-in notice offers
-        // to withdraw the request if they come back.
+        // to withdraw the request if they come back. A queued request stays
+        // signed in so Firestore can send it once the device is online.
         if (outcome == AccountDeletionOutcome.scheduled) {
           ref.read(analyticsServiceProvider).setUserId(null);
           await authRepo.signOut();
