@@ -133,6 +133,9 @@ class NotificationPrefsKeys {
   static const String goalStaleEnabled = 'notifications_goal_stale';
   static const String goalStaleDays = 'notifications_goal_stale_days';
 
+  /// Uid of the account whose reminders are scheduled on this device.
+  static const String remindersOwnerUid = 'notifications_reminders_owner_uid';
+
   /// Track which milestones have been shown (to avoid duplicates)
   static String milestoneShown(String investmentId, double moic) =>
       'milestone_shown_${investmentId}_${moic.toStringAsFixed(1)}';

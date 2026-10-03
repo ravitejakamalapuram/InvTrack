@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
@@ -156,6 +158,12 @@ class FakeNotificationService implements NotificationService {
   @override
   int get goalStaleDays => 60;
 
+  @override
+  String? get remindersOwnerUid => null;
+
+  @override
+  Future<void> setRemindersOwnerUid(String? uid) async {}
+
   // Implement all other required methods with no-op stubs
   @override
   dynamic noSuchMethod(Invocation invocation) {
@@ -174,6 +182,17 @@ class FakeFlutterLocalNotificationsPlugin
   bool _isInitialized = false;
   bool _allCancelled = false;
   bool permissionsGranted = true;
+
+  /// When set, [zonedSchedule] rejects a one-off date that is not in the
+  /// future, as the real plugin does ("Must be a date in the future").
+  DateTime Function()? now;
+
+  /// Ids whose [zonedSchedule] call throws, to simulate a platform failure.
+  final Set<int> failingScheduleIds = {};
+
+  /// When set, [zonedSchedule] waits for it before recording, so a test can
+  /// act while a reschedule is in flight.
+  Completer<void>? holdSchedules;
 
   void reset() {
     shownNotifications.clear();
@@ -231,6 +250,21 @@ class FakeFlutterLocalNotificationsPlugin
     String? payload,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
+    final hold = holdSchedules;
+    if (hold != null) await hold.future;
+    final clock = now;
+    if (clock != null &&
+        matchDateTimeComponents == null &&
+        scheduledDate.isBefore(clock())) {
+      throw ArgumentError.value(
+        scheduledDate,
+        'scheduledDate',
+        'Must be a date in the future',
+      );
+    }
+    if (failingScheduleIds.contains(id)) {
+      throw StateError('zonedSchedule failed for $id');
+    }
     scheduledNotifications.add(
       FakeScheduledNotification(
         id: id,
