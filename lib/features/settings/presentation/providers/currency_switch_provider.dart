@@ -4,18 +4,29 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/analytics/analytics_service.dart';
+import '../../../../core/di/database_module.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/logging/logger_service.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/services/currency_conversion_service.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../investment/presentation/providers/investment_providers.dart';
 import 'settings_provider.dart';
 
 part 'currency_switch_provider.g.dart';
 
 /// State for currency switch operation
-enum CurrencySwitchState { idle, fetchingRates, success, failed }
+enum CurrencySwitchState {
+  idle,
+
+  /// Checking, asking about and stamping records saved without a currency,
+  /// before the new base currency is applied.
+  checkingRecords,
+  fetchingRates,
+  success,
+  failed,
+}
 
 /// Currency switch status
 class CurrencySwitchStatus {
@@ -24,6 +35,10 @@ class CurrencySwitchStatus {
   final String? targetCurrency;
   final int? totalRates;
   final int? fetchedRates;
+
+  /// Set when the switch was blocked because records saved without a
+  /// currency could not first be stamped with this (the old) base currency.
+  final String? unstampedLegacyCurrency;
 
   /// Cached progress value (pre-calculated to avoid repeated division on every frame)
   final double? _cachedProgress;
@@ -34,7 +49,8 @@ class CurrencySwitchStatus {
     this.targetCurrency,
     this.totalRates,
     this.fetchedRates,
-  }) : _cachedProgress = null;
+  }) : unstampedLegacyCurrency = null,
+       _cachedProgress = null;
 
   const CurrencySwitchStatus.idle()
     : state = CurrencySwitchState.idle,
@@ -42,6 +58,15 @@ class CurrencySwitchStatus {
       targetCurrency = null,
       totalRates = null,
       fetchedRates = null,
+      unstampedLegacyCurrency = null,
+      _cachedProgress = null;
+
+  const CurrencySwitchStatus.checkingRecords({required this.targetCurrency})
+    : state = CurrencySwitchState.checkingRecords,
+      errorMessage = null,
+      totalRates = null,
+      fetchedRates = null,
+      unstampedLegacyCurrency = null,
       _cachedProgress = null;
 
   CurrencySwitchStatus.fetchingRates({
@@ -50,6 +75,7 @@ class CurrencySwitchStatus {
     required int this.fetchedRates,
   }) : state = CurrencySwitchState.fetchingRates,
        errorMessage = null,
+       unstampedLegacyCurrency = null,
        // Pre-calculate progress to avoid repeated division on every frame
        _cachedProgress = totalRates > 0 ? fetchedRates / totalRates : 0.0;
 
@@ -58,11 +84,13 @@ class CurrencySwitchStatus {
       errorMessage = null,
       totalRates = null,
       fetchedRates = null,
+      unstampedLegacyCurrency = null,
       _cachedProgress = null;
 
   const CurrencySwitchStatus.failed({
     this.errorMessage,
     required this.targetCurrency,
+    this.unstampedLegacyCurrency,
   }) : state = CurrencySwitchState.failed,
        totalRates = null,
        fetchedRates = null,
@@ -72,6 +100,11 @@ class CurrencySwitchStatus {
   bool get isFetchingRates => state == CurrencySwitchState.fetchingRates;
   bool get isSuccess => state == CurrencySwitchState.success;
   bool get isFailed => state == CurrencySwitchState.failed;
+
+  bool get isCheckingRecords => state == CurrencySwitchState.checkingRecords;
+
+  /// Whether a change is running; the currency tile is disabled meanwhile.
+  bool get isBusy => isCheckingRecords || isFetchingRates;
 
   /// Get progress value (0.0 to 1.0)
   /// Returns cached value to avoid repeated division on every frame during animation
@@ -85,7 +118,8 @@ class CurrencySwitchStatus {
         other.errorMessage == errorMessage &&
         other.targetCurrency == targetCurrency &&
         other.totalRates == totalRates &&
-        other.fetchedRates == fetchedRates;
+        other.fetchedRates == fetchedRates &&
+        other.unstampedLegacyCurrency == unstampedLegacyCurrency;
   }
 
   @override
@@ -96,15 +130,26 @@ class CurrencySwitchStatus {
       targetCurrency,
       totalRates,
       fetchedRates,
+      unstampedLegacyCurrency,
     );
   }
 }
+
+/// Asks whether records saved without a currency were entered in [currency],
+/// the current base currency. Returns true for yes, false for no, and null
+/// when the user cancelled the currency change.
+typedef LegacyCurrencyQuestion = Future<bool?> Function(String currency);
 
 /// Provider for currency switch status
 @riverpod
 class CurrencySwitch extends _$CurrencySwitch {
   Timer? _debounceTimer;
   String? _pendingCurrency;
+
+  /// True while a change runs. Only one change runs at a time: a second one
+  /// would ask about the same records with a currency that the first may
+  /// be about to replace, and its answer could override the first answer.
+  bool _inFlight = false;
 
   @override
   CurrencySwitchStatus build() {
@@ -120,7 +165,14 @@ class CurrencySwitch extends _$CurrencySwitch {
   ///
   /// This is the public API that should be called from UI.
   /// It debounces rapid currency changes to prevent race conditions.
-  void switchCurrencyDebounced(String newCurrency) {
+  ///
+  /// [askLegacyCurrency] is called before the change when this user still has
+  /// records without a currency and has not confirmed which currency they are
+  /// in. Without it, such a change is not applied.
+  void switchCurrencyDebounced(
+    String newCurrency, {
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  }) {
     // Cancel any pending switch
     _debounceTimer?.cancel();
 
@@ -130,7 +182,7 @@ class CurrencySwitch extends _$CurrencySwitch {
     // Schedule switch after 300ms of inactivity
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (_pendingCurrency != null) {
-        _switchCurrencyImmediate(_pendingCurrency!);
+        _switchCurrencyImmediate(_pendingCurrency!, askLegacyCurrency);
         _pendingCurrency = null;
       }
     });
@@ -141,8 +193,11 @@ class CurrencySwitch extends _$CurrencySwitch {
   /// This method is exposed for testing purposes to avoid dealing with Timer delays.
   /// In production code, use switchCurrencyDebounced() instead.
   @visibleForTesting
-  Future<void> switchCurrencyImmediate(String newCurrency) async {
-    return _switchCurrencyImmediate(newCurrency);
+  Future<void> switchCurrencyImmediate(
+    String newCurrency, {
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  }) async {
+    return _switchCurrencyImmediate(newCurrency, askLegacyCurrency);
   }
 
   /// Internal method: Switch currency with optimistic UI updates and parallel rate fetching
@@ -160,13 +215,42 @@ class CurrencySwitch extends _$CurrencySwitch {
   /// - Real-time progress feedback (updates as each rate completes)
   ///
   /// Note: This is an internal method. Use switchCurrencyDebounced() from UI.
-  Future<void> _switchCurrencyImmediate(String newCurrency) async {
+  Future<void> _switchCurrencyImmediate(
+    String newCurrency,
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  ) async {
     final currentCurrency = ref.read(currencyCodeProvider);
 
     // Same currency - no-op
     if (currentCurrency == newCurrency) {
       return;
     }
+
+    // Single flight: the tile is disabled while a change runs, so this only
+    // refuses a change started another way (debounce timer, Retry).
+    if (_inFlight) {
+      LoggerService.warn(
+        'Currency switch refused - another switch is running',
+        metadata: {'from': currentCurrency, 'to': newCurrency},
+      );
+      return;
+    }
+    _inFlight = true;
+    try {
+      await _runSwitch(currentCurrency, newCurrency, askLegacyCurrency);
+    } finally {
+      _inFlight = false;
+    }
+  }
+
+  Future<void> _runSwitch(
+    String currentCurrency,
+    String newCurrency,
+    LegacyCurrencyQuestion? askLegacyCurrency,
+  ) async {
+    // The user whose records step 0b checks and stamps.
+    final userId = ref.read(legacyCurrencyBackfillServiceProvider)?.userId;
+    state = CurrencySwitchStatus.checkingRecords(targetCurrency: newCurrency);
 
     try {
       // Step 0: Check connectivity before attempting switch
@@ -188,6 +272,21 @@ class CurrencySwitch extends _$CurrencySwitch {
 
         // Throw NetworkException for consistent error handling
         throw NetworkException.noConnection();
+      }
+
+      // Step 0b: Stamp records saved without a currency with the CURRENT
+      // base currency before switching, once the user confirmed it (A03-F1).
+      // Otherwise the repositories would label them with the new currency and
+      // their amounts would change currency without conversion. If this
+      // fails, the switch is not applied; if the user cancels, nothing is.
+      if (!await _stampLegacyRecords(
+            currentCurrency,
+            userId,
+            askLegacyCurrency,
+          ) ||
+          !_stillCurrent(currentCurrency, userId)) {
+        state = const CurrencySwitchStatus.idle();
+        return;
       }
 
       // Analytics: Track currency switch attempt
@@ -279,7 +378,9 @@ class CurrencySwitch extends _$CurrencySwitch {
 
       // BUG FIX (2026-05-04): Handle null service when user is not authenticated
       if (conversionService == null) {
-        throw Exception('Currency conversion service unavailable. Please sign in.');
+        throw Exception(
+          'Currency conversion service unavailable. Please sign in.',
+        );
       }
 
       int fetchedCount = 0;
@@ -331,14 +432,20 @@ class CurrencySwitch extends _$CurrencySwitch {
       );
     } catch (e, st) {
       // Step 7: ROLLBACK - Revert to old currency on failure
-      // This ensures UI consistency when rate fetching fails
-      await ref.read(settingsProvider.notifier).setCurrency(currentCurrency);
+      // This ensures UI consistency when rate fetching fails. Only this
+      // change is undone, never a currency set elsewhere meanwhile.
+      if (ref.read(currencyCodeProvider) == newCurrency) {
+        await ref.read(settingsProvider.notifier).setCurrency(currentCurrency);
+      }
 
       // Step 8: Set failed state
       // Use null for errorMessage - UI will show localized l10n.currencySwitchFailed
       state = CurrencySwitchStatus.failed(
         errorMessage: null,
         targetCurrency: newCurrency,
+        unstampedLegacyCurrency: e is LegacyCurrencyStampException
+            ? currentCurrency
+            : null,
       );
 
       // Analytics: Track currency switch failure
@@ -365,8 +472,77 @@ class CurrencySwitch extends _$CurrencySwitch {
     }
   }
 
+  /// Whether the base currency is still [currency] and the signed-in user is
+  /// still [userId], as when the change started. If either changed while the
+  /// records were checked or the question was open, the answer and the
+  /// change no longer apply.
+  bool _stillCurrent(String currency, String? userId) =>
+      ref.read(currencyCodeProvider) == currency &&
+      ref.read(legacyCurrencyBackfillServiceProvider)?.userId == userId;
+
+  /// Returns false when the change must not go ahead (the user cancelled,
+  /// could not be asked, or the base currency or user changed meanwhile).
+  /// Throws [LegacyCurrencyStampException] when the records could not be
+  /// checked or stamped.
+  Future<bool> _stampLegacyRecords(
+    String currency,
+    String? userId,
+    LegacyCurrencyQuestion? ask,
+  ) async {
+    final backfill = ref.read(legacyCurrencyBackfillServiceProvider);
+    if (backfill == null) return true;
+    try {
+      // Stamp only a currency this user confirmed for their account. On a
+      // fresh install the device currency is the default INR, and on a shared
+      // device it is the previous user's, so without a confirmation the user
+      // is asked now. A launch-time "Not Now" or an offline launch must not
+      // let the records silently take the new currency.
+      if (!backfill.isConfirmedFor(currency)) {
+        if (!await backfill.hasUnstampedRecords()) return true;
+        if (!_stillCurrent(currency, userId)) return false;
+        final enteredInCurrency = ask == null ? null : await ask(currency);
+        if (enteredInCurrency == null) return false;
+        // The question named [currency] for this user; if either changed
+        // while it was open, the answer is about something no longer shown.
+        if (!_stillCurrent(currency, userId)) return false;
+        // No: they were not entered in this currency, so they follow the new
+        // base currency as before.
+        if (!enteredInCurrency) return true;
+        await backfill.confirm(currency);
+      }
+      await backfill.backfill(currency);
+      return true;
+    } catch (e) {
+      throw LegacyCurrencyStampException(e.runtimeType.toString());
+    }
+  }
+
   /// Reset state to idle
   void reset() {
     state = const CurrencySwitchStatus.idle();
   }
+}
+
+/// Thrown when records saved without a currency could not be stamped with the
+/// current base currency, so a base-currency change must not be applied.
+/// Carries only the cause's type, never document paths or values.
+class LegacyCurrencyStampException implements Exception {
+  const LegacyCurrencyStampException(this.causeType);
+  final String causeType;
+
+  @override
+  String toString() => 'LegacyCurrencyStampException($causeType)';
+}
+
+/// The message shown when a currency switch failed.
+String currencySwitchFailureMessage(
+  AppLocalizations l10n,
+  CurrencySwitchStatus status,
+) {
+  final target = status.targetCurrency ?? 'Unknown';
+  final unstamped = status.unstampedLegacyCurrency;
+  if (unstamped != null) {
+    return l10n.currencySwitchBlockedLegacyRecords(unstamped, target);
+  }
+  return l10n.currencySwitchFailed(target);
 }

@@ -2609,6 +2609,77 @@
     }
   },
 
+  "currencySwitchBlockedLegacyRecords": "Currency not changed to {newCurrency}. Older records saved without a currency must first be marked as {oldCurrency} so their amounts stay correct, and that could not be finished. Connect to the internet and try again.",
+  "@currencySwitchBlockedLegacyRecords": {
+    "description": "Shown when a base-currency change was not applied because records saved without a currency could not first be stamped with the current base currency",
+    "placeholders": {
+      "oldCurrency": {
+        "type": "String"
+      },
+      "newCurrency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencyPromptTitle": "Older records have no currency",
+  "@legacyCurrencyPromptTitle": {
+    "description": "Title of the one-time question asking which currency records saved without a currency are in"
+  },
+
+  "legacyCurrencyPromptMessage": "Some records were saved before the app supported currencies. They are shown in {currency} now. If they were entered in {currency}, mark them so they stay in {currency} when you change your currency. If not, choose Not Now and change your currency in Settings first.",
+  "@legacyCurrencyPromptMessage": {
+    "description": "Body of the one-time question about records saved without a currency; currency is the current base currency code",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencyPromptConfirm": "Mark as {currency}",
+  "@legacyCurrencyPromptConfirm": {
+    "description": "Button that stamps records saved without a currency with the current base currency",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencySwitchPromptMessage": "Your older records are shown in {currency}. Were they entered in {currency}? If yes, they stay in {currency} after you change to {newCurrency}. If no, they will be shown in {newCurrency}.",
+  "@legacyCurrencySwitchPromptMessage": {
+    "description": "Asked before a base-currency change when records saved without a currency were never confirmed; currency is the current base currency, newCurrency the chosen one",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      },
+      "newCurrency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencySwitchPromptYes": "Yes, {currency}",
+  "@legacyCurrencySwitchPromptYes": {
+    "description": "Answer that records saved without a currency were entered in the current base currency; they are stamped with it before the change",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+
+  "legacyCurrencySwitchPromptNo": "No, show in {newCurrency}",
+  "@legacyCurrencySwitchPromptNo": {
+    "description": "Answer that records saved without a currency were not entered in the current base currency; they follow the new base currency",
+    "placeholders": {
+      "newCurrency": {
+        "type": "String"
+      }
+    }
+  },
+
   "loadingProgress": "Loading: {fetched} of {total}",
   "@loadingProgress": {
     "description": "Loading progress indicator with counts",

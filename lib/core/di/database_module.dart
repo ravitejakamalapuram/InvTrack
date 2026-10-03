@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/income_projection/data/repositories/firestore_expected_cash_flow_repository.dart';
@@ -12,6 +13,7 @@ import 'package:inv_tracker/features/investment/domain/repositories/document_rep
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
 import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
+import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 
 /// Provider for FirebaseFirestore instance with offline persistence enabled
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -127,3 +129,17 @@ final deletionRequestServiceProvider = Provider<DeletionRequestService>((ref) {
     userId: user.id,
   );
 });
+
+/// Provider for the one-time stamp of the base currency into records saved
+/// without one (A03-F1). Null when signed out (guests are signed in
+/// anonymously, so they are covered).
+final legacyCurrencyBackfillServiceProvider =
+    Provider<LegacyCurrencyBackfillService?>((ref) {
+      final user = ref.watch(authStateProvider).value;
+      if (user == null) return null;
+      return LegacyCurrencyBackfillService(
+        firestore: ref.watch(firestoreProvider),
+        userId: user.id,
+        prefs: ref.watch(sharedPreferencesProvider),
+      );
+    });
