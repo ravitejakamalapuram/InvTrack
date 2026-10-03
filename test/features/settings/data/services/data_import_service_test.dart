@@ -270,7 +270,11 @@ Archived Goal,targetAmount,25000
 ,targetAmount,10000''',
         });
 
-        final result = await service.importFromZip(bytes, ImportStrategy.merge);
+        final result = await service.importFromZip(
+          bytes,
+          ImportStrategy.merge,
+          baseCurrency: 'INR',
+        );
 
         expect(result.cashflowsImported, 1);
         expect(result.goalsImported, 1);
@@ -367,6 +371,7 @@ Archived Goal,targetAmount,25000
           final result = await serviceWithFire.importFromZip(
             backupWithFireSettings(),
             ImportStrategy.merge,
+            baseCurrency: 'INR',
           );
 
           expect(result.fireSettingsImported, false);
@@ -386,6 +391,7 @@ Archived Goal,targetAmount,25000
         final result = await serviceWithFire.importFromZip(
           backupWithFireSettings(),
           ImportStrategy.replace,
+          baseCurrency: 'INR',
         );
 
         expect(result.fireSettingsImported, true);
