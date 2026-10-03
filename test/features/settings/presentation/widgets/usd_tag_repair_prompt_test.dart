@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/settings/data/services/legacy_currency_back
 import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/currency_switch_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/features/settings/presentation/widgets/legacy_currency_backfill_initializer.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,6 +106,7 @@ void main() {
     bool switchRunning = false,
     bool controllableCurrency = false,
     bool locked = false,
+    bool withLegacyInitializer = false,
   }) => ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
@@ -127,7 +129,15 @@ void main() {
       navigatorKey: rootNavigatorKey,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const Scaffold(body: UsdTagRepairInitializer(child: SizedBox())),
+      // As in app.dart: the question about records without a currency wraps
+      // this one.
+      home: Scaffold(
+        body: withLegacyInitializer
+            ? const LegacyCurrencyBackfillInitializer(
+                child: UsdTagRepairInitializer(child: SizedBox()),
+              )
+            : const UsdTagRepairInitializer(child: SizedBox()),
+      ),
     ),
   );
 
@@ -202,6 +212,33 @@ void main() {
       await restart(tester, app(repair: service()));
       expect(find.text(title), findsNothing);
       expect(firestore.readOptions.length, reads);
+    });
+
+    testWidgets('an investment changed elsewhere before Change is not '
+        'counted as fixed', (tester) async {
+      await tester.pumpWidget(app(repair: service()));
+      await tester.pumpAndSettle();
+
+      // Another device sets the imported bond's cash flow to INR while the
+      // question is open; the repair re-reads it and leaves that investment
+      // alone.
+      firestore.put('cashflows', 'cf-i1', {
+        'investmentId': 'inv-imported',
+        'type': 'INVEST',
+        'amount': 100000.0,
+        'currency': 'INR',
+      });
+      await tester.tap(find.text('Change to INR'));
+      await tester.pumpAndSettle();
+
+      expect(currencyOf('investments', 'inv-merged'), 'INR');
+      expect(currencyOf('investments', 'inv-imported'), 'USD');
+      expect(find.text('1 investment changed to INR.'), findsOneWidget);
+      expect(analytics.loggedEvents.last.parameters, {
+        'action': 'fixed',
+        'flagged': 2,
+        'fixed': 1,
+      });
     });
 
     testWidgets('Change is disabled when nothing is ticked', (tester) async {
@@ -357,12 +394,86 @@ void main() {
         userId: firestore.uid,
         prefs: prefs,
       );
+      await tester.pumpWidget(
+        app(repair: service(), legacy: legacy, withLegacyInitializer: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Older records have no currency'), findsOneWidget);
+      expect(find.text(title), findsNothing);
+      // One shared check (investments, then cash flows, where it stops); the
+      // US dollar scan never ran.
+      expect(firestore.readOptions, hasLength(2));
+      expect(service().isResolved, isFalse);
+    });
+
+    testWidgets('first start after the update, no records without a '
+        'currency: asks on this start, after one shared check', (tester) async {
+      final legacy = LegacyCurrencyBackfillService(
+        firestore: firestore,
+        userId: firestore.uid,
+        prefs: prefs,
+      );
+      expect(legacy.isComplete, isFalse);
+      await tester.pumpWidget(
+        app(repair: service(), legacy: legacy, withLegacyInitializer: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Older records have no currency'), findsNothing);
+      expect(legacy.isComplete, isTrue);
+      expect(find.text(title), findsOneWidget);
+      expect(find.text(message), findsOneWidget);
+      // 7 collections for the currency check, read once for both questions,
+      // then 4 for the US dollar scan.
+      expect(firestore.readOptions, hasLength(11));
+    });
+
+    testWidgets('records without a currency already confirmed: nothing to '
+        'wait for, asks on this start', (tester) async {
+      firestore.put('cashflows', 'cf-legacy', {
+        'investmentId': 'inv-inr',
+        'amount': 10.0,
+      });
+      await prefs.setString(
+        'legacy_currency_confirmed_${firestore.uid}',
+        'INR',
+      );
+      final legacy = LegacyCurrencyBackfillService(
+        firestore: firestore,
+        userId: firestore.uid,
+        prefs: prefs,
+      );
       await tester.pumpWidget(app(repair: service(), legacy: legacy));
       await tester.pumpAndSettle();
 
+      expect(find.text(title), findsOneWidget);
+    });
+
+    testWidgets('the currency check fails offline: asks nothing and asks on '
+        'the next start', (tester) async {
+      final legacy = LegacyCurrencyBackfillService(
+        firestore: firestore,
+        userId: firestore.uid,
+        prefs: prefs,
+      );
+      firestore.readError = FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unavailable',
+      );
+      await tester.pumpWidget(
+        app(repair: service(), legacy: legacy, withLegacyInitializer: true),
+      );
+      await tester.pumpAndSettle();
       expect(find.text(title), findsNothing);
-      expect(firestore.readOptions, isEmpty);
       expect(service().isResolved, isFalse);
+
+      firestore.readError = null;
+      await restart(
+        tester,
+        app(repair: service(), legacy: legacy, withLegacyInitializer: true),
+      );
+      expect(find.text(title), findsOneWidget);
     });
 
     testWidgets('asks once the question about records without a currency '

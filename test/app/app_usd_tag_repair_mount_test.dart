@@ -13,6 +13,7 @@ import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
 import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/usd_tag_repair_prompt.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,6 +32,13 @@ void main() {
         'amount': 10.0,
         'currency': 'USD',
       });
+    // A real currency check for records without a currency, as in the app:
+    // on the first start after the update it has not finished yet.
+    final legacy = LegacyCurrencyBackfillService(
+      firestore: firestore,
+      userId: firestore.uid,
+      prefs: prefs,
+    );
     final service = UsdTagRepairService(
       firestore: firestore,
       userId: firestore.uid,
@@ -52,7 +60,7 @@ void main() {
           currencyConversionServiceProvider.overrideWithValue(null),
           allInvestmentsProvider.overrideWith((ref) => Stream.value([])),
           allCashFlowsStreamProvider.overrideWith((ref) => Stream.value([])),
-          legacyCurrencyBackfillServiceProvider.overrideWithValue(null),
+          legacyCurrencyBackfillServiceProvider.overrideWithValue(legacy),
           usdTagRepairServiceProvider.overrideWithValue(service),
         ],
         child: const InvTrackerApp(),

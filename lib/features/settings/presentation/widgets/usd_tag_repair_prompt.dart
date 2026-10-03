@@ -89,14 +89,7 @@ class _UsdTagRepairInitializerState
     // USD-based users have nothing to repair. Not recorded, so a later
     // change to another base currency still checks.
     if (currency == UsdTagRepairService.taggedCurrency) return;
-    final legacy = ref.read(legacyCurrencyBackfillServiceProvider);
-    if (legacy != null &&
-        legacy.userId == service.userId &&
-        !legacy.isComplete &&
-        legacy.mayPromptAtStart) {
-      // That question goes first; ask on a later start.
-      return;
-    }
+    if (!await _legacyQuestionSettled(service, currency)) return;
     final askedThisSession = ref.read(usdTagRepairPromptedUsersProvider);
     if (askedThisSession.contains(service.userId)) return;
 
@@ -165,17 +158,20 @@ class _UsdTagRepairInitializerState
       }
       return;
     }
+    // What was really changed: the re-scan skips investments changed
+    // elsewhere since the question opened. Undo puts back the same set.
+    final changed = service.backedUpInvestmentCount;
     _logRepair(analytics, {
       'action': 'fixed',
       'flagged': candidates.length,
-      'fixed': selected.length,
+      'fixed': changed,
     });
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
     final l10n = AppLocalizations.of(ctx);
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: Text(l10n.usdTagRepairDone(selected.length, currency)),
+        content: Text(l10n.usdTagRepairDone(changed, currency)),
         duration: const Duration(seconds: 10),
         action: SnackBarAction(
           label: l10n.usdTagRepairUndo,
@@ -191,6 +187,35 @@ class _UsdTagRepairInitializerState
         ),
       ),
     );
+  }
+
+  /// Whether the question about records without a currency (A03-F1) cannot
+  /// be asked now, so this one may go ahead. That question goes first: when
+  /// it may still be asked, waits for its check (shared with it, so the
+  /// server is read once) and, if records without a currency were found,
+  /// leaves this question for a later start. False too when the check fails
+  /// (offline), so the next start tries again.
+  Future<bool> _legacyQuestionSettled(
+    UsdTagRepairService service,
+    String currency,
+  ) async {
+    final legacy = ref.read(legacyCurrencyBackfillServiceProvider);
+    if (legacy == null ||
+        legacy.userId != service.userId ||
+        legacy.isComplete ||
+        legacy.isConfirmedFor(currency) ||
+        !legacy.mayPromptAtStart) {
+      return true;
+    }
+    try {
+      return !await legacy.hasUnstampedRecords();
+    } catch (e) {
+      LoggerService.warn(
+        'Legacy currency check did not finish; USD tag check will retry',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      return false;
+    }
   }
 
   /// Completes with true once the app is not locked, or false if this
