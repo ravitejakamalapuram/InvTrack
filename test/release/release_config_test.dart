@@ -18,6 +18,77 @@ void main() {
     ).firstMatch(read('.github/workflows/auto-release.yml'));
     expect(match, isNotNull, reason: 'rollout_fraction must be set');
     expect(double.parse(match!.group(1)!), 0.05);
+    expect(
+      double.parse(match.group(1)!),
+      stagedRolloutFraction,
+      reason: 'the guard caps promote at the auto-release fraction',
+    );
+  });
+
+  test('promote.yml defaults to a fraction the guard lets promote use', () {
+    final match = RegExp(
+      r"^      user_fraction:\n(?:        .*\n)*?        default: '([^']*)'",
+      multiLine: true,
+    ).firstMatch(read('.github/workflows/promote.yml'));
+    expect(match, isNotNull, reason: 'user_fraction needs a default');
+    expect(double.parse(match!.group(1)!), stagedRolloutFraction);
+  });
+
+  // ci-release-2 and ci-release-3: the promote job reuses the guard job's
+  // result, so it must only run on a first attempt from main (halt excepted).
+  test('the promote job runs only on the first attempt from main', () {
+    final promote = read('.github/workflows/promote.yml');
+    final job = RegExp(
+      r'^  promote:\n((?:    .*\n)+)',
+      multiLine: true,
+    ).firstMatch(promote)?.group(1);
+    expect(job, isNotNull);
+    final condition = RegExp(
+      r'^    if: (.+)$',
+      multiLine: true,
+    ).firstMatch(job!)?.group(1);
+    expect(condition, isNotNull, reason: 'the promote job needs an if');
+    expect(condition, contains("github.ref == 'refs/heads/main'"));
+    expect(condition, contains("github.run_attempt == '1'"));
+    expect(condition, contains("inputs.action == 'halt'"));
+  });
+
+  // ci-release-4: the guard needs the auto-release history to find when the
+  // 5% Play call finished.
+  test('the guard reads the auto-release history', () {
+    final promote = read('.github/workflows/promote.yml');
+    expect(promote, contains('--workflow auto-release.yml'));
+    expect(promote, contains('AUTO_RELEASE_RUNS'));
+    expect(promote, contains('updatedAt'));
+  });
+
+  // ci-release-8: third-party actions in the release guard and nightly
+  // workflows are pinned to a commit, and checkout keeps no token.
+  test('promote.yml and nightly.yml pin actions and drop checkout '
+      'credentials', () {
+    for (final path in [
+      '.github/workflows/promote.yml',
+      '.github/workflows/nightly.yml',
+    ]) {
+      final text = read(path);
+      final uses = RegExp(
+        r'uses:\s*(\S+)',
+      ).allMatches(text).map((m) => m.group(1)!);
+      for (final ref in uses) {
+        // The owner's own reusable workflows are versioned by tag on purpose.
+        if (ref.startsWith('ravitejakamalapuram/release-platform/')) continue;
+        expect(
+          ref,
+          matches(RegExp(r'@[0-9a-f]{40}$')),
+          reason: '$path: $ref must be pinned to a commit',
+        );
+      }
+      final checkouts = RegExp(r'actions/checkout@').allMatches(text).length;
+      final noCredentials = RegExp(
+        r'persist-credentials: false',
+      ).allMatches(text).length;
+      expect(noCredentials, checkouts, reason: path);
+    }
   });
 
   test('promote.yml runs the promotion guard before touching Play', () {
@@ -59,14 +130,16 @@ void main() {
         {
           'displayTitle': title('promote', 'production', '0.05'),
           'createdAt': '2026-10-01T09:00:00Z',
+          'updatedAt': '2026-10-01T09:30:00Z',
         },
         {
           'displayTitle': title('rollout', 'production', '0.2'),
           'createdAt': '2026-10-01T10:00:00Z',
+          'updatedAt': '2026-10-01T10:30:00Z',
         },
       ]),
     );
-    expect(starts, [DateTime.utc(2026, 10, 1, 9)]);
+    expect(starts, [DateTime.utc(2026, 10, 1, 9, 30)]);
 
     // The guard reads that history, and it needs permission to.
     expect(promote, contains('gh run list'));
