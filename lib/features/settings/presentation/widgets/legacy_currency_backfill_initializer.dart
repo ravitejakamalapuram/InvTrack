@@ -26,8 +26,8 @@ final legacyCurrencyPromptedUsersProvider = Provider<Set<String>>(
 /// [LegacyCurrencyBackfillService.maxPromptDismissals] dismissals (a
 /// base-currency change still asks). Until they confirm, nothing is written
 /// and the repositories keep their read-time fallback. If the base currency
-/// changes during the check or while the question is open, nothing is
-/// written. A failure (for example offline) is retried on the next start.
+/// or the signed-in user changes during the check or while the question is
+/// open, nothing is written or recorded. A failure (for example offline) is retried on the next start.
 class LegacyCurrencyBackfillInitializer extends ConsumerStatefulWidget {
   const LegacyCurrencyBackfillInitializer({super.key, required this.child});
 
@@ -85,10 +85,9 @@ class _LegacyCurrencyBackfillInitializerState
     }
     // The base currency may have changed in Settings during the scan; then
     // the question would name a currency that is no longer shown. Ask again
-    // on a later start instead.
-    if (!pending || !mounted || ref.read(currencyCodeProvider) != currency) {
-      return;
-    }
+    // on a later start instead. The user may also have signed out (or another
+    // user in) meanwhile; then this question is not theirs to answer.
+    if (!pending || !_stillCurrent(service, currency)) return;
 
     final context = rootNavigatorKey.currentContext;
     if (context == null || !context.mounted) return;
@@ -113,18 +112,24 @@ class _LegacyCurrencyBackfillInitializerState
         ],
       ),
     );
+    // Whoever answered must still be the user asked, and the currency they
+    // saw must still be the base currency (either may have changed while the
+    // dialog was open). Otherwise nothing is recorded and a later start asks
+    // again.
+    if (!_stillCurrent(service, currency)) return;
     if (confirmed != true) {
       await service.recordPromptDismissed();
       return;
     }
-
-    // Stamp only the currency the user saw and confirmed, and only while it
-    // is still the base currency (it may have changed while the dialog was
-    // open). Otherwise nothing is written and a later start asks again.
-    if (!mounted || ref.read(currencyCodeProvider) != currency) return;
     await service.confirm(currency);
     await service.runOnce(currency);
   }
+
+  bool _stillCurrent(LegacyCurrencyBackfillService service, String currency) =>
+      mounted &&
+      ref.read(legacyCurrencyBackfillServiceProvider)?.userId ==
+          service.userId &&
+      ref.read(currencyCodeProvider) == currency;
 
   @override
   Widget build(BuildContext context) => widget.child;

@@ -321,6 +321,76 @@ void main() {
       expect(find.text(title), findsNothing);
     });
 
+    // Signs user A out and user B in on the same device. B has no records
+    // without a currency, so any question shown is about A's records.
+    Future<void> switchUserToB(WidgetTester tester) async {
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SizedBox).first),
+      );
+      final holder = _ServiceHolder.provider;
+      container.read(holder.notifier).set(null);
+      await tester.pump();
+      container
+          .read(holder.notifier)
+          .set(
+            LegacyCurrencyBackfillService(
+              firestore: FakeLegacyCurrencyFirestore(uid: 'uid-b'),
+              userId: 'uid-b',
+              prefs: prefs,
+            ),
+          );
+      await tester.pump();
+    }
+
+    Widget appWithUserSwitch() {
+      _ServiceHolder.initial = service();
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          legacyCurrencyBackfillServiceProvider.overrideWith(
+            (ref) => ref.watch(_ServiceHolder.provider),
+          ),
+        ],
+        child: MaterialApp(
+          navigatorKey: rootNavigatorKey,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const LegacyCurrencyBackfillInitializer(child: SizedBox()),
+        ),
+      );
+    }
+
+    testWidgets('a user switch during the server scan: B is not asked about '
+        "A's records and nothing is stored for A", (tester) async {
+      firestore.readGate = Completer<void>();
+      await tester.pumpWidget(appWithUserSwitch());
+      await tester.pump();
+
+      await switchUserToB(tester);
+      firestore.readGate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(title), findsNothing);
+      expect(service().confirmedCurrency, isNull);
+      expect(service().promptDismissals, 0);
+      expect(cashFlowStamped(), isFalse);
+    });
+
+    testWidgets("a user switch while A's question is open: B's answer is not "
+        "stored as A's", (tester) async {
+      await tester.pumpWidget(appWithUserSwitch());
+      await tester.pumpAndSettle();
+      expect(find.text('Mark as INR'), findsOneWidget);
+
+      await switchUserToB(tester);
+      await tester.tap(find.text('Mark as INR'));
+      await tester.pumpAndSettle();
+
+      expect(service().confirmedCurrency, isNull);
+      expect(service().promptDismissals, 0);
+      expect(cashFlowStamped(), isFalse);
+    });
+
     testWidgets('stops asking at start after 3 dismissals, per user', (
       tester,
     ) async {
@@ -442,6 +512,11 @@ class _TestCurrency extends Notifier<String> {
 
 class _ServiceHolder extends Notifier<LegacyCurrencyBackfillService?> {
   static LegacyCurrencyBackfillService? initial;
+
+  static final provider =
+      NotifierProvider<_ServiceHolder, LegacyCurrencyBackfillService?>(
+        _ServiceHolder.new,
+      );
 
   @override
   LegacyCurrencyBackfillService? build() => initial;
