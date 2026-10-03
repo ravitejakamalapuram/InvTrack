@@ -55,6 +55,9 @@ jobs:
       (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Runs PR-controlled scripts, so the token stays read-only.
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -141,12 +144,18 @@ jobs:
       # Any PR (including Bolt/Sentinel/Palette bot PRs) that changes money-calculation code under
       # lib/core/calculations, goals, fire_number or reports must add or update a *_test.dart file.
       # Diffs the PR merge commit against its first parent (the base branch), so only this PR's
-      # files count. Rules live in scripts/ci/check_calculation_tests.sh.
+      # files count. Rules live in scripts/ci/check_calculation_tests.sh; the base branch's copy
+      # runs, so a PR cannot weaken the guard that checks it (the PR's own copy is used only
+      # while the base has none).
       - name: Money-code test guard
         if: github.event_name == 'pull_request'
         run: |
           git fetch --no-tags --depth=2 origin "$GITHUB_REF"
-          git diff --name-status FETCH_HEAD^1 FETCH_HEAD | bash scripts/ci/check_calculation_tests.sh
+          guard=scripts/ci/check_calculation_tests.sh
+          if ! git show "FETCH_HEAD^1:$guard" > "$RUNNER_TEMP/guard.sh" 2>/dev/null; then
+            cp "$guard" "$RUNNER_TEMP/guard.sh"
+          fi
+          git diff --name-status FETCH_HEAD^1 FETCH_HEAD | bash "$RUNNER_TEMP/guard.sh"
         shell: bash
 
   # Preserves the old workflow's single "notify Slack on any CI failure" behavior now that the

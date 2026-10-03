@@ -24,10 +24,17 @@ while IFS=$'\t' read -r status path1 path2 || [[ -n "${status:-}" ]]; do
     test_changed=1
   fi
 
-  if [[ "$status" != D* && "$path" =~ ^lib/(core/calculations|features/(goals|fire_number|reports))/.*\.dart$ \
-    && ! "$path" =~ \.(g|freezed)\.dart$ ]]; then
-    guarded+=("$path")
-  fi
+  # Deleting a file, or renaming it out of a guarded path, removes guarded
+  # code too, so the old path counts as well.
+  candidates=("$path")
+  [[ "$status" == R* && "$path1" != "$path" ]] && candidates+=("$path1")
+  for candidate in "${candidates[@]}"; do
+    if [[ "$candidate" =~ ^lib/(core/calculations|features/(goals|fire_number|reports))/.*\.dart$ \
+      && ! "$candidate" =~ \.(g|freezed)\.dart$ ]]; then
+      guarded+=("$candidate")
+      break
+    fi
+  done
 done
 
 if [[ ${#guarded[@]} -eq 0 ]]; then

@@ -85,6 +85,22 @@ void main() {
       expect(result.stdout, contains('lib/core/calculations/new.dart'));
     });
 
+    test('deleting a calculation file needs a test change', () async {
+      final result = await _runGuard(
+        'D\tlib/core/calculations/xirr_solver.dart\n',
+      );
+      expect(result.exitCode, 1);
+      expect(result.stdout, contains('lib/core/calculations/xirr_solver.dart'));
+    });
+
+    test('a file renamed out of a guarded path needs a test', () async {
+      final result = await _runGuard(
+        'R100\tlib/core/calculations/old.dart\tlib/core/utils/old.dart\n',
+      );
+      expect(result.exitCode, 1);
+      expect(result.stdout, contains('lib/core/calculations/old.dart'));
+    });
+
     test('deleting a test does not count as a test change', () async {
       final result = await _runGuard(
         'M\tlib/core/calculations/xirr_solver.dart\n'
