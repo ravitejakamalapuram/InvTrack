@@ -240,6 +240,38 @@ void main() {
     },
   );
 
+  testWidgets(
+    'when archived investments fail to load, an empty account shows the retry '
+    'message, and Retry loads them again',
+    (tester) async {
+      var archivedSubscriptions = 0;
+
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => Stream.value(const []),
+        cashFlows: () => Stream.value(const []),
+        archivedInvestments: () {
+          archivedSubscriptions++;
+          return Stream.error(Exception('unavailable'));
+        },
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text("Couldn't load your portfolio"), findsOneWidget);
+      expect(find.byType(OverviewEmptyState), findsNothing);
+      expect(find.text('Try Sample Data'), findsNothing);
+      expect(_emptyStateEvents(analytics), 0);
+
+      final before = archivedSubscriptions;
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(archivedSubscriptions, greaterThan(before));
+      expect(_emptyStateEvents(analytics), 0);
+    },
+  );
+
   testWidgets('sample data waits until archived investments have loaded', (
     tester,
   ) async {

@@ -101,6 +101,7 @@ final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
 void reloadPortfolio(WidgetRef ref) {
   ref.invalidate(allInvestmentsProvider);
   ref.invalidate(allCashFlowsStreamProvider);
+  ref.invalidate(archivedInvestmentsProvider);
 }
 
 /// Watch cash flows in a specific date range (optimized for reports).

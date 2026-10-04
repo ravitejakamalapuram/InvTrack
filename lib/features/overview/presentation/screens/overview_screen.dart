@@ -76,9 +76,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     // with investments but no cash flows yet, or only archived investments,
     // must not be offered sample data. Archived investments live in their own
     // collection, so both must have loaded.
+    final archivedInvestmentsAsync = errorFirst(
+      ref.watch(archivedInvestmentsProvider),
+    );
     final isNewAccount =
         (ref.watch(activeInvestmentsProvider).value?.isEmpty ?? false) &&
-        (ref.watch(archivedInvestmentsProvider).value?.isEmpty ?? false);
+        (archivedInvestmentsAsync.value?.isEmpty ?? false);
 
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -119,7 +122,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
               SliverPadding(
                 padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
-                  data: (stats) => stats.hasData
+                  // Without archived investments it is not known whether
+                  // the account is empty: show the load error, not onboarding.
+                  data: (stats) => !stats.hasData &&
+                          archivedInvestmentsAsync.hasError
+                      ? _buildLoadErrorContent(ref)
+                      : stats.hasData
                       ? _buildDataContent(
                           context,
                           ref,
