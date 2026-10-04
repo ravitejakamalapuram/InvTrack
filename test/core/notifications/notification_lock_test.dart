@@ -107,6 +107,9 @@ void main() {
         allInvestmentsProvider.overrideWith(
           (ref) => investments ?? Stream.value([_fd]),
         ),
+        // Overview watches archived investments too (A28). Without this the
+        // stream reads Firestore, fails, and leaves a retry timer running.
+        archivedInvestmentsProvider.overrideWith((ref) => Stream.value([])),
       ],
     );
     addTearDown(container.dispose);
