@@ -25,12 +25,14 @@ Future<void> _pumpCard(
     ProviderScope(
       overrides: [
         if (investment.isArchived) ...[
-          archivedInvestmentBasicStatsProvider(
-            investment.id,
-          ).overrideWith((ref) => AsyncValue.data(stats)),
-          archivedInvestmentXirrProvider(
-            investment.id,
-          ).overrideWith((ref) => Future.value(xirr)),
+          // Archived cards read the converted archived stats, XIRR included.
+          multiCurrencyArchivedInvestmentStatsProvider(investment.id)
+              .overrideWith(
+                (ref) async => stats.copyWith(
+                  xirr: xirr.value,
+                  xirrMethod: xirr.method,
+                ),
+              ),
         ] else ...[
           investmentBasicStatsProvider(
             investment.id,

@@ -99,9 +99,15 @@ class PortfolioHealthCalculator {
 
     for (final investment in investments) {
       final stat = stats[investment.id];
-      if (stat != null && stat.totalInvested > 0 && stat.xirr.isFinite) {
+      // An undefined XIRR (e.g. an open FD with no payout yet) is left out of
+      // the average, never counted as 0%.
+      final xirr = stat?.xirr;
+      if (stat != null &&
+          stat.totalInvested > 0 &&
+          xirr != null &&
+          xirr.isFinite) {
         totalInvested += stat.totalInvested;
-        weightedXirr += stat.xirr * stat.totalInvested;
+        weightedXirr += xirr * stat.totalInvested;
       }
     }
 

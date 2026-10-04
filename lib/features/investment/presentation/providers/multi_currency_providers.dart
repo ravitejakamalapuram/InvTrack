@@ -117,41 +117,6 @@ Future<double> multiCurrencyReturnedAmount(Ref ref, String investmentId) async {
   return total;
 }
 
-/// Provider for multi-currency XIRR calculation
-///
-/// Converts all cash flows to user's base currency using historical rates
-/// before calculating XIRR
-///
-/// **Parameters:**
-/// - [investmentId]: Investment ID
-///
-/// **Returns:**
-/// - XIRR as decimal (e.g., 0.15 = 15% annual return)
-/// - 0.0 if user is not authenticated (converter is null)
-@riverpod
-Future<double> multiCurrencyXirr(Ref ref, String investmentId) async {
-  final cashFlows = await ref.watch(
-    cashFlowsByInvestmentProvider(investmentId).selectAsync((data) => data),
-  );
-
-  if (cashFlows.isEmpty) return 0.0;
-
-  final engine = ref.watch(calculationEngineProvider);
-  if (!engine.currency.isAvailable) return 0.0;
-
-  final userBaseCurrency = ref.watch(currencyCodeProvider);
-
-  // Batch convert all cash flows to base currency (OPTIMIZED)
-  final convertedCashFlows = await engine.currency.batchConvert(
-    cashFlows: cashFlows,
-    baseCurrency: userBaseCurrency,
-    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
-  );
-
-  // Calculate XIRR using converted cash flows
-  return engine.financial.calculateXirrFromCashFlows(convertedCashFlows);
-}
-
 /// Provider for multi-currency portfolio value
 ///
 /// Calculates total portfolio value by summing net cash flow
@@ -202,28 +167,30 @@ Future<double> multiCurrencyPortfolioValue(Ref ref) async {
   return total;
 }
 
-/// Provider for multi-currency investment stats
+/// Stats for one active investment, in the user's base currency.
 ///
-/// Calculates investment statistics with proper currency conversion.
-/// All cash flows are converted to user's base currency before aggregation.
-///
-/// Uses optimized batch conversion with deduplication for performance.
+/// Read from the same converted snapshot as the list cards, the sort and the
+/// Overview ([convertedCashFlowsSnapshotProvider]), so the detail screen
+/// always shows the same net and XIRR as the card.
 ///
 /// **Parameters:**
 /// - [investmentId]: Investment ID
 ///
 /// **Returns:**
 /// - InvestmentStats with amounts in user's base currency
-/// - InvestmentStats.empty() if user is not authenticated (converter is null)
+/// - InvestmentStats.empty() when the investment has no active cash flows
 @riverpod
 Future<InvestmentStats> multiCurrencyInvestmentStats(
   Ref ref,
   String investmentId,
 ) async {
-  final cashFlows = await ref.watch(
-    cashFlowsByInvestmentProvider(investmentId).future,
-  );
-  return _convertedStats(ref, cashFlows);
+  final snapshot = await ref.watch(convertedCashFlowsSnapshotProvider.future);
+  final cashFlows = [
+    for (final cf in snapshot.cashFlows)
+      if (cf.investmentId == investmentId) cf,
+  ];
+  if (cashFlows.isEmpty) return InvestmentStats.empty();
+  return calculateStats(cashFlows);
 }
 
 /// Converts [cashFlows] to the user's base currency and calculates their

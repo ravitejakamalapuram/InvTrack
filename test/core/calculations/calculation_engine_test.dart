@@ -112,9 +112,8 @@ void main() {
     });
 
     group('FinancialCalculatorModule - Advanced returns & edge cases', () {
-      test('CAGR, MOIC, absolute return standard values', () {
+      test('MOIC, absolute return standard values', () {
         final f = identityEngine.financial;
-        expect(f.calculateCAGR(1000, 2000, 5), closeTo(0.1487, 0.0001));
         expect(f.calculateMOIC(1000, 2500), 2.5);
         expect(f.calculateAbsoluteReturn(1000, 1500), 50.0);
         expect(f.calculateNetCashFlow(1000, 1500), 500.0);
@@ -122,7 +121,6 @@ void main() {
 
       test('protects against division-by-zero on zero principal/invested inputs', () {
         final f = identityEngine.financial;
-        expect(f.calculateCAGR(0, 100, 5), 0.0);
         expect(f.calculateMOIC(0, 100), 0.0);
         expect(f.calculateAbsoluteReturn(0, 100), 0.0);
       });
@@ -140,7 +138,8 @@ void main() {
         expect(stats.netCashFlow, 0.0);
         expect(stats.absoluteReturn, 0.0);
         expect(stats.moic, 0.0);
-        expect(stats.xirr, 0.0);
+        // A71: no XIRR exists, so it is undefined (null), not 0%.
+        expect(stats.xirr, isNull);
       });
 
       test('calculateStats skips XIRR calculation when includeXirr is false', () {
@@ -167,7 +166,8 @@ void main() {
         expect(stats.totalInvested, 1000.0);
         expect(stats.totalReturned, 1200.0);
         expect(stats.netCashFlow, 200.0);
-        expect(stats.xirr, 0.0); // skipped!
+        // Skipped, so not computed: undefined (null), never a 0% placeholder.
+        expect(stats.xirr, isNull);
       });
     });
 

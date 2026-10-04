@@ -66,7 +66,9 @@ class CompactAmountText extends ConsumerWidget {
       decimalDigits: 2,
     );
     final formatted = formatter.format(amount.abs());
-    if (amount < 0) {
+    // A [prefix] already carries the sign ("-" + "-₹5,50,000.00" would read
+    // "--₹5,50,000.00").
+    if (amount < 0 && prefix == null) {
       return '-$formatted';
     }
     return formatted;

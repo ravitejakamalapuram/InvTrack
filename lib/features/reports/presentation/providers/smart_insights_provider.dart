@@ -6,6 +6,7 @@ library;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/reports/data/services/smart_insights_service.dart';
 import 'package:inv_tracker/features/reports/domain/entities/smart_insight.dart';
@@ -25,7 +26,8 @@ SmartInsightsService smartInsightsService(Ref ref) {
 Future<List<SmartInsight>> smartInsights(Ref ref, AppLocalizations l10n) async {
   // Watch all required data
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
+  // In the base currency: insights format their sums with its symbol.
+  final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
   final goalsAsync = ref.watch(activeGoalsProvider);
 
   // Watch currency and locale for proper formatting

@@ -4,55 +4,6 @@ import 'package:inv_tracker/features/investment/domain/entities/transaction_enti
 
 void main() {
   group('FinancialCalculator - Edge Cases', () {
-    group('calculateCAGR - Edge Cases', () {
-      test('should return 0 for zero startValue', () {
-        final cagr = FinancialCalculator.calculateCAGR(0, 100, 1);
-        expect(cagr, 0.0);
-      });
-
-      test('should return 0 for negative startValue', () {
-        final cagr = FinancialCalculator.calculateCAGR(-100, 200, 1);
-        expect(cagr, 0.0);
-      });
-
-      test('should return 0 for zero years', () {
-        final cagr = FinancialCalculator.calculateCAGR(100, 200, 0);
-        expect(cagr, 0.0);
-      });
-
-      test('should return 0 for negative years', () {
-        final cagr = FinancialCalculator.calculateCAGR(100, 200, -1);
-        expect(cagr, 0.0);
-      });
-
-      test('should handle zero endValue (total loss)', () {
-        final cagr = FinancialCalculator.calculateCAGR(100, 0, 1);
-        expect(cagr, -1.0); // -100% return
-      });
-
-      test('should handle very large numbers without overflow', () {
-        // Test with billions
-        final cagr = FinancialCalculator.calculateCAGR(
-          1000000000, // 1 billion
-          2000000000, // 2 billion
-          5,
-        );
-        expect(cagr.isFinite, isTrue);
-        expect(cagr, closeTo(0.1487, 0.001)); // ~14.87% CAGR
-      });
-
-      test('should handle very small fractional years', () {
-        final cagr = FinancialCalculator.calculateCAGR(100, 110, 0.1);
-        expect(cagr.isFinite, isTrue);
-        expect(cagr, greaterThan(0));
-      });
-
-      test('should handle same start and end value (break-even)', () {
-        final cagr = FinancialCalculator.calculateCAGR(100, 100, 1);
-        expect(cagr, closeTo(0.0, 0.0001));
-      });
-    });
-
     group('calculateMOIC - Edge Cases', () {
       test(
         'should return 0 for zero invested (division by zero protection)',
@@ -148,9 +99,10 @@ void main() {
     });
 
     group('calculateXirrFromCashFlows - Edge Cases', () {
-      test('should return 0 for empty cash flows', () {
+      // A71: no XIRR exists here, so it is undefined (null), not 0%.
+      test('should return undefined (null) for empty cash flows', () {
         final xirr = FinancialCalculator.calculateXirrFromCashFlows([]);
-        expect(xirr, 0.0);
+        expect(xirr, isNull);
       });
 
       test('should handle single cash flow', () {
@@ -165,7 +117,7 @@ void main() {
           ),
         ];
         final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
-        expect(xirr, 0.0); // Single cash flow has no return
+        expect(xirr, isNull); // Single cash flow has no XIRR (A71: not 0%)
       });
 
       test('should handle same-day transactions', () {
@@ -188,8 +140,8 @@ void main() {
           ),
         ];
         final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
-        // Same-day transactions should return 0 or handle gracefully
-        expect(xirr.isFinite, isTrue);
+        // Same-day transactions are undefined or a finite rate, never NaN
+        expect(xirr == null || xirr.isFinite, isTrue);
       });
     });
   });

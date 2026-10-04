@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/reports/data/services/report_cache_service.dart';
@@ -287,9 +288,9 @@ void main() {
       ];
 
       final xirrMap = {
-        'inv1': 0.05, // 5%
-        'inv2': 0.15, // 15% - Best performer
-        'inv3': 0.10, // 10% - But closed, should be excluded
+        'inv1': const XirrResult.exact(0.05), // 5%
+        'inv2': const XirrResult.exact(0.15), // 15% - Best performer
+        'inv3': const XirrResult.exact(0.10), // 10% - But closed, excluded
       };
 
       final summary = await service.generateSummary(

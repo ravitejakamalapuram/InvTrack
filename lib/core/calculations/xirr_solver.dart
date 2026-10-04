@@ -170,8 +170,9 @@ class XirrSolver {
   /// ## Returns
   ///
   /// - **double**: XIRR as decimal (e.g., 0.15 = 15% annual return)
-  /// - **null**: Invalid cash flows (all inflows or all outflows)
-  /// - **0.0**: Single cash flow or empty list (no return to calculate)
+  /// - **null**: No XIRR exists: a single cash flow or an empty list, all
+  ///   inflows or all outflows, or no solution. Show "—"; never treat it as
+  ///   0%.
   ///
   /// ## Algorithm
   ///
@@ -205,23 +206,14 @@ class XirrSolver {
   /// calculateXirr([date1, date2], [-1000.0, -500.0]); // Returns null
   ///
   /// // Single transaction
-  /// calculateXirr([date1], [-1000.0]); // Returns 0.0
+  /// calculateXirr([date1], [-1000.0]); // Returns null
   /// ```
   ///
   /// ## Throws
   ///
   /// - [ArgumentError]: If [dates] and [amounts] have different lengths
   static double? calculateXirr(List<DateTime> dates, List<double> amounts) {
-    final result = solve(dates, amounts);
-    switch (result.reason) {
-      case null:
-        return result.value;
-      case XirrUndefinedReason.noSignChange:
-        return null;
-      case XirrUndefinedReason.insufficientFlows:
-      case XirrUndefinedReason.noSolution:
-        return 0.0;
-    }
+    return solve(dates, amounts).value;
   }
 
   /// Calculates XIRR like [calculateXirr], but says how the value was found.

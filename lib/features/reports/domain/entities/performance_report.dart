@@ -61,7 +61,9 @@ class PerformanceReport {
 /// Individual investment performance data
 class InvestmentPerformance {
   final InvestmentEntity investment;
-  final double xirr;
+
+  /// XIRR as a decimal, or null when undefined (shown as "—", never 0%).
+  final double? xirr;
   final double absoluteReturn;
   final double percentageReturn;
   final double totalInvested;
@@ -81,12 +83,14 @@ class InvestmentPerformance {
   /// Returns true if this investment is profitable
   bool get isProfitable => absoluteReturn > 0;
 
-  /// Performance category based on XIRR
-  PerformanceCategory get category {
-    if (xirr >= 0.15) return PerformanceCategory.excellent;
-    if (xirr >= 0.10) return PerformanceCategory.good;
-    if (xirr >= 0.05) return PerformanceCategory.moderate;
-    if (xirr >= 0) return PerformanceCategory.poor;
+  /// Performance category based on XIRR, or null when XIRR is undefined.
+  PerformanceCategory? get category {
+    final rate = xirr;
+    if (rate == null) return null;
+    if (rate >= 0.15) return PerformanceCategory.excellent;
+    if (rate >= 0.10) return PerformanceCategory.good;
+    if (rate >= 0.05) return PerformanceCategory.moderate;
+    if (rate >= 0) return PerformanceCategory.poor;
     return PerformanceCategory.loss;
   }
 }
