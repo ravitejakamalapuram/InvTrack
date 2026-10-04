@@ -20,6 +20,16 @@ String _read(String file) =>
 /// Characters as Play counts them (code points, not UTF-16 units).
 int _chars(String text) => text.runes.length;
 
+/// A currency-count claim such as "40+ currencies", "forty currencies" or
+/// "40-plus currencies", in digits or number words, in any case.
+final _currencyCount = RegExp(
+  r'\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|'
+  r'thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|'
+  r'thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)'
+  r'(\+|-plus|\s+plus)?\s+currencies',
+  caseSensitive: false,
+);
+
 void main() {
   test('title leads with FD and P2P instead of a generic head term', () {
     final title = _read('title.txt');
@@ -36,6 +46,40 @@ void main() {
     );
     expect(_chars(short), 79);
     expect(short, isNot(contains('MOIC')));
+  });
+
+  group('currency-count guard', () {
+    test('matches counts in digits or words, with or without plus', () {
+      for (final claim in [
+        '40+ currencies',
+        '16 currencies',
+        'forty currencies',
+        'Forty Currencies',
+        '40-plus currencies',
+        '40 plus currencies',
+        'forty-plus currencies',
+        'twenty-five currencies',
+      ]) {
+        expect(claim, matches(_currencyCount), reason: claim);
+      }
+    });
+
+    test('ignores currency wording without a count', () {
+      for (final text in [
+        'Record each investment in its own currency',
+        'Totals are converted to your base currency',
+        'multi-currency support for major currencies',
+      ]) {
+        expect(text, isNot(matches(_currencyCount)), reason: text);
+      }
+    });
+  });
+
+  test('README claims no currency count the app does not offer', () {
+    expect(
+      File('README.md').readAsStringSync(),
+      isNot(matches(_currencyCount)),
+    );
   });
 
   group('full description', () {
@@ -115,7 +159,7 @@ void main() {
     test('claims no currency count the app does not offer', () {
       // The per-investment picker offers 16 currencies and the base-currency
       // picker 14, so a "40+ currencies" style claim would be false.
-      expect(full, isNot(matches(RegExp(r'\d+\+?\s+currencies'))));
+      expect(full, isNot(matches(_currencyCount)));
     });
 
     test('worked example matches the app XIRR for a one-year FD', () {
