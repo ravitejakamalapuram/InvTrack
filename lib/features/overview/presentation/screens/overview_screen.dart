@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/providers/feature_flags_provider.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/date_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
@@ -28,16 +29,29 @@ import 'package:inv_tracker/features/overview/presentation/widgets/sample_data_b
 import 'package:inv_tracker/features/settings/presentation/providers/sample_data_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
-class OverviewScreen extends ConsumerWidget {
+class OverviewScreen extends ConsumerStatefulWidget {
   const OverviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OverviewScreen> createState() => _OverviewScreenState();
+}
+
+class _OverviewScreenState extends ConsumerState<OverviewScreen> {
+  /// Whether `empty_state_viewed` was logged by this screen, so rebuilds and
+  /// new snapshots do not log it again.
+  bool _emptyStateViewLogged = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     // Use multi-currency stats providers (Rule 21.3 compliance)
     // Convert all amounts to base currency before displaying
-    final globalStatsAsync = ref.watch(multiCurrencyGlobalStatsProvider);
+    // errorFirst: while Riverpod retries a failed load, show the error and
+    // its retry action, not skeletons for as long as the retries last.
+    final globalStatsAsync = errorFirst(
+      ref.watch(multiCurrencyGlobalStatsProvider),
+    );
     final globalStats = globalStatsAsync.when<AsyncValue<InvestmentStats>>(
       data: (stats) => AsyncValue.data(stats),
       loading: () => const AsyncValue.loading(),
@@ -57,6 +71,18 @@ class OverviewScreen extends ConsumerWidget {
       loading: () => const AsyncValue.loading(),
       error: (e, st) => AsyncValue.error(e, st),
     );
+
+    // Only an account with no active and no archived investments is new; one
+    // with investments but no cash flows yet, or only archived investments,
+    // must not be offered sample data. Archived investments live in their own
+    // collection, so both must have loaded.
+    final archivedInvestmentsAsync = errorFirst(
+      ref.watch(archivedInvestmentsProvider),
+    );
+    final activeInvestmentsAsync = ref.watch(activeInvestmentsProvider);
+    final isNewAccount =
+        (activeInvestmentsAsync.value?.isEmpty ?? false) &&
+        (archivedInvestmentsAsync.value?.isEmpty ?? false);
 
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -80,11 +106,7 @@ class OverviewScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async {
-            // Invalidate base stream providers - all derived stats auto-update
-            ref.invalidate(allInvestmentsProvider);
-            ref.invalidate(allCashFlowsStreamProvider);
-          },
+          onRefresh: () async => reloadPortfolio(ref),
           child: CustomScrollView(
             slivers: [
               // App Bar
@@ -101,7 +123,28 @@ class OverviewScreen extends ConsumerWidget {
               SliverPadding(
                 padding: EdgeInsets.all(AppSpacing.md),
                 sliver: globalStats.when(
-                  data: (stats) => stats.hasData
+                  // Without archived investments it is not known whether
+                  // the account is empty: show the load error, not onboarding.
+                  data: (stats) => !stats.hasData &&
+                          archivedInvestmentsAsync.hasError
+                      ? _buildLoadErrorContent(ref)
+                      // Stats can be empty before the investments arrive;
+                      // the empty state must wait for both collections.
+                      // A refresh keeps the previous value, so it does not
+                      // count.
+                      : !stats.hasData &&
+                            ((!activeInvestmentsAsync.hasValue &&
+                                    activeInvestmentsAsync.isLoading) ||
+                                (!archivedInvestmentsAsync.hasValue &&
+                                    archivedInvestmentsAsync.isLoading))
+                      ? _buildLoadingContent(
+                          context,
+                          ref,
+                          globalStats,
+                          closedStats,
+                          currencyFormat,
+                        )
+                      : stats.hasData
                       ? _buildDataContent(
                           context,
                           ref,
@@ -119,6 +162,7 @@ class OverviewScreen extends ConsumerWidget {
                           closedStats,
                           currencyFormat,
                           isDark,
+                          isNewAccount: isNewAccount,
                         ),
                   loading: () => _buildLoadingContent(
                     context,
@@ -127,14 +171,9 @@ class OverviewScreen extends ConsumerWidget {
                     closedStats,
                     currencyFormat,
                   ),
-                  error: (e, s) => _buildEmptyStateContent(
-                    context,
-                    ref,
-                    globalStats,
-                    closedStats,
-                    currencyFormat,
-                    isDark,
-                  ),
+                  // A load failure is not an empty account: no onboarding,
+                  // no sample data, no empty_state_viewed.
+                  error: (e, s) => _buildLoadErrorContent(ref),
                 ),
               ),
             ],
@@ -251,24 +290,44 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  /// Build content for empty state (no data)
+  /// Build content for when the portfolio failed to load
+  SliverList _buildLoadErrorContent(WidgetRef ref) {
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        OverviewLoadErrorState(onRetry: () => reloadPortfolio(ref)),
+        // Bottom padding for FAB
+        const SizedBox(height: 80),
+      ]),
+    );
+  }
+
+  /// Build content for empty state (no cash flows).
+  ///
+  /// Sample data and the `empty_state_viewed` event are only for a new
+  /// account ([isNewAccount]); sample data would otherwise be mixed into
+  /// real investments.
   SliverList _buildEmptyStateContent(
     BuildContext context,
     WidgetRef ref,
     AsyncValue<InvestmentStats> globalStats,
     AsyncValue<InvestmentStats> closedStats,
     NumberFormat currencyFormat,
-    bool isDark,
-  ) {
-    // Track empty state view for analytics
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(analyticsServiceProvider)
-          .logEvent(
-            name: 'empty_state_viewed',
-            parameters: {'screen': 'overview'},
-          );
-    });
+    bool isDark, {
+    required bool isNewAccount,
+  }) {
+    // Track the empty state view once, not on every rebuild
+    if (isNewAccount && !_emptyStateViewLogged) {
+      _emptyStateViewLogged = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(analyticsServiceProvider)
+            .logEvent(
+              name: 'empty_state_viewed',
+              parameters: {'screen': 'overview'},
+            );
+      });
+    }
 
     return SliverList(
       delegate: SliverChildListDelegate([
@@ -319,37 +378,39 @@ class OverviewScreen extends ConsumerWidget {
               ),
             );
           },
-          onTrySampleData: () async {
-            HapticFeedback.mediumImpact();
+          onTrySampleData: !isNewAccount
+              ? null
+              : () async {
+                  HapticFeedback.mediumImpact();
 
-            // Capture l10n before async operation
-            final localizations = AppLocalizations.of(context);
+                  // Capture l10n before async operation
+                  final localizations = AppLocalizations.of(context);
 
-            // Activate sample data mode
-            final success = await ref
-                .read(sampleDataModeProvider.notifier)
-                .activateSampleData();
+                  // Activate sample data mode
+                  final success = await ref
+                      .read(sampleDataModeProvider.notifier)
+                      .activateSampleData();
 
-            if (!context.mounted) return;
+                  if (!context.mounted) return;
 
-            if (success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(localizations.sampleDataLoaded),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(localizations.sampleDataLoadFailed),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(localizations.sampleDataLoaded),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(localizations.sampleDataLoadFailed),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
         ),
 
         // Bottom padding for FAB
@@ -369,7 +430,10 @@ class OverviewScreen extends ConsumerWidget {
     return SliverList(
       delegate: SliverChildListDelegate([
         // Hero Card Skeleton
-        const HeroCardSkeleton(),
+        Semantics(
+          label: AppLocalizations.of(context).overviewLoadingPortfolio,
+          child: const HeroCardSkeleton(),
+        ),
 
         const SizedBox(height: 24),
 

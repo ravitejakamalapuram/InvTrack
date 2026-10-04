@@ -1,5 +1,6 @@
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -281,14 +282,9 @@ Future<InvestmentStats> multiCurrencyArchivedInvestmentStats(
 /// - InvestmentStats.empty() if user is not authenticated (converter is null)
 @riverpod
 Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  // Wait for cash flows to load
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) async => data,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, st) async => <CashFlowEntity>[],
-  );
+  // Stay loading, or fail, with the cash flows: an empty result here would
+  // show the new-user empty state to users who have data.
+  final cashFlows = await dataOf(ref.watch(validCashFlowsProvider));
 
   if (cashFlows.isEmpty) {
     return InvestmentStats.empty();
@@ -322,12 +318,8 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  // Wait for investments to load
-  final investments = await investmentsAsync.when(
-    data: (data) async => data,
-    loading: () async => <InvestmentEntity>[],
-    error: (e, st) async => <InvestmentEntity>[],
-  );
+  // Stay loading, or fail, with the sources instead of reporting no data.
+  final investments = await dataOf(investmentsAsync);
 
   // Optimization: Single pass loop replacing .where, .map, and .toSet
   final openIds = <String>{};
@@ -341,12 +333,7 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  // Wait for cash flows to load
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) async => data,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, st) async => <CashFlowEntity>[],
-  );
+  final cashFlows = await dataOf(cashFlowsAsync);
 
   // Optimization: Replace .where().toList() with standard loop
   final openCashFlows = <CashFlowEntity>[];
@@ -387,12 +374,8 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  // Wait for investments to load
-  final investments = await investmentsAsync.when(
-    data: (data) async => data,
-    loading: () async => <InvestmentEntity>[],
-    error: (e, st) async => <InvestmentEntity>[],
-  );
+  // Stay loading, or fail, with the sources instead of reporting no data.
+  final investments = await dataOf(investmentsAsync);
 
   // Optimization: Single pass loop replacing .where, .map, and .toSet
   final closedIds = <String>{};
@@ -406,12 +389,7 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  // Wait for cash flows to load
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) async => data,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, st) async => <CashFlowEntity>[],
-  );
+  final cashFlows = await dataOf(cashFlowsAsync);
 
   // Optimization: Replace .where().toList() with standard loop
   final closedCashFlows = <CashFlowEntity>[];
