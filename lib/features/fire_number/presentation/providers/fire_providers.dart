@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/fire_number/data/repositories/firestore_fire_settings_repository.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
@@ -66,16 +67,14 @@ final fireCalculationProvider =
     Provider.autoDispose<AsyncValue<FireCalculationResult>>((ref) {
       final settingsAsync = ref.watch(fireSettingsProvider);
 
-      // Use multi-currency global stats (Rule 21.3 compliance)
-      final multiCurrencyStatsAsync = ref.watch(
-        multiCurrencyGlobalStatsProvider,
+      // Use multi-currency global stats (Rule 21.3 compliance).
+      // errorFirst: a stats load error is an error even while Riverpod
+      // retries it, so the FIRE card and screen show it with a retry action
+      // instead of loading indefinitely, and no FIRE number is ever computed
+      // from a portfolio that failed to load.
+      final portfolioStatsAsync = errorFirst(
+        ref.watch(multiCurrencyGlobalStatsProvider),
       );
-      final portfolioStatsAsync = multiCurrencyStatsAsync
-          .when<AsyncValue<InvestmentStats>>(
-            data: (stats) => AsyncValue.data(stats),
-            loading: () => const AsyncValue.loading(),
-            error: (e, st) => AsyncValue.error(e, st),
-          );
 
       return settingsAsync.when(
         data: (settings) {

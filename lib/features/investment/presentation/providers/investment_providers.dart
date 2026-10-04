@@ -96,6 +96,13 @@ final allCashFlowsStreamProvider = StreamProvider<List<CashFlowEntity>>((ref) {
   return ref.watch(investmentRepositoryProvider).watchAllCashFlows();
 });
 
+/// Re-subscribes to the base portfolio streams; all derived stats follow.
+/// Used by Retry actions and pull-to-refresh after a load error.
+void reloadPortfolio(WidgetRef ref) {
+  ref.invalidate(allInvestmentsProvider);
+  ref.invalidate(allCashFlowsStreamProvider);
+}
+
 /// Watch cash flows in a specific date range (optimized for reports).
 /// Uses server-side filtering to reduce data transfer by ~90% for time-based reports.
 /// Returns empty list if user is not authenticated.

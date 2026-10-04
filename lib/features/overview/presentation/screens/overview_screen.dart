@@ -102,7 +102,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async => _reloadPortfolio(ref),
+          onRefresh: () async => reloadPortfolio(ref),
           child: CustomScrollView(
             slivers: [
               // App Bar
@@ -265,17 +265,11 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     );
   }
 
-  /// Re-subscribes to the base streams; all derived stats follow.
-  void _reloadPortfolio(WidgetRef ref) {
-    ref.invalidate(allInvestmentsProvider);
-    ref.invalidate(allCashFlowsStreamProvider);
-  }
-
   /// Build content for when the portfolio failed to load
   SliverList _buildLoadErrorContent(WidgetRef ref) {
     return SliverList(
       delegate: SliverChildListDelegate([
-        OverviewLoadErrorState(onRetry: () => _reloadPortfolio(ref)),
+        OverviewLoadErrorState(onRetry: () => reloadPortfolio(ref)),
         // Bottom padding for FAB
         const SizedBox(height: 80),
       ]),

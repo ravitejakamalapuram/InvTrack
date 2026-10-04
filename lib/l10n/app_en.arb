@@ -1231,6 +1231,11 @@
     "description": "Retry button label"
   },
 
+  "fireProgressLoadError": "Couldn''t load your FIRE progress",
+  "@fireProgressLoadError": {
+    "description": "FIRE card on Overview when the portfolio fails to load. No FIRE number is shown, because it would be computed from missing data."
+  },
+
   "signInFailed": "Sign-in failed: {error}",
   "@signInFailed": {
     "description": "Error message when Google sign-in fails",
