@@ -1,4 +1,5 @@
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
@@ -49,9 +50,15 @@ class FinancialCalculatorModule implements CalculationModule {
   /// Calculates stats from a list of cash flows.
   ///
   /// [includeXirr] - Set to false to skip expensive XIRR calculation if not needed.
+  ///
+  /// [terminalValues] are the current values of the open investments among
+  /// [cashFlows], already in the same currency. They are the terminal inflow
+  /// of XIRR, MOIC and absolute return; invested, returned and net cash flow
+  /// stay cash-only.
   InvestmentStats calculateStats(
     List<ICashFlow> cashFlows, {
     bool includeXirr = true,
+    TerminalValues terminalValues = TerminalValues.none,
   }) {
     if (cashFlows.isEmpty) {
       return InvestmentStats.empty();
@@ -88,6 +95,21 @@ class FinancialCalculatorModule implements CalculationModule {
       }
     }
 
+    // Current values: the terminal inflow (money rule 4).
+    double? currentValue;
+    DateTime? currentValueDate;
+    for (final terminal in terminalValues.flows) {
+      currentValue = (currentValue ?? 0) + terminal.amount;
+      if (currentValueDate == null || terminal.date.isAfter(currentValueDate)) {
+        currentValueDate = terminal.date;
+      }
+      if (includeXirr && terminal.amount > 0) {
+        xirrDates!.add(terminal.date);
+        xirrAmounts!.add(terminal.amount);
+      }
+    }
+    final returnedWithValue = totalReturned + (currentValue ?? 0);
+
     final firstDate = firstDateMs != null
         ? DateTime.fromMillisecondsSinceEpoch(firstDateMs)
         : null;
@@ -96,8 +118,11 @@ class FinancialCalculatorModule implements CalculationModule {
         : null;
 
     final netCashFlow = calculateNetCashFlow(totalInvested, totalReturned);
-    final absoluteReturn = calculateAbsoluteReturn(totalInvested, totalReturned);
-    final moic = calculateMOIC(totalInvested, totalReturned);
+    final absoluteReturn = calculateAbsoluteReturn(
+      totalInvested,
+      returnedWithValue,
+    );
+    final moic = calculateMOIC(totalInvested, returnedWithValue);
 
     final xirrResult = includeXirr
         ? XirrSolver.solve(xirrDates!, xirrAmounts!)
@@ -115,17 +140,24 @@ class FinancialCalculatorModule implements CalculationModule {
       cashFlowCount: cashFlows.length,
       firstCashFlowDate: firstDate,
       lastCashFlowDate: lastDate,
+      currentValue: currentValue,
+      currentValueDate: currentValueDate,
+      currentValueIsEstimate: currentValue != null && terminalValues.isEstimate,
+      currentValueRate: currentValue != null ? terminalValues.rate : null,
+      missingValueCount: terminalValues.missingValueCount,
     );
   }
 
   /// Stats for each investment in [cashFlows], keyed by investment id.
   ///
-  /// [cashFlows] must already be in one currency (the user's base currency);
-  /// this is the one place that groups a converted snapshot into
-  /// per-investment stats, so every screen shows the same numbers.
+  /// [cashFlows] and the flows of [terminalValues] (keyed by investment id)
+  /// must already be in one currency (the user's base currency); this is the
+  /// one place that groups a converted snapshot into per-investment stats,
+  /// so every screen shows the same numbers.
   Map<String, InvestmentStats> calculateStatsByInvestment(
     List<ICashFlow> cashFlows, {
     bool includeXirr = true,
+    Map<String, TerminalValues> terminalValues = const {},
   }) {
     final grouped = <String, List<ICashFlow>>{};
     for (final cf in cashFlows) {
@@ -133,7 +165,11 @@ class FinancialCalculatorModule implements CalculationModule {
     }
     return {
       for (final entry in grouped.entries)
-        entry.key: calculateStats(entry.value, includeXirr: includeXirr),
+        entry.key: calculateStats(
+          entry.value,
+          includeXirr: includeXirr,
+          terminalValues: terminalValues[entry.key] ?? TerminalValues.none,
+        ),
     };
   }
 }

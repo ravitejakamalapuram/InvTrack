@@ -18,6 +18,7 @@ import 'package:inv_tracker/features/fire_number/presentation/providers/fire_pro
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Main FIRE Number dashboard screen
@@ -64,7 +65,8 @@ class FireDashboardScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => _buildErrorState(isDark, () {
               ref.invalidate(fireSettingsProvider);
-              ref.invalidate(fireCalculationProvider);
+              // The calculation fails when the portfolio fails to load.
+              reloadPortfolio(ref);
             }, context),
           );
         },

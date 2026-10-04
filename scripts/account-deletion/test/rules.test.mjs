@@ -168,6 +168,15 @@ describe('users/** stays owner-only', () => {
     await assertFails(getDoc(doc(asBob(), 'users/alice/investments/i1')));
     await assertFails(getDoc(doc(anon(), 'users/alice/investments/i1')));
   });
+
+  it('the users/{uid} document itself is owner-only (US dollar fix answer)', async () => {
+    const answer = { usdTagRepairResolvedAt: serverTimestamp() };
+    await assertSucceeds(setDoc(doc(asAlice(), 'users/alice'), answer, { merge: true }));
+    await assertSucceeds(getDoc(doc(asAlice(), 'users/alice')));
+    await assertFails(setDoc(doc(asBob(), 'users/alice'), answer, { merge: true }));
+    await assertFails(getDoc(doc(asBob(), 'users/alice')));
+    await assertFails(getDoc(doc(anon(), 'users/alice')));
+  });
 });
 
 describe('everything else is denied', () => {

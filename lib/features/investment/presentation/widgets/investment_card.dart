@@ -101,6 +101,11 @@ class InvestmentCard extends ConsumerWidget {
           returnIsApproximate:
               display.kind == ReturnDisplayKind.annualised &&
               display.xirrMethod == XirrMethod.approximate,
+          // "Expected", with its basis, until the user confirms the value.
+          expectedReturnBasis:
+              display.kind == ReturnDisplayKind.annualised && display.isEstimate
+              ? display.secondaryText(l10n)
+              : null,
           returnStatus: display.statusLabel(l10n),
           currencySymbol: currencySymbol,
           isClosed: isClosed,
@@ -527,6 +532,8 @@ class _InvestmentValueColumn extends StatelessWidget {
                       : AppColors.errorLight;
                   final xirrFormatted = isShortHolding
                       ? display.primaryText(l10n)
+                      : display.isEstimate
+                      ? '${display.primaryText(l10n)} ${display.metricLabel(l10n)}'
                       : '${display.primaryText(l10n)} IRR';
 
                   return AnimatedOpacity(

@@ -256,6 +256,9 @@ void main() {
           'legacy_currency_confirmed_${FakeUserTree.uid}': 'INR',
           'legacy_currency_prompt_dismissals_${FakeUserTree.uid}': 2,
           'legacy_currency_confirmed_other-user': 'USD',
+          'usd_tag_repair_resolved_${FakeUserTree.uid}': true,
+          'usd_tag_repair_backup_${FakeUserTree.uid}': '[]',
+          'usd_tag_repair_resolved_other-user': true,
         });
         final prefs = await SharedPreferences.getInstance();
         final tree = FakeUserTree({'investments': 1});
@@ -281,6 +284,14 @@ void main() {
           expect(prefs.containsKey(k), isFalse, reason: k);
         }
         expect(prefs.getString('legacy_currency_confirmed_other-user'), 'USD');
+        // A04: this user's USD-repair answer and undo backup go too.
+        for (final k in [
+          'usd_tag_repair_resolved_${FakeUserTree.uid}',
+          'usd_tag_repair_backup_${FakeUserTree.uid}',
+        ]) {
+          expect(prefs.containsKey(k), isFalse, reason: k);
+        }
+        expect(prefs.getBool('usd_tag_repair_resolved_other-user'), isTrue);
       },
     );
 

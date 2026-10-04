@@ -153,6 +153,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
+      // The current value is in the stored currency; it means nothing in
+      // another one, so a currency change clears it (money rule 2).
+      final keepsValue = currency == null || currency == existing.currency;
 
       // Built explicitly, not with copyWith: the edit form sends every
       // optional field, and null means the user cleared it. copyWith would
@@ -181,6 +184,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         compoundingFrequency: compoundingFrequency,
         // Multi-currency: no currency from the form keeps the stored one
         currency: currency ?? existing.currency,
+        // Not on the edit form: set through setCurrentValue only.
+        currentValue: keepsValue ? existing.currentValue : null,
+        currentValueDate: keepsValue ? existing.currentValueDate : null,
       );
       final repo = ref.read(investmentRepositoryProvider);
 
@@ -223,6 +229,105 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       rethrow;
     }
   }
+
+  /// Sets the user's current value of an open investment, in the
+  /// investment's currency, as of [date] (date-only, not in the future).
+  /// It becomes the terminal inflow of its XIRR, MOIC and return %.
+  /// Throws [ValidationException] for a negative or non-finite value, a
+  /// future date, or an investment that is not open.
+  Future<void> setCurrentValue({
+    required String id,
+    required double value,
+    required DateTime date,
+  }) async {
+    if (!value.isFinite || value < 0) {
+      // No amount in the message: it may reach logs (money rule 7).
+      throw ValidationException(
+        userMessage: 'Enter a value of 0 or more.',
+        technicalMessage:
+            'Validation failed: current value is negative or '
+            'not finite',
+      );
+    }
+    final day = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    if (day.isAfter(DateTime(now.year, now.month, now.day))) {
+      throw ValidationException.invalidDate(date);
+    }
+    // Money is kept to the paisa.
+    final rounded = (value * 100).roundToDouble() / 100;
+    await _writeCurrentValue(id, (existing) {
+      if (!existing.isOpen) {
+        throw ValidationException(
+          userMessage: 'Only open investments have a current value.',
+          technicalMessage: 'setCurrentValue on a closed investment',
+        );
+      }
+      return _withCurrentValue(existing, rounded, day);
+    });
+  }
+
+  /// Removes the user's current value, so the estimate (if any) applies.
+  Future<void> clearCurrentValue(String id) async {
+    await _writeCurrentValue(
+      id,
+      (existing) => _withCurrentValue(existing, null, null),
+    );
+  }
+
+  Future<void> _writeCurrentValue(
+    String id,
+    InvestmentEntity Function(InvestmentEntity existing) update,
+  ) async {
+    state = const AsyncValue.loading();
+    try {
+      final repo = ref.read(investmentRepositoryProvider);
+      final existing = await repo.getInvestmentById(id);
+      if (existing == null) throw DataException.notFound('Investment', id);
+      final updated = update(existing);
+      if (existing.isArchived) {
+        await repo.updateArchivedInvestment(updated);
+      } else {
+        await repo.updateInvestment(updated);
+      }
+      _invalidateAll();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  /// [existing] with its current value replaced, including by null, which
+  /// copyWith cannot do.
+  InvestmentEntity _withCurrentValue(
+    InvestmentEntity existing,
+    double? value,
+    DateTime? date,
+  ) => InvestmentEntity(
+    id: existing.id,
+    name: existing.name,
+    type: existing.type,
+    status: existing.status,
+    notes: existing.notes,
+    createdAt: existing.createdAt,
+    closedAt: existing.closedAt,
+    updatedAt: DateTime.now(),
+    maturityDate: existing.maturityDate,
+    incomeFrequency: existing.incomeFrequency,
+    isArchived: existing.isArchived,
+    startDate: existing.startDate,
+    expectedRate: existing.expectedRate,
+    tenureMonths: existing.tenureMonths,
+    platform: existing.platform,
+    interestPayoutMode: existing.interestPayoutMode,
+    autoRenewal: existing.autoRenewal,
+    riskLevel: existing.riskLevel,
+    compoundingFrequency: existing.compoundingFrequency,
+    currency: existing.currency,
+    currentValue: value,
+    currentValueDate: date,
+  );
 
   /// Close an investment
   Future<void> closeInvestment(String id) async {

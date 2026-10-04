@@ -99,13 +99,15 @@ class PortfolioHealthCalculator {
 
     for (final investment in investments) {
       final stat = stats[investment.id];
-      // An undefined XIRR (e.g. an open FD with no payout yet) is left out of
-      // the average, never counted as 0%.
+      // An undefined XIRR, or an open investment with no current value
+      // (money rule 4), is left out of the average: never counted as 0% or
+      // as a fake loss.
       final xirr = stat?.xirr;
       if (stat != null &&
           stat.totalInvested > 0 &&
           xirr != null &&
-          xirr.isFinite) {
+          xirr.isFinite &&
+          !stat.needsCurrentValue) {
         totalInvested += stat.totalInvested;
         weightedXirr += xirr * stat.totalInvested;
       }

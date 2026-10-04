@@ -1,5 +1,7 @@
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -190,17 +192,43 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
       if (cf.investmentId == investmentId) cf,
   ];
   if (cashFlows.isEmpty) return InvestmentStats.empty();
-  return calculateStats(cashFlows);
+  final terminalValues = await ref.watch(
+    convertedTerminalValuesProvider.selectAsync(
+      (all) => all[investmentId] ?? TerminalValues.none,
+    ),
+  );
+  return calculateStats(cashFlows, terminalValues: terminalValues);
 }
 
-/// Converts [cashFlows] to the user's base currency and calculates their
-/// stats, or returns empty stats when there is nothing to convert or no
-/// converter. Throws when a flow has no rate, rather than summing it
-/// unconverted.
+/// The investment with [id] in [investments], or null.
+InvestmentEntity? _byId(List<InvestmentEntity> investments, String id) {
+  for (final investment in investments) {
+    if (investment.id == id) return investment;
+  }
+  return null;
+}
+
+/// The investment [investment] resolves to, or null if it failed to load.
+/// Without it no current value is added, and an open investment shows "—"
+/// instead of a return.
+Future<InvestmentEntity?> _investmentOrNull(
+  Future<InvestmentEntity?> investment,
+) async {
+  try {
+    return await investment;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Converts [cashFlows] and the current values of the open [investments]
+/// among them to the user's base currency and calculates their stats, or
+/// returns empty stats when there is nothing to convert or no converter.
 Future<InvestmentStats> _convertedStats(
   Ref ref,
-  List<CashFlowEntity> cashFlows,
-) async {
+  List<CashFlowEntity> cashFlows, {
+  required List<InvestmentEntity> investments,
+}) async {
   if (cashFlows.isEmpty) {
     return InvestmentStats.empty();
   }
@@ -218,8 +246,30 @@ Future<InvestmentStats> _convertedStats(
   );
   requireBaseCurrency(convertedCashFlows, userBaseCurrency);
 
+  // Current values are converted like cash flows before anything is summed
+  // (money rule 2).
+  final terminalValues = CurrentValueCalculator.terminalValues(
+    investments: investments,
+    cashFlows: cashFlows,
+    asOf: ref.watch(valuationDateProvider),
+  );
+  // A value with no rate at all counts as missing rather than show a
+  // native amount under the base symbol.
+  final convertedTerminalValues = terminalValues.flows.isEmpty
+      ? terminalValues
+      : terminalValues.withConvertedFlows(
+          await convertTerminalFlows(
+            engine,
+            terminalValues.flows,
+            userBaseCurrency,
+          ),
+        );
+
   // Use engine's financial module to calculate stats
-  return engine.financial.calculateStats(convertedCashFlows);
+  return engine.financial.calculateStats(
+    convertedCashFlows,
+    terminalValues: convertedTerminalValues,
+  );
 }
 
 /// Stats for one archived investment, in the user's base currency.
@@ -235,7 +285,14 @@ Future<InvestmentStats> multiCurrencyArchivedInvestmentStats(
   final cashFlows = await ref.watch(
     archivedCashFlowsByInvestmentProvider(investmentId).future,
   );
-  return _convertedStats(ref, cashFlows);
+  final investment = await _investmentOrNull(
+    ref.watch(
+      archivedInvestmentsProvider.selectAsync(
+        (all) => _byId(all, investmentId),
+      ),
+    ),
+  );
+  return _convertedStats(ref, cashFlows, investments: [?investment]);
 }
 
 /// Provider for multi-currency global stats
@@ -250,34 +307,20 @@ Future<InvestmentStats> multiCurrencyArchivedInvestmentStats(
 /// - InvestmentStats.empty() if user is not authenticated (converter is null)
 @riverpod
 Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  // Wait for cash flows to load
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) async => data,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, st) async => <CashFlowEntity>[],
-  );
+  // Stay loading, or fail, with the cash flows: an empty result here would
+  // show the new-user empty state to users who have data.
+  final cashFlows = await dataOf(ref.watch(validCashFlowsProvider));
 
   if (cashFlows.isEmpty) {
     return InvestmentStats.empty();
   }
 
-  final engine = ref.watch(calculationEngineProvider);
-  if (!engine.currency.isAvailable) return InvestmentStats.empty();
-
-  final userBaseCurrency = ref.watch(currencyCodeProvider);
-
-  // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await engine.currency.batchConvert(
-    cashFlows: cashFlows,
-    baseCurrency: userBaseCurrency,
-    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  // Valid cash flows exist only once the active investments have loaded.
+  return _convertedStats(
+    ref,
+    cashFlows,
+    investments: ref.watch(activeInvestmentsProvider).value ?? const [],
   );
-  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
-
-  // Use engine's financial module to calculate stats
-  return engine.financial.calculateStats(convertedCashFlows);
 }
 
 /// Provider for multi-currency open investments stats
@@ -292,12 +335,8 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  // Wait for investments to load
-  final investments = await investmentsAsync.when(
-    data: (data) async => data,
-    loading: () async => <InvestmentEntity>[],
-    error: (e, st) async => <InvestmentEntity>[],
-  );
+  // Stay loading, or fail, with the sources instead of reporting no data.
+  final investments = await dataOf(investmentsAsync);
 
   // Optimization: Single pass loop replacing .where, .map, and .toSet
   final openIds = <String>{};
@@ -311,12 +350,7 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  // Wait for cash flows to load
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) async => data,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, st) async => <CashFlowEntity>[],
-  );
+  final cashFlows = await dataOf(cashFlowsAsync);
 
   // Optimization: Replace .where().toList() with standard loop
   final openCashFlows = <CashFlowEntity>[];
@@ -330,20 +364,7 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  final engine = ref.watch(calculationEngineProvider);
-  if (!engine.currency.isAvailable) return InvestmentStats.empty();
-
-  final userBaseCurrency = ref.watch(currencyCodeProvider);
-
-  // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await engine.currency.batchConvert(
-    cashFlows: openCashFlows,
-    baseCurrency: userBaseCurrency,
-    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
-  );
-  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
-
-  return engine.financial.calculateStats(convertedCashFlows);
+  return _convertedStats(ref, openCashFlows, investments: investments);
 }
 
 /// Provider for multi-currency closed investments stats
@@ -358,12 +379,8 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final cashFlowsAsync = ref.watch(validCashFlowsProvider);
 
-  // Wait for investments to load
-  final investments = await investmentsAsync.when(
-    data: (data) async => data,
-    loading: () async => <InvestmentEntity>[],
-    error: (e, st) async => <InvestmentEntity>[],
-  );
+  // Stay loading, or fail, with the sources instead of reporting no data.
+  final investments = await dataOf(investmentsAsync);
 
   // Optimization: Single pass loop replacing .where, .map, and .toSet
   final closedIds = <String>{};
@@ -377,12 +394,7 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  // Wait for cash flows to load
-  final cashFlows = await cashFlowsAsync.when(
-    data: (data) async => data,
-    loading: () async => <CashFlowEntity>[],
-    error: (e, st) async => <CashFlowEntity>[],
-  );
+  final cashFlows = await dataOf(cashFlowsAsync);
 
   // Optimization: Replace .where().toList() with standard loop
   final closedCashFlows = <CashFlowEntity>[];
@@ -396,18 +408,5 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
     return InvestmentStats.empty();
   }
 
-  final engine = ref.watch(calculationEngineProvider);
-  if (!engine.currency.isAvailable) return InvestmentStats.empty();
-
-  final userBaseCurrency = ref.watch(currencyCodeProvider);
-
-  // Batch convert with deduplication (OPTIMIZED)
-  final convertedCashFlows = await engine.currency.batchConvert(
-    cashFlows: closedCashFlows,
-    baseCurrency: userBaseCurrency,
-    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
-  );
-  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
-
-  return engine.financial.calculateStats(convertedCashFlows);
+  return _convertedStats(ref, closedCashFlows, investments: investments);
 }
