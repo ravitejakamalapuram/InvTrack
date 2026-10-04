@@ -240,6 +240,65 @@ void main() {
     expect(location(), '/');
   });
 
+  testWidgets('a queued tap is dropped if another user signs in while the '
+      'unlock is settling', (tester) async {
+    await pumpApp(tester);
+
+    await tap(tester, NotificationPayload.maturityReminder('inv-1', 7));
+    // The replay starts at unlock and waits for a frame; the user changes
+    // before that frame.
+    (container.read(securityProvider.notifier) as _LockedSecurity).unlock();
+    authRepo.emit(guestUser);
+    await tester.pumpAndSettle();
+
+    expect(_detail, findsNothing);
+    expect(location(), '/');
+  });
+
+  testWidgets('an investment loaded for one user is not opened if another '
+      'user signed in meanwhile', (tester) async {
+    final investments = StreamController<List<InvestmentEntity>>();
+    addTearDown(investments.close);
+    await pumpApp(tester, investments: investments.stream);
+    (container.read(securityProvider.notifier) as _LockedSecurity).unlock();
+    await pumpFor(tester, const Duration(seconds: 1));
+
+    final result = container
+        .read(notificationNavigatorProvider)
+        .handleNotificationTap(
+          NotificationPayload.maturityReminder('inv-1', 7),
+        );
+    await tester.pump();
+    authRepo.emit(guestUser);
+    await pumpFor(tester, const Duration(seconds: 1));
+    investments.add([_fd]);
+    await tester.pumpAndSettle();
+
+    expect(await result, isFalse);
+    expect(_detail, findsNothing);
+  });
+
+  testWidgets('Add Cash Flow is not opened for an investment loaded for '
+      'another user', (tester) async {
+    final investments = StreamController<List<InvestmentEntity>>();
+    addTearDown(investments.close);
+    await pumpApp(tester, investments: investments.stream);
+    (container.read(securityProvider.notifier) as _LockedSecurity).unlock();
+    await pumpFor(tester, const Duration(seconds: 1));
+
+    final result = container
+        .read(notificationNavigatorProvider)
+        .handleNotificationTap(NotificationPayload.incomeReminder('inv-1'));
+    await tester.pump();
+    authRepo.emit(guestUser);
+    await pumpFor(tester, const Duration(seconds: 1));
+    investments.add([_fd]);
+    await tester.pumpAndSettle();
+
+    expect(await result, isFalse);
+    expect(_addCashFlow, findsNothing);
+  });
+
   testWidgets('the investment routes redirect to /lock while locked', (
     tester,
   ) async {

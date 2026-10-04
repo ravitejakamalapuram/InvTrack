@@ -170,6 +170,38 @@ void main() {
         expect(state.hasPin, isTrue);
       });
 
+      // With no mirror (first start after the update) and secure storage
+      // failing, nobody knows whether a PIN is set: stay locked rather than
+      // open the portfolio, and read storage again when the app resumes.
+      test('stays locked when secure storage fails and there is no '
+          'mirror', () async {
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        container = createContainer();
+        container.read(securityProvider);
+
+        await pumpEventQueue();
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
+      test('after a failed read with no mirror, reads storage again on '
+          'resume and unlocks when no PIN is set', () async {
+        fakeSecureStorage.setThrowRead('user_pin', true);
+        container = createContainer();
+        container.read(securityProvider);
+        await pumpEventQueue();
+
+        fakeSecureStorage.setThrowRead('user_pin', false);
+        container
+            .read(securityProvider.notifier)
+            .didChangeAppLifecycleState(AppLifecycleState.resumed);
+        await pumpEventQueue();
+
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isFalse);
+        expect(prefs.getBool('has_pin'), isFalse);
+      });
+
       test('setPin sets the mirror and removePin clears it', () async {
         container = createContainer();
         final notifier = container.read(securityProvider.notifier);

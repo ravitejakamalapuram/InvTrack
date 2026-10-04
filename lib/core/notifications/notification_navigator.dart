@@ -65,12 +65,14 @@ class NotificationNavigator {
   String? _pendingPayload;
   String? _pendingUserId;
 
+  String? get _userId => _ref.read(authStateProvider).value?.id;
+
   /// Keeps [payload] for after unlock if the app is locked (or its lock
   /// state is not known yet). Returns true when it did.
   bool _deferIfLocked(String payload) {
     if (!_ref.read(securityProvider).isLocked) return false;
     _pendingPayload = payload;
-    _pendingUserId = _ref.read(authStateProvider).value?.id;
+    _pendingUserId = _userId;
     LoggerService.debug('Notification navigation deferred until unlock');
     return true;
   }
@@ -83,9 +85,11 @@ class NotificationNavigator {
     _pendingPayload = null;
     _pendingUserId = null;
     if (payload == null || userId == null) return false;
-    if (_ref.read(authStateProvider).value?.id != userId) return false;
+    if (_userId != userId) return false;
     // Let the router built for the unlocked state take over first.
     await SchedulerBinding.instance.endOfFrame;
+    // Someone else may have signed in during that frame.
+    if (_userId != userId) return false;
     return handleNotificationTap(payload);
   }
 
@@ -151,7 +155,11 @@ class NotificationNavigator {
       return false;
     }
 
+    final userId = _userId;
+    if (userId == null) return false;
     final investment = await _findInvestment(investmentId);
+    // An investment loaded for one user is never shown to another.
+    if (_userId != userId) return false;
     if (investment == null) {
       LoggerService.warn(
         'Investment not found for notification',
@@ -220,7 +228,10 @@ class NotificationNavigator {
     }
 
     // Verify investment exists
+    final userId = _userId;
+    if (userId == null) return false;
     final investment = await _findInvestment(investmentId);
+    if (_userId != userId) return false;
     if (investment == null) return false;
 
     // The app may have locked while the investment loaded.

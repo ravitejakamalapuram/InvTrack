@@ -80,6 +80,10 @@ class SecurityNotifier extends Notifier<SecurityState>
   _ClockMark? _lastUnlockTime;
   Timer? _lockTimer;
 
+  // Secure storage failed with no has_pin mirror, so whether a PIN is set is
+  // not known; the next resume reads storage again.
+  bool _pinStateUnknown = false;
+
   // Grace period after unlock before auto-lock can trigger again
   // This prevents re-locking during app switches immediately after unlock
   static const Duration _unlockGracePeriod = Duration(seconds: 5);
@@ -169,11 +173,15 @@ class SecurityNotifier extends Notifier<SecurityState>
       );
     } catch (e) {
       // Secure storage failed. If a PIN was set, stay locked rather than
-      // open the portfolio; otherwise there is nothing to unlock with.
+      // open the portfolio. With no mirror nobody knows whether one is set,
+      // so stay locked too, and read storage again when the app resumes.
       LoggerService.warn('Security init failed', error: e);
       if (!ref.mounted) return;
-      final hasPin = hasPinMirror ?? false;
-      state = SecurityState(hasPin: hasPin, isLocked: hasPin);
+      _pinStateUnknown = hasPinMirror == null;
+      state = SecurityState(
+        hasPin: hasPinMirror ?? false,
+        isLocked: hasPinMirror ?? true,
+      );
     }
   }
 
@@ -182,6 +190,11 @@ class SecurityNotifier extends Notifier<SecurityState>
     if (state == AppLifecycleState.paused) {
       _lastPausedTime = _mark();
     } else if (state == AppLifecycleState.resumed) {
+      if (_pinStateUnknown) {
+        _pinStateUnknown = false;
+        _init(_readHasPinMirror());
+        return;
+      }
       _checkAutoLock();
     }
   }
