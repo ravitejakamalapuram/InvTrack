@@ -69,7 +69,8 @@ class AccessibilityUtils {
   ///
   /// [returnStatus] (e.g. "Awaiting first payout") replaces [returnPercent]
   /// when the return cannot be calculated yet. [returnIsApproximate] reads
-  /// [returnPercent] as approximate.
+  /// [returnPercent] as approximate. [expectedReturnBasis] (e.g. "Based on
+  /// 7% p.a.") reads it as expected, from an estimated current value.
   static String investmentCardLabel({
     required String name,
     required String type,
@@ -79,6 +80,7 @@ class AccessibilityUtils {
     required bool isClosed,
     String? returnStatus,
     bool returnIsApproximate = false,
+    String? expectedReturnBasis,
     DateTime? maturityDate,
     double? totalInvested,
     DateTime? lastActivityDate,
@@ -92,10 +94,14 @@ class AccessibilityUtils {
         ? 'Invested: ${shouldMask ? "Hidden amount" : formatCurrencyForScreenReader(totalInvested, currencySymbol)}'
         : '';
     final approx = returnIsApproximate ? 'approximately ' : '';
+    final expected = expectedReturnBasis != null ? 'expected ' : '';
+    final basis = expectedReturnBasis != null && !shouldMask
+        ? ', $expectedReturnBasis'
+        : '';
     final returns = returnStatus != null
         ? 'Returns: $returnStatus'
         : returnPercent != null
-        ? 'Returns: ${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}'
+        ? 'Returns: $expected${shouldMask ? "Hidden percentage" : '$approx${formatPercentageForScreenReader(returnPercent)}'}$basis'
         : '';
     final lastActivity = lastActivityDate != null
         ? 'Last activity: ${formatDateForScreenReader(lastActivityDate)}'

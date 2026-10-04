@@ -22,7 +22,13 @@ import 'package:inv_tracker/features/investment/domain/repositories/document_rep
 import 'package:inv_tracker/features/investment/data/services/document_storage_service.dart';
 
 /// File types for metadata.json
-enum ExportFileType { cashflows, cashflowsArchived, goals, goalsArchived }
+enum ExportFileType {
+  cashflows,
+  cashflowsArchived,
+  goals,
+  goalsArchived,
+  valuations,
+}
 
 /// An export ZIP held in memory, with the number of records it was built
 /// from, so a caller can check that an import of it was complete.
@@ -196,6 +202,10 @@ class DataExportService {
     final cashflowsArchivedCsv = _generateCashFlowsCsv(archivedCashFlows);
     final goalsCsv = _generateGoalsCsv(goals, allInvestments);
     final goalsArchivedCsv = _generateGoalsCsv(archivedGoals, allInvestments);
+    final valuationsCsv = _generateValuationsCsv(
+      active: investments,
+      archived: archivedInvestments,
+    );
 
     // 3. Create metadata JSON
     final metadata = _createMetadata(
@@ -231,6 +241,11 @@ class DataExportService {
         goalsArchivedBytes.length,
         goalsArchivedBytes,
       ),
+    );
+
+    final valuationsBytes = utf8.encode(valuationsCsv);
+    archive.addFile(
+      ArchiveFile('valuations.csv', valuationsBytes.length, valuationsBytes),
     );
 
     // Add metadata JSON
@@ -457,6 +472,34 @@ class DataExportService {
     return csv.encode(rows);
   }
 
+  /// Generate CSV for the current values users entered (money rule 6).
+  /// Format: Investment Name, Archived, Date, Value, Currency. Estimated
+  /// values are not stored, so they are not exported.
+  String _generateValuationsCsv({
+    required List<InvestmentEntity> active,
+    required List<InvestmentEntity> archived,
+  }) {
+    final rows = <List<dynamic>>[
+      ['Investment Name', 'Archived', 'Date', 'Value', 'Currency'],
+    ];
+    for (final (inv, isArchived) in [
+      for (final inv in active) (inv, false),
+      for (final inv in archived) (inv, true),
+    ]) {
+      final value = inv.currentValue;
+      final date = inv.currentValueDate;
+      if (value == null || date == null) continue;
+      rows.add([
+        CsvUtils.sanitizeField(inv.name),
+        isArchived,
+        date.toIso8601String().split('T').first,
+        value,
+        inv.currency,
+      ]);
+    }
+    return csv.encode(rows);
+  }
+
   /// Converts CashFlowType to export string (reused from ExportService)
   String _typeToExportString(CashFlowType type) {
     switch (type) {
@@ -497,6 +540,7 @@ class DataExportService {
           'fileName': 'goals_archived.csv',
           'type': ExportFileType.goalsArchived.name,
         },
+        {'fileName': 'valuations.csv', 'type': ExportFileType.valuations.name},
       ],
       'documents': documents.map((d) {
         return _documentToJson(d, investmentIdToName[d.investmentId] ?? '');

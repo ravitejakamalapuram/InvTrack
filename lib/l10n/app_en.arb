@@ -4111,6 +4111,121 @@
     "description": "Hint under a dash shown in place of XIRR when an open investment has no terminal value yet"
   },
 
+  "expectedXirrLabel": "Expected XIRR",
+  "@expectedXirrLabel": {
+    "description": "Label for an XIRR that uses an estimated current value of open investments, not one the user confirmed"
+  },
+
+  "realisedXirrLabel": "Realised XIRR",
+  "@realisedXirrLabel": {
+    "description": "Label for the XIRR of closed investments only, shown next to the expected XIRR"
+  },
+
+  "expectedXirrBasisRate": "Based on {rate} p.a.",
+  "@expectedXirrBasisRate": {
+    "description": "Hint under an expected XIRR whose current value was estimated at the investment's expected rate, e.g. 'Based on 7% p.a.'",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "7%"
+      }
+    }
+  },
+
+  "expectedXirrBasisEstimates": "Includes estimated current values",
+  "@expectedXirrBasisEstimates": {
+    "description": "Hint under an expected XIRR that uses estimated current values, such as outstanding principal"
+  },
+
+  "currentValueLabel": "Current value",
+  "@currentValueLabel": {
+    "description": "Title of the card showing what an open investment is worth today"
+  },
+
+  "currentValueEstimatedAtRate": "Estimated at {rate} p.a.",
+  "@currentValueEstimatedAtRate": {
+    "description": "How a current value was estimated: deposits grown at the expected rate, e.g. 'Estimated at 7% p.a.'",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "7%"
+      }
+    }
+  },
+
+  "currentValueEstimatedPrincipal": "Estimated as principal still invested",
+  "@currentValueEstimatedPrincipal": {
+    "description": "How a current value was estimated: the principal not yet paid back (payout FDs, bonds, P2P loans)"
+  },
+
+  "currentValueUpdatedOn": "Updated {date}",
+  "@currentValueUpdatedOn": {
+    "description": "Date of a current value the user entered, e.g. 'Updated Sep 30, 2026'",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Sep 30, 2026"
+      }
+    }
+  },
+
+  "currentValueNone": "No current value yet",
+  "@currentValueNone": {
+    "description": "Shown when an open investment has no current value, so its returns cannot be calculated"
+  },
+
+  "currentValueHidden": "Current value hidden",
+  "@currentValueHidden": {
+    "description": "Screen reader label for the current value card while privacy mode hides amounts"
+  },
+
+  "currentValueAdd": "Add current value",
+  "@currentValueAdd": {
+    "description": "Button that opens the editor for an open investment's current value when it has none"
+  },
+
+  "currentValueUpdate": "Update",
+  "@currentValueUpdate": {
+    "description": "Button that opens the editor for an open investment's current value"
+  },
+
+  "currentValueAmountLabel": "Value in {currency}",
+  "@currentValueAmountLabel": {
+    "description": "Label of the amount field in the current value editor, e.g. 'Value in INR'",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "INR"
+      }
+    }
+  },
+
+  "currentValueDateLabel": "Value as of {date}",
+  "@currentValueDateLabel": {
+    "description": "Button showing, and letting the user change, the date of a current value, e.g. 'Value as of Oct 2, 2026'",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Oct 2, 2026"
+      }
+    }
+  },
+
+  "currentValueInvalid": "Enter a value of 0 or more",
+  "@currentValueInvalid": {
+    "description": "Validation error in the current value editor"
+  },
+
+  "currentValueRemove": "Use estimate",
+  "@currentValueRemove": {
+    "description": "Button in the current value editor that removes the user's value so the app's estimate (or none) applies"
+  },
+
+  "currentValueSaveFailed": "Could not save the current value. Try again.",
+  "@currentValueSaveFailed": {
+    "description": "Error shown when saving or removing a current value fails"
+  },
+
   "netCashFlowSoFar": "Net cash flow so far",
   "@netCashFlowSoFar": {
     "description": "Headline for money received minus money invested while investments are still open"

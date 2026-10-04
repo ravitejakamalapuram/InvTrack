@@ -35,6 +35,28 @@ class InvestmentStats {
   /// Date of the most recent cash flow
   final DateTime? lastCashFlowDate;
 
+  /// Sum of the current values of the open investments in these stats, used
+  /// as their terminal inflow in [xirr], [moic] and [absoluteReturn]. Null
+  /// when none of them has one. Not part of [totalReturned] or
+  /// [netCashFlow], which stay cash-only.
+  final double? currentValue;
+
+  /// Latest date among the current values in [currentValue].
+  final DateTime? currentValueDate;
+
+  /// Whether any value in [currentValue] is an estimate rather than one the
+  /// user entered; the XIRR is then an expected one.
+  final bool currentValueIsEstimate;
+
+  /// The rate (% p.a.) an estimated [currentValue] accrued at, when all of
+  /// it accrued at that one rate; otherwise null.
+  final double? currentValueRate;
+
+  /// Open investments in these stats that have neither a current value nor
+  /// their invested amount back. Their XIRR, MOIC and return % cannot be
+  /// known (money rule 4).
+  final int missingValueCount;
+
   const InvestmentStats({
     required this.totalInvested,
     required this.totalReturned,
@@ -46,6 +68,11 @@ class InvestmentStats {
     required this.cashFlowCount,
     this.firstCashFlowDate,
     this.lastCashFlowDate,
+    this.currentValue,
+    this.currentValueDate,
+    this.currentValueIsEstimate = false,
+    this.currentValueRate,
+    this.missingValueCount = 0,
   });
 
   /// Creates an empty stats object with all values set to zero
@@ -62,6 +89,10 @@ class InvestmentStats {
 
   /// Returns true if there is at least one cash flow
   bool get hasData => cashFlowCount > 0;
+
+  /// True when an open investment in these stats needs a current value
+  /// before its returns can be shown.
+  bool get needsCurrentValue => missingValueCount > 0;
 
   /// Returns true if net cash flow is positive
   bool get isProfit => netCashFlow > 0;
@@ -98,6 +129,11 @@ class InvestmentStats {
     int? cashFlowCount,
     DateTime? firstCashFlowDate,
     DateTime? lastCashFlowDate,
+    double? currentValue,
+    DateTime? currentValueDate,
+    bool? currentValueIsEstimate,
+    double? currentValueRate,
+    int? missingValueCount,
   }) {
     return InvestmentStats(
       totalInvested: totalInvested ?? this.totalInvested,
@@ -110,6 +146,12 @@ class InvestmentStats {
       cashFlowCount: cashFlowCount ?? this.cashFlowCount,
       firstCashFlowDate: firstCashFlowDate ?? this.firstCashFlowDate,
       lastCashFlowDate: lastCashFlowDate ?? this.lastCashFlowDate,
+      currentValue: currentValue ?? this.currentValue,
+      currentValueDate: currentValueDate ?? this.currentValueDate,
+      currentValueIsEstimate:
+          currentValueIsEstimate ?? this.currentValueIsEstimate,
+      currentValueRate: currentValueRate ?? this.currentValueRate,
+      missingValueCount: missingValueCount ?? this.missingValueCount,
     );
   }
 
@@ -127,7 +169,12 @@ class InvestmentStats {
         other.xirrMethod == xirrMethod &&
         other.cashFlowCount == cashFlowCount &&
         other.firstCashFlowDate == firstCashFlowDate &&
-        other.lastCashFlowDate == lastCashFlowDate;
+        other.lastCashFlowDate == lastCashFlowDate &&
+        other.currentValue == currentValue &&
+        other.currentValueDate == currentValueDate &&
+        other.currentValueIsEstimate == currentValueIsEstimate &&
+        other.currentValueRate == currentValueRate &&
+        other.missingValueCount == missingValueCount;
   }
 
   @override
@@ -141,7 +188,14 @@ class InvestmentStats {
         xirrMethod.hashCode ^
         cashFlowCount.hashCode ^
         firstCashFlowDate.hashCode ^
-        lastCashFlowDate.hashCode;
+        lastCashFlowDate.hashCode ^
+        Object.hash(
+          currentValue,
+          currentValueDate,
+          currentValueIsEstimate,
+          currentValueRate,
+          missingValueCount,
+        );
   }
 }
 

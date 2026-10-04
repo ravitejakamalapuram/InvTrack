@@ -621,6 +621,11 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       'compoundingFrequency': investment.compoundingFrequency?.name,
       // Multi-currency support
       'currency': investment.currency,
+      // The user's current value; written as null when cleared.
+      'currentValue': investment.currentValue,
+      'currentValueDate': investment.currentValueDate != null
+          ? Timestamp.fromDate(investment.currentValueDate!)
+          : null,
     };
   }
 
@@ -674,6 +679,13 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
       ),
       // Multi-currency support; legacy documents use the base currency
       currency: data['currency'] as String? ?? baseCurrency,
+      // A value without its date is ignored rather than dated today.
+      currentValue: data['currentValueDate'] != null
+          ? (data['currentValue'] as num?)?.toDouble()
+          : null,
+      currentValueDate: data['currentValue'] != null
+          ? (data['currentValueDate'] as Timestamp?)?.toDate()
+          : null,
     );
   }
 

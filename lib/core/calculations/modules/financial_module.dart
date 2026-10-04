@@ -1,4 +1,5 @@
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
@@ -52,9 +53,15 @@ class FinancialCalculatorModule implements CalculationModule {
   /// Calculates stats from a list of cash flows.
   ///
   /// [includeXirr] - Set to false to skip expensive XIRR calculation if not needed.
+  ///
+  /// [terminalValues] are the current values of the open investments among
+  /// [cashFlows], already in the same currency. They are the terminal inflow
+  /// of XIRR, MOIC and absolute return; invested, returned and net cash flow
+  /// stay cash-only.
   InvestmentStats calculateStats(
     List<ICashFlow> cashFlows, {
     bool includeXirr = true,
+    TerminalValues terminalValues = TerminalValues.none,
   }) {
     if (cashFlows.isEmpty) {
       return InvestmentStats.empty();
@@ -91,6 +98,21 @@ class FinancialCalculatorModule implements CalculationModule {
       }
     }
 
+    // Current values: the terminal inflow (money rule 4).
+    double? currentValue;
+    DateTime? currentValueDate;
+    for (final terminal in terminalValues.flows) {
+      currentValue = (currentValue ?? 0) + terminal.amount;
+      if (currentValueDate == null || terminal.date.isAfter(currentValueDate)) {
+        currentValueDate = terminal.date;
+      }
+      if (includeXirr && terminal.amount > 0) {
+        xirrDates!.add(terminal.date);
+        xirrAmounts!.add(terminal.amount);
+      }
+    }
+    final returnedWithValue = totalReturned + (currentValue ?? 0);
+
     final firstDate = firstDateMs != null
         ? DateTime.fromMillisecondsSinceEpoch(firstDateMs)
         : null;
@@ -99,8 +121,11 @@ class FinancialCalculatorModule implements CalculationModule {
         : null;
 
     final netCashFlow = calculateNetCashFlow(totalInvested, totalReturned);
-    final absoluteReturn = calculateAbsoluteReturn(totalInvested, totalReturned);
-    final moic = calculateMOIC(totalInvested, totalReturned);
+    final absoluteReturn = calculateAbsoluteReturn(
+      totalInvested,
+      returnedWithValue,
+    );
+    final moic = calculateMOIC(totalInvested, returnedWithValue);
 
     final xirrResult = includeXirr
         ? XirrSolver.solve(xirrDates!, xirrAmounts!)
@@ -119,6 +144,11 @@ class FinancialCalculatorModule implements CalculationModule {
       cashFlowCount: cashFlows.length,
       firstCashFlowDate: firstDate,
       lastCashFlowDate: lastDate,
+      currentValue: currentValue,
+      currentValueDate: currentValueDate,
+      currentValueIsEstimate: currentValue != null && terminalValues.isEstimate,
+      currentValueRate: currentValue != null ? terminalValues.rate : null,
+      missingValueCount: terminalValues.missingValueCount,
     );
   }
 }
