@@ -30,6 +30,7 @@ InvestmentEntity _investment(
   DateTime? maturityDate,
   double? currentValue,
   DateTime? currentValueDate,
+  String currency = 'INR',
 }) => InvestmentEntity(
   id: id,
   name: id,
@@ -43,22 +44,23 @@ InvestmentEntity _investment(
   maturityDate: maturityDate,
   currentValue: currentValue,
   currentValueDate: currentValueDate,
-  currency: 'INR',
+  currency: currency,
 );
 
 CashFlowEntity _flow(
   String investmentId,
   CashFlowType type,
   double amount,
-  DateTime date,
-) => CashFlowEntity(
+  DateTime date, {
+  String currency = 'INR',
+}) => CashFlowEntity(
   id: '$investmentId-${date.toIso8601String()}-${type.name}',
   investmentId: investmentId,
   date: date,
   type: type,
   amount: amount,
   createdAt: date,
-  currency: 'INR',
+  currency: currency,
 );
 
 DateTime _addMonths(DateTime d, int months) =>
@@ -435,6 +437,133 @@ void main() {
       expect(stats.currentValue, isNull);
       expect(stats.moic, 0);
       expect(stats.missingValueCount, 0);
+    });
+  });
+
+  // Each cash flow keeps its own currency, which can differ from the
+  // investment's (A04). A value is only ever tagged with the currency its
+  // amounts are in, so conversion to the base currency is right (rule 2).
+  group('Currency of current values', () {
+    test('an estimate is in the currency of its cash flows', () {
+      final p2p = _investment('p2p', InvestmentType.p2pLending);
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [p2p],
+        cashFlows: [
+          _flow(
+            'p2p',
+            CashFlowType.invest,
+            1000,
+            DateTime(2026, 1, 1),
+            currency: 'USD',
+          ),
+        ],
+        asOf: _today,
+      );
+      expect(terminal.flows, hasLength(1));
+      expect(terminal.flows.single.amount, 1000);
+      expect(terminal.flows.single.currency, 'USD');
+      expect(terminal.missingValueCount, 0);
+    });
+
+    test('an accrued estimate is in the currency of its deposits', () {
+      final fd = _investment(
+        'fd',
+        InvestmentType.fixedDeposit,
+        rate: 7,
+        compounding: CompoundingFrequency.quarterly,
+        payout: InterestPayoutMode.cumulative,
+      );
+      final valuation = CurrentValueCalculator.valuationOf(fd, [
+        _flow(
+          'fd',
+          CashFlowType.invest,
+          100000,
+          DateTime(2025, 10, 2),
+          currency: 'USD',
+        ),
+      ], asOf: _today)!;
+      expect(valuation.currency, 'USD');
+      expect(valuation.amount, closeTo(107185.903129, 0.005));
+    });
+
+    test('principal in more than one currency is missing, not estimated', () {
+      final p2p = _investment('p2p', InvestmentType.p2pLending);
+      final flows = [
+        _flow('p2p', CashFlowType.invest, 50000, DateTime(2026, 1, 1)),
+        _flow(
+          'p2p',
+          CashFlowType.invest,
+          1000,
+          DateTime(2026, 2, 1),
+          currency: 'USD',
+        ),
+      ];
+      expect(
+        CurrentValueCalculator.valuationOf(p2p, flows, asOf: _today),
+        isNull,
+      );
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [p2p],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      expect(terminal.flows, isEmpty);
+      expect(terminal.missingValueCount, 1);
+    });
+
+    test('a manual value is in the investment currency', () {
+      final gold = _investment(
+        'gold',
+        InvestmentType.gold,
+        currency: 'USD',
+        currentValue: 1200,
+        currentValueDate: DateTime(2026, 9, 1),
+      );
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [gold],
+        cashFlows: [
+          _flow(
+            'gold',
+            CashFlowType.invest,
+            1000,
+            DateTime(2026, 1, 1),
+            currency: 'USD',
+          ),
+        ],
+        asOf: _today,
+      );
+      expect(terminal.flows.single.currency, 'USD');
+      expect(terminal.flows.single.amount, 1200);
+    });
+
+    test('a manual value is not carried forward across currencies', () {
+      final gold = _investment(
+        'gold',
+        InvestmentType.gold,
+        currentValue: 125000,
+        currentValueDate: DateTime(2026, 6, 1),
+      );
+      final flows = [
+        _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 10, 1)),
+        _flow(
+          'gold',
+          CashFlowType.invest,
+          1000,
+          DateTime(2026, 8, 1),
+          currency: 'USD',
+        ),
+      ];
+      expect(
+        CurrentValueCalculator.valuationOf(gold, flows, asOf: _today),
+        isNull,
+      );
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [gold],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      expect(terminal.flows, isEmpty);
+      expect(terminal.missingValueCount, 1);
     });
   });
 }

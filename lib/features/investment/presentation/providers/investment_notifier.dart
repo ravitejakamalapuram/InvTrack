@@ -153,6 +153,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getInvestmentById(id);
       if (existing == null) throw DataException.notFound('Investment', id);
+      // The current value is in the stored currency; it means nothing in
+      // another one, so a currency change clears it (money rule 2).
+      final keepsValue = currency == null || currency == existing.currency;
 
       // Built explicitly, not with copyWith: the edit form sends every
       // optional field, and null means the user cleared it. copyWith would
@@ -182,8 +185,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
         // Multi-currency: no currency from the form keeps the stored one
         currency: currency ?? existing.currency,
         // Not on the edit form: set through setCurrentValue only.
-        currentValue: existing.currentValue,
-        currentValueDate: existing.currentValueDate,
+        currentValue: keepsValue ? existing.currentValue : null,
+        currentValueDate: keepsValue ? existing.currentValueDate : null,
       );
       final repo = ref.read(investmentRepositoryProvider);
 

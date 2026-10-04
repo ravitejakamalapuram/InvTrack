@@ -127,4 +127,36 @@ void main() {
     expect(saved.currentValue, 125000);
     expect(saved.currentValueDate, DateTime(2026, 10, 1));
   });
+
+  test('editing with the same currency keeps the current value', () async {
+    repo.seed(investments: [_gold(value: 125000, date: DateTime(2026, 10, 1))]);
+
+    await notifier.updateInvestment(
+      id: 'gold',
+      name: 'SGB 2031',
+      type: InvestmentType.gold,
+      currency: 'INR',
+    );
+
+    final saved = (await repo.getInvestmentById('gold'))!;
+    expect(saved.currentValue, 125000);
+    expect(saved.currentValueDate, DateTime(2026, 10, 1));
+  });
+
+  test('changing the currency clears the current value', () async {
+    // The value was entered in INR; read as USD it would be 83x too large.
+    repo.seed(investments: [_gold(value: 125000, date: DateTime(2026, 10, 1))]);
+
+    await notifier.updateInvestment(
+      id: 'gold',
+      name: 'SGB 2031',
+      type: InvestmentType.gold,
+      currency: 'USD',
+    );
+
+    final saved = (await repo.getInvestmentById('gold'))!;
+    expect(saved.currency, 'USD');
+    expect(saved.currentValue, isNull);
+    expect(saved.currentValueDate, isNull);
+  });
 }

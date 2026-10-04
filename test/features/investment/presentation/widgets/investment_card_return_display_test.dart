@@ -246,4 +246,58 @@ void main() {
     expect(find.textContaining('under a day'), findsNothing);
     expect(find.textContaining('IRR'), findsNothing);
   });
+
+  // A10 (#754): an XIRR that uses an estimated current value is labelled
+  // "Expected XIRR" with its basis until the user confirms the value.
+  InvestmentStats valuedStats({required bool isEstimate}) => InvestmentStats(
+    totalInvested: 100000,
+    totalReturned: 0,
+    netCashFlow: -100000,
+    absoluteReturn: 7.185903,
+    moic: 1.07185903,
+    xirr: 0,
+    cashFlowCount: 1,
+    firstCashFlowDate: DateTime(2025, 10, 2),
+    lastCashFlowDate: DateTime(2025, 10, 2),
+    currentValue: 107185.90,
+    currentValueDate: DateTime(2026, 10, 2),
+    currentValueIsEstimate: isEstimate,
+    currentValueRate: isEstimate ? 7 : null,
+  );
+
+  testWidgets('estimated XIRR is labelled Expected XIRR on the card', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: valuedStats(isEstimate: true),
+      xirr: const XirrResult.exact(0.07185903),
+    );
+
+    expect(find.text('+7.2% Expected XIRR'), findsOneWidget);
+    expect(find.text('+7.2% IRR'), findsNothing);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(
+      label,
+      contains('Returns: expected positive 7.2 percent, Based on 7% p.a.'),
+    );
+  });
+
+  testWidgets('a confirmed current value keeps the plain IRR label', (
+    tester,
+  ) async {
+    await _pumpCard(
+      tester,
+      investment: _investment(InvestmentStatus.open),
+      stats: valuedStats(isEstimate: false),
+      xirr: const XirrResult.exact(0.07185903),
+    );
+
+    expect(find.text('+7.2% IRR'), findsOneWidget);
+    expect(find.textContaining('Expected'), findsNothing);
+    final label = tester.getSemantics(find.byType(GlassCard)).label;
+    expect(label, contains('Returns: positive 7.2 percent'));
+    expect(label, isNot(contains('expected')));
+  });
 }

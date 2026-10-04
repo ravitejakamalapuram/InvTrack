@@ -84,4 +84,41 @@ void main() {
     );
     expect(result!.isRemove, isTrue);
   });
+
+  // A comma is a thousands or lakh separator only. On a keyboard where it
+  // is the decimal separator, '1234,56' must not be saved as 1,23,456.
+  for (final text in ['1234,56', '1,56', '1.234,56', '12,3']) {
+    testWidgets('rejects "$text", where the comma may be a decimal point', (
+      tester,
+    ) async {
+      final result = await _open(
+        tester,
+        interact: () async {
+          await tester.enterText(find.byType(TextFormField), text);
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+          expect(find.text('Enter a value of 0 or more'), findsOneWidget);
+          await tester.tap(find.text('Cancel'));
+        },
+      );
+      expect(result, isNull);
+    });
+  }
+
+  for (final (text, value) in [
+    ('12,34,567.5', 1234567.5),
+    ('1,234,567', 1234567.0),
+    ('1234.56', 1234.56),
+  ]) {
+    testWidgets('reads "$text" as $value', (tester) async {
+      final result = await _open(
+        tester,
+        interact: () async {
+          await tester.enterText(find.byType(TextFormField), text);
+          await tester.tap(find.text('Save'));
+        },
+      );
+      expect(result!.value, value);
+    });
+  }
 }

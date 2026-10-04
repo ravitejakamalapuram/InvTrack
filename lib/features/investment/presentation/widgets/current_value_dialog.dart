@@ -96,8 +96,17 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
     super.dispose();
   }
 
+  /// Digits with an optional '.' fraction. A comma is accepted only as a
+  /// thousands (1,234,567) or lakh (12,34,567) separator, so a decimal
+  /// comma ('1234,56') is rejected rather than read as 123456.
+  static final _amountPattern = RegExp(
+    r'^(\d*|\d{1,3}(,\d{3})+|\d{1,2}(,\d{2})*,\d{3})(\.\d*)?$',
+  );
+
   double? _parse(String? text) {
-    final value = double.tryParse((text ?? '').replaceAll(',', '').trim());
+    final trimmed = (text ?? '').trim();
+    if (!_amountPattern.hasMatch(trimmed)) return null;
+    final value = double.tryParse(trimmed.replaceAll(',', ''));
     if (value == null || !value.isFinite || value < 0) return null;
     return value;
   }

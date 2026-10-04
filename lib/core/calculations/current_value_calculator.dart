@@ -16,9 +16,13 @@ enum ValuationSource {
   outstandingPrincipal,
 }
 
-/// A dated current value of one investment, in the investment's currency.
+/// A dated current value of one investment, in [currency].
 class InvestmentValuation {
   final double amount;
+
+  /// Currency of [amount]: the investment's for a manual value, the
+  /// currency of the cash flows for an estimate (money rule 2).
+  final String currency;
 
   /// Date-only date the value applies to.
   final DateTime date;
@@ -29,6 +33,7 @@ class InvestmentValuation {
 
   const InvestmentValuation({
     required this.amount,
+    required this.currency,
     required this.date,
     required this.source,
     this.rate,
@@ -39,13 +44,14 @@ class InvestmentValuation {
 
 /// The current values of a set of investments as terminal inflows (one
 /// RETURN-like flow per valued investment, dated at its valuation and in the
-/// investment's currency), ready to be converted to the base currency and
+/// valuation's currency), ready to be converted to the base currency and
 /// passed to `FinancialCalculatorModule.calculateStats`.
 class TerminalValues {
   /// One flow per valued investment; ids start with [idPrefix].
   final List<CashFlowEntity> flows;
 
-  /// Open investments with no value that have not returned their cost.
+  /// Open investments with no value that have not returned their cost, or
+  /// whose cash flows are in more than one currency.
   final int missingValueCount;
 
   /// Whether any value in [flows] is an estimate.
@@ -136,8 +142,11 @@ class CurrentValueCalculator {
 
   /// The current value of [investment] as of [asOf], or null when it has
   /// none: it is closed, has no cash flows, or is of a type (or lacks the
-  /// rate) needed to estimate one. [cashFlows] may include other
-  /// investments' flows; only this investment's are used.
+  /// rate) needed to estimate one. Amounts in different currencies are
+  /// never added: a manual value with principal moved in another currency
+  /// after its date, or an estimate from INVEST/RETURN flows in more than
+  /// one currency, is none. [cashFlows] may include other investments'
+  /// flows; only this investment's are used.
   static InvestmentValuation? valuationOf(
     InvestmentEntity investment,
     List<CashFlowEntity> cashFlows, {
@@ -157,10 +166,13 @@ class CurrentValueCalculator {
       if (d.isAfter(lastFlow)) lastFlow = d;
     }
 
-    final manual = _manualValuation(investment, flows, lastFlow);
-    if (manual != null) return manual;
+    if (_hasManualValue(investment)) {
+      return _manualValuation(investment, flows, lastFlow);
+    }
 
     if (!estimableTypes.contains(investment.type)) return null;
+    final currency = _sharedCurrency(flows.where(_isPrincipal));
+    if (currency == null) return null;
 
     // Value at maturity once it has passed, never after today.
     final maturity = investment.calculatedMaturityDate;
@@ -190,6 +202,7 @@ class CurrentValueCalculator {
       }
       return InvestmentValuation(
         amount: math.max(0, amount),
+        currency: currency,
         date: date,
         source: ValuationSource.accruedInterest,
         rate: rate,
@@ -198,6 +211,7 @@ class CurrentValueCalculator {
 
     return InvestmentValuation(
       amount: math.max(0, _principalChange(flows)),
+      currency: currency,
       date: date,
       source: ValuationSource.outstandingPrincipal,
     );
@@ -230,8 +244,9 @@ class CurrentValueCalculator {
           net += cf.signedAmount;
         }
         // Still out of pocket with no value: XIRR, MOIC and return % are
-        // unknown. An investment that already returned its cost is not.
-        if (net < 0) missing++;
+        // unknown. An investment that already returned its cost is not,
+        // but that cannot be told from flows in more than one currency.
+        if (net < 0 || _sharedCurrency(own) == null) missing++;
         continue;
       }
 
@@ -249,7 +264,7 @@ class CurrentValueCalculator {
           type: CashFlowType.returnFlow,
           amount: valuation.amount,
           createdAt: valuation.date,
-          currency: investment.currency,
+          currency: valuation.currency,
         ),
       );
     }
@@ -262,29 +277,44 @@ class CurrentValueCalculator {
     );
   }
 
-  /// The user's value, carried forward to the latest cash flow: principal
-  /// put in or taken out after the valuation date changes it, income does
-  /// not.
+  static bool _hasManualValue(InvestmentEntity investment) {
+    final value = investment.currentValue;
+    return value != null &&
+        investment.currentValueDate != null &&
+        value.isFinite &&
+        value >= 0;
+  }
+
+  /// The user's value, in the investment's currency, carried forward to the
+  /// latest cash flow: principal put in or taken out after the valuation
+  /// date changes it, income does not. Null when that principal is in
+  /// another currency.
   static InvestmentValuation? _manualValuation(
     InvestmentEntity investment,
     List<CashFlowEntity> flows,
     DateTime lastFlow,
   ) {
-    final value = investment.currentValue;
-    final valueDate = investment.currentValueDate;
-    if (value == null || valueDate == null || !value.isFinite || value < 0) {
-      return null;
-    }
-    final date = _dateOnly(valueDate);
+    final date = _dateOnly(investment.currentValueDate!);
     final later = [
       for (final cf in flows)
-        if (_dateOnly(cf.date).isAfter(date)) cf,
+        if (_dateOnly(cf.date).isAfter(date) && _isPrincipal(cf)) cf,
     ];
+    if (later.any((cf) => cf.currency != investment.currency)) return null;
     return InvestmentValuation(
-      amount: math.max(0, value + _principalChange(later)),
+      amount: math.max(0, investment.currentValue! + _principalChange(later)),
+      currency: investment.currency,
       date: lastFlow.isAfter(date) ? lastFlow : date,
       source: ValuationSource.manual,
     );
+  }
+
+  static bool _isPrincipal(CashFlowEntity cf) =>
+      cf.type == CashFlowType.invest || cf.type == CashFlowType.returnFlow;
+
+  /// The one currency of [flows], or null when there are none or several.
+  static String? _sharedCurrency(Iterable<CashFlowEntity> flows) {
+    final currencies = {for (final cf in flows) cf.currency};
+    return currencies.length == 1 ? currencies.single : null;
   }
 
   /// Interest accrues until maturity rather than being paid out.
