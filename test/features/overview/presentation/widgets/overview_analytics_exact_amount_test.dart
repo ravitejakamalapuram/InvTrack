@@ -54,6 +54,8 @@ void main() {
             lastYearInvested: 0,
             thisYearReturned: 0,
             lastYearReturned: 0,
+            thisYearIncome: 0,
+            lastYearIncome: 0,
             periodStart: DateTime(2026, 4, 1),
             periodEnd: DateTime(2026, 10, 5),
             previousPeriodStart: DateTime(2025, 4, 1),

@@ -313,8 +313,9 @@ class TypeDistribution {
 /// days of the previous financial year (ANLY-09), so a part year is never
 /// compared with a whole one.
 ///
-/// Invested, received and net are reported separately: investing more is not
-/// a decline, so net cash flow must not be read as performance.
+/// Invested, returned, income and net are reported separately: investing
+/// more is not a decline, and principal coming back is not income, so
+/// neither net cash flow nor money received must be read as performance.
 class YoYComparison {
   final double thisYearNet;
   final double lastYearNet;
@@ -326,6 +327,11 @@ class YoYComparison {
   /// Money received (RETURN + INCOME) in each period.
   final double thisYearReturned;
   final double lastYearReturned;
+
+  /// Income (INCOME: interest, dividends, rent) in each period, a part of
+  /// [thisYearReturned] and [lastYearReturned].
+  final double thisYearIncome;
+  final double lastYearIncome;
 
   /// This period: [periodStart] (1 April) to [periodEnd], exclusive (the day
   /// after today).
@@ -343,6 +349,8 @@ class YoYComparison {
     required this.lastYearInvested,
     required this.thisYearReturned,
     required this.lastYearReturned,
+    required this.thisYearIncome,
+    required this.lastYearIncome,
     required this.periodStart,
     required this.periodEnd,
     required this.previousPeriodStart,
@@ -378,6 +386,11 @@ class YoYComparison {
       }
     }
 
+    List<ICashFlow> incomeOf(List<ICashFlow> flows) => [
+      for (final cf in flows)
+        if (cf.calculationType == CalculationCashFlowType.income) cf,
+    ];
+
     final thisInvested = FinancialCalculator.calculateTotalInvested(thisYear);
     final thisReturned = FinancialCalculator.calculateTotalReturned(thisYear);
     final lastInvested = FinancialCalculator.calculateTotalInvested(lastYear);
@@ -395,6 +408,12 @@ class YoYComparison {
       lastYearInvested: lastInvested,
       thisYearReturned: thisReturned,
       lastYearReturned: lastReturned,
+      thisYearIncome: FinancialCalculator.calculateTotalReturned(
+        incomeOf(thisYear),
+      ),
+      lastYearIncome: FinancialCalculator.calculateTotalReturned(
+        incomeOf(lastYear),
+      ),
       periodStart: periodStart,
       periodEnd: periodEnd,
       previousPeriodStart: previousPeriodStart,
@@ -409,9 +428,15 @@ class YoYComparison {
       thisYearReturned != 0 ||
       lastYearReturned != 0;
 
-  /// Change in money received, in percent (20.0 = +20%), or null when
-  /// nothing was received in the previous period.
-  double? get receivedChangePercent => lastYearReturned > 0
-      ? (thisYearReturned - lastYearReturned) / lastYearReturned * 100
+  /// Money back from exits, sales and maturities (RETURN) in each period:
+  /// what was received apart from income.
+  double get thisYearCapitalReturned => thisYearReturned - thisYearIncome;
+  double get lastYearCapitalReturned => lastYearReturned - lastYearIncome;
+
+  /// Change in income, in percent (20.0 = +20%), or null when there was no
+  /// income in the previous period. Principal coming back is not income, so
+  /// a maturity does not read as growth.
+  double? get incomeChangePercent => lastYearIncome > 0
+      ? (thisYearIncome - lastYearIncome) / lastYearIncome * 100
       : null;
 }

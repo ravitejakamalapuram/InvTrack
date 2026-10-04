@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
+import 'package:inv_tracker/core/utils/accessibility_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/utils/number_format_utils.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
@@ -286,9 +287,10 @@ class TypeDistributionChart extends ConsumerWidget {
 }
 
 /// Year over year comparison widget: the financial year to date against the
-/// same days of the previous financial year, with invested, received and
-/// net shown separately. Amounts are in neutral colours, because investing
-/// more is not a decline; only the change in money received is highlighted.
+/// same days of the previous financial year, with invested, returned, income
+/// and net shown separately. Amounts are in neutral colours, because
+/// investing more is not a decline; only the change in income is
+/// highlighted, since principal coming back is not growth.
 class YoYComparisonCard extends ConsumerWidget {
   final NumberFormat currencyFormat;
 
@@ -311,6 +313,22 @@ class YoYComparisonCard extends ConsumerWidget {
             : AppColors.textSecondaryLight;
         final end = data.periodEnd;
         final lastDay = DateTime(end.year, end.month, end.day - 1);
+        final lastYear = _fyLabel(l10n, data.previousPeriodStart);
+        final thisYear = _fyLabel(l10n, data.periodStart);
+        Widget amountRow(
+          String label,
+          double last,
+          double current, {
+          bool signed = false,
+        }) => _buildAmountRow(
+          l10n,
+          label,
+          (lastYear, last),
+          (thisYear, current),
+          secondary,
+          isPrivacyMode,
+          signed: signed,
+        );
 
         return GlassCard(
           child: Column(
@@ -342,37 +360,40 @@ class YoYComparisonCard extends ConsumerWidget {
                 style: TextStyle(color: secondary, fontSize: 12),
               ),
               const SizedBox(height: 12),
-              _buildRow(
-                label: const SizedBox.shrink(),
-                last: _header(l10n, data.previousPeriodStart, secondary),
-                current: _header(l10n, data.periodStart, secondary),
+              // Each amount row is read with its own years.
+              ExcludeSemantics(
+                child: _buildRow(
+                  label: const SizedBox.shrink(),
+                  last: _header(lastYear, secondary),
+                  current: _header(thisYear, secondary),
+                ),
               ),
               const SizedBox(height: 8),
-              _buildAmountRow(
+              amountRow(
                 l10n.investedLabel,
                 data.lastYearInvested,
                 data.thisYearInvested,
-                secondary,
-                isPrivacyMode,
               ),
               const SizedBox(height: 6),
-              _buildAmountRow(
-                l10n.yoyReceivedLabel,
-                data.lastYearReturned,
-                data.thisYearReturned,
-                secondary,
-                isPrivacyMode,
+              amountRow(
+                l10n.yoyReturnedLabel,
+                data.lastYearCapitalReturned,
+                data.thisYearCapitalReturned,
               ),
               const SizedBox(height: 6),
-              _buildAmountRow(
+              amountRow(
+                l10n.yoyIncomeLabel,
+                data.lastYearIncome,
+                data.thisYearIncome,
+              ),
+              const SizedBox(height: 6),
+              amountRow(
                 l10n.yoyNetLabel,
                 data.lastYearNet,
                 data.thisYearNet,
-                secondary,
-                isPrivacyMode,
                 signed: true,
               ),
-              if (data.receivedChangePercent case final change?) ...[
+              if (data.incomeChangePercent case final change?) ...[
                 const SizedBox(height: 12),
                 _buildChangeIndicator(l10n, change, secondary, isPrivacyMode),
               ],
@@ -386,12 +407,14 @@ class YoYComparisonCard extends ConsumerWidget {
   }
 
   /// "FY 2026-27" for the financial year starting on [start].
-  Widget _header(AppLocalizations l10n, DateTime start, Color color) {
+  String _fyLabel(AppLocalizations l10n, DateTime start) => l10n.fyLabel(
+    start.year.toString(),
+    ((start.year + 1) % 100).toString().padLeft(2, '0'),
+  );
+
+  Widget _header(String text, Color color) {
     return Text(
-      l10n.fyLabel(
-        start.year.toString(),
-        ((start.year + 1) % 100).toString().padLeft(2, '0'),
-      ),
+      text,
       textAlign: TextAlign.end,
       style: TextStyle(color: color, fontSize: 12),
     );
@@ -411,18 +434,39 @@ class YoYComparisonCard extends ConsumerWidget {
     );
   }
 
+  /// One row of amounts, read by screen readers as "Invested: FY 2025-26
+  /// 6,00,000 rupees, FY 2026-27 9,00,000 rupees" (each amount "Hidden
+  /// amount" in privacy mode), since the cells alone carry no year.
   Widget _buildAmountRow(
+    AppLocalizations l10n,
     String label,
-    double last,
-    double current,
+    (String, double) last,
+    (String, double) current,
     Color labelColor,
     bool isPrivacyMode, {
     bool signed = false,
   }) {
-    return _buildRow(
-      label: Text(label, style: TextStyle(color: labelColor, fontSize: 13)),
-      last: _buildAmount(last, isPrivacyMode, signed: signed),
-      current: _buildAmount(current, isPrivacyMode, signed: signed),
+    String spoken(double amount) => isPrivacyMode
+        ? l10n.hiddenAmount
+        : AccessibilityUtils.formatCurrencyForScreenReader(
+            amount,
+            currencyFormat.currencySymbol,
+          ).trim();
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: l10n.yoyRowSemantics(
+        label,
+        last.$1,
+        spoken(last.$2),
+        current.$1,
+        spoken(current.$2),
+      ),
+      child: _buildRow(
+        label: Text(label, style: TextStyle(color: labelColor, fontSize: 13)),
+        last: _buildAmount(last.$2, isPrivacyMode, signed: signed),
+        current: _buildAmount(current.$2, isPrivacyMode, signed: signed),
+      ),
     );
   }
 
@@ -453,9 +497,8 @@ class YoYComparisonCard extends ConsumerWidget {
     );
   }
 
-  /// The change in money received. An increase is shown in green; a
-  /// decrease in a neutral colour, since last year may simply have had a
-  /// maturity in it.
+  /// The change in income. An increase is shown in green; a decrease in a
+  /// neutral colour, since a holding may simply have matured.
   Widget _buildChangeIndicator(
     AppLocalizations l10n,
     double change,
@@ -485,7 +528,7 @@ class YoYComparisonCard extends ConsumerWidget {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                l10n.yoyReceivedChange(formatPercent(change, showSign: true)),
+                l10n.yoyIncomeChange(formatPercent(change, showSign: true)),
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w500,

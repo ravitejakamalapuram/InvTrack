@@ -4389,23 +4389,55 @@
     }
   },
 
-  "yoyReceivedLabel": "Received",
-  "@yoyReceivedLabel": {
-    "description": "Row label on the Year over Year card: money received (returns and income) in the period"
+  "yoyReturnedLabel": "Returned",
+  "@yoyReturnedLabel": {
+    "description": "Row label on the Year over Year card: money back from exits, sales and maturities (RETURN cash flows) in the period"
+  },
+
+  "yoyIncomeLabel": "Income",
+  "@yoyIncomeLabel": {
+    "description": "Row label on the Year over Year card: interest, dividends and rent (INCOME cash flows) in the period"
   },
 
   "yoyNetLabel": "Net cash flow",
   "@yoyNetLabel": {
-    "description": "Row label on the Year over Year card: received minus invested in the period"
+    "description": "Row label on the Year over Year card: returned plus income minus invested in the period"
   },
 
-  "yoyReceivedChange": "Received {change} vs the same days last year",
-  "@yoyReceivedChange": {
-    "description": "Change in money received on the Year over Year card",
+  "yoyIncomeChange": "Income {change} vs the same days last year",
+  "@yoyIncomeChange": {
+    "description": "Change in income (interest, dividends, rent) on the Year over Year card",
     "placeholders": {
       "change": {
         "type": "String",
         "example": "+20.0%"
+      }
+    }
+  },
+
+  "yoyRowSemantics": "{label}: {lastYear} {lastAmount}, {thisYear} {thisAmount}",
+  "@yoyRowSemantics": {
+    "description": "Screen reader label for one row of the Year over Year card: the row, then each financial year with its amount (or 'Hidden amount' in privacy mode)",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Invested"
+      },
+      "lastYear": {
+        "type": "String",
+        "example": "FY 2025-26"
+      },
+      "lastAmount": {
+        "type": "String",
+        "example": "6,00,000 rupees"
+      },
+      "thisYear": {
+        "type": "String",
+        "example": "FY 2026-27"
+      },
+      "thisAmount": {
+        "type": "String",
+        "example": "9,00,000 rupees"
       }
     }
   },

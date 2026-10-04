@@ -56,6 +56,27 @@ void main() {
     expect(yoy.thisYearInvested, closeTo(900200.00, 0.005));
     expect(yoy.thisYearReturned, closeTo(60500.00, 0.005));
     expect(yoy.thisYearNet, closeTo(-839700.00, 0.005));
+    // Income (INCOME flows only) is reported on its own.
+    expect(yoy.lastYearIncome, closeTo(1000.00, 0.005));
+    expect(yoy.thisYearIncome, closeTo(500.00, 0.005));
+    expect(yoy.lastYearCapitalReturned, closeTo(50000.00, 0.005));
+    expect(yoy.thisYearCapitalReturned, closeTo(60000.00, 0.005));
+  });
+
+  test('principal coming back at maturity is not income growth', () {
+    final yoy = _compare([
+      // Last FY to date: ₹6,000 of interest.
+      _flow(CashFlowType.income, 6000, DateTime(2025, 8, 1)),
+      // This FY to date: a ₹1,00,000 FD matures with ₹7,000 of interest.
+      _flow(CashFlowType.returnFlow, 100000, DateTime(2026, 8, 1)),
+      _flow(CashFlowType.income, 7000, DateTime(2026, 8, 1)),
+    ], DateTime(2026, 10, 4));
+
+    expect(yoy.thisYearIncome, closeTo(7000.00, 0.005));
+    expect(yoy.lastYearIncome, closeTo(6000.00, 0.005));
+    // (7,000 − 6,000) / 6,000 = +16.666667%, not +1,683.3% for all money
+    // received.
+    expect(yoy.incomeChangePercent, closeTo(16.666667, 1e-6));
   });
 
   test('on 29 Feb the previous span ends on 28 Feb', () {
