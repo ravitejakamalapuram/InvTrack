@@ -220,16 +220,21 @@ void main() {
 
   group('goal milestone', () {
     GoalEntity goal({
+      String id = 'goal-1',
       GoalType type = GoalType.targetAmount,
       double targetAmount = 50000,
       double? targetMonthlyIncome,
+      List<String> linkedInvestmentIds = const [],
     }) => GoalEntity(
-      id: 'goal-1',
+      id: id,
       name: 'Retire',
       type: type,
       targetAmount: targetAmount,
       targetMonthlyIncome: targetMonthlyIncome,
-      trackingMode: GoalTrackingMode.all,
+      trackingMode: linkedInvestmentIds.isEmpty
+          ? GoalTrackingMode.all
+          : GoalTrackingMode.selected,
+      linkedInvestmentIds: linkedInvestmentIds,
       icon: 'flag',
       colorValue: 0,
       createdAt: DateTime(2025, 1, 1),
@@ -317,6 +322,50 @@ void main() {
           );
 
       expect(notifications.goalMilestones, isEmpty);
+    });
+
+    test('a missing rate for one goal does not skip the other goals', () async {
+      // goal-1 tracks everything, including an INR flow with no rate.
+      // goal-2 tracks only a USD investment: $10,000 of $20,000 is 50%.
+      goals.seed(
+        goals: [
+          goal(),
+          goal(
+            id: 'goal-2',
+            targetAmount: 20000,
+            linkedInvestmentIds: ['inv-8'],
+          ),
+        ],
+      );
+      repo.seed(
+        investments: [investment('inv-7', 'INR'), investment('inv-8', 'USD')],
+        cashFlows: [flow('inv-7', CashFlowType.invest, 100000, 'INR')],
+      );
+      final container = containerFor(
+        'USD',
+        conversion: _OfflineNoCacheConversionService(),
+      );
+
+      await container
+          .read(investmentNotifierProvider.notifier)
+          .addCashFlow(
+            investmentId: 'inv-8',
+            type: CashFlowType.returnFlow,
+            amount: 10000,
+            date: DateTime(2026, 1, 1),
+            currency: 'USD',
+          );
+
+      expect(notifications.goalMilestones, hasLength(1));
+      final shown = notifications.goalMilestones.single;
+      expect(shown['percent'] as double, closeTo(50, 1e-6));
+      expect(shown['target'], 20000.0);
+      expect(shown['currency'], 'USD');
+      // The stale-goal check needs no amounts, so it runs for both goals.
+      expect(
+        notifications.shownGoalStaleNotifications,
+        containsAll(<String>['goal-1', 'goal-2']),
+      );
     });
   });
 }

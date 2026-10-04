@@ -10,10 +10,12 @@ import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -890,21 +892,48 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Progress in the base currency, as the Goals screen shows it; raw sums
       // of mixed currencies would announce the wrong milestones. Without a
-      // rate, throwError skips the check rather than use unconverted amounts.
+      // rate, throwError skips that goal's amount-based alerts rather than
+      // use unconverted amounts; other goals are still checked.
       final batchConverter = ref.read(batchCurrencyConverterProvider);
-      if (batchConverter == null) return;
       final baseCurrency = ref.read(currencyCodeProvider);
 
       // Check each goal for milestone achievements and alerts
       for (final goal in goals) {
-        final progress = await GoalProgressCalculator.calculateMultiCurrency(
+        // Check for stale goals (no activity for X days). It needs no
+        // amounts, so it runs even when a rate is unavailable.
+        // This has built-in rate limiting (once per month)
+        final lastActivityDate = GoalProgressCalculator.getLastActivityDate(
           goal: goal,
           allInvestments: investments,
           allCashFlows: cashFlows,
-          batchConverter: batchConverter,
-          baseCurrency: baseCurrency,
-          fallbackStrategy: ConversionFallbackStrategy.throwError,
         );
+        await notificationService.showGoalStaleNotification(
+          goalId: goal.id,
+          goalName: goal.name,
+          lastActivityDate: lastActivityDate,
+        );
+
+        if (batchConverter == null) continue;
+        final GoalProgress progress;
+        final double targetInBase;
+        try {
+          progress = await GoalProgressCalculator.calculateMultiCurrency(
+            goal: goal,
+            allInvestments: investments,
+            allCashFlows: cashFlows,
+            batchConverter: batchConverter,
+            baseCurrency: baseCurrency,
+            fallbackStrategy: ConversionFallbackStrategy.throwError,
+          );
+          targetInBase = await GoalProgressCalculator.targetInBaseCurrency(
+            goal: goal,
+            batchConverter: batchConverter,
+            baseCurrency: baseCurrency,
+            fallbackStrategy: ConversionFallbackStrategy.throwError,
+          );
+        } on CurrencyConversionException {
+          continue;
+        }
 
         // CodeRabbit fix: Track previous progress to detect milestone crossings
         final currentPercent = progress.progressPercent;
@@ -927,12 +956,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             goalName: goal.name,
             progressPercent: currentPercent,
             currentValue: progress.currentAmount,
-            targetValue: await GoalProgressCalculator.targetInBaseCurrency(
-              goal: goal,
-              batchConverter: batchConverter,
-              baseCurrency: baseCurrency,
-              fallbackStrategy: ConversionFallbackStrategy.throwError,
-            ),
+            targetValue: targetInBase,
             currency: baseCurrency,
           );
         }
@@ -948,19 +972,6 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             projectedDate: progress.projectedCompletionDate,
           );
         }
-
-        // Check for stale goals (no activity for X days)
-        // This has built-in rate limiting (once per month)
-        final lastActivityDate = GoalProgressCalculator.getLastActivityDate(
-          goal: goal,
-          allInvestments: investments,
-          allCashFlows: cashFlows,
-        );
-        await notificationService.showGoalStaleNotification(
-          goalId: goal.id,
-          goalName: goal.name,
-          lastActivityDate: lastActivityDate,
-        );
       }
     } catch (e) {
       // Don't fail the main operation if goal milestone check fails
