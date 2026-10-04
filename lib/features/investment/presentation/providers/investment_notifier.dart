@@ -1054,6 +1054,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             currentValue: progress.currentAmount,
             targetValue: targetInBase,
             currency: baseCurrency,
+            // Not checked yet this session: milestones passed before (for
+            // example under an older way of measuring goals) are recorded,
+            // not announced.
+            firstCheck: previousPercent == null,
           );
         }
 

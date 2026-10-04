@@ -86,6 +86,7 @@ class FakeNotificationService implements NotificationService {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
+    bool firstCheck = false,
   }) async {
     if (progressPercent >= 25) {
       _logShown('goal_milestone_$goalId');

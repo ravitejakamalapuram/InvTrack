@@ -324,8 +324,8 @@ class ReportPdfExporter {
           data: report.onTrackGoals.map((g) => [
             g.name,
             '${g.progressPercentage}%',
-            _formatAmount(g.targetAmount, symbol, isPrivacyMode, locale),
-            _formatAmount(g.currentAmount, symbol, isPrivacyMode, locale),
+            g.amountLabel(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
+            g.amountLabel(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
           ]).toList(),
         ),
         pw.SizedBox(height: 20),
@@ -336,8 +336,8 @@ class ReportPdfExporter {
           data: report.atRiskGoals.map((g) => [
             g.name,
             '${g.progressPercentage}%',
-            _formatAmount(g.targetAmount, symbol, isPrivacyMode, locale),
-            _formatAmount(g.currentAmount, symbol, isPrivacyMode, locale),
+            g.amountLabel(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
+            g.amountLabel(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
           ]).toList(),
         ),
       ],

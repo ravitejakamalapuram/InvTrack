@@ -83,6 +83,13 @@ class FireStatsCard extends ConsumerWidget {
             l10n.fireEmergencyFund,
             compact(calculation.emergencyFundNeeded),
           ),
+          // So that the rows add up to the FIRE number.
+          if (calculation.otherIncomeDeduction > 0)
+            _buildBreakdownRow(
+              isDark,
+              l10n.fireLessOtherIncome,
+              '−${compact(calculation.otherIncomeDeduction)}',
+            ),
           Divider(
             height: AppSpacing.lg,
             color: isDark

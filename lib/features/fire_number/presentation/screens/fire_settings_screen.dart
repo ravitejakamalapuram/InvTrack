@@ -501,13 +501,46 @@ class FireSettingsScreen extends ConsumerWidget {
           .saveSettings(updated.copyWith(updatedAt: DateTime.now()));
       if (sheetContext.mounted) Navigator.pop(sheetContext);
     } on FireSettingsValidationException catch (e) {
-      showError(e.errors.join('\n'));
+      if (!sheetContext.mounted) return;
+      final l10n = AppLocalizations.of(sheetContext);
+      showError(
+        [for (final code in e.codes) _validationText(l10n, code)].join('\n'),
+      );
     } catch (e, st) {
       if (sheetContext.mounted) {
         ErrorHandler.handle(e, st, context: sheetContext, showFeedback: true);
       }
     }
   }
+
+  static String _validationText(
+    AppLocalizations l10n,
+    FireSettingsError code,
+  ) => switch (code) {
+    FireSettingsError.currentAgeOutOfRange => l10n.fireErrorCurrentAge,
+    FireSettingsError.targetAgeNotAfterCurrent =>
+      l10n.fireErrorTargetAgeAfterCurrent,
+    FireSettingsError.targetAgeTooHigh => l10n.fireErrorTargetAgeMax,
+    FireSettingsError.lifeExpectancyBeforeTarget =>
+      l10n.fireErrorLifeExpectancyAfterTarget,
+    FireSettingsError.lifeExpectancyTooHigh => l10n.fireErrorLifeExpectancyMax,
+    FireSettingsError.expensesNotPositive => l10n.fireErrorExpensesPositive,
+    FireSettingsError.withdrawalRateOutOfRange => l10n.fireErrorWithdrawalRate,
+    FireSettingsError.inflationOutOfRange => l10n.fireErrorInflationRate,
+    FireSettingsError.preRetirementReturnOutOfRange =>
+      l10n.fireErrorPreRetirementReturn,
+    FireSettingsError.postRetirementReturnOutOfRange =>
+      l10n.fireErrorPostRetirementReturn,
+    FireSettingsError.healthcareBufferOutOfRange =>
+      l10n.fireErrorHealthcareBuffer,
+    FireSettingsError.emergencyMonthsOutOfRange =>
+      l10n.fireErrorEmergencyMonths,
+    FireSettingsError.passiveIncomeNegative =>
+      l10n.fireErrorPassiveIncomeNegative,
+    FireSettingsError.pensionNegative => l10n.fireErrorPensionNegative,
+    FireSettingsError.otherAssetsNegative => l10n.fireErrorOtherAssetsNegative,
+    FireSettingsError.monthlySipNegative => l10n.fireErrorMonthlySipNegative,
+  };
 
   Widget _sheetError(String? error) {
     if (error == null) return const SizedBox.shrink();
@@ -866,7 +899,10 @@ class _AmountEditorSheet extends StatefulWidget {
 
 class _AmountEditorSheetState extends State<_AmountEditorSheet> {
   late final TextEditingController _controller = TextEditingController(
-    text: widget.initial?.toStringAsFixed(0) ?? '',
+    text: switch (widget.initial) {
+      final initial? => amountInputText(initial),
+      null => '',
+    },
   );
   String? _error;
 

@@ -103,7 +103,11 @@ enum FireProgressStatus {
   achieved,
 
   /// Coast FIRE number reached
-  coasting;
+  coasting,
+
+  /// Invested, but too little history to estimate the monthly savings, so
+  /// neither on track nor behind can be told yet.
+  notEnoughHistory;
 
   String get displayName {
     switch (this) {
@@ -119,6 +123,8 @@ enum FireProgressStatus {
         return 'FIRE Achieved!';
       case FireProgressStatus.coasting:
         return 'Coasting';
+      case FireProgressStatus.notEnoughHistory:
+        return 'Not Enough History';
     }
   }
 }

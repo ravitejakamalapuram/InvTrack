@@ -874,7 +874,9 @@ class NotificationService with NotificationPreferencesMixin {
 
   // --- Goal Notifications ---
 
-  /// Check if goal has reached a new milestone and show notification
+  /// Check if goal has reached a new milestone and show notification.
+  /// See [GoalNotificationHandler.checkAndShowGoalMilestone] for
+  /// [firstCheck].
   Future<void> checkAndShowGoalMilestone({
     required String goalId,
     required String goalName,
@@ -882,6 +884,7 @@ class NotificationService with NotificationPreferencesMixin {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
+    bool firstCheck = false,
   }) => _goalHandler.checkAndShowGoalMilestone(
     goalId: goalId,
     goalName: goalName,
@@ -889,6 +892,7 @@ class NotificationService with NotificationPreferencesMixin {
     currentValue: currentValue,
     targetValue: targetValue,
     currency: currency,
+    firstCheck: firstCheck,
   );
 
   /// Show goal at-risk notification when goal is behind schedule

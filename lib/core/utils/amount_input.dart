@@ -16,3 +16,8 @@ double? parseAmountInput(String text) {
 final amountInputFormatters = <TextInputFormatter>[
   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
 ];
+
+/// [value] as an amount field's starting text: whole amounts without
+/// ".0", others exactly, so saving it unchanged stores the same amount.
+String amountInputText(double value) =>
+    value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';

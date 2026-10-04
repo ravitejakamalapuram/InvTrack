@@ -104,6 +104,9 @@ class GoalProgressCalculator {
 
     var monthlyIncome = 0.0;
     var monthlySavings = 0.0;
+    // Income is not projected, and savings are not estimated from under
+    // [PlanningInputsCalculator.minHistoryMonths] months of history.
+    var projectable = false;
     final double current;
     if (goal.isIncomeGoal) {
       monthlyIncome = PlanningInputsCalculator.monthlyIncome(
@@ -118,12 +121,12 @@ class GoalProgressCalculator {
         cashFlows: flows,
         terminalValues: terminalValues,
       ).total;
-      monthlySavings =
-          PlanningInputsCalculator.monthlySavings(
-            cashFlows: flows,
-            asOf: today,
-          ).amount ??
-          0.0;
+      final savings = PlanningInputsCalculator.monthlySavings(
+        cashFlows: flows,
+        asOf: today,
+      ).amount;
+      projectable = savings != null;
+      monthlySavings = savings ?? 0.0;
     }
 
     final progressPercent = targetAmount > 0
@@ -143,12 +146,14 @@ class GoalProgressCalculator {
     if (reached) {
       projected = today;
     } else if (!goal.isIncomeGoal && targetAmount > 0) {
-      final months = PlanningInputsCalculator.monthsToReach(
-        target: targetAmount,
-        current: current,
-        monthlySavings: monthlySavings,
-        annualRatePercent: assumedAnnualReturn,
-      );
+      final months = projectable
+          ? PlanningInputsCalculator.monthsToReach(
+              target: targetAmount,
+              current: current,
+              monthlySavings: monthlySavings,
+              annualRatePercent: assumedAnnualReturn,
+            )
+          : null;
       if (months != null) {
         projected = PlanningInputsCalculator.addMonths(today, months);
       }
@@ -183,6 +188,7 @@ class GoalProgressCalculator {
         today: today,
         deadline: deadline,
         projected: projected,
+        projectable: projectable,
       ),
       currentMilestone: GoalMilestone.forPercentage(progressPercent),
       achievedMilestones: GoalMilestone.achievedMilestones(progressPercent),
@@ -198,14 +204,16 @@ class GoalProgressCalculator {
     required DateTime today,
     required DateTime? deadline,
     required DateTime? projected,
+    required bool projectable,
   }) {
     if (goal.isArchived) return GoalStatus.archived;
     if (reached) return GoalStatus.achieved;
     if (current <= 0) return GoalStatus.notStarted;
     if (deadline == null) return GoalStatus.onTrack;
     if (!deadline.isAfter(today)) return GoalStatus.behind;
-    // Income is not projected: an income goal is on track until its date.
-    if (goal.isIncomeGoal) return GoalStatus.onTrack;
+    // Without a projection (income goals, or savings not yet estimated)
+    // the goal is neither on track nor behind.
+    if (!projectable) return GoalStatus.inProgress;
     if (projected == null) return GoalStatus.behind;
     final daysAhead = deadline.difference(projected).inDays;
     if (daysAhead > onTrackWindowDays) return GoalStatus.ahead;

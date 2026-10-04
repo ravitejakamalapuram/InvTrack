@@ -5,6 +5,7 @@ library;
 
 import 'dart:io';
 import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:inv_tracker/core/utils/csv_utils.dart';
 import 'package:inv_tracker/features/reports/domain/services/report_export_service.dart';
@@ -69,6 +70,22 @@ class ReportCsvExporter {
     final formatter = NumberFormat.currency(locale: locale, symbol: symbol, decimalDigits: 2);
     return formatter.format(amount);
   }
+
+  /// The rows [export] writes for [reportData].
+  @visibleForTesting
+  List<List<dynamic>> rowsFor(
+    dynamic reportData,
+    ReportType reportType, {
+    String currencySymbol = '\$',
+    String locale = 'en_US',
+    bool isPrivacyMode = false,
+  }) => _generateCsvRows(
+    reportData,
+    reportType,
+    currencySymbol,
+    locale,
+    isPrivacyMode,
+  );
 
   /// Generate CSV rows based on report type
   List<List<dynamic>> _generateCsvRows(
@@ -207,8 +224,8 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(g.name),
         '${g.progressPercentage}%',
-        CsvUtils.sanitizeField(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
-        CsvUtils.sanitizeField(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(g.amountLabel(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale))),
+        CsvUtils.sanitizeField(g.amountLabel(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale))),
       ]);
     }
     rows.add([]);
@@ -218,8 +235,8 @@ class ReportCsvExporter {
       rows.add([
         CsvUtils.sanitizeField(g.name),
         '${g.progressPercentage}%',
-        CsvUtils.sanitizeField(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
-        CsvUtils.sanitizeField(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
+        CsvUtils.sanitizeField(g.amountLabel(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale))),
+        CsvUtils.sanitizeField(g.amountLabel(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale))),
       ]);
     }
     return rows;

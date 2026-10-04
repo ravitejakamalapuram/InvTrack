@@ -37,6 +37,12 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
   // ============ Goal Milestone Notifications ============
 
   /// Check if goal has reached a new milestone and show notification.
+  ///
+  /// Announces only the highest milestone reached and records every lower
+  /// one as shown, so milestones are never announced backwards (GAP3-07).
+  /// On the [firstCheck] of a goal with no milestone recorded yet, the
+  /// milestones it has already passed are recorded without a notification:
+  /// they were reached before, not now.
   Future<void> checkAndShowGoalMilestone({
     required String goalId,
     required String goalName,
@@ -44,25 +50,29 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     required double currentValue,
     required double targetValue,
     String currency = 'INR',
+    bool firstCheck = false,
   }) async {
     await ensureInitialized();
     if (!goalMilestonesEnabled) return;
     if (targetValue <= 0) return;
 
-    if (!await ensurePermissionsForShow()) return;
+    final reached = [
+      for (final milestone in goalMilestones)
+        if (progressPercent >= milestone) milestone,
+    ];
+    if (reached.isEmpty) return;
+    final reachedMilestone = reached.last;
+    if (isGoalMilestoneShown(goalId, reachedMilestone)) return;
 
-    int? reachedMilestone;
-    for (final milestone in goalMilestones.reversed) {
-      if (progressPercent >= milestone &&
-          !isGoalMilestoneShown(goalId, milestone)) {
-        reachedMilestone = milestone;
-        break;
-      }
+    final baseline =
+        firstCheck &&
+        !goalMilestones.any((m) => isGoalMilestoneShown(goalId, m));
+    if (!baseline && !await ensurePermissionsForShow()) return;
+
+    for (final milestone in reached) {
+      await markGoalMilestoneShown(goalId, milestone);
     }
-
-    if (reachedMilestone == null) return;
-
-    await markGoalMilestoneShown(goalId, reachedMilestone);
+    if (baseline) return;
 
     final formattedCurrent = formatCurrency(currentValue, currency);
     final formattedTarget = formatCurrency(targetValue, currency);

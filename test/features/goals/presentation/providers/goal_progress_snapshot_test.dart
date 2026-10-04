@@ -81,12 +81,38 @@ final _fdFlows = [
     _cf('fd', CashFlowType.income, 18750, DateTime(2024, 12 + 3 * quarter, 4)),
 ];
 
+/// No EUR rate, live or cached (offline before EUR was ever fetched).
+class _NoEurRates extends MockCurrencyConversionService {
+  @override
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) {
+    if (from == 'EUR' || to == 'EUR') {
+      throw CurrencyConversionException('No EUR rate');
+    }
+    return super.convert(amount: amount, from: from, to: to, date: date);
+  }
+
+  @override
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) async {
+    if (from == 'EUR' || to == 'EUR') return null;
+    return super.getLastKnownRate(from: from, to: to);
+  }
+}
+
 ProviderContainer _container({
   required List<GoalEntity> goals,
   List<InvestmentEntity> investments = const [],
   List<InvestmentEntity> archived = const [],
   List<CashFlowEntity> cashFlows = const [],
   String baseCurrency = 'INR',
+  CurrencyConversionService? conversion,
 }) {
   final container = ProviderContainer(
     overrides: [
@@ -101,7 +127,7 @@ ProviderContainer _container({
       archivedInvestmentsProvider.overrideWith((ref) => Stream.value(archived)),
       currencyCodeProvider.overrideWith((ref) => baseCurrency),
       currencyConversionServiceProvider.overrideWithValue(
-        MockCurrencyConversionService(),
+        conversion ?? MockCurrencyConversionService(),
       ),
     ],
   );
@@ -213,6 +239,33 @@ void main() {
     final counts = {for (final p in all) p.goal.id: p.otherGoalsCount};
 
     expect(counts, {'house': 1, 'all': 2, 'other': 1});
+  });
+
+  test('a goal without a rate does not hide the other goals', () async {
+    // One EUR goal with no rate must not fail the list that the Goals card,
+    // the carousel, the goal report and the health score read.
+    final container = _container(
+      goals: [
+        _goal('house'),
+        _goal('trip', target: 5000, currency: 'EUR'),
+      ],
+      investments: [_fd],
+      cashFlows: _fdFlows,
+      conversion: _NoEurRates(),
+    );
+
+    final all = await _resolve(
+      container,
+      multiCurrencyAllGoalsProgressProvider,
+    );
+
+    expect([for (final p in all) p.goal.id], ['house']);
+    expect(all.single.progressPercent, closeTo(100.0, 1e-9));
+    // The goal itself still fails, so its own card says so.
+    await expectLater(
+      _resolve(container, multiCurrencyGoalProgressProvider('trip')),
+      throwsA(isA<CurrencyConversionException>()),
+    );
   });
 
   test(

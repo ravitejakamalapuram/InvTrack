@@ -75,6 +75,10 @@ enum GoalTrackingMode {
 /// Goal status based on progress
 enum GoalStatus {
   notStarted,
+
+  /// Funded, with a date, but not projected: an income goal, or a corpus
+  /// goal with under 3 months of history. Neither on track nor behind.
+  inProgress,
   onTrack,
   ahead,
   behind,
@@ -85,6 +89,8 @@ enum GoalStatus {
     switch (this) {
       case GoalStatus.notStarted:
         return 'Not Started';
+      case GoalStatus.inProgress:
+        return 'In Progress';
       case GoalStatus.onTrack:
         return 'On Track';
       case GoalStatus.ahead:

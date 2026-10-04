@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/calculations/planning_inputs_calculator.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
@@ -21,11 +22,13 @@ FireSettingsEntity _settings({
   int birthYear = 1996,
   int targetFireAge = 45,
   String? currency = 'INR',
+  double monthlyPassiveIncome = 0,
 }) => FireSettingsEntity(
   id: 'fire',
   monthlyExpenses: 50000,
   birthYear: birthYear,
   targetFireAge: targetFireAge,
+  monthlyPassiveIncome: monthlyPassiveIncome,
   isSetupComplete: true,
   currency: currency,
   createdAt: DateTime(2026, 1, 1),
@@ -185,11 +188,54 @@ void main() {
 
     expect(find.textContaining('Not enough history'), findsWidgets);
     expect(find.textContaining('more to stay on track'), findsNothing);
+    // Nothing is told from an assumed ₹0 a month (PLAN-02): no status,
+    // no projected age or date, no nudge to invest more.
+    expect(find.text('Not Enough History'), findsOneWidget);
+    expect(find.text('Behind Schedule'), findsNothing);
+    expect(find.text('Action Needed'), findsNothing);
+    expect(find.textContaining('Boost your monthly investments'), findsNothing);
+    expect(find.textContaining('Age 8'), findsNothing);
+    expect(find.text('Not reachable'), findsNothing);
   });
 
-  testWidgets('asks to confirm the currency of settings saved without one', (
+  testWidgets('a user past the target age is asked to move it', (tester) async {
+    // Age 46, target 45: nothing more is required each month, so the gap
+    // is not positive, but the user is behind.
+    final settings = _settings(birthYear: 1980);
+    await _pump(
+      tester,
+      settings,
+      _calculate(settings, corpus: 1402551.73, savings: 0),
+    );
+
+    expect(find.text("You're needs focus!"), findsNothing);
+    expect(find.text('Keep up your current investment rate.'), findsNothing);
+    expect(find.textContaining('Move your target age'), findsOneWidget);
+  });
+
+  testWidgets('the FIRE number breakdown adds up with passive income', (
     tester,
   ) async {
+    // ₹1.83 Cr of buffers less ₹10,000 × 12 × 25 = ₹30L is ₹1.53 Cr.
+    final settings = _settings(monthlyPassiveIncome: 10000);
+    final result = _calculate(settings, corpus: 1402551.73, savings: 0);
+    await _pump(tester, settings, result);
+
+    expect(find.text('Less passive income and pension'), findsOneWidget);
+    expect(
+      find.text(
+        '−${formatCompactCurrency(3000000, symbol: '₹', locale: 'en_IN')}',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('settings saved without a currency ask for nothing', (
+    tester,
+  ) async {
+    // A base-currency change stamps them with the old base currency (the
+    // A03 backfill), so there is no card to confirm it and nothing that can
+    // fail when tapped.
     final settings = _settings(currency: null);
     await _pump(
       tester,
@@ -197,6 +243,59 @@ void main() {
       _calculate(settings, corpus: 1402551.73, savings: 0),
     );
 
-    expect(find.textContaining('in INR'), findsOneWidget);
+    expect(find.textContaining('Confirm INR'), findsNothing);
+    expect(find.textContaining('read in INR'), findsNothing);
+  });
+
+  testWidgets('Retry reloads a missing exchange rate', (tester) async {
+    // Settings in INR, base currency USD, and no rate on the first try.
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1080, 4000);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    var rateBuilds = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (_, _) => null,
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
+          currencySymbolProvider.overrideWith((ref) => 'US\$'),
+          currencyLocaleProvider.overrideWith((ref) => 'en_US'),
+          fireSettingsProvider.overrideWith((ref) => Stream.value(_settings())),
+          firePortfolioInputsProvider.overrideWith(
+            (ref) async => FirePortfolioInputs(
+              corpus: const CorpusValue(currentValues: 12000),
+              savings: const MonthlySavingsEstimate(
+                amount: 500,
+                monthsOfHistory: 24,
+              ),
+              currency: 'USD',
+              asOf: _asOf,
+            ),
+          ),
+          fireCurrencyRateProvider.overrideWith((ref, pair) async {
+            rateBuilds++;
+            if (rateBuilds == 1) throw Exception('no rate offline');
+            return 1 / 83;
+          }),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: FireDashboardScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(rateBuilds, 2);
+    expect(find.text('Retry'), findsNothing);
   });
 }

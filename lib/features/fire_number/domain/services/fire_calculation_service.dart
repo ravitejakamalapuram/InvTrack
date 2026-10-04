@@ -87,9 +87,10 @@ class FireCalculationService {
         fireNumber - (totalOtherIncome * settings.fireMultiplier);
     final finalFireNumber = adjustedFireNumber > 0 ? adjustedFireNumber : 0.0;
 
-    // The multiple of annual expenses the FIRE number really is.
-    final expenseMultiple = currentAnnualExpenses > 0
-        ? finalFireNumber / currentAnnualExpenses
+    // The multiple of the annual expenses entered that the FIRE number
+    // really is, the FIRE type's lifestyle factor included.
+    final expenseMultiple = settings.annualExpenses > 0
+        ? finalFireNumber / settings.annualExpenses
         : 0.0;
 
     // Calculate what this will be worth in future money (for display purposes)
@@ -125,14 +126,20 @@ class FireCalculationService {
           annualRatePercent: realReturn,
         );
 
-    // Months until the corpus reaches the FIRE number, using REAL returns
-    final monthsToFire = PlanningInputsCalculator.monthsToReach(
+    // Months until the corpus reaches the FIRE number, using REAL returns.
+    // Savings that could not be estimated are not projected as ₹0 a month.
+    final savingsUnknown =
+        inputs?.savingsSource == MonthlySavingsSource.notEnoughHistory;
+    final solvedMonths = PlanningInputsCalculator.monthsToReach(
       target: finalFireNumber,
       current: currentPortfolioValue,
       monthlySavings: currentMonthlySavings,
       annualRatePercent: realReturn,
       maxMonths: maxProjectionMonths,
     );
+    final monthsToFire = savingsUnknown && solvedMonths != 0
+        ? null
+        : solvedMonths;
     final projectedFireDate = monthsToFire == null
         ? null
         : PlanningInputsCalculator.addMonths(today, monthsToFire);
@@ -147,6 +154,7 @@ class FireCalculationService {
       coastNumber: coastFireNumber,
       projectedFireAge: projectedFireAge,
       targetFireAge: settings.targetFireAge,
+      savingsUnknown: savingsUnknown,
     );
 
     // Generate milestones
@@ -187,6 +195,7 @@ class FireCalculationService {
       emergencyFundNeeded: emergencyFundNeeded,
       healthcareCorpusNeeded: healthcareCorpusNeeded,
       coreRetirementCorpus: coreRetirementCorpus,
+      otherIncomeDeduction: fireNumber - finalFireNumber,
       expenseMultiple: expenseMultiple,
       inputs: inputs,
       calculatedAt: now,
@@ -231,12 +240,15 @@ class FireCalculationService {
   /// - ahead: projected [aheadByYears]+ years before the target age
   /// - onTrack: projected by the target age
   /// - behind: projected after the target age, or not reachable
+  /// - notEnoughHistory: none of the above can be told, because the monthly
+  ///   savings could not be estimated yet
   FireProgressStatus _determineStatus({
     required double progressPercentage,
     required double currentValue,
     required double coastNumber,
     required int? projectedFireAge,
     required int targetFireAge,
+    required bool savingsUnknown,
   }) {
     if (progressPercentage >= 100) {
       return FireProgressStatus.achieved;
@@ -246,6 +258,9 @@ class FireCalculationService {
     }
     if (progressPercentage <= 0) {
       return FireProgressStatus.notStarted;
+    }
+    if (savingsUnknown) {
+      return FireProgressStatus.notEnoughHistory;
     }
     if (projectedFireAge == null || projectedFireAge > targetFireAge) {
       return FireProgressStatus.behind;

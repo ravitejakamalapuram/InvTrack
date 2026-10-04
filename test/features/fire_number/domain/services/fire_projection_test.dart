@@ -5,6 +5,7 @@
 // ₹1,83,00,000), 12% return and 6% inflation, so the real return is
 // r = 1.12 / 1.06 − 1 = 5.660377% and the monthly rate is r / 12.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
 
@@ -14,11 +15,15 @@ const _fireNumber = 18300000.0;
 FireSettingsEntity _settings({
   required int birthYear,
   int targetFireAge = 45,
+  FireType fireType = FireType.regular,
+  double monthlyPassiveIncome = 0,
 }) => FireSettingsEntity(
   id: 'fire',
   monthlyExpenses: 50000,
   birthYear: birthYear,
   targetFireAge: targetFireAge,
+  fireType: fireType,
+  monthlyPassiveIncome: monthlyPassiveIncome,
   isSetupComplete: true,
   currency: 'INR',
   createdAt: DateTime(2026, 1, 1),
@@ -143,6 +148,91 @@ void main() {
 
       expect(result.fireNumber, closeTo(18300000.00, 0.005));
       expect(result.expenseMultiple, closeTo(30.5, 1e-9));
+    });
+
+    test('Fat and Lean FIRE are multiples of the expenses entered', () {
+      // Fat: 150% of ₹6L a year → ₹2,74,50,000 = 45.75× (not 30.5×).
+      // Lean: 70% → ₹1,28,10,000 = 21.35×.
+      final fat = service.calculate(
+        settings: _settings(birthYear: 1996, fireType: FireType.fat),
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 0,
+        asOf: _asOf,
+      );
+      final lean = service.calculate(
+        settings: _settings(birthYear: 1996, fireType: FireType.lean),
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 0,
+        asOf: _asOf,
+      );
+
+      expect(fat.fireNumber, closeTo(27450000.00, 0.005));
+      expect(fat.expenseMultiple, closeTo(45.75, 1e-9));
+      expect(lean.fireNumber, closeTo(12810000.00, 0.005));
+      expect(lean.expenseMultiple, closeTo(21.35, 1e-9));
+    });
+
+    test('passive income is shown as a deduction from the buffers', () {
+      // ₹10,000 a month × 12 × 25 = ₹30,00,000 off ₹1.83 Cr.
+      final result = service.calculate(
+        settings: _settings(birthYear: 1996, monthlyPassiveIncome: 10000),
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 0,
+        asOf: _asOf,
+      );
+
+      expect(result.fireNumber, closeTo(15300000.00, 0.005));
+      expect(result.otherIncomeDeduction, closeTo(3000000.00, 0.005));
+      expect(
+        result.coreRetirementCorpus +
+            result.healthcareCorpusNeeded +
+            result.emergencyFundNeeded -
+            result.otherIncomeDeduction,
+        closeTo(result.fireNumber, 0.005),
+      );
+    });
+  });
+
+  group('PLAN-02: savings that cannot be estimated yet', () {
+    test('give no status or projection from an assumed ₹0 a month', () {
+      // ₹10L invested 10 days ago: with ₹0 a month the projection was
+      // Apr 2078 at age 82 and the status behind.
+      final result = service.calculate(
+        settings: _settings(birthYear: 1996),
+        currentPortfolioValue: 1000000,
+        currentMonthlySavings: 0,
+        asOf: _asOf,
+        inputs: const FireInputsSummary(
+          investmentsValue: 1000000,
+          principalWithoutValue: 0,
+          otherAssets: 0,
+          savingsSource: MonthlySavingsSource.notEnoughHistory,
+        ),
+      );
+
+      expect(result.status.name, 'notEnoughHistory');
+      expect(result.projectedFireDate, isNull);
+      expect(result.projectedFireAge, isNull);
+      // What is needed does not depend on the savings.
+      expect(result.requiredMonthlySavings, closeTo(56511.29, 0.005));
+    });
+
+    test('a corpus already at the FIRE number is still achieved', () {
+      final result = service.calculate(
+        settings: _settings(birthYear: 1996),
+        currentPortfolioValue: _fireNumber,
+        currentMonthlySavings: 0,
+        asOf: _asOf,
+        inputs: const FireInputsSummary(
+          investmentsValue: _fireNumber,
+          principalWithoutValue: 0,
+          otherAssets: 0,
+          savingsSource: MonthlySavingsSource.notEnoughHistory,
+        ),
+      );
+
+      expect(result.status, FireProgressStatus.achieved);
+      expect(result.projectedFireDate, _asOf);
     });
   });
 }

@@ -5,6 +5,7 @@ import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/goal_progress_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
@@ -129,6 +130,11 @@ final multiCurrencyGoalProgressProvider =
     }, retry: _noRetry);
 
 /// Progress of every active goal, in the base currency.
+///
+/// A goal whose target has no exchange rate is left out rather than fail
+/// the list, so the other goals and the health score still show. Its own
+/// progress ([multiCurrencyGoalProgressProvider]) fails, and its card says
+/// so.
 final multiCurrencyAllGoalsProgressProvider =
     FutureProvider<List<GoalProgress>>((ref) async {
       final goalsAsync = ref.watch(activeGoalsProvider);
@@ -139,10 +145,16 @@ final multiCurrencyAllGoalsProgressProvider =
       final goals = await dataOf(goalsAsync);
       final inputs = await dataOf(inputsAsync);
 
-      return Future.wait([
+      final progress = await Future.wait([
         for (final goal in goals)
-          _progressOf(goal, inputs, goals, _currencyOf(ref)),
+          _progressOf(goal, inputs, goals, _currencyOf(ref))
+              .then<GoalProgress?>((p) => p)
+              .catchError(
+                (Object _) => null,
+                test: (e) => e is CurrencyConversionException,
+              ),
       ]);
+      return [for (final p in progress) ?p];
     }, retry: _noRetry);
 
 /// An investment a goal tracks, as listed on the goal details screen.

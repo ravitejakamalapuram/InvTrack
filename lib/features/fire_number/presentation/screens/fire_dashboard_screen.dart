@@ -14,12 +14,10 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
-import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Main FIRE Number dashboard screen
@@ -66,8 +64,9 @@ class FireDashboardScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => _buildErrorState(isDark, () {
               ref.invalidate(fireSettingsProvider);
-              // The calculation fails when the portfolio fails to load.
-              reloadPortfolio(ref);
+              // The calculation fails when the portfolio or the exchange
+              // rate fails to load.
+              reloadFireInputs(ref);
             }, context),
           );
         },
@@ -145,10 +144,6 @@ class FireDashboardScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (settings.currency == null) ...[
-            _buildCurrencyConfirmCard(context, ref, isDark, settings),
-            SizedBox(height: AppSpacing.lg),
-          ],
           // Premium hero card with centered progress ring
           _buildPremiumHeroCard(
             context,
@@ -176,6 +171,7 @@ class FireDashboardScreen extends ConsumerWidget {
             context,
             isDark,
             calculation,
+            settings,
             currencySymbol,
             locale,
           ),
@@ -249,7 +245,11 @@ class FireDashboardScreen extends ConsumerWidget {
     final statusColor = calculation.status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
-    final motivationalMessage = _getMotivationalMessage(calculation, settings);
+    final motivationalMessage = _getMotivationalMessage(
+      AppLocalizations.of(context),
+      calculation,
+      settings,
+    );
 
     return Container(
       width: double.infinity,
@@ -364,12 +364,15 @@ class FireDashboardScreen extends ConsumerWidget {
   }
 
   String _getMotivationalMessage(
+    AppLocalizations l10n,
     FireCalculationResult calculation,
     FireSettingsEntity settings,
   ) {
     switch (calculation.status) {
       case FireProgressStatus.notStarted:
         return 'Every journey begins with a single step. Start investing today!';
+      case FireProgressStatus.notEnoughHistory:
+        return l10n.fireNotEnoughHistoryMotivation;
       case FireProgressStatus.behind:
         final monthlyNeeded =
             calculation.requiredMonthlySavings -
@@ -430,6 +433,8 @@ class FireDashboardScreen extends ConsumerWidget {
             label: 'Projected',
             value: projectedDate != null
                 ? AppDateUtils.formatYearMonth(projectedDate, locale: locale)
+                : _savingsUnknown(calculation)
+                ? '—'
                 : l10n.fireNotReachable,
             subtitle: calculation.status.shortSubtitle,
           ),
@@ -514,6 +519,7 @@ class FireDashboardScreen extends ConsumerWidget {
     BuildContext context,
     bool isDark,
     FireCalculationResult calculation,
+    FireSettingsEntity settings,
     String currencySymbol,
     String locale,
   ) {
@@ -521,16 +527,28 @@ class FireDashboardScreen extends ConsumerWidget {
     final monthlyGap = calculation.monthlyGap;
     final status = calculation.status;
     final isPositive = status.isPositive;
-    final notEnoughHistory =
-        calculation.inputs?.savingsSource ==
-        MonthlySavingsSource.notEnoughHistory;
+    final notEnoughHistory = _savingsUnknown(calculation);
     // "Invest X more" only for a real shortfall (PLAN-04), and never from
     // a savings figure that could not be estimated (PLAN-02).
     final showInvestMore = !isPositive && !notEnoughHistory && monthlyGap > 0;
-    final needsAction = !isPositive && (showInvestMore || notEnoughHistory);
+    final targetAgePassed =
+        !isPositive && !showInvestMore && settings.yearsToFire <= 0;
     final hintStyle = AppTypography.small.copyWith(
       color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
     );
+    final String header;
+    if (showInvestMore) {
+      header = 'Action Needed';
+    } else if (targetAgePassed) {
+      header = l10n.fireTargetAgePassed;
+    } else if (status == FireProgressStatus.notEnoughHistory ||
+        (notEnoughHistory && !isPositive)) {
+      header = l10n.fireNotEnoughHistoryTitle;
+    } else if (isPositive) {
+      header = 'You\'re ${status.shortSubtitle.toLowerCase()}!';
+    } else {
+      header = status.displayName;
+    }
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
@@ -552,7 +570,7 @@ class FireDashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  needsAction
+                  !isPositive
                       ? Icons.lightbulb_outline
                       : Icons.check_circle_outline,
                   color: statusColor,
@@ -565,9 +583,7 @@ class FireDashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      needsAction
-                          ? 'Action Needed'
-                          : 'You\'re ${status.shortSubtitle.toLowerCase()}!',
+                      header,
                       style: AppTypography.bodyMedium.copyWith(
                         color: isDark
                             ? AppColors.textPrimaryDark
@@ -588,9 +604,11 @@ class FireDashboardScreen extends ConsumerWidget {
                           style: hintStyle,
                         ),
                       )
+                    else if (targetAgePassed)
+                      Text(l10n.fireMoveTargetAgeHint, style: hintStyle)
                     else if (notEnoughHistory && !isPositive)
                       Text(l10n.fireNotEnoughHistoryHint, style: hintStyle)
-                    else
+                    else if (isPositive)
                       Text(
                         'Keep up your current investment rate.',
                         style: hintStyle,
@@ -779,9 +797,11 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                projectedAge == null
-                    ? l10n.fireNotReachable
-                    : 'Age $projectedAge',
+                projectedAge != null
+                    ? 'Age $projectedAge'
+                    : _savingsUnknown(calculation)
+                    ? '—'
+                    : l10n.fireNotReachable,
                 style: valueStyle,
               ),
             ],
@@ -822,6 +842,11 @@ class FireDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Whether the monthly savings could not be estimated yet (PLAN-02).
+  static bool _savingsUnknown(FireCalculationResult calculation) =>
+      calculation.inputs?.savingsSource ==
+      MonthlySavingsSource.notEnoughHistory;
 
   static String _savingsSourceLabel(
     AppLocalizations l10n,
@@ -902,51 +927,6 @@ class FireDashboardScreen extends ConsumerWidget {
                   ? AppColors.neutral500Dark
                   : AppColors.neutral400Light,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Settings saved before FIRE amounts had a currency are read in the base
-  /// currency. Confirming stores it, so a later base-currency switch
-  /// converts them instead of reading them as another currency (GAP2-01).
-  Widget _buildCurrencyConfirmCard(
-    BuildContext context,
-    WidgetRef ref,
-    bool isDark,
-    FireSettingsEntity settings,
-  ) {
-    final l10n = AppLocalizations.of(context);
-    final baseCurrency = ref.watch(currencyCodeProvider);
-    return GlassCard(
-      child: Row(
-        children: [
-          Icon(
-            Icons.currency_exchange,
-            color: isDark ? AppColors.warningDark : AppColors.warningLight,
-          ),
-          SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              l10n.fireCurrencyConfirmMessage(baseCurrency),
-              style: AppTypography.small.copyWith(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => ref
-                .read(fireSettingsNotifierProvider.notifier)
-                .saveSettings(
-                  settings.copyWith(
-                    currency: baseCurrency,
-                    updatedAt: DateTime.now(),
-                  ),
-                ),
-            child: Text(l10n.fireCurrencyConfirmAction(baseCurrency)),
           ),
         ],
       ),

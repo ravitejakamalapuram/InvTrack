@@ -61,6 +61,9 @@ class GoalProgressService {
         case GoalStatus.archived:
           stale.add(goalWithProgress);
           break;
+        // Not projected: neither on track nor at risk.
+        case GoalStatus.inProgress:
+          break;
       }
 
       // Totals add converted corpus targets: an income goal's monthly

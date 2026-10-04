@@ -208,7 +208,10 @@ void main() {
       expect(savings.monthsOfHistory, 78);
     });
 
-    test('with 3 to 12 months of history, divides by the months there are', () {
+    test('with 3 to 12 months of history, still divides by 12', () {
+      // Trailing-12-month net new money (A11): ₹1,20,000 ÷ 12. Dividing by
+      // the 6 months of history (₹20,000) treated money put in once as a
+      // monthly saving.
       final flows = [
         _cf('a', CashFlowType.invest, 60000, DateTime(2026, 4, 2)),
         _cf('a', CashFlowType.invest, 60000, DateTime(2026, 7, 2)),
@@ -220,7 +223,24 @@ void main() {
       );
 
       expect(savings.monthsOfHistory, 6);
-      expect(savings.amount, closeTo(20000.00, 0.005));
+      expect(savings.amount, closeTo(10000.00, 0.005));
+    });
+
+    test('a lump sum is not a monthly saving once 3 months have passed', () {
+      // ₹10L put in over 10 days in September, nothing since: ₹83,333.33 a
+      // month over 12 months, not ₹3,33,333.33 over the 3 months of history.
+      final flows = [
+        _cf('a', CashFlowType.invest, 500000, DateTime(2026, 9, 20)),
+        _cf('a', CashFlowType.invest, 500000, DateTime(2026, 9, 30)),
+      ];
+
+      final savings = PlanningInputsCalculator.monthlySavings(
+        cashFlows: flows,
+        asOf: DateTime(2026, 12, 20),
+      );
+
+      expect(savings.monthsOfHistory, 3);
+      expect(savings.amount, closeTo(83333.33, 0.005));
     });
 
     test('money taken out is never negative savings', () {

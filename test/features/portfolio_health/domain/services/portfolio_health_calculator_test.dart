@@ -7,6 +7,8 @@
 // - Goal Alignment (% goals on track)
 // - Action Readiness (overdue renewals, stale investments)
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/services/portfolio_health_calculator.dart';
@@ -337,6 +339,51 @@ void main() {
       // Should be scored between 60-80 (above inflation but below inflation+5%)
       expect(score.returnsPerformance.score, greaterThan(60.0));
       expect(score.returnsPerformance.score, lessThan(80.0));
+    });
+  });
+
+  group('goal alignment', () {
+    GoalProgress progress(String id, GoalStatus status) => GoalProgress(
+      goal: GoalEntity(
+        id: id,
+        name: id,
+        type: GoalType.targetAmount,
+        targetAmount: 100000,
+        trackingMode: GoalTrackingMode.all,
+        icon: '🎯',
+        colorValue: 0xFF3B82F6,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        currency: 'INR',
+      ),
+      currentAmount: 50000,
+      targetAmount: 100000,
+      progressPercent: 50,
+      monthlyVelocity: 0,
+      monthlyIncome: 0,
+      status: status,
+      currentMilestone: GoalMilestone.forPercentage(50),
+      achievedMilestones: GoalMilestone.achievedMilestones(50),
+      linkedInvestmentCount: 1,
+      calculatedAt: DateTime(2026),
+    );
+
+    test('a goal that is not projected counts neither for nor against', () {
+      // A12: income goals and goals with under 3 months of history are
+      // in progress, not on track (which inflated the score) or behind.
+      final score = PortfolioHealthCalculator.calculate(
+        investments: [],
+        investmentStats: {},
+        allCashFlows: [],
+        goalProgress: [
+          progress('done', GoalStatus.achieved),
+          progress('new', GoalStatus.inProgress),
+          progress('late', GoalStatus.behind),
+        ],
+      );
+
+      expect(score.goalAlignment.score, 50.0);
+      expect(score.goalAlignment.description, '1/2 goals on track or better');
     });
   });
 }

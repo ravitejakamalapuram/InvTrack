@@ -84,6 +84,11 @@ class GoalWithProgress {
   /// Goal name, for report rows.
   String get name => goal.name;
 
+  /// [formatted], an amount of this goal, as a report shows it: income
+  /// goals' amounts are per month.
+  String amountLabel(String formatted) =>
+      goal.isIncomeGoal ? '$formatted/mo' : formatted;
+
   /// Progress under the one rounding rule for goal %.
   int get progressPercentage => progress.displayPercent;
 

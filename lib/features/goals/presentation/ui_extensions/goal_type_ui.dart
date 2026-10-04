@@ -39,6 +39,8 @@ extension GoalStatusUI on GoalStatus {
     switch (this) {
       case GoalStatus.notStarted:
         return const Color(0xFF6B7280); // Gray
+      case GoalStatus.inProgress:
+        return const Color(0xFF64748B); // Slate
       case GoalStatus.onTrack:
         return const Color(0xFF3B82F6); // Blue
       case GoalStatus.ahead:
@@ -57,6 +59,8 @@ extension GoalStatusUI on GoalStatus {
     switch (this) {
       case GoalStatus.notStarted:
         return Icons.hourglass_empty_rounded;
+      case GoalStatus.inProgress:
+        return Icons.timelapse_rounded;
       case GoalStatus.onTrack:
         return Icons.trending_flat_rounded;
       case GoalStatus.ahead:

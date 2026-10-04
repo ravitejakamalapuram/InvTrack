@@ -47,6 +47,7 @@ InvestmentEntity _inv(
   String id,
   InvestmentType type, {
   InvestmentStatus status = InvestmentStatus.open,
+  IncomeFrequency? incomeFrequency,
 }) => InvestmentEntity(
   id: id,
   name: id,
@@ -56,6 +57,7 @@ InvestmentEntity _inv(
   updatedAt: DateTime(2026),
   interestPayoutMode: InterestPayoutMode.periodic,
   expectedRate: 7.5,
+  incomeFrequency: incomeFrequency,
   currency: 'INR',
 );
 
@@ -140,8 +142,8 @@ void main() {
 
   group('corpus goal with a deadline', () {
     // ₹2L in a payout FD since 2026-04-04, nothing else. The deadline is
-    // 36 months away and ₹2L of net new money over 6 months is
-    // ₹33,333.33 a month.
+    // 36 months away and ₹2L of net new money in the last 12 months is
+    // ₹16,666.67 a month.
     final goal = _goal(targetDate: DateTime(2029, 10, 4));
     final fd = _inv('fd', InvestmentType.fixedDeposit);
     final flows = [
@@ -155,10 +157,11 @@ void main() {
       expect(progress.targetAmount, 1000000.0);
       expect(progress.progressPercent, closeTo(20.0, 1e-9));
       expect(progress.requiredMonthly, closeTo(18402.43, 0.005));
-      expect(progress.monthlyVelocity, closeTo(33333.33, 0.005));
-      // n = 21.5366 months, rounded up: 2028-08-04, 14 months early.
-      expect(progress.projectedCompletionDate, DateTime(2028, 8, 4));
-      expect(progress.status, GoalStatus.ahead);
+      expect(progress.monthlyVelocity, closeTo(16666.67, 0.005));
+      // n = 39.0563 months, rounded up: 2030-02-04, 4 months late. (₹2L
+      // over 6 months counted ₹33,333.33 a month and showed it ahead.)
+      expect(progress.projectedCompletionDate, DateTime(2030, 2, 4));
+      expect(progress.status, GoalStatus.behind);
     });
 
     test('without savings the corpus still compounds', () {
@@ -173,6 +176,32 @@ void main() {
         progress.projectedCompletionDate,
         PlanningInputsCalculator.addMonths(_today, 243),
       );
+      expect(progress.status, GoalStatus.behind);
+    });
+
+    test('with under 3 months of history it is not projected, not behind', () {
+      // ₹2L invested last month: savings cannot be estimated yet, so the
+      // goal is neither projected with ₹0 a month (243 months, behind and
+      // an at-risk alert) nor called on track.
+      final recent = [
+        _cf('fd', CashFlowType.invest, 200000, DateTime(2026, 9, 4)),
+      ];
+      final progress = _progress(goal, [fd], recent);
+
+      expect(progress.currentAmount, closeTo(200000.00, 0.005));
+      expect(progress.projectedCompletionDate, isNull);
+      expect(progress.status.name, 'inProgress');
+      expect(progress.requiredMonthly, closeTo(18402.43, 0.005));
+    });
+
+    test('with under 3 months of history a passed deadline is behind', () {
+      final recent = [
+        _cf('fd', CashFlowType.invest, 200000, DateTime(2026, 9, 4)),
+      ];
+      final progress = _progress(_goal(targetDate: DateTime(2026, 9, 1)), [
+        fd,
+      ], recent);
+
       expect(progress.status, GoalStatus.behind);
     });
 
@@ -222,6 +251,28 @@ void main() {
     });
   });
 
+  test('an income goal with a deadline ahead is not called on track', () {
+    // Income is not projected: ₹100 of a ₹10,000/month target due next
+    // month is in progress, not on track.
+    final goal = _goal(
+      type: GoalType.incomeTarget,
+      target: 1200000,
+      monthlyIncome: 10000,
+      targetDate: DateTime(2026, 11, 4),
+      linked: const ['bond'],
+    );
+    final bond = _inv('bond', InvestmentType.bonds);
+    final flows = [
+      _cf('bond', CashFlowType.invest, 16000, DateTime(2025, 1, 4)),
+      _cf('bond', CashFlowType.income, 1200, DateTime(2026, 1, 4)),
+    ];
+
+    final progress = _progress(goal, [bond], flows);
+
+    expect(progress.monthlyIncome, closeTo(100.00, 0.005));
+    expect(progress.status.name, 'inProgress');
+  });
+
   group('monthly income', () {
     test('G3: two quarterly payouts over 6 months held are ₹6,250 a month', () {
       final fd = _inv('fd', InvestmentType.fixedDeposit);
@@ -240,9 +291,13 @@ void main() {
     });
 
     test('each investment is spread over the months it has been held', () {
-      // ₹75,000 over 12 months plus ₹9,000 over 3 months.
+      // ₹75,000 over 12 months plus a quarterly ₹9,000 over 3 months.
       final bond = _inv('bond', InvestmentType.bonds);
-      final p2p = _inv('p2p', InvestmentType.p2pLending);
+      final p2p = _inv(
+        'p2p',
+        InvestmentType.p2pLending,
+        incomeFrequency: IncomeFrequency.quarterly,
+      );
       expect(
         PlanningInputsCalculator.monthlyIncome(
           investments: [bond, p2p],
@@ -256,6 +311,68 @@ void main() {
           asOf: _today,
         ),
         closeTo(6250.00 + 3000.00, 0.005),
+      );
+    });
+
+    test('G2: an annual coupon bought 2 months ago is ₹6,250 a month', () {
+      // A bond bought in August pays its ₹75,000 annual coupon in
+      // September. Dividing by the 2 months held gave ₹37,500 a month and
+      // marked a ₹10,000/month goal achieved.
+      final goal = _goal(
+        type: GoalType.incomeTarget,
+        target: 1200000,
+        monthlyIncome: 10000,
+        linked: const ['bond'],
+      );
+      final bond = _inv('bond', InvestmentType.bonds);
+      final flows = [
+        _cf('bond', CashFlowType.invest, 1000000, DateTime(2026, 8, 1)),
+        _cf('bond', CashFlowType.income, 75000, DateTime(2026, 9, 15)),
+      ];
+
+      final progress = _progress(goal, [bond], flows);
+
+      expect(progress.monthlyIncome, closeTo(6250.00, 0.005));
+      expect(progress.progressPercent, closeTo(62.5, 1e-9));
+      expect(progress.status, isNot(GoalStatus.achieved));
+    });
+
+    test('a known payout interval is never divided by fewer months', () {
+      // Quarterly, bought 4 months ago, paid twice: two quarters of income,
+      // ₹37,500 ÷ 6, not ÷ 4 (₹9,375).
+      final fd = _inv(
+        'fd',
+        InvestmentType.fixedDeposit,
+        incomeFrequency: IncomeFrequency.quarterly,
+      );
+      expect(
+        PlanningInputsCalculator.monthlyIncome(
+          investments: [fd],
+          cashFlows: [
+            _cf('fd', CashFlowType.invest, 1000000, DateTime(2026, 6, 4)),
+            _cf('fd', CashFlowType.income, 18750, DateTime(2026, 7, 4)),
+            _cf('fd', CashFlowType.income, 18750, DateTime(2026, 10, 4)),
+          ],
+          asOf: _today,
+        ),
+        closeTo(6250.00, 0.005),
+      );
+    });
+
+    test('without a payout interval, it is read from the payouts', () {
+      // The same deposit with no frequency set: payouts 3 months apart.
+      final fd = _inv('fd', InvestmentType.fixedDeposit);
+      expect(
+        PlanningInputsCalculator.monthlyIncome(
+          investments: [fd],
+          cashFlows: [
+            _cf('fd', CashFlowType.invest, 1000000, DateTime(2026, 6, 4)),
+            _cf('fd', CashFlowType.income, 18750, DateTime(2026, 7, 4)),
+            _cf('fd', CashFlowType.income, 18750, DateTime(2026, 10, 4)),
+          ],
+          asOf: _today,
+        ),
+        closeTo(6250.00, 0.005),
       );
     });
 

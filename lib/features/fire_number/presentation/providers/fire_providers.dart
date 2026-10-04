@@ -132,6 +132,14 @@ final fireCurrencyRateProvider = FutureProvider.autoDispose
           .rateToday(from: pair.from, to: pair.to);
     });
 
+/// Reloads what the FIRE calculation reads after a load error: the
+/// portfolio, and the exchange rate for FIRE amounts in another currency
+/// (which Riverpod stops retrying after a while).
+void reloadFireInputs(WidgetRef ref) {
+  reloadPortfolio(ref);
+  ref.invalidate(fireCurrencyRateProvider);
+}
+
 // ============ CALCULATION PROVIDERS ============
 
 /// Calculate FIRE numbers based on settings and current portfolio, all in
@@ -156,7 +164,8 @@ final fireCalculationProvider =
             ref.watch(firePortfolioInputsProvider),
           );
           // Settings saved before amounts had a currency are read in the
-          // base currency (as they always were) until they are saved again.
+          // base currency, as they always were. A base-currency change
+          // stamps them with the old one first (LegacyCurrencyBackfill).
           final rateAsync = errorFirst(
             ref.watch(
               fireCurrencyRateProvider((

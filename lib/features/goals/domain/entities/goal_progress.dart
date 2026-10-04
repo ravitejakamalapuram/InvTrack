@@ -178,6 +178,10 @@ class GoalProgress {
     switch (status) {
       case GoalStatus.notStarted:
         return 'Start investing to make progress';
+      case GoalStatus.inProgress:
+        return goal.isIncomeGoal
+            ? 'Income goals are not projected'
+            : 'Not enough history to project yet';
       case GoalStatus.onTrack:
         if (projectedCompletionDate != null) {
           return 'On track for ${_formatDate(projectedCompletionDate!)}';

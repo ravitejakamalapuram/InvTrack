@@ -1008,8 +1008,10 @@ void main() {
       },
     );
 
-    test('should show lower milestones if skipped initially', () async {
-      // First call at 50% shows 50% (highest reached)
+    test('never shows a skipped lower milestone afterwards', () async {
+      // GAP3-07: this used to announce 50% and then, on the next check,
+      // 25%: milestones went backwards (after "Goal Achieved!" came 75%,
+      // 50% and 25%). Reaching 50% now also records 25%.
       await service.checkAndShowGoalMilestone(
         goalId: 'goal-dup',
         goalName: 'Duplicate Test',
@@ -1021,7 +1023,6 @@ void main() {
       expect(fakePlugin.shownNotifications.length, 1);
       expect(fakePlugin.shownNotifications.first.title, contains('50%'));
 
-      // Second call at 50% shows 25% (next highest not shown)
       await service.checkAndShowGoalMilestone(
         goalId: 'goal-dup',
         goalName: 'Duplicate Test',
@@ -1030,11 +1031,9 @@ void main() {
         targetValue: 100000,
       );
 
-      // Shows 25% since 50% was already shown
-      expect(fakePlugin.shownNotifications.length, 2);
-      expect(fakePlugin.shownNotifications.last.title, contains('25%'));
+      expect(fakePlugin.shownNotifications.length, 1);
 
-      // Third call should not show anything (both 25% and 50% already shown)
+      // Third call should not show anything (both 25% and 50% recorded)
       await service.checkAndShowGoalMilestone(
         goalId: 'goal-dup',
         goalName: 'Duplicate Test',
@@ -1044,7 +1043,7 @@ void main() {
       );
 
       // No new notification
-      expect(fakePlugin.shownNotifications.length, 2);
+      expect(fakePlugin.shownNotifications.length, 1);
     });
 
     test('should show new milestone when higher threshold reached', () async {

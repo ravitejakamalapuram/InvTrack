@@ -31,6 +31,7 @@ extension FireProgressStatusUI on FireProgressStatus {
   Color get color {
     switch (this) {
       case FireProgressStatus.notStarted:
+      case FireProgressStatus.notEnoughHistory:
         return AppColors.neutral500Light;
       case FireProgressStatus.behind:
         return AppColors.warningLight; // Rich Amber #F59E0B
@@ -49,6 +50,7 @@ extension FireProgressStatusUI on FireProgressStatus {
   Color get colorDark {
     switch (this) {
       case FireProgressStatus.notStarted:
+      case FireProgressStatus.notEnoughHistory:
         return AppColors.neutral400Dark;
       case FireProgressStatus.behind:
         return AppColors.warningDark; // Brighter Amber #FBBF24
@@ -83,6 +85,8 @@ extension FireProgressStatusUI on FireProgressStatus {
         return Icons.celebration;
       case FireProgressStatus.coasting:
         return Icons.beach_access;
+      case FireProgressStatus.notEnoughHistory:
+        return Icons.hourglass_top;
     }
   }
 
@@ -91,6 +95,7 @@ extension FireProgressStatusUI on FireProgressStatus {
     switch (this) {
       case FireProgressStatus.notStarted:
       case FireProgressStatus.behind:
+      case FireProgressStatus.notEnoughHistory:
         return false;
       case FireProgressStatus.onTrack:
       case FireProgressStatus.ahead:
@@ -115,6 +120,8 @@ extension FireProgressStatusUI on FireProgressStatus {
         return 'Achieved!';
       case FireProgressStatus.coasting:
         return 'Coasting';
+      case FireProgressStatus.notEnoughHistory:
+        return 'Too early to tell';
     }
   }
 }

@@ -35,7 +35,7 @@ class _Notifier extends FireSettingsNotifier {
   Future<void> saveSettings(FireSettingsEntity settings) async {
     if (fail) {
       throw FireSettingsValidationException([
-        'Target FIRE age must be greater than current age',
+        FireSettingsError.targetAgeNotAfterCurrent,
       ]);
     }
     saved.add(settings);
@@ -45,6 +45,7 @@ class _Notifier extends FireSettingsNotifier {
 Future<List<FireSettingsEntity>> _pump(
   WidgetTester tester, {
   bool fail = false,
+  FireSettingsEntity? settings,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -59,7 +60,9 @@ Future<List<FireSettingsEntity>> _pump(
         sharedPreferencesProvider.overrideWithValue(prefs),
         currencyCodeProvider.overrideWith((ref) => 'INR'),
         currencySymbolProvider.overrideWith((ref) => '₹'),
-        fireSettingsProvider.overrideWith((ref) => Stream.value(_settings)),
+        fireSettingsProvider.overrideWith(
+          (ref) => Stream.value(settings ?? _settings),
+        ),
         fireSettingsNotifierProvider.overrideWith(
           () => _Notifier(saved, fail: fail),
         ),
@@ -87,8 +90,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
+    // The reason comes from the app's strings, not the validator's English.
     expect(
-      find.text('Target FIRE age must be greater than current age'),
+      find.text('Your target FIRE age must be after your current age.'),
       findsOneWidget,
     );
   });
@@ -116,6 +120,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved.single.monthlyExpenses, 125000);
+  });
+
+  testWidgets('saving an amount unchanged keeps its paise', (tester) async {
+    // ₹1,234.56 opened as "1235" and was saved rounded.
+    final saved = await _pump(
+      tester,
+      settings: _settings.copyWith(monthlyExpenses: 1234.56),
+    );
+
+    await tester.tap(find.text('Monthly Expenses'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      '1234.56',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(saved.single.monthlyExpenses, 1234.56);
   });
 
   testWidgets('invalid monthly expenses are not replaced by the old value', (

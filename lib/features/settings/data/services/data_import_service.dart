@@ -298,11 +298,17 @@ class DataImportService {
               jsonDecode(utf8.decode(fireSettingsFile.content as List<int>))
                   as Map<String, dynamic>;
 
-          final fireSettings = FireSettingsEntity.fromJson(
+          final imported = FireSettingsEntity.fromJson(
             fireSettingsJson,
             fallbackId: _uuid.v4(),
             defaultIsSetupComplete: true,
-          ).copyWith(updatedAt: DateTime.now());
+          );
+          // Amounts exported before they had a currency take the base
+          // currency, like rows, investments and goals without one.
+          final fireSettings = imported.copyWith(
+            currency: imported.currency ?? baseCurrency,
+            updatedAt: DateTime.now(),
+          );
 
           await _fireSettingsRepository.saveSettings(fireSettings);
           fireSettingsImported = true;

@@ -32,4 +32,45 @@ void main() {
 
     expect(plugin.shownNotifications.single.body, contains('is 99% complete'));
   });
+
+  // GAP3-07: milestones must never be announced backwards.
+  Future<void> check(double percent, {bool firstCheck = false}) =>
+      service.checkAndShowGoalMilestone(
+        goalId: 'goal',
+        goalName: 'House',
+        progressPercent: percent,
+        currentValue: percent * 10000,
+        targetValue: 1000000,
+        firstCheck: firstCheck,
+      );
+
+  test('after Goal Achieved, the lower milestones are not announced', () async {
+    for (var i = 0; i < 4; i++) {
+      await check(100);
+    }
+
+    expect(plugin.shownNotifications, hasLength(1));
+    expect(plugin.shownNotifications.single.title, contains('Achieved'));
+  });
+
+  test('a goal first checked at 98% announces only reaching 100%', () async {
+    // The milestones it had passed before it was first checked (here after
+    // an update that measures goals differently) are recorded, not
+    // announced.
+    await check(98, firstCheck: true);
+    await check(98.5);
+    await check(99);
+    await check(100);
+
+    expect(plugin.shownNotifications, hasLength(1));
+    expect(plugin.shownNotifications.single.title, contains('Achieved'));
+  });
+
+  test('a milestone crossed after the first check is announced', () async {
+    await check(20, firstCheck: true);
+    await check(26);
+
+    expect(plugin.shownNotifications, hasLength(1));
+    expect(plugin.shownNotifications.single.title, contains('25%'));
+  });
 }

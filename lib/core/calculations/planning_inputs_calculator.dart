@@ -106,10 +106,11 @@ class PlanningInputsCalculator {
   }
 
   /// Net new money (INVEST − RETURN) dated in the [trailingMonths] months up
-  /// to and including [asOf], floored at 0, per month. With less history
-  /// than that it is divided by the months there are, and under
-  /// [minHistoryMonths] months there is no estimate. Income and fees are
-  /// not new money, and flows after [asOf] have not happened yet.
+  /// to and including [asOf], floored at 0, divided by [trailingMonths].
+  /// Under [minHistoryMonths] months of history there is no estimate. It is
+  /// divided by 12 even with less history, so that money put in once is
+  /// not read as a monthly saving. Income and fees are not new money, and
+  /// flows after [asOf] have not happened yet.
   static MonthlySavingsEstimate monthlySavings({
     required List<CashFlowEntity> cashFlows,
     required DateTime asOf,
@@ -138,18 +139,22 @@ class PlanningInputsCalculator {
     }
 
     return MonthlySavingsEstimate(
-      amount: math.max(0, net) / math.min(trailingMonths, history),
+      amount: math.max(0, net) / trailingMonths,
       monthsOfHistory: history,
     );
   }
 
   /// INCOME per month of the open [investments]: for each one, its INCOME
   /// dated in the [trailingMonths] months up to and including [asOf],
-  /// divided by the months it has been held in that window (at least 1, at
-  /// most [trailingMonths]). A ₹75,000 annual coupon is ₹6,250 a month, and
-  /// so are two quarterly ₹18,750 payouts from a deposit held 6 months.
-  /// Closed investments pay nothing any more, and income after [asOf] has
-  /// not been earned yet.
+  /// divided by the months it covers, at most [trailingMonths].
+  ///
+  /// The months covered are the months held in that window, but never
+  /// fewer than the payouts times the payout interval: the investment's
+  /// [IncomeFrequency] when set, else the average gap between its payouts,
+  /// else 12 for a single payout. So a ₹75,000 annual coupon is ₹6,250 a
+  /// month even when the bond was bought 2 months before it, and so are two
+  /// quarterly ₹18,750 payouts. Closed investments pay nothing any more,
+  /// and income after [asOf] has not been earned yet.
   static double monthlyIncome({
     required Iterable<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
@@ -159,13 +164,13 @@ class PlanningInputsCalculator {
     final windowStart = addMonths(today, -trailingMonths);
     final open = {
       for (final investment in investments)
-        if (investment.isOpen) investment.id,
+        if (investment.isOpen) investment.id: investment,
     };
 
     final first = <String, DateTime>{};
-    final income = <String, double>{};
+    final payouts = <String, List<CashFlowEntity>>{};
     for (final cf in cashFlows) {
-      if (!open.contains(cf.investmentId)) continue;
+      if (!open.containsKey(cf.investmentId)) continue;
       final date = _dateOnly(cf.date);
       if (date.isAfter(today)) continue;
       final earliest = first[cf.investmentId];
@@ -173,17 +178,39 @@ class PlanningInputsCalculator {
         first[cf.investmentId] = date;
       }
       if (cf.type == CashFlowType.income && date.isAfter(windowStart)) {
-        income[cf.investmentId] = (income[cf.investmentId] ?? 0) + cf.amount;
+        payouts.putIfAbsent(cf.investmentId, () => []).add(cf);
       }
     }
 
     var total = 0.0;
-    for (final MapEntry(key: id, value: amount) in income.entries) {
-      final held = wholeMonthsBetween(first[id]!, today);
-      total += amount / held.clamp(1, trailingMonths);
+    for (final MapEntry(key: id, value: paid) in payouts.entries) {
+      final interval =
+          open[id]!.incomeFrequency?.monthsBetweenPayments ??
+          _monthsBetweenPayouts(paid);
+      final covered = math.max(
+        wholeMonthsBetween(first[id]!, today),
+        paid.length * interval,
+      );
+      final amount = paid.fold(0.0, (sum, cf) => sum + cf.amount);
+      total += amount / covered.clamp(1, trailingMonths);
     }
     return total;
   }
+
+  /// Average months between [payouts] (at least 1); 12 for a single payout,
+  /// whose interval is unknown: an annual coupon must not count as monthly.
+  static int _monthsBetweenPayouts(List<CashFlowEntity> payouts) {
+    if (payouts.length < 2) return trailingMonths;
+    final days = [
+      for (final cf in payouts)
+        DateTime.utc(cf.date.year, cf.date.month, cf.date.day),
+    ]..sort();
+    final spanDays = days.last.difference(days.first).inDays;
+    final months = (spanDays / (payouts.length - 1) / _daysPerMonth).round();
+    return math.max(1, months);
+  }
+
+  static const _daysPerMonth = 365.25 / 12;
 
   /// The monthly contribution that grows [current] to [target] in [months]
   /// months at [annualRatePercent] a year, compounded monthly:

@@ -39,6 +39,11 @@ class FireCalculationResult {
   final double healthcareCorpusNeeded;
   final double coreRetirementCorpus;
 
+  /// Passive income and pension, as a corpus, taken off the buffers above:
+  /// [coreRetirementCorpus] + [healthcareCorpusNeeded] +
+  /// [emergencyFundNeeded] − this = [fireNumber].
+  final double otherIncomeDeduction;
+
   /// [fireNumber] as a multiple of annual expenses (30.5× with the
   /// defaults: 25× at a 4% withdrawal rate, plus the buffers).
   final double expenseMultiple;
@@ -70,6 +75,7 @@ class FireCalculationResult {
     required this.emergencyFundNeeded,
     required this.healthcareCorpusNeeded,
     required this.coreRetirementCorpus,
+    this.otherIncomeDeduction = 0,
     this.expenseMultiple = 0,
     this.inputs,
     required this.calculatedAt,

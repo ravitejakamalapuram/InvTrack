@@ -345,7 +345,10 @@ Archived Goal,targetAmount,25000
         expect(fireSettingsRepository.settings!.birthYear, 1994);
         expect(fireSettingsRepository.settings!.targetFireAge, 45);
         expect(fireSettingsRepository.settings!.fireType, FireType.regular);
-        expect(fireSettingsRepository.settings!.currency, isNull);
+        // GAP2-01: amounts exported without a currency take the base
+        // currency, like rows, investments and goals, so a later
+        // base-currency change converts them instead of relabelling them.
+        expect(fireSettingsRepository.settings!.currency, 'INR');
       });
 
       // Rule 6: every stored FIRE field survives export and import.
