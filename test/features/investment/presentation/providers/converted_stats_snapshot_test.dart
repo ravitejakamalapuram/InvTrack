@@ -2,6 +2,8 @@
 // the same base-currency net and XIRR on its card, its detail screen, the
 // archived view and in the list sort order, and the Overview analytics sum
 // converted amounts.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override, ProviderListenable;
@@ -79,6 +81,44 @@ class _MissingRateConversionService extends FakeUsdInrConversionService {
     required String to,
   }) async => const {};
 }
+
+/// Holds every batch lookup until [gate] completes, and converts INR → USD
+/// at 1/80 (0.0125) on any date.
+class _GatedConversionService extends FakeUsdInrConversionService {
+  Completer<void>? gate;
+
+  @override
+  Future<double> getRate({
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    if (from == 'INR' && to == 'USD') return 1 / 80;
+    return super.getRate(from: from, to: to, date: date);
+  }
+
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async {
+    final pending = gate;
+    if (pending != null) await pending.future;
+    return super.batchConvertHistorical(requests: requests, to: to);
+  }
+}
+
+/// The user's base currency, switchable from a test.
+class _BaseCurrency extends Notifier<String> {
+  @override
+  String build() => 'INR';
+
+  void select(String code) => state = code;
+}
+
+final _baseCurrencyProvider = NotifierProvider<_BaseCurrency, String>(
+  _BaseCurrency.new,
+);
 
 class _PrivacyOff extends PrivacyModeNotifier {
   @override
@@ -172,9 +212,13 @@ List<Override> _overrides({
   List<InvestmentEntity> archived = const [],
   Map<String, List<CashFlowEntity>> archivedFlows = const {},
   CurrencyConversionService? conversionService,
+  Stream<List<InvestmentEntity>>? activeStream,
+  String Function(Ref ref)? baseCurrency,
 }) => [
   isAuthenticatedProvider.overrideWith((ref) => true),
-  allInvestmentsProvider.overrideWith((ref) => Stream.value(active)),
+  allInvestmentsProvider.overrideWith(
+    (ref) => activeStream ?? Stream.value(active),
+  ),
   archivedInvestmentsProvider.overrideWith((ref) => Stream.value(archived)),
   allCashFlowsStreamProvider.overrideWith((ref) => Stream.value(activeFlows)),
   for (final inv in active)
@@ -188,7 +232,7 @@ List<Override> _overrides({
     archivedCashFlowsByInvestmentProvider(
       inv.id,
     ).overrideWith((ref) => Stream.value(archivedFlows[inv.id] ?? const [])),
-  currencyCodeProvider.overrideWith((ref) => 'INR'),
+  currencyCodeProvider.overrideWith(baseCurrency ?? (ref) => 'INR'),
   currencyConversionServiceProvider.overrideWith(
     (ref) => conversionService ?? FakeUsdInrConversionService(),
   ),
@@ -540,6 +584,163 @@ void main() {
       );
       expect(find.text('+${compactInr(_expectedNet)}'), findsOneWidget);
       expect(find.text('+7.5% IRR'), findsOneWidget);
+    });
+  });
+
+  group('Converted cash flows while a conversion is pending', () {
+    // Card amounts, to the paisa (or cent).
+    void expectStats(
+      InvestmentStats? stats, {
+      required double invested,
+      required double returned,
+      required double net,
+    }) {
+      expect(stats, isNotNull);
+      expect(stats!.totalInvested, closeTo(invested, 0.005));
+      expect(stats.totalReturned, closeTo(returned, 0.005));
+      expect(stats.netCashFlow, closeTo(net, 0.005));
+    }
+
+    test('stays loading after a base-currency switch until the flows are '
+        'converted to the new currency', () async {
+      final service = _GatedConversionService();
+      final container = ProviderContainer(
+        overrides: _overrides(
+          active: [_investment('usd', 'USD'), _investment('inr', 'INR')],
+          activeFlows: [..._usdFlows('usd'), ..._inrFlows('inr')],
+          conversionService: service,
+          baseCurrency: (ref) => ref.watch(_baseCurrencyProvider),
+        ),
+      );
+      addTearDown(container.dispose);
+      container.listen(activeInvestmentBasicStatsMapProvider, (_, _) {});
+      await _settle();
+
+      final inInr = container.read(activeInvestmentBasicStatsMapProvider);
+      expectStats(
+        inInr.requireValue['usd'],
+        invested: 83800,
+        returned: 96800,
+        net: 13000,
+      );
+      expectStats(
+        inInr.requireValue['inr'],
+        invested: 50000,
+        returned: 55000,
+        net: 5000,
+      );
+
+      // Switch to USD while the INR → USD lookup is held.
+      service.gate = Completer<void>();
+      container.read(_baseCurrencyProvider.notifier).select('USD');
+      await _settle();
+
+      // The INR snapshot must not be shown under the $ symbol (rule 2).
+      final pending = container.read(activeInvestmentBasicStatsMapProvider);
+      expect(pending.isLoading, isTrue, reason: '$pending');
+      expect(pending.hasValue, isFalse, reason: '$pending');
+
+      service.gate!.complete();
+      await _settle();
+
+      // USD flows stay as entered; ₹50,000 / ₹55,000 at 0.0125.
+      final inUsd = container.read(activeInvestmentBasicStatsMapProvider);
+      expectStats(
+        inUsd.requireValue['usd'],
+        invested: 1000,
+        returned: 1100,
+        net: 100,
+      );
+      expectStats(
+        inUsd.requireValue['inr'],
+        invested: 625,
+        returned: 687.5,
+        net: 62.5,
+      );
+    });
+
+    test('drops a removed investment from the previous snapshot while the '
+        'rest is re-converted', () async {
+      final service = _GatedConversionService();
+      final investments = StreamController<List<InvestmentEntity>>();
+      addTearDown(investments.close);
+      final usd = _investment('usd', 'USD');
+      final removed = _investment('usd2', 'USD');
+      // $2,000 on 2024-10-01 → $2,300 on 2026-10-01: ₹1,67,600 → ₹2,02,400.
+      final removedFlows = [
+        _flow(
+          'usd2-1',
+          'usd2',
+          CashFlowType.invest,
+          2000,
+          'USD',
+          DateTime(2024, 10, 1),
+        ),
+        _flow(
+          'usd2-2',
+          'usd2',
+          CashFlowType.returnFlow,
+          2300,
+          'USD',
+          DateTime(2026, 10, 1),
+        ),
+      ];
+      final container = ProviderContainer(
+        overrides: _overrides(
+          active: [usd, removed],
+          activeFlows: [..._usdFlows('usd'), ...removedFlows],
+          conversionService: service,
+          activeStream: investments.stream,
+        ),
+      );
+      addTearDown(container.dispose);
+      container.listen(activeInvestmentBasicStatsMapProvider, (_, _) {});
+      container.listen(convertedCashFlowsProvider, (_, _) {});
+      investments.add([usd, removed]);
+      await _settle();
+
+      final before = container.read(activeInvestmentBasicStatsMapProvider);
+      expect(before.requireValue.keys, unorderedEquals(['usd', 'usd2']));
+      expectStats(
+        before.requireValue['usd2'],
+        invested: 167600,
+        returned: 202400,
+        net: 34800,
+      );
+
+      // Remove usd2 while the re-conversion of the remaining flows is held.
+      service.gate = Completer<void>();
+      investments.add([usd]);
+      await _settle();
+      expect(
+        container.read(convertedCashFlowsSnapshotProvider).isLoading,
+        isTrue,
+        reason: 'the re-conversion must still be pending',
+      );
+
+      // Every reader of the stale snapshot (Overview analytics, insights,
+      // reports) must stop seeing usd2, not only the per-investment map.
+      final flows = container.read(convertedCashFlowsProvider).requireValue;
+      expect({for (final cf in flows) cf.investmentId}, {'usd'});
+      final pending = container.read(activeInvestmentBasicStatsMapProvider);
+      expect(pending.requireValue.keys, ['usd']);
+      expectStats(
+        pending.requireValue['usd'],
+        invested: 83800,
+        returned: 96800,
+        net: 13000,
+      );
+
+      service.gate!.complete();
+      await _settle();
+      final after = container.read(activeInvestmentBasicStatsMapProvider);
+      expect(after.requireValue.keys, ['usd']);
+      expectStats(
+        after.requireValue['usd'],
+        invested: 83800,
+        returned: 96800,
+        net: 13000,
+      );
     });
   });
 }
