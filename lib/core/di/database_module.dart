@@ -14,6 +14,7 @@ import 'package:inv_tracker/features/investment/domain/repositories/investment_r
 import 'package:inv_tracker/features/settings/data/services/account_data_deletion_service.dart';
 import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
 import 'package:inv_tracker/features/settings/data/services/legacy_currency_backfill_service.dart';
+import 'package:inv_tracker/features/settings/data/services/usd_tag_repair_service.dart';
 
 /// Provider for FirebaseFirestore instance with offline persistence enabled
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -143,3 +144,16 @@ final legacyCurrencyBackfillServiceProvider =
         prefs: ref.watch(sharedPreferencesProvider),
       );
     });
+
+/// Provider for the one-time check of investments wrongly stored as US
+/// dollars (A04). Null when signed out (guests are signed in anonymously, so
+/// they are covered).
+final usdTagRepairServiceProvider = Provider<UsdTagRepairService?>((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return null;
+  return UsdTagRepairService(
+    firestore: ref.watch(firestoreProvider),
+    userId: user.id,
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
