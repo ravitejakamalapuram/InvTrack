@@ -136,7 +136,7 @@ void main() {
     });
 
     testWidgets('Help & FAQ shows the support constant', (tester) async {
-      await tester.pumpWidget(_localized(const HelpFaqScreen()));
+      await tester.pumpWidget(_localized(const HelpFaqScreen(showDeveloperFaq: true)));
       await tester.pumpAndSettle();
 
       final finder = find.textContaining(supportEmailAddress);

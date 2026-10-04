@@ -1,7 +1,6 @@
 /// Help & FAQ screen with app usage information
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -11,9 +10,10 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Screen displaying help and frequently asked questions about using the app
 class HelpFaqScreen extends StatelessWidget {
-  const HelpFaqScreen({super.key, this.showDeveloperFaq = !kReleaseMode});
+  const HelpFaqScreen({super.key, required this.showDeveloperFaq});
 
-  /// Whether to explain the developer tools. Release builds have none.
+  /// Whether to explain the developer tools. Callers pass
+  /// developerToolsAvailableProvider, which is false in release builds.
   final bool showDeveloperFaq;
 
   @override

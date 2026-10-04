@@ -2,6 +2,8 @@
 //
 // Tests run in a debug build, so the release configuration is simulated by
 // overriding developerToolsAvailableProvider with its release value (false).
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -265,6 +267,94 @@ void main() {
       expect(
         find.text('Advanced Features', skipOffstage: false),
         findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('release: Help opened from About hides the developer FAQ', (
+    tester,
+  ) async {
+    await givenPrefs({});
+    tester.view.physicalSize = const Size(800, 20000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          developerToolsAvailableProvider.overrideWithValue(false),
+          packageInfoProvider.overrideWith((ref) async => _packageInfo),
+        ],
+        child: _app(const AboutScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Help & FAQ'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HelpFaqScreen), findsOneWidget);
+    expect(find.text('Advanced Features', skipOffstage: false), findsNothing);
+  });
+
+  // kReleaseMode is a compile-time constant, so tests (debug builds) cannot
+  // exercise the release branch. These source guards stop a second, ungated
+  // entry point from slipping in.
+  group('release-only guards in source', () {
+    Iterable<File> libDartFiles() => Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .where((f) => !f.path.contains('${Platform.pathSeparator}generated'))
+        .where((f) => !f.path.endsWith('.g.dart'));
+
+    test('DebugSettingsScreen is opened only behind the release switch', () {
+      final uses = <String>[];
+      for (final file in libDartFiles()) {
+        if (file.path.endsWith('debug_settings_screen.dart')) continue;
+        final lines = file.readAsLinesSync();
+        for (var i = 0; i < lines.length; i++) {
+          final line = lines[i].trim();
+          if (line.startsWith('import ') || line.startsWith('//')) continue;
+          if (RegExp(r'\bDebugSettingsScreen\b').hasMatch(line)) {
+            uses.add('${file.path}:${i + 1}');
+          }
+        }
+      }
+      final settings =
+          'lib/features/settings/presentation/screens/'
+          'settings_screen.dart';
+      expect(uses, hasLength(1), reason: 'Entry points: $uses');
+      expect(uses.single, startsWith('$settings:'));
+
+      final lines = File(settings).readAsLinesSync();
+      final useLine = int.parse(uses.single.split(':').last) - 1;
+      final guardLine = lines.lastIndexWhere(
+        (l) => l.trim().startsWith('if (!kReleaseMode && '),
+        useLine,
+      );
+      expect(guardLine, isNot(-1), reason: 'No kReleaseMode guard above use');
+      expect(
+        useLine - guardLine,
+        lessThan(20),
+        reason: 'The kReleaseMode guard must wrap the Developer section',
+      );
+    });
+
+    test('GoRouter diagnostics follow the developer-tools switch', () {
+      final settings = <String>[];
+      for (final file in libDartFiles()) {
+        for (final m in RegExp(
+          r'debugLogDiagnostics:\s*([^,\n]+)',
+        ).allMatches(file.readAsStringSync())) {
+          settings.add(m.group(1)!.trim());
+        }
+      }
+      expect(settings, isNotEmpty);
+      expect(
+        settings,
+        everyElement('ref.watch(developerToolsAvailableProvider)'),
+        reason: 'Release builds must not log route paths',
       );
     });
   });

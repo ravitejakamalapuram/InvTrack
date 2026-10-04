@@ -478,9 +478,13 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
   /// Opens the Help & FAQ page
   void _openHelpPage(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const HelpFaqScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => HelpFaqScreen(
+          showDeveloperFaq: ref.read(developerToolsAvailableProvider),
+        ),
+      ),
+    );
   }
 
   /// Opens the email client for support
