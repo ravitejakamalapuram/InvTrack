@@ -274,6 +274,7 @@ Future<InvestmentStats> multiCurrencyGlobalStats(Ref ref) async {
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
+  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
 
   // Use engine's financial module to calculate stats
   return engine.financial.calculateStats(convertedCashFlows);
@@ -340,6 +341,7 @@ Future<InvestmentStats> multiCurrencyOpenStats(Ref ref) async {
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
+  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
 
   return engine.financial.calculateStats(convertedCashFlows);
 }
@@ -405,6 +407,7 @@ Future<InvestmentStats> multiCurrencyClosedStats(Ref ref) async {
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
+  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
 
   return engine.financial.calculateStats(convertedCashFlows);
 }

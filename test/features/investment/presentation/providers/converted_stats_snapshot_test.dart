@@ -342,8 +342,11 @@ void main() {
           final container = ProviderContainer(
             retry: retries ? null : (_, _) => null,
             overrides: _overrides(
-              active: [_investment('usd', 'USD')],
-              activeFlows: _usdFlows('usd'),
+              active: [
+                _investment('usd', 'USD'),
+                _investment('open', 'USD', status: InvestmentStatus.open),
+              ],
+              activeFlows: [..._usdFlows('usd'), ..._usdFlows('open')],
               archived: [archived],
               archivedFlows: {'arch': _usdFlows('arch')},
               conversionService: entry.value,
@@ -368,12 +371,30 @@ void main() {
             'archived stats',
             multiCurrencyArchivedInvestmentStatsProvider('arch'),
           );
+          // Overview hero, open and closed sections, and FIRE.
+          record('global stats', multiCurrencyGlobalStatsProvider);
+          record('open stats', multiCurrencyOpenStatsProvider);
+          record('closed stats', multiCurrencyClosedStatsProvider);
           await _settle();
 
-          expect(seen.keys, hasLength(5));
+          expect(seen.keys, hasLength(8));
+          // The Overview providers emit empty stats while the cash-flow
+          // stream is still loading (A28 replaces that with a loading
+          // state). Empty stats hold no amounts, so only stats with data
+          // count as showing amounts for them.
+          const emptyWhileLoading = {
+            'global stats',
+            'open stats',
+            'closed stats',
+          };
           for (final MapEntry(key: name, value: states) in seen.entries) {
+            bool showsAmounts(AsyncValue<Object?> s) =>
+                s.hasValue &&
+                !(emptyWhileLoading.contains(name) &&
+                    s.value is InvestmentStats &&
+                    !(s.value! as InvestmentStats).hasData);
             expect(
-              states.where((s) => s.hasValue),
+              states.where(showsAmounts),
               isEmpty,
               reason: '$name must never show unconverted amounts: $states',
             );
@@ -502,7 +523,7 @@ void main() {
         _overrides(active: [investment], activeFlows: _usdFlows('usd')),
       );
       expect(find.text('+${compactInr(_expectedNet)}'), findsOneWidget);
-      expect(find.textContaining('7.5'), findsOneWidget);
+      expect(find.text('+7.5% IRR'), findsOneWidget);
     });
 
     testWidgets('an archived USD card shows the converted net', (tester) async {
@@ -518,7 +539,7 @@ void main() {
         ),
       );
       expect(find.text('+${compactInr(_expectedNet)}'), findsOneWidget);
-      expect(find.textContaining('7.5'), findsOneWidget);
+      expect(find.text('+7.5% IRR'), findsOneWidget);
     });
   });
 }
