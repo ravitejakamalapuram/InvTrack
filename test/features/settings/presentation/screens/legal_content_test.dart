@@ -1,9 +1,49 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_content.dart';
 import 'package:inv_tracker/features/settings/presentation/screens/legal_screen.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 void main() {
+  late String privacyPolicyContent;
+
+  setUpAll(() async {
+    // main.dart initialises date symbols for every locale before runApp.
+    await initializeDateFormatting();
+    privacyPolicyContent = privacyPolicyText(
+      lookupAppLocalizations(const Locale('en')),
+    );
+  });
+
+  // The policy is user-facing text, so it lives in the ARB file (rule 16),
+  // with the support address, hosted URL and date filled in by the app.
+  test('privacy policy text comes from the ARB file', () {
+    final arb =
+        jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+            as Map<String, dynamic>;
+    final meta = arb['@privacyPolicyBody'] as Map<String, dynamic>;
+    expect(meta['description'], isNotEmpty);
+    expect(
+      (meta['placeholders'] as Map<String, dynamic>).keys,
+      containsAll(['lastUpdated', 'supportEmail', 'policyUrl']),
+    );
+    expect(arb['privacyPolicyBody'], isNot(contains(supportEmailAddress)));
+    expect(arb['privacyPolicyBody'], isNot(contains(hostedPrivacyPolicyUrl)));
+
+    final dart = File(
+      'lib/features/settings/presentation/screens/legal_content.dart',
+    ).readAsStringSync();
+    expect(dart, isNot(contains('Data Collection')));
+
+    expect(
+      privacyPolicyContent,
+      contains('contact us at $supportEmailAddress.'),
+    );
+  });
   test('privacy policy text matches real Firebase behaviour', () {
     final text = privacyPolicyContent.toLowerCase();
     expect(privacyPolicyContent, contains('Google Firebase'));
@@ -70,7 +110,9 @@ void main() {
 
   testWidgets('LegalScreen has no link by default', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: LegalScreen(title: 'T', content: 'x')),
+      const MaterialApp(
+        home: LegalScreen(title: 'T', content: 'x'),
+      ),
     );
     expect(find.byKey(const Key('legal_screen_link')), findsNothing);
   });
