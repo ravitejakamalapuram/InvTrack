@@ -138,7 +138,10 @@ void main() {
       final found = await service().findCandidates('INR');
 
       expect(found.map((c) => c.investmentId), ['inv-merged', 'arch-1']);
-      expect(await service().repair({'inv-imported'}, 'INR'), 0);
+      expect(await service().repair({'inv-imported'}, 'INR'), (
+        documents: 0,
+        investments: 0,
+      ));
       expect(currencyOf('cashflows', 'cf-i1'), 'USD');
     });
 
@@ -167,7 +170,7 @@ void main() {
         'the amounts', () async {
       final written = await service().repair({'inv-merged'}, 'INR');
 
-      expect(written, 3);
+      expect(written, (documents: 3, investments: 1));
       expect(currencyOf('investments', 'inv-merged'), 'INR');
       expect(currencyOf('cashflows', 'cf-m1'), 'INR');
       expect(currencyOf('cashflows', 'cf-m2'), 'INR');
@@ -185,7 +188,7 @@ void main() {
     test('repairs confirmed archived investments too', () async {
       final written = await service().repair({'arch-1'}, 'INR');
 
-      expect(written, 2);
+      expect(written, (documents: 2, investments: 1));
       expect(currencyOf('archivedInvestments', 'arch-1'), 'INR');
       expect(currencyOf('archivedCashflows', 'acf-1'), 'INR');
     });
@@ -202,7 +205,7 @@ void main() {
         'inv-imported',
       }, 'INR');
 
-      expect(second, 0);
+      expect(second, (documents: 0, investments: 0));
       expect(firestore.updatedDocs, commitsAfterFirst);
       expect(currencyOf('cashflows', 'cf-m1'), 'INR');
       expect(currencyOf('cashflows', 'cf-i1'), 'INR');
@@ -220,30 +223,53 @@ void main() {
         'inv-empty',
       }, 'INR');
 
-      expect(written, 0);
+      expect(written, (documents: 0, investments: 0));
       expect(currencyOf('investments', 'inv-inr'), 'INR');
       expect(currencyOf('cashflows', 'cf-x1'), 'USD');
       expect(currencyOf('cashflows', 'cf-x2'), 'INR');
       expect(currencyOf('investments', 'inv-empty'), 'USD');
     });
 
-    test('never overwrites a currency changed after the scan', () async {
+    test('skips the whole investment when one of its documents changed '
+        'after the scan, so it never ends up with mixed currencies', () async {
       firestore.beforeTransaction = () {
         firestore.stored('cashflows', 'cf-m2')!['currency'] = 'EUR';
       };
 
       final written = await service().repair({'inv-merged'}, 'INR');
 
-      expect(written, 2);
-      expect(currencyOf('cashflows', 'cf-m1'), 'INR');
+      expect(written, (documents: 0, investments: 0));
+      expect(currencyOf('investments', 'inv-merged'), 'USD');
+      expect(currencyOf('cashflows', 'cf-m1'), 'USD');
       expect(currencyOf('cashflows', 'cf-m2'), 'EUR');
-      // The backup lists only what was written, so undo cannot touch cf-m2.
+      // Nothing was written, so there is nothing to undo.
+      expect(service().hasBackup, isFalse);
+    });
+
+    test('a changed investment is skipped while the others in the same '
+        'transaction are still repaired', () async {
+      firestore.beforeTransaction = () {
+        firestore.stored('cashflows', 'cf-m2')!['currency'] = 'EUR';
+      };
+
+      final written = await service().repair({
+        'inv-merged',
+        'inv-imported',
+      }, 'INR');
+
+      expect(written, (documents: 2, investments: 1));
+      expect(currencyOf('investments', 'inv-merged'), 'USD');
+      expect(currencyOf('cashflows', 'cf-m1'), 'USD');
+      expect(currencyOf('investments', 'inv-imported'), 'INR');
+      expect(currencyOf('cashflows', 'cf-i1'), 'INR');
+      // The backup lists only what was written, so undo cannot touch the
+      // skipped investment.
       final backup =
           jsonDecode(prefs.getString('usd_tag_repair_backup_${firestore.uid}')!)
               as List;
       expect([
         for (final e in backup) '${e['c']}/${e['id']}',
-      ], unorderedEquals(['investments/inv-merged', 'cashflows/cf-m1']));
+      ], unorderedEquals(['investments/inv-imported', 'cashflows/cf-i1']));
     });
 
     test('saves the backup before the first write', () async {
@@ -308,7 +334,7 @@ void main() {
         chunkSize: 2,
       ).repair({'inv-merged', 'inv-imported'}, 'INR');
 
-      expect(written, 5);
+      expect(written, (documents: 5, investments: 2));
       // inv-imported (2 docs) fits one chunk; inv-merged (3 docs) is larger
       // than the chunk size and is split only because it must be.
       expect(firestore.commitSizes, [2, 2, 1]);

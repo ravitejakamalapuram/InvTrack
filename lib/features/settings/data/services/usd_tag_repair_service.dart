@@ -37,10 +37,11 @@ class UsdTagCandidate {
 ///  * Before any write, a backup of every document about to change
 ///    (collection, id, previous and new currency) is saved for this user, so
 ///    [undo] can put the previous currency back.
-///  * Each chunk is written in a transaction that re-reads every document and
-///    only changes `currency` where it is still `USD`, so a value changed in
-///    between (another device, an edit) is never overwritten. A transaction
-///    fails instead of queueing while offline.
+///  * Each chunk is written in a transaction that re-reads every document.
+///    An investment with any document no longer `USD` (another device, an
+///    edit) is skipped as a whole, so a changed value is never overwritten
+///    and no investment is left with mixed currencies. A transaction fails
+///    instead of queueing while offline.
 class UsdTagRepairService {
   UsdTagRepairService({
     required FirebaseFirestore firestore,
@@ -240,9 +241,13 @@ class UsdTagRepairService {
   /// Relabels the confirmed [investmentIds] (and their cash flows) from USD
   /// to [baseCurrency], after re-reading them from the server. Investments
   /// that are no longer all USD are skipped, so a second run writes nothing.
-  /// Returns how many documents were written and records the answer. Throws
-  /// if a read or write fails; documents already written stay in the backup.
-  Future<int> repair(Set<String> investmentIds, String baseCurrency) async {
+  /// Returns how many documents and investments this run changed, and
+  /// records the answer. Throws if a read or write fails; documents already
+  /// written stay in the backup.
+  Future<({int documents, int investments})> repair(
+    Set<String> investmentIds,
+    String baseCurrency,
+  ) async {
     if (baseCurrency.trim().isEmpty || baseCurrency == taggedCurrency) {
       throw ArgumentError.value(baseCurrency, 'baseCurrency');
     }
@@ -252,6 +257,7 @@ class UsdTagRepairService {
     ];
 
     var written = 0;
+    final changedInvestments = <String>{};
     for (final chunk in _chunks(selected)) {
       final planned = [
         for (final (investmentId, collection, ref) in chunk)
@@ -274,11 +280,7 @@ class UsdTagRepairService {
       await _saveBackup([...before, ...planned]);
       final List<DocumentReference<Map<String, dynamic>>> done;
       try {
-        done = await _rewrite(
-          [for (final (_, _, ref) in chunk) ref],
-          from: taggedCurrency,
-          to: baseCurrency,
-        );
+        done = await _rewrite(chunk, from: taggedCurrency, to: baseCurrency);
       } catch (_) {
         await _saveBackup(before);
         rethrow;
@@ -291,14 +293,21 @@ class UsdTagRepairService {
           if (done.contains(chunk[i].$3)) planned[i],
       ]);
       written += done.length;
+      changedInvestments.addAll([
+        for (final (investmentId, _, ref) in chunk)
+          if (done.contains(ref)) investmentId,
+      ]);
     }
     await markResolved();
     // Counts only: never ids, names or amounts (CLAUDE.md rule 7).
     LoggerService.info(
       'USD tag repair finished',
-      metadata: {'investments': selected.length, 'documents': written},
+      metadata: {
+        'investments': changedInvestments.length,
+        'documents': written,
+      },
     );
-    return written;
+    return (documents: written, investments: changedInvestments.length);
   }
 
   /// Groups documents so that one investment's documents share a
@@ -366,23 +375,36 @@ class UsdTagRepairService {
     return restored;
   }
 
-  /// Changes `currency` from [from] to [to] on each of [refs] still holding
-  /// [from], in one transaction. Returns the documents written.
+  /// Changes `currency` from [from] to [to] on each document of [targets],
+  /// in one transaction. An investment with any existing document no longer
+  /// holding [from] is skipped as a whole, so it never ends up with mixed
+  /// currencies. Returns the documents written.
   Future<List<DocumentReference<Map<String, dynamic>>>> _rewrite(
-    List<DocumentReference<Map<String, dynamic>>> refs, {
+    List<_Target> targets, {
     required String from,
     required String to,
   }) {
     return _firestore.runTransaction((tx) async {
-      final still = <DocumentReference<Map<String, dynamic>>>[];
-      for (final ref in refs) {
+      final still = <_Target>[];
+      final changedElsewhere = <String>{};
+      for (final target in targets) {
+        final (investmentId, _, ref) = target;
         final snap = await tx.get(ref);
-        if (snap.exists && snap.data()?[_field] == from) still.add(ref);
+        if (!snap.exists) continue;
+        if (snap.data()?[_field] == from) {
+          still.add(target);
+        } else {
+          changedElsewhere.add(investmentId);
+        }
       }
-      for (final ref in still) {
+      final toWrite = [
+        for (final (investmentId, _, ref) in still)
+          if (!changedElsewhere.contains(investmentId)) ref,
+      ];
+      for (final ref in toWrite) {
         tx.update(ref, {_field: to});
       }
-      return still;
+      return toWrite;
     });
   }
 }

@@ -129,8 +129,11 @@ class _UsdTagRepairInitializerState
       return;
     }
 
+    final int changed;
     try {
-      await service.repair(selected, currency);
+      // What this run really changed: the re-scan and the transactions skip
+      // investments changed elsewhere since the question opened.
+      changed = (await service.repair(selected, currency)).investments;
     } catch (e) {
       LoggerService.warn(
         'USD tag repair did not finish; will ask again',
@@ -142,9 +145,6 @@ class _UsdTagRepairInitializerState
       }
       return;
     }
-    // What was really changed: the re-scan skips investments changed
-    // elsewhere since the question opened. Undo puts back the same set.
-    final changed = service.backedUpInvestmentCount;
     logUsdTagRepair(analytics, {
       'action': 'fixed',
       'flagged': candidates.length,
@@ -153,6 +153,12 @@ class _UsdTagRepairInitializerState
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
     final l10n = AppLocalizations.of(ctx);
+    if (changed == 0) {
+      ScaffoldMessenger.of(
+        ctx,
+      ).showSnackBar(SnackBar(content: Text(l10n.usdTagRepairNothingChanged)));
+      return;
+    }
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(l10n.usdTagRepairDone(changed, currency)),

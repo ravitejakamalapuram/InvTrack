@@ -4,6 +4,7 @@
 // without a Change answer, only ticked investments change, and the change
 // can be undone from the snackbar or from Data & Account.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -37,8 +38,8 @@ void main() {
   const detail =
       'Older versions of the app could save amounts as US dollars by '
       'mistake when importing, merging or restoring. Changing the currency '
-      'keeps every amount as it is. You can undo it in Settings > Data & '
-      'Account.';
+      'keeps every amount as it is. You can undo it on this device in '
+      'Settings > Data & Account.';
 
   Future<void> startWith(Map<String, Object> initialPrefs) async {
     SharedPreferences.setMockInitialValues(initialPrefs);
@@ -250,6 +251,70 @@ void main() {
       });
     });
 
+    testWidgets('Change when another device already fixed everything says '
+        'nothing changed and offers no Undo', (tester) async {
+      await tester.pumpWidget(app(repair: service()));
+      await tester.pumpAndSettle();
+
+      // Another device relabels the merged investment while the question is
+      // open.
+      for (final (collection, id) in [
+        ('investments', 'inv-merged'),
+        ('cashflows', 'cf-m1'),
+        ('cashflows', 'cf-m2'),
+      ]) {
+        firestore.stored(collection, id)!['currency'] = 'INR';
+      }
+      await tester.tap(find.text('Change to INR'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0 investments changed to INR.'), findsNothing);
+      expect(
+        find.text(
+          'Nothing needed changing. These investments are no longer '
+          'recorded in US dollars.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Undo'), findsNothing);
+      expect(analytics.loggedEvents.last.parameters, {
+        'action': 'fixed',
+        'flagged': 2,
+        'fixed': 0,
+      });
+      expect(service().isResolved, isTrue);
+    });
+
+    testWidgets('the count after Change leaves out entries from an earlier '
+        'interrupted run', (tester) async {
+      // Process death after an earlier backup was saved, before its write.
+      await prefs.setString(
+        'usd_tag_repair_backup_${firestore.uid}',
+        jsonEncode([
+          {
+            'c': 'cashflows',
+            'id': 'cf-i1',
+            'inv': 'inv-imported',
+            'from': 'USD',
+            'to': 'INR',
+          },
+        ]),
+      );
+      await tester.pumpWidget(app(repair: service()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Change to INR'));
+      await tester.pumpAndSettle();
+
+      expect(currencyOf('cashflows', 'cf-i1'), 'USD');
+      expect(find.text('1 investment changed to INR.'), findsOneWidget);
+      expect(analytics.loggedEvents.last.parameters, {
+        'action': 'fixed',
+        'flagged': 2,
+        'fixed': 1,
+      });
+    });
+
     testWidgets('Change is disabled when nothing is ticked', (tester) async {
       await tester.pumpWidget(app(repair: service()));
       await tester.pumpAndSettle();
@@ -412,7 +477,7 @@ void main() {
       expect(
         find.text(
           'Could not finish changing the currency. Check your connection. '
-          'We will ask again next time you open the app.',
+          'We will ask again the next time the app starts.',
         ),
         findsOneWidget,
       );

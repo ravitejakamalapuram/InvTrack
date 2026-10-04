@@ -2701,9 +2701,9 @@
     }
   },
 
-  "usdTagRepairDetail": "Older versions of the app could save amounts as US dollars by mistake when importing, merging or restoring. Changing the currency keeps every amount as it is. You can undo it in Settings > Data & Account.",
+  "usdTagRepairDetail": "Older versions of the app could save amounts as US dollars by mistake when importing, merging or restoring. Changing the currency keeps every amount as it is. You can undo it on this device in Settings > Data & Account.",
   "@usdTagRepairDetail": {
-    "description": "Explains why investments may be stored as US dollars and that the fix keeps amounts and can be undone"
+    "description": "Explains why investments may be stored as US dollars and that the fix keeps amounts and can be undone on the device that made it"
   },
 
   "usdTagRepairCashFlows": "{count, plural, =1{1 cash flow} other{{count} cash flows}}",
@@ -2754,9 +2754,14 @@
     }
   },
 
-  "usdTagRepairFailed": "Could not finish changing the currency. Check your connection. We will ask again next time you open the app.",
+  "usdTagRepairFailed": "Could not finish changing the currency. Check your connection. We will ask again the next time the app starts.",
   "@usdTagRepairFailed": {
     "description": "Shown when relabelling investments from US dollars could not finish"
+  },
+
+  "usdTagRepairNothingChanged": "Nothing needed changing. These investments are no longer recorded in US dollars.",
+  "@usdTagRepairNothingChanged": {
+    "description": "Shown after the user chose to change the currency but the investments had already been changed, for example on another device"
   },
 
   "usdTagRepairUndo": "Undo",
