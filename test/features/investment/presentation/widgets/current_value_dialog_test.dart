@@ -8,6 +8,7 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 Future<CurrentValueEdit?> _open(
   WidgetTester tester, {
   bool canRemove = false,
+  DateTime? firstDate,
   required Future<void> Function() interact,
 }) async {
   CurrentValueEdit? result;
@@ -24,6 +25,7 @@ Future<CurrentValueEdit?> _open(
                 currency: 'INR',
                 canRemove: canRemove,
                 today: DateTime(2026, 10, 2),
+                firstDate: firstDate,
               ),
             );
           },
@@ -59,6 +61,23 @@ void main() {
     expect(result!.isRemove, isFalse);
     expect(result.value, 125000.55);
     expect(result.date, DateTime(2026, 10, 2));
+  });
+
+  testWidgets('the date cannot be before the first cash flow', (tester) async {
+    await _open(
+      tester,
+      firstDate: DateTime(2025, 10, 2, 15, 30),
+      interact: () async {
+        await tester.tap(find.text('Value as of Oct 2, 2026'));
+        await tester.pumpAndSettle();
+        final picker = tester.widget<DatePickerDialog>(
+          find.byType(DatePickerDialog),
+        );
+        expect(picker.firstDate, DateTime(2025, 10, 2));
+        expect(picker.lastDate, DateTime(2026, 10, 2));
+        await tester.tap(find.text('Cancel').last);
+      },
+    );
   });
 
   testWidgets('rejects an empty value', (tester) async {

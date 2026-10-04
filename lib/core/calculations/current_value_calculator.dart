@@ -145,7 +145,8 @@ class CurrentValueCalculator {
   /// rate) needed to estimate one. Amounts in different currencies are
   /// never added: a manual value with principal moved in another currency
   /// after its date, or an estimate from INVEST/RETURN flows in more than
-  /// one currency, is none. [cashFlows] may include other investments'
+  /// one currency, is none. So is a manual value dated before the first
+  /// cash flow. [cashFlows] may include other investments'
   /// flows; only this investment's are used.
   static InvestmentValuation? valuationOf(
     InvestmentEntity investment,
@@ -219,10 +220,15 @@ class CurrentValueCalculator {
 
   /// Terminal values of [investments] as of [asOf]. Closed investments and
   /// investments without cash flows get none.
+  ///
+  /// Callers that add the values to cash flows without converting them pass
+  /// [sameCurrencyOnly]: a value whose currency is not the one currency of
+  /// its investment's cash flows then counts as missing (money rule 2).
   static TerminalValues terminalValues({
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
     required DateTime asOf,
+    bool sameCurrencyOnly = false,
   }) {
     final byInvestment = <String, List<CashFlowEntity>>{};
     for (final cf in cashFlows) {
@@ -238,6 +244,12 @@ class CurrentValueCalculator {
       if (own == null || own.isEmpty || !investment.isOpen) continue;
 
       final valuation = valuationOf(investment, own, asOf: asOf);
+      if (valuation != null &&
+          sameCurrencyOnly &&
+          _sharedCurrency(own) != valuation.currency) {
+        missing++;
+        continue;
+      }
       if (valuation == null) {
         var net = 0.0;
         for (final cf in own) {
@@ -288,13 +300,16 @@ class CurrentValueCalculator {
   /// The user's value, in the investment's currency, carried forward to the
   /// latest cash flow: principal put in or taken out after the valuation
   /// date changes it, income does not. Null when that principal is in
-  /// another currency.
+  /// another currency, or when the value is dated before the first cash
+  /// flow: it cannot include principal not yet put in, and adding all of
+  /// it would count the principal twice.
   static InvestmentValuation? _manualValuation(
     InvestmentEntity investment,
     List<CashFlowEntity> flows,
     DateTime lastFlow,
   ) {
     final date = _dateOnly(investment.currentValueDate!);
+    if (flows.every((cf) => _dateOnly(cf.date).isAfter(date))) return null;
     final later = [
       for (final cf in flows)
         if (_dateOnly(cf.date).isAfter(date) && _isPrincipal(cf)) cf,

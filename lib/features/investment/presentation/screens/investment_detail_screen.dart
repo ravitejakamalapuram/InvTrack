@@ -325,6 +325,7 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                             hasUserValue:
                                 stats.currentValue != null &&
                                 !stats.currentValueIsEstimate,
+                            firstCashFlowDate: stats.firstCashFlowDate,
                           )
                         : null,
                   ),

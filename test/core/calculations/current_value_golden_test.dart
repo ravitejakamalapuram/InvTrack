@@ -379,6 +379,44 @@ void main() {
       expect(valuation.date, DateTime(2026, 9, 15));
     });
 
+    test('a value dated before the first cash flow is missing, not added '
+        'to all the principal', () {
+      final plot = _investment(
+        'plot',
+        InvestmentType.realEstate,
+        currentValue: 110000,
+        currentValueDate: DateTime(2020, 1, 1),
+      );
+      final flows = [
+        _flow('plot', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+      ];
+      expect(
+        CurrentValueCalculator.valuationOf(plot, flows, asOf: _today),
+        isNull,
+      );
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [plot],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      expect(terminal.flows, isEmpty);
+      expect(terminal.missingValueCount, 1);
+    });
+
+    test('a value dated on the first cash flow is used as entered', () {
+      final plot = _investment(
+        'plot',
+        InvestmentType.realEstate,
+        currentValue: 110000,
+        currentValueDate: DateTime(2025, 10, 2),
+      );
+      final valuation = CurrentValueCalculator.valuationOf(plot, [
+        _flow('plot', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+      ], asOf: _today)!;
+      expect(valuation.amount, 110000);
+      expect(valuation.date, DateTime(2025, 10, 2));
+    });
+
     test('closed investments never get a terminal value', () {
       final closed = _investment(
         'c',
@@ -534,6 +572,51 @@ void main() {
       );
       expect(terminal.flows.single.currency, 'USD');
       expect(terminal.flows.single.amount, 1200);
+    });
+
+    test('unconverted callers count a value in another currency than its '
+        'cash flows as missing', () {
+      final gold = _investment(
+        'gold',
+        InvestmentType.gold,
+        currency: 'USD',
+        currentValue: 1200,
+        currentValueDate: DateTime(2026, 9, 1),
+      );
+      final flows = [
+        _flow('gold', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+      ];
+      // Converted callers convert the USD value to the base currency.
+      final converted = CurrentValueCalculator.terminalValues(
+        investments: [gold],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      expect(converted.flows.single.currency, 'USD');
+
+      final unconverted = CurrentValueCalculator.terminalValues(
+        investments: [gold],
+        cashFlows: flows,
+        asOf: _today,
+        sameCurrencyOnly: true,
+      );
+      expect(unconverted.flows, isEmpty);
+      expect(unconverted.missingValueCount, 1);
+      final stats = module.calculateStats(flows, terminalValues: unconverted);
+      expect(stats.currentValue, isNull);
+      expect(stats.needsCurrentValue, isTrue);
+    });
+
+    test('unconverted callers keep a value in the currency of its cash '
+        'flows', () {
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [_fdS1],
+        cashFlows: _flowsS1,
+        asOf: _today,
+        sameCurrencyOnly: true,
+      );
+      expect(terminal.flows.single.amount, closeTo(107185.903129, 0.005));
+      expect(terminal.missingValueCount, 0);
     });
 
     test('a manual value is not carried forward across currencies', () {

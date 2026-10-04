@@ -74,6 +74,7 @@ final activeInvestmentBasicStatsMapProvider =
               investments: [inv],
               cashFlows: flows,
               asOf: asOf,
+              sameCurrencyOnly: true,
             ),
           );
         }
@@ -124,11 +125,13 @@ final activeInvestmentXirrResultMapProvider =
 
       // Each terminal value carries its investment's id, so it joins that
       // investment's group in _calculateAllXirrs. Valid cash flows exist
-      // only once the active investments have loaded.
+      // only once the active investments have loaded. Nothing here is
+      // converted, so a value in another currency is left out.
       final terminalValues = CurrentValueCalculator.terminalValues(
         investments: ref.watch(activeInvestmentsProvider).value ?? const [],
         cashFlows: cashFlows,
         asOf: ref.watch(valuationDateProvider),
+        sameCurrencyOnly: true,
       );
       final flows = [...cashFlows, ...terminalValues.flows];
 

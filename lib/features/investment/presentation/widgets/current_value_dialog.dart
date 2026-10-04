@@ -24,17 +24,20 @@ class CurrentValueEdit {
 
 /// Opens [CurrentValueDialog] for [investment] and saves the result.
 /// [hasUserValue] offers to remove the user's value so the estimate applies.
+/// [firstCashFlowDate] is the earliest date the value can be dated.
 Future<void> showCurrentValueDialog(
   BuildContext context,
   WidgetRef ref, {
   required InvestmentEntity investment,
   required bool hasUserValue,
+  DateTime? firstCashFlowDate,
 }) async {
   final edit = await showDialog<CurrentValueEdit>(
     context: context,
     builder: (_) => CurrentValueDialog(
       currency: investment.currency,
       canRemove: hasUserValue,
+      firstDate: firstCashFlowDate,
     ),
   );
   if (edit == null || !context.mounted) return;
@@ -65,11 +68,15 @@ class CurrentValueDialog extends StatefulWidget {
   /// Today; injectable for tests.
   final DateTime? today;
 
+  /// The first cash flow's date: a value cannot be dated before it.
+  final DateTime? firstDate;
+
   const CurrentValueDialog({
     super.key,
     required this.currency,
     required this.canRemove,
     this.today,
+    this.firstDate,
   });
 
   @override
@@ -80,6 +87,7 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
   final _formKey = GlobalKey<FormState>();
   final _controller = TextEditingController();
   late final DateTime _today;
+  late final DateTime _firstDate;
   late DateTime _date;
 
   @override
@@ -87,6 +95,12 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
     super.initState();
     final now = widget.today ?? DateTime.now();
     _today = DateTime(now.year, now.month, now.day);
+    final first = widget.firstDate;
+    final firstDay = first == null
+        ? DateTime(1970)
+        : DateTime(first.year, first.month, first.day);
+    // A first cash flow in the future leaves only today to pick.
+    _firstDate = firstDay.isAfter(_today) ? _today : firstDay;
     _date = _today;
   }
 
@@ -115,7 +129,7 @@ class _CurrentValueDialogState extends State<CurrentValueDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(1970),
+      firstDate: _firstDate,
       lastDate: _today,
     );
     if (picked != null) {

@@ -349,6 +349,37 @@ void main() {
     expect(xirrMap['s2'], closeTo(0.077137789, 1e-6));
   });
 
+  test('list card stats and XIRR never add a value to cash flows in another '
+      'currency', () async {
+    // Tagged USD, bought in INR: the list paths do not convert, so the USD
+    // value cannot be added to the INR flow (money rule 2).
+    final gold = _inv(
+      'gold',
+      InvestmentType.gold,
+      currency: 'USD',
+      currentValue: 1200,
+      currentValueDate: DateTime(2026, 9, 1),
+    );
+    final container = _container(
+      investments: [gold],
+      cashFlows: [
+        _cf('gold', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final basic = await _read(container, investmentBasicStatsProvider('gold'));
+    expect(basic.currentValue, isNull);
+    expect(basic.missingValueCount, 1);
+    expect(basic.moic, 0);
+
+    _keep(container, activeInvestmentXirrResultMapProvider);
+    final xirrMap = await container.read(
+      activeInvestmentXirrResultMapProvider.future,
+    );
+    expect(xirrMap['gold']!.value, isNull);
+  });
+
   test('a value that cannot be converted counts as missing, never as a '
       'native amount under the base symbol', () async {
     final chfGold = _inv(
