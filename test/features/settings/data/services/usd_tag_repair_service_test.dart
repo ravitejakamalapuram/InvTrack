@@ -414,6 +414,43 @@ void main() {
       expect(currencyOf('cashflows', 'cf-m2'), 'USD');
     });
 
+    // An investment archived (or restored) between the repair and Undo
+    // keeps its document ids but moves to the other collections.
+    void move(String id, String from, String to) =>
+        firestore.data.putIfAbsent(to, () => {})[id] = firestore.data[from]!
+            .remove(id)!;
+
+    test('restores an investment archived after the repair', () async {
+      await service().repair({'inv-merged'}, 'INR');
+      move('inv-merged', 'investments', 'archivedInvestments');
+      move('cf-m1', 'cashflows', 'archivedCashflows');
+      move('cf-m2', 'cashflows', 'archivedCashflows');
+
+      final restored = await service().undo();
+
+      expect(restored, 3);
+      expect(currencyOf('archivedInvestments', 'inv-merged'), 'USD');
+      expect(currencyOf('archivedCashflows', 'cf-m1'), 'USD');
+      expect(currencyOf('archivedCashflows', 'cf-m2'), 'USD');
+      expect(firestore.stored('investments', 'inv-merged'), isNull);
+      expect(firestore.stored('cashflows', 'cf-m1'), isNull);
+      expect(service().hasBackup, isFalse);
+    });
+
+    test('restores an archived investment restored after the repair', () async {
+      await service().repair({'arch-1'}, 'INR');
+      move('arch-1', 'archivedInvestments', 'investments');
+      move('acf-1', 'archivedCashflows', 'cashflows');
+
+      final restored = await service().undo();
+
+      expect(restored, 2);
+      expect(currencyOf('investments', 'arch-1'), 'USD');
+      expect(currencyOf('cashflows', 'acf-1'), 'USD');
+      expect(firestore.stored('archivedInvestments', 'arch-1'), isNull);
+      expect(service().hasBackup, isFalse);
+    });
+
     test('keeps the backup when the undo fails', () async {
       await service().repair({'inv-merged'}, 'INR');
       firestore.transactionError = FirebaseException(

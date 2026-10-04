@@ -337,8 +337,18 @@ class UsdTagRepairService {
     return chunks;
   }
 
+  /// Where a document moves when its investment is archived or restored.
+  /// Archiving keeps document ids.
+  static const Map<String, String> _movedTo = {
+    'investments': 'archivedInvestments',
+    'archivedInvestments': 'investments',
+    'cashflows': 'archivedCashflows',
+    'archivedCashflows': 'cashflows',
+  };
+
   /// Puts US dollars back on every document the last repairs changed, where
-  /// the currency is still the one the repair wrote. Returns how many were
+  /// the currency is still the one the repair wrote, including documents
+  /// whose investment was archived or restored since. Returns how many were
   /// restored. The backup is removed only after every chunk succeeded.
   Future<int> undo() async {
     final entries = _backup();
@@ -353,12 +363,15 @@ class UsdTagRepairService {
       restored += await _firestore.runTransaction<int>((tx) async {
         final toRestore = <(DocumentReference<Map<String, dynamic>>, String)>[];
         for (final e in chunk) {
-          final ref = userDoc
-              .collection(e['c'] as String)
-              .doc(e['id'] as String);
-          final snap = await tx.get(ref);
-          if (snap.exists && snap.data()?[_field] == e['to']) {
-            toRestore.add((ref, e['from'] as String));
+          final collection = e['c'] as String;
+          for (final name in [collection, ?_movedTo[collection]]) {
+            final ref = userDoc.collection(name).doc(e['id'] as String);
+            final snap = await tx.get(ref);
+            if (!snap.exists) continue;
+            if (snap.data()?[_field] == e['to']) {
+              toRestore.add((ref, e['from'] as String));
+            }
+            break;
           }
         }
         for (final (ref, from) in toRestore) {
