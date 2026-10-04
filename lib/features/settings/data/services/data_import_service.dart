@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:csv/csv.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/performance/performance_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
@@ -163,6 +164,16 @@ class DataImportService {
     int goalsImported = 0;
     final investmentNameToIdMap = <String, String>{};
 
+    // Current values the user entered, attached to the investments created
+    // below (money rule 6).
+    final valuationsFile = archive.findFile('valuations.csv');
+    final valuations = valuationsFile == null
+        ? const <(bool, String), _ImportedValuation>{}
+        : _parseValuationsCsv(
+            utf8.decode(valuationsFile.content as List<int>),
+            warnings,
+          );
+
     // Import cashflows (active)
     final cashflowsFile = archive.findFile('cashflows.csv');
     if (cashflowsFile != null) {
@@ -171,6 +182,7 @@ class DataImportService {
         isArchived: false,
         strategy: strategy,
         baseCurrency: baseCurrency,
+        valuations: valuations,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -187,6 +199,7 @@ class DataImportService {
         isArchived: true,
         strategy: strategy,
         baseCurrency: baseCurrency,
+        valuations: valuations,
       );
       investmentsImported += result.investmentsCreated;
       cashflowsImported += result.imported;
@@ -405,6 +418,7 @@ class DataImportService {
     required bool isArchived,
     required ImportStrategy strategy,
     required String baseCurrency,
+    Map<(bool, String), _ImportedValuation> valuations = const {},
   }) async {
     final parseResult = SimpleCsvParser.parseString(
       csvContent,
@@ -461,6 +475,20 @@ class DataImportService {
       final investmentStatus =
           firstRow.investmentStatus ?? InvestmentStatus.open;
 
+      final currency = resolveSharedCurrency(
+        rows.map((r) => r.currency ?? baseCurrency),
+        baseCurrency,
+      );
+      var valuation = valuations[(isArchived, investmentName.toLowerCase())];
+      if (valuation != null && valuation.currency != currency) {
+        // A value is only meaningful in the investment's own currency.
+        warnings.add(
+          'Current value of "$investmentName" not imported: its currency '
+          'differs from the investment\'s',
+        );
+        valuation = null;
+      }
+
       investments.add(
         InvestmentEntity(
           id: investmentId,
@@ -470,10 +498,9 @@ class DataImportService {
           createdAt: now,
           updatedAt: now,
           isArchived: isArchived,
-          currency: resolveSharedCurrency(
-            rows.map((r) => r.currency ?? baseCurrency),
-            baseCurrency,
-          ),
+          currency: currency,
+          currentValue: valuation?.value,
+          currentValueDate: valuation?.date,
         ),
       );
 
@@ -518,6 +545,63 @@ class DataImportService {
       warnings: warnings,
       investmentNameToIdMap: nameToIdMap,
     );
+  }
+
+  /// Parses valuations.csv into values keyed by (archived, lowercase
+  /// investment name), the way cash flow rows name their investment. Bad
+  /// rows are skipped with a warning that holds no amount.
+  Map<(bool, String), _ImportedValuation> _parseValuationsCsv(
+    String content,
+    List<String> warnings,
+  ) {
+    final List<List<dynamic>> rows;
+    try {
+      rows = csv.decode(content);
+    } catch (e) {
+      warnings.add('Current values not imported: valuations.csv is invalid');
+      return const {};
+    }
+    if (rows.isEmpty) return const {};
+
+    final header = [for (final h in rows.first) h.toString().trim()];
+    final nameCol = header.indexOf('Investment Name');
+    final archivedCol = header.indexOf('Archived');
+    final dateCol = header.indexOf('Date');
+    final valueCol = header.indexOf('Value');
+    final currencyCol = header.indexOf('Currency');
+    if ([nameCol, archivedCol, dateCol, valueCol, currencyCol].contains(-1)) {
+      warnings.add('Current values not imported: valuations.csv is invalid');
+      return const {};
+    }
+
+    final result = <(bool, String), _ImportedValuation>{};
+    for (var i = 1; i < rows.length; i++) {
+      final row = rows[i];
+      String cell(int col) =>
+          col < row.length ? row[col].toString().trim() : '';
+      final name = cell(nameCol);
+      if (name.isEmpty) continue;
+      final value = double.tryParse(cell(valueCol));
+      final parsedDate = DateTime.tryParse(cell(dateCol));
+      final currency = cell(currencyCol).toUpperCase();
+      if (value == null ||
+          !value.isFinite ||
+          value < 0 ||
+          parsedDate == null ||
+          currency.isEmpty) {
+        warnings.add('Current value of "$name" not imported: invalid row');
+        continue;
+      }
+      result[(
+        cell(archivedCol).toLowerCase() == 'true',
+        name.toLowerCase(),
+      )] = _ImportedValuation(
+        value: value,
+        date: DateTime(parsedDate.year, parsedDate.month, parsedDate.day),
+        currency: currency,
+      );
+    }
+    return result;
   }
 
   /// Import goals from CSV content
@@ -660,6 +744,19 @@ class DataImportService {
 
     await _documentRepository.createDocument(doc);
   }
+}
+
+/// A current value read from valuations.csv.
+class _ImportedValuation {
+  final double value;
+  final DateTime date;
+  final String currency;
+
+  const _ImportedValuation({
+    required this.value,
+    required this.date,
+    required this.currency,
+  });
 }
 
 /// Internal result class for CSV import operations

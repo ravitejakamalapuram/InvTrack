@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
@@ -14,6 +15,12 @@ import 'package:inv_tracker/features/investment/presentation/providers/investmen
 
 // Re-export stats entities
 export 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+
+/// Today, date-only: the date estimated current values are valued at.
+final valuationDateProvider = Provider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
 
 // ============ INDIVIDUAL INVESTMENT STATS ============
 
@@ -52,6 +59,7 @@ final activeInvestmentBasicStatsMapProvider =
       }
 
       // Calculate stats for each investment
+      final asOf = ref.watch(valuationDateProvider);
       final statsMap = <String, InvestmentStats>{};
       for (final inv in investments) {
         final flows = cashFlowsMap[inv.id] ?? [];
@@ -59,7 +67,15 @@ final activeInvestmentBasicStatsMapProvider =
           statsMap[inv.id] = InvestmentStats.empty();
         } else {
           // Optimization: Skip XIRR calculation
-          statsMap[inv.id] = calculateStats(flows, includeXirr: false);
+          statsMap[inv.id] = calculateStats(
+            flows,
+            includeXirr: false,
+            terminalValues: CurrentValueCalculator.terminalValues(
+              investments: [inv],
+              cashFlows: flows,
+              asOf: asOf,
+            ),
+          );
         }
       }
 
@@ -84,7 +100,8 @@ Map<String, XirrResult> _calculateAllXirrs(List<CashFlowEntity> allFlows) {
 
 /// Map of all active investment XIRRs with how each was obtained, computed in
 /// a single isolate batch. This prevents N+1 isolate overhead when rendering
-/// lists.
+/// lists. Open investments include their current value as the terminal
+/// inflow.
 final activeInvestmentXirrResultMapProvider =
     FutureProvider<Map<String, XirrResult>>((ref) async {
       // Wait for valid cash flows to be available
@@ -105,6 +122,16 @@ final activeInvestmentXirrResultMapProvider =
         return {};
       }
 
+      // Each terminal value carries its investment's id, so it joins that
+      // investment's group in _calculateAllXirrs. Valid cash flows exist
+      // only once the active investments have loaded.
+      final terminalValues = CurrentValueCalculator.terminalValues(
+        investments: ref.watch(activeInvestmentsProvider).value ?? const [],
+        cashFlows: cashFlows,
+        asOf: ref.watch(valuationDateProvider),
+      );
+      final flows = [...cashFlows, ...terminalValues.flows];
+
       // Track performance of bulk XIRR calculation
       return ref
           .read(performanceServiceProvider)
@@ -112,7 +139,7 @@ final activeInvestmentXirrResultMapProvider =
             'bulk_xirr_calculation',
             () => compute<List<CashFlowEntity>, Map<String, XirrResult>>(
               _calculateAllXirrs,
-              cashFlows,
+              flows,
             ),
             metrics: {'total_cash_flows': cashFlows.length},
           );
@@ -412,9 +439,11 @@ final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
 InvestmentStats calculateStats(
   List<CashFlowEntity> cashFlows, {
   bool includeXirr = true,
+  TerminalValues terminalValues = TerminalValues.none,
 }) {
   return FinancialCalculatorModule().calculateStats(
     cashFlows,
     includeXirr: includeXirr,
+    terminalValues: terminalValues,
   );
 }

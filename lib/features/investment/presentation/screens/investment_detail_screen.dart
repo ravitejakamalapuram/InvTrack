@@ -17,6 +17,7 @@ import 'package:inv_tracker/features/investment/presentation/widgets/cash_flow_c
 import 'package:inv_tracker/features/investment/presentation/widgets/document_list_widget.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_fab_widgets.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_segment_control.dart';
+import 'package:inv_tracker/features/investment/presentation/widgets/current_value_dialog.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
 import 'package:inv_tracker/features/investment/presentation/ui_extensions/investment_ui.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
@@ -315,6 +316,17 @@ class _InvestmentDetailScreenState extends ConsumerState<InvestmentDetailScreen>
                     isDark: isDark,
                     currencyFormat: currencyFormat,
                     isPrivacyMode: isPrivacyMode,
+                    onUpdateCurrentValue:
+                        widget.investment.isOpen && !isArchived
+                        ? () => showCurrentValueDialog(
+                            context,
+                            ref,
+                            investment: widget.investment,
+                            hasUserValue:
+                                stats.currentValue != null &&
+                                !stats.currentValueIsEstimate,
+                          )
+                        : null,
                   ),
                   loading: () => const StatsCardsSkeleton(),
                   error: (e, s) => const SizedBox.shrink(),

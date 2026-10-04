@@ -23,6 +23,10 @@ class InvestmentDetailStatsSection extends StatelessWidget {
   final NumberFormat currencyFormat;
   final bool isPrivacyMode;
 
+  /// Opens the editor for the investment's current value, or null to offer
+  /// none.
+  final VoidCallback? onUpdateCurrentValue;
+
   const InvestmentDetailStatsSection({
     super.key,
     required this.stats,
@@ -30,6 +34,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
     required this.isDark,
     required this.currencyFormat,
     required this.isPrivacyMode,
+    this.onUpdateCurrentValue,
   });
 
   @override
@@ -46,7 +51,11 @@ class InvestmentDetailStatsSection extends StatelessWidget {
     final returnIsPositive = display.kind == ReturnDisplayKind.shortHolding
         ? stats.absoluteReturn >= 0
         : stats.xirr >= 0;
-    final projection = display.kind == ReturnDisplayKind.awaitingFirstPayout
+    final projection =
+        display.kind == ReturnDisplayKind.awaitingFirstPayout ||
+            (investment.isOpen &&
+                stats.totalReturned == 0 &&
+                stats.currentValueIsEstimate)
         ? _projectedMaturityText(l10n)
         : null;
 
@@ -54,6 +63,16 @@ class InvestmentDetailStatsSection extends StatelessWidget {
       children: [
         // Net Position Hero Card
         _buildNetPositionCard(context, isPositive, display),
+        if (investment.isOpen) ...[
+          const SizedBox(height: 10),
+          _CurrentValueCard(
+            stats: stats,
+            isDark: isDark,
+            currencyFormat: currencyFormat,
+            isPrivacyMode: isPrivacyMode,
+            onUpdate: onUpdateCurrentValue,
+          ),
+        ],
         if (projection != null) ...[
           const SizedBox(height: 6),
           Text(
@@ -339,6 +358,101 @@ class InvestmentDetailStatsSection extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// What an open investment is worth today, how that value was obtained, and
+/// a button to add or update the user's own value.
+class _CurrentValueCard extends StatelessWidget {
+  final InvestmentStats stats;
+  final bool isDark;
+  final NumberFormat currencyFormat;
+  final bool isPrivacyMode;
+  final VoidCallback? onUpdate;
+
+  const _CurrentValueCard({
+    required this.stats,
+    required this.isDark,
+    required this.currencyFormat,
+    required this.isPrivacyMode,
+    required this.onUpdate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final value = stats.currentValue;
+    final mutedColor = isDark
+        ? AppColors.neutral400Dark
+        : AppColors.neutral500Light;
+    final amountText = value == null ? null : currencyFormat.format(value);
+    final basis = _basis(l10n, value);
+    final semanticsLabel = isPrivacyMode && value != null
+        ? l10n.currentValueHidden
+        : [l10n.currentValueLabel, ?amountText, basis].join(', ');
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              container: true,
+              label: semanticsLabel,
+              child: ExcludeSemantics(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.currentValueLabel,
+                      style: AppTypography.small.copyWith(color: mutedColor),
+                    ),
+                    if (amountText != null) ...[
+                      const SizedBox(height: 2),
+                      MaskedAmountText(
+                        text: amountText,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.neutral900Light,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 2),
+                    Text(
+                      basis,
+                      style: AppTypography.small.copyWith(color: mutedColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (onUpdate != null)
+            TextButton(
+              onPressed: onUpdate,
+              child: Text(
+                value == null ? l10n.currentValueAdd : l10n.currentValueUpdate,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _basis(AppLocalizations l10n, double? value) {
+    if (value == null) return l10n.currentValueNone;
+    if (!stats.currentValueIsEstimate) {
+      final date = stats.currentValueDate;
+      return date == null
+          ? l10n.currentValueLabel
+          : l10n.currentValueUpdatedOn(AppDateUtils.formatShort(date));
+    }
+    final rate = stats.currentValueRate;
+    return rate != null
+        ? l10n.currentValueEstimatedAtRate(ReturnDisplay.formatRate(rate))
+        : l10n.currentValueEstimatedPrincipal;
   }
 }
 

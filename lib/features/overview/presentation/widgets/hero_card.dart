@@ -142,7 +142,9 @@ class HeroCardContent extends ConsumerWidget {
             _buildValueRow(netPosition, isPositive, stats, status, ref),
             const SizedBox(height: 16),
             _buildStatsRow(stats, display, l10n, ref),
-            if (display.isAwaitingValue) ...[
+            if (display.isAwaitingValue ||
+                (display.kind == ReturnDisplayKind.annualised &&
+                    display.isEstimate)) ...[
               const SizedBox(height: 6),
               Text(
                 display.secondaryText(l10n)!,
@@ -321,48 +323,82 @@ class HeroCardContent extends ConsumerWidget {
     WidgetRef ref,
   ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
+    final showRealised =
+        display.kind == ReturnDisplayKind.annualised && display.isEstimate;
 
-    return Row(
+    // A Wrap, not a Row with a Spacer: with Realised and Expected XIRR side
+    // by side the figures move to their own line on narrow phones.
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.end,
+      spacing: 16,
+      runSpacing: 8,
       children: [
-        // Cash Out with up arrow
-        _buildCashFlowStat(
-          icon: Icons.arrow_upward_rounded,
-          amount: stats.totalInvested,
-          value: currencyFormat.formatCompact(stats.totalInvested),
-          label: 'out',
-          isPrivacyMode: isPrivacyMode,
-        ),
-        const SizedBox(width: 16),
-        // Cash In with down arrow
-        _buildCashFlowStat(
-          icon: Icons.arrow_downward_rounded,
-          amount: stats.totalReturned,
-          value: currencyFormat.formatCompact(stats.totalReturned),
-          label: 'in',
-          isPrivacyMode: isPrivacyMode,
-        ),
-        const Spacer(),
-        // XIRR
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              display.metricLabel(l10n),
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
+            // Cash Out with up arrow
+            _buildCashFlowStat(
+              icon: Icons.arrow_upward_rounded,
+              amount: stats.totalInvested,
+              value: currencyFormat.formatCompact(stats.totalInvested),
+              label: 'out',
+              isPrivacyMode: isPrivacyMode,
             ),
-            const SizedBox(height: 2),
-            MaskedAmountText(
-              text: display.primaryText(l10n, showSign: false),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+            const SizedBox(width: 16),
+            // Cash In with down arrow
+            _buildCashFlowStat(
+              icon: Icons.arrow_downward_rounded,
+              amount: stats.totalReturned,
+              value: currencyFormat.formatCompact(stats.totalReturned),
+              label: 'in',
+              isPrivacyMode: isPrivacyMode,
             ),
           ],
+        ),
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          children: [
+            // Realised XIRR of closed investments next to the expected one
+            if (showRealised) ...[
+              _buildXirrStat(
+                l10n.realisedXirrLabel,
+                ReturnDisplay.resolve(
+                  stats: closedStats,
+                ).primaryText(l10n, showSign: false),
+              ),
+            ],
+            // XIRR
+            _buildXirrStat(
+              display.metricLabel(l10n),
+              display.primaryText(l10n, showSign: false),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildXirrStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 2),
+        MaskedAmountText(
+          text: value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
