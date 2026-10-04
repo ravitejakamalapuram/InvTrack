@@ -544,7 +544,7 @@ class RecentlyClosedCard extends ConsumerWidget {
                       prefix: isProfit ? '+' : '-',
                       style: valueStyle,
                     ),
-              if (xirr != null && xirr != 0 && xirr.isFinite)
+              if (xirr != null && xirr.isFinite)
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: isPrivacyMode ? 0.0 : 1.0,

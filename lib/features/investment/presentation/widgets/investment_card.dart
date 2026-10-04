@@ -87,7 +87,7 @@ class InvestmentCard extends ConsumerWidget {
         );
         final double? returnPercent = switch (display.kind) {
           ReturnDisplayKind.annualised =>
-            xirrValue != null && xirrValue != 0 ? xirrValue * 100 : null,
+            xirrValue != null ? xirrValue * 100 : null,
           ReturnDisplayKind.shortHolding => stats.absoluteReturn,
           _ => null,
         };

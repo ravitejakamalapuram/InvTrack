@@ -65,9 +65,6 @@ class ReportPdfExporter {
     return localizedStrings?[key] ?? fallback;
   }
 
-  /// XIRR column text: "—" when undefined (null), never "0.00%"
-  String _xirrText(dynamic xirr) =>
-      xirr == null ? '—' : '${(xirr as num).toStringAsFixed(2)}%';
 
   /// Format amount with privacy masking support and locale-aware formatting
   String _formatAmount(double amount, String symbol, bool isPrivacyMode, String locale) {
@@ -267,7 +264,7 @@ class ReportPdfExporter {
         _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalInvested', 'Total Invested'), _formatAmount(report.totalInvested, symbol, isPrivacyMode, locale)),
         _buildKeyValueRow(_l10n(l10n, 'reportPdfTotalReturned', 'Total Returned'), _formatAmount(report.totalReturned, symbol, isPrivacyMode, locale)),
         _buildKeyValueRow(_l10n(l10n, 'reportPdfNetPosition', 'Net Position'), _formatAmount(report.netPosition, symbol, isPrivacyMode, locale)),
-        _buildKeyValueRow(_l10n(l10n, 'reportPdfXirr', 'XIRR'), _xirrText(report.xirr)),
+        _buildKeyValueRow(_l10n(l10n, 'reportPdfXirr', 'XIRR'), formatReportXirr(report.xirr)),
         pw.SizedBox(height: 20),
         pw.Text(_l10n(l10n, 'reportPdfMonthlyBreakdown', 'Monthly Breakdown'), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 10),
@@ -297,7 +294,7 @@ class ReportPdfExporter {
           data: report.topPerformers.map((p) => [
             p.investment.name,
             _formatAmount(p.returns, symbol, isPrivacyMode, locale),
-            _xirrText(p.xirr),
+            formatReportXirr(p.xirr),
           ]).toList(),
         ),
         pw.SizedBox(height: 20),
@@ -308,7 +305,7 @@ class ReportPdfExporter {
           data: report.bottomPerformers.map((p) => [
             p.investment.name,
             _formatAmount(p.returns, symbol, isPrivacyMode, locale),
-            _xirrText(p.xirr),
+            formatReportXirr(p.xirr),
           ]).toList(),
         ),
       ],

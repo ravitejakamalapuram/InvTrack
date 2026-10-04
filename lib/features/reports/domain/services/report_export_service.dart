@@ -120,3 +120,8 @@ class ExportResult {
 
   String get fileSizeKB => (fileSizeBytes / 1024).toStringAsFixed(1);
 }
+
+/// XIRR column text for exports: [xirr] is a decimal rate (0.15 is 15%).
+/// "—" when undefined (null); a break-even XIRR is "0.00%".
+String formatReportXirr(num? xirr) =>
+    xirr == null ? '—' : '${(xirr * 100).toStringAsFixed(2)}%';

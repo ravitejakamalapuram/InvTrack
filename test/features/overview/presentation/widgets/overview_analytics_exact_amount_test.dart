@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
@@ -114,5 +115,36 @@ void main() {
     expect(find.text(r'-$5,500.00'), findsOneWidget);
     expect(find.textContaining('--'), findsNothing);
     expect(find.textContaining('₹'), findsNothing);
+  });
+
+  testWidgets('Recently Closed: a break-even XIRR reads 0.0% IRR; an '
+      'undefined one shows no IRR', (tester) async {
+    InvestmentWithStats closed(String id, double? xirr) => InvestmentWithStats(
+      investment: InvestmentEntity(
+        id: id,
+        name: 'Closed $id',
+        type: InvestmentType.stocks,
+        status: InvestmentStatus.closed,
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2026, 1, 1),
+      ),
+      stats: InvestmentStats(
+        totalInvested: 10000,
+        totalReturned: 10000,
+        netCashFlow: 0,
+        absoluteReturn: 0,
+        moic: 1,
+        xirr: xirr,
+        xirrMethod: xirr == null ? XirrMethod.undefined : XirrMethod.exact,
+        cashFlowCount: 2,
+      ),
+    );
+    await _pump(tester, RecentlyClosedCard(currencyFormat: usdFormat), [
+      recentlyClosedInvestmentsProvider.overrideWithValue(
+        AsyncValue.data([closed('even', 0), closed('unknown', null)]),
+      ),
+    ]);
+
+    expect(find.text('0.0% IRR'), findsOneWidget);
   });
 }
