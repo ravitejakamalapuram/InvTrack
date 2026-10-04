@@ -63,6 +63,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             globalStats: global,
             openStats: open,
             closedStats: global,
+            closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
           ),
@@ -70,6 +71,7 @@ class HeroCardWithToggle extends ConsumerWidget {
             globalStats: global,
             openStats: open,
             closedStats: global,
+            closedStatsReady: false,
             currencyFormat: currencyFormat,
             showRealizedOnly: showRealizedOnly,
           ),
@@ -94,6 +96,10 @@ class HeroCardContent extends ConsumerWidget {
   /// terminal value yet, which decides whether returns can be shown.
   final InvestmentStats openStats;
   final InvestmentStats closedStats;
+
+  /// False while [closedStats] is a stand-in (still loading or failed), so
+  /// no other figure is shown as the realised XIRR.
+  final bool closedStatsReady;
   final NumberFormat currencyFormat;
   final bool showRealizedOnly;
 
@@ -102,6 +108,7 @@ class HeroCardContent extends ConsumerWidget {
     required this.globalStats,
     required this.openStats,
     required this.closedStats,
+    this.closedStatsReady = true,
     required this.currencyFormat,
     required this.showRealizedOnly,
   });
@@ -324,7 +331,9 @@ class HeroCardContent extends ConsumerWidget {
   ) {
     final isPrivacyMode = ref.watch(privacyModeProvider);
     final showRealised =
-        display.kind == ReturnDisplayKind.annualised && display.isEstimate;
+        closedStatsReady &&
+        display.kind == ReturnDisplayKind.annualised &&
+        display.isEstimate;
 
     // A Wrap, not a Row with a Spacer: with Realised and Expected XIRR side
     // by side the figures move to their own line on narrow phones.

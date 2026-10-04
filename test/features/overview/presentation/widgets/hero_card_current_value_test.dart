@@ -69,7 +69,11 @@ final _closed = InvestmentStats(
   lastCashFlowDate: DateTime(2025, 1, 1),
 );
 
-Future<void> _pump(WidgetTester tester, {bool privacy = false}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  bool privacy = false,
+  Widget? card,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -80,19 +84,29 @@ Future<void> _pump(WidgetTester tester, {bool privacy = false}) async {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: HeroCardContent(
-            globalStats: _global,
-            openStats: _open,
-            closedStats: _closed,
-            currencyFormat: _inr,
-            showRealizedOnly: false,
-          ),
+          body:
+              card ??
+              HeroCardContent(
+                globalStats: _global,
+                openStats: _open,
+                closedStats: _closed,
+                currencyFormat: _inr,
+                showRealizedOnly: false,
+              ),
         ),
       ),
     ),
   );
   await tester.pumpAndSettle();
 }
+
+Widget _toggleCard(AsyncValue<InvestmentStats> closed) => HeroCardWithToggle(
+  globalStats: AsyncData(_global),
+  openStats: AsyncData(_open),
+  closedStats: closed,
+  currencyFormat: _inr,
+  errorBuilder: (e) => Text(e),
+);
 
 void main() {
   testWidgets('shows Expected and Realised XIRR side by side', (tester) async {
@@ -126,5 +140,36 @@ void main() {
     expect(find.text('Realised XIRR'), findsOneWidget);
     expect(find.text('8.7%'), findsNothing);
     expect(find.text('12.0%'), findsNothing);
+  });
+
+  // The expected XIRR must never pass as the realised one.
+  testWidgets('no Realised XIRR while closed stats load', (tester) async {
+    await _pump(
+      tester,
+      card: _toggleCard(const AsyncLoading<InvestmentStats>()),
+    );
+
+    expect(find.text('Expected XIRR'), findsOneWidget);
+    expect(find.text('8.7%'), findsOneWidget);
+    expect(find.text('Realised XIRR'), findsNothing);
+  });
+
+  testWidgets('no Realised XIRR when closed stats fail', (tester) async {
+    await _pump(
+      tester,
+      card: _toggleCard(
+        AsyncError<InvestmentStats>(Exception('x'), StackTrace.empty),
+      ),
+    );
+
+    expect(find.text('Expected XIRR'), findsOneWidget);
+    expect(find.text('Realised XIRR'), findsNothing);
+  });
+
+  testWidgets('Realised XIRR once closed stats load', (tester) async {
+    await _pump(tester, card: _toggleCard(AsyncData(_closed)));
+
+    expect(find.text('Realised XIRR'), findsOneWidget);
+    expect(find.text('12.0%'), findsOneWidget);
   });
 }

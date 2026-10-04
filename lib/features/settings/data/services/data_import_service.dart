@@ -574,6 +574,8 @@ class DataImportService {
       return const {};
     }
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final result = <(bool, String), _ImportedValuation>{};
     for (var i = 1; i < rows.length; i++) {
       final row = rows[i];
@@ -588,6 +590,12 @@ class DataImportService {
           !value.isFinite ||
           value < 0 ||
           parsedDate == null ||
+          // A value cannot be dated after today (as in setCurrentValue).
+          DateTime(
+            parsedDate.year,
+            parsedDate.month,
+            parsedDate.day,
+          ).isAfter(today) ||
           currency.isEmpty) {
         warnings.add('Current value of "$name" not imported: invalid row');
         continue;

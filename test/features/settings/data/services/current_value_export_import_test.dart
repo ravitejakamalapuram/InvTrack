@@ -188,4 +188,42 @@ void main() {
     expect(sgb.currentValue, isNull);
     expect(result.warnings, isNotEmpty);
   });
+
+  test(
+    'a future-dated value is skipped with a warning, like in the app',
+    () async {
+      final zip = Archive();
+      void add(String name, String content) {
+        final data = utf8.encode(content);
+        zip.addFile(ArchiveFile(name, data.length, data));
+      }
+
+      add('metadata.json', jsonEncode({'version': '1.0', 'documents': []}));
+      add(
+        'cashflows.csv',
+        'Date,Investment Name,Type,Amount,Currency,Notes,Investment Type,'
+            'Investment Status\n'
+            '2025-10-01,SGB 2031,INVEST,100000,INR,,gold,open\n',
+      );
+      add(
+        'valuations.csv',
+        'Investment Name,Archived,Date,Value,Currency\n'
+            'SGB 2031,false,2999-01-01,125000,INR\n',
+      );
+
+      final result = await importService.importFromZip(
+        Uint8List.fromList(ZipEncoder().encode(zip)!),
+        ImportStrategy.replace,
+        baseCurrency: 'INR',
+      );
+
+      final sgb = (await repo.getAllInvestments()).single;
+      expect(sgb.currentValue, isNull);
+      expect(sgb.currentValueDate, isNull);
+      expect(
+        result.warnings,
+        contains('Current value of "SGB 2031" not imported: invalid row'),
+      );
+    },
+  );
 }
