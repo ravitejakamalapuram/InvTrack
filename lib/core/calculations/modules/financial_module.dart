@@ -10,19 +10,16 @@ class FinancialCalculatorModule implements CalculationModule {
   @override
   String get name => 'Financial';
 
-  /// Calculates XIRR (Extended Internal Rate of Return) from dates and amounts.
-  double calculateXirr(List<DateTime> dates, List<double> amounts) {
-    return XirrSolver.calculateXirr(dates, amounts) ?? 0.0;
+  /// Calculates XIRR (Extended Internal Rate of Return) from dates and
+  /// amounts, or null when it is undefined.
+  double? calculateXirr(List<DateTime> dates, List<double> amounts) {
+    return XirrSolver.calculateXirr(dates, amounts);
   }
 
-  /// Calculates XIRR (Extended Internal Rate of Return) from a list of cash flows.
-  double calculateXirrFromCashFlows(List<ICashFlow> cashFlows) {
+  /// Calculates XIRR (Extended Internal Rate of Return) from a list of cash
+  /// flows, or null when it is undefined.
+  double? calculateXirrFromCashFlows(List<ICashFlow> cashFlows) {
     return FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
-  }
-
-  /// Calculates CAGR (Compound Annual Growth Rate).
-  double calculateCAGR(double startValue, double endValue, double years) {
-    return FinancialCalculator.calculateCAGR(startValue, endValue, years);
   }
 
   /// Calculates MOIC (Multiple on Invested Capital).
@@ -130,8 +127,6 @@ class FinancialCalculatorModule implements CalculationModule {
     final xirrResult = includeXirr
         ? XirrSolver.solve(xirrDates!, xirrAmounts!)
         : const XirrResult.undefined(XirrUndefinedReason.noSolution);
-    // Same number as XirrSolver.calculateXirr(...) ?? 0.0.
-    final xirr = xirrResult.value ?? 0.0;
 
     return InvestmentStats(
       totalInvested: totalInvested,
@@ -139,7 +134,8 @@ class FinancialCalculatorModule implements CalculationModule {
       netCashFlow: netCashFlow,
       absoluteReturn: absoluteReturn,
       moic: moic,
-      xirr: xirr,
+      // Null when undefined: callers must not count it as 0%.
+      xirr: xirrResult.value,
       xirrMethod: xirrResult.method,
       cashFlowCount: cashFlows.length,
       firstCashFlowDate: firstDate,
@@ -150,5 +146,30 @@ class FinancialCalculatorModule implements CalculationModule {
       currentValueRate: currentValue != null ? terminalValues.rate : null,
       missingValueCount: terminalValues.missingValueCount,
     );
+  }
+
+  /// Stats for each investment in [cashFlows], keyed by investment id.
+  ///
+  /// [cashFlows] and the flows of [terminalValues] (keyed by investment id)
+  /// must already be in one currency (the user's base currency); this is the
+  /// one place that groups a converted snapshot into per-investment stats,
+  /// so every screen shows the same numbers.
+  Map<String, InvestmentStats> calculateStatsByInvestment(
+    List<ICashFlow> cashFlows, {
+    bool includeXirr = true,
+    Map<String, TerminalValues> terminalValues = const {},
+  }) {
+    final grouped = <String, List<ICashFlow>>{};
+    for (final cf in cashFlows) {
+      (grouped[cf.investmentId] ??= []).add(cf);
+    }
+    return {
+      for (final entry in grouped.entries)
+        entry.key: calculateStats(
+          entry.value,
+          includeXirr: includeXirr,
+          terminalValues: terminalValues[entry.key] ?? TerminalValues.none,
+        ),
+    };
   }
 }

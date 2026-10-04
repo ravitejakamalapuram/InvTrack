@@ -228,16 +228,13 @@ class CurrentValueCalculator {
   }
 
   /// Terminal values of [investments] as of [asOf]. Closed investments and
-  /// investments without cash flows get none.
-  ///
-  /// Callers that add the values to cash flows without converting them pass
-  /// [sameCurrencyOnly]: a value whose currency is not the one currency of
-  /// its investment's cash flows then counts as missing (money rule 2).
+  /// investments without cash flows get none. [cashFlows] are unconverted;
+  /// callers convert the returned flows to the base currency before adding
+  /// them to converted cash flows (money rule 2).
   static TerminalValues terminalValues({
     required List<InvestmentEntity> investments,
     required List<CashFlowEntity> cashFlows,
     required DateTime asOf,
-    bool sameCurrencyOnly = false,
   }) {
     final byInvestment = <String, List<CashFlowEntity>>{};
     for (final cf in cashFlows) {
@@ -253,12 +250,6 @@ class CurrentValueCalculator {
       if (own == null || own.isEmpty || !investment.isOpen) continue;
 
       final valuation = valuationOf(investment, own, asOf: asOf);
-      if (valuation != null &&
-          sameCurrencyOnly &&
-          _sharedCurrency(own) != valuation.currency) {
-        missing++;
-        continue;
-      }
       if (valuation == null) {
         var net = 0.0;
         for (final cf in own) {

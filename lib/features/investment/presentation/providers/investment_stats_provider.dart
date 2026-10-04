@@ -1,20 +1,165 @@
 /// Stats calculation providers for investments.
 /// All stats derive from stream providers for automatic updates.
+///
+/// Every amount here is in the user's base currency: the active cash flows
+/// are converted once ([convertedCashFlowsSnapshotProvider]) and every map,
+/// card, sort and chart reads that one snapshot.
 library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 
 // Re-export stats entities
 export 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+
+// ============ CONVERTED SNAPSHOT ============
+
+/// The active cash flows, converted once to [baseCurrency].
+@immutable
+class ConvertedCashFlows {
+  /// The currency every amount in [cashFlows] is in.
+  final String baseCurrency;
+
+  /// [source] converted to [baseCurrency].
+  final List<CashFlowEntity> cashFlows;
+
+  /// The unconverted list this snapshot was built from.
+  final List<CashFlowEntity> source;
+
+  const ConvertedCashFlows({
+    required this.baseCurrency,
+    required this.cashFlows,
+    required this.source,
+  });
+}
+
+/// Converts the active cash flows to the base currency once per change.
+///
+/// This is the single snapshot every stats screen reads; never sum
+/// [validCashFlowsProvider] amounts directly. Flows in another currency fail
+/// visibly when no converter is available instead of being summed natively.
+final convertedCashFlowsSnapshotProvider = FutureProvider<ConvertedCashFlows>((
+  ref,
+) async {
+  final baseCurrency = ref.watch(currencyCodeProvider);
+  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+
+  if (cashFlowsAsync.hasError) {
+    Error.throwWithStackTrace(
+      cashFlowsAsync.error!,
+      cashFlowsAsync.stackTrace ?? StackTrace.current,
+    );
+  }
+  if (cashFlowsAsync.isLoading) {
+    return Completer<ConvertedCashFlows>().future;
+  }
+
+  final cashFlows = cashFlowsAsync.value ?? const <CashFlowEntity>[];
+  var needsConversion = false;
+  for (final cf in cashFlows) {
+    if (cf.currency != baseCurrency) {
+      needsConversion = true;
+      break;
+    }
+  }
+  if (!needsConversion) {
+    return ConvertedCashFlows(
+      baseCurrency: baseCurrency,
+      cashFlows: cashFlows,
+      source: cashFlows,
+    );
+  }
+
+  final engine = ref.watch(calculationEngineProvider);
+  if (!engine.currency.isAvailable) {
+    throw StateError('Currency conversion is unavailable');
+  }
+  final converted = await engine.currency.batchConvert(
+    cashFlows: cashFlows,
+    baseCurrency: baseCurrency,
+    fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+  );
+  requireBaseCurrency(converted, baseCurrency);
+  return ConvertedCashFlows(
+    baseCurrency: baseCurrency,
+    cashFlows: converted,
+    source: cashFlows,
+  );
+});
+
+/// Throws a [CurrencyConversionException] if any of [cashFlows] is still in
+/// a currency other than [baseCurrency].
+///
+/// [BatchCurrencyConverter] keeps a flow in its own currency when there is
+/// neither a rate nor a last-known rate (offline, first run, a new
+/// currency). Summing it would show a native amount under the base-currency
+/// symbol, so stats fail visibly instead.
+void requireBaseCurrency(List<CashFlowEntity> cashFlows, String baseCurrency) {
+  for (final cf in cashFlows) {
+    if (cf.currency != baseCurrency) {
+      throw CurrencyConversionException(
+        'No exchange rate for ${cf.currency} → $baseCurrency',
+      );
+    }
+  }
+}
+
+/// The active cash flows in the base currency, for synchronous stats.
+///
+/// Loading until a snapshot in the current base currency exists, so amounts
+/// are never shown under a symbol they were not converted to. While the
+/// latest change is being converted, the previous snapshot is kept, limited
+/// to investments that are still active, so lists do not flicker and nothing
+/// from a removed investment (or a previous account) is shown.
+final convertedCashFlowsProvider = Provider<AsyncValue<List<CashFlowEntity>>>((
+  ref,
+) {
+  final baseCurrency = ref.watch(currencyCodeProvider);
+  final sourceAsync = ref.watch(validCashFlowsProvider);
+  final snapshotAsync = ref.watch(convertedCashFlowsSnapshotProvider);
+
+  if (sourceAsync.hasError) {
+    return AsyncValue.error(
+      sourceAsync.error!,
+      sourceAsync.stackTrace ?? StackTrace.current,
+    );
+  }
+  if (snapshotAsync.hasError) {
+    return AsyncValue.error(
+      snapshotAsync.error!,
+      snapshotAsync.stackTrace ?? StackTrace.current,
+    );
+  }
+  final source = sourceAsync.value;
+  final snapshot = snapshotAsync.value;
+  if (source == null ||
+      snapshot == null ||
+      snapshot.baseCurrency != baseCurrency) {
+    return const AsyncValue.loading();
+  }
+  if (identical(snapshot.source, source)) {
+    return AsyncValue.data(snapshot.cashFlows);
+  }
+
+  final activeIds = <String>{for (final cf in source) cf.investmentId};
+  return AsyncValue.data([
+    for (final cf in snapshot.cashFlows)
+      if (activeIds.contains(cf.investmentId)) cf,
+  ]);
+});
 
 /// Today, date-only: the date estimated current values are valued at.
 final valuationDateProvider = Provider<DateTime>((ref) {
@@ -22,65 +167,149 @@ final valuationDateProvider = Provider<DateTime>((ref) {
   return DateTime(now.year, now.month, now.day);
 });
 
+/// A converted snapshot with the current values of its active investments.
+@immutable
+class ConvertedTerminalValues {
+  /// The snapshot [byInvestment] was worked out from. Read its cash flows
+  /// together with [byInvestment], never another snapshot's: a value must
+  /// not meet flows it was not built from.
+  final ConvertedCashFlows snapshot;
+
+  /// Terminal inflows by investment id, in the snapshot's base currency.
+  final Map<String, TerminalValues> byInvestment;
+
+  const ConvertedTerminalValues({
+    required this.snapshot,
+    required this.byInvestment,
+  });
+}
+
+/// The current values of the active investments as terminal inflows,
+/// converted to the base currency of the snapshot they come with (money
+/// rule 2).
+///
+/// They are worked out from the unconverted flows, since an estimate accrues
+/// on the principal in its own currency and a manual value is in the
+/// investment's currency, and then converted in one batch, like the flows.
+/// A value with no rate at all counts as missing.
+final convertedTerminalValuesProvider = FutureProvider<ConvertedTerminalValues>(
+  (ref) async {
+    final snapshot = await ref.watch(convertedCashFlowsSnapshotProvider.future);
+    // Valid cash flows exist only once the active investments have loaded.
+    final investments = ref.watch(activeInvestmentsProvider).value ?? const [];
+    final asOf = ref.watch(valuationDateProvider);
+
+    final flowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in snapshot.source) {
+      flowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
+    final values = <String, TerminalValues>{
+      for (final inv in investments)
+        if (flowsByInvestment[inv.id] case final flows?)
+          inv.id: CurrentValueCalculator.terminalValues(
+            investments: [inv],
+            cashFlows: flows,
+            asOf: asOf,
+          ),
+    };
+
+    final flows = [for (final value in values.values) ...value.flows];
+    // Like the snapshot, the converter is needed only when a value is in
+    // another currency.
+    final converted = flows.every((cf) => cf.currency == snapshot.baseCurrency)
+        ? flows
+        : await convertTerminalFlows(
+            ref.watch(calculationEngineProvider),
+            flows,
+            snapshot.baseCurrency,
+          );
+    final convertedByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in converted) {
+      convertedByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
+    return ConvertedTerminalValues(
+      snapshot: snapshot,
+      byInvestment: {
+        for (final MapEntry(:key, :value) in values.entries)
+          key: value.flows.isEmpty
+              ? value
+              : value.withConvertedFlows(
+                  convertedByInvestment[key] ?? const [],
+                ),
+      },
+    );
+  },
+);
+
+/// [flows] converted to [baseCurrency], leaving out any that have no rate
+/// at all: such a flow stays in its own currency, and adding it would show
+/// a native amount under the base-currency symbol.
+Future<List<CashFlowEntity>> convertTerminalFlows(
+  CalculationEngine engine,
+  List<CashFlowEntity> flows,
+  String baseCurrency,
+) async {
+  if (flows.every((cf) => cf.currency == baseCurrency)) return flows;
+  final converted = engine.currency.isAvailable
+      ? await engine.currency.batchConvert(
+          cashFlows: flows,
+          baseCurrency: baseCurrency,
+          fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
+        )
+      : flows;
+  return [
+    for (final cf in converted)
+      if (cf.currency == baseCurrency) cf,
+  ];
+}
+
 // ============ INDIVIDUAL INVESTMENT STATS ============
 
-/// Map of all active investment stats (basic only, no XIRR)
-/// Computed from a single stream to avoid N+1 stream problem.
+/// Map of all active investment stats (basic only, no XIRR), in the base
+/// currency. Computed from the converted snapshot to avoid the N+1 stream
+/// problem.
 final activeInvestmentBasicStatsMapProvider =
     Provider<AsyncValue<Map<String, InvestmentStats>>>((ref) {
       final investmentsAsync = ref.watch(activeInvestmentsProvider);
-      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-      // Wait for both to load
-      if (investmentsAsync.isLoading || cashFlowsAsync.isLoading) {
-        return const AsyncValue.loading();
-      }
+      // The flows and the current values come from one snapshot: while a
+      // newer one converts, the previous pair is kept rather than new flows
+      // shown with an old value.
+      final convertedAsync = ref.watch(convertedTerminalValuesProvider);
 
       if (investmentsAsync.hasError) {
         return AsyncValue.error(
-          investmentsAsync.error ?? Exception('Unknown error loading investments'),
+          investmentsAsync.error ??
+              Exception('Unknown error loading investments'),
           investmentsAsync.stackTrace ?? StackTrace.current,
         );
       }
-      if (cashFlowsAsync.hasError) {
+      if (convertedAsync.hasError) {
         return AsyncValue.error(
-          cashFlowsAsync.error ?? Exception('Unknown error loading cash flows'),
-          cashFlowsAsync.stackTrace ?? StackTrace.current,
+          convertedAsync.error!,
+          convertedAsync.stackTrace ?? StackTrace.current,
         );
+      }
+      if (!investmentsAsync.hasValue || !convertedAsync.hasValue) {
+        return const AsyncValue.loading();
+      }
+      final converted = convertedAsync.requireValue;
+      // Amounts are never shown under a symbol they were not converted to.
+      if (converted.snapshot.baseCurrency != ref.watch(currencyCodeProvider)) {
+        return const AsyncValue.loading();
       }
 
       final investments = investmentsAsync.value ?? [];
-      final cashFlows = cashFlowsAsync.value ?? [];
-
-      // Group cash flows by investment ID
-      final cashFlowsMap = <String, List<CashFlowEntity>>{};
-      for (final cf in cashFlows) {
-        cashFlowsMap.putIfAbsent(cf.investmentId, () => []).add(cf);
-      }
-
-      // Calculate stats for each investment
-      final asOf = ref.watch(valuationDateProvider);
-      final statsMap = <String, InvestmentStats>{};
-      for (final inv in investments) {
-        final flows = cashFlowsMap[inv.id] ?? [];
-        if (flows.isEmpty) {
-          statsMap[inv.id] = InvestmentStats.empty();
-        } else {
-          // Optimization: Skip XIRR calculation
-          statsMap[inv.id] = calculateStats(
-            flows,
+      final byInvestment = FinancialCalculatorModule()
+          .calculateStatsByInvestment(
+            converted.snapshot.cashFlows,
             includeXirr: false,
-            terminalValues: CurrentValueCalculator.terminalValues(
-              investments: [inv],
-              cashFlows: flows,
-              asOf: asOf,
-              sameCurrencyOnly: true,
-            ),
+            terminalValues: converted.byInvestment,
           );
-        }
-      }
 
-      return AsyncValue.data(statsMap);
+      return AsyncValue.data({
+        for (final inv in investments)
+          inv.id: byInvestment[inv.id] ?? InvestmentStats.empty(),
+      });
     });
 
 /// Top-level function for calculating XIRR for multiple investments in a single isolate.
@@ -99,41 +328,26 @@ Map<String, XirrResult> _calculateAllXirrs(List<CashFlowEntity> allFlows) {
   return results;
 }
 
-/// Map of all active investment XIRRs with how each was obtained, computed in
-/// a single isolate batch. This prevents N+1 isolate overhead when rendering
-/// lists. Open investments include their current value as the terminal
-/// inflow.
+/// Map of all active investment XIRRs with how each was obtained, computed
+/// from the converted snapshot in a single isolate batch. This prevents N+1
+/// isolate overhead when rendering lists. Open investments include their
+/// converted current value as the terminal inflow. An undefined XIRR stays
+/// undefined: never read it as 0%.
 final activeInvestmentXirrResultMapProvider =
     FutureProvider<Map<String, XirrResult>>((ref) async {
-      // Wait for valid cash flows to be available
-      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-      if (cashFlowsAsync.isLoading) {
-        return Completer<Map<String, XirrResult>>().future;
-      }
-
-      if (cashFlowsAsync.hasError) {
-        throw cashFlowsAsync.error ??
-            Exception('Unknown error loading cash flows for XIRR calculation');
-      }
-
-      final cashFlows = cashFlowsAsync.value ?? [];
+      final converted = await ref.watch(convertedTerminalValuesProvider.future);
+      final cashFlows = converted.snapshot.cashFlows;
 
       if (cashFlows.isEmpty) {
         return {};
       }
 
       // Each terminal value carries its investment's id, so it joins that
-      // investment's group in _calculateAllXirrs. Valid cash flows exist
-      // only once the active investments have loaded. Nothing here is
-      // converted, so a value in another currency is left out.
-      final terminalValues = CurrentValueCalculator.terminalValues(
-        investments: ref.watch(activeInvestmentsProvider).value ?? const [],
-        cashFlows: cashFlows,
-        asOf: ref.watch(valuationDateProvider),
-        sameCurrencyOnly: true,
-      );
-      final flows = [...cashFlows, ...terminalValues.flows];
+      // investment's group in _calculateAllXirrs.
+      final flows = [
+        ...cashFlows,
+        for (final value in converted.byInvestment.values) ...value.flows,
+      ];
 
       // Track performance of bulk XIRR calculation
       return ref
@@ -148,77 +362,6 @@ final activeInvestmentXirrResultMapProvider =
           );
     });
 
-/// Map of all active investment XIRRs as bare numbers (0.0 when undefined),
-/// for callers that do not label approximate values.
-final activeInvestmentXirrMapProvider = FutureProvider<Map<String, double>>((
-  ref,
-) async {
-  final results = await ref.watch(activeInvestmentXirrResultMapProvider.future);
-  return {
-    for (final entry in results.entries) entry.key: entry.value.value ?? 0.0,
-  };
-});
-
-/// Calculate stats for a single active investment (reactive - watches the stream)
-///
-/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
-/// Use [multiCurrencyInvestmentStatsProvider] instead for Rule 21.3 compliance.
-///
-/// This provider sums raw amounts from different currencies without conversion,
-/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
-@Deprecated(
-  'Use multiCurrencyInvestmentStatsProvider instead. '
-  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
-)
-final investmentStatsProvider =
-    Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
-      // Use filtered stream to avoid opening per-investment stream
-      final cashFlowsAsync = ref.watch(
-        validCashFlowsProvider.select((async) {
-          return async.whenData((allFlows) {
-            // Optimization: Replace .where().toList() with standard loop
-            final filteredFlows = <CashFlowEntity>[];
-            for (final cf in allFlows) {
-              if (cf.investmentId == investmentId) {
-                filteredFlows.add(cf);
-              }
-            }
-            return filteredFlows;
-          });
-        }),
-      );
-
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          if (cashFlows.isEmpty) {
-            return AsyncValue.data(InvestmentStats.empty());
-          }
-          return AsyncValue.data(calculateStats(cashFlows));
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    });
-
-/// Calculate stats for a single archived investment (reactive - watches the stream)
-final archivedInvestmentStatsProvider =
-    Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
-      final cashFlowsAsync = ref.watch(
-        archivedCashFlowsByInvestmentProvider(investmentId),
-      );
-
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          if (cashFlows.isEmpty) {
-            return AsyncValue.data(InvestmentStats.empty());
-          }
-          return AsyncValue.data(calculateStats(cashFlows));
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    });
-
 /// LIGHTWEIGHT stats for sorting active investments (skips expensive XIRR calculation).
 /// Use this provider when sorting by date, name, or simple sums.
 final investmentBasicStatsProvider =
@@ -230,26 +373,6 @@ final investmentBasicStatsProvider =
             return map[investmentId] ?? InvestmentStats.empty();
           });
         }),
-      );
-    });
-
-/// LIGHTWEIGHT stats for sorting archived investments (skips expensive XIRR calculation).
-final archivedInvestmentBasicStatsProvider =
-    Provider.family<AsyncValue<InvestmentStats>, String>((ref, investmentId) {
-      final cashFlowsAsync = ref.watch(
-        archivedCashFlowsByInvestmentProvider(investmentId),
-      );
-
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          if (cashFlows.isEmpty) {
-            return AsyncValue.data(InvestmentStats.empty());
-          }
-          // Optimization: Skip XIRR calculation
-          return AsyncValue.data(calculateStats(cashFlows, includeXirr: false));
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
       );
     });
 
@@ -270,174 +393,9 @@ final investmentXirrProvider = FutureProvider.family<XirrResult, String>((
       const XirrResult.undefined(XirrUndefinedReason.insufficientFlows);
 });
 
-/// XIRR ONLY provider for archived investments.
-/// Offloads calculation to a background isolate using [compute].
-final archivedInvestmentXirrProvider =
-    FutureProvider.family<XirrResult, String>((ref, investmentId) async {
-      final cashFlows = await ref.watch(
-        archivedCashFlowsByInvestmentProvider(
-          investmentId,
-        ).selectAsync((data) => data),
-      );
-
-      if (cashFlows.isEmpty) {
-        return const XirrResult.undefined(
-          XirrUndefinedReason.insufficientFlows,
-        );
-      }
-
-      // Track performance of XIRR calculation for archived investments
-      return ref
-          .read(performanceServiceProvider)
-          .trackOperation(
-            'xirr_calculation_archived',
-            () =>
-                compute(FinancialCalculator.solveXirrFromCashFlows, cashFlows),
-            metrics: {'cash_flow_count': cashFlows.length},
-          );
-    });
-
-// ============ AGGREGATE STATS PROVIDERS ============
-
-/// Global stats across all investments (derived from streams - auto-updates)
-///
-/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
-/// Use [multiCurrencyGlobalStatsProvider] instead for Rule 21.3 compliance.
-///
-/// This provider sums raw amounts from different currencies without conversion,
-/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
-@Deprecated(
-  'Use multiCurrencyGlobalStatsProvider instead. '
-  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
-)
-final globalStatsProvider = Provider<AsyncValue<InvestmentStats>>((ref) {
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  return cashFlowsAsync.when(
-    data: (cashFlows) {
-      if (cashFlows.isEmpty) {
-        return AsyncValue.data(InvestmentStats.empty());
-      }
-      return AsyncValue.data(calculateStats(cashFlows));
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
-
-/// Stats for closed investments only (derived from streams - auto-updates)
-/// Only includes non-archived investments.
-///
-/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
-/// Use [multiCurrencyClosedStatsProvider] instead for Rule 21.3 compliance.
-///
-/// This provider sums raw amounts from different currencies without conversion,
-/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
-@Deprecated(
-  'Use multiCurrencyClosedStatsProvider instead. '
-  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
-)
-final closedInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
-  ref,
-) {
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  return investmentsAsync.when(
-    data: (investments) {
-      // Optimization: Single pass loop replacing .where, .map, and .toSet
-      final closedIds = <String>{};
-      for (final i in investments) {
-        if (i.status == InvestmentStatus.closed) {
-          closedIds.add(i.id);
-        }
-      }
-
-      if (closedIds.isEmpty) {
-        return AsyncValue.data(InvestmentStats.empty());
-      }
-
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          // Optimization: Replace .where().toList() with standard loop
-          final closedCashFlows = <CashFlowEntity>[];
-          for (final cf in cashFlows) {
-            if (closedIds.contains(cf.investmentId)) {
-              closedCashFlows.add(cf);
-            }
-          }
-          if (closedCashFlows.isEmpty) {
-            return AsyncValue.data(InvestmentStats.empty());
-          }
-          return AsyncValue.data(calculateStats(closedCashFlows));
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
-
-/// Stats for open investments only (derived from streams - auto-updates)
-/// Only includes non-archived investments.
-///
-/// ⚠️ DEPRECATED: This provider does NOT convert multi-currency amounts to base currency.
-/// Use [multiCurrencyOpenStatsProvider] instead for Rule 21.3 compliance.
-///
-/// This provider sums raw amounts from different currencies without conversion,
-/// which violates Rule 21.3 (all summary stats MUST be converted to base currency).
-@Deprecated(
-  'Use multiCurrencyOpenStatsProvider instead. '
-  'This provider does not convert multi-currency amounts to base currency (Rule 21.3 violation).',
-)
-final openInvestmentsStatsProvider = Provider<AsyncValue<InvestmentStats>>((
-  ref,
-) {
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  return investmentsAsync.when(
-    data: (investments) {
-      // Optimization: Single pass loop replacing .where, .map, and .toSet
-      final openIds = <String>{};
-      for (final i in investments) {
-        if (i.status == InvestmentStatus.open) {
-          openIds.add(i.id);
-        }
-      }
-
-      if (openIds.isEmpty) {
-        return AsyncValue.data(InvestmentStats.empty());
-      }
-
-      return cashFlowsAsync.when(
-        data: (cashFlows) {
-          // Optimization: Replace .where().toList() with standard loop
-          final openCashFlows = <CashFlowEntity>[];
-          for (final cf in cashFlows) {
-            if (openIds.contains(cf.investmentId)) {
-              openCashFlows.add(cf);
-            }
-          }
-          if (openCashFlows.isEmpty) {
-            return AsyncValue.data(InvestmentStats.empty());
-          }
-          return AsyncValue.data(calculateStats(openCashFlows));
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
-
 // ============ STATS CALCULATION ============
 
-/// Calculate stats from a list of cash flows.
+/// Calculate stats from a list of cash flows already in one currency.
 /// Delegates to the unified [FinancialCalculatorModule].
 InvestmentStats calculateStats(
   List<CashFlowEntity> cashFlows, {

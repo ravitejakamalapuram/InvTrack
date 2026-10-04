@@ -394,6 +394,7 @@ class YoYComparisonCard extends ConsumerWidget {
             : CompactAmountText(
                 amount: net,
                 compactText: currencyFormat.formatCompact(net.abs()),
+                currencySymbol: currencyFormat.currencySymbol,
                 prefix: isPositive ? '+' : '-',
                 style: valueStyle,
               ),
@@ -494,6 +495,8 @@ class RecentlyClosedCard extends ConsumerWidget {
     bool isPrivacyMode,
   ) {
     final isProfit = item.stats.netCashFlow >= 0;
+    // Undefined (null) XIRR shows no IRR line, never "0.0% IRR".
+    final xirr = item.stats.xirr;
     final valueStyle = TextStyle(
       color: isProfit ? AppColors.successLight : AppColors.errorLight,
       fontWeight: FontWeight.w600,
@@ -537,15 +540,16 @@ class RecentlyClosedCard extends ConsumerWidget {
                       compactText: currencyFormat.formatCompact(
                         item.stats.netCashFlow.abs(),
                       ),
+                      currencySymbol: currencyFormat.currencySymbol,
                       prefix: isProfit ? '+' : '-',
                       style: valueStyle,
                     ),
-              if (item.stats.xirr != 0 && !item.stats.xirr.isNaN)
+              if (xirr != null && xirr.isFinite)
                 AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: isPrivacyMode ? 0.0 : 1.0,
                   child: Text(
-                    '${(item.stats.xirr * 100).toStringAsFixed(1)}% IRR',
+                    '${(xirr * 100).toStringAsFixed(1)}% IRR',
                     style: TextStyle(
                       fontSize: 10,
                       color: isDark ? Colors.white54 : Colors.grey,

@@ -34,12 +34,6 @@ void main() {
   });
 
   group('FinancialCalculator', () {
-    test('calculateCAGR', () {
-      // 100 to 200 in 10 years => 7.18%
-      final cagr = FinancialCalculator.calculateCAGR(100, 200, 10);
-      expect(cagr, closeTo(0.0717, 0.0001));
-    });
-
     test('calculateMOIC', () {
       // 100 invested, 200 current => 2.0x
       final moic = FinancialCalculator.calculateMOIC(100, 200);

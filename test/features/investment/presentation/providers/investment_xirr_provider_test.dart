@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
@@ -78,6 +79,8 @@ void main() {
             AsyncValue.data([...cashFlows1, ...cashFlows2, ...cashFlows4]),
           ),
           isAuthenticatedProvider.overrideWith((ref) => true),
+          // The flows are in USD (the entity default): no conversion needed.
+          currencyCodeProvider.overrideWith((ref) => 'USD'),
         ],
       );
     });
@@ -119,11 +122,16 @@ void main() {
       expect(xirr4.value, closeTo(10.126388779444367, 1e-6));
     });
 
-    test('active XIRR number map keeps the bare values', () async {
-      final map = await container.read(activeInvestmentXirrMapProvider.future);
+    // A71: the bare-number map (undefined read as 0.0) is gone; callers read
+    // the result map, which keeps undefined values undefined.
+    test('active XIRR result map keeps the values and methods', () async {
+      final map = await container.read(
+        activeInvestmentXirrResultMapProvider.future,
+      );
 
-      expect(map['inv1'], closeTo(0.5, 0.001));
-      expect(map['inv4'], closeTo(10.126388779444367, 1e-6));
+      expect(map['inv1']!.value, closeTo(0.5, 0.001));
+      expect(map['inv4']!.value, closeTo(10.126388779444367, 1e-6));
+      expect(map['inv4']!.method, XirrMethod.approximate);
     });
 
     test('is undefined for investment with no cash flows', () async {

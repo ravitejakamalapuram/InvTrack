@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -31,7 +32,7 @@ class WeeklySummaryService {
     required DateTime periodEnd,
     required List<CashFlowEntity> allCashFlows,
     required List<InvestmentEntity> allInvestments,
-    required Map<String, double> xirrMap,
+    required Map<String, XirrResult> xirrMap,
   }) async {
     // Check cache first
     final cached = cacheService.get<WeeklySummary>(
@@ -108,7 +109,9 @@ class WeeklySummaryService {
           upcomingMaturities.add(inv);
         }
 
-        final xirr = xirrMap[inv.id];
+        // An undefined XIRR (no current value yet) is not a 0% return and
+        // never makes an investment the top performer.
+        final xirr = xirrMap[inv.id]?.value;
         if (xirr != null && (topXirr == null || xirr > topXirr)) {
           topXirr = xirr;
           topPerformer = inv;

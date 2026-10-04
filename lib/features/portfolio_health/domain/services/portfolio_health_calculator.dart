@@ -99,14 +99,17 @@ class PortfolioHealthCalculator {
 
     for (final investment in investments) {
       final stat = stats[investment.id];
-      // An open investment with no current value has no meaningful XIRR
-      // yet (money rule 4); leave it out rather than count a fake loss.
+      // An undefined XIRR, or an open investment with no current value
+      // (money rule 4), is left out of the average: never counted as 0% or
+      // as a fake loss.
+      final xirr = stat?.xirr;
       if (stat != null &&
           stat.totalInvested > 0 &&
-          stat.xirr.isFinite &&
+          xirr != null &&
+          xirr.isFinite &&
           !stat.needsCurrentValue) {
         totalInvested += stat.totalInvested;
-        weightedXirr += stat.xirr * stat.totalInvested;
+        weightedXirr += xirr * stat.totalInvested;
       }
     }
 

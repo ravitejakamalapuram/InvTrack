@@ -14,7 +14,7 @@ final portfolioHealthReportProvider =
   // Get investments, stats, and cash flows
   final investmentsAsync = ref.watch(activeInvestmentsProvider);
   final statsMapAsync = ref.watch(activeInvestmentBasicStatsMapProvider);
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+  final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
 
   // Wait for all data
   final investments = await investmentsAsync.when(

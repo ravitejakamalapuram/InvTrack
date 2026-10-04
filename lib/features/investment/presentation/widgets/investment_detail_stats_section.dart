@@ -48,9 +48,10 @@ class InvestmentDetailStatsSection extends StatelessWidget {
     final hasReturnFigure =
         display.kind == ReturnDisplayKind.annualised ||
         display.kind == ReturnDisplayKind.shortHolding;
+    final xirr = stats.xirr;
     final returnIsPositive = display.kind == ReturnDisplayKind.shortHolding
         ? stats.absoluteReturn >= 0
-        : stats.xirr >= 0;
+        : xirr != null && xirr >= 0;
     final projection =
         display.kind == ReturnDisplayKind.awaitingFirstPayout ||
             (investment.isOpen &&

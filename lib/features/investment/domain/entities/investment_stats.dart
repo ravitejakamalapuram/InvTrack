@@ -19,11 +19,14 @@ class InvestmentStats {
   /// Multiple on Invested Capital
   final double moic;
 
-  /// Annualized return (XIRR). 0.0 when [xirrMethod] is undefined.
-  final double xirr;
+  /// Annualized return (XIRR), or null when [xirrMethod] is undefined: an
+  /// open investment without a current value, too few flows or no solution.
+  /// Never treat null as 0%: leave it out of sorts, averages and scores, and
+  /// show "—".
+  final double? xirr;
 
   /// How [xirr] was obtained. Show "approx." for approximate values and "—"
-  /// for undefined ones instead of the 0.0 placeholder.
+  /// for undefined ones.
   final XirrMethod xirrMethod;
 
   /// Number of cash flow transactions
@@ -73,7 +76,10 @@ class InvestmentStats {
     this.currentValueIsEstimate = false,
     this.currentValueRate,
     this.missingValueCount = 0,
-  });
+  }) : assert(
+         xirr != null || xirrMethod == XirrMethod.undefined,
+         'A missing XIRR must be marked undefined',
+       );
 
   /// Creates an empty stats object with all values set to zero
   factory InvestmentStats.empty() => const InvestmentStats(
@@ -82,13 +88,24 @@ class InvestmentStats {
     netCashFlow: 0,
     absoluteReturn: 0,
     moic: 0,
-    xirr: 0,
+    xirr: null,
     xirrMethod: XirrMethod.undefined,
     cashFlowCount: 0,
   );
 
   /// Returns true if there is at least one cash flow
   bool get hasData => cashFlowCount > 0;
+
+  /// [xirr] and [xirrMethod] as an [XirrResult].
+  XirrResult get xirrResult {
+    final rate = xirr;
+    if (rate == null || xirrMethod == XirrMethod.undefined) {
+      return const XirrResult.undefined(XirrUndefinedReason.noSolution);
+    }
+    return xirrMethod == XirrMethod.approximate
+        ? XirrResult.approximate(rate)
+        : XirrResult.exact(rate);
+  }
 
   /// True when an open investment in these stats needs a current value
   /// before its returns can be shown.

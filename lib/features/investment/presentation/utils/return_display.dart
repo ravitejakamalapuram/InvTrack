@@ -42,8 +42,8 @@ class ReturnDisplay {
 
   final ReturnDisplayKind kind;
 
-  /// XIRR as a decimal; only meaningful when [xirrMethod] is not undefined.
-  final double xirr;
+  /// XIRR as a decimal, or null when [xirrMethod] is undefined.
+  final double? xirr;
   final XirrMethod xirrMethod;
 
   /// Absolute return in percent (2.0 = +2%).
@@ -104,7 +104,9 @@ class ReturnDisplay {
         days != null &&
         days < shortHoldingDays) {
       kind = ReturnDisplayKind.shortHolding;
-    } else if (method == XirrMethod.undefined || !value.isFinite) {
+    } else if (method == XirrMethod.undefined ||
+        value == null ||
+        !value.isFinite) {
       kind = ReturnDisplayKind.undefined;
     } else {
       kind = ReturnDisplayKind.annualised;
@@ -173,7 +175,7 @@ class ReturnDisplay {
           holdingDays!,
         );
       case ReturnDisplayKind.annualised:
-        return formatXirrText(xirr, xirrMethod, l10n, showSign: showSign);
+        return formatXirrText(xirr!, xirrMethod, l10n, showSign: showSign);
     }
   }
 
@@ -184,8 +186,13 @@ class ReturnDisplay {
       case ReturnDisplayKind.awaitingCurrentValue:
         return l10n.returnNeedsValueHint;
       case ReturnDisplayKind.shortHolding:
-        if (xirrMethod == XirrMethod.undefined || !xirr.isFinite) return null;
-        return l10n.returnAnnualised(formatXirrText(xirr, xirrMethod, l10n));
+        final rate = xirr;
+        if (xirrMethod == XirrMethod.undefined ||
+            rate == null ||
+            !rate.isFinite) {
+          return null;
+        }
+        return l10n.returnAnnualised(formatXirrText(rate, xirrMethod, l10n));
       case ReturnDisplayKind.annualised:
         if (!isEstimate) return null;
         final rate = estimateRate;
