@@ -30,6 +30,8 @@ Future<(_MockMonitor, _MockSync)> _pump(
   final sync = _MockSync();
   when(monitor.startMonitoring).thenAnswer((_) async {});
   when(sync.startSync).thenAnswer((_) async {});
+  when(monitor.stopMonitoring).thenReturn(null);
+  when(sync.stopSync).thenReturn(null);
 
   await tester.pumpWidget(
     ProviderScope(
@@ -81,5 +83,28 @@ void main() {
 
     verify(monitor.startMonitoring).called(1);
     verify(sync.startSync).called(1);
+  });
+
+  testWidgets('turning the flag off stops the running services once', (
+    tester,
+  ) async {
+    final (monitor, sync) = await _pump(
+      tester,
+      overridesAllowed: true,
+      stored: {'feature_flag_income_guardian': true},
+    );
+    verifyNever(monitor.stopMonitoring);
+    verifyNever(sync.stopSync);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(IncomeGuardianServiceInitializer)),
+    );
+    await container
+        .read(featureFlagsProvider.notifier)
+        .setEnabled(FeatureFlag.incomeGuardian, false);
+    await tester.pump();
+
+    verify(monitor.stopMonitoring).called(1);
+    verify(sync.stopSync).called(1);
   });
 }
