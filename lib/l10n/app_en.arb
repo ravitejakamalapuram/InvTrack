@@ -1531,6 +1531,62 @@
     "description": "Sample data description"
   },
 
+  "xirrDemoTitle": "See Your Real Returns",
+  "@xirrDemoTitle": {
+    "description": "Title of the advertised-vs-real XIRR demo on the empty overview"
+  },
+
+  "xirrDemoSubtitle": "P2P platforms advertise {rate}. What did you really earn?",
+  "@xirrDemoSubtitle": {
+    "description": "Subtitle of the XIRR demo: the rate a P2P lending platform advertises",
+    "placeholders": {
+      "rate": {
+        "type": "String",
+        "example": "12%"
+      }
+    }
+  },
+
+  "xirrDemoAdvertised": "Advertised",
+  "@xirrDemoAdvertised": {
+    "description": "XIRR demo label under the advertised rate"
+  },
+
+  "xirrDemoYourXirr": "Your XIRR",
+  "@xirrDemoYourXirr": {
+    "description": "XIRR demo label under the real return (XIRR)"
+  },
+
+  "xirrDemoCaption": "Platform fees and one defaulted loan cut {advertised} to {real} a year.",
+  "@xirrDemoCaption": {
+    "description": "XIRR demo caption explaining why the real P2P return is lower than advertised",
+    "placeholders": {
+      "advertised": {
+        "type": "String",
+        "example": "12%"
+      },
+      "real": {
+        "type": "String",
+        "example": "6.3%"
+      }
+    }
+  },
+
+  "xirrDemoSemantics": "Advertised {advertised}. Your XIRR after fees and one defaulted loan: {real}.",
+  "@xirrDemoSemantics": {
+    "description": "Screen-reader label for the XIRR demo comparison",
+    "placeholders": {
+      "advertised": {
+        "type": "String",
+        "example": "12.0%"
+      },
+      "real": {
+        "type": "String",
+        "example": "6.3%"
+      }
+    }
+  },
+
   "tryIt": "Try It",
   "@tryIt": {
     "description": "Try it button label"
