@@ -81,11 +81,14 @@ class NotificationNavigator {
   /// someone else is signed in by now.
   Future<bool> replayAfterUnlock() async {
     final payload = _pendingPayload;
-    final userId = _pendingUserId;
+    final pendingUserId = _pendingUserId;
     _pendingPayload = null;
     _pendingUserId = null;
+    // A tap made before sign-in resolved has no user; it is for whoever is
+    // signed in now.
+    final userId = _userId;
     if (payload == null || userId == null) return false;
-    if (_userId != userId) return false;
+    if (pendingUserId != null && pendingUserId != userId) return false;
     // Let the router built for the unlocked state take over first.
     await SchedulerBinding.instance.endOfFrame;
     // Someone else may have signed in during that frame.

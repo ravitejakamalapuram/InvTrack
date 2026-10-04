@@ -240,6 +240,31 @@ void main() {
     expect(location(), '/');
   });
 
+  // A tap that arrives before sign-in has resolved is kept without a user;
+  // it opens for whoever is signed in at unlock.
+  testWidgets('a tap made while locked before sign-in resolved opens after '
+      'unlock once a user is signed in', (tester) async {
+    await pumpApp(tester);
+    // Signed out, the sign-in screen animates: pump a bounded time.
+    authRepo.emit(null);
+    await pumpFor(tester, const Duration(seconds: 1));
+
+    final result = container
+        .read(notificationNavigatorProvider)
+        .handleNotificationTap(
+          NotificationPayload.maturityReminder('inv-1', 7),
+        );
+    expect(await result, isFalse);
+    authRepo.emit(googleUser);
+    await pumpFor(tester, const Duration(seconds: 1));
+
+    (container.read(securityProvider.notifier) as _LockedSecurity).unlock();
+    await tester.pumpAndSettle();
+
+    expect(location(), '/investments/inv-1');
+    expect(_detail, findsOneWidget);
+  });
+
   testWidgets('a queued tap is dropped if another user signs in while the '
       'unlock is settling', (tester) async {
     await pumpApp(tester);
