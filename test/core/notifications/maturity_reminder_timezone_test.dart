@@ -77,6 +77,9 @@ void main() {
       'week before maturity', () async {
     // US clocks go forward on 8 Mar 2026. Subtracting 7 x 24 hours from a
     // local midnight on 10 Mar lands on 2 Mar 23:00 on a device in New York.
+    // The handler takes the device's own DateTime, so this test can only
+    // fail on a machine whose zone changes clocks that week: run it with
+    // TZ=America/New_York. On a UTC machine (CI) it passes either way.
     await service.scheduleMaturityReminders(
       investmentId: 'inv-fd',
       investmentName: 'SBI FD',

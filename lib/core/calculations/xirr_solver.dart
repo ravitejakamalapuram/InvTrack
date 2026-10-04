@@ -239,23 +239,21 @@ class XirrSolver {
       return const XirrResult.undefined(XirrUndefinedReason.insufficientFlows);
     }
 
-    // Normalize dates to years from the first date
-    // Optimization: Use a loop to find min milliseconds directly instead of
-    // dates.reduce with isBefore closures for better performance
-    int firstMs = dates[0].millisecondsSinceEpoch;
-    for (int i = 1; i < dates.length; i++) {
-      final ms = dates[i].millisecondsSinceEpoch;
-      if (ms < firstMs) {
-        firstMs = ms;
+    // Normalize dates to years from the first date, counting calendar days
+    // (actual/365, as Excel). Elapsed time would lose a day between two local
+    // midnights either side of a DST change.
+    final dayNumbers = [for (final date in dates) _dayNumber(date)];
+    int firstDay = dayNumbers[0];
+    for (int i = 1; i < dayNumbers.length; i++) {
+      if (dayNumbers[i] < firstDay) {
+        firstDay = dayNumbers[i];
       }
     }
 
     // Optimization: Group transactions by date to reduce solver iterations
     final flowMap = <double, double>{};
     for (int i = 0; i < dates.length; i++) {
-      // Optimization: Calculate days difference using milliseconds instead of Duration for better performance
-      final t =
-          ((dates[i].millisecondsSinceEpoch - firstMs) ~/ 86400000) / 365.0;
+      final t = (dayNumbers[i] - firstDay) / 365.0;
       final existing = flowMap[t];
       if (existing == null) {
         flowMap[t] = amounts[i];
@@ -356,6 +354,12 @@ class XirrSolver {
 
     return const XirrResult.undefined(XirrUndefinedReason.noSolution);
   }
+
+  /// Days since the epoch of [date]'s calendar day (its year, month and day
+  /// fields), whatever its zone or time of day.
+  static int _dayNumber(DateTime date) =>
+      DateTime.utc(date.year, date.month, date.day).millisecondsSinceEpoch ~/
+      Duration.millisecondsPerDay;
 
   /// Newton-Raphson iterative solver for finding XIRR.
   ///

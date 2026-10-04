@@ -218,6 +218,33 @@ void main() {
       );
     });
 
+    test('XIRR of -100,000 on 15 Jan 2026 and +101,000 on 1 Apr 2026, both '
+        'saved in India and read in New York, counts 76 days', () {
+      // The two days read as local midnights. On a machine in a zone with
+      // DST, such as TZ=America/New_York, they are 75 days and 23 hours
+      // apart; the solver must still count 76 days.
+      final flows = [
+        readInNewYork(
+          cashFlowDoc(legacyMidnight('Asia/Kolkata', 2026, 1, 15)),
+          'cf-1',
+        ),
+        readInNewYork(
+          cashFlowDoc(
+            legacyMidnight('Asia/Kolkata', 2026, 4, 1),
+            type: 'RETURN',
+            amount: 101000,
+          ),
+          'cf-2',
+        ),
+      ];
+
+      // 1.01^(365/76) - 1
+      expect(
+        FinancialCalculator.calculateXirrFromCashFlows(flows),
+        closeTo(0.048948016794645666, 1e-6),
+      );
+    });
+
     test('XIRR is 0.080000 when the two cash flows were saved on devices in '
         'different zones', () {
       final flows = [
@@ -339,8 +366,8 @@ void main() {
             investmentId: 'inv-p2p',
             type: CashFlowType.invest,
             amount: 100000,
-            // The CSV parser gives the importing device's local midnight.
-            date: DateTime(2026, 4, 1),
+            // Only the calendar day is kept, whatever the time of day.
+            date: DateTime(2026, 4, 1, 14, 30),
             createdAt: createdAt,
             currency: 'INR',
           ),
