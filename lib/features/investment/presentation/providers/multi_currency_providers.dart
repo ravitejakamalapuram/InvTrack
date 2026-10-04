@@ -186,18 +186,16 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
   Ref ref,
   String investmentId,
 ) async {
-  final snapshot = await ref.watch(convertedCashFlowsSnapshotProvider.future);
+  final converted = await ref.watch(convertedTerminalValuesProvider.future);
   final cashFlows = [
-    for (final cf in snapshot.cashFlows)
+    for (final cf in converted.snapshot.cashFlows)
       if (cf.investmentId == investmentId) cf,
   ];
   if (cashFlows.isEmpty) return InvestmentStats.empty();
-  final terminalValues = await ref.watch(
-    convertedTerminalValuesProvider.selectAsync(
-      (all) => all[investmentId] ?? TerminalValues.none,
-    ),
+  return calculateStats(
+    cashFlows,
+    terminalValues: converted.byInvestment[investmentId] ?? TerminalValues.none,
   );
-  return calculateStats(cashFlows, terminalValues: terminalValues);
 }
 
 /// The investment with [id] in [investments], or null.

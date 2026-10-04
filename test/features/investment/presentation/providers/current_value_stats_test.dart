@@ -2,6 +2,8 @@
 // value of open investments as their terminal inflow, converted to the base
 // currency first (money rules 2, 3 and 4). Today is pinned to 2026-10-02 so
 // the CALC-01 golden values apply; see current_value_golden_test.dart.
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 import 'package:flutter_test/flutter_test.dart';
@@ -162,6 +164,45 @@ Future<T> _read<T>(
     fail('provider did not resolve');
   } finally {
     sub.close();
+  }
+}
+
+/// The user's base currency, switchable from a test.
+class _BaseCurrency extends Notifier<String> {
+  @override
+  String build() => 'INR';
+
+  void select(String code) => state = code;
+}
+
+final _baseCurrencyProvider = NotifierProvider<_BaseCurrency, String>(
+  _BaseCurrency.new,
+);
+
+/// Holds back every conversion dated [heldDay] while [hold] is set.
+class _HeldRateService extends MockCurrencyConversionService {
+  _HeldRateService(this.heldDay);
+
+  final DateTime heldDay;
+  Completer<void>? hold;
+
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async {
+    final gate = hold;
+    if (gate != null &&
+        requests.values.any(
+          (r) =>
+              r.date != null &&
+              r.date!.year == heldDay.year &&
+              r.date!.month == heldDay.month &&
+              r.date!.day == heldDay.day,
+        )) {
+      await gate.future;
+    }
+    return super.batchConvertHistorical(requests: requests, to: to);
   }
 }
 
@@ -421,5 +462,136 @@ void main() {
     final basic = await _read(container, investmentBasicStatsProvider('gold'));
     expect(basic.currentValue, isNull);
     expect(basic.missingValueCount, 1);
+  });
+
+  test('list cards never pair new cash flows with a current value that is '
+      'still being converted', () async {
+    // A USD P2P loan valued at its outstanding principal. Recording a
+    // principal return changes the flows and the value together; while
+    // today's rate for the new value is pending, the card must keep the old
+    // pair (or load), never the new flows with the old value.
+    final loan = _inv('loan', InvestmentType.p2pLending, currency: 'USD');
+    final invest = _cf(
+      'loan',
+      CashFlowType.invest,
+      1000,
+      DateTime(2025, 10, 2),
+      currency: 'USD',
+    );
+    final principalBack = _cf(
+      'loan',
+      CashFlowType.returnFlow,
+      400,
+      DateTime(2026, 6, 1),
+      currency: 'USD',
+    );
+    final flows = StreamController<List<CashFlowEntity>>.broadcast();
+    addTearDown(flows.close);
+    final rates = _HeldRateService(DateTime(2026, 10, 2));
+    final container = ProviderContainer(
+      overrides: [
+        valuationDateProvider.overrideWithValue(DateTime(2026, 10, 2)),
+        allInvestmentsProvider.overrideWith((ref) => Stream.value([loan])),
+        allCashFlowsStreamProvider.overrideWith((ref) => flows.stream),
+        archivedInvestmentsProvider.overrideWith(
+          (ref) => Stream.value(const <InvestmentEntity>[]),
+        ),
+        currencyCodeProvider.overrideWith((ref) => 'INR'),
+        currencyConversionServiceProvider.overrideWithValue(rates),
+      ],
+    );
+    addTearDown(container.dispose);
+    _keep(container, activeInvestmentBasicStatsMapProvider);
+    Future<void> flush() async {
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    flows.add([invest]);
+    await flush();
+    final before = container.read(investmentBasicStatsProvider('loan'));
+    // Mock rate: 1 USD = 83 INR.
+    expect(before.requireValue.currentValue, closeTo(1000 * 83.0, 0.005));
+
+    rates.hold = Completer<void>();
+    flows.add([invest, principalBack]);
+    await flush();
+    final during = container.read(investmentBasicStatsProvider('loan'));
+    if (during.hasValue) {
+      final stats = during.requireValue;
+      final oldPair =
+          stats.totalReturned == 0 &&
+          (stats.currentValue! - 1000 * 83.0).abs() < 0.005;
+      final newPair =
+          (stats.totalReturned - 400 * 83.0).abs() < 0.005 &&
+          (stats.currentValue! - 600 * 83.0).abs() < 0.005;
+      expect(
+        oldPair || newPair,
+        isTrue,
+        reason:
+            'returned ${stats.totalReturned} with value ${stats.currentValue}',
+      );
+    }
+
+    rates.hold!.complete();
+    await flush();
+    final after = container.read(investmentBasicStatsProvider('loan'));
+    expect(after.requireValue.totalReturned, closeTo(400 * 83.0, 0.005));
+    expect(after.requireValue.currentValue, closeTo(600 * 83.0, 0.005));
+    expect(after.requireValue.moic, closeTo(1.0, 1e-9));
+  });
+
+  test('after a base-currency switch, list cards stay loading until the '
+      'current values are converted too', () async {
+    // The INR flow converts at once; today's rate for the value is held.
+    final rates = _HeldRateService(DateTime(2026, 10, 2));
+    final container = ProviderContainer(
+      overrides: [
+        valuationDateProvider.overrideWithValue(DateTime(2026, 10, 2)),
+        allInvestmentsProvider.overrideWith(
+          (ref) => Stream.value([_cumulativeFd]),
+        ),
+        allCashFlowsStreamProvider.overrideWith(
+          (ref) => Stream.value([
+            _cf('fd', CashFlowType.invest, 500000, DateTime(2026, 4, 1)),
+          ]),
+        ),
+        archivedInvestmentsProvider.overrideWith(
+          (ref) => Stream.value(const <InvestmentEntity>[]),
+        ),
+        currencyCodeProvider.overrideWith(
+          (ref) => ref.watch(_baseCurrencyProvider),
+        ),
+        currencyConversionServiceProvider.overrideWithValue(rates),
+      ],
+    );
+    addTearDown(container.dispose);
+    _keep(container, activeInvestmentBasicStatsMapProvider);
+    Future<void> flush() async {
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    await flush();
+    final inInr = container.read(investmentBasicStatsProvider('fd'));
+    // 1.0175^(4 × 184/365) on ₹5,00,000.
+    expect(inInr.requireValue.currentValue, closeTo(517800.771973, 0.005));
+
+    rates.hold = Completer<void>();
+    container.read(_baseCurrencyProvider.notifier).select('USD');
+    await flush();
+    // Never the INR value (or INR flows) under the $ symbol (rule 2).
+    final pending = container.read(investmentBasicStatsProvider('fd'));
+    expect(pending.hasValue, isFalse, reason: '$pending');
+
+    rates.hold!.complete();
+    await flush();
+    // Mock rate: 1 USD = 83 INR.
+    final inUsd = container.read(investmentBasicStatsProvider('fd'));
+    expect(inUsd.requireValue.totalInvested, closeTo(500000 / 83, 0.005));
+    expect(inUsd.requireValue.currentValue, closeTo(517800.771973 / 83, 0.005));
+    expect(inUsd.requireValue.moic, closeTo(1.035601544, 1e-6));
   });
 }

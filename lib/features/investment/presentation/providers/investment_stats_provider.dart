@@ -167,62 +167,79 @@ final valuationDateProvider = Provider<DateTime>((ref) {
   return DateTime(now.year, now.month, now.day);
 });
 
-/// The current values of the active investments as terminal inflows, by
-/// investment id, converted to the base currency of the snapshot (money
+/// A converted snapshot with the current values of its active investments.
+@immutable
+class ConvertedTerminalValues {
+  /// The snapshot [byInvestment] was worked out from. Read its cash flows
+  /// together with [byInvestment], never another snapshot's: a value must
+  /// not meet flows it was not built from.
+  final ConvertedCashFlows snapshot;
+
+  /// Terminal inflows by investment id, in the snapshot's base currency.
+  final Map<String, TerminalValues> byInvestment;
+
+  const ConvertedTerminalValues({
+    required this.snapshot,
+    required this.byInvestment,
+  });
+}
+
+/// The current values of the active investments as terminal inflows,
+/// converted to the base currency of the snapshot they come with (money
 /// rule 2).
 ///
 /// They are worked out from the unconverted flows, since an estimate accrues
 /// on the principal in its own currency and a manual value is in the
 /// investment's currency, and then converted in one batch, like the flows.
 /// A value with no rate at all counts as missing.
-final convertedTerminalValuesProvider =
-    FutureProvider<Map<String, TerminalValues>>((ref) async {
-      final snapshot = await ref.watch(
-        convertedCashFlowsSnapshotProvider.future,
-      );
-      // Valid cash flows exist only once the active investments have loaded.
-      final investments =
-          ref.watch(activeInvestmentsProvider).value ?? const [];
-      final asOf = ref.watch(valuationDateProvider);
+final convertedTerminalValuesProvider = FutureProvider<ConvertedTerminalValues>(
+  (ref) async {
+    final snapshot = await ref.watch(convertedCashFlowsSnapshotProvider.future);
+    // Valid cash flows exist only once the active investments have loaded.
+    final investments = ref.watch(activeInvestmentsProvider).value ?? const [];
+    final asOf = ref.watch(valuationDateProvider);
 
-      final flowsByInvestment = <String, List<CashFlowEntity>>{};
-      for (final cf in snapshot.source) {
-        flowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
-      }
-      final values = <String, TerminalValues>{
-        for (final inv in investments)
-          if (flowsByInvestment[inv.id] case final flows?)
-            inv.id: CurrentValueCalculator.terminalValues(
-              investments: [inv],
-              cashFlows: flows,
-              asOf: asOf,
-            ),
-      };
+    final flowsByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in snapshot.source) {
+      flowsByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
+    final values = <String, TerminalValues>{
+      for (final inv in investments)
+        if (flowsByInvestment[inv.id] case final flows?)
+          inv.id: CurrentValueCalculator.terminalValues(
+            investments: [inv],
+            cashFlows: flows,
+            asOf: asOf,
+          ),
+    };
 
-      final flows = [for (final value in values.values) ...value.flows];
-      // Like the snapshot, the converter is needed only when a value is in
-      // another currency.
-      final converted =
-          flows.every((cf) => cf.currency == snapshot.baseCurrency)
-          ? flows
-          : await convertTerminalFlows(
-              ref.watch(calculationEngineProvider),
-              flows,
-              snapshot.baseCurrency,
-            );
-      final convertedByInvestment = <String, List<CashFlowEntity>>{};
-      for (final cf in converted) {
-        convertedByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
-      }
-      return {
+    final flows = [for (final value in values.values) ...value.flows];
+    // Like the snapshot, the converter is needed only when a value is in
+    // another currency.
+    final converted = flows.every((cf) => cf.currency == snapshot.baseCurrency)
+        ? flows
+        : await convertTerminalFlows(
+            ref.watch(calculationEngineProvider),
+            flows,
+            snapshot.baseCurrency,
+          );
+    final convertedByInvestment = <String, List<CashFlowEntity>>{};
+    for (final cf in converted) {
+      convertedByInvestment.putIfAbsent(cf.investmentId, () => []).add(cf);
+    }
+    return ConvertedTerminalValues(
+      snapshot: snapshot,
+      byInvestment: {
         for (final MapEntry(:key, :value) in values.entries)
           key: value.flows.isEmpty
               ? value
               : value.withConvertedFlows(
                   convertedByInvestment[key] ?? const [],
                 ),
-      };
-    });
+      },
+    );
+  },
+);
 
 /// [flows] converted to [baseCurrency], leaving out any that have no rate
 /// at all: such a flow stays in its own currency, and adding it would show
@@ -254,8 +271,10 @@ Future<List<CashFlowEntity>> convertTerminalFlows(
 final activeInvestmentBasicStatsMapProvider =
     Provider<AsyncValue<Map<String, InvestmentStats>>>((ref) {
       final investmentsAsync = ref.watch(activeInvestmentsProvider);
-      final cashFlowsAsync = ref.watch(convertedCashFlowsProvider);
-      final terminalValuesAsync = ref.watch(convertedTerminalValuesProvider);
+      // The flows and the current values come from one snapshot: while a
+      // newer one converts, the previous pair is kept rather than new flows
+      // shown with an old value.
+      final convertedAsync = ref.watch(convertedTerminalValuesProvider);
 
       if (investmentsAsync.hasError) {
         return AsyncValue.error(
@@ -264,31 +283,27 @@ final activeInvestmentBasicStatsMapProvider =
           investmentsAsync.stackTrace ?? StackTrace.current,
         );
       }
-      if (cashFlowsAsync.hasError) {
+      if (convertedAsync.hasError) {
         return AsyncValue.error(
-          cashFlowsAsync.error ?? Exception('Unknown error loading cash flows'),
-          cashFlowsAsync.stackTrace ?? StackTrace.current,
+          convertedAsync.error!,
+          convertedAsync.stackTrace ?? StackTrace.current,
         );
       }
-      if (terminalValuesAsync.hasError) {
-        return AsyncValue.error(
-          terminalValuesAsync.error!,
-          terminalValuesAsync.stackTrace ?? StackTrace.current,
-        );
+      if (!investmentsAsync.hasValue || !convertedAsync.hasValue) {
+        return const AsyncValue.loading();
       }
-      // Wait for all three to load
-      if (!investmentsAsync.hasValue ||
-          !cashFlowsAsync.hasValue ||
-          !terminalValuesAsync.hasValue) {
+      final converted = convertedAsync.requireValue;
+      // Amounts are never shown under a symbol they were not converted to.
+      if (converted.snapshot.baseCurrency != ref.watch(currencyCodeProvider)) {
         return const AsyncValue.loading();
       }
 
       final investments = investmentsAsync.value ?? [];
       final byInvestment = FinancialCalculatorModule()
           .calculateStatsByInvestment(
-            cashFlowsAsync.requireValue,
+            converted.snapshot.cashFlows,
             includeXirr: false,
-            terminalValues: terminalValuesAsync.requireValue,
+            terminalValues: converted.byInvestment,
           );
 
       return AsyncValue.data({
@@ -320,10 +335,8 @@ Map<String, XirrResult> _calculateAllXirrs(List<CashFlowEntity> allFlows) {
 /// undefined: never read it as 0%.
 final activeInvestmentXirrResultMapProvider =
     FutureProvider<Map<String, XirrResult>>((ref) async {
-      final snapshot = await ref.watch(
-        convertedCashFlowsSnapshotProvider.future,
-      );
-      final cashFlows = snapshot.cashFlows;
+      final converted = await ref.watch(convertedTerminalValuesProvider.future);
+      final cashFlows = converted.snapshot.cashFlows;
 
       if (cashFlows.isEmpty) {
         return {};
@@ -331,12 +344,9 @@ final activeInvestmentXirrResultMapProvider =
 
       // Each terminal value carries its investment's id, so it joins that
       // investment's group in _calculateAllXirrs.
-      final terminalValues = await ref.watch(
-        convertedTerminalValuesProvider.future,
-      );
       final flows = [
         ...cashFlows,
-        for (final value in terminalValues.values) ...value.flows,
+        for (final value in converted.byInvestment.values) ...value.flows,
       ];
 
       // Track performance of bulk XIRR calculation
