@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
 void main() {
@@ -140,8 +141,13 @@ void main() {
           ),
         ];
         final xirr = FinancialCalculator.calculateXirrFromCashFlows(cashFlows);
-        // Same-day transactions are undefined or a finite rate, never NaN
-        expect(xirr == null || xirr.isFinite, isTrue);
+        // Same-day flows net to a single +10 with no outflow left, so there
+        // is no rate to solve for: undefined, never 0% or NaN.
+        expect(xirr, isNull);
+        expect(
+          FinancialCalculator.solveXirrFromCashFlows(cashFlows).reason,
+          XirrUndefinedReason.noSignChange,
+        );
       });
     });
   });

@@ -177,8 +177,8 @@ void main() {
 
       expect(report.topPerformers, isEmpty);
       expect(report.bottomPerformers, isEmpty);
-      expect(report.averageXIRR, 0.0);
-      expect(report.medianXIRR, 0.0);
+      expect(report.averageXIRR, isNull);
+      expect(report.medianXIRR, isNull);
       expect(report.profitableCount, 0);
       expect(report.lossCount, 0);
     });

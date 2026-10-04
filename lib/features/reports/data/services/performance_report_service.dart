@@ -86,12 +86,12 @@ class PerformanceReportService {
     }
 
     final averageXIRR = sortedByXIRR.isEmpty
-        ? 0.0
+        ? null
         : totalXIRR / sortedByXIRR.length;
 
     // Optimization: Reuse existing sortedByXIRR array to find median instead of mapping to a new primitive array and sorting it again
     final medianXIRR = sortedByXIRR.isEmpty
-        ? 0.0
+        ? null
         : sortedByXIRR.length.isOdd
         ? sortedByXIRR[sortedByXIRR.length ~/ 2].xirr!
         : (sortedByXIRR[sortedByXIRR.length ~/ 2 - 1].xirr! +

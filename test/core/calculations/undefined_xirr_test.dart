@@ -273,5 +273,15 @@ void main() {
         ['C', 'A'],
       );
     });
+
+    test('average and median XIRR are undefined when no XIRR is', () {
+      final report = PerformanceReportService().generateReport(
+        allInvestments: [_investment('B', InvestmentStatus.open)],
+        allCashFlows: _flowsB,
+      );
+
+      expect(report.averageXIRR, isNull);
+      expect(report.medianXIRR, isNull);
+    });
   });
 }

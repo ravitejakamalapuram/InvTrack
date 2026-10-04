@@ -20,11 +20,12 @@ class PerformanceReport {
   /// Recent milestone achievements
   final List<MilestoneAchievement> recentMilestones;
 
-  /// Average portfolio XIRR (weighted by amount invested)
-  final double averageXIRR;
+  /// Mean XIRR of the investments that have one; null when no
+  /// investment has a defined XIRR (show '—', never 0%).
+  final double? averageXIRR;
 
-  /// Median portfolio XIRR
-  final double medianXIRR;
+  /// Median portfolio XIRR; null when no investment has a defined XIRR.
+  final double? medianXIRR;
 
   /// Total investments analyzed
   final int totalInvestments;
