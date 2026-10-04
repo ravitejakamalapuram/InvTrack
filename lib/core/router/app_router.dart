@@ -43,6 +43,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final onboardingComplete = ref.watch(onboardingCompleteProvider);
   final analyticsObserver = ref.watch(analyticsObserverProvider);
   final isReportsEnabled = ref.watch(isReportsTabEnabledProvider);
+  final isIncomeGuardianEnabled = ref.watch(isIncomeGuardianEnabledProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -90,6 +91,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isReportsRoute = state.uri.path.startsWith('/reports');
       if (isLoggedIn && !isReportsEnabled && isReportsRoute) {
         LoggerService.debug('Reports feature disabled, redirecting to Overview');
+        return '/';
+      }
+
+      // Income Guardian is hidden while its flag is off (A42), including its
+      // calendar reached by a deep link or a stale navigation.
+      final isIncomeCalendarRoute = state.uri.path == '/income-calendar';
+      if (isLoggedIn && !isIncomeGuardianEnabled && isIncomeCalendarRoute) {
         return '/';
       }
 
