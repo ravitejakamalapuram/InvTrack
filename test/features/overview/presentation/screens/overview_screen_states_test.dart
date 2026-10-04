@@ -272,6 +272,38 @@ void main() {
     },
   );
 
+  testWidgets(
+    'with no cash flows yet, shows loading, not the empty state, while '
+    'investments are still loading',
+    (tester) async {
+      final investments = StreamController<List<InvestmentEntity>>();
+      final archived = StreamController<List<InvestmentEntity>>();
+      addTearDown(() => unawaited(investments.close()));
+      addTearDown(() => unawaited(archived.close()));
+
+      await _pumpOverview(
+        tester,
+        analytics: analytics,
+        investments: () => investments.stream,
+        cashFlows: () => Stream.value(const []),
+        archivedInvestments: () => archived.stream,
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.bySemanticsLabel('Loading your portfolio'), findsOneWidget);
+      expect(find.byType(OverviewEmptyState), findsNothing);
+      expect(find.textContaining('₹'), findsNothing);
+
+      // Active loaded, archived still loading: still loading.
+      investments.add(const []);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.bySemanticsLabel('Loading your portfolio'), findsOneWidget);
+      expect(find.byType(OverviewEmptyState), findsNothing);
+      expect(_emptyStateEvents(analytics), 0);
+    },
+  );
+
   testWidgets('sample data waits until archived investments have loaded', (
     tester,
   ) async {

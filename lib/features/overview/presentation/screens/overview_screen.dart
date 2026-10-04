@@ -79,8 +79,9 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     final archivedInvestmentsAsync = errorFirst(
       ref.watch(archivedInvestmentsProvider),
     );
+    final activeInvestmentsAsync = ref.watch(activeInvestmentsProvider);
     final isNewAccount =
-        (ref.watch(activeInvestmentsProvider).value?.isEmpty ?? false) &&
+        (activeInvestmentsAsync.value?.isEmpty ?? false) &&
         (archivedInvestmentsAsync.value?.isEmpty ?? false);
 
     final currencyFormat = ref.watch(currencyFormatProvider);
@@ -127,6 +128,22 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                   data: (stats) => !stats.hasData &&
                           archivedInvestmentsAsync.hasError
                       ? _buildLoadErrorContent(ref)
+                      // Stats can be empty before the investments arrive;
+                      // the empty state must wait for both collections.
+                      // A refresh keeps the previous value, so it does not
+                      // count.
+                      : !stats.hasData &&
+                            ((!activeInvestmentsAsync.hasValue &&
+                                    activeInvestmentsAsync.isLoading) ||
+                                (!archivedInvestmentsAsync.hasValue &&
+                                    archivedInvestmentsAsync.isLoading))
+                      ? _buildLoadingContent(
+                          context,
+                          ref,
+                          globalStats,
+                          closedStats,
+                          currencyFormat,
+                        )
                       : stats.hasData
                       ? _buildDataContent(
                           context,
