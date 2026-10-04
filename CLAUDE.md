@@ -62,6 +62,7 @@ Tickets are GitHub issues labelled `review-2026-10` and titled `[Axx] …`. The 
      - migration or rollback notes;
      - follow-ups.
    - Run `superpowers:requesting-code-review` before marking the PR ready. Handle review feedback with `superpowers:receiving-code-review`.
+   - Right after opening any PR, comment `@coderabbitai review` on it. The repo gets no automatic CodeRabbit reviews, and the free plan allows one review an hour. If CodeRabbit replies "Review limit reached", ask again after the time it names, one PR at a time. Ask again after you push fixes for a "changes requested" review, because that review blocks the merge until CodeRabbit approves.
    - The review covers more than correctness and tests. It must also check:
      - **Security and privacy:** workflow token permissions, checkout credentials, untrusted `${{ }}` in `run:`, secrets, auth and deletion flows, and PII or amounts in logs.
      - **Bypass:** for every guard, check or gate, how it could pass falsely, for example on deleted, renamed or symlinked files, re-runs, time zones, process death or offline.
