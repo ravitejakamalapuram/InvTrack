@@ -13,11 +13,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// loading; it is rebuilt, and the pending future dropped, once [value]
 /// changes. Never substitute an empty list for these states: screens would
 /// show "no data" to users who have data.
+///
+/// A refresh (`ref.invalidate`, as in pull-to-refresh) keeps the previous
+/// data, so screens do not flash loading. A reload caused by a dependency
+/// change, such as a different signed-in user, stays pending so stale data
+/// is never shown as current.
 Future<T> dataOf<T>(AsyncValue<T> value) {
   if (value.hasError) {
     return Future<T>.error(value.error!, value.stackTrace);
   }
-  if (value.isLoading) return Completer<T>().future;
+  if (value.isLoading && !value.isRefreshing) return Completer<T>().future;
   return Future<T>.value(value.requireValue);
 }
 

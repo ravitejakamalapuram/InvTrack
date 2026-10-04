@@ -135,6 +135,32 @@ void main() {
         },
       );
 
+      test('keeps the stats, not loading, during a pull-to-refresh', () async {
+        // The first subscription emits; after the refresh the new stream
+        // has not emitted yet, as when Firestore is slow to answer.
+        final refreshed = StreamController<List<InvestmentEntity>>();
+        addTearDown(() => unawaited(refreshed.close()));
+        var subscriptions = 0;
+        final container = _container(
+          investments: () => subscriptions++ == 0
+              ? Stream.value([_openInvestment, _closedInvestment])
+              : refreshed.stream,
+          cashFlows: () => Stream.value(const []),
+        );
+
+        final sub = container.listen(entry.value, (_, _) {});
+        await pumpEventQueue();
+        expect(sub.read().hasValue, isTrue);
+        expect(sub.read().isLoading, isFalse);
+
+        container.invalidate(allInvestmentsProvider);
+        await pumpEventQueue();
+
+        expect(container.read(allInvestmentsProvider).isRefreshing, isTrue);
+        expect(sub.read().isLoading, isFalse);
+        expect(sub.read().hasValue, isTrue);
+      });
+
       test('resolves to empty stats when the account has no data', () async {
         final container = _container(
           investments: () => Stream.value(const []),
