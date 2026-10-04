@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/router/navigation_extensions.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_sizes.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
+import 'package:inv_tracker/core/utils/amount_input.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
+import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/fire_number/domain/services/fire_settings_validator.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
@@ -112,6 +116,10 @@ class FireSettingsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _divider(bool isDark) => Divider(
+    color: isDark ? AppColors.neutral700Dark : AppColors.neutral200Light,
+  );
+
   Widget _buildSettingsList(
     BuildContext context,
     WidgetRef ref,
@@ -119,7 +127,13 @@ class FireSettingsScreen extends ConsumerWidget {
     FireSettingsEntity settings,
   ) {
     final l10n = AppLocalizations.of(context);
-    final currencySymbol = ref.watch(currencySymbolProvider);
+    // Amounts are shown in the currency they were entered in, which can
+    // differ from the base currency after a switch (GAP2-01).
+    final String currency =
+        settings.currency ?? ref.watch(currencyCodeProvider);
+    final currencySymbol = getCurrencySymbol(currency);
+    String amount(double value) => '$currencySymbol${value.toStringAsFixed(0)}';
+    final sip = settings.monthlySip;
 
     return SingleChildScrollView(
       padding: AppSpacing.paddingMd,
@@ -133,6 +147,15 @@ class FireSettingsScreen extends ConsumerWidget {
               color: isDark
                   ? AppColors.textPrimaryDark
                   : AppColors.textPrimaryLight,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.fireAmountsInCurrency(currency),
+            style: AppTypography.small.copyWith(
+              color: isDark
+                  ? AppColors.neutral400Dark
+                  : AppColors.neutral500Light,
             ),
           ),
           SizedBox(height: AppSpacing.sm),
@@ -152,11 +175,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     isCurrentAge: true,
                   ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                _divider(isDark),
                 _buildSettingTile(
                   context,
                   isDark,
@@ -170,32 +189,114 @@ class FireSettingsScreen extends ConsumerWidget {
                     isCurrentAge: false,
                   ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                _divider(isDark),
                 _buildSettingTile(
                   context,
                   isDark,
                   icon: Icons.payments_outlined,
                   title: 'Monthly Expenses',
-                  value:
-                      '$currencySymbol${settings.monthlyExpenses.toStringAsFixed(0)}',
-                  onTap: () => _showExpensesEditor(context, ref, settings),
+                  value: amount(settings.monthlyExpenses),
+                  isAmount: true,
+                  onTap: () => _showAmountEditor(
+                    context,
+                    ref,
+                    title: l10n.monthlyExpenses,
+                    currencySymbol: currencySymbol,
+                    initial: settings.monthlyExpenses,
+                    onSave: (v) => settings.copyWith(monthlyExpenses: v),
+                  ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                _divider(isDark),
                 _buildSettingTile(
                   context,
                   isDark,
-                  icon: settings.fireType.icon,
+                  icon: settings.fireType.effective.icon,
                   title: 'FIRE Type',
-                  value: settings.fireType.displayName,
+                  value: settings.fireType.effective.displayName,
                   onTap: () => _showFireTypeSelector(context, ref, settings),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+
+          // What the user has and invests
+          GlassCard(
+            child: Column(
+              children: [
+                _buildSettingTile(
+                  context,
+                  isDark,
+                  icon: Icons.account_balance_outlined,
+                  title: l10n.fireOtherAssets,
+                  value: amount(settings.otherAssets),
+                  isAmount: true,
+                  onTap: () => _showAmountEditor(
+                    context,
+                    ref,
+                    title: l10n.fireOtherAssets,
+                    hint: l10n.fireOtherAssetsHint,
+                    currencySymbol: currencySymbol,
+                    initial: settings.otherAssets,
+                    onSave: (v) => settings.copyWith(otherAssets: v),
+                  ),
+                ),
+                _divider(isDark),
+                _buildSettingTile(
+                  context,
+                  isDark,
+                  icon: Icons.savings_outlined,
+                  title: l10n.fireMonthlySip,
+                  value: sip == null
+                      ? l10n.fireMonthlySipEstimated
+                      : amount(sip),
+                  isAmount: sip != null,
+                  onTap: () => _showAmountEditor(
+                    context,
+                    ref,
+                    title: l10n.fireMonthlySip,
+                    hint: l10n.fireMonthlySipHint,
+                    currencySymbol: currencySymbol,
+                    initial: sip,
+                    allowEmpty: true,
+                    onSave: (v) => v == null
+                        ? settings.copyWith(clearMonthlySip: true)
+                        : settings.copyWith(monthlySip: v),
+                  ),
+                ),
+                _divider(isDark),
+                _buildSettingTile(
+                  context,
+                  isDark,
+                  icon: Icons.home_work_outlined,
+                  title: l10n.firePassiveIncome,
+                  value: amount(settings.monthlyPassiveIncome),
+                  isAmount: true,
+                  onTap: () => _showAmountEditor(
+                    context,
+                    ref,
+                    title: l10n.firePassiveIncome,
+                    currencySymbol: currencySymbol,
+                    initial: settings.monthlyPassiveIncome,
+                    onSave: (v) => settings.copyWith(monthlyPassiveIncome: v),
+                  ),
+                ),
+                _divider(isDark),
+                _buildSettingTile(
+                  context,
+                  isDark,
+                  icon: Icons.elderly_outlined,
+                  title: l10n.firePension,
+                  value: amount(settings.expectedPension),
+                  isAmount: true,
+                  onTap: () => _showAmountEditor(
+                    context,
+                    ref,
+                    title: l10n.firePension,
+                    currencySymbol: currencySymbol,
+                    initial: settings.expectedPension,
+                    onSave: (v) => settings.copyWith(expectedPension: v),
+                  ),
                 ),
               ],
             ),
@@ -224,7 +325,6 @@ class FireSettingsScreen extends ConsumerWidget {
                   onTap: () => _showSliderEditor(
                     context,
                     ref,
-                    settings,
                     title: 'Safe Withdrawal Rate',
                     currentValue: settings.safeWithdrawalRate,
                     min: 2.5,
@@ -232,11 +332,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     onSave: (v) => settings.copyWith(safeWithdrawalRate: v),
                   ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                _divider(isDark),
                 _buildSettingTile(
                   context,
                   isDark,
@@ -246,7 +342,6 @@ class FireSettingsScreen extends ConsumerWidget {
                   onTap: () => _showSliderEditor(
                     context,
                     ref,
-                    settings,
                     title: 'Inflation Rate',
                     currentValue: settings.inflationRate,
                     min: 4.0,
@@ -254,11 +349,7 @@ class FireSettingsScreen extends ConsumerWidget {
                     onSave: (v) => settings.copyWith(inflationRate: v),
                   ),
                 ),
-                Divider(
-                  color: isDark
-                      ? AppColors.neutral700Dark
-                      : AppColors.neutral200Light,
-                ),
+                _divider(isDark),
                 _buildSettingTile(
                   context,
                   isDark,
@@ -268,12 +359,53 @@ class FireSettingsScreen extends ConsumerWidget {
                   onTap: () => _showSliderEditor(
                     context,
                     ref,
-                    settings,
                     title: 'Pre-retirement Return',
                     currentValue: settings.preRetirementReturn,
                     min: 8.0,
                     max: 15.0,
                     onSave: (v) => settings.copyWith(preRetirementReturn: v),
+                  ),
+                ),
+                _divider(isDark),
+                _buildSettingTile(
+                  context,
+                  isDark,
+                  icon: Icons.health_and_safety_outlined,
+                  title: l10n.fireHealthcareBuffer,
+                  value: l10n.percentageFormat(
+                    settings.healthcareBuffer.toStringAsFixed(0),
+                  ),
+                  onTap: () => _showSliderEditor(
+                    context,
+                    ref,
+                    title: l10n.fireHealthcareBuffer,
+                    currentValue: settings.healthcareBuffer,
+                    min: 0,
+                    max: 50,
+                    divisions: 50,
+                    label: (v) => l10n.percentageFormat(v.toStringAsFixed(0)),
+                    onSave: (v) => settings.copyWith(healthcareBuffer: v),
+                  ),
+                ),
+                _divider(isDark),
+                _buildSettingTile(
+                  context,
+                  isDark,
+                  icon: Icons.shield_outlined,
+                  title: l10n.fireEmergencyFund,
+                  value: l10n.fireMonthsCount(
+                    settings.emergencyMonths.toStringAsFixed(0),
+                  ),
+                  onTap: () => _showSliderEditor(
+                    context,
+                    ref,
+                    title: l10n.fireEmergencyFund,
+                    currentValue: settings.emergencyMonths,
+                    min: 0,
+                    max: 24,
+                    divisions: 24,
+                    label: (v) => l10n.fireMonthsCount(v.toStringAsFixed(0)),
+                    onSave: (v) => settings.copyWith(emergencyMonths: v),
                   ),
                 ),
               ],
@@ -318,7 +450,11 @@ class FireSettingsScreen extends ConsumerWidget {
     required String title,
     required String value,
     required VoidCallback onTap,
+    bool isAmount = false,
   }) {
+    final valueStyle = AppTypography.body.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
     return ListTile(
       leading: Icon(
         icon,
@@ -335,14 +471,9 @@ class FireSettingsScreen extends ConsumerWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: AppTypography.body.copyWith(
-              color: isDark
-                  ? AppColors.neutral400Dark
-                  : AppColors.neutral500Light,
-            ),
-          ),
+          isAmount
+              ? MaskedAmountText(text: value, style: valueStyle)
+              : Text(value, style: valueStyle),
           SizedBox(width: AppSpacing.xs),
           Icon(
             Icons.chevron_right,
@@ -356,6 +487,39 @@ class FireSettingsScreen extends ConsumerWidget {
     );
   }
 
+  /// Saves [updated] from a bottom sheet: closes it on success, and keeps it
+  /// open with the reason when the settings are rejected (PLAN-07).
+  Future<void> _saveFromSheet(
+    BuildContext sheetContext,
+    WidgetRef ref,
+    FireSettingsEntity updated,
+    void Function(String error) showError,
+  ) async {
+    try {
+      await ref
+          .read(fireSettingsNotifierProvider.notifier)
+          .saveSettings(updated.copyWith(updatedAt: DateTime.now()));
+      if (sheetContext.mounted) Navigator.pop(sheetContext);
+    } on FireSettingsValidationException catch (e) {
+      showError(e.errors.join('\n'));
+    } catch (e, st) {
+      if (sheetContext.mounted) {
+        ErrorHandler.handle(e, st, context: sheetContext, showFeedback: true);
+      }
+    }
+  }
+
+  Widget _sheetError(String? error) {
+    if (error == null) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(top: AppSpacing.sm),
+      child: Text(
+        error,
+        style: AppTypography.small.copyWith(color: AppColors.errorLight),
+      ),
+    );
+  }
+
   void _showAgeEditor(
     BuildContext context,
     WidgetRef ref,
@@ -364,13 +528,16 @@ class FireSettingsScreen extends ConsumerWidget {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final title = isCurrentAge ? 'Current Age' : 'Target FIRE Age';
-    final currentValue = isCurrentAge
-        ? settings.currentAge
-        : settings.targetFireAge;
-    final minAge = isCurrentAge ? 18 : settings.currentAge + 5;
-    final maxAge = isCurrentAge ? 80 : 80;
+    final currentAge = settings.currentAge;
+    // The target is always after the current age, and every range has room
+    // to move (PLAN-07).
+    final targetRange = FireAgeLimits.targetRange(currentAge);
+    final minAge = isCurrentAge ? FireAgeLimits.minCurrentAge : targetRange.min;
+    final maxAge = isCurrentAge ? FireAgeLimits.maxCurrentAge : targetRange.max;
 
-    int selectedAge = currentValue;
+    int selectedAge = (isCurrentAge ? currentAge : settings.targetFireAge)
+        .clamp(minAge, maxAge);
+    String? error;
 
     showModalBottomSheet(
       context: context,
@@ -421,21 +588,26 @@ class FireSettingsScreen extends ConsumerWidget {
                   max: maxAge.toDouble(),
                   divisions: maxAge - minAge,
                   label: '$selectedAge',
-                  onChanged: (v) => setState(() => selectedAge = v.toInt()),
+                  onChanged: (v) => setState(() => selectedAge = v.round()),
                 ),
+                _sheetError(error),
                 SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      final updated = isCurrentAge
-                          ? settings.copyWith(currentAge: selectedAge)
-                          : settings.copyWith(targetFireAge: selectedAge);
-                      await ref
-                          .read(fireSettingsNotifierProvider.notifier)
-                          .saveSettings(updated);
-                    },
+                    onPressed: () => _saveFromSheet(
+                      ctx,
+                      ref,
+                      isCurrentAge
+                          ? settings.copyWith(
+                              birthYear: FireSettingsEntity.birthYearForAge(
+                                selectedAge,
+                                DateTime.now(),
+                              ),
+                            )
+                          : settings.copyWith(targetFireAge: selectedAge),
+                      (e) => setState(() => error = e),
+                    ),
                     child: Text(l10n.save),
                   ),
                 ),
@@ -447,18 +619,20 @@ class FireSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showExpensesEditor(
+  /// Edits an amount. Grouped input ("1,25,000") is accepted; invalid input
+  /// keeps the sheet open instead of falling back to another value (UX-10).
+  /// With [allowEmpty], an empty field saves null.
+  void _showAmountEditor(
     BuildContext context,
-    WidgetRef ref,
-    FireSettingsEntity settings,
-  ) {
-    final l10n = AppLocalizations.of(context);
+    WidgetRef ref, {
+    required String title,
+    required String currencySymbol,
+    required double? initial,
+    required FireSettingsEntity Function(double? value) onSave,
+    String? hint,
+    bool allowEmpty = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencySymbol = ref.read(currencySymbolProvider);
-    final controller = TextEditingController(
-      text: settings.monthlyExpenses.toStringAsFixed(0),
-    );
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -466,57 +640,16 @@ class FireSettingsScreen extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.lg,
-          AppSpacing.lg,
-          MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.monthlyExpenses,
-              style: AppTypography.h3.copyWith(
-                color: isDark
-                    ? AppColors.textPrimaryDark
-                    : AppColors.textPrimaryLight,
-              ),
-            ),
-            SizedBox(height: AppSpacing.lg),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                prefixText: '$currencySymbol ',
-                labelText: l10n.monthlyExpenses,
-                border: const OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            SizedBox(height: AppSpacing.lg),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  final value =
-                      double.tryParse(controller.text) ??
-                      settings.monthlyExpenses;
-                  final updated = settings.copyWith(monthlyExpenses: value);
-                  await ref
-                      .read(fireSettingsNotifierProvider.notifier)
-                      .saveSettings(updated);
-                },
-                child: Text(l10n.save),
-              ),
-            ),
-          ],
-        ),
+      builder: (ctx) => _AmountEditorSheet(
+        title: title,
+        hint: hint,
+        currencySymbol: currencySymbol,
+        initial: initial,
+        allowEmpty: allowEmpty,
+        onSave: (value, showError) =>
+            _saveFromSheet(ctx, ref, onSave(value), showError),
       ),
-    ).whenComplete(() => controller.dispose());
+    );
   }
 
   void _showFireTypeSelector(
@@ -548,7 +681,7 @@ class FireSettingsScreen extends ConsumerWidget {
               ),
             ),
             SizedBox(height: AppSpacing.md),
-            ...FireType.values.map(
+            ...FireType.selectable.map(
               (type) => ListTile(
                 leading: Icon(
                   type.icon,
@@ -558,20 +691,21 @@ class FireSettingsScreen extends ConsumerWidget {
                 ),
                 title: Text(type.displayName),
                 subtitle: Text(type.description, style: AppTypography.small),
-                selected: settings.fireType == type,
+                selected: settings.fireType.effective == type,
                 selectedTileColor:
                     (isDark ? AppColors.primaryDark : AppColors.primaryLight)
                         .withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final updated = settings.copyWith(fireType: type);
-                  await ref
-                      .read(fireSettingsNotifierProvider.notifier)
-                      .saveSettings(updated);
-                },
+                onTap: () => _saveFromSheet(
+                  ctx,
+                  ref,
+                  settings.copyWith(fireType: type),
+                  (e) => ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e))),
+                ),
               ),
             ),
           ],
@@ -582,16 +716,18 @@ class FireSettingsScreen extends ConsumerWidget {
 
   void _showSliderEditor(
     BuildContext context,
-    WidgetRef ref,
-    FireSettingsEntity settings, {
+    WidgetRef ref, {
     required String title,
     required double currentValue,
     required double min,
     required double max,
     required FireSettingsEntity Function(double) onSave,
+    int? divisions,
+    String Function(double value)? label,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    double selectedValue = currentValue;
+    double selectedValue = currentValue.clamp(min, max);
+    String? error;
 
     showModalBottomSheet(
       context: context,
@@ -603,6 +739,9 @@ class FireSettingsScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           final l10n = AppLocalizations.of(context);
+          final valueLabel =
+              label?.call(selectedValue) ??
+              l10n.percentageFormat(selectedValue.toStringAsFixed(1));
           return Padding(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -627,7 +766,7 @@ class FireSettingsScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      l10n.percentageFormat(selectedValue.toStringAsFixed(1)),
+                      valueLabel,
                       style: AppTypography.h1.copyWith(
                         color: isDark
                             ? AppColors.primaryDark
@@ -640,21 +779,21 @@ class FireSettingsScreen extends ConsumerWidget {
                   value: selectedValue,
                   min: min,
                   max: max,
-                  divisions: ((max - min) * 10).toInt(),
-                  label: '${selectedValue.toStringAsFixed(1)}%',
+                  divisions: divisions ?? ((max - min) * 10).round(),
+                  label: valueLabel,
                   onChanged: (v) => setState(() => selectedValue = v),
                 ),
+                _sheetError(error),
                 SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      final updated = onSave(selectedValue);
-                      await ref
-                          .read(fireSettingsNotifierProvider.notifier)
-                          .saveSettings(updated);
-                    },
+                    onPressed: () => _saveFromSheet(
+                      ctx,
+                      ref,
+                      onSave(selectedValue),
+                      (e) => setState(() => error = e),
+                    ),
                     child: Text(l10n.save),
                   ),
                 ),
@@ -697,6 +836,116 @@ class FireSettingsScreen extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Bottom sheet that edits one amount. It owns its text controller, which
+/// must outlive the sheet's closing animation.
+class _AmountEditorSheet extends StatefulWidget {
+  const _AmountEditorSheet({
+    required this.title,
+    required this.currencySymbol,
+    required this.initial,
+    required this.allowEmpty,
+    required this.onSave,
+    this.hint,
+  });
+
+  final String title;
+  final String? hint;
+  final String currencySymbol;
+  final double? initial;
+  final bool allowEmpty;
+  final Future<void> Function(double? value, void Function(String) showError)
+  onSave;
+
+  @override
+  State<_AmountEditorSheet> createState() => _AmountEditorSheetState();
+}
+
+class _AmountEditorSheetState extends State<_AmountEditorSheet> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial?.toStringAsFixed(0) ?? '',
+  );
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save(AppLocalizations l10n) {
+    final text = _controller.text.trim();
+    final value = parseAmountInput(text);
+    if (value == null && !(widget.allowEmpty && text.isEmpty)) {
+      setState(() => _error = l10n.fireEnterValidAmount);
+      return;
+    }
+    widget.onSave(value, (e) {
+      if (mounted) setState(() => _error = e);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final error = _error;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.title,
+            style: AppTypography.h3.copyWith(
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+            ),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          TextField(
+            controller: _controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: amountInputFormatters,
+            decoration: InputDecoration(
+              prefixText: '${widget.currencySymbol} ',
+              labelText: widget.title,
+              helperText: widget.hint,
+              helperMaxLines: 2,
+              border: const OutlineInputBorder(),
+            ),
+            autofocus: true,
+          ),
+          if (error != null)
+            Padding(
+              padding: EdgeInsets.only(top: AppSpacing.sm),
+              child: Text(
+                error,
+                style: AppTypography.small.copyWith(
+                  color: AppColors.errorLight,
+                ),
+              ),
+            ),
+          SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => _save(l10n),
+              child: Text(l10n.save),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -5634,5 +5634,163 @@
   "tooltipRemoveFile": "Remove file",
   "@tooltipRemoveFile": {
     "description": "Tooltip for remove file button"
+  },
+
+  "fireInvestMore": "Invest {amount}/month more to stay on track.",
+  "@fireInvestMore": {
+    "description": "FIRE dashboard: how much more to invest each month, shown only when the user invests less than needed",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "fireNotEnoughHistoryHint": "Not enough history to estimate how much you invest each month. Add your monthly SIP in FIRE settings to see whether you are on track.",
+  "@fireNotEnoughHistoryHint": {
+    "description": "FIRE dashboard: shown when there are fewer than 3 months of cash flows and no declared SIP"
+  },
+  "fireNotReachable": "Not reachable",
+  "@fireNotReachable": {
+    "description": "FIRE dashboard: projected FIRE age when the FIRE number is never reached at the current investing rate"
+  },
+  "fireMonthlyInvesting": "Monthly investing",
+  "@fireMonthlyInvesting": {
+    "description": "FIRE dashboard: label for how much the user invests each month"
+  },
+  "fireSavingsSourceDeclared": "Your monthly SIP",
+  "@fireSavingsSourceDeclared": {
+    "description": "FIRE dashboard: monthly investing comes from the SIP the user entered"
+  },
+  "fireSavingsSourceHistory": "Net new money, last 12 months",
+  "@fireSavingsSourceHistory": {
+    "description": "FIRE dashboard: monthly investing estimated from the last 12 months of cash flows"
+  },
+  "fireSavingsNotEnoughHistory": "Not enough history",
+  "@fireSavingsNotEnoughHistory": {
+    "description": "FIRE dashboard: fewer than 3 months of cash flows to estimate monthly investing"
+  },
+  "fireCorpusTitle": "Your FIRE corpus",
+  "@fireCorpusTitle": {
+    "description": "FIRE dashboard: heading for how the current corpus is built"
+  },
+  "fireCorpusCurrentValues": "Open investments at current value",
+  "@fireCorpusCurrentValues": {
+    "description": "FIRE dashboard: corpus part from current values of open investments"
+  },
+  "fireCorpusPrincipalOnly": "Open investments without a current value (amount invested)",
+  "@fireCorpusPrincipalOnly": {
+    "description": "FIRE dashboard: corpus part from principal still invested in open investments that have no current value"
+  },
+  "fireCorpusExcluded": "Closed and archived investments are not counted.",
+  "@fireCorpusExcluded": {
+    "description": "FIRE dashboard: disclosure that closed and archived investments are left out of the corpus"
+  },
+  "fireOtherAssets": "Other assets",
+  "@fireOtherAssets": {
+    "description": "FIRE: savings held outside the app, added to the FIRE corpus"
+  },
+  "fireOtherAssetsHint": "Savings outside InvTrack, such as EPF or bank balances",
+  "@fireOtherAssetsHint": {
+    "description": "FIRE settings: explanation of other assets"
+  },
+  "fireMonthlySip": "Monthly SIP",
+  "@fireMonthlySip": {
+    "description": "FIRE settings: how much the user invests every month"
+  },
+  "fireMonthlySipEstimated": "Estimated from history",
+  "@fireMonthlySipEstimated": {
+    "description": "FIRE settings: no monthly SIP entered, so it is estimated from cash flows"
+  },
+  "fireMonthlySipHint": "Leave empty to estimate it from the last 12 months",
+  "@fireMonthlySipHint": {
+    "description": "FIRE settings: help text for the monthly SIP field"
+  },
+  "firePassiveIncome": "Monthly passive income",
+  "@firePassiveIncome": {
+    "description": "FIRE settings: rent, dividends and other income that lowers the FIRE number"
+  },
+  "firePension": "Expected monthly pension",
+  "@firePension": {
+    "description": "FIRE settings: pension that lowers the FIRE number"
+  },
+  "fireCoreCorpus": "Core corpus",
+  "@fireCoreCorpus": {
+    "description": "FIRE number breakdown: annual expenses divided by the withdrawal rate"
+  },
+  "fireHealthcareBuffer": "Healthcare buffer",
+  "@fireHealthcareBuffer": {
+    "description": "FIRE number breakdown and setting: extra percentage of the core corpus for healthcare"
+  },
+  "fireEmergencyFund": "Emergency fund",
+  "@fireEmergencyFund": {
+    "description": "FIRE number breakdown and setting: months of expenses kept as an emergency fund"
+  },
+  "fireMonthsCount": "{count} months",
+  "@fireMonthsCount": {
+    "description": "FIRE settings: number of months of expenses",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "fireNumberMultiple": "{multiple}× your annual expenses, in today''s money",
+  "@fireNumberMultiple": {
+    "description": "FIRE number subtitle: the real multiple of annual expenses",
+    "placeholders": {
+      "multiple": {
+        "type": "String"
+      }
+    }
+  },
+  "fireNumberExplanation": "The amount you need in today''s money: annual expenses at a {swr}% withdrawal rate, plus a {healthcare}% healthcare buffer and {months} months of expenses as an emergency fund, less any passive income and pension. Change these in FIRE settings.",
+  "@fireNumberExplanation": {
+    "description": "FIRE number tooltip explaining what it is made of",
+    "placeholders": {
+      "swr": {
+        "type": "String"
+      },
+      "healthcare": {
+        "type": "String"
+      },
+      "months": {
+        "type": "String"
+      }
+    }
+  },
+  "fireTargetAgePassed": "Target age passed",
+  "@fireTargetAgePassed": {
+    "description": "FIRE dashboard: the user's target FIRE age is not in the future any more"
+  },
+  "fireCurrencyConfirmMessage": "Your FIRE amounts are read in {currency}.",
+  "@fireCurrencyConfirmMessage": {
+    "description": "FIRE dashboard: settings saved before amounts had a currency are read in the base currency",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "fireCurrencyConfirmAction": "Confirm {currency}",
+  "@fireCurrencyConfirmAction": {
+    "description": "FIRE dashboard: button that stores the base currency on FIRE settings",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "fireAmountsInCurrency": "Amounts are in {currency}",
+  "@fireAmountsInCurrency": {
+    "description": "FIRE settings: the currency the FIRE amounts are stored in",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "fireEnterValidAmount": "Enter a valid amount",
+  "@fireEnterValidAmount": {
+    "description": "FIRE: validation error for an amount that is not a number"
   }
 }

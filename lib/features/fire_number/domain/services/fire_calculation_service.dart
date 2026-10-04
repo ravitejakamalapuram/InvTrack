@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:inv_tracker/core/calculations/planning_inputs_calculator.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 
@@ -13,22 +14,40 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 /// - Real return = Nominal return - Inflation rate (using Fisher equation)
 /// - All projections use real returns to maintain purchasing power
 class FireCalculationService {
+  /// Projections longer than this are shown as not reachable.
+  static const maxProjectionMonths = 100 * 12;
+
+  /// Projected this many years before the target age or earlier is ahead.
+  static const aheadByYears = 2;
+
   /// Calculate complete FIRE analysis
   ///
   /// This method calculates the FIRE number in today's money and uses real returns
   /// for all projections. This approach is mathematically correct and user-friendly.
   ///
+  /// [settings] amounts, [currentPortfolioValue] and [currentMonthlySavings]
+  /// must be in one currency. Ages and dates are worked out as of [asOf]
+  /// (today when omitted).
+  ///
   /// Example:
   /// - Monthly expenses: ₹50,000
   /// - Inflation: 6%, Nominal return: 12%
   /// - Real return: ~5.66%
-  /// - FIRE number: ₹1.5 crore (in today's money)
-  /// - At retirement, this will have same purchasing power as ₹4.8cr in future money
+  /// - FIRE number: ₹1.83 crore (in today's money): 25× annual expenses at a
+  ///   4% withdrawal rate, plus a 20% healthcare buffer and 6 months of
+  ///   expenses, i.e. 30.5× annual expenses
   FireCalculationResult calculate({
     required FireSettingsEntity settings,
     required double currentPortfolioValue,
     required double currentMonthlySavings,
+    DateTime? asOf,
+    FireInputsSummary? inputs,
   }) {
+    final now = DateTime.now();
+    final today = asOf ?? DateTime(now.year, now.month, now.day);
+    final currentAge = settings.ageAt(today);
+    final yearsToFire = settings.targetFireAge - currentAge;
+
     // Calculate real return using Fisher equation
     // (1 + nominal) = (1 + real) × (1 + inflation)
     // Solving for real: real = (1 + nominal) / (1 + inflation) - 1
@@ -40,7 +59,8 @@ class FireCalculationService {
     // Calculate FIRE number in TODAY'S money (no inflation adjustment)
     // Apply FIRE type expense multiplier (e.g., lean = 70%, fat = 150%)
     final fireTypeAdjustedExpenses =
-        settings.monthlyExpenses * settings.fireType.expenseMultiplier;
+        settings.monthlyExpenses *
+        settings.fireType.effective.expenseMultiplier;
     final currentAnnualExpenses = fireTypeAdjustedExpenses * 12;
 
     // Calculate core FIRE number (25x rule with SWR) - in today's money
@@ -67,11 +87,15 @@ class FireCalculationService {
         fireNumber - (totalOtherIncome * settings.fireMultiplier);
     final finalFireNumber = adjustedFireNumber > 0 ? adjustedFireNumber : 0.0;
 
+    // The multiple of annual expenses the FIRE number really is.
+    final expenseMultiple = currentAnnualExpenses > 0
+        ? finalFireNumber / currentAnnualExpenses
+        : 0.0;
+
     // Calculate what this will be worth in future money (for display purposes)
-    final yearsToFire = settings.yearsToFire;
     final inflationMultiplier = math.pow(
       1 + settings.inflationRate / 100,
-      yearsToFire,
+      math.max(0, yearsToFire),
     );
     final inflationAdjustedFireNumber = finalFireNumber * inflationMultiplier;
     final inflationAdjustedMonthlyExpenses =
@@ -92,14 +116,6 @@ class FireCalculationService {
         ? (currentPortfolioValue / finalFireNumber * 100)
         : 0.0;
 
-    // Determine status
-    final status = _determineStatus(
-      progressPercentage: progressPercentage,
-      currentValue: currentPortfolioValue,
-      coastNumber: coastFireNumber,
-      yearsToFire: yearsToFire,
-    );
-
     // Calculate required monthly savings using REAL returns
     final requiredMonthlySavings = _calculateRequiredMonthlySavings(
       targetAmount: finalFireNumber,
@@ -108,21 +124,28 @@ class FireCalculationService {
       annualReturn: realReturn,
     );
 
-    // Calculate projected FIRE age using REAL returns
-    final projectedFireAge = _calculateProjectedFireAge(
+    // Months until the corpus reaches the FIRE number, using REAL returns
+    final monthsToFire = _monthsToFire(
       targetAmount: finalFireNumber,
       currentAmount: currentPortfolioValue,
       monthlySavings: currentMonthlySavings,
       annualReturn: realReturn,
-      currentAge: settings.currentAge,
     );
+    final projectedFireDate = monthsToFire == null
+        ? null
+        : PlanningInputsCalculator.addMonths(today, monthsToFire);
+    final projectedFireAge = projectedFireDate == null
+        ? null
+        : settings.ageAt(projectedFireDate);
 
-    // Calculate projected FIRE date
-    final projectedFireDate = projectedFireAge > settings.currentAge
-        ? DateTime.now().add(
-            Duration(days: (projectedFireAge - settings.currentAge) * 365),
-          )
-        : null;
+    // Determine status
+    final status = _determineStatus(
+      progressPercentage: progressPercentage,
+      currentValue: currentPortfolioValue,
+      coastNumber: coastFireNumber,
+      projectedFireAge: projectedFireAge,
+      targetFireAge: settings.targetFireAge,
+    );
 
     // Generate milestones
     final milestones = _generateMilestones(
@@ -162,7 +185,9 @@ class FireCalculationService {
       emergencyFundNeeded: emergencyFundNeeded,
       healthcareCorpusNeeded: healthcareCorpusNeeded,
       coreRetirementCorpus: coreRetirementCorpus,
-      calculatedAt: DateTime.now(),
+      expenseMultiple: expenseMultiple,
+      inputs: inputs,
+      calculatedAt: now,
     );
   }
 
@@ -222,60 +247,58 @@ class FireCalculationService {
     return amountNeeded * monthlyRate / denominator;
   }
 
-  /// Calculate projected FIRE age based on current savings rate
-  int _calculateProjectedFireAge({
+  /// Whole months (rounded up) until [currentAmount] growing at
+  /// [annualReturn] with [monthlySavings] a month reaches [targetAmount];
+  /// 0 when it already has, null when it never does within
+  /// [maxProjectionMonths].
+  ///
+  /// With savings: n = ln((FV·r + PMT) / (PV·r + PMT)) / ln(1 + r).
+  /// Without savings the corpus still compounds: n = ln(FV / PV) / ln(1 + r).
+  int? _monthsToFire({
     required double targetAmount,
     required double currentAmount,
     required double monthlySavings,
     required double annualReturn,
-    required int currentAge,
   }) {
-    if (currentAmount >= targetAmount) return currentAge;
-    if (monthlySavings <= 0) return 100; // Never if not saving
+    if (currentAmount >= targetAmount) return 0;
+    final savings = math.max(0.0, monthlySavings);
+    final pv = math.max(0.0, currentAmount);
+    final r = annualReturn / 100 / 12;
 
-    final monthlyRate = annualReturn / 100 / 12;
-    const maxMonths = 600; // 50 years max
-
-    // Use logarithmic formula for O(1) calculation instead of O(N) loop
-    // Formula: n = ln((FV*r + PMT) / (PV*r + PMT)) / ln(1+r)
-    int months;
-
-    if (monthlyRate.abs() < 1e-9) {
-      // Simple linear growth if rate is effectively zero
-      // FV = PV + n*PMT => n = (FV - PV) / PMT
-      months = ((targetAmount - currentAmount) / monthlySavings).ceil();
+    double months;
+    if (r.abs() < 1e-12) {
+      // No growth: FV = PV + n·PMT.
+      if (savings <= 0) return null;
+      months = (targetAmount - pv) / savings;
+    } else if (savings <= 0) {
+      if (pv <= 0 || r < 0) return null;
+      months = math.log(targetAmount / pv) / math.log(1 + r);
     } else {
-      final r = monthlyRate;
-      final num = targetAmount * r + monthlySavings;
-      final den = currentAmount * r + monthlySavings;
-
-      // Logarithm domain check (should be positive given checks above)
-      if (num <= 0 || den <= 0) return 100;
-
-      final monthsFloat = math.log(num / den) / math.log(1 + r);
-      months = monthsFloat.ceil();
+      final numerator = targetAmount * r + savings;
+      final denominator = pv * r + savings;
+      if (numerator <= 0 || denominator <= 0) return null;
+      months = math.log(numerator / denominator) / math.log(1 + r);
     }
 
-    if (months > maxMonths) months = maxMonths;
-    if (months < 0) months = 0; // Should not happen due to initial check
-
-    return currentAge + (months / 12).ceil();
+    if (!months.isFinite || months > maxProjectionMonths) return null;
+    return math.max(0, months.ceil());
   }
 
-  /// Determine FIRE progress status based on progress percentage and Coast FIRE
+  /// FIRE progress status: projected FIRE age against the target age.
   ///
-  /// Status determination logic:
   /// - achieved: 100%+ of FIRE number reached
-  /// - coasting: Reached Coast FIRE (can stop saving, investments will grow to FIRE)
-  /// - ahead: 75%+ progress OR on track to reach FIRE 2+ years early
-  /// - onTrack: 25-75% progress with reasonable trajectory
-  /// - behind: <25% progress with significant time remaining
-  /// - notStarted: No investments yet
+  /// - coasting: growth alone reaches the FIRE number by the target age,
+  ///   which is the timeline too: with no savings the projection meets it
+  /// - notStarted: nothing invested yet
+  /// - ahead: projected [aheadByYears]+ years before the target age
+  /// - onTrack: projected by the target age
+  /// - behind: projected after the target age, or not reachable
   FireProgressStatus _determineStatus({
     required double progressPercentage,
     required double currentValue,
     required double coastNumber,
-    required int yearsToFire,
+    required int? projectedFireAge,
+    required int targetFireAge,
   }) {
     if (progressPercentage >= 100) {
       return FireProgressStatus.achieved;
@@ -286,16 +309,13 @@ class FireCalculationService {
     if (progressPercentage <= 0) {
       return FireProgressStatus.notStarted;
     }
-
-    // Use progress percentage thresholds for status
-    // These thresholds are based on typical FIRE journey milestones
-    if (progressPercentage >= 75) {
+    if (projectedFireAge == null || projectedFireAge > targetFireAge) {
+      return FireProgressStatus.behind;
+    }
+    if (projectedFireAge <= targetFireAge - aheadByYears) {
       return FireProgressStatus.ahead;
     }
-    if (progressPercentage >= 25) {
-      return FireProgressStatus.onTrack;
-    }
-    return FireProgressStatus.behind;
+    return FireProgressStatus.onTrack;
   }
 
   /// Generate milestone list
@@ -336,8 +356,12 @@ class FireCalculationService {
     required double currentPortfolioValue,
     required double monthlySavings,
     required double fireNumber,
+    DateTime? asOf,
   }) {
     final points = <FireProjectionPoint>[];
+    final now = DateTime.now();
+    final today = asOf ?? DateTime(now.year, now.month, now.day);
+    final currentAge = settings.ageAt(today);
 
     // Calculate real return for projections
     final realReturn = _calculateRealReturn(
@@ -347,14 +371,11 @@ class FireCalculationService {
     final monthlyRate = realReturn / 100 / 12;
     var balance = currentPortfolioValue;
 
-    for (var year = 0; year <= settings.yearsToFire + 5; year++) {
-      final age = settings.currentAge + year;
-      final date = DateTime.now().add(Duration(days: year * 365));
-
+    for (var year = 0; year <= settings.yearsToFireAt(today) + 5; year++) {
       points.add(
         FireProjectionPoint(
-          date: date,
-          age: age,
+          date: PlanningInputsCalculator.addMonths(today, year * 12),
+          age: currentAge + year,
           projectedValue: balance,
           targetValue: fireNumber,
           isHistorical: year == 0,

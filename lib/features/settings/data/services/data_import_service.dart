@@ -298,48 +298,11 @@ class DataImportService {
               jsonDecode(utf8.decode(fireSettingsFile.content as List<int>))
                   as Map<String, dynamic>;
 
-          final fireSettings = FireSettingsEntity(
-            id: fireSettingsJson['id'] as String? ?? _uuid.v4(),
-            monthlyExpenses: (fireSettingsJson['monthlyExpenses'] as num)
-                .toDouble(),
-            safeWithdrawalRate:
-                (fireSettingsJson['safeWithdrawalRate'] as num?)?.toDouble() ??
-                4.0,
-            currentAge: fireSettingsJson['currentAge'] as int,
-            targetFireAge: fireSettingsJson['targetFireAge'] as int,
-            lifeExpectancy: (fireSettingsJson['lifeExpectancy'] as int?) ?? 85,
-            inflationRate:
-                (fireSettingsJson['inflationRate'] as num?)?.toDouble() ?? 6.0,
-            preRetirementReturn:
-                (fireSettingsJson['preRetirementReturn'] as num?)?.toDouble() ??
-                12.0,
-            postRetirementReturn:
-                (fireSettingsJson['postRetirementReturn'] as num?)
-                    ?.toDouble() ??
-                8.0,
-            healthcareBuffer:
-                (fireSettingsJson['healthcareBuffer'] as num?)?.toDouble() ??
-                20.0,
-            emergencyMonths:
-                (fireSettingsJson['emergencyMonths'] as num?)?.toDouble() ?? 6,
-            fireType: FireType.fromString(
-              fireSettingsJson['fireType'] as String? ?? 'regular',
-            ),
-            monthlyPassiveIncome:
-                (fireSettingsJson['monthlyPassiveIncome'] as num?)
-                    ?.toDouble() ??
-                0,
-            expectedPension:
-                (fireSettingsJson['expectedPension'] as num?)?.toDouble() ?? 0,
-            isSetupComplete:
-                fireSettingsJson['isSetupComplete'] as bool? ?? true,
-            createdAt:
-                DateTime.tryParse(
-                  fireSettingsJson['createdAt'] as String? ?? '',
-                ) ??
-                DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
+          final fireSettings = FireSettingsEntity.fromJson(
+            fireSettingsJson,
+            fallbackId: _uuid.v4(),
+            defaultIsSetupComplete: true,
+          ).copyWith(updatedAt: DateTime.now());
 
           await _fireSettingsRepository.saveSettings(fireSettings);
           fireSettingsImported = true;

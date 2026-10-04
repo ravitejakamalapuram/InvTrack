@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
+import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
@@ -144,6 +145,10 @@ class FireDashboardScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (settings.currency == null) ...[
+            _buildCurrencyConfirmCard(context, ref, isDark, settings),
+            SizedBox(height: AppSpacing.lg),
+          ],
           // Premium hero card with centered progress ring
           _buildPremiumHeroCard(
             context,
@@ -189,6 +194,17 @@ class FireDashboardScreen extends ConsumerWidget {
           FireStatsCard(
             calculation: calculation,
             currencySymbol: currencySymbol,
+            settings: settings,
+          ),
+          SizedBox(height: AppSpacing.lg),
+
+          // How the corpus is built (PLAN-01)
+          _buildCorpusCard(
+            context,
+            isDark,
+            calculation,
+            currencySymbol,
+            locale,
           ),
           SizedBox(height: AppSpacing.lg),
 
@@ -381,7 +397,8 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
     String locale,
   ) {
-    final yearsToFire = settings.targetFireAge - settings.currentAge;
+    final l10n = AppLocalizations.of(context);
+    final yearsToFire = settings.yearsToFire;
     final projectedDate = calculation.projectedFireDate;
     // Use locale-aware date formatting
     final locale = Localizations.localeOf(context).languageCode;
@@ -396,7 +413,9 @@ class FireDashboardScreen extends ConsumerWidget {
             iconColor: isDark ? AppColors.accentDark : AppColors.accentLight,
             label: 'Target Age',
             value: '${settings.targetFireAge}',
-            subtitle: '$yearsToFire years left',
+            subtitle: yearsToFire > 0
+                ? '$yearsToFire years left'
+                : l10n.fireTargetAgePassed,
           ),
         ),
         SizedBox(width: AppSpacing.sm),
@@ -411,7 +430,7 @@ class FireDashboardScreen extends ConsumerWidget {
             label: 'Projected',
             value: projectedDate != null
                 ? AppDateUtils.formatYearMonth(projectedDate, locale: locale)
-                : 'N/A',
+                : l10n.fireNotReachable,
             subtitle: calculation.status.shortSubtitle,
           ),
         ),
@@ -498,9 +517,20 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     final monthlyGap = calculation.monthlyGap;
     final status = calculation.status;
     final isPositive = status.isPositive;
+    final notEnoughHistory =
+        calculation.inputs?.savingsSource ==
+        MonthlySavingsSource.notEnoughHistory;
+    // "Invest X more" only for a real shortfall (PLAN-04), and never from
+    // a savings figure that could not be estimated (PLAN-02).
+    final showInvestMore = !isPositive && !notEnoughHistory && monthlyGap > 0;
+    final needsAction = !isPositive && (showInvestMore || notEnoughHistory);
+    final hintStyle = AppTypography.small.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
@@ -522,9 +552,9 @@ class FireDashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isPositive
-                      ? Icons.check_circle_outline
-                      : Icons.lightbulb_outline,
+                  needsAction
+                      ? Icons.lightbulb_outline
+                      : Icons.check_circle_outline,
                   color: statusColor,
                   size: 24,
                 ),
@@ -535,9 +565,9 @@ class FireDashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isPositive
-                          ? 'You\'re ${status.shortSubtitle.toLowerCase()}!'
-                          : 'Action Needed',
+                      needsAction
+                          ? 'Action Needed'
+                          : 'You\'re ${status.shortSubtitle.toLowerCase()}!',
                       style: AppTypography.bodyMedium.copyWith(
                         color: isDark
                             ? AppColors.textPrimaryDark
@@ -545,25 +575,26 @@ class FireDashboardScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    isPositive
-                        ? Text(
-                            'Keep up your current investment rate.',
-                            style: AppTypography.small.copyWith(
-                              color: isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light,
-                            ),
-                          )
-                        : PrivacyMask(
-                            child: Text(
-                              'Invest ${formatCompactCurrency(monthlyGap.abs(), symbol: currencySymbol, locale: locale)}/month more to stay on track.',
-                              style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.neutral400Dark
-                                    : AppColors.neutral500Light,
-                              ),
+                    if (showInvestMore)
+                      PrivacyMask(
+                        child: Text(
+                          l10n.fireInvestMore(
+                            formatCompactCurrency(
+                              monthlyGap,
+                              symbol: currencySymbol,
+                              locale: locale,
                             ),
                           ),
+                          style: hintStyle,
+                        ),
+                      )
+                    else if (notEnoughHistory && !isPositive)
+                      Text(l10n.fireNotEnoughHistoryHint, style: hintStyle)
+                    else
+                      Text(
+                        'Keep up your current investment rate.',
+                        style: hintStyle,
+                      ),
                   ],
                 ),
               ),
@@ -675,6 +706,17 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
+    final projectedAge = calculation.projectedFireAge;
+    final source =
+        calculation.inputs?.savingsSource ?? MonthlySavingsSource.history;
+    final labelStyle = AppTypography.body.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      fontWeight: FontWeight.w600,
+    );
     final gap = calculation.portfolioGap;
     // portfolioGap = fireNumber - currentPortfolioValue
     // Positive gap = shortfall (need more money) → show as negative (red)
@@ -737,15 +779,174 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                'Age ${calculation.projectedFireAge}',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
-                ),
+                projectedAge == null
+                    ? l10n.fireNotReachable
+                    : 'Age $projectedAge',
+                style: valueStyle,
               ),
             ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.fireMonthlyInvesting, style: labelStyle),
+                    Text(
+                      _savingsSourceLabel(l10n, source),
+                      style: AppTypography.small.copyWith(
+                        color: isDark
+                            ? AppColors.neutral500Dark
+                            : AppColors.neutral400Light,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              source == MonthlySavingsSource.notEnoughHistory
+                  ? Text('—', style: valueStyle)
+                  : MaskedAmountText(
+                      text: formatCompactCurrency(
+                        calculation.currentMonthlySavingsRate,
+                        symbol: currencySymbol,
+                        locale: locale,
+                      ),
+                      style: valueStyle,
+                    ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _savingsSourceLabel(
+    AppLocalizations l10n,
+    MonthlySavingsSource source,
+  ) {
+    switch (source) {
+      case MonthlySavingsSource.declared:
+        return l10n.fireSavingsSourceDeclared;
+      case MonthlySavingsSource.history:
+        return l10n.fireSavingsSourceHistory;
+      case MonthlySavingsSource.notEnoughHistory:
+        return l10n.fireSavingsNotEnoughHistory;
+    }
+  }
+
+  /// How the FIRE corpus is built: current values, principal of holdings
+  /// without one, and other assets. Closed and archived investments are
+  /// left out, and the card says so (money rule 9).
+  Widget _buildCorpusCard(
+    BuildContext context,
+    bool isDark,
+    FireCalculationResult calculation,
+    String currencySymbol,
+    String locale,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final inputs = calculation.inputs;
+    final labelStyle = AppTypography.body.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      fontWeight: FontWeight.w600,
+    );
+    Widget row(String label, double amount) => Padding(
+      padding: EdgeInsets.only(top: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: Text(label, style: labelStyle)),
+          SizedBox(width: AppSpacing.sm),
+          MaskedAmountText(
+            text: formatCompactCurrency(
+              amount,
+              symbol: currencySymbol,
+              locale: locale,
+            ),
+            style: valueStyle,
+          ),
+        ],
+      ),
+    );
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fireCorpusTitle,
+            style: AppTypography.h4.copyWith(
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
+            ),
+          ),
+          if (inputs != null) ...[
+            row(l10n.fireCorpusCurrentValues, inputs.investmentsValue),
+            if (inputs.principalWithoutValue > 0)
+              row(l10n.fireCorpusPrincipalOnly, inputs.principalWithoutValue),
+            if (inputs.otherAssets > 0)
+              row(l10n.fireOtherAssets, inputs.otherAssets),
+          ],
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.fireCorpusExcluded,
+            style: AppTypography.small.copyWith(
+              color: isDark
+                  ? AppColors.neutral500Dark
+                  : AppColors.neutral400Light,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Settings saved before FIRE amounts had a currency are read in the base
+  /// currency. Confirming stores it, so a later base-currency switch
+  /// converts them instead of reading them as another currency (GAP2-01).
+  Widget _buildCurrencyConfirmCard(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+    FireSettingsEntity settings,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final baseCurrency = ref.watch(currencyCodeProvider);
+    return GlassCard(
+      child: Row(
+        children: [
+          Icon(
+            Icons.currency_exchange,
+            color: isDark ? AppColors.warningDark : AppColors.warningLight,
+          ),
+          SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              l10n.fireCurrencyConfirmMessage(baseCurrency),
+              style: AppTypography.small.copyWith(
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => ref
+                .read(fireSettingsNotifierProvider.notifier)
+                .saveSettings(
+                  settings.copyWith(
+                    currency: baseCurrency,
+                    updatedAt: DateTime.now(),
+                  ),
+                ),
+            child: Text(l10n.fireCurrencyConfirmAction(baseCurrency)),
           ),
         ],
       ),

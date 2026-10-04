@@ -34,7 +34,7 @@ class FireSettingsValidator {
       errors.add('Current age must be between 18 and 100');
     }
 
-    if (settings.targetFireAge < settings.currentAge) {
+    if (settings.targetFireAge <= settings.currentAge) {
       errors.add('Target FIRE age must be greater than current age');
     }
 
@@ -87,6 +87,15 @@ class FireSettingsValidator {
 
     if (settings.expectedPension < 0) {
       errors.add('Expected pension cannot be negative');
+    }
+
+    if (settings.otherAssets < 0) {
+      errors.add('Other assets cannot be negative');
+    }
+
+    final sip = settings.monthlySip;
+    if (sip != null && sip < 0) {
+      errors.add('Monthly SIP cannot be negative');
     }
 
     // Passive income should not exceed expenses (warning level, but we'll allow it)

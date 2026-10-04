@@ -1,0 +1,202 @@
+// A11 (#755, PLAN-03, PLAN-04, PLAN-06, PLAN-02): the FIRE screen shows the
+// real multiple, "Not reachable" instead of age 100, where the corpus and
+// the monthly savings come from, and asks the user to invest more only when
+// they are short.
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
+import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+final _asOf = DateTime(2026, 10, 2);
+
+FireSettingsEntity _settings({
+  int birthYear = 1996,
+  int targetFireAge = 45,
+  String? currency = 'INR',
+}) => FireSettingsEntity(
+  id: 'fire',
+  monthlyExpenses: 50000,
+  birthYear: birthYear,
+  targetFireAge: targetFireAge,
+  isSetupComplete: true,
+  currency: currency,
+  createdAt: DateTime(2026, 1, 1),
+  updatedAt: DateTime(2026, 1, 1),
+);
+
+FireCalculationResult _calculate(
+  FireSettingsEntity settings, {
+  required double corpus,
+  required double savings,
+  MonthlySavingsSource source = MonthlySavingsSource.history,
+}) => FireCalculationService().calculate(
+  settings: settings,
+  currentPortfolioValue: corpus,
+  currentMonthlySavings: savings,
+  asOf: _asOf,
+  inputs: FireInputsSummary(
+    investmentsValue: corpus,
+    principalWithoutValue: 0,
+    otherAssets: 0,
+    savingsSource: source,
+  ),
+);
+
+Future<void> _pump(
+  WidgetTester tester,
+  FireSettingsEntity settings,
+  FireCalculationResult result,
+) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  tester.view.physicalSize = const Size(1080, 4000);
+  tester.view.devicePixelRatio = 2;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        currencyCodeProvider.overrideWith((ref) => 'INR'),
+        currencySymbolProvider.overrideWith((ref) => '₹'),
+        currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
+        fireSettingsProvider.overrideWith((ref) => Stream.value(settings)),
+        fireCalculationProvider.overrideWithValue(AsyncValue.data(result)),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: FireDashboardScreen(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets('a user ahead of schedule is not told to invest more', (
+    tester,
+  ) async {
+    // S5: saving ₹60k against ₹10.8k needed (gap −₹49,235.22).
+    final settings = _settings(birthYear: 1998, targetFireAge: 50);
+    await _pump(
+      tester,
+      settings,
+      _calculate(settings, corpus: 3660000, savings: 60000),
+    );
+
+    expect(find.textContaining('more to stay on track'), findsNothing);
+    expect(find.text('Ahead of Schedule'), findsOneWidget);
+  });
+
+  testWidgets('a behind user with a surplus is not told to invest more', (
+    tester,
+  ) async {
+    final settings = _settings();
+    final behind = _calculate(settings, corpus: 1402551.73, savings: 0);
+    final withSurplus = FireCalculationResult(
+      fireNumber: behind.fireNumber,
+      coastFireNumber: behind.coastFireNumber,
+      baristaFireNumber: behind.baristaFireNumber,
+      currentPortfolioValue: behind.currentPortfolioValue,
+      progressPercentage: behind.progressPercentage,
+      status: FireProgressStatus.behind,
+      requiredMonthlySavings: 40000,
+      currentMonthlySavingsRate: 49200,
+      projectedFireAge: 46,
+      inflationAdjustedFireNumber: behind.inflationAdjustedFireNumber,
+      inflationAdjustedMonthlyExpenses: behind.inflationAdjustedMonthlyExpenses,
+      portfolioGap: behind.portfolioGap,
+      monthlyGap: -9200,
+      milestones: behind.milestones,
+      achievedMilestones: behind.achievedMilestones,
+      emergencyFundNeeded: behind.emergencyFundNeeded,
+      healthcareCorpusNeeded: behind.healthcareCorpusNeeded,
+      coreRetirementCorpus: behind.coreRetirementCorpus,
+      expenseMultiple: behind.expenseMultiple,
+      inputs: behind.inputs,
+      calculatedAt: _asOf,
+    );
+    await _pump(tester, settings, withSurplus);
+
+    expect(find.textContaining('more to stay on track'), findsNothing);
+  });
+
+  testWidgets('a user who is short is told how much more to invest', (
+    tester,
+  ) async {
+    final settings = _settings();
+    await _pump(
+      tester,
+      settings,
+      _calculate(settings, corpus: 1402551.73, savings: 0),
+    );
+
+    expect(find.textContaining('more to stay on track'), findsOneWidget);
+    expect(find.text('Age 76'), findsOneWidget);
+  });
+
+  testWidgets('shows the real multiple and the FIRE number breakdown', (
+    tester,
+  ) async {
+    final settings = _settings();
+    await _pump(
+      tester,
+      settings,
+      _calculate(settings, corpus: 1402551.73, savings: 0),
+    );
+
+    expect(find.textContaining('30.5× your annual expenses'), findsOneWidget);
+    expect(find.textContaining('25x'), findsNothing);
+    expect(find.text('Healthcare buffer'), findsOneWidget);
+    expect(find.text('Emergency fund'), findsOneWidget);
+  });
+
+  testWidgets('shows Not reachable instead of age 100', (tester) async {
+    final settings = _settings();
+    await _pump(tester, settings, _calculate(settings, corpus: 0, savings: 0));
+
+    expect(find.text('Not reachable'), findsWidgets);
+    expect(find.text('Age 100'), findsNothing);
+  });
+
+  testWidgets('says when there is not enough history to estimate savings', (
+    tester,
+  ) async {
+    final settings = _settings();
+    await _pump(
+      tester,
+      settings,
+      _calculate(
+        settings,
+        corpus: 1000000,
+        savings: 0,
+        source: MonthlySavingsSource.notEnoughHistory,
+      ),
+    );
+
+    expect(find.textContaining('Not enough history'), findsWidgets);
+    expect(find.textContaining('more to stay on track'), findsNothing);
+  });
+
+  testWidgets('asks to confirm the currency of settings saved without one', (
+    tester,
+  ) async {
+    final settings = _settings(currency: null);
+    await _pump(
+      tester,
+      settings,
+      _calculate(settings, corpus: 1402551.73, savings: 0),
+    );
+
+    expect(find.textContaining('in INR'), findsOneWidget);
+  });
+}

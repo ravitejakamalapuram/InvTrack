@@ -15,7 +15,10 @@ class FireCalculationResult {
   // Projections
   final double requiredMonthlySavings;
   final double currentMonthlySavingsRate;
-  final int projectedFireAge; // Based on current savings rate
+
+  /// Age at [projectedFireDate]; null when FIRE is not reachable at the
+  /// current savings rate.
+  final int? projectedFireAge;
   final DateTime? projectedFireDate;
 
   // Inflation-adjusted values
@@ -36,6 +39,13 @@ class FireCalculationResult {
   final double healthcareCorpusNeeded;
   final double coreRetirementCorpus;
 
+  /// [fireNumber] as a multiple of annual expenses (30.5× with the
+  /// defaults: 25× at a 4% withdrawal rate, plus the buffers).
+  final double expenseMultiple;
+
+  /// Where the corpus and the monthly savings came from.
+  final FireInputsSummary? inputs;
+
   // Metadata
   final DateTime calculatedAt;
 
@@ -48,7 +58,7 @@ class FireCalculationResult {
     required this.status,
     required this.requiredMonthlySavings,
     required this.currentMonthlySavingsRate,
-    required this.projectedFireAge,
+    this.projectedFireAge,
     this.projectedFireDate,
     required this.inflationAdjustedFireNumber,
     required this.inflationAdjustedMonthlyExpenses,
@@ -60,6 +70,8 @@ class FireCalculationResult {
     required this.emergencyFundNeeded,
     required this.healthcareCorpusNeeded,
     required this.coreRetirementCorpus,
+    this.expenseMultiple = 0,
+    this.inputs,
     required this.calculatedAt,
   });
 
@@ -89,7 +101,6 @@ class FireCalculationResult {
       status: FireProgressStatus.notStarted,
       requiredMonthlySavings: 0,
       currentMonthlySavingsRate: 0,
-      projectedFireAge: 0,
       inflationAdjustedFireNumber: 0,
       inflationAdjustedMonthlyExpenses: 0,
       portfolioGap: 0,
@@ -109,6 +120,40 @@ class FireCalculationResult {
         'progress: ${progressPercentage.toStringAsFixed(1)}%, '
         'status: ${status.displayName})';
   }
+}
+
+/// Where the monthly savings figure came from.
+enum MonthlySavingsSource {
+  /// The SIP the user declared.
+  declared,
+
+  /// Net new money of the last 12 months.
+  history,
+
+  /// Less than 3 months of cash flows: no estimate, 0 is used.
+  notEnoughHistory,
+}
+
+/// How the FIRE corpus is built, in the base currency.
+class FireInputsSummary {
+  /// Current values of open investments that have one.
+  final double investmentsValue;
+
+  /// Principal still invested in open investments without a current value.
+  final double principalWithoutValue;
+
+  /// The user's other assets.
+  final double otherAssets;
+  final MonthlySavingsSource savingsSource;
+
+  const FireInputsSummary({
+    required this.investmentsValue,
+    required this.principalWithoutValue,
+    required this.otherAssets,
+    required this.savingsSource,
+  });
+
+  double get corpus => investmentsValue + principalWithoutValue + otherAssets;
 }
 
 /// Individual FIRE milestone
