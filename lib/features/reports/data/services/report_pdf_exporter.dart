@@ -323,7 +323,7 @@ class ReportPdfExporter {
           headers: ['Goal', 'Progress', 'Target', 'Current'],
           data: report.onTrackGoals.map((g) => [
             g.name,
-            '${g.progressPercentage.toStringAsFixed(1)}%',
+            '${g.progressPercentage}%',
             _formatAmount(g.targetAmount, symbol, isPrivacyMode, locale),
             _formatAmount(g.currentAmount, symbol, isPrivacyMode, locale),
           ]).toList(),
@@ -335,7 +335,7 @@ class ReportPdfExporter {
           headers: ['Goal', 'Progress', 'Target', 'Current'],
           data: report.atRiskGoals.map((g) => [
             g.name,
-            '${g.progressPercentage.toStringAsFixed(1)}%',
+            '${g.progressPercentage}%',
             _formatAmount(g.targetAmount, symbol, isPrivacyMode, locale),
             _formatAmount(g.currentAmount, symbol, isPrivacyMode, locale),
           ]).toList(),

@@ -42,7 +42,8 @@ class MonthlySavingsEstimate {
 }
 
 /// Portfolio inputs for plans (FIRE, goals): the single implementation of
-/// "corpus" and "monthly savings" (money rule 3).
+/// "corpus", "monthly savings", "monthly income", the monthly contribution
+/// a target needs and the months it takes (money rule 3).
 ///
 /// Callers pass cash flows and terminal values already converted to the
 /// base currency (money rule 2), and only active (non-archived)
@@ -140,6 +141,106 @@ class PlanningInputsCalculator {
       amount: math.max(0, net) / math.min(trailingMonths, history),
       monthsOfHistory: history,
     );
+  }
+
+  /// INCOME per month of the open [investments]: for each one, its INCOME
+  /// dated in the [trailingMonths] months up to and including [asOf],
+  /// divided by the months it has been held in that window (at least 1, at
+  /// most [trailingMonths]). A ₹75,000 annual coupon is ₹6,250 a month, and
+  /// so are two quarterly ₹18,750 payouts from a deposit held 6 months.
+  /// Closed investments pay nothing any more, and income after [asOf] has
+  /// not been earned yet.
+  static double monthlyIncome({
+    required Iterable<InvestmentEntity> investments,
+    required List<CashFlowEntity> cashFlows,
+    required DateTime asOf,
+  }) {
+    final today = _dateOnly(asOf);
+    final windowStart = addMonths(today, -trailingMonths);
+    final open = {
+      for (final investment in investments)
+        if (investment.isOpen) investment.id,
+    };
+
+    final first = <String, DateTime>{};
+    final income = <String, double>{};
+    for (final cf in cashFlows) {
+      if (!open.contains(cf.investmentId)) continue;
+      final date = _dateOnly(cf.date);
+      if (date.isAfter(today)) continue;
+      final earliest = first[cf.investmentId];
+      if (earliest == null || date.isBefore(earliest)) {
+        first[cf.investmentId] = date;
+      }
+      if (cf.type == CashFlowType.income && date.isAfter(windowStart)) {
+        income[cf.investmentId] = (income[cf.investmentId] ?? 0) + cf.amount;
+      }
+    }
+
+    var total = 0.0;
+    for (final MapEntry(key: id, value: amount) in income.entries) {
+      final held = wholeMonthsBetween(first[id]!, today);
+      total += amount / held.clamp(1, trailingMonths);
+    }
+    return total;
+  }
+
+  /// The monthly contribution that grows [current] to [target] in [months]
+  /// months at [annualRatePercent] a year, compounded monthly:
+  /// PMT = (FV − PV·(1+r)ⁿ)·r / ((1+r)ⁿ − 1), with r the monthly rate.
+  /// 0 when growth alone gets there or no months are left.
+  static double requiredMonthlyContribution({
+    required double target,
+    required double current,
+    required int months,
+    required double annualRatePercent,
+  }) {
+    if (months <= 0) return 0.0;
+    final r = annualRatePercent / 100 / 12;
+    final growth = math.pow(1 + r, months).toDouble();
+    final needed = target - current * growth;
+    if (needed <= 0) return 0.0;
+    final denominator = growth - 1;
+    if (denominator == 0) return needed / months;
+    return needed * r / denominator;
+  }
+
+  /// Whole months (rounded up) until [current] growing at
+  /// [annualRatePercent] a year with [monthlySavings] a month reaches
+  /// [target]; 0 when it already has, null when it never does within
+  /// [maxMonths].
+  ///
+  /// With savings: n = ln((FV·r + PMT) / (PV·r + PMT)) / ln(1 + r).
+  /// Without savings the amount still compounds: n = ln(FV / PV) / ln(1 + r).
+  static int? monthsToReach({
+    required double target,
+    required double current,
+    required double monthlySavings,
+    required double annualRatePercent,
+    int maxMonths = 100 * 12,
+  }) {
+    if (current >= target) return 0;
+    final savings = math.max(0.0, monthlySavings);
+    final pv = math.max(0.0, current);
+    final r = annualRatePercent / 100 / 12;
+
+    double months;
+    if (r.abs() < 1e-12) {
+      // No growth: FV = PV + n·PMT.
+      if (savings <= 0) return null;
+      months = (target - pv) / savings;
+    } else if (savings <= 0) {
+      if (pv <= 0 || r < 0) return null;
+      months = math.log(target / pv) / math.log(1 + r);
+    } else {
+      final numerator = target * r + savings;
+      final denominator = pv * r + savings;
+      if (numerator <= 0 || denominator <= 0) return null;
+      months = math.log(numerator / denominator) / math.log(1 + r);
+    }
+
+    if (!months.isFinite || months > maxMonths) return null;
+    return math.max(0, months.ceil());
   }
 
   /// [date] plus [months] calendar months, with the day clamped to the

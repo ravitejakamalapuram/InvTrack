@@ -206,7 +206,7 @@ class ReportCsvExporter {
     for (final g in report.onTrackGoals) {
       rows.add([
         CsvUtils.sanitizeField(g.name),
-        '${g.progressPercentage.toStringAsFixed(1)}%',
+        '${g.progressPercentage}%',
         CsvUtils.sanitizeField(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
         CsvUtils.sanitizeField(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
       ]);
@@ -217,7 +217,7 @@ class ReportCsvExporter {
     for (final g in report.atRiskGoals) {
       rows.add([
         CsvUtils.sanitizeField(g.name),
-        '${g.progressPercentage.toStringAsFixed(1)}%',
+        '${g.progressPercentage}%',
         CsvUtils.sanitizeField(_formatAmount(g.targetAmount, symbol, isPrivacyMode, locale)),
         CsvUtils.sanitizeField(_formatAmount(g.currentAmount, symbol, isPrivacyMode, locale)),
       ]);

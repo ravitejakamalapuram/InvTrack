@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 void main() {
   group('GoalEntity', () {
@@ -151,6 +152,43 @@ void main() {
 
     test('defaultIcon is in available list', () {
       expect(GoalIcons.available, contains(GoalIcons.defaultIcon));
+    });
+  });
+
+  // A12 (#756): an edit that only changes which investments a goal tracks
+  // must refresh the goal screens, which skip a rebuild for an equal goal.
+  group('GoalEntity equality', () {
+    final goal = GoalEntity(
+      id: 'g',
+      name: 'House',
+      type: GoalType.targetAmount,
+      targetAmount: 1000000,
+      trackingMode: GoalTrackingMode.selected,
+      linkedInvestmentIds: const ['a'],
+      linkedTypes: const [InvestmentType.fixedDeposit],
+      icon: '🏠',
+      colorValue: 0xFF3B82F6,
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+      currency: 'INR',
+    );
+
+    test('equal copies are equal and hash alike', () {
+      final copy = goal.copyWith(linkedInvestmentIds: ['a']);
+      expect(copy, goal);
+      expect(copy.hashCode, goal.hashCode);
+    });
+
+    test('different linked investments are not equal', () {
+      expect(goal.copyWith(linkedInvestmentIds: ['a', 'b']), isNot(goal));
+    });
+
+    test('different linked types are not equal', () {
+      expect(goal.copyWith(linkedTypes: [InvestmentType.bonds]), isNot(goal));
+    });
+
+    test('a later update is not equal', () {
+      expect(goal.copyWith(updatedAt: DateTime(2026, 2, 1)), isNot(goal));
     });
   });
 }

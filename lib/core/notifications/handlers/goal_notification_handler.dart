@@ -3,6 +3,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Handler for goal-related notifications.
@@ -147,7 +148,7 @@ class GoalNotificationHandler with NotificationPreferencesMixin {
     final daysOver = projectedDate.difference(targetDate).inDays;
     const title = '⚠️ Goal At Risk';
     final body =
-        '"$goalName" is ${progressPercent.toStringAsFixed(0)}% complete but '
+        '"$goalName" is ${GoalProgress.wholePercent(progressPercent)}% complete but '
         'projected to miss deadline by $daysOver days. Consider increasing contributions.';
 
     final androidDetails = AndroidNotificationDetails(

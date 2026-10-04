@@ -9,11 +9,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 
 final _loadError = Exception('permission-denied');
 
@@ -56,9 +56,10 @@ ProviderContainer _container({
       ),
       allInvestmentsProvider.overrideWith((ref) => investments()),
       allCashFlowsStreamProvider.overrideWith((ref) => cashFlows()),
-      // No converter: the providers then resolve to zero progress, which is
-      // what a swallowed loading or error state used to look like.
-      batchCurrencyConverterProvider.overrideWithValue(null),
+      // Everything is in the base currency, so no converter is needed. A12:
+      // goal progress reads the converted snapshot, which needs the base
+      // currency up front.
+      currencyCodeProvider.overrideWith((ref) => 'INR'),
     ],
     // Production (main.dart) keeps Riverpod's default retry policy.
     retry: productionRetry ? null : (_, _) => null,

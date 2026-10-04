@@ -117,19 +117,21 @@ class FireCalculationService {
         : 0.0;
 
     // Calculate required monthly savings using REAL returns
-    final requiredMonthlySavings = _calculateRequiredMonthlySavings(
-      targetAmount: finalFireNumber,
-      currentAmount: currentPortfolioValue,
-      years: yearsToFire,
-      annualReturn: realReturn,
-    );
+    final requiredMonthlySavings =
+        PlanningInputsCalculator.requiredMonthlyContribution(
+          target: finalFireNumber,
+          current: currentPortfolioValue,
+          months: yearsToFire * 12,
+          annualRatePercent: realReturn,
+        );
 
     // Months until the corpus reaches the FIRE number, using REAL returns
-    final monthsToFire = _monthsToFire(
-      targetAmount: finalFireNumber,
-      currentAmount: currentPortfolioValue,
+    final monthsToFire = PlanningInputsCalculator.monthsToReach(
+      target: finalFireNumber,
+      current: currentPortfolioValue,
       monthlySavings: currentMonthlySavings,
-      annualReturn: realReturn,
+      annualRatePercent: realReturn,
+      maxMonths: maxProjectionMonths,
     );
     final projectedFireDate = monthsToFire == null
         ? null
@@ -218,70 +220,6 @@ class FireCalculationService {
     if (yearsToGrow <= 0) return targetAmount;
     final rate = returnRate / 100;
     return targetAmount / math.pow(1 + rate, yearsToGrow).toDouble();
-  }
-
-  /// Calculate required monthly savings using future value formula
-  double _calculateRequiredMonthlySavings({
-    required double targetAmount,
-    required double currentAmount,
-    required int years,
-    required double annualReturn,
-  }) {
-    if (years <= 0) return 0.0;
-
-    final monthlyRate = annualReturn / 100 / 12;
-    final months = years * 12;
-
-    // Future value of current amount
-    final futureValueOfCurrent =
-        currentAmount * math.pow(1 + monthlyRate, months).toDouble();
-
-    // Amount still needed
-    final amountNeeded = targetAmount - futureValueOfCurrent;
-    if (amountNeeded <= 0) return 0.0;
-
-    // PMT formula: PMT = FV * r / ((1 + r)^n - 1)
-    final denominator = math.pow(1 + monthlyRate, months).toDouble() - 1;
-    if (denominator == 0) return amountNeeded / months;
-
-    return amountNeeded * monthlyRate / denominator;
-  }
-
-  /// Whole months (rounded up) until [currentAmount] growing at
-  /// [annualReturn] with [monthlySavings] a month reaches [targetAmount];
-  /// 0 when it already has, null when it never does within
-  /// [maxProjectionMonths].
-  ///
-  /// With savings: n = ln((FV·r + PMT) / (PV·r + PMT)) / ln(1 + r).
-  /// Without savings the corpus still compounds: n = ln(FV / PV) / ln(1 + r).
-  int? _monthsToFire({
-    required double targetAmount,
-    required double currentAmount,
-    required double monthlySavings,
-    required double annualReturn,
-  }) {
-    if (currentAmount >= targetAmount) return 0;
-    final savings = math.max(0.0, monthlySavings);
-    final pv = math.max(0.0, currentAmount);
-    final r = annualReturn / 100 / 12;
-
-    double months;
-    if (r.abs() < 1e-12) {
-      // No growth: FV = PV + n·PMT.
-      if (savings <= 0) return null;
-      months = (targetAmount - pv) / savings;
-    } else if (savings <= 0) {
-      if (pv <= 0 || r < 0) return null;
-      months = math.log(targetAmount / pv) / math.log(1 + r);
-    } else {
-      final numerator = targetAmount * r + savings;
-      final denominator = pv * r + savings;
-      if (numerator <= 0 || denominator <= 0) return null;
-      months = math.log(numerator / denominator) / math.log(1 + r);
-    }
-
-    if (!months.isFinite || months > maxProjectionMonths) return null;
-    return math.max(0, months.ceil());
   }
 
   /// FIRE progress status: projected FIRE age against the target age.

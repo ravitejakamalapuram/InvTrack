@@ -5792,5 +5792,47 @@
   "fireEnterValidAmount": "Enter a valid amount",
   "@fireEnterValidAmount": {
     "description": "FIRE: validation error for an amount that is not a number"
+  },
+  "goalRequiredPerMonth": "Required per month",
+  "@goalRequiredPerMonth": {
+    "description": "Goal details: what has to be added each month to reach the goal by its date"
+  },
+  "goalRequiredPerMonthAssumption": "Assumes {rate}% growth a year",
+  "@goalRequiredPerMonthAssumption": {
+    "description": "Goal details: the annual return the monthly amount and projection assume",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "goalAlsoCountedIn": "{count, plural, =1{Also counted in 1 other goal} other{Also counted in {count} other goals}}",
+  "@goalAlsoCountedIn": {
+    "description": "Goal card and details: the goal's investments also count towards other goals",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalLinkedInvestments": "Linked investments",
+  "@goalLinkedInvestments": {
+    "description": "Goal details: section listing the investments the goal tracks"
+  },
+  "goalNoLinkedInvestments": "No investments linked yet",
+  "@goalNoLinkedInvestments": {
+    "description": "Goal details: the goal tracks no investment"
+  },
+  "goalInvestmentArchivedNotCounted": "Archived · not counted",
+  "@goalInvestmentArchivedNotCounted": {
+    "description": "Goal details: label on an archived investment the goal does not count"
+  },
+  "goalInvestmentClosedNotCounted": "Closed · not counted",
+  "@goalInvestmentClosedNotCounted": {
+    "description": "Goal details: label on a closed investment the goal does not count"
+  },
+  "goalArchivedInvestmentsDisclosure": "Archived investments are not counted in goal progress.",
+  "@goalArchivedInvestmentsDisclosure": {
+    "description": "Goal details: why archived investments are listed but not counted"
   }
 }

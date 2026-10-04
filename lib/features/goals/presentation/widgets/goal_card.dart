@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/goals/presentation/ui_extensions/goal_type_ui.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/widgets/goal_progress_ring.dart';
+import 'package:inv_tracker/features/goals/presentation/widgets/shared_goals_chip.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Card widget displaying a goal with its progress
@@ -263,6 +264,10 @@ class GoalCard extends ConsumerWidget {
         isPrivacyMode
             ? MaskedAmountText(text: progressText, style: progressTextStyle)
             : Text(progressText, style: progressTextStyle),
+        if (progress != null && progress.otherGoalsCount > 0) ...[
+          SizedBox(height: AppSpacing.xxs),
+          SharedGoalsChip(count: progress.otherGoalsCount),
+        ],
       ],
     );
   }

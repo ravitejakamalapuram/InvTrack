@@ -8,9 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/calculations/planning_inputs_calculator.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
-import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
-import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/fire_number/data/repositories/firestore_fire_settings_repository.dart';
@@ -128,25 +126,10 @@ final firePortfolioInputsProvider =
 final fireCurrencyRateProvider = FutureProvider.autoDispose
     .family<double, ({String from, String to})>((ref, pair) async {
       if (pair.from == pair.to) return 1.0;
-      final currency = ref.watch(calculationEngineProvider).currency;
-      if (!currency.isAvailable) {
-        throw CurrencyConversionException('Currency conversion is unavailable');
-      }
-      try {
-        return await currency.convert(
-          amount: 1,
-          from: pair.from,
-          to: pair.to,
-          fallbackStrategy: ConversionFallbackStrategy.throwError,
-        );
-      } on CurrencyConversionException {
-        final rate = await currency.getLastKnownRate(
-          from: pair.from,
-          to: pair.to,
-        );
-        if (rate == null) rethrow;
-        return rate;
-      }
+      return ref
+          .watch(calculationEngineProvider)
+          .currency
+          .rateToday(from: pair.from, to: pair.to);
     });
 
 // ============ CALCULATION PROVIDERS ============

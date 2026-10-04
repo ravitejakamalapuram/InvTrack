@@ -28,6 +28,7 @@ void main() {
     final testProgress = GoalProgress(
       goal: testGoal,
       currentAmount: 250000,
+      targetAmount: 1000000,
       progressPercent: 25,
       monthlyVelocity: 5000,
       monthlyIncome: 0,
@@ -183,6 +184,7 @@ void main() {
       final incomeProgress = GoalProgress(
         goal: incomeGoal,
         currentAmount: 0,
+        targetAmount: 10000,
         progressPercent: 25,
         monthlyVelocity: 0,
         monthlyIncome: 2500,

@@ -1,560 +1,106 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
+import 'package:inv_tracker/core/calculations/goal_progress_calculator.dart';
+import 'package:inv_tracker/core/calculations/modules/currency_module.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
-import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
-
-/// Calculate progress for a single goal
-class GoalProgressCalculator {
-  /// Calculate progress for a goal based on investments and cash flows
-  static GoalProgress calculate({
-    required GoalEntity goal,
-    required List<InvestmentEntity> allInvestments,
-    required List<CashFlowEntity> allCashFlows,
-  }) {
-    // Filter investments based on tracking mode
-    final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
-    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
-
-    // Filter cash flows for linked investments
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
-
-    // Calculate current amount based on goal type
-    double currentAmount;
-    double monthlyIncome = 0;
-
-    if (goal.isIncomeGoal) {
-      // For income goals, calculate average monthly income
-      monthlyIncome = _calculateMonthlyIncome(linkedCashFlows);
-      currentAmount = monthlyIncome;
-    } else {
-      // For corpus goals, calculate net value (returns + income - invested - fees)
-      currentAmount = _calculateNetValue(linkedCashFlows);
-    }
-
-    // Calculate target
-    final targetAmount = goal.isIncomeGoal
-        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
-        : goal.targetAmount;
-
-    // Calculate progress percentage
-    final progressPercent = targetAmount > 0
-        ? (currentAmount / targetAmount * 100).clamp(0.0, 100.0)
-        : 0.0;
-
-    // Calculate monthly velocity (average monthly contribution)
-    final monthlyVelocity = _calculateMonthlyVelocity(linkedCashFlows);
-
-    // Project completion date
-    DateTime? projectedDate;
-    if (monthlyVelocity > 0 && currentAmount < targetAmount) {
-      final remaining = targetAmount - currentAmount;
-      final monthsNeeded = remaining / monthlyVelocity;
-      projectedDate = DateTime.now().add(
-        Duration(days: (monthsNeeded * 30).round()),
-      );
-    } else if (currentAmount >= targetAmount) {
-      projectedDate = DateTime.now(); // Already achieved
-    }
-
-    // Determine status
-    final status = _determineStatus(
-      goal: goal,
-      currentAmount: currentAmount,
-      targetAmount: targetAmount,
-      projectedDate: projectedDate,
-    );
-
-    // Get milestones
-    final currentMilestone = GoalMilestone.forPercentage(progressPercent);
-    final achievedMilestones = GoalMilestone.achievedMilestones(
-      progressPercent,
-    );
-
-    return GoalProgress(
-      goal: goal,
-      currentAmount: currentAmount,
-      progressPercent: progressPercent,
-      monthlyVelocity: monthlyVelocity,
-      monthlyIncome: monthlyIncome,
-      projectedCompletionDate: projectedDate,
-      status: status,
-      currentMilestone: currentMilestone,
-      achievedMilestones: achievedMilestones,
-      linkedInvestmentCount: linkedInvestments.length,
-      calculatedAt: DateTime.now(),
-    );
-  }
-
-  /// Get investments linked to this goal based on tracking mode
-  static List<InvestmentEntity> _getLinkedInvestments(
-    GoalEntity goal,
-    List<InvestmentEntity> allInvestments,
-  ) {
-    switch (goal.trackingMode) {
-      case GoalTrackingMode.all:
-        return allInvestments;
-      case GoalTrackingMode.byType:
-        return allInvestments
-            .where((i) => goal.linkedTypes.contains(i.type))
-            .toList();
-      case GoalTrackingMode.selected:
-        return allInvestments
-            .where((i) => goal.linkedInvestmentIds.contains(i.id))
-            .toList();
-    }
-  }
-
-  /// Calculate net value from cash flows (for corpus goals)
-  static double _calculateNetValue(List<CashFlowEntity> cashFlows) {
-    double totalReturned = 0;
-
-    for (final cf in cashFlows) {
-      if (cf.type != CashFlowType.invest && cf.type != CashFlowType.fee) {
-        totalReturned += cf.amount;
-      }
-    }
-
-    // For goal tracking, we track returns + income as progress
-    // This represents "money back" toward the goal
-    return totalReturned;
-  }
-
-  /// Calculate average monthly income (for income goals)
-  static double _calculateMonthlyIncome(List<CashFlowEntity> cashFlows) {
-    if (cashFlows.isEmpty) return 0;
-
-    double totalIncome = 0.0;
-    int minDateMs = -1;
-    int maxDateMs = -1;
-    bool hasIncome = false;
-
-    // Optimization: Single pass loop replacing .where, .toList, .sort, and .fold
-    for (final cf in cashFlows) {
-      if (cf.type == CashFlowType.income) {
-        totalIncome += cf.amount;
-        final cfDateMs = cf.date.millisecondsSinceEpoch;
-
-        if (!hasIncome) {
-          minDateMs = cfDateMs;
-          maxDateMs = cfDateMs;
-          hasIncome = true;
-        } else {
-          if (cfDateMs < minDateMs) minDateMs = cfDateMs;
-          if (cfDateMs > maxDateMs) maxDateMs = cfDateMs;
-        }
-      }
-    }
-
-    if (!hasIncome) return 0;
-
-    // Optimization: Calculate date diff using ms integer division
-    final daysDiff = (maxDateMs - minDateMs) ~/ 86400000;
-    final monthsDiff = (daysDiff / 30.0).ceil();
-    final months = monthsDiff < 1 ? 1 : monthsDiff;
-
-    return totalIncome / months;
-  }
-
-  /// Calculate average monthly contribution velocity
-  static double _calculateMonthlyVelocity(List<CashFlowEntity> cashFlows) {
-    if (cashFlows.isEmpty) return 0;
-
-    int minDateMs = -1;
-    bool hasDate = false;
-    double netPositive = 0.0;
-
-    // Optimization: Find minimum date and calculate net positive flow in a single pass
-    for (final cf in cashFlows) {
-      final cfDateMs = cf.date.millisecondsSinceEpoch;
-      if (!hasDate) {
-        minDateMs = cfDateMs;
-        hasDate = true;
-      } else if (cfDateMs < minDateMs) {
-        minDateMs = cfDateMs;
-      }
-
-      if (cf.type == CashFlowType.returnFlow ||
-          cf.type == CashFlowType.income) {
-        netPositive += cf.amount;
-      }
-    }
-
-    if (!hasDate) return 0;
-
-    // Calculate months since first cash flow
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    // Optimization: Calculate date diff using ms integer division
-    final daysDiff = (nowMs - minDateMs) ~/ 86400000;
-    final monthsDiff = (daysDiff / 30.0).ceil();
-    final months = monthsDiff < 1 ? 1 : monthsDiff;
-
-    return netPositive / months;
-  }
-
-  /// Determine goal status based on progress
-  static GoalStatus _determineStatus({
-    required GoalEntity goal,
-    required double currentAmount,
-    required double targetAmount,
-    required DateTime? projectedDate,
-  }) {
-    if (goal.isArchived) return GoalStatus.archived;
-    if (currentAmount >= targetAmount) return GoalStatus.achieved;
-    if (currentAmount <= 0) return GoalStatus.notStarted;
-
-    // If there's a deadline, check if on track
-    if (goal.targetDate != null && projectedDate != null) {
-      final daysAhead = goal.targetDate!.difference(projectedDate).inDays;
-      if (daysAhead > 30) return GoalStatus.ahead;
-      if (daysAhead < -30) return GoalStatus.behind;
-    }
-
-    return GoalStatus.onTrack;
-  }
-
-  /// Get the last activity date for a goal (most recent cash flow date)
-  static DateTime? getLastActivityDate({
-    required GoalEntity goal,
-    required List<InvestmentEntity> allInvestments,
-    required List<CashFlowEntity> allCashFlows,
-  }) {
-    final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
-    if (linkedInvestments.isEmpty) return null;
-
-    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
-    DateTime? maxDate;
-
-    // Optimization: Find max date in a single pass without allocating new lists or sorting
-    for (final cf in allCashFlows) {
-      if (linkedIds.contains(cf.investmentId)) {
-        if (maxDate == null || cf.date.isAfter(maxDate)) {
-          maxDate = cf.date;
-        }
-      }
-    }
-
-    return maxDate;
-  }
-
-  /// Calculate progress for a goal with multi-currency support
-  ///
-  /// Converts all cash flows AND target amount to base currency before
-  /// calculating progress. This ensures accurate progress tracking when
-  /// investments are in different currencies.
-  ///
-  /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
-  /// **Bug Fix:** Target amount must also be converted to ensure percentage stability
-  static Future<GoalProgress> calculateMultiCurrency({
-    required GoalEntity goal,
-    required List<InvestmentEntity> allInvestments,
-    required List<CashFlowEntity> allCashFlows,
-    required BatchCurrencyConverter batchConverter,
-    required String baseCurrency,
-  }) async {
-    // Filter investments based on tracking mode
-    final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
-    final linkedIds = linkedInvestments.map((i) => i.id).toSet();
-
-    // Filter cash flows for linked investments
-    final linkedCashFlows = allCashFlows
-        .where((cf) => linkedIds.contains(cf.investmentId))
-        .toList();
-
-    // Convert all cash flows to base currency
-    // Optimization: Use batch conversion to deduplicate rates and parallelize requests, avoiding N+1 bottleneck
-    final convertedCashFlows = await batchConverter.batchConvert(
-      cashFlows: linkedCashFlows,
-      baseCurrency: baseCurrency,
-    );
-
-    // Calculate current amount based on goal type
-    double currentAmount;
-    double monthlyIncome = 0;
-
-    if (goal.isIncomeGoal) {
-      // For income goals, calculate average monthly income
-      monthlyIncome = _calculateMonthlyIncome(convertedCashFlows);
-      currentAmount = monthlyIncome;
-    } else {
-      // For corpus goals, calculate net value (returns + income - invested - fees)
-      currentAmount = _calculateNetValue(convertedCashFlows);
-    }
-
-    // Convert target amount to base currency (CRITICAL FIX for Rule 21.3)
-    // Both currentAmount and targetAmount MUST be in same currency for stable %
-    final targetAmountInGoalCurrency = goal.isIncomeGoal
-        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
-        : goal.targetAmount;
-
-    final targetAmount = await batchConverter.convert(
-      amount: targetAmountInGoalCurrency,
-      from: goal.currency,
-      to: baseCurrency,
-    );
-
-    // Calculate progress percentage
-    // Now both currentAmount and targetAmount are in baseCurrency
-    final progressPercent = targetAmount > 0
-        ? (currentAmount / targetAmount * 100).clamp(0.0, 100.0)
-        : 0.0;
-
-    // Calculate monthly velocity (average monthly contribution)
-    final monthlyVelocity = _calculateMonthlyVelocity(convertedCashFlows);
-
-    // Project completion date
-    DateTime? projectedDate;
-    if (monthlyVelocity > 0 && currentAmount < targetAmount) {
-      final remaining = targetAmount - currentAmount;
-      final monthsNeeded = remaining / monthlyVelocity;
-      projectedDate = DateTime.now().add(
-        Duration(days: (monthsNeeded * 30).round()),
-      );
-    } else if (currentAmount >= targetAmount) {
-      projectedDate = DateTime.now(); // Already achieved
-    }
-
-    // Determine status
-    final status = _determineStatus(
-      goal: goal,
-      currentAmount: currentAmount,
-      targetAmount: targetAmount,
-      projectedDate: projectedDate,
-    );
-
-    // Determine current milestone
-    final currentMilestone = GoalMilestone.forPercentage(progressPercent);
-
-    // Get achieved milestones
-    final achievedMilestones = GoalMilestone.achievedMilestones(
-      progressPercent,
-    );
-
-    return GoalProgress(
-      goal: goal,
-      currentAmount: currentAmount,
-      progressPercent: progressPercent,
-      monthlyVelocity: monthlyVelocity,
-      monthlyIncome: monthlyIncome,
-      projectedCompletionDate: projectedDate,
-      status: status,
-      currentMilestone: currentMilestone,
-      achievedMilestones: achievedMilestones,
-      linkedInvestmentCount: linkedInvestments.length,
-      calculatedAt: DateTime.now(),
-    );
-  }
-}
-
-/// Provider for a single goal's progress (works for any goal including archived)
-/// Uses only active (non-archived) investments for calculations.
-final goalProgressProvider = Provider.family<GoalProgress?, String>((
-  ref,
-  goalId,
-) {
-  // Watch the goal directly (not from active list - works for any goal)
-  final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
-  // Use activeInvestmentsProvider to exclude archived investments
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  // Use validCashFlowsProvider to only include cash flows from active investments
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  return goalAsync.when(
-    data: (goal) {
-      if (goal == null) return null;
-
-      return investmentsAsync.when(
-        data: (investments) {
-          return cashFlowsAsync.when(
-            data: (cashFlows) {
-              return GoalProgressCalculator.calculate(
-                goal: goal,
-                allInvestments: investments,
-                allCashFlows: cashFlows,
-              );
-            },
-            loading: () => null,
-            error: (e, s) => null,
-          );
-        },
-        loading: () => null,
-        error: (e, s) => null,
-      );
-    },
-    loading: () => null,
-    error: (e, s) => null,
-  );
-});
-
-/// Provider for all goals with their progress
-/// Uses only active (non-archived) investments for calculations.
-final allGoalsProgressProvider = Provider<AsyncValue<List<GoalProgress>>>((
-  ref,
-) {
-  final goalsAsync = ref.watch(activeGoalsProvider);
-  // Use activeInvestmentsProvider to exclude archived investments
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  // Use validCashFlowsProvider to only include cash flows from active investments
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
-
-  return goalsAsync.when(
-    data: (goals) {
-      return investmentsAsync.when(
-        data: (investments) {
-          return cashFlowsAsync.when(
-            data: (cashFlows) {
-              // Track performance of goal progress calculation
-              final progressList = ref
-                  .read(performanceServiceProvider)
-                  .trackSync(
-                    'goal_progress_calculation',
-                    () => goals.map((goal) {
-                      return GoalProgressCalculator.calculate(
-                        goal: goal,
-                        allInvestments: investments,
-                        allCashFlows: cashFlows,
-                      );
-                    }).toList(),
-                    metrics: {
-                      'goal_count': goals.length,
-                      'investment_count': investments.length,
-                      'cash_flow_count': cashFlows.length,
-                    },
-                  );
-              return AsyncValue.data(progressList);
-            },
-            loading: () => const AsyncValue.loading(),
-            error: (e, st) => AsyncValue.error(e, st),
-          );
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
-
-/// Provider for goals summary (for dashboard card)
-final goalsSummaryProvider = Provider<AsyncValue<GoalsSummary>>((ref) {
-  final progressAsync = ref.watch(allGoalsProgressProvider);
-
-  return progressAsync.when(
-    data: (progressList) {
-      if (progressList.isEmpty) {
-        return AsyncValue.data(GoalsSummary.empty());
-      }
-
-      final totalGoals = progressList.length;
-      int achievedGoals = 0;
-      int onTrackGoals = 0;
-      int behindGoals = 0;
-      double totalProgressSum = 0.0;
-      final activeGoalsList = <GoalProgress>[];
-      final completedGoalsList = <GoalProgress>[];
-
-      // Optimization: Single pass loop for all metrics replacing multiple sequential .where().toList() calls
-      for (final p in progressList) {
-        totalProgressSum += p.progressPercent;
-
-        if (p.status == GoalStatus.achieved) {
-          achievedGoals++;
-          completedGoalsList.add(p);
-        } else {
-          activeGoalsList.add(p);
-          if (p.status == GoalStatus.onTrack || p.status == GoalStatus.ahead) {
-            onTrackGoals++;
-          } else if (p.status == GoalStatus.behind) {
-            behindGoals++;
-          }
-        }
-      }
-
-      final avgProgress = totalProgressSum / totalGoals;
-
-      // Sort active goals by progress (highest first)
-      activeGoalsList.sort(
-        (a, b) => b.progressPercent.compareTo(a.progressPercent),
-      );
-      final closestToCompletion = activeGoalsList.isNotEmpty
-          ? activeGoalsList.first
-          : null;
-
-      // Sort achieved goals by updated date (most recent first), limit to 5
-      completedGoalsList.sort(
-        (a, b) => b.goal.updatedAt.compareTo(a.goal.updatedAt),
-      );
-      final recentCompletedGoals = completedGoalsList.take(5).toList();
-
-      return AsyncValue.data(
-        GoalsSummary(
-          totalGoals: totalGoals,
-          achievedGoals: achievedGoals,
-          onTrackGoals: onTrackGoals,
-          behindGoals: behindGoals,
-          averageProgress: avgProgress,
-          closestToCompletion: closestToCompletion,
-          activeGoals: activeGoalsList, // Pass all active goals for carousel
-          completedGoals: recentCompletedGoals, // Pass recent completed goals
-        ),
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
-  );
-});
-
-/// Summary of all goals for dashboard display
-class GoalsSummary {
-  final int totalGoals;
-  final int achievedGoals;
-  final int onTrackGoals;
-  final int behindGoals;
-  final double averageProgress;
-  final GoalProgress? closestToCompletion;
-  final List<GoalProgress>
-  activeGoals; // Active (non-achieved) goals for carousel
-  final List<GoalProgress>
-  completedGoals; // Achieved goals for carousel (max 5)
-
-  const GoalsSummary({
-    required this.totalGoals,
-    required this.achievedGoals,
-    required this.onTrackGoals,
-    required this.behindGoals,
-    required this.averageProgress,
-    this.closestToCompletion,
-    this.activeGoals = const [],
-    this.completedGoals = const [],
+import 'package:inv_tracker/features/investment/presentation/providers/investment_stats_provider.dart';
+
+export 'package:inv_tracker/core/calculations/goal_progress_calculator.dart';
+
+/// What goal progress is worked out from, all in [baseCurrency]: the active
+/// investments, their converted cash flows (A13) and the converted current
+/// values of the open ones (A10). Archived investments are left out (money
+/// rule 9).
+class GoalPortfolioInputs {
+  final List<InvestmentEntity> investments;
+  final List<CashFlowEntity> cashFlows;
+  final Map<String, TerminalValues> terminalValues;
+  final String baseCurrency;
+  final DateTime asOf;
+
+  const GoalPortfolioInputs({
+    required this.investments,
+    required this.cashFlows,
+    required this.terminalValues,
+    required this.baseCurrency,
+    required this.asOf,
   });
-
-  factory GoalsSummary.empty() => const GoalsSummary(
-    totalGoals: 0,
-    achievedGoals: 0,
-    onTrackGoals: 0,
-    behindGoals: 0,
-    averageProgress: 0,
-    activeGoals: [],
-    completedGoals: [],
-  );
-
-  bool get hasGoals => totalGoals > 0;
-  bool get hasActiveGoals => totalGoals > achievedGoals;
-
-  /// All goals for carousel (active first, then completed)
-  List<GoalProgress> get allCarouselGoals => [
-    ...activeGoals,
-    ...completedGoals,
-  ];
 }
+
+/// The goal inputs, from the converted snapshot every stats screen reads.
+final goalPortfolioInputsProvider = FutureProvider<GoalPortfolioInputs>((
+  ref,
+) async {
+  final baseCurrency = ref.watch(currencyCodeProvider);
+  final asOf = ref.watch(valuationDateProvider);
+  final investmentsAsync = ref.watch(activeInvestmentsProvider);
+  final snapshotAsync = ref.watch(convertedCashFlowsSnapshotProvider);
+  final convertedAsync = ref.watch(convertedTerminalValuesProvider);
+
+  // Stay loading, or fail, with the sources: an empty portfolio here would
+  // show '0%' and 'Not Started' for goals that have progress. The snapshot
+  // is checked itself so that its load error shows even while Riverpod
+  // retries it.
+  final investments = await dataOf(investmentsAsync);
+  await dataOf(snapshotAsync);
+  final converted = await dataOf(convertedAsync);
+  // Amounts are never used under a currency they were not converted to.
+  if (converted.snapshot.baseCurrency != baseCurrency) {
+    return Completer<GoalPortfolioInputs>().future;
+  }
+
+  return GoalPortfolioInputs(
+    investments: investments,
+    cashFlows: converted.snapshot.cashFlows,
+    terminalValues: converted.byInvestment,
+    baseCurrency: baseCurrency,
+    asOf: asOf,
+  );
+}, retry: _noRetry);
+
+/// Progress of [goal] from [inputs], with its target converted to the base
+/// currency at today's rate. Without a rate it fails rather than read the
+/// goal's currency as the base currency.
+Future<GoalProgress> _progressOf(
+  GoalEntity goal,
+  GoalPortfolioInputs inputs,
+  List<GoalEntity> activeGoals,
+  CurrencyConverterModule Function() currency,
+) async {
+  var target = GoalProgressCalculator.targetInGoalCurrency(goal);
+  if (goal.currency != inputs.baseCurrency) {
+    target *= await currency().rateToday(
+      from: goal.currency,
+      to: inputs.baseCurrency,
+    );
+  }
+  return GoalProgressCalculator.calculate(
+    goal: goal,
+    investments: inputs.investments,
+    cashFlows: inputs.cashFlows,
+    terminalValues: inputs.terminalValues,
+    targetAmount: target,
+    asOf: inputs.asOf,
+    otherGoalsCount: GoalProgressCalculator.otherGoalsSharing(
+      goal,
+      activeGoals,
+      inputs.investments,
+    ),
+  );
+}
+
+/// The currency module, read only when a goal's target is in another
+/// currency: like the snapshot, the converter is needed only then.
+CurrencyConverterModule Function() _currencyOf(Ref ref) =>
+    () => ref.watch(calculationEngineProvider).currency;
 
 /// Retry policy for the goal progress providers below: never retry them.
 ///
@@ -564,118 +110,93 @@ class GoalsSummary {
 /// screens would spin indefinitely instead of showing the error.
 Duration? _noRetry(int retryCount, Object error) => null;
 
-/// Multi-currency provider for a single goal's progress
-///
-/// Converts all cash flows to base currency before calculating progress.
-/// This ensures accurate progress tracking when investments are in different currencies.
-///
-/// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+/// Progress of one goal (archived goals too), in the base currency.
 final multiCurrencyGoalProgressProvider =
     FutureProvider.family<GoalProgress?, String>((ref, goalId) async {
       // Watch the goal directly (not from active list - works for any goal)
       final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
-      // Use activeInvestmentsProvider to exclude archived investments
-      final investmentsAsync = ref.watch(activeInvestmentsProvider);
-      // Use validCashFlowsProvider to only include cash flows from active investments
-      final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+      final inputsAsync = ref.watch(goalPortfolioInputsProvider);
+      // Only for the "also counted in N other goals" chip.
+      final activeGoals = ref.watch(activeGoalsProvider).value ?? const [];
 
       // Stay loading, or fail, with the sources: substituting empty data
       // would show '0%' and 'Not Started' for goals that have progress.
       final goal = await dataOf(goalAsync);
-
       if (goal == null) return null;
+      final inputs = await dataOf(inputsAsync);
 
-      final investments = await dataOf(investmentsAsync);
-      final cashFlows = await dataOf(cashFlowsAsync);
-
-      final batchConverter = ref.watch(batchCurrencyConverterProvider);
-
-      // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-      if (batchConverter == null) {
-        return GoalProgress(
-          goal: goal,
-          currentAmount: 0,
-          progressPercent: 0,
-          monthlyVelocity: 0,
-          monthlyIncome: 0,
-          projectedCompletionDate: null,
-          status: GoalStatus.notStarted,
-          currentMilestone: GoalMilestone.start,
-          achievedMilestones: const [],
-          linkedInvestmentCount: 0,
-          calculatedAt: DateTime.now(),
-        );
-      }
-
-      final baseCurrency = ref.watch(currencyCodeProvider);
-
-      return GoalProgressCalculator.calculateMultiCurrency(
-        goal: goal,
-        allInvestments: investments,
-        allCashFlows: cashFlows,
-        batchConverter: batchConverter,
-        baseCurrency: baseCurrency,
-      );
+      return _progressOf(goal, inputs, activeGoals, _currencyOf(ref));
     }, retry: _noRetry);
 
-/// Multi-currency provider for all goals with their progress
-///
-/// Converts all cash flows to base currency before calculating progress.
-/// This ensures accurate progress tracking when investments are in different currencies.
-///
-/// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
-final multiCurrencyAllGoalsProgressProvider = FutureProvider<List<GoalProgress>>((
-  ref,
-) async {
-  final goalsAsync = ref.watch(activeGoalsProvider);
-  // Use activeInvestmentsProvider to exclude archived investments
-  final investmentsAsync = ref.watch(activeInvestmentsProvider);
-  // Use validCashFlowsProvider to only include cash flows from active investments
-  final cashFlowsAsync = ref.watch(validCashFlowsProvider);
+/// Progress of every active goal, in the base currency.
+final multiCurrencyAllGoalsProgressProvider =
+    FutureProvider<List<GoalProgress>>((ref) async {
+      final goalsAsync = ref.watch(activeGoalsProvider);
+      final inputsAsync = ref.watch(goalPortfolioInputsProvider);
 
-  // Stay loading, or fail, with the sources: substituting empty lists would
-  // show 'Set your first goal' or '0%' to users who have goals.
-  final goals = await dataOf(goalsAsync);
-  final investments = await dataOf(investmentsAsync);
-  final cashFlows = await dataOf(cashFlowsAsync);
+      // Stay loading, or fail, with the sources: substituting empty lists
+      // would show 'Set your first goal' or '0%' to users who have goals.
+      final goals = await dataOf(goalsAsync);
+      final inputs = await dataOf(inputsAsync);
 
-  final batchConverter = ref.watch(batchCurrencyConverterProvider);
+      return Future.wait([
+        for (final goal in goals)
+          _progressOf(goal, inputs, goals, _currencyOf(ref)),
+      ]);
+    }, retry: _noRetry);
 
-  // BUG FIX (2026-05-04): Handle null converter when user is not authenticated
-  if (batchConverter == null) {
-    return goals.map((g) => GoalProgress(
-      goal: g,
-      currentAmount: 0,
-      progressPercent: 0,
-      monthlyVelocity: 0,
-      monthlyIncome: 0,
-      projectedCompletionDate: null,
-      status: GoalStatus.notStarted,
-      currentMilestone: GoalMilestone.start,
-      achievedMilestones: const [],
-      linkedInvestmentCount: 0,
-      calculatedAt: DateTime.now(),
-    )).toList();
-  }
+/// An investment a goal tracks, as listed on the goal details screen.
+class LinkedGoalInvestment {
+  final InvestmentEntity investment;
+  final bool isArchived;
 
-  final baseCurrency = ref.watch(currencyCodeProvider);
+  /// Whether the goal counts it: open and not archived.
+  final bool isCounted;
 
-  // Calculate progress for each goal with currency conversion
-  // Optimization: Parallel execution of multiple multi-currency calculations
-  final progressList = await Future.wait(
-    goals.map(
-      (goal) => GoalProgressCalculator.calculateMultiCurrency(
-        goal: goal,
-        allInvestments: investments,
-        allCashFlows: cashFlows,
-        batchConverter: batchConverter,
-        baseCurrency: baseCurrency,
-      ),
-    ),
-  );
+  const LinkedGoalInvestment({
+    required this.investment,
+    required this.isArchived,
+    required this.isCounted,
+  });
+}
 
-  return progressList;
-}, retry: _noRetry);
+/// The investments a goal tracks, archived ones included so that the goal
+/// details screen can say they are not counted (money rule 9).
+final goalLinkedInvestmentsProvider =
+    FutureProvider.family<List<LinkedGoalInvestment>, String>((
+      ref,
+      goalId,
+    ) async {
+      final goalAsync = ref.watch(watchGoalByIdProvider(goalId));
+      final activeAsync = ref.watch(activeInvestmentsProvider);
+      final archivedAsync = ref.watch(archivedInvestmentsProvider);
+
+      final goal = await dataOf(goalAsync);
+      if (goal == null) return const [];
+      final active = await dataOf(activeAsync);
+      final archived = await dataOf(archivedAsync);
+
+      return [
+        for (final inv in GoalProgressCalculator.linkedInvestments(
+          goal,
+          active,
+        ))
+          LinkedGoalInvestment(
+            investment: inv,
+            isArchived: inv.isArchived,
+            isCounted: inv.isOpen && !inv.isArchived,
+          ),
+        for (final inv in GoalProgressCalculator.linkedInvestments(
+          goal,
+          archived,
+        ))
+          LinkedGoalInvestment(
+            investment: inv,
+            isArchived: true,
+            isCounted: false,
+          ),
+      ];
+    }, retry: _noRetry);
 
 /// Multi-currency provider for goals summary (for dashboard card)
 ///
@@ -756,3 +277,47 @@ final multiCurrencyGoalsSummaryProvider = FutureProvider<GoalsSummary>((
     completedGoals: recentCompletedGoals, // Pass recent completed goals
   );
 }, retry: _noRetry);
+
+/// Summary of all goals for dashboard display
+class GoalsSummary {
+  final int totalGoals;
+  final int achievedGoals;
+  final int onTrackGoals;
+  final int behindGoals;
+  final double averageProgress;
+  final GoalProgress? closestToCompletion;
+  final List<GoalProgress>
+  activeGoals; // Active (non-achieved) goals for carousel
+  final List<GoalProgress>
+  completedGoals; // Achieved goals for carousel (max 5)
+
+  const GoalsSummary({
+    required this.totalGoals,
+    required this.achievedGoals,
+    required this.onTrackGoals,
+    required this.behindGoals,
+    required this.averageProgress,
+    this.closestToCompletion,
+    this.activeGoals = const [],
+    this.completedGoals = const [],
+  });
+
+  factory GoalsSummary.empty() => const GoalsSummary(
+    totalGoals: 0,
+    achievedGoals: 0,
+    onTrackGoals: 0,
+    behindGoals: 0,
+    averageProgress: 0,
+    activeGoals: [],
+    completedGoals: [],
+  );
+
+  bool get hasGoals => totalGoals > 0;
+  bool get hasActiveGoals => totalGoals > achievedGoals;
+
+  /// All goals for carousel (active first, then completed)
+  List<GoalProgress> get allCarouselGoals => [
+    ...activeGoals,
+    ...completedGoals,
+  ];
+}

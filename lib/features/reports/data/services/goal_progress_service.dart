@@ -63,9 +63,13 @@ class GoalProgressService {
           break;
       }
 
-      // Accumulate totals
-      totalTarget += goal.targetAmount;
-      totalCurrent += progress.currentAmount;
+      // Totals add converted corpus targets: an income goal's monthly
+      // income is not a corpus, and goal.targetAmount is in the goal's own
+      // currency.
+      if (!goal.isIncomeGoal) {
+        totalTarget += progress.targetAmount;
+        totalCurrent += progress.currentAmount;
+      }
       totalProgress += progress.progressPercent;
     }
 
