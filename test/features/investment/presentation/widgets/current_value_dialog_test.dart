@@ -1,7 +1,11 @@
 // A10 (#754): the current value editor takes a value in the investment's
 // currency and a date that defaults to today and cannot be in the future.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/investment_notifier.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/current_value_dialog.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -39,6 +43,23 @@ Future<CurrentValueEdit?> _open(
   await interact();
   await tester.pumpAndSettle();
   return result;
+}
+
+/// Rejects every save, as the notifier does when the investment was closed
+/// while the editor was open.
+class _RejectingNotifier extends InvestmentNotifier {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
+
+  @override
+  Future<void> setCurrentValue({
+    required String id,
+    required double value,
+    required DateTime date,
+  }) async => throw ValidationException(
+    userMessage: 'Only open investments have a current value.',
+    technicalMessage: 'setCurrentValue on a closed investment',
+  );
 }
 
 void main() {
@@ -140,4 +161,60 @@ void main() {
       expect(result!.value, value);
     });
   }
+
+  testWidgets(
+    'a rejected save shows the localized message, not the exception text',
+    (tester) async {
+      final fd = InvestmentEntity(
+        id: 'fd-1',
+        name: 'FD',
+        type: InvestmentType.fixedDeposit,
+        status: InvestmentStatus.open,
+        createdAt: DateTime(2025, 10, 2),
+        updatedAt: DateTime(2025, 10, 2),
+        currency: 'INR',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            investmentNotifierProvider.overrideWith(_RejectingNotifier.new),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => TextButton(
+                  onPressed: () => showCurrentValueDialog(
+                    context,
+                    ref,
+                    investment: fd,
+                    hasUserValue: false,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '1000');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the current value. Try again.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Only open investments have a current value.'),
+        findsNothing,
+      );
+      // Let the snack bar time out so no timer outlives the test.
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+    },
+  );
 }
