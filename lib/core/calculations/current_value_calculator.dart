@@ -145,7 +145,8 @@ class CurrentValueCalculator {
   /// rate) needed to estimate one. Amounts in different currencies are
   /// never added: a manual value with principal moved in another currency
   /// after its date, or an estimate from INVEST/RETURN flows in more than
-  /// one currency, is none. So is a manual value dated before the first
+  /// one currency, is none, as is an accrual with INCOME in another
+  /// currency. So is a manual value dated before the first
   /// cash flow. [cashFlows] may include other investments'
   /// flows; only this investment's are used.
   static InvestmentValuation? valuationOf(
@@ -185,11 +186,19 @@ class CurrentValueCalculator {
 
     if (_isCumulative(investment, flows)) {
       if (!investment.hasExpectedRate) return null;
+      // Interest recorded as INCOME has left the deposit like a RETURN, so
+      // it comes off the balance and must be in the deposits' currency.
+      if (flows.any(
+        (cf) => cf.type == CashFlowType.income && cf.currency != currency,
+      )) {
+        return null;
+      }
       final rate = investment.expectedRate!;
       var amount = 0.0;
       for (final cf in flows) {
         if (cf.type != CashFlowType.invest &&
-            cf.type != CashFlowType.returnFlow) {
+            cf.type != CashFlowType.returnFlow &&
+            cf.type != CashFlowType.income) {
           continue;
         }
         final grown = accruedValue(

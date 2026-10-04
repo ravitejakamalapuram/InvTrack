@@ -303,6 +303,91 @@ void main() {
     });
   });
 
+  // Interest recorded as INCOME has left the deposit, like a RETURN, so it
+  // comes off the accrued balance. Expected values from Python (actual/365):
+  //   matured: 1,00,000 × 1.0175^(4·182/365) = 1,03,520.783740, less the
+  //     RETURN of 1,00,000 and INCOME of 3,520.78 = 0.003740;
+  //     MOIC 1.035207837, XIRR 7.185903%
+  //   partial: 1,07,185.903129 − 2,000 × 1.0175^(4·183/365) (2,070.809344)
+  //     = 1,05,115.093785; MOIC 1.071150938, XIRR 7.185903%
+  group('Interest recorded as INCOME on a cumulative deposit', () {
+    test('a matured at-maturity FD paid out in full is worth nothing', () {
+      final fd = _investment(
+        'mat',
+        InvestmentType.fixedDeposit,
+        rate: 7,
+        compounding: CompoundingFrequency.quarterly,
+        payout: InterestPayoutMode.atMaturity,
+        maturityDate: DateTime(2026, 4, 2),
+      );
+      final flows = [
+        _flow('mat', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+        _flow('mat', CashFlowType.returnFlow, 100000, DateTime(2026, 4, 2)),
+        _flow('mat', CashFlowType.income, 3520.78, DateTime(2026, 4, 2)),
+      ];
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [fd],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      final stats = module.calculateStats(flows, terminalValues: terminal);
+
+      expect(stats.currentValue, closeTo(0, 0.005));
+      expect(stats.moic, closeTo(1.035207837, 1e-6));
+      expect(stats.xirr, closeTo(0.071859031, 1e-6));
+      expect(stats.absoluteReturn, closeTo(3.520784, 1e-6));
+    });
+
+    test('a partial INCOME payout before maturity comes off the balance', () {
+      final fd = _investment(
+        'part',
+        InvestmentType.fixedDeposit,
+        rate: 7,
+        compounding: CompoundingFrequency.quarterly,
+        payout: InterestPayoutMode.cumulative,
+      );
+      final flows = [
+        _flow('part', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+        _flow('part', CashFlowType.income, 2000, DateTime(2026, 4, 2)),
+      ];
+      final terminal = CurrentValueCalculator.terminalValues(
+        investments: [fd],
+        cashFlows: flows,
+        asOf: _today,
+      );
+      final stats = module.calculateStats(flows, terminalValues: terminal);
+
+      expect(stats.currentValue, closeTo(105115.09, 0.005));
+      expect(stats.moic, closeTo(1.071150938, 1e-6));
+      expect(stats.xirr, closeTo(0.071859031, 1e-6));
+      expect(stats.absoluteReturn, closeTo(7.115094, 1e-6));
+    });
+
+    test('INCOME in another currency than the deposits is missing', () {
+      final fd = _investment(
+        'fx',
+        InvestmentType.fixedDeposit,
+        rate: 7,
+        compounding: CompoundingFrequency.quarterly,
+        payout: InterestPayoutMode.cumulative,
+      );
+      final flows = [
+        _flow('fx', CashFlowType.invest, 100000, DateTime(2025, 10, 2)),
+        _flow(
+          'fx',
+          CashFlowType.income,
+          20,
+          DateTime(2026, 4, 2),
+          currency: 'USD',
+        ),
+      ];
+      expect(
+        CurrentValueCalculator.valuationOf(fd, flows, asOf: _today),
+        isNull,
+      );
+    });
+  });
+
   group('User-confirmed current value', () {
     test('overrides the estimate and is not labelled as an estimate', () {
       final fd = _investment(
