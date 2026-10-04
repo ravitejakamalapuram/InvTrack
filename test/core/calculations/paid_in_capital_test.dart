@@ -15,6 +15,7 @@
 //     XIRR 1.1449^(365/731) - 1 = 6.990097%.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
+import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 
@@ -183,6 +184,14 @@ void main() {
       expect(stats.isLoss, isFalse);
       expect(stats.absoluteReturn, 0.0);
       expect(stats.moic, 1.0);
+    });
+
+    test('less than half a paisa below zero rounds to 0, not -0', () {
+      final rounded = FinancialCalculator.roundMoney(-0.004);
+
+      expect(rounded, 0.0);
+      expect(rounded.isNegative, isFalse);
+      expect(FinancialCalculator.roundMoney(1234.565001), 1234.57);
     });
 
     test('invested and returned are rounded to the paisa', () {

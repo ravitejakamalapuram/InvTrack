@@ -157,9 +157,12 @@ class FinancialCalculator {
 
   /// [amount] rounded to two decimals (the paisa), so sums of many small
   /// amounts compare and display exactly: ten payouts of 10.10 make 101.00,
-  /// not 100.99999999999999, and a break-even position nets to 0.
-  static double roundMoney(double amount) =>
-      (amount * 100).roundToDouble() / 100;
+  /// not 100.99999999999999, and a break-even position nets to 0. Never
+  /// returns -0.0, which would format as "-0".
+  static double roundMoney(double amount) {
+    final rounded = (amount * 100).roundToDouble() / 100;
+    return rounded == 0 ? 0.0 : rounded;
+  }
 
   /// Paid-in capital: the most of the investor's own money that was in each
   /// investment at any one time, summed over the investments in
