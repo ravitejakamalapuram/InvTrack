@@ -210,7 +210,10 @@ void main() {
   });
 
   group('Portfolio health returns component', () {
-    test('leaves an open FD with no payout out of the portfolio XIRR', () {
+    // An open FD with no payout and no value has an unknown return, so the
+    // portfolio's is unknown too: no score, rather than the closed holding
+    // alone or the FD's lone INVEST read as a −100% loss.
+    test('has no score while an open FD has no payout or value', () {
       // Closed: ₹10,00,000 → ₹10,80,000 over 365 days = XIRR 8.0000%.
       final closedFlows = [
         _flow('h1', 'H1', CashFlowType.invest, 1000000, DateTime(2025, 1, 1)),
@@ -241,12 +244,9 @@ void main() {
         },
         allCashFlows: [...closedFlows, ...openFlows],
         goalProgress: [],
-      )!;
+      );
 
-      // The portfolio XIRR (the closed holding alone) of 0.080000 against 6%
-      // inflation scores 60 + (0.08 − 0.06) / 0.05 × 20 = 68.0. Counting the
-      // FD's lone INVEST would drag it far below that.
-      expect(score.returnsPerformance.score, closeTo(68.0, 1e-6));
+      expect(score, isNull);
     });
   });
 

@@ -1,10 +1,12 @@
 // A10 (#754): the health score's returns component uses the XIRR that
-// includes current values, and leaves out open investments that still need
-// one instead of counting their fake −80% XIRR (money rule 4).
+// includes current values, and never counts the fake −80% XIRR of an open
+// investment that still needs one (money rule 4).
 //
 // A21: the returns XIRR is solved over the portfolio's cash flows and
 // current values, so this test gives cash flows rather than per-investment
-// XIRRs.
+// XIRRs. An open investment that still needs a value now makes the whole
+// score "not enough data": scoring the other holdings alone judged only part
+// of the money, while the Overview shows "Awaiting current value".
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
@@ -96,12 +98,14 @@ PortfolioHealthScore? _score(
 }
 
 void main() {
-  test('an open holding awaiting a current value is left out', () {
-    final score = _score([_payoutFd, _gold], [..._fdFlows, ..._goldFlows])!;
+  test('an open holding awaiting a current value means not enough data, '
+      'never a fake loss', () {
+    final score = _score([_payoutFd, _gold], [..._fdFlows, ..._goldFlows]);
 
-    // Only the FD counts: the same returns score as an FD-only portfolio.
+    expect(score, isNull);
+
+    // Once the FD is the whole portfolio, it is scored on its real return.
     final fdOnly = _score([_payoutFd], _fdFlows)!;
-    expect(score.returnsPerformance.score, fdOnly.returnsPerformance.score);
-    expect(score.returnsPerformance.score, greaterThan(0));
+    expect(fdOnly.returnsPerformance.score, greaterThan(0));
   });
 }

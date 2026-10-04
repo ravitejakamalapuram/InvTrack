@@ -1,7 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/utils/async_value_utils.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
@@ -21,10 +23,15 @@ HealthScoreRepository healthScoreRepository(
 }
 
 /// Provider for auto-save service
+///
+/// One service per signed-in account: the repository writes under whoever
+/// is signed in when it saves, so a score held for one account must never
+/// outlive a switch to another.
 @Riverpod(keepAlive: true)
 HealthScoreAutoSaveService healthScoreAutoSaveService(
   Ref ref,
 ) {
+  ref.watch(authStateProvider.select((user) => user.value?.id));
   final repository = ref.watch(healthScoreRepositoryProvider);
   final service = HealthScoreAutoSaveService(repository: repository);
 
@@ -61,6 +68,14 @@ class PortfolioHealth extends _$PortfolioHealth {
     final asOf = ref.watch(valuationDateProvider);
     final engine = ref.watch(calculationEngineProvider);
 
+    // Drop the score auto-save holds before waiting for the new snapshot, so
+    // an older score (or another account's) is not saved meanwhile.
+    try {
+      ref.read(healthScoreAutoSaveServiceProvider).clearScore();
+    } catch (e) {
+      // Ignore - auto-save service issues shouldn't break the score
+    }
+
     final converted = await convertedFuture;
     final investments = await dataOf(investmentsAsync);
     final goalProgress = await dataOf(goalProgressAsync);
@@ -83,16 +98,8 @@ class PortfolioHealth extends _$PortfolioHealth {
       asOf: asOf,
     );
 
-    if (score == null) {
-      // Not enough data: nothing to save, and an older score must not be
-      // saved again either.
-      try {
-        ref.read(healthScoreAutoSaveServiceProvider).clearScore();
-      } catch (e) {
-        // Ignore - auto-save service issues shouldn't break the score
-      }
-      return null;
-    }
+    // Not enough data: nothing to save (auto-save was cleared above).
+    if (score == null) return null;
 
     // Log analytics - score calculated (non-blocking, privacy-safe)
     try {

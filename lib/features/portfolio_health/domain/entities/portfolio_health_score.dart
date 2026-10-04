@@ -62,6 +62,10 @@ class ComponentScore {
   /// Weighted contribution to overall score
   double get weightedScore => score * weight;
 
+  /// The score as shown, and as coloured: [score] rounded half up, the same
+  /// rule as [PortfolioHealthScore.displayScore].
+  int get displayScore => score.round();
+
   ComponentScore copyWith({
     String? name,
     double? score,

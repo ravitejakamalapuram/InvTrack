@@ -64,10 +64,15 @@ void main() {
       ),
     );
 
-    // The overall score and each 79.6 component badge all read 80.
+    // The overall score and each 79.6 component badge all read 80, and all
+    // take the colour of 80 (Excellent green), not the amber of 79.6.
     expect(find.text('80'), findsNWidgets(6));
     expect(find.text('Excellent'), findsOneWidget);
     expect(find.text('Good'), findsNothing);
+    expect(
+      tester.widgetList<Text>(find.text('80')).map((t) => t.style?.color),
+      everyElement(const Color(0xFF059669)),
+    );
   });
 
   testWidgets('no score says there is not enough data', (tester) async {

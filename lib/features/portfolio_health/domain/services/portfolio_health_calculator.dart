@@ -26,8 +26,9 @@ class PortfolioHealthCalculator {
   static const double neutralScore = 50;
 
   /// Calculate portfolio health score, or null when there is not enough
-  /// data for one: no active investment has a defined return yet (an empty
-  /// portfolio, or only open holdings still waiting for a current value).
+  /// data for one: an empty portfolio, or any active open holding still
+  /// waiting for a current value (the Overview then shows "Awaiting current
+  /// value" for the portfolio return too).
   ///
   /// [allCashFlows] and the flows of [terminalValues] (the current values
   /// of open investments, keyed by investment id) must be in one currency,
@@ -50,22 +51,20 @@ class PortfolioHealthCalculator {
       validatedInflationRate = defaultInflationRate;
     }
 
-    final portfolioXirr = _portfolioXirr(
+    final portfolio = _portfolioStats(
       investments,
       investmentStats,
       allCashFlows,
       terminalValues,
     );
     // A score without its returns component would be a partial score.
-    if (portfolioXirr == null) return null;
+    if (portfolio == null) return null;
+    final returns = _calculateReturnsScore(portfolio, validatedInflationRate);
+    if (returns == null) return null;
 
     final now = asOf ?? DateTime.now();
 
     // Calculate each component
-    final returns = _calculateReturnsScore(
-      portfolioXirr,
-      validatedInflationRate,
-    );
     final diversification = _calculateDiversificationScore(
       investments,
       investmentStats,
@@ -101,14 +100,16 @@ class PortfolioHealthCalculator {
     );
   }
 
-  /// One XIRR over the merged cash flows and current values of every active
-  /// investment with a defined return (CALC-02), or null when there is none.
+  /// Stats, with one XIRR, over the merged cash flows and current values of
+  /// every active investment (CALC-02), or null when there are none or the
+  /// return of any of them is unknown.
   ///
   /// Averaging per-investment XIRRs ignores timing and amounts, so the
-  /// portfolio's flows are solved together, like the Overview's XIRR. Open
-  /// investments still waiting for a current value are left out: their
-  /// flows alone would read as a loss (money rule 4).
-  static double? _portfolioXirr(
+  /// portfolio's flows are solved together, like the Overview's XIRR. An
+  /// open investment still waiting for a current value makes the portfolio
+  /// return unknown (money rule 4): scoring the rest would judge only part
+  /// of the money while the other components count all of it.
+  static InvestmentStats? _portfolioStats(
     List<InvestmentEntity> investments,
     Map<String, InvestmentStats> stats,
     List<ICashFlow> allCashFlows,
@@ -117,19 +118,17 @@ class PortfolioHealthCalculator {
     final included = <String>{};
     for (final investment in investments) {
       final stat = stats[investment.id];
-      if (investment.isArchived ||
-          stat == null ||
-          stat.totalInvested <= 0 ||
-          stat.needsCurrentValue) {
+      if (investment.isArchived || stat == null || stat.totalInvested <= 0) {
         continue;
       }
       // Open, with no current value and less back than was put in: its
       // return is unknown until it has a value.
       final hasValue = terminalValues[investment.id]?.flows.isNotEmpty ?? false;
-      if (investment.isOpen &&
-          !hasValue &&
-          stat.totalReturned < stat.totalInvested) {
-        continue;
+      if (stat.needsCurrentValue ||
+          (investment.isOpen &&
+              !hasValue &&
+              stat.totalReturned < stat.totalInvested)) {
+        return null;
       }
       included.add(investment.id);
     }
@@ -142,18 +141,43 @@ class PortfolioHealthCalculator {
     final values = TerminalValues(
       flows: [for (final id in included) ...?terminalValues[id]?.flows],
     );
-    final xirr = FinancialCalculatorModule()
-        .calculateStats(flows, terminalValues: values)
-        .xirr;
-    return xirr != null && xirr.isFinite ? xirr : null;
+    return FinancialCalculatorModule().calculateStats(
+      flows,
+      terminalValues: values,
+    );
   }
 
   /// Component 1: Returns Performance (30% weight)
-  /// Score based on the portfolio XIRR vs inflation
-  static ComponentScore _calculateReturnsScore(
-    double portfolioXirr,
+  /// Score based on the portfolio XIRR vs inflation, or null when that XIRR
+  /// cannot be solved.
+  static ComponentScore? _calculateReturnsScore(
+    InvestmentStats portfolio,
     double benchmarkInflationRate,
   ) {
+    final double portfolioXirr;
+    if (portfolio.totalReturned + (portfolio.currentValue ?? 0) <= 0) {
+      // Nothing came back and nothing is left: a total loss of −100%, which
+      // has no XIRR but is fully known.
+      portfolioXirr = -1;
+    } else if (portfolio.isShortHolding) {
+      // Annualising a few weeks of movement gives absurd rates; the
+      // Overview shows the absolute return instead (ReturnDisplay).
+      const days = InvestmentStats.shortHoldingDays;
+      return ComponentScore(
+        name: 'Returns Performance',
+        score: neutralScore,
+        weight: 0.30,
+        description: 'Too early to judge',
+        suggestions: [
+          'Returns are judged once your investments are $days days old',
+        ],
+      );
+    } else {
+      final xirr = portfolio.xirr;
+      if (xirr == null || !xirr.isFinite) return null;
+      portfolioXirr = xirr;
+    }
+
     // Score calculation:
     // XIRR >= Inflation + 10%: 100 points (excellent)
     // XIRR >= Inflation + 5%: 80 points (good)

@@ -322,7 +322,7 @@ class _PortfolioHealthDetailsScreenState
     ComponentScore component,
     IconData icon,
   ) {
-    final color = _getScoreColor(component.score, isDark);
+    final color = _getScoreColor(component.displayScore.toDouble(), isDark);
 
     return GlassCard(
       child: Column(
@@ -366,7 +366,7 @@ class _PortfolioHealthDetailsScreenState
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${component.score.round()}',
+                  '${component.displayScore}',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

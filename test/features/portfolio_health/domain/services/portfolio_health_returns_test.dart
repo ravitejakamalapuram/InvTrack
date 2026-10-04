@@ -146,4 +146,90 @@ void main() {
 
     expect(score, isNull);
   });
+
+  // Review follow-ups: a partial portfolio has no score, a total loss is
+  // scored rather than called "not enough data", and short holdings are not
+  // annualised (the Overview's ReturnDisplay rules).
+  group('review follow-ups', () {
+    test('a portfolio with an open holding still awaiting a current value has '
+        'not enough data, even when other holdings have a return', () {
+      // ₹50,00,000 of gold with no value, next to a closed ₹10,000 P2P loan
+      // that returned ₹14,000: scoring the loan alone would judge 0.2% of the
+      // money. The Overview shows "Awaiting current value" for this portfolio.
+      final score = _score(
+        [
+          _investment('gold', InvestmentType.gold),
+          _investment(
+            'p2p',
+            InvestmentType.p2pLending,
+            status: InvestmentStatus.closed,
+          ),
+        ],
+        [
+          _flow('gold', CashFlowType.invest, 5000000, DateTime(2025, 10, 1)),
+          _flow('p2p', CashFlowType.invest, 10000, DateTime(2025, 1, 1)),
+          _flow('p2p', CashFlowType.returnFlow, 14000, DateTime(2026, 1, 1)),
+        ],
+      );
+
+      expect(score, isNull);
+    });
+
+    test('a closed investment that returned nothing is scored as a total '
+        'loss, not as not enough data', () {
+      // A fully defaulted P2P loan: the portfolio is fully known.
+      final score = _score(
+        [
+          _investment(
+            'p2p',
+            InvestmentType.p2pLending,
+            status: InvestmentStatus.closed,
+          ),
+        ],
+        [_flow('p2p', CashFlowType.invest, 50000, DateTime(2026, 1, 1))],
+      )!;
+
+      // −100%: max(0, 20 + (−1 / 0.20) × 20) = 0.
+      expect(score.returnsPerformance.score, 0.0);
+      expect(
+        score.returnsPerformance.suggestions.first,
+        'Negative returns detected. Review underperforming investments',
+      );
+      // 0.30 × 0 + 0.25 × 0 (one type) + 0.20 × 0 (nothing open)
+      // + 0.15 × 50 (no goals) + 0.10 × 100 (nothing open) = 17.5.
+      expect(score.overallScore, closeTo(17.5, 1e-6));
+    });
+
+    for (final value in [103000.0, 97000.0]) {
+      test('a holding of 30 days valued at ₹$value gets a neutral returns '
+          'score, not an annualised one', () {
+        // ₹1,00,000 of stock on 4 Sep 2026, valued on 4 Oct 2026: ±3% in 30
+        // days annualises to about +43% or −31%. The Overview shows "+3.0% in
+        // 30 days" (ReturnDisplay.shortHolding) instead.
+        final stock = InvestmentEntity(
+          id: 'stock',
+          name: 'stock',
+          type: InvestmentType.stocks,
+          status: InvestmentStatus.open,
+          currency: 'INR',
+          currentValue: value,
+          currentValueDate: _asOf,
+          createdAt: DateTime(2026, 9, 4),
+          updatedAt: DateTime(2026, 10, 4),
+        );
+        final score = _score(
+          [stock],
+          [_flow('stock', CashFlowType.invest, 100000, DateTime(2026, 9, 4))],
+        )!;
+
+        expect(score.returnsPerformance.score, 50.0);
+        expect(score.returnsPerformance.description, 'Too early to judge');
+        expect(score.returnsPerformance.suggestions, [
+          'Returns are judged once your investments are 90 days old',
+        ]);
+        // 0.30 × 50 + 0.25 × 0 + 0.20 × 60 + 0.15 × 50 + 0.10 × 100 = 44.5.
+        expect(score.overallScore, closeTo(44.5, 1e-6));
+      });
+    }
+  });
 }

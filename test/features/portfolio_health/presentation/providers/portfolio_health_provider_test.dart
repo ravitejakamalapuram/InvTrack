@@ -7,8 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
+import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
+import 'package:inv_tracker/features/portfolio_health/data/repositories/health_score_repository.dart';
 import 'package:inv_tracker/features/portfolio_health/data/services/health_score_auto_save_service.dart';
 import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_health_score.dart';
 import 'package:inv_tracker/features/portfolio_health/presentation/providers/portfolio_health_provider.dart';
@@ -51,15 +54,55 @@ class _RecordingAutoSave implements HealthScoreAutoSaveService {
   final updates = <PortfolioHealthScore>[];
   var clears = 0;
 
-  @override
-  void updateScore(PortfolioHealthScore score) => updates.add(score);
+  /// The score auto-save would write next, as the real service holds it.
+  PortfolioHealthScore? held;
 
   @override
-  void clearScore() => clears++;
+  void updateScore(PortfolioHealthScore score) {
+    updates.add(score);
+    held = score;
+  }
+
+  @override
+  void clearScore() {
+    clears++;
+    held = null;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+/// Records the snapshots auto-save writes.
+class _RecordingRepository implements HealthScoreRepository {
+  final saved = <PortfolioHealthScore>[];
+
+  @override
+  Future<void> saveSnapshot(PortfolioHealthScore score) async =>
+      saved.add(score);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+ComponentScore _component(String name, double weight) => ComponentScore(
+  name: name,
+  score: 70,
+  weight: weight,
+  description: name,
+  suggestions: const [],
+);
+
+/// A score worked out earlier, still held by auto-save.
+PortfolioHealthScore _heldScore() => PortfolioHealthScore(
+  overallScore: 70,
+  returnsPerformance: _component('Returns Performance', 0.30),
+  diversification: _component('Diversification', 0.25),
+  liquidity: _component('Liquidity', 0.20),
+  goalAlignment: _component('Goal Alignment', 0.15),
+  actionReadiness: _component('Action Readiness', 0.10),
+  calculatedAt: DateTime(2026, 10, 3),
+);
 
 final _usdBond = InvestmentEntity(
   id: 'bond',
@@ -157,6 +200,25 @@ void main() {
     },
   );
 
+  test('a score held from before is dropped as soon as a new snapshot '
+      'starts loading', () async {
+    // For example the previous account's score after switching accounts, or
+    // the score from before an edit, while the new snapshot converts.
+    final conversion = _GatedUsdInr();
+    final autoSave = _RecordingAutoSave()..held = _heldScore();
+    final container = _container(
+      investments: [_usdBond],
+      flows: _usdFlows,
+      conversion: conversion,
+      autoSave: autoSave,
+    );
+    await _settle();
+
+    expect(container.read(portfolioHealthProvider).isLoading, isTrue);
+    expect(autoSave.held, isNull);
+    conversion.gate.complete();
+  });
+
   test('an empty portfolio has no score, and nothing is saved', () async {
     final autoSave = _RecordingAutoSave();
     final container = _container(
@@ -170,6 +232,36 @@ void main() {
     expect(container.read(portfolioHealthProvider).value, isNull);
     expect(container.read(portfolioHealthProvider).hasValue, isTrue);
     expect(autoSave.updates, isEmpty);
-    expect(autoSave.clears, 1);
+    expect(autoSave.clears, isPositive);
+    expect(autoSave.held, isNull);
+  });
+
+  test('a new account gets a new auto-save service, so the score of the '
+      'previous account is never saved under it', () async {
+    final users = StreamController<UserEntity?>();
+    final repository = _RecordingRepository();
+    final container = ProviderContainer(
+      overrides: [
+        authStateProvider.overrideWith((ref) => users.stream),
+        healthScoreRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+    addTearDown(users.close);
+    container.listen(healthScoreAutoSaveServiceProvider, (_, _) {});
+
+    users.add(const UserEntity(id: 'a', email: 'a@example.com'));
+    await _settle();
+    final first = container.read(healthScoreAutoSaveServiceProvider)
+      ..updateScore(_heldScore());
+
+    users.add(const UserEntity(id: 'b', email: 'b@example.com'));
+    await _settle();
+    final second = container.read(healthScoreAutoSaveServiceProvider);
+    await second.forceSave();
+    await first.forceSave();
+
+    expect(second, isNot(same(first)));
+    expect(repository.saved, isEmpty);
   });
 }

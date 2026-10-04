@@ -114,6 +114,41 @@ class InvestmentStats {
   /// before its returns can be shown.
   bool get needsCurrentValue => missingValueCount > 0;
 
+  /// Holdings shorter than this show their absolute return instead of an
+  /// annualised XIRR, because annualising a few days of return gives absurd
+  /// rates. Every screen that judges a return uses this one rule.
+  static const int shortHoldingDays = 90;
+
+  /// Days from the first cash flow to the last cash flow or current value,
+  /// by calendar day, or null without dates.
+  int? get holdingDays {
+    final first = firstCashFlowDate;
+    var last = lastCashFlowDate;
+    if (first == null || last == null) return null;
+    final valueDate = currentValueDate;
+    if (valueDate != null && valueDate.isAfter(last)) last = valueDate;
+    // Date-only difference in UTC, so DST changes cannot shift it.
+    return DateTime.utc(
+      last.year,
+      last.month,
+      last.day,
+    ).difference(DateTime.utc(first.year, first.month, first.day)).inDays;
+  }
+
+  /// Whether these stats were held for less than [shortHoldingDays] with
+  /// money back or a current value, so their XIRR must not be judged.
+  ///
+  /// Without any inflow (or current value) there is no holding period to
+  /// report a return over: a closed investment with a single INVEST flow
+  /// would otherwise read "-100.0% in under a day".
+  bool get isShortHolding {
+    final days = holdingDays;
+    return totalInvested > 0 &&
+        totalReturned + (currentValue ?? 0) > 0 &&
+        days != null &&
+        days < shortHoldingDays;
+  }
+
   /// Returns true if net cash flow is positive
   bool get isProfit => netCashFlow > 0;
 
