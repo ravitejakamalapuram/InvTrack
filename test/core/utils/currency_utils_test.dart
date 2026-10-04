@@ -333,7 +333,15 @@ void main() {
         test('$code compact amounts never show 1,000 of a unit', () {
           final symbol = getCurrencySymbol(code);
           final locale = getCurrencyLocale(code);
-          for (final v in [999.999, 999999.999, 999999999.999, 9999999.999]) {
+          // On main INR gave '₹0.999Cr' for 9994999 and '₹1KCr' for 1e10.
+          for (final v in [
+            999.999,
+            999999.999,
+            999999999.999,
+            9999999.999,
+            9994999.0,
+            1e10,
+          ]) {
             final text = formatCompactCurrency(
               v,
               symbol: symbol,
@@ -341,7 +349,9 @@ void main() {
             );
             expect(
               text,
-              isNot(matches(RegExp(r'1\D?000(K|M|B)|100 L'))),
+              isNot(
+                matches(RegExp(r'1\D?000(K|M|B)|100 L|KCr|(?<![\d.])0\.999')),
+              ),
               reason: '$code: $v gave "$text"',
             );
           }

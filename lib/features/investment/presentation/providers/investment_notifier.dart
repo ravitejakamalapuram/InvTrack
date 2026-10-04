@@ -11,6 +11,7 @@ import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/notifications/notification_service.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
 import 'package:inv_tracker/core/utils/analytics_utils.dart';
+import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
@@ -834,13 +835,16 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       // Totals in the base currency: raw sums of mixed currencies would fire
       // false milestones and be shown under the wrong symbol. Without a
-      // converter (signed out) there is no milestone to show.
+      // converter (signed out) there is no milestone to show. If a rate is
+      // unavailable, throwError skips the check until the next cash flow;
+      // the default fallback would keep the unconverted amount.
       final engine = ref.read(calculationEngineProvider);
       if (!engine.currency.isAvailable) return;
       final baseCurrency = ref.read(currencyCodeProvider);
       final converted = await engine.currency.batchConvert(
         cashFlows: cashFlows,
         baseCurrency: baseCurrency,
+        fallbackStrategy: ConversionFallbackStrategy.throwError,
       );
       final stats = engine.financial.calculateStats(
         converted,
@@ -885,7 +889,8 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
       final notificationService = ref.read(notificationServiceProvider);
 
       // Progress in the base currency, as the Goals screen shows it; raw sums
-      // of mixed currencies would announce the wrong milestones.
+      // of mixed currencies would announce the wrong milestones. Without a
+      // rate, throwError skips the check rather than use unconverted amounts.
       final batchConverter = ref.read(batchCurrencyConverterProvider);
       if (batchConverter == null) return;
       final baseCurrency = ref.read(currencyCodeProvider);
@@ -898,6 +903,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           allCashFlows: cashFlows,
           batchConverter: batchConverter,
           baseCurrency: baseCurrency,
+          fallbackStrategy: ConversionFallbackStrategy.throwError,
         );
 
         // CodeRabbit fix: Track previous progress to detect milestone crossings
@@ -925,6 +931,7 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
               goal: goal,
               batchConverter: batchConverter,
               baseCurrency: baseCurrency,
+              fallbackStrategy: ConversionFallbackStrategy.throwError,
             ),
             currency: baseCurrency,
           );

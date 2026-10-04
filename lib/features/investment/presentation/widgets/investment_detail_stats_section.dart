@@ -202,6 +202,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                           stats.netCashFlow,
                         ),
                         currencySymbol: currencyFormat.currencySymbol,
+                        locale: currencyFormat.locale,
                         style: netPositionStyle,
                       ),
               ],
@@ -288,6 +289,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     stats.totalInvested,
                   ),
                   currencySymbol: currencyFormat.currencySymbol,
+                  locale: currencyFormat.locale,
                   style: cashFlowStyle,
                 ),
           Text(
@@ -317,6 +319,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     stats.totalReturned,
                   ),
                   currencySymbol: currencyFormat.currencySymbol,
+                  locale: currencyFormat.locale,
                   style: cashFlowStyle,
                 ),
           Text(

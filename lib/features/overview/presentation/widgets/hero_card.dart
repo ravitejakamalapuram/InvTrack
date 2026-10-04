@@ -284,6 +284,7 @@ class HeroCardContent extends ConsumerWidget {
               amount: netPosition,
               compactText: currencyFormat.formatSmart(netPosition),
               currencySymbol: currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 36,
@@ -424,6 +425,7 @@ class HeroCardContent extends ConsumerWidget {
                 amount: amount,
                 compactText: value,
                 currencySymbol: currencyFormat.currencySymbol,
+                locale: currencyFormat.locale,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,

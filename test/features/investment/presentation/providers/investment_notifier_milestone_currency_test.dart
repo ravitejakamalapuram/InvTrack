@@ -54,6 +54,32 @@ class _RecordingNotificationService extends FakeNotificationService {
   }
 }
 
+/// A converter that is offline and has no cached rate to fall back on.
+class _OfflineNoCacheConversionService extends MockCurrencyConversionService {
+  @override
+  Future<double> convert({
+    required double amount,
+    required String from,
+    required String to,
+    DateTime? date,
+  }) async {
+    if (from == to) return amount;
+    throw Exception('offline');
+  }
+
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async => throw Exception('offline');
+
+  @override
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) async => from == to ? 1.0 : null;
+}
+
 /// Milestone notifications summed raw amounts in mixed currencies and showed
 /// them under '₹' whatever the base currency (GAP2-03). They must use the
 /// base currency and amounts converted to it (rate here: 1 USD = 83 INR).
@@ -68,7 +94,10 @@ void main() {
     notifications = _RecordingNotificationService();
   });
 
-  ProviderContainer containerFor(String baseCurrency) {
+  ProviderContainer containerFor(
+    String baseCurrency, {
+    CurrencyConversionService? conversion,
+  }) {
     final container = ProviderContainer(
       overrides: [
         investmentRepositoryProvider.overrideWithValue(repo),
@@ -76,7 +105,7 @@ void main() {
         analyticsServiceProvider.overrideWithValue(FakeAnalyticsService()),
         notificationServiceProvider.overrideWithValue(notifications),
         currencyConversionServiceProvider.overrideWithValue(
-          MockCurrencyConversionService(),
+          conversion ?? MockCurrencyConversionService(),
         ),
         isAuthenticatedProvider.overrideWithValue(true),
         currencyCodeProvider.overrideWithValue(baseCurrency),
@@ -163,6 +192,30 @@ void main() {
         closeTo(10000, 0.005),
       );
     });
+
+    test('no milestone when a rate is unavailable offline', () async {
+      // Without a rate the ₹8,30,000 would be counted as $830,000 (83x).
+      repo.seed(
+        investments: [investment('inv-5', 'USD')],
+        cashFlows: [flow('inv-5', CashFlowType.invest, 10000, 'USD')],
+      );
+      final container = containerFor(
+        'USD',
+        conversion: _OfflineNoCacheConversionService(),
+      );
+
+      await container
+          .read(investmentNotifierProvider.notifier)
+          .addCashFlow(
+            investmentId: 'inv-5',
+            type: CashFlowType.returnFlow,
+            amount: 830000,
+            date: DateTime(2026, 1, 1),
+            currency: 'INR',
+          );
+
+      expect(notifications.milestones, isEmpty);
+    });
   });
 
   group('goal milestone', () {
@@ -243,5 +296,27 @@ void main() {
         expect(shown['currency'], 'INR');
       },
     );
+
+    test('no goal milestone when a rate is unavailable offline', () async {
+      // Without a rate ₹8,30,000 would count as $830,000 of a $50,000 goal.
+      goals.seed(goals: [goal()]);
+      repo.seed(investments: [investment('inv-6', 'INR')]);
+      final container = containerFor(
+        'USD',
+        conversion: _OfflineNoCacheConversionService(),
+      );
+
+      await container
+          .read(investmentNotifierProvider.notifier)
+          .addCashFlow(
+            investmentId: 'inv-6',
+            type: CashFlowType.returnFlow,
+            amount: 830000,
+            date: DateTime(2026, 1, 1),
+            currency: 'INR',
+          );
+
+      expect(notifications.goalMilestones, isEmpty);
+    });
   });
 }

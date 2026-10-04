@@ -469,6 +469,7 @@ class _InvestmentValueColumn extends StatelessWidget {
                       stats.netCashFlow.abs(),
                     ),
                     currencySymbol: currencyFormat.currencySymbol,
+                    locale: currencyFormat.locale,
                     prefix: isPositive ? '+' : '-',
                     style: valueStyle,
                   ),
@@ -670,6 +671,7 @@ class _InvestmentBottomStrip extends StatelessWidget {
                               stats.totalInvested,
                             ),
                             currencySymbol: currencyFormat.currencySymbol,
+                            locale: currencyFormat.locale,
                             style: subtleTextStyle.copyWith(
                               fontWeight: FontWeight.w500,
                             ),

@@ -243,20 +243,14 @@ class GoalProgressCalculator {
     return maxDate;
   }
 
-  /// Calculate progress for a goal with multi-currency support
-  ///
-  /// Converts all cash flows AND target amount to base currency before
-  /// calculating progress. This ensures accurate progress tracking when
-  /// investments are in different currencies.
-  ///
-  /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
-  /// **Bug Fix:** Target amount must also be converted to ensure percentage stability
   /// The goal's target in [baseCurrency]: the monthly income target for an
   /// income goal, otherwise the target amount.
   static Future<double> targetInBaseCurrency({
     required GoalEntity goal,
     required BatchCurrencyConverter batchConverter,
     required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
   }) {
     final targetAmountInGoalCurrency = goal.isIncomeGoal
         ? (goal.targetMonthlyIncome ?? goal.targetAmount)
@@ -265,15 +259,26 @@ class GoalProgressCalculator {
       amount: targetAmountInGoalCurrency,
       from: goal.currency,
       to: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
   }
 
+  /// Calculate progress for a goal with multi-currency support
+  ///
+  /// Converts all cash flows AND target amount to base currency before
+  /// calculating progress. This ensures accurate progress tracking when
+  /// investments are in different currencies.
+  ///
+  /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
+  /// **Bug Fix:** Target amount must also be converted to ensure percentage stability
   static Future<GoalProgress> calculateMultiCurrency({
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
     required List<CashFlowEntity> allCashFlows,
     required BatchCurrencyConverter batchConverter,
     required String baseCurrency,
+    ConversionFallbackStrategy fallbackStrategy =
+        ConversionFallbackStrategy.useLastKnown,
   }) async {
     // Filter investments based on tracking mode
     final linkedInvestments = _getLinkedInvestments(goal, allInvestments);
@@ -289,6 +294,7 @@ class GoalProgressCalculator {
     final convertedCashFlows = await batchConverter.batchConvert(
       cashFlows: linkedCashFlows,
       baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
 
     // Calculate current amount based on goal type
@@ -310,6 +316,7 @@ class GoalProgressCalculator {
       goal: goal,
       batchConverter: batchConverter,
       baseCurrency: baseCurrency,
+      fallbackStrategy: fallbackStrategy,
     );
 
     // Calculate progress percentage
