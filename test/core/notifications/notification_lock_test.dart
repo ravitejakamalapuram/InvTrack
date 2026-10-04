@@ -15,6 +15,7 @@ import 'package:inv_tracker/core/router/app_router.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
+import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/income_projection/presentation/providers/expected_cash_flow_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/document_providers.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -94,6 +95,9 @@ void main() {
         documentsByInvestmentProvider(
           'inv-1',
         ).overrideWith((ref) => Stream.value([])),
+        watchGoalByIdProvider(
+          'goal-1',
+        ).overrideWith((ref) => Stream.value(null)),
         authRepositoryProvider.overrideWithValue(authRepo),
         securityProvider.overrideWith(_LockedSecurity.new),
         onboardingCompleteProvider.overrideWith((ref) async => true),
@@ -184,6 +188,23 @@ void main() {
 
     expect(location(), '/investments/inv-1');
     expect(_detail, findsOneWidget);
+    expect(_lock, findsNothing);
+  });
+
+  // The router redirect alone would send a goal tap to /lock and forget it;
+  // only the deferral at the start of handleNotificationTap brings it back.
+  testWidgets('a goal notification tapped while locked lands on /lock, and '
+      'opens the goal after unlock', (tester) async {
+    await pumpApp(tester);
+
+    await tap(tester, 'goal_at_risk:goal-1');
+
+    expect(location(), '/lock');
+
+    (container.read(securityProvider.notifier) as _LockedSecurity).unlock();
+    await tester.pumpAndSettle();
+
+    expect(location(), '/goals/goal-1');
     expect(_lock, findsNothing);
   });
 
