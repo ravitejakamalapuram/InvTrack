@@ -4158,6 +4158,16 @@
     "description": "How a current value was estimated: the principal not yet paid back (payout FDs, bonds, P2P loans)"
   },
 
+  "moneyOutIncludesFees": "Money out includes fees.",
+  "@moneyOutIncludesFees": {
+    "description": "Note under an investment's money out / money in summary: the amount invested counts fees, so MOIC and return % are net of fees"
+  },
+
+  "moneyOutIncludesFeesReinvested": "Money out includes fees. Reinvested payouts count once in MOIC and return %.",
+  "@moneyOutIncludesFeesReinvested": {
+    "description": "Note under an investment's money out / money in summary when part of the money out came from earlier payouts (an FD renewed on maturity, a P2P payout re-lent): MOIC and return % count that money once"
+  },
+
   "currentValueUpdatedOn": "Updated {date}",
   "@currentValueUpdatedOn": {
     "description": "Date of a current value the user entered, e.g. 'Updated Sep 30, 2026'",

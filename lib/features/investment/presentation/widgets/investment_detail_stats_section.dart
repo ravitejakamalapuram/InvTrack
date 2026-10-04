@@ -88,6 +88,17 @@ class InvestmentDetailStatsSection extends StatelessWidget {
         const SizedBox(height: 10),
         // Cash Out and Cash In row
         _buildCashFlowSummaryCard(),
+        if (stats.hasData) ...[
+          const SizedBox(height: 6),
+          // Money out is gross and includes fees; MOIC and return % count
+          // reinvested payouts once (paid-in capital).
+          Text(
+            stats.paidInCapital < stats.totalInvested
+                ? l10n.moneyOutIncludesFeesReinvested
+                : l10n.moneyOutIncludesFees,
+            style: AppTypography.small.copyWith(color: _neutralColor),
+          ),
+        ],
         const SizedBox(height: 10),
         // XIRR and MOIC row
         Row(

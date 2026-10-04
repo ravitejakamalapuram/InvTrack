@@ -4,8 +4,16 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 /// Investment statistics for display.
 /// Contains calculated metrics like returns, MOIC, and XIRR.
 class InvestmentStats {
-  /// Sum of INVEST + FEE (money out)
+  /// Sum of INVEST + FEE (money out), gross: money reinvested from earlier
+  /// payouts is counted each time it goes in.
   final double totalInvested;
+
+  /// The most of the user's own money in these investments at any one time
+  /// (fees included): the peak of cumulative outflows minus inflows, with
+  /// same-day flows netted, per investment and summed. A rollover or a
+  /// re-lent payout is not counted twice. The denominator of [moic] and
+  /// [absoluteReturn]. Equals [totalInvested] when nothing is reinvested.
+  final double paidInCapital;
 
   /// Sum of RETURN + INCOME (money in)
   final double totalReturned;
@@ -13,10 +21,12 @@ class InvestmentStats {
   /// Net cash flow (Returned - Invested)
   final double netCashFlow;
 
-  /// Percentage return on investment
+  /// Gain (returned + current value - invested) as a percentage of
+  /// [paidInCapital].
   final double absoluteReturn;
 
-  /// Multiple on Invested Capital
+  /// Multiple on Invested Capital: (returned + current value - reinvested)
+  /// / [paidInCapital], where reinvested = [totalInvested] - paid-in.
   final double moic;
 
   /// Annualized return (XIRR), or null when [xirrMethod] is undefined: an
@@ -62,6 +72,7 @@ class InvestmentStats {
 
   const InvestmentStats({
     required this.totalInvested,
+    double? paidInCapital,
     required this.totalReturned,
     required this.netCashFlow,
     required this.absoluteReturn,
@@ -76,7 +87,8 @@ class InvestmentStats {
     this.currentValueIsEstimate = false,
     this.currentValueRate,
     this.missingValueCount = 0,
-  }) : assert(
+  }) : paidInCapital = paidInCapital ?? totalInvested,
+       assert(
          xirr != null || xirrMethod == XirrMethod.undefined,
          'A missing XIRR must be marked undefined',
        );
@@ -117,11 +129,21 @@ class InvestmentStats {
   /// Returns true if net cash flow is negative
   bool get isLoss => netCashFlow < 0;
 
-  /// Duration in years from first to last cash flow (or to now if ongoing)
+  /// Years from the first cash flow to the end of the period [moic] covers:
+  /// the later of the last cash flow and the [currentValueDate] of an open
+  /// investment. Counted in calendar days, so time of day and DST changes
+  /// do not shorten it.
   double? get durationYears {
-    if (firstCashFlowDate == null) return null;
-    final endDate = lastCashFlowDate ?? DateTime.now();
-    final days = endDate.difference(firstCashFlowDate!).inDays;
+    final start = firstCashFlowDate;
+    if (start == null) return null;
+    var end = lastCashFlowDate ?? DateTime.now();
+    final valueDate = currentValueDate;
+    if (valueDate != null && valueDate.isAfter(end)) end = valueDate;
+    final days = DateTime.utc(
+      end.year,
+      end.month,
+      end.day,
+    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
     return days / 365.0;
   }
 
@@ -137,6 +159,7 @@ class InvestmentStats {
   /// Creates a copy with the given fields replaced
   InvestmentStats copyWith({
     double? totalInvested,
+    double? paidInCapital,
     double? totalReturned,
     double? netCashFlow,
     double? absoluteReturn,
@@ -154,6 +177,7 @@ class InvestmentStats {
   }) {
     return InvestmentStats(
       totalInvested: totalInvested ?? this.totalInvested,
+      paidInCapital: paidInCapital ?? this.paidInCapital,
       totalReturned: totalReturned ?? this.totalReturned,
       netCashFlow: netCashFlow ?? this.netCashFlow,
       absoluteReturn: absoluteReturn ?? this.absoluteReturn,
@@ -178,6 +202,7 @@ class InvestmentStats {
 
     return other is InvestmentStats &&
         other.totalInvested == totalInvested &&
+        other.paidInCapital == paidInCapital &&
         other.totalReturned == totalReturned &&
         other.netCashFlow == netCashFlow &&
         other.absoluteReturn == absoluteReturn &&
@@ -207,6 +232,7 @@ class InvestmentStats {
         firstCashFlowDate.hashCode ^
         lastCashFlowDate.hashCode ^
         Object.hash(
+          paidInCapital,
           currentValue,
           currentValueDate,
           currentValueIsEstimate,

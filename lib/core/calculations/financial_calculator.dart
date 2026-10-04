@@ -149,9 +149,62 @@ class FinancialCalculator {
   /// ## See Also
   ///
   /// - [calculateAbsoluteReturn] for percentage-based return
+  /// - [calculatePaidInCapital] for the invested amount investment stats use
   static double calculateMOIC(double invested, double returned) {
     if (invested == 0) return 0.0;
     return returned / invested;
+  }
+
+  /// [amount] rounded to two decimals (the paisa), so sums of many small
+  /// amounts compare and display exactly: ten payouts of 10.10 make 101.00,
+  /// not 100.99999999999999, and a break-even position nets to 0.
+  static double roundMoney(double amount) =>
+      (amount * 100).roundToDouble() / 100;
+
+  /// Paid-in capital: the most of the investor's own money that was in each
+  /// investment at any one time, summed over the investments in
+  /// [cashFlows], rounded to the paisa.
+  ///
+  /// For one investment it is the peak of cumulative outflows (INVEST and
+  /// FEE) minus inflows (RETURN and INCOME), with the flows of one calendar
+  /// day netted first. A maturing FD renewed the same day (RETURN 10.75L and
+  /// INVEST 10.75L) or a payout re-lent later is not new capital, so it is
+  /// counted once. Fees are part of it. Investments are not netted against
+  /// each other: money moved from one investment into another counts in
+  /// both. An investment whose inflows always exceed its outflows so far
+  /// (payouts recorded before the investment) counts its outflows instead.
+  ///
+  /// With nothing reinvested it equals [calculateTotalInvested].
+  static double calculatePaidInCapital(List<ICashFlow> cashFlows) {
+    final netOutflowByDay = <String, Map<int, double>>{};
+    final outflows = <String, double>{};
+    for (final cf in cashFlows) {
+      final day = DateTime.utc(
+        cf.date.year,
+        cf.date.month,
+        cf.date.day,
+      ).millisecondsSinceEpoch;
+      final days = netOutflowByDay.putIfAbsent(cf.investmentId, () => {});
+      days[day] = (days[day] ?? 0) - cf.signedAmount;
+      if (cf.signedAmount < 0) {
+        outflows[cf.investmentId] =
+            (outflows[cf.investmentId] ?? 0) + cf.amount;
+      }
+    }
+
+    var total = 0.0;
+    for (final MapEntry(key: investmentId, value: days)
+        in netOutflowByDay.entries) {
+      var cumulative = 0.0;
+      var peak = 0.0;
+      for (final day in days.keys.toList()..sort()) {
+        cumulative += days[day]!;
+        if (cumulative > peak) peak = cumulative;
+      }
+      final paidIn = roundMoney(peak);
+      total += paidIn > 0 ? paidIn : (outflows[investmentId] ?? 0);
+    }
+    return roundMoney(total);
   }
 
   /// Calculates Net Cash Flow (Total Returned - Total Invested).
