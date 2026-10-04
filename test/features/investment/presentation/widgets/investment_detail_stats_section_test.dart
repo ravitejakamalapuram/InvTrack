@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
+import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/presentation/widgets/investment_detail_stats_section.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
@@ -31,6 +33,7 @@ InvestmentEntity _investment({
   int? tenureMonths,
   CompoundingFrequency? compounding,
   InterestPayoutMode? payoutMode,
+  DateTime? maturityDate,
 }) {
   return InvestmentEntity(
     id: 'fd-1',
@@ -40,6 +43,7 @@ InvestmentEntity _investment({
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     startDate: DateTime(2026, 1, 1),
+    maturityDate: maturityDate,
     expectedRate: expectedRate,
     tenureMonths: tenureMonths,
     compoundingFrequency: compounding,
@@ -51,6 +55,7 @@ InvestmentEntity _investment({
 /// What calculateStats returns today for a single INVEST of Rs1,00,000.
 final _investOnlyStats = InvestmentStats(
   totalInvested: 100000,
+  principal: 100000,
   totalReturned: 0,
   netCashFlow: -100000,
   absoluteReturn: -100,
@@ -140,6 +145,90 @@ void main() {
 
           expect(
             find.text('Projected at maturity ₹1,23,144 (7.19% p.a.)'),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'A72: a fee is not compounded as principal (Rs1,23,144, not Rs1,23,760)',
+        (tester) async {
+          // INVEST Rs1,00,000 + FEE Rs500, 7% quarterly, 36 months:
+          // 100000 * 1.0175^12 = 1,23,143.93 (100500 would give 1,23,759.65).
+          CashFlowEntity flow(String id, CashFlowType type, double amount) =>
+              CashFlowEntity(
+                id: id,
+                investmentId: 'fd-1',
+                date: DateTime(2026, 1, 1),
+                type: type,
+                amount: amount,
+                currency: 'INR',
+                createdAt: DateTime(2026, 1, 1),
+              );
+          final stats = FinancialCalculatorModule().calculateStats([
+            flow('1', CashFlowType.invest, 100000),
+            flow('2', CashFlowType.fee, 500),
+          ]);
+
+          await _pump(
+            tester,
+            investment: _investment(
+              expectedRate: 7,
+              tenureMonths: 36,
+              compounding: CompoundingFrequency.quarterly,
+              payoutMode: InterestPayoutMode.cumulative,
+            ),
+            stats: stats,
+          );
+
+          expect(
+            find.text('Projected at maturity ₹1,23,144 (7.19% p.a.)'),
+            findsOneWidget,
+          );
+          expect(find.textContaining('1,23,760'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'A16: an FD with no compounding chosen is projected quarterly',
+        (tester) async {
+          // Rs1,00,000 at 7% for 5 years: 100000 * 1.0175^20 = 1,41,477.82
+          // (annual compounding would show 1,40,255).
+          await _pump(
+            tester,
+            investment: _investment(
+              expectedRate: 7,
+              tenureMonths: 60,
+              payoutMode: InterestPayoutMode.cumulative,
+            ),
+            stats: _investOnlyStats,
+          );
+
+          expect(
+            find.text('Projected at maturity ₹1,41,478 (7.19% p.a.)'),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'A16: a 444-day FD set by its maturity date is projected in days',
+        (tester) async {
+          // 1 Jan 2026 to 21 Mar 2027 is 444 days: 4 quarters, then 79 days
+          // simple: 100000 * 1.0175^4 * (1 + 0.07 * 79 / 365) = 1,08,809.84.
+          await _pump(
+            tester,
+            investment: _investment(
+              expectedRate: 7,
+              compounding: CompoundingFrequency.quarterly,
+              payoutMode: InterestPayoutMode.cumulative,
+              maturityDate: DateTime(2027, 3, 21),
+            ),
+            stats: _investOnlyStats,
+          );
+
+          expect(
+            find.text('Projected at maturity ₹1,08,810 (7.19% p.a.)'),
             findsOneWidget,
           );
         },
