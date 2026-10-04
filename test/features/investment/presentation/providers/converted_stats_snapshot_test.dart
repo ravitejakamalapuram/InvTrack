@@ -4,7 +4,7 @@
 // converted amounts.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:flutter_riverpod/misc.dart' show Override, ProviderListenable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/services/currency_conversion_service.dart';
@@ -60,6 +60,24 @@ class FakeUsdInrConversionService implements CurrencyConversionService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Offline with no cached rate: the batch lookup fails.
+class _OfflineConversionService extends FakeUsdInrConversionService {
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async => throw Exception('offline');
+}
+
+/// The batch lookup succeeds but has no rate for USD.
+class _MissingRateConversionService extends FakeUsdInrConversionService {
+  @override
+  Future<Map<String, double>> batchConvertHistorical({
+    required Map<String, ConversionRequest> requests,
+    required String to,
+  }) async => const {};
 }
 
 class _PrivacyOff extends PrivacyModeNotifier {
@@ -153,6 +171,7 @@ List<Override> _overrides({
   required List<CashFlowEntity> activeFlows,
   List<InvestmentEntity> archived = const [],
   Map<String, List<CashFlowEntity>> archivedFlows = const {},
+  CurrencyConversionService? conversionService,
 }) => [
   isAuthenticatedProvider.overrideWith((ref) => true),
   allInvestmentsProvider.overrideWith((ref) => Stream.value(active)),
@@ -171,7 +190,7 @@ List<Override> _overrides({
     ).overrideWith((ref) => Stream.value(archivedFlows[inv.id] ?? const [])),
   currencyCodeProvider.overrideWith((ref) => 'INR'),
   currencyConversionServiceProvider.overrideWith(
-    (ref) => FakeUsdInrConversionService(),
+    (ref) => conversionService ?? FakeUsdInrConversionService(),
   ),
 ];
 
@@ -305,6 +324,70 @@ void main() {
         ['usd', 'inr'],
       );
     });
+  });
+
+  group('No rate and no last-known rate', () {
+    // Unconverted, the USD flows would show net 100 under the ₹ symbol
+    // (CALC-04). Every screen must fail visibly instead. With Riverpod's
+    // default retry the screens wait (loading) while the rate is retried;
+    // once retries stop they are in their error state.
+    for (final entry in <String, CurrencyConversionService>{
+      'batch lookup fails': _OfflineConversionService(),
+      'rate missing from batch': _MissingRateConversionService(),
+    }.entries) {
+      for (final retries in [false, true]) {
+        final when = retries ? 'while retrying' : 'once retries stop';
+        test('${entry.key}, $when: never net 100', () async {
+          final archived = _investment('arch', 'USD', archived: true);
+          final container = ProviderContainer(
+            retry: retries ? null : (_, _) => null,
+            overrides: _overrides(
+              active: [_investment('usd', 'USD')],
+              activeFlows: _usdFlows('usd'),
+              archived: [archived],
+              archivedFlows: {'arch': _usdFlows('arch')},
+              conversionService: entry.value,
+            ),
+          );
+          addTearDown(container.dispose);
+          // Every state each screen sees, including those during retries.
+          final seen = <String, List<AsyncValue<Object?>>>{};
+          void record(String name, ProviderListenable<AsyncValue<Object?>> p) {
+            container.listen(
+              p,
+              (_, next) => seen.putIfAbsent(name, () => []).add(next),
+              fireImmediately: true,
+            );
+          }
+
+          record('basic stats map', activeInvestmentBasicStatsMapProvider);
+          record('card stats', investmentBasicStatsProvider('usd'));
+          record('XIRR map', activeInvestmentXirrResultMapProvider);
+          record('detail stats', multiCurrencyInvestmentStatsProvider('usd'));
+          record(
+            'archived stats',
+            multiCurrencyArchivedInvestmentStatsProvider('arch'),
+          );
+          await _settle();
+
+          expect(seen.keys, hasLength(5));
+          for (final MapEntry(key: name, value: states) in seen.entries) {
+            expect(
+              states.where((s) => s.hasValue),
+              isEmpty,
+              reason: '$name must never show unconverted amounts: $states',
+            );
+            if (!retries) {
+              expect(
+                states.last.hasError,
+                isTrue,
+                reason: '$name must be in its error state: $states',
+              );
+            }
+          }
+        });
+      }
+    }
   });
 
   group('Overview analytics use converted amounts', () {

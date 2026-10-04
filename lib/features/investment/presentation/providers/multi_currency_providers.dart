@@ -195,7 +195,8 @@ Future<InvestmentStats> multiCurrencyInvestmentStats(
 
 /// Converts [cashFlows] to the user's base currency and calculates their
 /// stats, or returns empty stats when there is nothing to convert or no
-/// converter.
+/// converter. Throws when a flow has no rate, rather than summing it
+/// unconverted.
 Future<InvestmentStats> _convertedStats(
   Ref ref,
   List<CashFlowEntity> cashFlows,
@@ -215,6 +216,7 @@ Future<InvestmentStats> _convertedStats(
     baseCurrency: userBaseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
+  requireBaseCurrency(convertedCashFlows, userBaseCurrency);
 
   // Use engine's financial module to calculate stats
   return engine.financial.calculateStats(convertedCashFlows);

@@ -14,6 +14,7 @@ import 'package:inv_tracker/core/calculations/financial_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 import 'package:inv_tracker/core/performance/performance_provider.dart';
+import 'package:inv_tracker/core/services/currency_conversion_service.dart';
 import 'package:inv_tracker/core/utils/batch_currency_converter.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_stats.dart';
@@ -89,12 +90,30 @@ final convertedCashFlowsSnapshotProvider = FutureProvider<ConvertedCashFlows>((
     baseCurrency: baseCurrency,
     fallbackStrategy: ConversionFallbackStrategy.useLastKnown,
   );
+  requireBaseCurrency(converted, baseCurrency);
   return ConvertedCashFlows(
     baseCurrency: baseCurrency,
     cashFlows: converted,
     source: cashFlows,
   );
 });
+
+/// Throws a [CurrencyConversionException] if any of [cashFlows] is still in
+/// a currency other than [baseCurrency].
+///
+/// [BatchCurrencyConverter] keeps a flow in its own currency when there is
+/// neither a rate nor a last-known rate (offline, first run, a new
+/// currency). Summing it would show a native amount under the base-currency
+/// symbol, so stats fail visibly instead.
+void requireBaseCurrency(List<CashFlowEntity> cashFlows, String baseCurrency) {
+  for (final cf in cashFlows) {
+    if (cf.currency != baseCurrency) {
+      throw CurrencyConversionException(
+        'No exchange rate for ${cf.currency} → $baseCurrency',
+      );
+    }
+  }
+}
 
 /// The active cash flows in the base currency, for synchronous stats.
 ///
