@@ -26,6 +26,8 @@
 /// ```
 library;
 
+import 'dart:math' as math;
+
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 
@@ -168,45 +170,49 @@ class FinancialCalculator {
   /// investment at any one time, summed over the investments in
   /// [cashFlows], rounded to the paisa.
   ///
-  /// For one investment it is the peak of cumulative outflows (INVEST and
-  /// FEE) minus inflows (RETURN and INCOME), with the flows of one calendar
-  /// day netted first. A maturing FD renewed the same day (RETURN 10.75L and
-  /// INVEST 10.75L) or a payout re-lent later is not new capital, so it is
-  /// counted once. Fees are part of it. Investments are not netted against
-  /// each other: money moved from one investment into another counts in
-  /// both. An investment whose inflows always exceed its outflows so far
-  /// (payouts recorded before the investment) counts its outflows instead.
+  /// For one investment it is the peak of the money still in it: outflows
+  /// (INVEST and FEE) add to it and inflows (RETURN and INCOME) take it out,
+  /// with the flows of one calendar day netted first. A maturing FD renewed
+  /// the same day (RETURN 10.75L and INVEST 10.75L) or a payout re-lent
+  /// later is not new capital, so it is counted once. Fees are part of it.
+  ///
+  /// The money in never goes below zero: an inflow beyond it (a payout
+  /// recorded before the investment, a chit-fund prize) is gain and does
+  /// not fund later outflows. A day that starts with nothing in counts its
+  /// outflows in full, since its inflows cannot have paid for them.
+  /// Investments are not netted against each other: money moved from one
+  /// investment into another counts in both.
   ///
   /// With nothing reinvested it equals [calculateTotalInvested].
   static double calculatePaidInCapital(List<ICashFlow> cashFlows) {
-    final netOutflowByDay = <String, Map<int, double>>{};
-    final outflows = <String, double>{};
+    // Per investment and day: (outflows, inflows).
+    final flowsByDay = <String, Map<int, (double, double)>>{};
     for (final cf in cashFlows) {
       final day = DateTime.utc(
         cf.date.year,
         cf.date.month,
         cf.date.day,
       ).millisecondsSinceEpoch;
-      final days = netOutflowByDay.putIfAbsent(cf.investmentId, () => {});
-      days[day] = (days[day] ?? 0) - cf.signedAmount;
-      if (cf.signedAmount < 0) {
-        outflows[cf.investmentId] =
-            (outflows[cf.investmentId] ?? 0) + cf.amount;
-      }
+      final days = flowsByDay.putIfAbsent(cf.investmentId, () => {});
+      final (out, inflow) = days[day] ?? (0.0, 0.0);
+      days[day] = cf.signedAmount < 0
+          ? (out + cf.amount, inflow)
+          : (out, inflow + cf.signedAmount);
     }
 
     var total = 0.0;
-    for (final MapEntry(key: investmentId, value: days)
-        in netOutflowByDay.entries) {
-      var cumulative = 0.0;
+    for (final days in flowsByDay.values) {
+      var moneyIn = 0.0;
       var peak = 0.0;
       for (final day in days.keys.toList()..sort()) {
-        cumulative += days[day]!;
-        if (cumulative > peak) peak = cumulative;
+        final (out, inflow) = days[day]!;
+        if (roundMoney(moneyIn) == 0 && out > peak) peak = out;
+        moneyIn = math.max(0.0, moneyIn + out - inflow);
+        if (moneyIn > peak) peak = moneyIn;
       }
-      final paidIn = roundMoney(peak);
-      total += paidIn > 0 ? paidIn : (outflows[investmentId] ?? 0);
+      total += peak;
     }
+    // Rounded once, like the money-out total it is compared with.
     return roundMoney(total);
   }
 

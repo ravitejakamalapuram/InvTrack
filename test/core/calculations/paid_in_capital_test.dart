@@ -158,8 +158,8 @@ void main() {
       expect(stats.absoluteReturn, closeTo(20000 / 210000 * 100, _rateTol));
     });
 
-    test('returns recorded before any investment fall back to the amount '
-        'invested rather than divide by zero', () {
+    test('returns recorded before any investment are gain, so the amount '
+        'invested is paid in', () {
       final stats = _module.calculateStats([
         _flow(CashFlowType.returnFlow, 1000, DateTime.utc(2024, 1, 1)),
         _flow(CashFlowType.invest, 500, DateTime.utc(2024, 2, 1)),
@@ -167,6 +167,113 @@ void main() {
 
       expect(stats.paidInCapital, 500.0);
       expect(stats.moic, closeTo(2.0, _rateTol));
+    });
+  });
+
+  // Money taken out beyond what is in an investment is gain: it never funds
+  // later contributions, so paid-in capital cannot collapse to a few paise.
+  group('paid-in capital never collapses (CALC-07 review)', () {
+    test('a payout one paisa short of the next investment does not make '
+        'the denominator 0.01', () {
+      final stats = _module.calculateStats([
+        _flow(CashFlowType.returnFlow, 999.99, DateTime.utc(2024, 1, 1)),
+        _flow(CashFlowType.invest, 1000, DateTime.utc(2024, 1, 2)),
+        _flow(CashFlowType.returnFlow, 1100, DateTime.utc(2025, 1, 2)),
+      ]);
+
+      expect(stats.paidInCapital, 1000.0);
+      expect(stats.moic, closeTo(2.09999, _rateTol));
+      expect(stats.absoluteReturn, closeTo(109.999, _rateTol));
+    });
+
+    test('income received before a top-up is gain, not funding', () {
+      final stats = _module.calculateStats([
+        _flow(CashFlowType.income, 1000, DateTime.utc(2024, 1, 1)),
+        _flow(CashFlowType.invest, 1500, DateTime.utc(2024, 1, 2)),
+        _flow(CashFlowType.returnFlow, 1600, DateTime.utc(2025, 1, 2)),
+      ]);
+
+      expect(stats.paidInCapital, 1500.0);
+      expect(stats.moic, closeTo(2600 / 1500, _rateTol));
+      expect(stats.absoluteReturn, closeTo(73.333333, _rateTol));
+    });
+
+    test('a financial-year window that starts with a payout keeps the '
+        're-investment as paid in: +7.8%, not +400%', () {
+      final stats = _module.calculateStats([
+        _flow(CashFlowType.returnFlow, 50000, DateTime.utc(2025, 5, 1)),
+        _flow(CashFlowType.invest, 51000, DateTime.utc(2025, 5, 5)),
+        _flow(CashFlowType.income, 5000, DateTime.utc(2025, 6, 1)),
+      ]);
+
+      expect(stats.paidInCapital, 51000.0);
+      expect(stats.moic, closeTo(55000 / 51000, _rateTol));
+      expect(stats.absoluteReturn, closeTo(7.843137, _rateTol));
+    });
+
+    test('a refund on the day the money went in cannot have funded it', () {
+      final stats = _module.calculateStats([
+        _flow(CashFlowType.invest, 1000, DateTime.utc(2024, 1, 1)),
+        _flow(CashFlowType.returnFlow, 999.99, DateTime.utc(2024, 1, 1)),
+      ]);
+
+      expect(stats.paidInCapital, 1000.0);
+      expect(stats.moic, closeTo(0.99999, _rateTol));
+      expect(stats.absoluteReturn, closeTo(-0.001, _rateTol));
+    });
+
+    // A chit fund: Rs10,000 a month for 20 months from 5 Jan 2024, and the
+    // prize of Rs1,85,000 paid on the day of one instalment.
+    List<CashFlowEntity> chit({required int prizeMonth}) => [
+      for (var month = 0; month < 20; month++)
+        _flow(CashFlowType.invest, 10000, DateTime.utc(2024, 1 + month, 5)),
+      _flow(CashFlowType.returnFlow, 185000, DateTime.utc(2024, prizeMonth, 5)),
+    ];
+
+    test('a chit fund won in month 2 shows a small loss, not -100%', () {
+      final stats = _module.calculateStats(chit(prizeMonth: 2));
+
+      expect(stats.paidInCapital, 180000.0);
+      expect(stats.moic, closeTo(165000 / 180000, _rateTol));
+      expect(stats.absoluteReturn, closeTo(-8.333333, _rateTol));
+    });
+
+    test('a chit fund won in month 9 counts the instalments after the '
+        'prize as paid in', () {
+      final stats = _module.calculateStats(chit(prizeMonth: 9));
+
+      expect(stats.totalInvested, 200000.0);
+      expect(stats.paidInCapital, 110000.0);
+      expect(stats.moic, closeTo(95000 / 110000, _rateTol));
+      expect(stats.absoluteReturn, closeTo(-13.636364, _rateTol));
+    });
+
+    test('a chit fund won on the first instalment: 0.79x, not 0.00x', () {
+      final stats = _module.calculateStats([
+        for (var month = 0; month < 20; month++)
+          _flow(CashFlowType.invest, 100000, DateTime.utc(2024, 1 + month, 5)),
+        _flow(CashFlowType.returnFlow, 1600000, DateTime.utc(2024, 1, 5)),
+      ]);
+
+      expect(stats.paidInCapital, 1900000.0);
+      expect(stats.moic, closeTo(1500000 / 1900000, _rateTol));
+      expect(stats.absoluteReturn, closeTo(-21.052632, _rateTol));
+    });
+
+    test('a portfolio rounds paid-in capital once, so with nothing '
+        'reinvested it equals money out', () {
+      final stats = _module.calculateStats([
+        for (final id in ['a', 'b', 'c'])
+          _flow(
+            CashFlowType.invest,
+            83.125,
+            DateTime.utc(2024, 1, 1),
+            investmentId: id,
+          ),
+      ]);
+
+      expect(stats.totalInvested, 249.38);
+      expect(stats.paidInCapital, 249.38);
     });
   });
 

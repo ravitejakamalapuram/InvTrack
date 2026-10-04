@@ -149,6 +149,17 @@ class HeroCardContent extends ConsumerWidget {
             _buildValueRow(netPosition, isPositive, stats, status, ref),
             const SizedBox(height: 16),
             _buildStatsRow(stats, display, l10n, ref),
+            // The return % is on paid-in capital, not on money out.
+            if (status == null && stats.hasReinvestedPayouts) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.moneyOutIncludesFeesReinvested,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
             if (display.isAwaitingValue ||
                 (display.kind == ReturnDisplayKind.annualised &&
                     display.isEstimate)) ...[

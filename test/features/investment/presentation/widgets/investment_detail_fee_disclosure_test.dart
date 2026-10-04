@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -68,6 +69,7 @@ Future<void> _pump(
   WidgetTester tester,
   InvestmentStats stats, {
   bool privacy = false,
+  InvestmentEntity? investment,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -79,7 +81,7 @@ Future<void> _pump(
           body: SingleChildScrollView(
             child: InvestmentDetailStatsSection(
               stats: stats,
-              investment: _fd,
+              investment: investment ?? _fd,
               isDark: false,
               currencyFormat: NumberFormat.currency(
                 locale: 'en_IN',
@@ -122,5 +124,27 @@ void main() {
     await _pump(tester, _rolloverStats, privacy: true);
 
     expect(find.text(_reinvestedNote), findsOneWidget);
+  });
+
+  testWidgets('an open investment awaiting a value shows MOIC "—" with no '
+      'holding period, not "<1mo" (CALC-12)', (tester) async {
+    // An open FD with no rate: one INVEST a year ago and no current value.
+    final openFd = InvestmentEntity(
+      id: 'fd',
+      name: 'Open FD',
+      type: InvestmentType.fixedDeposit,
+      status: InvestmentStatus.open,
+      createdAt: DateTime(2025, 10, 4),
+      updatedAt: DateTime(2025, 10, 4),
+      currency: 'INR',
+    );
+    final stats = _module.calculateStats([
+      _flow('1', CashFlowType.invest, 100000, DateTime(2025, 10, 4)),
+    ], terminalValues: const TerminalValues(missingValueCount: 1));
+
+    await _pump(tester, stats, investment: openFd);
+
+    expect(find.text('—'), findsWidgets);
+    expect(find.text('<1mo'), findsNothing);
   });
 }

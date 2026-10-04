@@ -93,7 +93,7 @@ class InvestmentDetailStatsSection extends StatelessWidget {
           // Money out is gross and includes fees; MOIC and return % count
           // reinvested payouts once (paid-in capital).
           Text(
-            stats.paidInCapital < stats.totalInvested
+            stats.hasReinvestedPayouts
                 ? l10n.moneyOutIncludesFeesReinvested
                 : l10n.moneyOutIncludesFees,
             style: AppTypography.small.copyWith(color: _neutralColor),
@@ -130,7 +130,10 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     : formatMultiplier(stats.moic),
                 color: AppColors.graphPurple,
                 isDark: isDark,
-                subtitle: stats.durationFormatted,
+                // No holding period while MOIC waits for a current value.
+                subtitle: display.isAwaitingValue
+                    ? null
+                    : stats.durationFormatted,
                 isPrivacyMode: isPrivacyMode,
               ),
             ),
