@@ -23,9 +23,10 @@ enum ScoreTier {
 
   const ScoreTier(this.minScore, this.maxScore, this.label, this.message, this.emoji);
 
-  /// Get tier for a given score
+  /// Get tier for a given score. A [PortfolioHealthScore]'s tier is that of
+  /// its [PortfolioHealthScore.displayScore], so the number shown and the
+  /// tier always agree (79.6 shows as 80, Excellent).
   static ScoreTier fromScore(double score) {
-    // Use raw double comparison to avoid rounding issues (79.6 should be good, not excellent)
     if (score >= 80.0) return ScoreTier.excellent;
     if (score >= 60.0) return ScoreTier.good;
     if (score >= 40.0) return ScoreTier.fair;
@@ -119,8 +120,13 @@ class PortfolioHealthScore {
   /// When this score was calculated
   final DateTime calculatedAt;
 
-  /// Score tier for visual representation
-  ScoreTier get tier => ScoreTier.fromScore(overallScore);
+  /// The score as shown everywhere (ring, details, share text, trend chart,
+  /// analytics bucket): [overallScore] rounded half up. This is the one
+  /// rounding rule; never show or bucket [overallScore] any other way.
+  int get displayScore => overallScore.round();
+
+  /// Score tier for visual representation: the tier of [displayScore].
+  ScoreTier get tier => ScoreTier.fromScore(displayScore.toDouble());
 
   PortfolioHealthScore({
     required this.overallScore,

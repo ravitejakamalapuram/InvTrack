@@ -210,7 +210,7 @@ void main() {
   });
 
   group('Portfolio health returns component', () {
-    test('leaves an open FD with no payout out of the weighted XIRR', () {
+    test('leaves an open FD with no payout out of the portfolio XIRR', () {
       // Closed: ₹10,00,000 → ₹10,80,000 over 365 days = XIRR 8.0000%.
       final closedFlows = [
         _flow('h1', 'H1', CashFlowType.invest, 1000000, DateTime(2025, 1, 1)),
@@ -241,11 +241,11 @@ void main() {
         },
         allCashFlows: [...closedFlows, ...openFlows],
         goalProgress: [],
-      );
+      )!;
 
-      // A weighted XIRR of 0.080000 against 6% inflation scores
-      // 60 + (0.08 − 0.06) / 0.05 × 20 = 68.0. Counting the FD as 0% would
-      // give 0.040000 and 40 + 0.04 / 0.06 × 20 = 53.33.
+      // The portfolio XIRR (the closed holding alone) of 0.080000 against 6%
+      // inflation scores 60 + (0.08 − 0.06) / 0.05 × 20 = 68.0. Counting the
+      // FD's lone INVEST would drag it far below that.
       expect(score.returnsPerformance.score, closeTo(68.0, 1e-6));
     });
   });

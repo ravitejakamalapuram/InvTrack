@@ -49,7 +49,7 @@ class ReportsHomeScreen extends ConsumerWidget {
     );
 
     final healthScore = portfolioHealthAsync.maybeWhen(
-      data: (health) => health?.overallScore.round() ?? 0,
+      data: (health) => health?.displayScore ?? 0,
       orElse: () => 0,
     );
 

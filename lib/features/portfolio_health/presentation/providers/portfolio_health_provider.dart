@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/utils/async_value_utils.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/providers.dart';
 import 'package:inv_tracker/features/portfolio_health/data/models/health_score_snapshot_model.dart';
@@ -44,36 +45,33 @@ HealthScoreAutoSaveService healthScoreAutoSaveService(
 /// - Liquidity (20%): % maturing in 90 days
 /// - Goal Alignment (15%): % goals on-track
 /// - Action Readiness (10%): Overdue renewals, stale investments
+///
+/// Worked out from one complete converted snapshot of the active portfolio
+/// (amounts in the base currency, with current values): it stays loading
+/// until that snapshot and the goals have loaded, so a partial score is
+/// never shown or saved. Null means there is not enough data for a score.
 @riverpod
 class PortfolioHealth extends _$PortfolioHealth {
   @override
   Future<PortfolioHealthScore?> build() async {
-    // Watch all dependencies
-    final investmentsAsync = ref.watch(allInvestmentsProvider);
-    final cashFlowsAsync = ref.watch(allCashFlowsStreamProvider);
+    // Watch every dependency before the first await.
+    final convertedFuture = ref.watch(convertedTerminalValuesProvider.future);
+    final investmentsAsync = ref.watch(activeInvestmentsProvider);
     final goalProgressAsync = ref.watch(allGoalsProgressProvider);
-
-    // Wait for all data to load
-    if (!investmentsAsync.hasValue ||
-        !cashFlowsAsync.hasValue ||
-        !goalProgressAsync.hasValue) {
-      return null;
-    }
-
-    final investments = investmentsAsync.value ?? [];
-    final cashFlows = cashFlowsAsync.value ?? [];
-    final goalProgress = goalProgressAsync.value ?? [];
-
-    // Build stats map for each investment (use ref.watch for reactivity)
-    final statsMap = <String, InvestmentStats>{};
-    for (final inv in investments) {
-      final invStats = ref.watch(multiCurrencyInvestmentStatsProvider(inv.id));
-      if (invStats.hasValue && invStats.value != null) {
-        statsMap[inv.id] = invStats.value!;
-      }
-    }
-
+    final asOf = ref.watch(valuationDateProvider);
     final engine = ref.watch(calculationEngineProvider);
+
+    final converted = await convertedFuture;
+    final investments = await dataOf(investmentsAsync);
+    final goalProgress = await dataOf(goalProgressAsync);
+
+    final cashFlows = converted.snapshot.cashFlows;
+    final statsMap = engine.financial.calculateStatsByInvestment(
+      cashFlows,
+      // The returns component solves one portfolio XIRR instead.
+      includeXirr: false,
+      terminalValues: converted.byInvestment,
+    );
 
     // Calculate health score using the unified calculation engine
     final score = engine.health.calculate(
@@ -81,13 +79,26 @@ class PortfolioHealth extends _$PortfolioHealth {
       investmentStats: statsMap,
       allCashFlows: cashFlows,
       goalProgress: goalProgress,
+      terminalValues: converted.byInvestment,
+      asOf: asOf,
     );
+
+    if (score == null) {
+      // Not enough data: nothing to save, and an older score must not be
+      // saved again either.
+      try {
+        ref.read(healthScoreAutoSaveServiceProvider).clearScore();
+      } catch (e) {
+        // Ignore - auto-save service issues shouldn't break the score
+      }
+      return null;
+    }
 
     // Log analytics - score calculated (non-blocking, privacy-safe)
     try {
       final analytics = AnalyticsService();
       await analytics.logHealthScoreCalculated(
-        scoreTier: getScoreTier(score.overallScore),
+        scoreTier: getScoreTier(score.displayScore.toDouble()),
         investmentCount: investments.length,
         hasGoals: goalProgress.isNotEmpty,
       );

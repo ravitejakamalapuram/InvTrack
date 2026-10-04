@@ -3134,14 +3134,19 @@
     "description": "Portfolio health details screen title"
   },
 
-  "noPortfolioData": "No data available",
+  "noPortfolioData": "Not enough data yet",
   "@noPortfolioData": {
-    "description": "Message when portfolio health data is not available"
+    "description": "Title when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
   },
 
-  "addInvestmentsToSeeHealth": "Add investments to see your portfolio health score",
+  "addInvestmentsToSeeHealth": "Add your investments, with a current value for open ones, to see your health score.",
   "@addInvestmentsToSeeHealth": {
-    "description": "Empty state message for portfolio health"
+    "description": "Body under the title when there is not enough data for a portfolio health score"
+  },
+
+  "healthScoreNotEnoughData": "Not enough data yet. Add your investments, with a current value for open ones, to see your health score.",
+  "@healthScoreNotEnoughData": {
+    "description": "Dashboard card text when there is not enough data for a portfolio health score (no investments, or only open holdings without a current value)"
   },
 
   "healthScoreTrendWeeks": "Score Trend (Last {weeks} Weeks)",

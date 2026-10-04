@@ -38,7 +38,9 @@ class PortfolioHealthDetailsScreen extends ConsumerStatefulWidget {
 class _PortfolioHealthDetailsScreenState
     extends ConsumerState<PortfolioHealthDetailsScreen> {
   bool _analyticsLogged = false;
-  final _analytics = AnalyticsService();
+  // Created on first use, so the screen still builds where analytics are
+  // unavailable.
+  late final _analytics = AnalyticsService();
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +237,7 @@ class _PortfolioHealthDetailsScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    score.overallScore.round().toString(),
+                    score.displayScore.toString(),
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
@@ -498,14 +500,14 @@ class _PortfolioHealthDetailsScreenState
 
     // Log analytics - share button tapped
     await _analytics.logHealthScoreShared(
-      scoreTier: getScoreTier(score.overallScore),
+      scoreTier: getScoreTier(score.displayScore.toDouble()),
       shareMethod: 'clipboard',
     );
 
     // TODO(@ravitejakamalapuram, 2026-04-06, #322): Generate score card image and share
     // For now, share text using localized template
     final text = l10n.shareScoreText(
-      score.overallScore.round(),
+      score.displayScore,
       score.tier.label,
       score.returnsPerformance.score.round(),
       score.diversification.score.round(),
@@ -529,9 +531,13 @@ class _PortfolioHealthDetailsScreenState
 
   /// Log analytics when details screen is opened
   Future<void> _logDetailsOpened(PortfolioHealthScore score) async {
-    await _analytics.logPortfolioHealthDetailsOpened(
-      scoreTier: getScoreTier(score.overallScore),
-      scoreRange: getScoreRange(score.overallScore),
-    );
+    try {
+      await _analytics.logPortfolioHealthDetailsOpened(
+        scoreTier: getScoreTier(score.displayScore.toDouble()),
+        scoreRange: getScoreRange(score.displayScore.toDouble()),
+      );
+    } catch (e) {
+      // Ignore - analytics failures shouldn't break the screen
+    }
   }
 }

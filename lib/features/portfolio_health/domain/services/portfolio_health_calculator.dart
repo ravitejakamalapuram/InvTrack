@@ -1,6 +1,8 @@
 import 'dart:math';
 
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
+import 'package:inv_tracker/core/calculations/modules/financial_module.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -10,7 +12,7 @@ import 'package:inv_tracker/features/portfolio_health/domain/entities/portfolio_
 /// Portfolio Health Score Calculator
 ///
 /// Calculates a unified health score (0-100) based on 5 weighted components:
-/// - Returns Performance (30%): XIRR vs inflation/benchmarks
+/// - Returns Performance (30%): portfolio XIRR vs inflation/benchmarks
 /// - Diversification (25%): Herfindahl index across types/platforms
 /// - Liquidity (20%): % maturing in next 90 days
 /// - Goal Alignment (15%): On-track vs behind goals
@@ -19,12 +21,26 @@ class PortfolioHealthCalculator {
   /// Default benchmark inflation rate (India annual average)
   static const double defaultInflationRate = 0.06; // 6%
 
-  /// Calculate portfolio health score
-  static PortfolioHealthScore calculate({
+  /// Score of a component with nothing to judge, such as goal alignment
+  /// with no goals: neither a penalty nor free points (ANLY-07).
+  static const double neutralScore = 50;
+
+  /// Calculate portfolio health score, or null when there is not enough
+  /// data for one: no active investment has a defined return yet (an empty
+  /// portfolio, or only open holdings still waiting for a current value).
+  ///
+  /// [allCashFlows] and the flows of [terminalValues] (the current values
+  /// of open investments, keyed by investment id) must be in one currency,
+  /// the user's base currency, and [investmentStats] must be calculated from
+  /// them, so that [InvestmentStats.needsCurrentValue] is known. [asOf] is
+  /// the day the score is for; it defaults to now.
+  static PortfolioHealthScore? calculate({
     required List<InvestmentEntity> investments,
     required Map<String, InvestmentStats> investmentStats,
     required List<ICashFlow> allCashFlows,
     required List<GoalProgress> goalProgress,
+    Map<String, TerminalValues> terminalValues = const {},
+    DateTime? asOf,
     double benchmarkInflationRate = defaultInflationRate,
   }) {
     // Validate benchmarkInflationRate to prevent NaN/Infinity propagation
@@ -34,19 +50,37 @@ class PortfolioHealthCalculator {
       validatedInflationRate = defaultInflationRate;
     }
 
-    // Calculate each component
-    final returns = _calculateReturnsScore(
+    final portfolioXirr = _portfolioXirr(
       investments,
       investmentStats,
+      allCashFlows,
+      terminalValues,
+    );
+    // A score without its returns component would be a partial score.
+    if (portfolioXirr == null) return null;
+
+    final now = asOf ?? DateTime.now();
+
+    // Calculate each component
+    final returns = _calculateReturnsScore(
+      portfolioXirr,
       validatedInflationRate,
     );
     final diversification = _calculateDiversificationScore(
       investments,
       investmentStats,
     );
-    final liquidity = _calculateLiquidityScore(investments, investmentStats);
+    final liquidity = _calculateLiquidityScore(
+      investments,
+      investmentStats,
+      now,
+    );
     final goals = _calculateGoalAlignmentScore(goalProgress);
-    final actions = _calculateActionReadinessScore(investments, allCashFlows);
+    final actions = _calculateActionReadinessScore(
+      investments,
+      allCashFlows,
+      now,
+    );
 
     // Calculate weighted overall score
     final overall =
@@ -67,65 +101,59 @@ class PortfolioHealthCalculator {
     );
   }
 
-  /// Component 1: Returns Performance (30% weight)
-  /// Score based on portfolio XIRR vs inflation
-  static ComponentScore _calculateReturnsScore(
+  /// One XIRR over the merged cash flows and current values of every active
+  /// investment with a defined return (CALC-02), or null when there is none.
+  ///
+  /// Averaging per-investment XIRRs ignores timing and amounts, so the
+  /// portfolio's flows are solved together, like the Overview's XIRR. Open
+  /// investments still waiting for a current value are left out: their
+  /// flows alone would read as a loss (money rule 4).
+  static double? _portfolioXirr(
     List<InvestmentEntity> investments,
     Map<String, InvestmentStats> stats,
-    double benchmarkInflationRate,
+    List<ICashFlow> allCashFlows,
+    Map<String, TerminalValues> terminalValues,
   ) {
-    if (investments.isEmpty || stats.isEmpty) {
-      return ComponentScore(
-        name: 'Returns Performance',
-        score: 0,
-        weight: 0.30,
-        description: 'No investments to evaluate',
-        suggestions: ['Add your first investment to track returns'],
-      );
-    }
-
-    // Calculate weighted average XIRR (weighted by total invested)
-    // TODO(@ravitejakamalapuram, 2026-04-09, #TBD): Convert each stat.totalInvested
-    // to a canonical/base currency before summing to fix multi-currency weighting.
-    // Currently, this sums stat.totalInvested across different currencies which breaks
-    // the avgXirr calculation. Need to:
-    // 1. Determine a base currency (e.g., user's default currency)
-    // 2. Obtain exchange rate for stat.currency using CurrencyConversionService.convert()
-    // 3. Compute convertedInvested = stat.totalInvested * rateToBase
-    // 4. Use convertedInvested when updating totalInvested and weightedXirr
-    // This ensures avgXirr = weightedXirr / totalInvested uses consistent currency units.
-    double totalInvested = 0;
-    double weightedXirr = 0;
-
+    final included = <String>{};
     for (final investment in investments) {
       final stat = stats[investment.id];
-      // An undefined XIRR, or an open investment with no current value
-      // (money rule 4), is left out of the average: never counted as 0% or
-      // as a fake loss.
-      final xirr = stat?.xirr;
-      if (stat != null &&
-          stat.totalInvested > 0 &&
-          xirr != null &&
-          xirr.isFinite &&
-          !stat.needsCurrentValue) {
-        totalInvested += stat.totalInvested;
-        weightedXirr += xirr * stat.totalInvested;
+      if (investment.isArchived ||
+          stat == null ||
+          stat.totalInvested <= 0 ||
+          stat.needsCurrentValue) {
+        continue;
       }
+      // Open, with no current value and less back than was put in: its
+      // return is unknown until it has a value.
+      final hasValue = terminalValues[investment.id]?.flows.isNotEmpty ?? false;
+      if (investment.isOpen &&
+          !hasValue &&
+          stat.totalReturned < stat.totalInvested) {
+        continue;
+      }
+      included.add(investment.id);
     }
+    if (included.isEmpty) return null;
 
-    // Return no-data result if no valid XIRR data
-    if (totalInvested == 0) {
-      return ComponentScore(
-        name: 'Returns Performance',
-        score: 0,
-        weight: 0.30,
-        description: 'No return data available',
-        suggestions: ['Add investments with cash flows to track returns'],
-      );
-    }
+    final flows = <ICashFlow>[
+      for (final cf in allCashFlows)
+        if (included.contains(cf.investmentId)) cf,
+    ];
+    final values = TerminalValues(
+      flows: [for (final id in included) ...?terminalValues[id]?.flows],
+    );
+    final xirr = FinancialCalculatorModule()
+        .calculateStats(flows, terminalValues: values)
+        .xirr;
+    return xirr != null && xirr.isFinite ? xirr : null;
+  }
 
-    final avgXirr = weightedXirr / totalInvested;
-
+  /// Component 1: Returns Performance (30% weight)
+  /// Score based on the portfolio XIRR vs inflation
+  static ComponentScore _calculateReturnsScore(
+    double portfolioXirr,
+    double benchmarkInflationRate,
+  ) {
     // Score calculation:
     // XIRR >= Inflation + 10%: 100 points (excellent)
     // XIRR >= Inflation + 5%: 80 points (good)
@@ -136,24 +164,25 @@ class PortfolioHealthCalculator {
     double score;
     final suggestions = <String>[];
 
-    if (avgXirr >= benchmarkInflationRate + 0.10) {
+    if (portfolioXirr >= benchmarkInflationRate + 0.10) {
       score = 100;
       suggestions.add('Excellent returns! Keep up the good work');
-    } else if (avgXirr >= benchmarkInflationRate + 0.05) {
-      score = 80 + ((avgXirr - (benchmarkInflationRate + 0.05)) / 0.05) * 20;
+    } else if (portfolioXirr >= benchmarkInflationRate + 0.05) {
+      score =
+          80 + ((portfolioXirr - (benchmarkInflationRate + 0.05)) / 0.05) * 20;
       suggestions.add('Good returns, beating inflation comfortably');
-    } else if (avgXirr >= benchmarkInflationRate) {
-      score = 60 + ((avgXirr - benchmarkInflationRate) / 0.05) * 20;
+    } else if (portfolioXirr >= benchmarkInflationRate) {
+      score = 60 + ((portfolioXirr - benchmarkInflationRate) / 0.05) * 20;
       suggestions.add(
         'Returns are just above inflation. Consider higher-yield options',
       );
-    } else if (avgXirr >= 0) {
-      score = 40 + (avgXirr / benchmarkInflationRate) * 20;
+    } else if (portfolioXirr >= 0) {
+      score = 40 + (portfolioXirr / benchmarkInflationRate) * 20;
       suggestions.add('Returns below inflation. Your money is losing value');
       suggestions.add('Explore P2P lending or equity funds for better returns');
     } else {
       // Negative returns: scale from 20 (0% XIRR) to 0 (-20% or worse XIRR)
-      score = max(0.0, 20.0 + (avgXirr / 0.20) * 20.0).clamp(0.0, 100.0);
+      score = max(0.0, 20.0 + (portfolioXirr / 0.20) * 20.0).clamp(0.0, 100.0);
       suggestions.add(
         'Negative returns detected. Review underperforming investments',
       );
@@ -255,6 +284,7 @@ class PortfolioHealthCalculator {
   static ComponentScore _calculateLiquidityScore(
     List<InvestmentEntity> investments,
     Map<String, InvestmentStats> stats,
+    DateTime now,
   ) {
     if (investments.isEmpty) {
       return ComponentScore(
@@ -266,7 +296,6 @@ class PortfolioHealthCalculator {
       );
     }
 
-    final now = DateTime.now();
     final next90Days = now.add(const Duration(days: 90));
 
     double totalActiveValue = 0;
@@ -351,7 +380,7 @@ class PortfolioHealthCalculator {
     if (goalProgress.isEmpty) {
       return ComponentScore(
         name: 'Goal Alignment',
-        score: 100, // No goals = no misalignment
+        score: neutralScore, // Nothing to judge: no penalty, no free 100
         weight: 0.15,
         description: 'No goals tracked',
         suggestions: ['Set financial goals to track progress'],
@@ -368,7 +397,7 @@ class PortfolioHealthCalculator {
     if (activeGoals.isEmpty) {
       return ComponentScore(
         name: 'Goal Alignment',
-        score: 100,
+        score: neutralScore,
         weight: 0.15,
         description: 'No active goals',
         suggestions: ['Add active goals to improve focus'],
@@ -445,6 +474,7 @@ class PortfolioHealthCalculator {
   static ComponentScore _calculateActionReadinessScore(
     List<InvestmentEntity> investments,
     List<ICashFlow> allCashFlows,
+    DateTime now,
   ) {
     if (investments.isEmpty) {
       return ComponentScore(
@@ -476,7 +506,6 @@ class PortfolioHealthCalculator {
       );
     }
 
-    final now = DateTime.now();
     int overdueRenewals = 0;
     int staleInvestments = 0;
 

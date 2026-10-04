@@ -1,4 +1,5 @@
 import 'package:inv_tracker/core/calculations/calculation_engine.dart';
+import 'package:inv_tracker/core/calculations/current_value_calculator.dart';
 import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/features/goals/domain/entities/goal_progress.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
@@ -11,22 +12,29 @@ class PortfolioHealthModule implements CalculationModule {
   @override
   String get name => 'PortfolioHealth';
 
-  /// Calculates a unified health score (0-100) based on weighted components.
+  /// Calculates a unified health score (0-100) based on weighted components,
+  /// or null when there is not enough data for one.
   ///
-  /// Expects pre-converted stats (amounts converted to a base currency)
-  /// to ensure correct mathematical weightings (Returns XIRR, Diversification HHI, Liquidity ratios).
-  PortfolioHealthScore calculate({
+  /// Expects one converted snapshot: [allCashFlows] and the flows of
+  /// [terminalValues] in the base currency, and [investmentStats] calculated
+  /// from them (returns XIRR, diversification HHI, liquidity ratios).
+  PortfolioHealthScore? calculate({
     required List<InvestmentEntity> investments,
     required Map<String, InvestmentStats> investmentStats,
     required List<ICashFlow> allCashFlows,
     required List<GoalProgress> goalProgress,
-    double benchmarkInflationRate = PortfolioHealthCalculator.defaultInflationRate,
+    Map<String, TerminalValues> terminalValues = const {},
+    DateTime? asOf,
+    double benchmarkInflationRate =
+        PortfolioHealthCalculator.defaultInflationRate,
   }) {
     return PortfolioHealthCalculator.calculate(
       investments: investments,
       investmentStats: investmentStats,
       allCashFlows: allCashFlows,
       goalProgress: goalProgress,
+      terminalValues: terminalValues,
+      asOf: asOf,
       benchmarkInflationRate: benchmarkInflationRate,
     );
   }
