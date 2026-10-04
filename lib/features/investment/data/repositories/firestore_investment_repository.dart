@@ -432,8 +432,7 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
     DateTime firstDay,
     DateTime lastDay,
   ) => [
-    for (final doc in snapshot.docs)
-      _cashFlowFromFirestore(doc.data(), doc.id),
+    for (final doc in snapshot.docs) _cashFlowFromFirestore(doc.data(), doc.id),
   ].where((cf) => StoredDate.isWithinDays(cf.date, firstDay, lastDay)).toList();
 
   @override
