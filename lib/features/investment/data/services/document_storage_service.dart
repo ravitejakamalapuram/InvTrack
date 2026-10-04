@@ -44,8 +44,13 @@ class DocumentStorageService {
       return path_lib.isWithin(resolvedDocsDir, resolvedPath) ||
           resolvedPath == resolvedDocsDir;
     } catch (e) {
-      // Treat any IO exceptions (including symlink resolution failures) as unsafe
-      LoggerService.warn('Security: Failed to validate path safety', error: e);
+      // Treat any IO exceptions (including symlink resolution failures) as unsafe.
+      // Send only the type: a FileSystemException's text holds the path, which
+      // contains the user id and the file name.
+      LoggerService.warn(
+        'Security: Failed to validate path safety',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
       return false;
     }
   }
@@ -91,10 +96,8 @@ class DocumentStorageService {
   /// Read a document file as bytes
   Future<Uint8List?> readDocument(String localPath) async {
     if (!await _isSafePath(localPath)) {
-      LoggerService.warn(
-        'Security: Blocked access to unsafe path',
-        metadata: {'path': localPath},
-      );
+      // No path in the log: it holds the user id and the file name.
+      LoggerService.warn('Security: Blocked access to unsafe path');
       return null;
     }
 
@@ -115,10 +118,8 @@ class DocumentStorageService {
   /// Delete a document file
   Future<void> deleteDocument(String localPath) async {
     if (!await _isSafePath(localPath)) {
-      LoggerService.warn(
-        'Security: Blocked deletion of unsafe path',
-        metadata: {'path': localPath},
-      );
+      // No path in the log: it holds the user id and the file name.
+      LoggerService.warn('Security: Blocked deletion of unsafe path');
       return;
     }
 

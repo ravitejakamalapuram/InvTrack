@@ -142,33 +142,7 @@ class CrashlyticsService {
     _previousFlutterOnError = FlutterError.onError;
 
     FlutterError.onError = (errorDetails) {
-      // BUG FIX: Read via private getter for single source of truth
-      // This ensures the handler respects runtime toggle changes
-      if (kDebugMode && !_debugMode) {
-        // In debug mode (without override), print to console
-        FlutterError.presentError(errorDetails);
-      } else {
-        // In release mode OR debug mode with override, send to Crashlytics
-        final isFatal = !_isTransientError(errorDetails.exception, errorDetails.stack);
-
-        if (!isFatal) {
-          LoggerService.info(
-            'Transient framework error caught by FlutterError (skipped Crashlytics)',
-            metadata: {'source': 'FlutterError', 'errorType': errorDetails.exception.runtimeType.toString()},
-          );
-        } else {
-          _crashlytics.recordFlutterFatalError(errorDetails);
-          LoggerService.error(
-            'Flutter framework error',
-            error: errorDetails.exception.runtimeType.toString(),
-            stackTrace: errorDetails.stack,
-            metadata: {
-              'library': errorDetails.library,
-              'context': errorDetails.context?.name ?? 'unknown',
-            },
-          );
-        }
-      }
+      handleFlutterError(errorDetails);
 
       // Chain to previous handler if it exists
       _previousFlutterOnError?.call(errorDetails);
@@ -178,46 +152,103 @@ class CrashlyticsService {
     _previousPlatformOnError = PlatformDispatcher.instance.onError;
 
     PlatformDispatcher.instance.onError = (error, stack) {
-      // BUG FIX: Read via private getter for single source of truth
-      // This ensures the handler respects runtime toggle changes
-      if (kDebugMode && !_debugMode) {
-        // In debug mode (without override), log to console
-        LoggerService.error(
-          'Uncaught async error',
-          error: error,
-          stackTrace: stack,
-          metadata: {'source': 'PlatformDispatcher'},
-        );
-      } else {
-        // In release mode OR debug mode with override, send to Crashlytics
-        final isFatal = !_isTransientError(error, stack);
-
-        // BUG FIX: Skip sending transient errors to Crashlytics entirely
-        // to prevent polluting crash reports with network/connectivity issues
-        if (!isFatal) {
-          LoggerService.info(
-            'Transient async error caught by PlatformDispatcher (skipped Crashlytics)',
-            metadata: {'source': 'PlatformDispatcher', 'error': error.toString()},
-          );
-        } else {
-          _crashlytics.recordError(
-            error,
-            stack,
-            reason: 'Uncaught async error from PlatformDispatcher',
-            fatal: true,
-          );
-          LoggerService.error(
-            'Uncaught async error reported to Crashlytics',
-            error: error,
-            stackTrace: stack,
-            metadata: {'fatal': 'true', 'source': 'PlatformDispatcher'},
-          );
-        }
-      }
+      handlePlatformError(error, stack);
 
       // Chain to previous handler if it exists, otherwise return true (handled)
       return _previousPlatformOnError?.call(error, stack) ?? true;
     };
+  }
+
+  /// Body of the global [FlutterError.onError] handler.
+  ///
+  /// Records a framework crash exactly once, as fatal. Transient errors
+  /// (network, timeouts) are not recorded.
+  @visibleForTesting
+  void handleFlutterError(FlutterErrorDetails errorDetails) {
+    // Read via private getter so the handler respects runtime toggle changes
+    if (kDebugMode && !_debugMode) {
+      // In debug mode (without override), print to console
+      FlutterError.presentError(errorDetails);
+      return;
+    }
+
+    const source = 'FlutterError';
+    if (_isTransientError(errorDetails.exception, errorDetails.stack)) {
+      _logSkippedTransient(errorDetails.exception, source);
+      return;
+    }
+
+    _recordSafely(() => _crashlytics.recordFlutterFatalError(errorDetails));
+    LoggerService.debug(
+      'Framework crash reported to Crashlytics',
+      metadata: {'source': source, 'library': errorDetails.library},
+    );
+  }
+
+  /// Body of the global [PlatformDispatcher.onError] handler.
+  @visibleForTesting
+  void handlePlatformError(Object error, StackTrace stack) =>
+      _recordUncaughtError(error, stack, source: 'PlatformDispatcher');
+
+  /// Handler for errors that escape the root `runZonedGuarded` zone in main.
+  void handleZoneError(Object error, StackTrace stack) =>
+      _recordUncaughtError(error, stack, source: 'Zone');
+
+  /// Records an uncaught error exactly once: fatal when it is a real crash,
+  /// not at all when it is transient (network, timeouts, Firestore
+  /// unavailable).
+  void _recordUncaughtError(
+    Object error,
+    StackTrace stack, {
+    required String source,
+  }) {
+    // Read via private getter so the handler respects runtime toggle changes
+    if (kDebugMode && !_debugMode) {
+      // In debug mode (without override), log to console only
+      LoggerService.error(
+        'Uncaught error',
+        error: error,
+        stackTrace: stack,
+        metadata: {'source': source},
+      );
+      return;
+    }
+
+    if (_isTransientError(error, stack)) {
+      _logSkippedTransient(error, source);
+      return;
+    }
+
+    _recordSafely(
+      () => _crashlytics.recordError(
+        error,
+        stack,
+        reason: 'Uncaught error from $source',
+        fatal: true,
+      ),
+    );
+    LoggerService.debug(
+      'Uncaught error reported to Crashlytics',
+      metadata: {'source': source},
+    );
+  }
+
+  void _logSkippedTransient(Object error, String source) {
+    LoggerService.info(
+      'Transient error caught by $source (skipped Crashlytics)',
+      metadata: {'source': source, 'errorType': error.runtimeType.toString()},
+    );
+  }
+
+  /// Runs a Crashlytics call from a global error handler. A failure, for
+  /// example before Firebase is initialised, must neither throw from the
+  /// handler nor come back as a new uncaught error.
+  static void _recordSafely(Future<void> Function() record) {
+    try {
+      unawaited(record().catchError((Object _) {}));
+    } catch (_) {
+      // Losing one report is better than an error loop in the handler.
+    }
   }
 
   /// Determine if an error is transient/recoverable (non-fatal)

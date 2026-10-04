@@ -256,9 +256,6 @@ class DataExportService {
           'Document not found or inaccessible during export',
           metadata: {
             'documentId': doc.id,
-            'documentName': doc.name,
-            'fileName': doc.fileName,
-            'localPath': doc.localPath,
             'investmentId': doc.investmentId,
           },
         );
