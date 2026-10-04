@@ -1,4 +1,7 @@
+import 'package:inv_tracker/core/calculations/financial_calculator.dart';
+import 'package:inv_tracker/core/calculations/models/cash_flow_interface.dart';
 import 'package:inv_tracker/core/calculations/xirr_solver.dart';
+import 'package:inv_tracker/core/utils/financial_year.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 
 /// Investment statistics for display.
@@ -271,14 +274,32 @@ class TypeDistribution {
   }
 }
 
-/// Year-over-Year comparison statistics.
+/// Year-over-Year comparison: the financial year to date against the same
+/// days of the previous financial year (ANLY-09), so a part year is never
+/// compared with a whole one.
+///
+/// Invested, received and net are reported separately: investing more is not
+/// a decline, so net cash flow must not be read as performance.
 class YoYComparison {
   final double thisYearNet;
   final double lastYearNet;
+
+  /// Money out (INVEST + FEE) in each period.
   final double thisYearInvested;
   final double lastYearInvested;
+
+  /// Money received (RETURN + INCOME) in each period.
   final double thisYearReturned;
   final double lastYearReturned;
+
+  /// This period: [periodStart] (1 April) to [periodEnd], exclusive (the day
+  /// after today).
+  final DateTime periodStart;
+  final DateTime periodEnd;
+
+  /// The same days of the previous financial year, [periodEnd] exclusive.
+  final DateTime previousPeriodStart;
+  final DateTime previousPeriodEnd;
 
   const YoYComparison({
     required this.thisYearNet,
@@ -287,32 +308,75 @@ class YoYComparison {
     required this.lastYearInvested,
     required this.thisYearReturned,
     required this.lastYearReturned,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.previousPeriodStart,
+    required this.previousPeriodEnd,
   });
 
-  /// Percentage change in net position year-over-year
-  double get netChange => lastYearNet != 0
-      ? ((thisYearNet - lastYearNet) / lastYearNet.abs()) * 100
-      : 0;
-
-  /// Returns true if this year's net is better than last year's
-  bool get isImproved => thisYearNet > lastYearNet;
-
-  /// Creates a copy with the given fields replaced
-  YoYComparison copyWith({
-    double? thisYearNet,
-    double? lastYearNet,
-    double? thisYearInvested,
-    double? lastYearInvested,
-    double? thisYearReturned,
-    double? lastYearReturned,
+  /// Compares the financial year to date, 1 April to [today] inclusive, with
+  /// the same days of the previous financial year, by calendar day. Flows
+  /// dated after [today] do not count yet. [cashFlows] must all be in one
+  /// currency (money rule 2).
+  factory YoYComparison.financialYearToDate(
+    List<ICashFlow> cashFlows, {
+    required DateTime today,
   }) {
+    final periodStart = FinancialYear.startOf(today);
+    final periodEnd = FinancialYear.dayAfter(today);
+    final previousPeriodStart = DateTime(periodStart.year - 1, DateTime.april);
+    final previousPeriodEnd = FinancialYear.dayAfter(
+      FinancialYear.sameDayLastYear(today),
+    );
+
+    final thisYear = <ICashFlow>[];
+    final lastYear = <ICashFlow>[];
+    for (final cf in cashFlows) {
+      if (FinancialYear.contains(periodStart, periodEnd, cf.date)) {
+        thisYear.add(cf);
+      } else if (FinancialYear.contains(
+        previousPeriodStart,
+        previousPeriodEnd,
+        cf.date,
+      )) {
+        lastYear.add(cf);
+      }
+    }
+
+    final thisInvested = FinancialCalculator.calculateTotalInvested(thisYear);
+    final thisReturned = FinancialCalculator.calculateTotalReturned(thisYear);
+    final lastInvested = FinancialCalculator.calculateTotalInvested(lastYear);
+    final lastReturned = FinancialCalculator.calculateTotalReturned(lastYear);
     return YoYComparison(
-      thisYearNet: thisYearNet ?? this.thisYearNet,
-      lastYearNet: lastYearNet ?? this.lastYearNet,
-      thisYearInvested: thisYearInvested ?? this.thisYearInvested,
-      lastYearInvested: lastYearInvested ?? this.lastYearInvested,
-      thisYearReturned: thisYearReturned ?? this.thisYearReturned,
-      lastYearReturned: lastYearReturned ?? this.lastYearReturned,
+      thisYearNet: FinancialCalculator.calculateNetCashFlow(
+        thisInvested,
+        thisReturned,
+      ),
+      lastYearNet: FinancialCalculator.calculateNetCashFlow(
+        lastInvested,
+        lastReturned,
+      ),
+      thisYearInvested: thisInvested,
+      lastYearInvested: lastInvested,
+      thisYearReturned: thisReturned,
+      lastYearReturned: lastReturned,
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+      previousPeriodStart: previousPeriodStart,
+      previousPeriodEnd: previousPeriodEnd,
     );
   }
+
+  /// Whether either period has any cash flow.
+  bool get hasActivity =>
+      thisYearInvested != 0 ||
+      lastYearInvested != 0 ||
+      thisYearReturned != 0 ||
+      lastYearReturned != 0;
+
+  /// Change in money received, in percent (20.0 = +20%), or null when
+  /// nothing was received in the previous period.
+  double? get receivedChangePercent => lastYearReturned > 0
+      ? (thisYearReturned - lastYearReturned) / lastYearReturned * 100
+      : null;
 }

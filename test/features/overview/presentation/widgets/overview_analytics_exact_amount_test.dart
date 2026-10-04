@@ -46,7 +46,7 @@ void main() {
   ) async {
     await _pump(tester, YoYComparisonCard(currencyFormat: usdFormat), [
       yoyComparisonProvider.overrideWithValue(
-        const AsyncValue.data(
+        AsyncValue.data(
           YoYComparison(
             thisYearNet: -5500,
             lastYearNet: 0,
@@ -54,6 +54,10 @@ void main() {
             lastYearInvested: 0,
             thisYearReturned: 0,
             lastYearReturned: 0,
+            periodStart: DateTime(2026, 4, 1),
+            periodEnd: DateTime(2026, 10, 5),
+            previousPeriodStart: DateTime(2025, 4, 1),
+            previousPeriodEnd: DateTime(2025, 10, 5),
           ),
         ),
       ),
@@ -65,7 +69,9 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.longPress(find.textContaining('5.5K'));
+    // The card also shows the amount invested (\$5.5K, no sign); the net
+    // cash flow is the signed one.
+    await tester.longPress(find.text(r'-$5.5K'));
     await tester.pumpAndSettle();
 
     expect(find.text(r'-$5,500.00'), findsOneWidget);

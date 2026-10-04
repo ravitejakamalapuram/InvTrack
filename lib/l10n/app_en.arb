@@ -4369,6 +4369,47 @@
     "description": "Invested label for charts"
   },
 
+  "yoyTitle": "Year over Year",
+  "@yoyTitle": {
+    "description": "Title of the Overview card comparing this financial year to date with the same days of the previous financial year"
+  },
+
+  "yoyPeriodCaption": "Financial year to date ({start} – {end}) vs the same days last year",
+  "@yoyPeriodCaption": {
+    "description": "Caption of the Year over Year card: both periods run from 1 April to today's day and month",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "Apr 1"
+      },
+      "end": {
+        "type": "String",
+        "example": "Oct 4"
+      }
+    }
+  },
+
+  "yoyReceivedLabel": "Received",
+  "@yoyReceivedLabel": {
+    "description": "Row label on the Year over Year card: money received (returns and income) in the period"
+  },
+
+  "yoyNetLabel": "Net cash flow",
+  "@yoyNetLabel": {
+    "description": "Row label on the Year over Year card: received minus invested in the period"
+  },
+
+  "yoyReceivedChange": "Received {change} vs the same days last year",
+  "@yoyReceivedChange": {
+    "description": "Change in money received on the Year over Year card",
+    "placeholders": {
+      "change": {
+        "type": "String",
+        "example": "+20.0%"
+      }
+    }
+  },
+
   "returnedLabel": "Returned",
   "@returnedLabel": {
     "description": "Returned label for charts"
