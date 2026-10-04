@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/calculations/calculation_engine_provider.dart';
 import 'package:inv_tracker/core/config/app_constants.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
@@ -15,6 +16,7 @@ import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goal_progress_provider.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
+import 'package:inv_tracker/features/investment/presentation/providers/multi_currency_providers.dart';
 import 'package:uuid/uuid.dart';
 
 // ============ INVESTMENT NOTIFIER (ACTIONS) ============
@@ -830,16 +832,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .read(investmentRepositoryProvider)
           .getCashFlowsByInvestment(investmentId);
 
-      // Calculate totals
-      double totalInvested = 0;
-      double totalReturned = 0;
-      for (final cf in cashFlows) {
-        if (cf.type == CashFlowType.invest || cf.type == CashFlowType.fee) {
-          totalInvested += cf.amount;
-        } else {
-          totalReturned += cf.amount;
-        }
-      }
+      // Totals in the base currency: raw sums of mixed currencies would fire
+      // false milestones and be shown under the wrong symbol. Without a
+      // converter (signed out) there is no milestone to show.
+      final engine = ref.read(calculationEngineProvider);
+      if (!engine.currency.isAvailable) return;
+      final baseCurrency = ref.read(currencyCodeProvider);
+      final converted = await engine.currency.batchConvert(
+        cashFlows: cashFlows,
+        baseCurrency: baseCurrency,
+      );
+      final stats = engine.financial.calculateStats(
+        converted,
+        includeXirr: false,
+      );
 
       // Check for milestone notification
       await ref
@@ -847,8 +853,9 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .checkAndShowMilestone(
             investmentId: investmentId,
             investmentName: investment.name,
-            totalInvested: totalInvested,
-            totalReturned: totalReturned,
+            totalInvested: stats.totalInvested,
+            totalReturned: stats.totalReturned,
+            currency: baseCurrency,
           );
     } catch (e) {
       // Don't fail the main operation if milestone check fails
@@ -877,12 +884,20 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
 
       final notificationService = ref.read(notificationServiceProvider);
 
+      // Progress in the base currency, as the Goals screen shows it; raw sums
+      // of mixed currencies would announce the wrong milestones.
+      final batchConverter = ref.read(batchCurrencyConverterProvider);
+      if (batchConverter == null) return;
+      final baseCurrency = ref.read(currencyCodeProvider);
+
       // Check each goal for milestone achievements and alerts
       for (final goal in goals) {
-        final progress = GoalProgressCalculator.calculate(
+        final progress = await GoalProgressCalculator.calculateMultiCurrency(
           goal: goal,
           allInvestments: investments,
           allCashFlows: cashFlows,
+          batchConverter: batchConverter,
+          baseCurrency: baseCurrency,
         );
 
         // CodeRabbit fix: Track previous progress to detect milestone crossings
@@ -906,7 +921,12 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
             goalName: goal.name,
             progressPercent: currentPercent,
             currentValue: progress.currentAmount,
-            targetValue: goal.targetAmount,
+            targetValue: await GoalProgressCalculator.targetInBaseCurrency(
+              goal: goal,
+              batchConverter: batchConverter,
+              baseCurrency: baseCurrency,
+            ),
+            currency: baseCurrency,
           );
         }
 

@@ -251,6 +251,23 @@ class GoalProgressCalculator {
   ///
   /// **Rule 21.3 Compliance:** All monetary displays MUST convert to base currency
   /// **Bug Fix:** Target amount must also be converted to ensure percentage stability
+  /// The goal's target in [baseCurrency]: the monthly income target for an
+  /// income goal, otherwise the target amount.
+  static Future<double> targetInBaseCurrency({
+    required GoalEntity goal,
+    required BatchCurrencyConverter batchConverter,
+    required String baseCurrency,
+  }) {
+    final targetAmountInGoalCurrency = goal.isIncomeGoal
+        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
+        : goal.targetAmount;
+    return batchConverter.convert(
+      amount: targetAmountInGoalCurrency,
+      from: goal.currency,
+      to: baseCurrency,
+    );
+  }
+
   static Future<GoalProgress> calculateMultiCurrency({
     required GoalEntity goal,
     required List<InvestmentEntity> allInvestments,
@@ -289,14 +306,10 @@ class GoalProgressCalculator {
 
     // Convert target amount to base currency (CRITICAL FIX for Rule 21.3)
     // Both currentAmount and targetAmount MUST be in same currency for stable %
-    final targetAmountInGoalCurrency = goal.isIncomeGoal
-        ? (goal.targetMonthlyIncome ?? goal.targetAmount)
-        : goal.targetAmount;
-
-    final targetAmount = await batchConverter.convert(
-      amount: targetAmountInGoalCurrency,
-      from: goal.currency,
-      to: baseCurrency,
+    final targetAmount = await targetInBaseCurrency(
+      goal: goal,
+      batchConverter: batchConverter,
+      baseCurrency: baseCurrency,
     );
 
     // Calculate progress percentage
