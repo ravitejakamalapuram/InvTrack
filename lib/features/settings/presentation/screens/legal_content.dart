@@ -15,13 +15,13 @@ const String privacyPolicyContent =
     '''
 **Privacy Policy**
 
-Last updated: September 30, 2026
+Last updated: October 4, 2026
 
 1. **Introduction**
    InvTracker ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by InvTracker.
 
 2. **Data Collection**
-   Your data is securely stored in your private cloud account (Google Firebase), encrypted in transit, so it syncs across your devices and works offline. Only you can read your records - we do not sell your data, and we do not use it for advertising. If you choose to sign in with Google, we receive your name, email and a unique user ID to create your account; we do not access your Drive, Gmail or Sheets.
+   Your data is stored in InvTrack's Google Firebase (Cloud Firestore) project under your account, so it syncs across your devices and works offline. Google encrypts it in transit and at rest. In the app, only your signed-in account can see your records. The developer can technically access stored data and does so only to answer a support request from you, to process a deletion request, or when the law requires it. We do not sell your data, and we do not use it for advertising. If you choose to sign in with Google, we receive your name, email and a unique user ID to create your account; we do not access your Drive, Gmail or Sheets.
 
    We also use Google Firebase Analytics, Crashlytics and Performance Monitoring to measure app usage and diagnose crashes and slowness. This diagnostic data is associated with your user ID and device identifiers, and it is always on (there is currently no opt-out). Amounts are reported only in ranges, not exact values. You can delete your account and data in Settings > Data & Account.
 
