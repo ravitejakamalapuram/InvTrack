@@ -50,6 +50,14 @@ void main() {
           ),
           'negative 1,234,567.5 euros',
         );
+        expect(
+          AccessibilityUtils.formatCurrencyForScreenReader(
+            -0.0001,
+            '\$',
+            locale: 'en_US',
+          ),
+          '0 dollars',
+        );
       });
     });
 

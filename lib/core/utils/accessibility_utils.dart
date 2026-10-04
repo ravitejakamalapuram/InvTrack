@@ -57,7 +57,7 @@ class AccessibilityUtils {
       isZero = parts.value == 0;
     } else {
       formattedAmount = _currencyFormatter.format(amount.abs());
-      isZero = amount == 0;
+      isZero = formattedAmount == _currencyFormatter.format(0);
     }
     final sign = amount < 0 && !isZero ? 'negative ' : '';
     return '$sign$formattedAmount ${_currencyName(symbol)}';
