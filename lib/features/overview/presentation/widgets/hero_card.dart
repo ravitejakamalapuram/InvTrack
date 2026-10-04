@@ -118,16 +118,23 @@ class HeroCardContent extends ConsumerWidget {
     final isPositive = netPosition >= 0;
     final status = display.statusLabel(l10n);
 
+    // Privacy mode hides amounts from the screen reader as well.
+    final isPrivacyMode = ref.watch(privacyModeProvider);
     final semanticLabel = AccessibilityUtils.statCardLabel(
       title: showRealizedOnly ? 'Realized Net Position' : l10n.netCashFlowSoFar,
-      value: AccessibilityUtils.formatCurrencyForScreenReader(
-        netPosition,
-        currencyFormat.currencySymbol,
-      ),
+      value: isPrivacyMode
+          ? 'Hidden amount'
+          : AccessibilityUtils.formatCurrencyForScreenReader(
+              netPosition,
+              currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
+            ),
       subtitle: !stats.hasData
           ? null
           : status != null
           ? 'Return: $status'
+          : isPrivacyMode
+          ? 'Return: Hidden percentage'
           : 'Return: ${AccessibilityUtils.formatPercentageForScreenReader(stats.absoluteReturn)}',
     );
 

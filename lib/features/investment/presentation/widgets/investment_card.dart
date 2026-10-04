@@ -96,6 +96,7 @@ class InvestmentCard extends ConsumerWidget {
               display.xirrMethod == XirrMethod.approximate,
           returnStatus: display.statusLabel(l10n),
           currencySymbol: currencySymbol,
+          currencyLocale: currencyFormat.locale,
           isClosed: isClosed,
           maturityDate: investment.maturityDate,
           totalInvested: stats.totalInvested,

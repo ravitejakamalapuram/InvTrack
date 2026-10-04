@@ -39,13 +39,10 @@ void main() {
         privacyModeEnabled: false,
       );
 
-      // Verify semantics match our expectations for accessible text
-      // We expect the label to contain "1,50,000" (full amount)
+      // The screen reader hears the amount as shown, in lakh for INR (the
+      // default base currency), not Western-grouped '150,000' (A18).
       final semantics = tester.getSemantics(find.byType(CompactAmountText));
-      // Expect 150,000 (US format default) or 1,50,000 (Indian).
-      // The actual output shows 150,000, so we check for that or generally that it's the full number.
-      expect(semantics.label, anyOf(contains('1,50,000'), contains('150,000')));
-      expect(semantics.label, contains('rupees'));
+      expect(semantics.label, '1.5 lakh rupees');
 
       // Verify hint is present
       expect(semantics.hint, contains('copy exact amount'));

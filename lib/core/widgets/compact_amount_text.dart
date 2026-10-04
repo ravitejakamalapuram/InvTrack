@@ -180,6 +180,7 @@ class CompactAmountText extends ConsumerWidget {
       label: AccessibilityUtils.formatCurrencyForScreenReader(
         amount,
         currencySymbol,
+        locale: ref.watch(currencyLocaleProvider),
       ),
       hint: l10n.doubleTapHoldToCopy,
       onLongPress: () => _showFullAmount(context, ref),

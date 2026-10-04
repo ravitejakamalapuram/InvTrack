@@ -4,6 +4,7 @@ import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/notifications/notification_constants.dart';
 import 'package:inv_tracker/core/notifications/notification_payload.dart';
 import 'package:inv_tracker/core/notifications/notification_preferences.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -312,8 +313,7 @@ class InvestmentNotificationHandler with NotificationPreferencesMixin {
 
     // Add financial context if available
     if (currentValue != null) {
-      final currencySymbol = currency == 'INR' ? '₹' : '\$';
-      buffer.write(' Value: $currencySymbol${currentValue.toInt()}');
+      buffer.write(' Value: ${formatCurrencyForCode(currentValue, currency)}');
       if (returnPercent != null) {
         buffer.write(' (${returnPercent.toStringAsFixed(1)}% return)');
       }
