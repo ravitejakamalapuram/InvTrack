@@ -34,8 +34,8 @@ enum ReturnDisplayKind {
 /// Presentation decision for a set of [InvestmentStats].
 class ReturnDisplay {
   /// Holdings shorter than this show their absolute return as the primary
-  /// figure, because annualising a few days of return gives absurd rates.
-  static const int shortHoldingDays = 90;
+  /// figure (the one rule in [InvestmentStats.shortHoldingDays]).
+  static const int shortHoldingDays = InvestmentStats.shortHoldingDays;
 
   /// Shown in place of a figure that cannot be calculated.
   static const String dash = '—';
@@ -96,13 +96,7 @@ class ReturnDisplay {
       kind = openStats.totalReturned == 0 && stats.totalReturned == 0
           ? ReturnDisplayKind.awaitingFirstPayout
           : ReturnDisplayKind.awaitingCurrentValue;
-    } else if (stats.totalInvested > 0 &&
-        // Without any inflow (or current value) there is no holding period
-        // to report a return over: a closed investment with a single INVEST
-        // flow would otherwise read "-100.0% in under a day".
-        stats.totalReturned + (stats.currentValue ?? 0) > 0 &&
-        days != null &&
-        days < shortHoldingDays) {
+    } else if (stats.isShortHolding) {
       kind = ReturnDisplayKind.shortHolding;
     } else if (method == XirrMethod.undefined ||
         value == null ||
