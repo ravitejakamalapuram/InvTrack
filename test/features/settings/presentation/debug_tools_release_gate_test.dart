@@ -333,27 +333,46 @@ void main() {
         (l) => l.trim().startsWith('if (!kReleaseMode && '),
         useLine,
       );
-      expect(guardLine, isNot(-1), reason: 'No kReleaseMode guard above use');
+      // Deliberate tripwires: the guard must be written as
+      // `if (!kReleaseMode && ...` and sit within 20 lines of the screen's only
+      // use. A failure after moving or rewording that code means: check the
+      // Developer section is still behind the compile-time kReleaseMode
+      // constant, then update this test.
+      expect(
+        guardLine,
+        isNot(-1),
+        reason:
+            'No `if (!kReleaseMode && ...` guard above the DebugSettingsScreen '
+            'use (source tripwire; see comment above)',
+      );
       expect(
         useLine - guardLine,
         lessThan(20),
-        reason: 'The kReleaseMode guard must wrap the Developer section',
+        reason:
+            'The kReleaseMode guard must wrap the Developer section; the '
+            '20-line limit is a source tripwire (see comment above)',
       );
     });
 
     test('GoRouter diagnostics follow the developer-tools switch', () {
+      const followsSwitch = 'ref.watch(developerToolsAvailableProvider)';
       final settings = <String>[];
       for (final file in libDartFiles()) {
+        // Compare without whitespace, so a formatter that wraps the value
+        // over several lines does not break the check.
+        final source = file.readAsStringSync().replaceAll(RegExp(r'\s+'), '');
         for (final m in RegExp(
-          r'debugLogDiagnostics:\s*([^,\n]+)',
-        ).allMatches(file.readAsStringSync())) {
-          settings.add(m.group(1)!.trim());
+          r'debugLogDiagnostics:(ref\.watch\([^)]*\)|[^,)]+)',
+        ).allMatches(source)) {
+          settings.add(m.group(1)!.replaceAll(',)', ')'));
         }
       }
-      expect(settings, isNotEmpty);
+      // The app router follows the switch; any other router may only turn
+      // diagnostics off outright.
+      expect(settings, contains(followsSwitch));
       expect(
         settings,
-        everyElement('ref.watch(developerToolsAvailableProvider)'),
+        everyElement(anyOf(followsSwitch, 'false')),
         reason: 'Release builds must not log route paths',
       );
     });
