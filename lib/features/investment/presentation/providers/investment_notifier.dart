@@ -359,14 +359,10 @@ class InvestmentNotifier extends Notifier<AsyncValue<void>> {
           .getInvestmentById(id);
       await ref.read(investmentRepositoryProvider).reopenInvestment(id);
       if (investment != null) {
-        // Re-schedule income reminder if investment has income frequency
-        if (investment.incomeFrequency != null) {
-          await _scheduleIncomeReminder(investment);
-        }
-        // Re-schedule maturity reminders if investment has maturity date
-        if (investment.maturityDate != null) {
-          await _scheduleMaturityReminders(investment);
-        }
+        // An archived investment stays archived, so it gets no reminders.
+        await _syncReminders(
+          investment.copyWith(status: InvestmentStatus.open),
+        );
 
         // Track analytics
         ref

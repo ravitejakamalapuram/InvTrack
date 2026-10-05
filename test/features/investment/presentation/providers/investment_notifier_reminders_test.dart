@@ -1,7 +1,7 @@
 // A117 (#891): editing a closed or archived investment must not bring back
 // its income and maturity reminders; only an open, active investment has
 // them. A17 (#762, GAP1-11): the same holds when a closed investment is
-// unarchived.
+// unarchived, and when an archived one is reopened.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -133,6 +133,33 @@ void main() {
 
       expect(notifications.scheduledIncomeReminders, ['inv-fd']);
       expect(notifications.scheduledMaturityReminders, ['inv-fd']);
+    });
+  });
+
+  group('reopenInvestment reminders', () {
+    // The fake, like an offline write, leaves the archived investment
+    // closed; reopening must still not schedule for it.
+    test('reopening an archived investment schedules no reminders', () async {
+      repository.seed(
+        archivedInvestments: [
+          _fd(status: InvestmentStatus.closed, isArchived: true),
+        ],
+      );
+
+      await notifier.reopenInvestment('inv-fd');
+
+      expect(notifications.scheduledIncomeReminders, isEmpty);
+      expect(notifications.scheduledMaturityReminders, isEmpty);
+    });
+
+    test('control: reopening a closed investment schedules both', () async {
+      repository.seed(investments: [_fd(status: InvestmentStatus.closed)]);
+
+      await notifier.reopenInvestment('inv-fd');
+
+      expect(notifications.scheduledIncomeReminders, ['inv-fd']);
+      expect(notifications.scheduledMaturityReminders, ['inv-fd']);
+      expect(repository.investments.single.isOpen, isTrue);
     });
   });
 }
