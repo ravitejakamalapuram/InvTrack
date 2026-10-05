@@ -140,16 +140,23 @@ class InvestmentDetailStatsSection extends StatelessWidget {
   /// "Projected at maturity ₹1,23,144 (7.19% p.a.)" for an open investment
   /// that has not paid out yet, when its rate and tenure are known. Periodic
   /// payouts are skipped: their interest is paid out, not compounded.
+  /// The principal is the INVEST total: fees do not earn interest. With no
+  /// tenure in months, the days from start to maturity date are used.
   String? _projectedMaturityText(AppLocalizations l10n) {
     if (isPrivacyMode ||
         investment.interestPayoutMode == InterestPayoutMode.periodic) {
       return null;
     }
     final summary = InvestmentProjector.getProjectionSummary(
-      principal: stats.totalInvested,
+      principal: stats.principal,
       annualRate: investment.expectedRate,
       tenureMonths: investment.tenureMonths,
+      tenureDays: InvestmentProjector.tenureDaysBetween(
+        investment.startDate,
+        investment.maturityDate,
+      ),
       compounding: investment.compoundingFrequency,
+      type: investment.type,
     );
     if (summary == null) return null;
     return l10n.projectedAtMaturity(
