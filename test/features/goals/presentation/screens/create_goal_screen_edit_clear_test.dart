@@ -76,7 +76,9 @@ void main() {
     tester.view.physicalSize = const Size(1080, 4000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    repository.seed(goals: [goal]);
+    goal.isArchived
+        ? repository.seed(archivedGoals: [goal])
+        : repository.seed(goals: [goal]);
 
     final router = GoRouter(
       initialLocation: '/edit',
@@ -115,7 +117,9 @@ void main() {
     await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
     expect(find.text('Goals'), findsOneWidget, reason: 'the form saved');
-    return repository.goals.single;
+    return goal.isArchived
+        ? repository.archivedGoals.single
+        : repository.goals.single;
   }
 
   testWidgets('clearing the target date saves no date', (tester) async {
@@ -161,5 +165,23 @@ void main() {
     expect(stored.updatedAt.isAfter(DateTime(2026, 1, 15)), isTrue);
     expect(stored.currency, 'INR');
     expect(_afterRestart(stored).targetDate, DateTime(2030, 3, 31));
+  });
+
+  testWidgets('control: editing an archived goal keeps it archived', (
+    tester,
+  ) async {
+    final stored = await editAndSave(
+      tester,
+      _house.copyWith(isArchived: true),
+      () async {
+        await tester.enterText(_editableWithText('House'), 'Home');
+        await tester.pumpAndSettle();
+      },
+    );
+
+    // The edit reached the archived store, not the active one.
+    expect(stored.name, 'Home');
+    expect(stored.isArchived, isTrue);
+    expect(repository.goals, isEmpty);
   });
 }
