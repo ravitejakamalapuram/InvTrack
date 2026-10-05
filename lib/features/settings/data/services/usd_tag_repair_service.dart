@@ -42,12 +42,18 @@ class UsdTagCandidate {
 ///    edit) is skipped as a whole, so a changed value is never overwritten
 ///    and no investment is left with mixed currencies. A transaction fails
 ///    instead of queueing while offline.
+///  * A transaction's reads run in parallel, [defaultChunkSize] documents at
+///    a time, so it takes about one round trip and stays well inside
+///    cloud_firestore's 30-second runTransaction timeout on a slow network.
+///    Reads that take longer than the read timeout fail the transaction
+///    first, so that timeout path, which can still commit, is never
+///    reached.
 class UsdTagRepairService {
   UsdTagRepairService({
     required FirebaseFirestore firestore,
     required String userId,
     required SharedPreferences prefs,
-    int chunkSize = maxWritesPerCommit,
+    int chunkSize = defaultChunkSize,
     Duration readTimeout = const Duration(seconds: 20),
   }) : _firestore = firestore,
        _userId = userId,
@@ -78,6 +84,10 @@ class UsdTagRepairService {
 
   /// Firestore's limit on writes in one batch or transaction.
   static const int maxWritesPerCommit = 500;
+
+  /// Documents written per transaction. Smaller than [maxWritesPerCommit] so
+  /// a transaction's parallel reads finish quickly on a slow network.
+  static const int defaultChunkSize = 100;
 
   /// Investment collection and its cash-flow collection, active and archived.
   static const List<(String, String)> _collections = [
@@ -361,19 +371,33 @@ class UsdTagRepairService {
         i + _chunkSize > entries.length ? entries.length : i + _chunkSize,
       );
       restored += await _firestore.runTransaction<int>((tx) async {
-        final toRestore = <(DocumentReference<Map<String, dynamic>>, String)>[];
-        for (final e in chunk) {
-          final collection = e['c'] as String;
-          for (final name in [collection, ?_movedTo[collection]]) {
-            final ref = userDoc.collection(name).doc(e['id'] as String);
-            final snap = await tx.get(ref);
-            if (!snap.exists) continue;
-            if (snap.data()?[_field] == e['to']) {
-              toRestore.add((ref, e['from'] as String));
-            }
-            break;
-          }
+        DocumentReference<Map<String, dynamic>> refIn(String name, int at) =>
+            userDoc.collection(name).doc(chunk[at]['id'] as String);
+        // Where the repair wrote each document, all at once; then, only for
+        // documents no longer there, the collection they moved to when
+        // their investment or goal was archived or restored.
+        final refs = [
+          for (var i = 0; i < chunk.length; i++)
+            refIn(chunk[i]['c'] as String, i),
+        ];
+        final snaps = await _readAll(tx, refs);
+        final moved = [
+          for (var i = 0; i < chunk.length; i++)
+            if (!snaps[i].exists && _movedTo[chunk[i]['c']] != null) i,
+        ];
+        final movedRefs = [
+          for (final i in moved) refIn(_movedTo[chunk[i]['c']]!, i),
+        ];
+        final movedSnaps = await _readAll(tx, movedRefs);
+        for (var m = 0; m < moved.length; m++) {
+          refs[moved[m]] = movedRefs[m];
+          snaps[moved[m]] = movedSnaps[m];
         }
+        final toRestore = [
+          for (var i = 0; i < chunk.length; i++)
+            if (snaps[i].exists && snaps[i].data()?[_field] == chunk[i]['to'])
+              (refs[i], chunk[i]['from'] as String),
+        ];
         for (final (ref, from) in toRestore) {
           tx.update(ref, {_field: from});
         }
@@ -398,11 +422,15 @@ class UsdTagRepairService {
     required String to,
   }) {
     return _firestore.runTransaction((tx) async {
+      final snaps = await _readAll(tx, [
+        for (final (_, _, ref) in targets) ref,
+      ]);
       final still = <_Target>[];
       final changedElsewhere = <String>{};
-      for (final target in targets) {
-        final (investmentId, _, ref) = target;
-        final snap = await tx.get(ref);
+      for (var i = 0; i < targets.length; i++) {
+        final target = targets[i];
+        final (investmentId, _, _) = target;
+        final snap = snaps[i];
         if (!snap.exists) continue;
         if (snap.data()?[_field] == from) {
           still.add(target);
@@ -420,6 +448,14 @@ class UsdTagRepairService {
       return toWrite;
     });
   }
+
+  /// Reads [refs] in [tx] all at once. One after another, a few hundred
+  /// documents ran past the 30-second runTransaction timeout on a slow
+  /// network (A81).
+  Future<List<DocumentSnapshot<Map<String, dynamic>>>> _readAll(
+    Transaction tx,
+    List<DocumentReference<Map<String, dynamic>>> refs,
+  ) => Future.wait([for (final ref in refs) tx.get(ref)]).timeout(_readTimeout);
 }
 
 /// Investment id, collection name and document to rewrite.
