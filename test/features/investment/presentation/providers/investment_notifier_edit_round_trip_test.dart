@@ -4,8 +4,9 @@
 // would be erased by every edit. Saving an investment unchanged must give
 // back the same investment, and the written document must hold every field.
 //
-// When you add a field to InvestmentEntity, set it in [_everyField] with a
-// non-default value; the completeness test fails until you do.
+// When you add a field to InvestmentEntity and its Firestore mapper, set it
+// in [_everyField] to a value other than its default; the completeness test
+// fails until you do, whether the field is nullable or has a default.
 
 // ignore_for_file: subtype_of_sealed_class
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -56,6 +57,21 @@ final _everyField = InvestmentEntity(
   currentValue: 105000.00,
   currentValueDate: DateTime(2026, 9, 30),
 );
+
+/// Only the required fields; everything else at its default.
+final _requiredOnly = InvestmentEntity(
+  id: 'inv-fd',
+  name: 'Other',
+  type: InvestmentType.bonds,
+  status: InvestmentStatus.open,
+  createdAt: DateTime(2025, 1, 1),
+  updatedAt: DateTime(2025, 1, 1),
+);
+
+/// Written fields [_everyField] leaves at their default on purpose: it is
+/// open and active, so it has no closing date, and the server sets
+/// updatedAt.
+const _leftAtDefault = {'status', 'closedAt', 'isArchived', 'updatedAt'};
 
 /// Writes [investment] through the Firestore repository and returns the
 /// map passed to `set()` (create) or `update()` (edit).
@@ -148,27 +164,26 @@ void main() {
     'the edit writes every field the create wrote, none of them null',
     () async {
       final created = await _written(_everyField, create: true);
+      final defaults = await _written(_requiredOnly, create: true);
       final stored = await saveUnchanged(_everyField);
       final edited = await _written(stored, create: false);
 
-      // The fixture must set every field the mapper writes, or this guard
-      // would not notice the edit dropping it.
+      // The fixture must set every field the mapper writes to a value other
+      // than its default, or this guard would not notice the edit
+      // resetting it.
       expect(
         [
           for (final e in created.entries)
-            if (e.value == null) e.key,
+            if (!_leftAtDefault.contains(e.key) && e.value == defaults[e.key])
+              e.key,
         ],
-        ['closedAt'],
-        reason: 'set the new field in _everyField',
+        isEmpty,
+        reason: 'set these fields in _everyField to a non-default value',
       );
-      expect(edited.keys.toSet(), created.keys.toSet());
       expect(
-        [
-          for (final e in edited.entries)
-            if (e.value == null) e.key,
-        ],
-        ['closedAt'],
-        reason: 'updateInvestment dropped these fields',
+        {...edited}..remove('updatedAt'),
+        {...created}..remove('updatedAt'),
+        reason: 'updateInvestment dropped or changed a field',
       );
     },
   );
