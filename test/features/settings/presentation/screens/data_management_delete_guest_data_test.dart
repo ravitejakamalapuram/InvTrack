@@ -92,6 +92,10 @@ void main() {
     when(
       () => requests.requestStatus(),
     ).thenAnswer((_) async => DeletionRequestStatus.confirmed);
+    // No request yet, so the A88 banner stays hidden.
+    when(
+      () => requests.watchStatus(),
+    ).thenAnswer((_) => Stream.value(DeletionRequestStatus.none));
     when(() => requests.withdraw()).thenAnswer((_) async {
       calls.add('withdraw');
       return true;
