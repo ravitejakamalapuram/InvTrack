@@ -26,6 +26,16 @@ abstract class AuthRepository {
   /// - Linking fails for other reasons
   Future<UserEntity?> linkAnonymousToGoogle();
 
+  /// Signs in to the Google account that the last [linkAnonymousToGoogle]
+  /// found already registered, with the credential that link produced, so
+  /// the user does not pick the account a second time.
+  ///
+  /// The credential is used at most once and is dropped on sign-out. Returns
+  /// null when none is kept. Throws [AuthException] with
+  /// [AuthExceptionCode.invalidCredential] when Firebase rejects it (an
+  /// expired token, for example); [signInWithGoogle] then asks again.
+  Future<UserEntity?> signInWithLinkCredential();
+
   /// Signs out.
   Future<void> signOut();
 

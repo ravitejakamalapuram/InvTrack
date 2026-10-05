@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
+import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_export_provider.dart';
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
@@ -131,7 +133,7 @@ class GuestBackupMergeService {
 
     final UserEntity? googleUser;
     try {
-      googleUser = await authRepository.signInWithGoogle();
+      googleUser = await _signInToGoogle(authRepository);
     } catch (_) {
       final signedIn = authRepository.currentUser?.id;
       if (signedIn == guestId) {
@@ -208,6 +210,19 @@ class GuestBackupMergeService {
       );
       return GuestMergeImportFailed(backupPath);
     }
+  }
+
+  /// Signs in to the Google account the guest picked when linking failed,
+  /// without asking again, or asks with [AuthRepository.signInWithGoogle]
+  /// when that credential is missing or Firebase rejects it.
+  Future<UserEntity?> _signInToGoogle(AuthRepository authRepository) async {
+    try {
+      final user = await authRepository.signInWithLinkCredential();
+      if (user != null) return user;
+    } on AuthException catch (e) {
+      if (e.code != AuthExceptionCode.invalidCredential) rethrow;
+    }
+    return authRepository.signInWithGoogle();
   }
 
   /// Deletes a backup that is no longer the only copy of anything. A failure
