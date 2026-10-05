@@ -171,11 +171,11 @@ class _UsdTagRepairInitializerState
     }
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: Text(
-          goals > 0
-              ? l10n.usdTagRepairDoneWithGoals(changed, currency)
-              : l10n.usdTagRepairDone(changed, currency),
-        ),
+        content: Text(switch ((changed - goals, goals)) {
+          (_, 0) => l10n.usdTagRepairDone(changed, currency),
+          (0, _) => l10n.usdTagRepairDoneGoals(changed, currency),
+          _ => l10n.usdTagRepairDoneWithGoals(changed, currency),
+        }),
         duration: const Duration(seconds: 10),
         action: SnackBarAction(
           label: l10n.usdTagRepairUndo,

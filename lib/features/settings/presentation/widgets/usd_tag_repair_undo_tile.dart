@@ -23,36 +23,38 @@ class _UsdTagRepairUndoTileState extends ConsumerState<UsdTagRepairUndoTile> {
     final service = ref.watch(usdTagRepairServiceProvider);
     if (service == null || !service.hasBackup) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
+    final investments = service.backedUpInvestmentCount;
     final goals = service.backedUpGoalCount;
-    final count = service.backedUpInvestmentCount + goals;
+    final count = investments + goals;
     return ListTile(
       leading: const Icon(Icons.undo),
       title: Text(l10n.usdTagRepairUndoTitle),
-      subtitle: Text(
-        goals > 0
-            ? l10n.usdTagRepairUndoSubtitleWithGoals(count)
-            : l10n.usdTagRepairUndoSubtitle(count),
-      ),
+      subtitle: Text(switch ((investments, goals)) {
+        (_, 0) => l10n.usdTagRepairUndoSubtitle(count),
+        (0, _) => l10n.usdTagRepairUndoSubtitleGoals(count),
+        _ => l10n.usdTagRepairUndoSubtitleWithGoals(count),
+      }),
       enabled: !_busy,
-      onTap: () => _confirmUndo(service, count, withGoals: goals > 0),
+      onTap: () => _confirmUndo(service, investments, goals),
     );
   }
 
   Future<void> _confirmUndo(
     UsdTagRepairService service,
-    int count, {
-    required bool withGoals,
-  }) async {
+    int investments,
+    int goals,
+  ) async {
     final l10n = AppLocalizations.of(context);
+    final count = investments + goals;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.usdTagRepairUndoTitle),
-        content: Text(
-          withGoals
-              ? l10n.usdTagRepairUndoMessageWithGoals(count)
-              : l10n.usdTagRepairUndoMessage(count),
-        ),
+        content: Text(switch ((investments, goals)) {
+          (_, 0) => l10n.usdTagRepairUndoMessage(count),
+          (0, _) => l10n.usdTagRepairUndoMessageGoals(count),
+          _ => l10n.usdTagRepairUndoMessageWithGoals(count),
+        }),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),

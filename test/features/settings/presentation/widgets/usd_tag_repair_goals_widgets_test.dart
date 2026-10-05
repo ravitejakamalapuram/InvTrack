@@ -301,7 +301,7 @@ void main() {
     });
 
     testWidgets('a user who answered the A04 question is asked once more, '
-        'about the new kinds only', (tester) async {
+        'with all US dollar investments unticked', (tester) async {
       await prefs.setBool('usd_tag_repair_resolved_${firestore.uid}', true);
       firestore
         ..put('investments', 'inv-merged', {
@@ -321,7 +321,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('House'), findsOneWidget);
-      expect(find.text('Merged FD'), findsNothing);
+      // A04 skipped investments with no cash flows, so all US dollar ones
+      // are listed again, unticked: this one may have been kept then.
+      expect(ticked(tester, 'Merged FD'), isFalse);
       await tester.tap(find.text('Keep in US dollars'));
       await tester.pumpAndSettle();
       expect(service().isResolved, isTrue);

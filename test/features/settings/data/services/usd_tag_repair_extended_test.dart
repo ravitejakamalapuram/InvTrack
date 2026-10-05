@@ -164,23 +164,29 @@ void main() {
   });
 
   // A04 shipped in v3.73.5 and listed only investments all in US dollars.
-  // Users who answered it are asked once more, about the new kinds only.
+  // Users who answered it are asked once more. All US dollar investments
+  // are listed again, because A04 skipped those that had no cash flows
+  // then, but start unticked, because the user may have kept them.
   group('after the A04 answer', () {
-    test('only the new kinds are listed: all US dollar investments were '
-        'already asked about', () async {
+    test('the new kinds are listed, and all US dollar investments are '
+        'listed unticked', () async {
       await prefs.setBool('usd_tag_repair_resolved_${firestore.uid}', true);
 
       expect(service().isResolved, isFalse);
       expect(service().answeredAllUsd, isTrue);
       final found = await service().findCandidates('INR');
 
-      expect(found.map((c) => c.id), [
-        'partly:inv-mixed',
-        'empty:inv-empty',
-        'partly:inv-p2p',
-        'goal:g1',
-        'goal:g2',
-      ]);
+      expect(
+        [for (final c in found) (c.id, c.tickedByDefault)],
+        [
+          ('partly:inv-mixed', false),
+          ('inv-merged', false),
+          ('empty:inv-empty', false),
+          ('partly:inv-p2p', false),
+          ('goal:g1', false),
+          ('goal:g2', false),
+        ],
+      );
     });
 
     test('an A04 answer on another device is remembered here, and is not '
@@ -192,10 +198,10 @@ void main() {
       expect(await service().checkResolved(), isFalse);
       expect(service().answeredAllUsd, isTrue);
       expect(service().isResolved, isFalse);
-      expect(
-        (await service().findCandidates('INR')).map((c) => c.id),
-        isNot(contains('inv-merged')),
-      );
+      final merged = (await service().findCandidates(
+        'INR',
+      )).singleWhere((c) => c.id == 'inv-merged');
+      expect(merged.tickedByDefault, isFalse);
     });
 
     test('the new answer is recorded on this device and for the '

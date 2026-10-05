@@ -36,25 +36,36 @@ class _UsdTagRepairDialogState extends State<UsdTagRepairDialog> {
     final candidates = widget.candidates;
     final count = candidates.length;
     final symbol = getCurrencySymbol(widget.currency);
-    final hasGoals = candidates.any((c) => c.kind == UsdTagKind.goal);
+    final goals = candidates.where((c) => c.kind == UsdTagKind.goal).length;
+    final investments = count - goals;
     return AlertDialog(
-      title: Text(
-        hasGoals ? l10n.usdTagRepairTitleWithGoals : l10n.usdTagRepairTitle,
-      ),
+      title: Text(switch ((investments, goals)) {
+        (_, 0) => l10n.usdTagRepairTitle,
+        (0, _) => l10n.usdTagRepairTitleGoals,
+        _ => l10n.usdTagRepairTitleWithGoals,
+      }),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
           children: [
-            Text(
-              hasGoals
-                  ? l10n.usdTagRepairMessageWithGoals(
-                      count,
-                      symbol,
-                      widget.currency,
-                    )
-                  : l10n.usdTagRepairMessage(count, symbol, widget.currency),
-            ),
+            Text(switch ((investments, goals)) {
+              (_, 0) => l10n.usdTagRepairMessage(
+                count,
+                symbol,
+                widget.currency,
+              ),
+              (0, _) => l10n.usdTagRepairMessageGoals(
+                count,
+                symbol,
+                widget.currency,
+              ),
+              _ => l10n.usdTagRepairMessageWithGoals(
+                count,
+                symbol,
+                widget.currency,
+              ),
+            }),
             const SizedBox(height: 8),
             Text(l10n.usdTagRepairDetail, style: theme.textTheme.bodySmall),
             if (candidates.any((c) => c.kind != UsdTagKind.allUsd)) ...[
@@ -106,6 +117,8 @@ class _UsdTagRepairDialogState extends State<UsdTagRepairDialog> {
           UsdTagKind.partlyUsd => l10n.usdTagRepairPartly,
           UsdTagKind.goal => l10n.usdTagRepairGoal,
         },
+        if (c.kind == UsdTagKind.partlyUsd && c.investmentTagged)
+          l10n.usdTagRepairInvestmentCurrency,
         if (c.kind == UsdTagKind.partlyUsd && c.usdCashFlowCount > 0)
           l10n.usdTagRepairSomeCashFlows(c.usdCashFlowCount, c.cashFlowCount),
         if (c.expectedPaymentCount > 0)

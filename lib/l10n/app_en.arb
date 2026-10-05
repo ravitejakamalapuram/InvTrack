@@ -5818,12 +5818,12 @@
 
   "usdTagRepairTitleWithGoals": "Investments and goals recorded in US dollars",
   "@usdTagRepairTitleWithGoals": {
-    "description": "Title of the US dollar repair question when the list includes goals (A109). Shown instead of usdTagRepairTitle."
+    "description": "Title of the US dollar repair question when the list has both investments and goals (A109). Shown instead of usdTagRepairTitle."
   },
 
-  "usdTagRepairMessageWithGoals": "{count, plural, =1{We found 1 goal recorded in US dollars. Was it in {symbol} ({currency})?} other{We found {count} investments and goals recorded in US dollars. Were these in {symbol} ({currency})?}}",
+  "usdTagRepairMessageWithGoals": "We found {count} investments and goals recorded in US dollars. Were these in {symbol} ({currency})?",
   "@usdTagRepairMessageWithGoals": {
-    "description": "US dollar repair question when the list includes at least one goal (A109). With a count of 1 the only item is a goal.",
+    "description": "US dollar repair question when the list has both investments and goals (A109). count is at least 2.",
     "placeholders": {
       "count": {"type": "int", "example": "3"},
       "symbol": {"type": "String", "example": "₹"},
@@ -5871,9 +5871,9 @@
     }
   },
 
-  "usdTagRepairDoneWithGoals": "{count, plural, =1{1 goal changed to {currency}.} other{{count} investments and goals changed to {currency}.}}",
+  "usdTagRepairDoneWithGoals": "{count} investments and goals changed to {currency}.",
   "@usdTagRepairDoneWithGoals": {
-    "description": "Snackbar after the US dollar repair changed at least one goal (A109). With a count of 1 the only item is a goal.",
+    "description": "Snackbar after the US dollar repair changed both investments and goals (A109). count is at least 2.",
     "placeholders": {
       "count": {"type": "int", "example": "3"},
       "currency": {"type": "String", "example": "INR"}
@@ -5885,17 +5885,17 @@
     "description": "Snackbar when the US dollar repair found nothing left to change and the list included goals (A109)"
   },
 
-  "usdTagRepairUndoSubtitleWithGoals": "{count, plural, =1{Show 1 goal in US dollars again} other{Show {count} investments and goals in US dollars again}}",
+  "usdTagRepairUndoSubtitleWithGoals": "Show {count} investments and goals in US dollars again",
   "@usdTagRepairUndoSubtitleWithGoals": {
-    "description": "Data & Account undo item when the US dollar fix changed at least one goal (A109). With a count of 1 the only item is a goal.",
+    "description": "Data & Account undo item when the US dollar fix changed both investments and goals (A109). count is at least 2.",
     "placeholders": {
       "count": {"type": "int", "example": "3"}
     }
   },
 
-  "usdTagRepairUndoMessageWithGoals": "{count, plural, =1{1 goal will be shown in US dollars again. Its amounts do not change.} other{{count} investments and goals will be shown in US dollars again. Their amounts do not change.}}",
+  "usdTagRepairUndoMessageWithGoals": "{count} investments and goals will be shown in US dollars again. Their amounts do not change.",
   "@usdTagRepairUndoMessageWithGoals": {
-    "description": "Confirmation before undoing a US dollar fix that changed at least one goal (A109). With a count of 1 the only item is a goal.",
+    "description": "Confirmation before undoing a US dollar fix that changed both investments and goals (A109). count is at least 2.",
     "placeholders": {
       "count": {"type": "int", "example": "3"}
     }
@@ -6292,5 +6292,50 @@
   "goalStatusMessageArchived": "Goal archived",
   "@goalStatusMessageArchived": {
     "description": "Goal status message: the goal is archived"
+  },
+
+  "usdTagRepairTitleGoals": "Goals recorded in US dollars",
+  "@usdTagRepairTitleGoals": {
+    "description": "Title of the US dollar repair question when the list has only goals (A109). Shown instead of usdTagRepairTitle."
+  },
+
+  "usdTagRepairMessageGoals": "{count, plural, =1{We found 1 goal recorded in US dollars. Was it in {symbol} ({currency})?} other{We found {count} goals recorded in US dollars. Were these in {symbol} ({currency})?}}",
+  "@usdTagRepairMessageGoals": {
+    "description": "US dollar repair question when the list has only goals (A109)",
+    "placeholders": {
+      "count": {"type": "int", "example": "2"},
+      "symbol": {"type": "String", "example": "₹"},
+      "currency": {"type": "String", "example": "INR"}
+    }
+  },
+
+  "usdTagRepairDoneGoals": "{count, plural, =1{1 goal changed to {currency}.} other{{count} goals changed to {currency}.}}",
+  "@usdTagRepairDoneGoals": {
+    "description": "Snackbar after the US dollar repair changed only goals (A109)",
+    "placeholders": {
+      "count": {"type": "int", "example": "2"},
+      "currency": {"type": "String", "example": "INR"}
+    }
+  },
+
+  "usdTagRepairUndoSubtitleGoals": "{count, plural, =1{Show 1 goal in US dollars again} other{Show {count} goals in US dollars again}}",
+  "@usdTagRepairUndoSubtitleGoals": {
+    "description": "Data & Account undo item when the US dollar fix changed only goals (A109)",
+    "placeholders": {
+      "count": {"type": "int", "example": "2"}
+    }
+  },
+
+  "usdTagRepairUndoMessageGoals": "{count, plural, =1{1 goal will be shown in US dollars again. Its amounts do not change.} other{{count} goals will be shown in US dollars again. Their amounts do not change.}}",
+  "@usdTagRepairUndoMessageGoals": {
+    "description": "Confirmation before undoing a US dollar fix that changed only goals (A109)",
+    "placeholders": {
+      "count": {"type": "int", "example": "2"}
+    }
+  },
+
+  "usdTagRepairInvestmentCurrency": "The investment''s currency",
+  "@usdTagRepairInvestmentCurrency": {
+    "description": "US dollar repair question: a partly US dollar investment whose own currency is US dollars; its currency changes, so its new cash flows no longer start in US dollars (A109)"
   }
 }
