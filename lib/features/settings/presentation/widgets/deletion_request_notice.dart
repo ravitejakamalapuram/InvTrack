@@ -49,40 +49,48 @@ class _DeletionRequestNoticeState extends ConsumerState<DeletionRequestNotice>
   Future<void> _check(int session) async {
     final service = ref.read(deletionRequestServiceProvider);
     if (!await service.hasRequest()) return;
-    // Whoever holds a locked phone must not withdraw the deletion. The user
-    // may also have signed out (or in again) while it waited.
-    if (!await waitUntilUnlocked() || session != _session) return;
 
-    final context = rootNavigatorKey.currentContext;
-    if (!mounted || context == null || !context.mounted) return;
-    final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    bool? withdraw;
+    late AppLocalizations l10n;
+    ScaffoldMessengerState? messenger;
+    // Null means the dialog closed without an answer, because the page under
+    // it went (the app locked, for example). Ask again rather than sign out.
+    while (withdraw == null) {
+      // Whoever holds a locked phone must not withdraw the deletion. The
+      // user may also have signed out (or in again) while it waited.
+      if (!await waitUntilUnlocked() || session != _session) return;
 
-    final withdraw = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      useRootNavigator: true,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: Text(l10n.deletionScheduledTitle),
-          content: Text(l10n.deletionScheduledMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(l10n.signOut),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(l10n.deletionScheduledWithdraw),
-            ),
-          ],
+      final context = rootNavigatorKey.currentContext;
+      if (!mounted || context == null || !context.mounted) return;
+      l10n = AppLocalizations.of(context);
+      messenger = ScaffoldMessenger.maybeOf(context);
+
+      withdraw = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        useRootNavigator: true,
+        builder: (ctx) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: Text(l10n.deletionScheduledTitle),
+            content: Text(l10n.deletionScheduledMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(l10n.signOut),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text(l10n.deletionScheduledWithdraw),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+      if (!mounted || session != _session) return;
+    }
 
-    if (!mounted) return;
-    if (withdraw == true) {
+    if (withdraw) {
       final ok = await service.withdraw();
       messenger?.showSnackBar(
         SnackBar(
