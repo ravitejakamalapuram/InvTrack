@@ -181,5 +181,27 @@ void main() {
 
       expect(localAuth.authenticateCallCount, 0);
     });
+
+    // A114: the prompt after a resume (500 ms later) is skipped the same way.
+    testWidgets('does not prompt on resume once the user has started typing '
+        'the PIN', (tester) async {
+      const storageDelay = Duration(milliseconds: 800);
+      final localAuth = await pumpLockScreen(tester, storageDelay);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('1'));
+      await tester.pump();
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      // Storage answers: biometrics are on and available.
+      await tester.pump(storageDelay);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(localAuth.authenticateCallCount, 0);
+    });
   });
 }

@@ -730,6 +730,33 @@ void main() {
         expect(state.hasPin, isTrue);
       });
 
+      // The same when secure storage then fails: the failure path used to
+      // lock from the has_pin mirror alone.
+      test('a PIN unlock is not undone when storage then fails', () async {
+        final notifier = await lockedWhileStorageIsSlow();
+        expect(await notifier.unlockWithPin('1234'), isTrue);
+
+        service.hasPinAnswer.completeError(
+          PlatformException(code: 'READ_ERROR'),
+        );
+        await pumpEventQueue();
+
+        final state = container.read(securityProvider);
+        expect(state.isLocked, isFalse);
+        expect(state.hasPin, isTrue);
+      });
+
+      test('without an unlock, a storage failure still locks', () async {
+        await lockedWhileStorageIsSlow();
+
+        service.hasPinAnswer.completeError(
+          PlatformException(code: 'READ_ERROR'),
+        );
+        await pumpEventQueue();
+
+        expect(container.read(securityProvider).isLocked, isTrue);
+      });
+
       test('without an unlock, the start-up checks still lock', () async {
         await lockedWhileStorageIsSlow();
 
