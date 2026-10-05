@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
@@ -51,6 +52,9 @@ class InMemoryGuestBackupStore implements GuestBackupStore {
   final List<String>? calls;
   var _next = 0;
 
+  /// Makes [transfer] fail, like a rename the file system refuses.
+  var failTransfers = false;
+
   String _path(String ownerId, String name) =>
       '/data/app/files/guest_backups/$ownerId/$name';
 
@@ -65,6 +69,7 @@ class InMemoryGuestBackupStore implements GuestBackupStore {
 
   @override
   Future<String> transfer(String filePath, {required String toOwnerId}) async {
+    if (failTransfers) throw const FileSystemException('rename failed');
     final moved = _path(toOwnerId, filePath.split('/').last);
     files[moved] = files.remove(filePath)!;
     owners.remove(filePath);
@@ -95,11 +100,15 @@ class InMemoryGuestBackupStore implements GuestBackupStore {
 class FakeGuestExportService extends Fake implements DataExportService {
   final sharedFiles = <List<String>>[];
 
+  /// Thrown by [shareZipFiles] instead of sharing, when set.
+  Object? shareError;
+
   @override
   Future<ZipExport> exportAsZipBytes() async => guestExport();
 
   @override
   Future<void> shareZipFiles(List<String> filePaths) async {
+    if (shareError != null) throw shareError!;
     sharedFiles.add(filePaths);
   }
 }

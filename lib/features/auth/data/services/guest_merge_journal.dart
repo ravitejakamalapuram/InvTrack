@@ -64,8 +64,14 @@ class GuestBackupSummary {
 }
 
 /// A guest merge that saved the guest's backup and may have stopped before
-/// the backup reached the Google account.
-typedef PendingGuestMerge = ({String guestId, String backupPath});
+/// the backup reached the Google account. [targetId] is the account the
+/// merge signed in to, or null if the process stopped before that was
+/// recorded.
+typedef PendingGuestMerge = ({
+  String guestId,
+  String backupPath,
+  String? targetId,
+});
 
 /// Remembers, across process death, the guest merge in progress, what each
 /// guest backup holds and which backups were already offered at launch.
@@ -86,18 +92,33 @@ class GuestMergeJournal {
       '$_summaryPrefix${path.basename(backupPath)}';
 
   /// Records, before the sign-in, that [guestId] saved [backupPath].
+  /// Throws if the device did not save it.
   Future<void> begin({
     required String guestId,
     required String backupPath,
     required GuestBackupSummary summary,
   }) async {
-    await _prefs.setString(
-      _summaryKey(backupPath),
-      jsonEncode(summary.toJson()),
-    );
+    final saved =
+        await _prefs.setString(
+          _summaryKey(backupPath),
+          jsonEncode(summary.toJson()),
+        ) &&
+        await _prefs.setString(
+          pendingKey,
+          jsonEncode({'guestId': guestId, 'path': backupPath}),
+        );
+    if (!saved) throw StateError('The guest merge could not be recorded');
+  }
+
+  /// Records, once the sign-in returned, the account [targetId] that the
+  /// pending merge's backup belongs to, so no other account is given it.
+  Future<void> setTarget(String targetId) async {
+    final raw = _prefs.getString(pendingKey);
+    if (raw == null) return;
+    final json = jsonDecode(raw) as Map<String, dynamic>;
     await _prefs.setString(
       pendingKey,
-      jsonEncode({'guestId': guestId, 'path': backupPath}),
+      jsonEncode({...json, 'target': targetId}),
     );
   }
 
@@ -109,6 +130,7 @@ class GuestMergeJournal {
       return (
         guestId: json['guestId'] as String,
         backupPath: json['path'] as String,
+        targetId: json['target'] as String?,
       );
     } catch (_) {
       return null;
@@ -145,7 +167,10 @@ class GuestMergeJournal {
   Future<void> forget(String backupPath) async {
     await _prefs.remove(_summaryKey(backupPath));
     final offered = _prefs.getStringList(_offeredKey);
-    if (offered != null && offered.remove(path.basename(backupPath))) {
+    if (offered == null || !offered.remove(path.basename(backupPath))) return;
+    if (offered.isEmpty) {
+      await _prefs.remove(_offeredKey);
+    } else {
       await _prefs.setStringList(_offeredKey, offered);
     }
   }

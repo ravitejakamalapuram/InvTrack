@@ -630,18 +630,18 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     // Server-confirmed wipe of every users/{uid} collection (investments,
     // cashflows, archived items, goals, expectedCashFlows, documents,
     // healthScores, fireSettings, profile, exchangeRates), then the local
-    // attachment files, any guest backups this account owns, and per-user
-    // preferences. Throws (NetworkException when offline) if the server
-    // cannot confirm, in which case the caller must NOT delete the Auth
+    // attachment files, any guest backups this account owns or an unfinished
+    // guest merge was moving into it (and what the device kept about them),
+    // and per-user preferences. Throws (NetworkException when offline) if the
+    // server cannot confirm, in which case the caller must NOT delete the Auth
     // account or report success.
     final deletionService = ref.read(accountDataDeletionServiceProvider);
     final documentStorageService = ref.read(documentStorageServiceProvider);
-    final guestBackupStore = ref.read(guestBackupStoreProvider);
+    final guestBackups = ref.read(guestBackupMergeServiceProvider);
     await deletionService.deleteEverything(
       deleteLocalFiles: () async {
         await documentStorageService.deleteAllUserDocuments();
-        await guestBackupStore.deleteAll(ownerId: user.id);
-        if (mounted) ref.invalidate(savedGuestBackupsProvider);
+        await guestBackups.deleteBackupsForAccountDeletion(user);
       },
       prefs: ref.read(sharedPreferencesProvider),
     );

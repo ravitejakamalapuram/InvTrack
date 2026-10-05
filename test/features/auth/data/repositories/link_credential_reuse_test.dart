@@ -257,4 +257,14 @@ void main() {
     expect(await repository.signInWithLinkCredential(), isNull);
     expect(signInCredentials, isEmpty);
   });
+
+  test('deleting the account drops the kept credential', () async {
+    when(() => guest.delete()).thenAnswer((_) async {});
+    await linkFailsBecauseTheAccountExists();
+
+    await repository.deleteAccount();
+
+    expect(await repository.signInWithLinkCredential(), isNull);
+    expect(signInCredentials, isEmpty);
+  });
 }

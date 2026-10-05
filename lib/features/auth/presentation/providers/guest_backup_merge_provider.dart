@@ -116,8 +116,9 @@ class GuestBackupMergeService {
   /// If the process dies before the backup reaches the Google account,
   /// [recoverInterruptedMerge] finishes the hand-over at the next launch.
   ///
-  /// Throws if the backup cannot be created or saved, or the sign-in fails;
-  /// the guest is then still signed in and nothing has changed.
+  /// Throws if the backup cannot be created, saved or recorded for
+  /// [recoverInterruptedMerge], or the sign-in fails; the guest is then
+  /// still signed in and nothing has changed.
   Future<GuestMergeOutcome> backupAndSignIn({
     required Future<bool> Function(ZipExport export) confirmDetailsNotMoved,
   }) async {
@@ -164,14 +165,17 @@ class GuestBackupMergeService {
     final store = _ref.read(guestBackupStoreProvider);
     var backupPath = await store.save(backup, ownerId: guestId);
     _ref.invalidate(savedGuestBackupsProvider);
-    final savedPath = backupPath;
-    await _record(
-      (journal) => journal.begin(
-        guestId: guestId,
-        backupPath: savedPath,
-        summary: summary,
-      ),
-    );
+    try {
+      // Not best effort: without this record, a process death after the
+      // sign-in would leave the backup where no launch looks for it.
+      await _ref
+          .read(guestMergeJournalProvider)
+          .begin(guestId: guestId, backupPath: backupPath, summary: summary);
+    } catch (_) {
+      await _deleteBackup(backupPath);
+      await _record((journal) => journal.clearPending());
+      rethrow;
+    }
 
     final analytics = _ref.read(analyticsServiceProvider);
     await analytics.logEvent(
@@ -267,9 +271,11 @@ class GuestBackupMergeService {
   /// returns the guest backups [user] owns that were not offered yet, oldest
   /// first. Nothing is offered to a guest.
   ///
-  /// A backup is handed only to a Google account. If the guest who saved it
-  /// is still signed in, the sign-in never happened and the guest still has
-  /// all of their data, so the backup is deleted.
+  /// A backup is handed only to the Google account the merge signed in to,
+  /// or to any Google account if the process stopped before that was
+  /// recorded. If the guest who saved it is still signed in, the sign-in
+  /// never happened and the guest still has all of their data, so the
+  /// backup is deleted.
   Future<List<String>> recoverInterruptedMerge(UserEntity user) async {
     // A running merge hands its backup over itself.
     if (_merging) return const [];
@@ -280,7 +286,7 @@ class GuestBackupMergeService {
       if (pending.guestId == user.id) {
         await _deleteBackup(pending.backupPath);
         await journal.clearPending();
-      } else if (!user.isAnonymous) {
+      } else if (_goesTo(pending, user)) {
         var allMoved = true;
         for (final backupPath in await store.list(ownerId: pending.guestId)) {
           final moved = await _transferBackup(backupPath, user.id);
@@ -296,6 +302,11 @@ class GuestBackupMergeService {
         if (!journal.wasOffered(backupPath)) backupPath,
     ];
   }
+
+  /// Whether the backup of [pending] goes to [user]: only to a Google
+  /// account, and only to the one the merge signed in to once that is known.
+  static bool _goesTo(PendingGuestMerge pending, UserEntity user) =>
+      !user.isAnonymous && (pending.targetId ?? user.id) == user.id;
 
   /// Records that the user answered the launch notice for [backupPath], so
   /// it is not offered again.
@@ -341,6 +352,8 @@ class GuestBackupMergeService {
   /// Hands the backup to [ownerId] and, once it is there, clears the
   /// pending merge. Returns the backup's path.
   Future<String> _handOver(String backupPath, String ownerId) async {
+    // First, so that a backup the transfer leaves behind goes to no one else.
+    await _record((journal) => journal.setTarget(ownerId));
     final moved = await _transferBackup(backupPath, ownerId);
     if (moved != backupPath) {
       await _record((journal) => journal.clearPending());
@@ -446,11 +459,27 @@ class GuestBackupMergeService {
 
   /// Deletes every guest backup the signed-in account owns, after the user
   /// confirmed it.
-  Future<void> deleteSavedBackups() async {
+  Future<void> deleteSavedBackups() => _deleteAllOf(_signedInUserId());
+
+  /// For Delete Account: deletes every guest backup [user] owns and the
+  /// backup of an unfinished guest merge that [user] started as a guest or
+  /// that goes to [user], and forgets them.
+  Future<void> deleteBackupsForAccountDeletion(UserEntity user) async {
+    final pending = _ref.read(guestMergeJournalProvider).pending;
+    await _deleteAllOf(user.id);
+    if (pending != null &&
+        (pending.guestId == user.id || _goesTo(pending, user))) {
+      await _deleteAllOf(pending.guestId);
+      await _record((journal) => journal.clearPending());
+    }
+  }
+
+  /// Deletes every guest backup [ownerId] owns and what the journal holds
+  /// about them.
+  Future<void> _deleteAllOf(String ownerId) async {
     final store = _ref.read(guestBackupStoreProvider);
-    final userId = _signedInUserId();
-    final paths = await store.list(ownerId: userId);
-    await store.deleteAll(ownerId: userId);
+    final paths = await store.list(ownerId: ownerId);
+    await store.deleteAll(ownerId: ownerId);
     for (final backupPath in paths) {
       await _record((journal) => journal.forget(backupPath));
     }

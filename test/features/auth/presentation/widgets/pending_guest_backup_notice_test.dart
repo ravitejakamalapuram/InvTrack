@@ -205,6 +205,34 @@ void main() {
     expect(find.text(_title), findsNothing);
   });
 
+  testWidgets('a share that fails is offered again on the next launch', (
+    tester,
+  ) async {
+    exportService.shareError = StateError('share sheet unavailable');
+    await launch(tester);
+
+    await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    expect(exportService.sharedFiles, isEmpty);
+    expect(await googleBackups(), hasLength(1));
+
+    exportService.shareError = null;
+    await launch(tester);
+    expect(find.text(_title), findsOneWidget);
+  });
+
+  testWidgets('no guest backup on the device: no notice', (tester) async {
+    store.files.clear();
+    store.owners.clear();
+    await prefs.clear();
+
+    await launch(tester);
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text(_title), findsNothing);
+    expect(find.byType(AlertDialog), findsNothing);
+  });
+
   testWidgets('waits until the app is unlocked', (tester) async {
     await launch(tester, locked: true);
     expect(find.text(_title), findsNothing);

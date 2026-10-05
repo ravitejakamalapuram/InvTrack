@@ -75,7 +75,8 @@ class _PendingGuestBackupNoticeState
         case _Answer.keep:
           break;
         case _Answer.share:
-          await _share(service, backupPath);
+          // A failed share is offered again next time.
+          if (!await _share(service, backupPath)) continue;
         case _Answer.importNow:
           final result = await _import(service, backupPath);
           // Deleted after a complete import; a failed one is offered again.
@@ -114,9 +115,11 @@ class _PendingGuestBackupNoticeState
     );
   }
 
-  Future<void> _share(GuestBackupMergeService service, String path) async {
+  /// False if the share sheet could not be opened.
+  Future<bool> _share(GuestBackupMergeService service, String path) async {
     try {
       await service.shareBackup(path);
+      return true;
     } catch (e, st) {
       final context = rootNavigatorKey.currentContext;
       ErrorHandler.handle(
@@ -125,6 +128,7 @@ class _PendingGuestBackupNoticeState
         context: context != null && context.mounted ? context : null,
         showFeedback: true,
       );
+      return false;
     }
   }
 
