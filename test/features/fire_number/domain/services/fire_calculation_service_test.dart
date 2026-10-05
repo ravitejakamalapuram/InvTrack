@@ -12,7 +12,7 @@ void main() {
       id: 'fire-1',
       monthlyExpenses: 50000,
       safeWithdrawalRate: 4.0,
-      currentAge: 30,
+      birthYear: DateTime.now().year - 30,
       targetFireAge: 45,
       lifeExpectancy: 85,
       inflationRate: 6.0,
@@ -314,7 +314,7 @@ void main() {
 
     test('handles zero years to FIRE gracefully', () {
       final zeroYearsSettings = testSettings.copyWith(
-        currentAge: 45,
+        birthYear: DateTime.now().year - 45,
         targetFireAge: 45,
       );
 
@@ -328,57 +328,44 @@ void main() {
       expect(result.coastFireNumber, result.fireNumber);
     });
 
-    test('returns behind status when progress is below 25%', () {
-      // First calculate to get the FIRE number
+    // PLAN-04: status used to come from progress % alone (below 25% was
+    // 'behind' whatever the timeline). It now compares the projected FIRE
+    // age with the target age.
+    test('returns behind when the projected FIRE age is after the target', () {
       final initial = service.calculate(
         settings: testSettings,
         currentPortfolioValue: 0,
         currentMonthlySavings: 50000,
       );
 
-      // Portfolio at 10% of FIRE number (below 25% threshold)
+      // 10% funded and saving ₹20k a month: FIRE in 278.8 months, at 53.
       final result = service.calculate(
         settings: testSettings,
         currentPortfolioValue: initial.fireNumber * 0.10,
-        currentMonthlySavings: 50000,
+        currentMonthlySavings: 20000,
       );
 
       expect(result.status, FireProgressStatus.behind);
-      expect(result.progressPercentage, lessThan(25));
+      expect(result.projectedFireAge, greaterThan(testSettings.targetFireAge));
     });
 
-    test(
-      'returns onTrack status when progress is between 25% and 75% and below coast',
-      () {
-        // First calculate to get the FIRE number and coast number
-        final initial = service.calculate(
-          settings: testSettings,
-          currentPortfolioValue: 0,
-          currentMonthlySavings: 50000,
-        );
+    test('returns ahead when 30% funded and saving ₹50k a month', () {
+      final initial = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: 0,
+        currentMonthlySavings: 50000,
+      );
 
-        // Calculate a value that is 30% of FIRE but below coast FIRE
-        // Coast FIRE is typically around 30-40% of full FIRE for 15 year horizon
-        final coastRatio = initial.coastFireNumber / initial.fireNumber;
+      // Below the coast number (43.8% for 15 years), but FIRE in 124.4
+      // months, at 40 or 41: more than 2 years before the target age 45.
+      final result = service.calculate(
+        settings: testSettings,
+        currentPortfolioValue: initial.fireNumber * 0.30,
+        currentMonthlySavings: 50000,
+      );
 
-        // If 30% is below coast, use it; otherwise use a value just below coast
-        final targetRatio = coastRatio > 0.30 ? 0.30 : coastRatio * 0.9;
-
-        final result = service.calculate(
-          settings: testSettings,
-          currentPortfolioValue: initial.fireNumber * targetRatio,
-          currentMonthlySavings: 50000,
-        );
-
-        // Should be onTrack if between 25-75% and below coast
-        // Or behind if below 25%
-        expect(
-          result.status == FireProgressStatus.onTrack ||
-              result.status == FireProgressStatus.behind,
-          isTrue,
-        );
-      },
-    );
+      expect(result.status, FireProgressStatus.ahead);
+    });
 
     test('returns ahead or coasting when progress is 75% or more', () {
       // First calculate to get the FIRE number

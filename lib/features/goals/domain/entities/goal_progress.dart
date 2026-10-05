@@ -65,13 +65,32 @@ enum GoalMilestone {
   }
 }
 
-/// Calculated progress for a goal
+/// Calculated progress for a goal. Every amount is in the base currency.
 class GoalProgress {
   final GoalEntity goal;
+
+  /// What the goal has reached: the current value of its open investments
+  /// for a corpus goal, the monthly income for an income goal.
   final double currentAmount;
+
+  /// The goal's target converted to the base currency: the monthly income
+  /// target for an income goal, otherwise the target amount.
+  final double targetAmount;
+
   final double progressPercent;
-  final double monthlyVelocity; // Average monthly contribution
+
+  /// Net new money (INVEST − RETURN) a month into the linked investments
+  /// over the last 12 months; 0 with less than 3 months of history.
+  final double monthlyVelocity;
   final double monthlyIncome; // For income goals
+
+  /// What has to be added each month to reach a corpus goal by its date,
+  /// at the assumed annual return of the goal calculator; null without a
+  /// date still ahead, for income goals and once the goal is reached.
+  final double? requiredMonthly;
+
+  /// Other active goals that count at least one of the same investments.
+  final int otherGoalsCount;
   final DateTime? projectedCompletionDate;
   final GoalStatus status;
   final GoalMilestone currentMilestone;
@@ -82,9 +101,12 @@ class GoalProgress {
   const GoalProgress({
     required this.goal,
     required this.currentAmount,
+    required this.targetAmount,
     required this.progressPercent,
     required this.monthlyVelocity,
     required this.monthlyIncome,
+    this.requiredMonthly,
+    this.otherGoalsCount = 0,
     this.projectedCompletionDate,
     required this.status,
     required this.currentMilestone,
@@ -93,8 +115,16 @@ class GoalProgress {
     required this.calculatedAt,
   });
 
-  /// Target amount from the goal
-  double get targetAmount => goal.targetAmount;
+  /// The one rounding rule for goal % on every screen, alert and report:
+  /// whole percent, rounded down and kept within 0-100, so a goal is never
+  /// shown as 100% before it is reached.
+  static int wholePercent(double percent) {
+    if (!percent.isFinite) return 0;
+    return percent.clamp(0.0, 100.0).floor();
+  }
+
+  /// [progressPercent] under the one rounding rule ([wholePercent]).
+  int get displayPercent => wholePercent(progressPercent);
 
   /// Amount remaining to reach the goal
   double get remainingAmount =>
@@ -135,8 +165,7 @@ class GoalProgress {
       return 'Congratulations! You\'ve reached your goal!';
     }
     if (goal.isIncomeGoal) {
-      final target = goal.targetMonthlyIncome ?? goal.targetAmount;
-      return '$symbol${_formatAmount(monthlyIncome, locale)}/mo of $symbol${_formatAmount(target, locale)}/mo';
+      return '$symbol${_formatAmount(monthlyIncome, locale)}/mo of $symbol${_formatAmount(targetAmount, locale)}/mo';
     }
     return '$symbol${_formatAmount(currentAmount, locale)} of $symbol${_formatAmount(targetAmount, locale)}';
   }
@@ -144,53 +173,11 @@ class GoalProgress {
   /// Progress message for display (default ₹, en_IN)
   String get progressMessage => getProgressMessage();
 
-  /// Status message
-  String get statusMessage {
-    switch (status) {
-      case GoalStatus.notStarted:
-        return 'Start investing to make progress';
-      case GoalStatus.onTrack:
-        if (projectedCompletionDate != null) {
-          return 'On track for ${_formatDate(projectedCompletionDate!)}';
-        }
-        return 'Making steady progress';
-      case GoalStatus.ahead:
-        return 'Ahead of schedule! Keep it up!';
-      case GoalStatus.behind:
-        if (goal.targetDate != null) {
-          return 'Behind schedule - needs attention';
-        }
-        return 'Consider increasing contributions';
-      case GoalStatus.achieved:
-        return 'Goal achieved!';
-      case GoalStatus.archived:
-        return 'Goal archived';
-    }
-  }
-
   /// Formats amount using locale-aware compact notation (100K/1M for Western, 1L/1Cr for Indian)
   /// without the currency symbol prefix (symbol is added separately in getProgressMessage)
   String _formatAmount(double amount, String locale) {
     // Use locale-aware formatter but strip the symbol since we add it separately
     final formatted = formatCompactCurrency(amount, symbol: '', locale: locale);
     return formatted;
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
   }
 }

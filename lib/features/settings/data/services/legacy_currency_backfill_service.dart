@@ -52,7 +52,8 @@ class LegacyCurrencyBackfillService {
 
   /// Every collection whose mapper falls back to the base currency when a
   /// document has no `currency` (investment, cash-flow, goal and
-  /// expected-cash-flow mappers, active and archived).
+  /// expected-cash-flow mappers, active and archived, and the FIRE
+  /// settings, whose amounts are read in the base currency until stamped).
   static const List<String> collections = [
     'investments',
     'cashflows',
@@ -61,6 +62,7 @@ class LegacyCurrencyBackfillService {
     'goals',
     'archivedGoals',
     'expectedCashFlows',
+    'fireSettings',
   ];
 
   /// Firestore's limit on writes in one batch or transaction.

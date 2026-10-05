@@ -284,6 +284,16 @@ class BatchCurrencyConverter {
     }
   }
 
+  /// The last cached rate from [from] to [to] (any date), or null when
+  /// there is none.
+  Future<double?> getLastKnownRate({
+    required String from,
+    required String to,
+  }) {
+    if (from == to) return Future.value(1.0);
+    return _conversionService.getLastKnownRate(from: from, to: to);
+  }
+
   /// Format date as YYYY-MM-DD (delegates to shared utility)
   String _formatDate(DateTime date) {
     return CurrencyConversionService.formatDate(date);

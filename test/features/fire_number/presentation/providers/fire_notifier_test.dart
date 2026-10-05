@@ -7,6 +7,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_notifier.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
@@ -26,6 +27,7 @@ void main() {
       overrides: [
         fireSettingsRepositoryProvider.overrideWithValue(mockRepository),
         analyticsServiceProvider.overrideWithValue(fakeAnalytics),
+        currencyCodeProvider.overrideWith((ref) => 'INR'),
       ],
     );
   });
@@ -33,6 +35,34 @@ void main() {
   tearDown(() {
     container.dispose();
     fakeAnalytics.reset();
+  });
+
+  // GAP2-01: FIRE amounts are stored with the currency they were entered in,
+  // never defaulting to USD.
+  group('FireSettingsNotifier - currency', () {
+    test('saving settings with no currency stores the base currency', () async {
+      final settings = FireSettingsEntity.defaults(id: 'id', currentAge: 30);
+      expect(settings.currency, isNull);
+
+      await container
+          .read(fireSettingsNotifierProvider.notifier)
+          .saveSettings(settings);
+
+      expect(mockRepository.settings!.currency, 'INR');
+    });
+
+    test('saving settings keeps the currency they already have', () async {
+      final settings = FireSettingsEntity.defaults(
+        id: 'id',
+        currentAge: 30,
+      ).copyWith(currency: 'USD');
+
+      await container
+          .read(fireSettingsNotifierProvider.notifier)
+          .saveSettings(settings);
+
+      expect(mockRepository.settings!.currency, 'USD');
+    });
   });
 
   group('FireSettingsNotifier - Analytics Privacy', () {

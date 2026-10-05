@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// UI-specific extensions for FIRE domain entities.
 /// Keeps domain entities framework-agnostic by moving Color and IconData here.
@@ -31,6 +32,7 @@ extension FireProgressStatusUI on FireProgressStatus {
   Color get color {
     switch (this) {
       case FireProgressStatus.notStarted:
+      case FireProgressStatus.notEnoughHistory:
         return AppColors.neutral500Light;
       case FireProgressStatus.behind:
         return AppColors.warningLight; // Rich Amber #F59E0B
@@ -49,6 +51,7 @@ extension FireProgressStatusUI on FireProgressStatus {
   Color get colorDark {
     switch (this) {
       case FireProgressStatus.notStarted:
+      case FireProgressStatus.notEnoughHistory:
         return AppColors.neutral400Dark;
       case FireProgressStatus.behind:
         return AppColors.warningDark; // Brighter Amber #FBBF24
@@ -83,6 +86,8 @@ extension FireProgressStatusUI on FireProgressStatus {
         return Icons.celebration;
       case FireProgressStatus.coasting:
         return Icons.beach_access;
+      case FireProgressStatus.notEnoughHistory:
+        return Icons.hourglass_top;
     }
   }
 
@@ -91,6 +96,7 @@ extension FireProgressStatusUI on FireProgressStatus {
     switch (this) {
       case FireProgressStatus.notStarted:
       case FireProgressStatus.behind:
+      case FireProgressStatus.notEnoughHistory:
         return false;
       case FireProgressStatus.onTrack:
       case FireProgressStatus.ahead:
@@ -100,21 +106,43 @@ extension FireProgressStatusUI on FireProgressStatus {
     }
   }
 
-  /// Short subtitle for status display
-  String get shortSubtitle {
+  /// Status label for badges, from the app's strings.
+  String label(AppLocalizations l10n) {
     switch (this) {
       case FireProgressStatus.notStarted:
-        return 'Start investing';
+        return l10n.fireStatusNotStarted;
       case FireProgressStatus.behind:
-        return 'Needs focus';
+        return l10n.fireStatusBehind;
       case FireProgressStatus.onTrack:
-        return 'On track';
+        return l10n.fireStatusOnTrack;
       case FireProgressStatus.ahead:
-        return 'Ahead';
+        return l10n.fireStatusAhead;
       case FireProgressStatus.achieved:
-        return 'Achieved!';
+        return l10n.fireStatusAchieved;
       case FireProgressStatus.coasting:
-        return 'Coasting';
+        return l10n.fireStatusCoasting;
+      case FireProgressStatus.notEnoughHistory:
+        return l10n.fireStatusNotEnoughHistory;
+    }
+  }
+
+  /// Short subtitle for status display
+  String shortSubtitle(AppLocalizations l10n) {
+    switch (this) {
+      case FireProgressStatus.notStarted:
+        return l10n.fireStatusShortNotStarted;
+      case FireProgressStatus.behind:
+        return l10n.fireStatusShortBehind;
+      case FireProgressStatus.onTrack:
+        return l10n.fireStatusShortOnTrack;
+      case FireProgressStatus.ahead:
+        return l10n.fireStatusShortAhead;
+      case FireProgressStatus.achieved:
+        return l10n.fireStatusShortAchieved;
+      case FireProgressStatus.coasting:
+        return l10n.fireStatusShortCoasting;
+      case FireProgressStatus.notEnoughHistory:
+        return l10n.fireStatusShortNotEnoughHistory;
     }
   }
 }
