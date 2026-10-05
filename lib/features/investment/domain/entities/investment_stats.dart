@@ -177,23 +177,6 @@ class InvestmentStats {
   /// back in, which [moic] and [absoluteReturn] count once.
   bool get hasReinvestedPayouts => paidInCapital < totalInvested;
 
-  /// Calendar days from the first cash flow to the end of the period [moic]
-  /// covers: the later of the last cash flow and the [currentValueDate] of
-  /// an open investment. Counted on date-only UTC values, so time of day
-  /// and DST changes do not shorten it. Null without cash flows.
-  int? get holdingDays {
-    final first = firstCashFlowDate;
-    var last = lastCashFlowDate;
-    if (first == null || last == null) return null;
-    final valueDate = currentValueDate;
-    if (valueDate != null && valueDate.isAfter(last)) last = valueDate;
-    return DateTime.utc(
-      last.year,
-      last.month,
-      last.day,
-    ).difference(DateTime.utc(first.year, first.month, first.day)).inDays;
-  }
-
   /// [holdingDays] in years.
   double? get durationYears {
     final days = holdingDays;
