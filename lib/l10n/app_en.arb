@@ -6076,5 +6076,61 @@
   "goalArchivedInvestmentsDisclosure": "Archived investments are not counted in goal progress.",
   "@goalArchivedInvestmentsDisclosure": {
     "description": "Goal details: why archived investments are listed but not counted"
+  },
+  "fireStatusNotStarted": "Not Started",
+  "@fireStatusNotStarted": {
+    "description": "FIRE status badge: nothing invested yet"
+  },
+  "fireStatusBehind": "Behind Schedule",
+  "@fireStatusBehind": {
+    "description": "FIRE status badge: the projection misses the target age"
+  },
+  "fireStatusOnTrack": "On Track",
+  "@fireStatusOnTrack": {
+    "description": "FIRE status badge: the projection meets the target age"
+  },
+  "fireStatusAhead": "Ahead of Schedule",
+  "@fireStatusAhead": {
+    "description": "FIRE status badge: the projection beats the target age"
+  },
+  "fireStatusAchieved": "FIRE Achieved!",
+  "@fireStatusAchieved": {
+    "description": "FIRE status badge: the FIRE number is reached"
+  },
+  "fireStatusCoasting": "Coasting",
+  "@fireStatusCoasting": {
+    "description": "FIRE status badge: the Coast FIRE number is reached"
+  },
+  "fireStatusNotEnoughHistory": "Not Enough History",
+  "@fireStatusNotEnoughHistory": {
+    "description": "FIRE status badge: monthly savings cannot be estimated yet, so the status is not known"
+  },
+  "fireStatusShortNotStarted": "Start investing",
+  "@fireStatusShortNotStarted": {
+    "description": "FIRE dashboard: short status under the projected date, nothing invested yet"
+  },
+  "fireStatusShortBehind": "Needs focus",
+  "@fireStatusShortBehind": {
+    "description": "FIRE dashboard: short status under the projected date, behind schedule"
+  },
+  "fireStatusShortOnTrack": "On track",
+  "@fireStatusShortOnTrack": {
+    "description": "FIRE dashboard: short status under the projected date, on track"
+  },
+  "fireStatusShortAhead": "Ahead",
+  "@fireStatusShortAhead": {
+    "description": "FIRE dashboard: short status under the projected date, ahead of schedule"
+  },
+  "fireStatusShortAchieved": "Achieved!",
+  "@fireStatusShortAchieved": {
+    "description": "FIRE dashboard: short status under the projected date, FIRE reached"
+  },
+  "fireStatusShortCoasting": "Coasting",
+  "@fireStatusShortCoasting": {
+    "description": "FIRE dashboard: short status under the projected date, Coast FIRE reached"
+  },
+  "fireStatusShortNotEnoughHistory": "Too early to tell",
+  "@fireStatusShortNotEnoughHistory": {
+    "description": "FIRE dashboard: short status under the projected date, monthly savings cannot be estimated yet"
   }
 }

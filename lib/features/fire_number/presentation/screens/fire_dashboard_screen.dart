@@ -313,7 +313,11 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: AppSpacing.lg),
                 // Status badge
-                _buildStatusBadge(calculation.status, isDark),
+                _buildStatusBadge(
+                  AppLocalizations.of(context),
+                  calculation.status,
+                  isDark,
+                ),
                 SizedBox(height: AppSpacing.md),
                 // Motivational message
                 Text(
@@ -332,7 +336,11 @@ class FireDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusBadge(FireProgressStatus status, bool isDark) {
+  Widget _buildStatusBadge(
+    AppLocalizations l10n,
+    FireProgressStatus status,
+    bool isDark,
+  ) {
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
@@ -352,7 +360,7 @@ class FireDashboardScreen extends ConsumerWidget {
           Icon(status.icon, color: statusColor, size: 18),
           SizedBox(width: AppSpacing.xs),
           Text(
-            status.displayName,
+            status.label(l10n),
             style: AppTypography.bodyMedium.copyWith(
               color: statusColor,
               fontWeight: FontWeight.w600,
@@ -436,7 +444,7 @@ class FireDashboardScreen extends ConsumerWidget {
                 : _savingsUnknown(calculation)
                 ? '—'
                 : l10n.fireNotReachable,
-            subtitle: calculation.status.shortSubtitle,
+            subtitle: calculation.status.shortSubtitle(l10n),
           ),
         ),
         SizedBox(width: AppSpacing.sm),
@@ -545,9 +553,9 @@ class FireDashboardScreen extends ConsumerWidget {
         (notEnoughHistory && !isPositive)) {
       header = l10n.fireNotEnoughHistoryTitle;
     } else if (isPositive) {
-      header = 'You\'re ${status.shortSubtitle.toLowerCase()}!';
+      header = 'You\'re ${status.shortSubtitle(l10n).toLowerCase()}!';
     } else {
-      header = status.displayName;
+      header = status.label(l10n);
     }
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,

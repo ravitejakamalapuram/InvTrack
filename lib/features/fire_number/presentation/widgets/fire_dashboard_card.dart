@@ -157,7 +157,7 @@ class FireDashboardCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  status.displayName,
+                  status.label(l10n),
                   style: AppTypography.caption.copyWith(
                     color: status.color,
                     fontWeight: FontWeight.w600,

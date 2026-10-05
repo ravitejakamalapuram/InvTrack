@@ -3,6 +3,7 @@
 // the monthly savings come from, and asks the user to invest more only when
 // they are short.
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/calculations/planning_inputs_calculator.dart';
@@ -12,8 +13,10 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_e
 import 'package:inv_tracker/features/fire_number/domain/services/fire_calculation_service.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
 import 'package:inv_tracker/features/fire_number/presentation/screens/fire_dashboard_screen.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_dashboard_card.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations_en.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _asOf = DateTime(2026, 10, 2);
@@ -53,11 +56,36 @@ FireCalculationResult _calculate(
   ),
 );
 
+/// The app's strings with the not-enough-history status texts marked, to
+/// show the UI reads them from the ARB file rather than English in code.
+class _MarkedL10n extends AppLocalizationsEn {
+  @override
+  String get fireStatusNotEnoughHistory => '[status: not enough history]';
+
+  @override
+  String get fireStatusShortNotEnoughHistory => '[short: too early]';
+}
+
+class _MarkedL10nDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _MarkedL10nDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async => _MarkedL10n();
+
+  @override
+  bool shouldReload(_MarkedL10nDelegate old) => false;
+}
+
 Future<void> _pump(
   WidgetTester tester,
   FireSettingsEntity settings,
-  FireCalculationResult result,
-) async {
+  FireCalculationResult result, {
+  Widget home = const FireDashboardScreen(),
+  bool markedStrings = false,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   tester.view.physicalSize = const Size(1080, 4000);
@@ -74,10 +102,17 @@ Future<void> _pump(
         fireSettingsProvider.overrideWith((ref) => Stream.value(settings)),
         fireCalculationProvider.overrideWithValue(AsyncValue.data(result)),
       ],
-      child: const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+      child: MaterialApp(
+        localizationsDelegates: markedStrings
+            ? const [
+                _MarkedL10nDelegate(),
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ]
+            : AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: FireDashboardScreen(),
+        home: home,
       ),
     ),
   );
@@ -191,6 +226,8 @@ void main() {
     // Nothing is told from an assumed ₹0 a month (PLAN-02): no status,
     // no projected age or date, no nudge to invest more.
     expect(find.text('Not Enough History'), findsOneWidget);
+    // The heading and the short status under the projected date.
+    expect(find.text('Too early to tell'), findsNWidgets(2));
     expect(find.text('Behind Schedule'), findsNothing);
     expect(find.text('Action Needed'), findsNothing);
     expect(find.textContaining('Boost your monthly investments'), findsNothing);
@@ -297,5 +334,32 @@ void main() {
 
     expect(rateBuilds, 2);
     expect(find.text('Retry'), findsNothing);
+  });
+
+  testWidgets('the not-enough-history status comes from the app strings', (
+    tester,
+  ) async {
+    final settings = _settings();
+    final result = _calculate(
+      settings,
+      corpus: 1000000,
+      savings: 0,
+      source: MonthlySavingsSource.notEnoughHistory,
+    );
+
+    await _pump(tester, settings, result, markedStrings: true);
+    expect(find.text('[status: not enough history]'), findsOneWidget);
+    expect(find.text('[short: too early]'), findsOneWidget);
+    expect(find.text('Not Enough History'), findsNothing);
+
+    await _pump(
+      tester,
+      settings,
+      result,
+      home: const Scaffold(body: FireDashboardCard()),
+      markedStrings: true,
+    );
+    expect(find.text('[status: not enough history]'), findsOneWidget);
+    expect(find.text('Not Enough History'), findsNothing);
   });
 }
