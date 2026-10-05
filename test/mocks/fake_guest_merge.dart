@@ -108,6 +108,9 @@ class RecordingGuestImportService extends Fake implements DataImportService {
   RecordingGuestImportService({this.result = completeGuestImport});
 
   ZipImportResult result;
+
+  /// Thrown instead of returning [result] when set.
+  Object? error;
   final calls = <(Uint8List, ImportStrategy, String)>[];
 
   @override
@@ -117,6 +120,7 @@ class RecordingGuestImportService extends Fake implements DataImportService {
     required String baseCurrency,
   }) async {
     calls.add((zipBytes, strategy, baseCurrency));
+    if (error != null) throw error!;
     return result;
   }
 }

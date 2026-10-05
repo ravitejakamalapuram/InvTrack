@@ -5,7 +5,9 @@ import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
+import 'package:inv_tracker/features/auth/data/services/guest_merge_journal.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 import 'package:inv_tracker/features/auth/presentation/providers/auth_provider.dart';
@@ -62,6 +64,19 @@ class GuestMergeDetailsNotMoved extends GuestMergeOutcome {
   final ZipImportResult result;
 }
 
+/// Result of [GuestBackupMergeService.importSavedBackup].
+enum GuestBackupImport {
+  /// Every record of the backup was added; the backup was deleted.
+  complete,
+
+  /// Some records were not added; the backup is kept.
+  incomplete,
+
+  /// Imported without a problem reported, but the backup was saved before
+  /// its contents were counted, so it is kept.
+  unchecked,
+}
+
 /// Moves a guest's data into a Google account that already exists, used when
 /// linking fails with credential-already-in-use.
 ///
@@ -98,11 +113,28 @@ class GuestBackupMergeService {
   /// not happen. Otherwise it stays on the device, because the guest account
   /// cannot be reached after the sign-in.
   ///
+  /// If the process dies before the backup reaches the Google account,
+  /// [recoverInterruptedMerge] finishes the hand-over at the next launch.
+  ///
   /// Throws if the backup cannot be created or saved, or the sign-in fails;
   /// the guest is then still signed in and nothing has changed.
   Future<GuestMergeOutcome> backupAndSignIn({
     required Future<bool> Function(ZipExport export) confirmDetailsNotMoved,
   }) async {
+    _merging = true;
+    try {
+      return await _backupAndSignIn(confirmDetailsNotMoved);
+    } finally {
+      _merging = false;
+    }
+  }
+
+  /// Whether [backupAndSignIn] is running in this process.
+  bool _merging = false;
+
+  Future<GuestMergeOutcome> _backupAndSignIn(
+    Future<bool> Function(ZipExport export) confirmDetailsNotMoved,
+  ) async {
     final exportService = _ref.read(dataExportServiceProvider);
     final authRepository = _ref.read(authRepositoryProvider);
     final guestId = authRepository.currentUser?.id;
@@ -118,12 +150,28 @@ class GuestBackupMergeService {
     // The guest's base currency, read before the session switch, applies to
     // backup rows that carry no currency of their own.
     final baseCurrency = _ref.read(currencyCodeProvider);
+    final summary = GuestBackupSummary(
+      investments: export.investmentsInExport,
+      cashFlows: export.cashFlows,
+      goals: export.goals,
+      documents: export.documents,
+      hasFireSettings: export.hasFireSettings,
+      baseCurrency: baseCurrency,
+    );
 
     // On disk before the guest session ends, so the only copy of the guest
     // data survives a closed prompt, a timed-out snackbar and process death.
     final store = _ref.read(guestBackupStoreProvider);
     var backupPath = await store.save(backup, ownerId: guestId);
     _ref.invalidate(savedGuestBackupsProvider);
+    final savedPath = backupPath;
+    await _record(
+      (journal) => journal.begin(
+        guestId: guestId,
+        backupPath: savedPath,
+        summary: summary,
+      ),
+    );
 
     final analytics = _ref.read(analyticsServiceProvider);
     await analytics.logEvent(
@@ -139,8 +187,9 @@ class GuestBackupMergeService {
       if (signedIn == guestId) {
         // Nothing changed, so the backup is redundant; a retry makes a new one.
         await _deleteBackup(backupPath);
+        await _record((journal) => journal.clearPending());
       } else if (signedIn != null) {
-        await _transferBackup(backupPath, signedIn);
+        await _handOver(backupPath, signedIn);
       }
       rethrow;
     }
@@ -148,10 +197,11 @@ class GuestBackupMergeService {
       LoggerService.info('Guest backup merge cancelled at Google sign-in');
       // The guest is still signed in with all of their data.
       await _deleteBackup(backupPath);
+      await _record((journal) => journal.clearPending());
       return const GuestMergeCancelled();
     }
     // From here only the Google account may see the backup.
-    backupPath = await _transferBackup(backupPath, googleUser.id);
+    backupPath = await _handOver(backupPath, googleUser.id);
 
     await analytics.logEvent(
       name: 'account_link_failure',
@@ -169,7 +219,7 @@ class GuestBackupMergeService {
         ImportStrategy.merge,
         baseCurrency: baseCurrency,
       );
-      if (!_isComplete(result, export)) {
+      if (!_isComplete(result, summary)) {
         // Counts only: warnings and errors contain investment and goal names.
         LoggerService.warn(
           'Guest backup merge did not import every record',
@@ -212,6 +262,108 @@ class GuestBackupMergeService {
     }
   }
 
+  /// Run when the app starts with [user] signed in. Finishes a merge that
+  /// the process stopped before the backup reached the Google account, and
+  /// returns the guest backups [user] owns that were not offered yet, oldest
+  /// first. Nothing is offered to a guest.
+  ///
+  /// A backup is handed only to a Google account. If the guest who saved it
+  /// is still signed in, the sign-in never happened and the guest still has
+  /// all of their data, so the backup is deleted.
+  Future<List<String>> recoverInterruptedMerge(UserEntity user) async {
+    // A running merge hands its backup over itself.
+    if (_merging) return const [];
+    final journal = _ref.read(guestMergeJournalProvider);
+    final store = _ref.read(guestBackupStoreProvider);
+    final pending = journal.pending;
+    if (pending != null) {
+      if (pending.guestId == user.id) {
+        await _deleteBackup(pending.backupPath);
+        await journal.clearPending();
+      } else if (!user.isAnonymous) {
+        var allMoved = true;
+        for (final backupPath in await store.list(ownerId: pending.guestId)) {
+          final moved = await _transferBackup(backupPath, user.id);
+          if (moved == backupPath) allMoved = false;
+        }
+        // Kept if a hand-over failed, so the next launch tries again.
+        if (allMoved) await journal.clearPending();
+      }
+    }
+    if (user.isAnonymous) return const [];
+    return [
+      for (final backupPath in await store.list(ownerId: user.id))
+        if (!journal.wasOffered(backupPath)) backupPath,
+    ];
+  }
+
+  /// Records that the user answered the launch notice for [backupPath], so
+  /// it is not offered again.
+  Future<void> markOffered(String backupPath) =>
+      _ref.read(guestMergeJournalProvider).markOffered(backupPath);
+
+  /// Imports a kept guest backup into the signed-in account with
+  /// [ImportStrategy.merge], checked the same way as the merge right after
+  /// sign-in. The backup is deleted only when every record was added.
+  Future<GuestBackupImport> importSavedBackup(String backupPath) async {
+    final importService = _ref.read(dataImportServiceProvider);
+    if (importService == null) {
+      throw StateError('No signed-in user to import the guest backup into');
+    }
+    final expected = _ref.read(guestMergeJournalProvider).summaryOf(backupPath);
+    final bytes = await _ref.read(guestBackupReaderProvider)(backupPath);
+    final result = await importService.importFromZip(
+      bytes,
+      ImportStrategy.merge,
+      baseCurrency: expected?.baseCurrency ?? _ref.read(currencyCodeProvider),
+    );
+    final problems = result.hasErrors || result.warnings.isNotEmpty;
+    if (expected == null) {
+      return problems
+          ? GuestBackupImport.incomplete
+          : GuestBackupImport.unchecked;
+    }
+    if (!_isComplete(result, expected)) {
+      // Counts only: warnings and errors contain investment and goal names.
+      LoggerService.warn(
+        'Saved guest backup import did not add every record',
+        metadata: {
+          'errorCount': result.errors.length,
+          'warningCount': result.warnings.length,
+        },
+      );
+      return GuestBackupImport.incomplete;
+    }
+    await _deleteBackup(backupPath);
+    return GuestBackupImport.complete;
+  }
+
+  /// Hands the backup to [ownerId] and, once it is there, clears the
+  /// pending merge. Returns the backup's path.
+  Future<String> _handOver(String backupPath, String ownerId) async {
+    final moved = await _transferBackup(backupPath, ownerId);
+    if (moved != backupPath) {
+      await _record((journal) => journal.clearPending());
+    }
+    return moved;
+  }
+
+  /// Updates the journal that lets a later launch finish this merge. Best
+  /// effort: without it the merge itself still works.
+  Future<void> _record(
+    Future<void> Function(GuestMergeJournal journal) update,
+  ) async {
+    try {
+      await update(_ref.read(guestMergeJournalProvider));
+    } catch (e, st) {
+      LoggerService.warn(
+        'Could not record the guest merge for recovery',
+        metadata: {'errorType': e.runtimeType.toString()},
+        stackTrace: st,
+      );
+    }
+  }
+
   /// Signs in to the Google account the guest picked when linking failed,
   /// without asking again, or asks with [AuthRepository.signInWithGoogle]
   /// when that credential is missing or Firebase rejects it.
@@ -238,6 +390,7 @@ class GuestBackupMergeService {
         stackTrace: st,
       );
     }
+    await _record((journal) => journal.forget(backupPath));
     _ref.invalidate(savedGuestBackupsProvider);
   }
 
@@ -261,19 +414,22 @@ class GuestBackupMergeService {
     }
   }
 
-  /// Whether [result] added every record of [export]. Merge reports skipped
-  /// duplicates and failed documents or FIRE settings only as warnings, so
-  /// the counts are compared as well. Investments without cash flows are not
-  /// in the backup (the guest was warned about them), so they are not
-  /// expected.
-  static bool _isComplete(ZipImportResult result, ZipExport export) =>
+  /// Whether [result] added every record the backup holds. Merge reports
+  /// skipped duplicates and failed documents or FIRE settings only as
+  /// warnings, so the counts are compared as well. Investments without cash
+  /// flows are not in the backup (the guest was warned about them), so they
+  /// are not expected.
+  static bool _isComplete(
+    ZipImportResult result,
+    GuestBackupSummary expected,
+  ) =>
       !result.hasErrors &&
       result.warnings.isEmpty &&
-      result.investmentsImported == export.investmentsInExport &&
-      result.cashflowsImported == export.cashFlows &&
-      result.goalsImported == export.goals &&
-      result.documentsImported == export.documents &&
-      (!export.hasFireSettings || result.fireSettingsImported);
+      result.investmentsImported == expected.investments &&
+      result.cashflowsImported == expected.cashFlows &&
+      result.goalsImported == expected.goals &&
+      result.documentsImported == expected.documents &&
+      (!expected.hasFireSettings || result.fireSettingsImported);
 
   /// Opens the share sheet for the backup of a [GuestMergeImportFailed].
   /// Sharing does not delete it: only the user can say they have saved it
@@ -291,9 +447,13 @@ class GuestBackupMergeService {
   /// Deletes every guest backup the signed-in account owns, after the user
   /// confirmed it.
   Future<void> deleteSavedBackups() async {
-    await _ref
-        .read(guestBackupStoreProvider)
-        .deleteAll(ownerId: _signedInUserId());
+    final store = _ref.read(guestBackupStoreProvider);
+    final userId = _signedInUserId();
+    final paths = await store.list(ownerId: userId);
+    await store.deleteAll(ownerId: userId);
+    for (final backupPath in paths) {
+      await _record((journal) => journal.forget(backupPath));
+    }
     _ref.invalidate(savedGuestBackupsProvider);
   }
 
@@ -342,6 +502,17 @@ final guestBackupMergeServiceProvider = Provider<GuestBackupMergeService>(
 /// Guest backups kept in app-private storage (not in Android Auto Backup).
 final guestBackupStoreProvider = Provider<GuestBackupStore>(
   (ref) => FileGuestBackupStore(getApplicationSupportDirectory),
+);
+
+/// The guest merge in progress and what each guest backup holds, kept
+/// across process death.
+final guestMergeJournalProvider = Provider<GuestMergeJournal>(
+  (ref) => GuestMergeJournal(ref.watch(sharedPreferencesProvider)),
+);
+
+/// Reads a kept guest backup, for [GuestBackupMergeService.importSavedBackup].
+final guestBackupReaderProvider = Provider<GuestBackupReader>(
+  (ref) => FileGuestBackupStore(getApplicationSupportDirectory).read,
 );
 
 /// Paths of the guest backups the signed-in account owns on this device, for
