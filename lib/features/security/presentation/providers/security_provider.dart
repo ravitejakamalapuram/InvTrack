@@ -33,6 +33,20 @@ final securityServiceProvider = Provider<SecurityService>((ref) {
   );
 });
 
+/// True from a resume until the auto-lock check has decided. The check waits
+/// for a [SecurityClock] reading, so the privacy cover stays up meanwhile:
+/// no frame of the portfolio may show, or take taps, before the lock. Kept
+/// out of [SecurityState] because the router rebuilds on every change there.
+final autoLockCheckPendingProvider =
+    NotifierProvider<AutoLockCheckPending, bool>(AutoLockCheckPending.new);
+
+class AutoLockCheckPending extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool pending) => state = pending;
+}
+
 /// A [SecurityClock] reading, taken when it was asked for. Readings are
 /// asynchronous; holding the future keeps their order even when the app
 /// resumes before the pause reading has arrived.
@@ -80,6 +94,10 @@ class SecurityNotifier extends Notifier<SecurityState>
   // Secure storage failed with no has_pin mirror, so whether a PIN is set is
   // not known; the next resume reads storage again.
   bool _pinStateUnknown = false;
+
+  // Counts auto-lock checks, so an older one that finishes late does not lift
+  // the privacy cover while a newer one is still deciding.
+  int _autoLockChecks = 0;
 
   // Grace period after unlock before auto-lock can trigger again
   // This prevents re-locking during app switches immediately after unlock
@@ -204,6 +222,19 @@ class SecurityNotifier extends Notifier<SecurityState>
     // Don't lock if no PIN or already locked
     if (!state.hasPin || state.isLocked) return;
 
+    // Set before the first frame after the resume, cleared in the same
+    // microtask as the lock, so the cover goes when the lock screen comes.
+    final check = ++_autoLockChecks;
+    final pending = ref.read(autoLockCheckPendingProvider.notifier)..set(true);
+    try {
+      await _decideAutoLock();
+    } finally {
+      // A newer check still deciding keeps the cover up.
+      if (ref.mounted && check == _autoLockChecks) pending.set(false);
+    }
+  }
+
+  Future<void> _decideAutoLock() async {
     // Decide on what the app knew when it resumed. The clock answers
     // asynchronously, so read every time before deciding.
     final suspended = _isAutoLockSuspended;
