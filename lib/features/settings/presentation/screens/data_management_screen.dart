@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/error/error_handler.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
@@ -19,6 +20,7 @@ import 'package:inv_tracker/features/settings/data/providers/data_export_provide
 import 'package:inv_tracker/features/settings/data/providers/data_import_provider.dart';
 import 'package:inv_tracker/features/settings/data/services/account_deletion_flow.dart';
 import 'package:inv_tracker/features/settings/data/services/data_import_service.dart';
+import 'package:inv_tracker/features/settings/presentation/providers/deletion_request_status_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/export_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/features/settings/presentation/widgets/deletion_request_banner.dart';
@@ -479,12 +481,17 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
     ScaffoldMessengerState scaffoldMessenger, {
     bool fromGuestTile = false,
   }) async {
-    // Proceed with deletion
+    // Proceed with deletion. The banner hides its Withdraw button until the
+    // flow ends, on every screen.
+    final inProgress = ref.read(deletionInProgressProvider.notifier)..start();
     setState(() => _isDeleting = true);
 
     try {
       final authRepo = ref.read(authRepositoryProvider);
       final isGuest = ref.read(authStateProvider).value?.isAnonymous ?? false;
+      final dataDeletion = ref.read(accountDataDeletionServiceProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
+      final deleteLocalFiles = _localFilesDeleter();
 
       final outcome = await AccountDeletionFlow(
         auth: authRepo,
@@ -492,7 +499,17 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         requests: ref.read(deletionRequestServiceProvider),
         prepareGoogleSignIn: () =>
             ref.read(googleSignInInitializedProvider.future),
-        deleteUserData: _deleteAllUserData,
+        // Server-confirmed wipe of every users/{uid} collection, then this
+        // device's copy. Throws (NetworkException when offline) if the server
+        // cannot confirm; the flow then leaves the deletion to the job.
+        deleteUserData: () => dataDeletion.deleteEverything(
+          deleteLocalFiles: deleteLocalFiles,
+          prefs: prefs,
+        ),
+        deleteLocalData: () => dataDeletion.deleteLocalData(
+          deleteLocalFiles: deleteLocalFiles,
+          prefs: prefs,
+        ),
       ).run();
 
       if (outcome != AccountDeletionOutcome.deleted) {
@@ -574,38 +591,27 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
         );
       }
     } finally {
+      inProgress.finish();
       if (mounted) {
         setState(() => _isDeleting = false);
       }
     }
   }
 
-  Future<void> _deleteAllUserData() async {
-    // Get current user ID
-    final authState = ref.read(authStateProvider);
-    final user = authState.value;
+  /// Deletes this account's local attachment files and any guest backups it
+  /// owns. Everything it needs is read now, before the flow's first await.
+  Future<void> Function() _localFilesDeleter() {
+    final user = ref.read(authStateProvider).value;
     if (user == null) {
       throw StateError('User not authenticated');
     }
-
-    // Server-confirmed wipe of every users/{uid} collection (investments,
-    // cashflows, archived items, goals, expectedCashFlows, documents,
-    // healthScores, fireSettings, profile, exchangeRates), then the local
-    // attachment files, any guest backups this account owns, and per-user
-    // preferences. Throws (NetworkException when offline) if the server
-    // cannot confirm, in which case the caller must NOT delete the Auth
-    // account or report success.
-    final deletionService = ref.read(accountDataDeletionServiceProvider);
     final documentStorageService = ref.read(documentStorageServiceProvider);
     final guestBackupStore = ref.read(guestBackupStoreProvider);
-    await deletionService.deleteEverything(
-      deleteLocalFiles: () async {
-        await documentStorageService.deleteAllUserDocuments();
-        await guestBackupStore.deleteAll(ownerId: user.id);
-        if (mounted) ref.invalidate(savedGuestBackupsProvider);
-      },
-      prefs: ref.read(sharedPreferencesProvider),
-    );
+    return () async {
+      await documentStorageService.deleteAllUserDocuments();
+      await guestBackupStore.deleteAll(ownerId: user.id);
+      if (mounted) ref.invalidate(savedGuestBackupsProvider);
+    };
   }
 }
 
@@ -628,7 +634,19 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
     try {
       await widget.exportBackup();
     } catch (e, st) {
-      if (mounted) ErrorHandler.handle(e, st, context: context);
+      // Mapped here: share_plus fails with a PlatformException, which the
+      // generic mapping reports as a failed sign-in. Type only, no message:
+      // it can hold a file path (rule 7).
+      if (mounted) {
+        ErrorHandler.handle(
+          DataException(
+            userMessage: AppLocalizations.of(context).exportFailureMessage,
+            technicalMessage: 'Backup export failed (${e.runtimeType})',
+          ),
+          st,
+          context: context,
+        );
+      }
     } finally {
       if (mounted) setState(() => _exporting = false);
     }

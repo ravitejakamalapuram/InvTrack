@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
@@ -144,6 +145,12 @@ void main() {
         prefs: any(named: 'prefs'),
       ),
     ).thenAnswer((_) async => calls.add('wipe'));
+    when(
+      () => dataDeletion.deleteLocalData(
+        deleteLocalFiles: any(named: 'deleteLocalFiles'),
+        prefs: any(named: 'prefs'),
+      ),
+    ).thenAnswer((_) async => calls.add('wipeLocal'));
     when(
       () => export.exportAndShare(),
     ).thenAnswer((_) async => calls.add('export'));
@@ -403,7 +410,16 @@ void main() {
 
     await confirmDeletion(tester, l10n);
 
-    expect(calls, ['init', 'reauth', 'request', 'wipe', 'signOut']);
+    // The request is filed, so this device's copy is not kept for a retry:
+    // the server job cannot reach it.
+    expect(calls, [
+      'init',
+      'reauth',
+      'request',
+      'wipe',
+      'wipeLocal',
+      'signOut',
+    ]);
     verifyNever(() => auth.deleteAccount());
     verifyNever(() => requests.withdraw());
     verify(() => auth.signOut()).called(1);
@@ -497,6 +513,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(inDialog(find.text('Delete Account')), findsOneWidget);
+      expect(inDialog(find.text('Delete Everything')), findsOneWidget);
+      expect(find.text('Failed to export data'), findsOneWidget);
+      expectNothingFiledOrDeleted();
+    });
+
+    // share_plus reports its failures as PlatformException, which the
+    // generic error mapping reads as a failed Google sign-in.
+    testWidgets('a share sheet failure says the export failed, not that '
+        'sign-in failed', (tester) async {
+      when(() => export.exportAndShare()).thenThrow(
+        PlatformException(code: 'error', message: 'Share callback error'),
+      );
+      await pumpScreen(tester);
+      await openDeleteDialog(tester);
+
+      await tester.tap(find.text('Export a backup first'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Failed to export data'), findsOneWidget);
+      expect(find.textContaining('Sign in failed'), findsNothing);
       expect(inDialog(find.text('Delete Everything')), findsOneWidget);
       expectNothingFiledOrDeleted();
     });

@@ -111,6 +111,26 @@ void main() {
     });
   });
 
+  // A88: Firestore drops a deleted document from this device's view at once
+  // and never flags it as a pending write, so a withdrawal that timed out is
+  // only known to have reached the server once every queued write has.
+  group('pendingWritesSent', () {
+    test('true once the server has acknowledged every queued write', () async {
+      when(() => firestore.waitForPendingWrites()).thenAnswer((_) async {});
+
+      expect(await service.pendingWritesSent(), isTrue);
+      verify(() => firestore.waitForPendingWrites()).called(1);
+    });
+
+    test('false instead of throwing when Firestore stops waiting', () async {
+      when(
+        () => firestore.waitForPendingWrites(),
+      ).thenThrow(FirebaseException(plugin: 'firestore', code: 'cancelled'));
+
+      expect(await service.pendingWritesSent(), isFalse);
+    });
+  });
+
   group('hasRequest', () {
     test('true when the doc exists', () async {
       stubExists(true);

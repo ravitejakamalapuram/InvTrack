@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/theme/app_colors.dart';
 import 'package:inv_tracker/core/theme/app_spacing.dart';
 import 'package:inv_tracker/core/theme/app_typography.dart';
@@ -11,7 +10,8 @@ import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 /// Persistent notice, with a Withdraw action, for as long as a
 /// `deletionRequests/{uid}` document exists. Unlike the one-off sign-in
 /// notice, it stays on screen, so a user who keeps adding data knows the
-/// deletion job will remove it. Shows nothing otherwise.
+/// deletion job will remove it. Shows nothing otherwise, or while this
+/// device is running the deletion itself.
 class DeletionRequestBanner extends ConsumerStatefulWidget {
   const DeletionRequestBanner({super.key});
 
@@ -25,16 +25,20 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
 
   @override
   Widget build(BuildContext context) {
-    // Loading, a listen error or no request: nothing to tell the user.
-    return ref
-        .watch(deletionRequestStatusProvider)
-        .when(
-          data: (status) => status == DeletionRequestStatus.none
-              ? const SizedBox.shrink()
-              : _buildBanner(context, status),
-          loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
-        );
+    // Watch everything first so the live status keeps flowing while hidden.
+    final live = ref.watch(deletionRequestStatusProvider).value;
+    final held = ref.watch(deletionWithdrawalProvider);
+    final deleting = ref.watch(deletionInProgressProvider);
+
+    // Loading, a listen error or no request reads as nothing to tell, unless
+    // a withdrawal has not reached the server yet.
+    final status = live == null || live == DeletionRequestStatus.none
+        ? held
+        : live;
+    if (deleting || status == null || status == DeletionRequestStatus.none) {
+      return const SizedBox.shrink();
+    }
+    return _buildBanner(context, status);
   }
 
   Widget _buildBanner(BuildContext context, DeletionRequestStatus status) {
@@ -60,6 +64,8 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.errorLight.withValues(alpha: 0.3)),
       ),
+      // The message (a live region) and the Withdraw button stay separate
+      // nodes: Flutter keeps a focusable button out of a merged node anyway.
       child: Semantics(
         container: true,
         child: Row(
@@ -82,7 +88,7 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
               ),
             ),
             TextButton(
-              onPressed: _withdrawing ? null : _withdraw,
+              onPressed: _withdrawing ? null : () => _withdraw(status),
               child: Text(l10n.deletionScheduledWithdraw),
             ),
           ],
@@ -91,11 +97,13 @@ class _DeletionRequestBannerState extends ConsumerState<DeletionRequestBanner> {
     );
   }
 
-  Future<void> _withdraw() async {
+  Future<void> _withdraw(DeletionRequestStatus shown) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.maybeOf(context);
     setState(() => _withdrawing = true);
-    final withdrawn = await ref.read(deletionRequestServiceProvider).withdraw();
+    final withdrawn = await ref
+        .read(deletionWithdrawalProvider.notifier)
+        .withdraw(shown);
     if (mounted) setState(() => _withdrawing = false);
     messenger?.showSnackBar(
       SnackBar(

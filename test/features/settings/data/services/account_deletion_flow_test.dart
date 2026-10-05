@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/analytics/crashlytics_service.dart';
 import 'package:inv_tracker/core/error/app_exception.dart';
+import 'package:inv_tracker/core/logging/logger_service.dart';
 import 'package:inv_tracker/features/auth/domain/repositories/auth_repository.dart';
 import 'package:inv_tracker/features/settings/data/services/account_deletion_flow.dart';
 import 'package:inv_tracker/features/settings/data/services/deletion_request_service.dart';
@@ -10,6 +15,8 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockDeletionRequestService extends Mock
     implements DeletionRequestService {}
+
+class MockFirebaseCrashlytics extends Mock implements FirebaseCrashlytics {}
 
 void main() {
   final now = DateTime.utc(2026, 10, 2, 12);
@@ -21,6 +28,7 @@ void main() {
   late bool sessionFresh;
   late Future<void> Function() prepareGoogleSignIn;
   late Future<void> Function() deleteUserData;
+  late Future<void> Function() deleteLocalData;
 
   AccountDeletionFlow flow({bool isAnonymous = false}) => AccountDeletionFlow(
     auth: auth,
@@ -28,6 +36,7 @@ void main() {
     requests: requests,
     prepareGoogleSignIn: prepareGoogleSignIn,
     deleteUserData: deleteUserData,
+    deleteLocalData: deleteLocalData,
     now: () => now,
   );
 
@@ -56,6 +65,7 @@ void main() {
     sessionFresh = false;
     prepareGoogleSignIn = () async => calls.add('init');
     deleteUserData = () async => calls.add('wipe');
+    deleteLocalData = () async => calls.add('wipeLocal');
 
     // Firebase refuses to delete the Auth user until the sign-in is recent.
     when(() => auth.deleteAccount()).thenAnswer((_) async {
@@ -277,7 +287,7 @@ void main() {
       };
 
       expect(await flow().run(), AccountDeletionOutcome.scheduled);
-      expect(calls, ['request', 'wipe']);
+      expect(calls, ['request', 'wipe', 'wipeLocal']);
       verifyNever(() => requests.withdraw());
       verifyNever(() => auth.deleteAccount());
     });
@@ -290,10 +300,75 @@ void main() {
       };
 
       expect(await flow().run(), AccountDeletionOutcome.scheduled);
-      expect(calls, ['request', 'wipe']);
+      expect(calls, ['request', 'wipe', 'wipeLocal']);
       verifyNever(() => requests.withdraw());
       verifyNever(() => auth.deleteAccount());
     });
+
+    test('a failing cleanup of this device after a failed wipe is still '
+        'scheduled', () async {
+      deleteUserData = () async {
+        calls.add('wipe');
+        throw NetworkException.noConnection();
+      };
+      deleteLocalData = () async {
+        calls.add('wipeLocal');
+        throw const FileSystemException('Deletion failed');
+      };
+
+      expect(await flow().run(), AccountDeletionOutcome.scheduled);
+      expect(calls, ['request', 'wipe', 'wipeLocal']);
+      verifyNever(() => requests.withdraw());
+    });
+
+    // Rule 7: a wipe error can carry a device path (documents/<uid>).
+    test(
+      'a failed wipe reaches Crashlytics without its message or path',
+      () async {
+        registerFallbackValue(StackTrace.empty);
+        registerFallbackValue(const <Object>[]);
+        final crashlytics = MockFirebaseCrashlytics();
+        when(
+          () => crashlytics.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+            fatal: any(named: 'fatal'),
+            information: any(named: 'information'),
+          ),
+        ).thenAnswer((_) async {});
+        CrashlyticsService.enableInDebugMode = true;
+        LoggerService.crashlyticsServiceForTesting = CrashlyticsService(
+          debugModeEnabled: true,
+          crashlytics: crashlytics,
+        );
+        addTearDown(() {
+          CrashlyticsService.enableInDebugMode = false;
+          LoggerService.crashlyticsServiceForTesting = null;
+        });
+        const path = '/data/user/0/com.invtracker.inv_tracker/documents/uid-1';
+        deleteUserData = () async =>
+            throw const FileSystemException('Deletion failed', path);
+
+        expect(await flow().run(), AccountDeletionOutcome.scheduled);
+        await Future<void>.delayed(Duration.zero);
+
+        final sent = verify(
+          () => crashlytics.recordError(
+            captureAny(),
+            any(),
+            reason: captureAny(named: 'reason'),
+            fatal: any(named: 'fatal'),
+            information: any(named: 'information'),
+          ),
+        ).captured;
+        expect(sent, isNotEmpty);
+        for (final value in sent) {
+          expect('$value', isNot(contains(path)));
+          expect('$value', isNot(contains('Deletion failed')));
+        }
+      },
+    );
 
     test('a network failure deleting the Auth user after the wipe keeps the '
         'request and reports the deletion as scheduled', () async {

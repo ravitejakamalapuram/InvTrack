@@ -82,7 +82,9 @@ class DeletionRequestService {
   /// Follows the request live. Metadata changes are included, so a request
   /// saved offline moves from [DeletionRequestStatus.pending] to
   /// [DeletionRequestStatus.confirmed] once the server acknowledges it.
-  /// Listen errors are passed on.
+  /// A withdrawal reads as [DeletionRequestStatus.none] as soon as it is
+  /// issued, even offline (see [pendingWritesSent]). Listen errors are passed
+  /// on.
   Stream<DeletionRequestStatus> watchStatus() => _doc
       .snapshots(includeMetadataChanges: true)
       .map(
@@ -92,6 +94,25 @@ class DeletionRequestService {
             ? DeletionRequestStatus.pending
             : DeletionRequestStatus.confirmed,
       );
+
+  /// Completes with true once the server has acknowledged every write
+  /// queued on this device, such as a [withdraw] that timed out. Firestore
+  /// drops a deleted document from [watchStatus] as soon as the delete is
+  /// issued and does not flag it as a pending write, so this is the only
+  /// sign that a queued withdrawal reached the server. False if Firestore
+  /// stops waiting (e.g. the user changed). Never throws; no timeout.
+  Future<bool> pendingWritesSent() async {
+    try {
+      await _firestore.waitForPendingWrites();
+      return true;
+    } catch (e) {
+      LoggerService.warn(
+        'Stopped waiting for queued writes',
+        metadata: {'errorType': e.runtimeType.toString()},
+      );
+      return false;
+    }
+  }
 
   /// Files a request with source `app`. Returns true only when THIS call
   /// created it and the server acknowledged the write, so the caller knows

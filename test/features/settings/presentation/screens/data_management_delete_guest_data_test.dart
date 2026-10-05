@@ -3,6 +3,7 @@
 /// and every outcome is reported truthfully.
 library;
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
+import 'package:inv_tracker/core/error/app_exception.dart';
 import 'package:inv_tracker/core/providers/shared_preferences_provider.dart';
 import 'package:inv_tracker/features/auth/data/services/guest_backup_store.dart';
 import 'package:inv_tracker/features/auth/domain/entities/user_entity.dart';
@@ -106,9 +108,15 @@ void main() {
         prefs: any(named: 'prefs'),
       ),
     ).thenAnswer((_) async => calls.add('wipe'));
+    when(
+      () => dataDeletion.deleteLocalData(
+        deleteLocalFiles: any(named: 'deleteLocalFiles'),
+        prefs: any(named: 'prefs'),
+      ),
+    ).thenAnswer((_) async => calls.add('wipeLocal'));
   });
 
-  Future<void> deleteGuestData(WidgetTester tester) async {
+  Future<void> openAndConfirm(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -140,6 +148,10 @@ void main() {
     await tester.tap(find.text(en.deleteGuestData));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, en.deleteGuestData));
+  }
+
+  Future<void> deleteGuestData(WidgetTester tester) async {
+    await openAndConfirm(tester);
     await tester.pumpAndSettle();
   }
 
@@ -234,5 +246,71 @@ void main() {
       find.text('Guest data and anonymous account deleted successfully'),
       findsOneWidget,
     );
+  });
+
+  // A guest cannot sign back in, so nothing could ever remove this device's
+  // copy (attachments, guest backup ZIPs, per-user preferences) later.
+  testWidgets('a server wipe failing after the request was filed still '
+      "removes this device's copy before signing out", (tester) async {
+    when(
+      () => dataDeletion.deleteEverything(
+        deleteLocalFiles: any(named: 'deleteLocalFiles'),
+        prefs: any(named: 'prefs'),
+      ),
+    ).thenAnswer((_) async {
+      calls.add('wipe');
+      throw NetworkException.noConnection();
+    });
+
+    await deleteGuestData(tester);
+
+    expect(calls, ['request', 'wipe', 'wipeLocal', 'signOut']);
+    verifyNever(() => auth.deleteAccount());
+    verifyNever(() => requests.withdraw());
+    expect(
+      find.text(
+        'Your guest data and anonymous account are scheduled for deletion '
+        'and will be fully deleted within 7 days.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  // Withdrawing mid-wipe would leave no request for the server job, yet a
+  // failing wipe would still be reported as scheduled.
+  testWidgets('Withdraw is not offered while the deletion is running', (
+    tester,
+  ) async {
+    final status = StreamController<DeletionRequestStatus>.broadcast();
+    addTearDown(status.close);
+    final wipe = Completer<void>();
+    when(() => requests.watchStatus()).thenAnswer((_) => status.stream);
+    when(() => requests.requestDeletion()).thenAnswer((_) async {
+      calls.add('request');
+      status.add(DeletionRequestStatus.confirmed);
+      return true;
+    });
+    when(
+      () => dataDeletion.deleteEverything(
+        deleteLocalFiles: any(named: 'deleteLocalFiles'),
+        prefs: any(named: 'prefs'),
+      ),
+    ).thenAnswer((_) {
+      calls.add('wipe');
+      return wipe.future;
+    });
+
+    await openAndConfirm(tester);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+
+    expect(calls, ['request', 'wipe']);
+    expect(find.text('Withdraw request'), findsNothing);
+
+    wipe.complete();
+    await tester.pumpAndSettle();
+    expect(calls, ['request', 'wipe', 'deleteAuth', 'signOut']);
+    verifyNever(() => requests.withdraw());
   });
 }

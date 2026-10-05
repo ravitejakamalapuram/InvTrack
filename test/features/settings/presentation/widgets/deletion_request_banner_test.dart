@@ -43,6 +43,9 @@ class _NoGuestBackups extends Fake implements GuestBackupStore {
 const _scheduled = 'Your account is scheduled for deletion.';
 const _pending = "Your deletion request will be sent when you're online.";
 const _withdraw = 'Withdraw request';
+const _withdrawn = 'Deletion request withdrawn. Your account is kept.';
+const _withdrawFailed =
+    'Could not withdraw the request. Check your connection and try again.';
 
 void main() {
   late MockDeletionRequestService requests;
@@ -100,6 +103,15 @@ void main() {
     await tester.pump();
   }
 
+  /// The message is read on its own, then Withdraw as a button (A88).
+  void expectMessageAndWithdrawButton(WidgetTester tester, String message) {
+    expect(find.bySemanticsLabel(message), findsOneWidget);
+    expect(
+      tester.getSemantics(find.widgetWithText(TextButton, _withdraw)),
+      containsSemantics(label: _withdraw, isButton: true, hasTapAction: true),
+    );
+  }
+
   final screens = <String, Widget>{
     'Overview': const OverviewScreen(),
     'Data & Account': const DataManagementScreen(),
@@ -115,11 +127,7 @@ void main() {
 
       expect(find.byType(DeletionRequestBanner), findsOneWidget);
       expect(find.text(_scheduled), findsOneWidget);
-      expect(find.bySemanticsLabel(_scheduled), findsOneWidget);
-      expect(
-        tester.getSemantics(find.widgetWithText(TextButton, _withdraw)),
-        containsSemantics(label: _withdraw, isButton: true),
-      );
+      expectMessageAndWithdrawButton(tester, _scheduled);
       semantics.dispose();
     });
 
@@ -147,8 +155,7 @@ void main() {
     await emit(tester, DeletionRequestStatus.pending);
 
     expect(find.text(_pending), findsOneWidget);
-    expect(find.bySemanticsLabel(_pending), findsOneWidget);
-    expect(find.text(_withdraw), findsOneWidget);
+    expectMessageAndWithdrawButton(tester, _pending);
     expect(find.text(_scheduled), findsNothing);
     semantics.dispose();
   });
@@ -172,30 +179,126 @@ void main() {
     verify(() => requests.withdraw()).called(1);
     expect(find.text(_scheduled), findsNothing);
     expect(find.text(_withdraw), findsNothing);
-    expect(
-      find.text('Deletion request withdrawn. Your account is kept.'),
-      findsOneWidget,
-    );
+    expect(find.text(_withdrawn), findsOneWidget);
   });
 
-  testWidgets('a failed withdrawal keeps the banner and says to try again', (
-    tester,
-  ) async {
-    when(() => requests.withdraw()).thenAnswer((_) async => false);
-    await pumpBanner(tester);
-    await emit(tester, DeletionRequestStatus.confirmed);
+  // Firestore removes the document from this device's view as soon as the
+  // delete is issued, and does not flag a deleted document as a pending
+  // write, so the live status reads "no request" while the server may still
+  // hold it.
+  void withdrawFailsAfterLocalDelete() =>
+      when(() => requests.withdraw()).thenAnswer((_) async {
+        statuses.add(DeletionRequestStatus.none);
+        return false;
+      });
 
+  Future<void> tapWithdraw(WidgetTester tester) async {
     await tester.tap(find.text(_withdraw));
     await tester.pump();
     await tester.pump();
+  }
+
+  testWidgets('a withdrawal the server has not confirmed keeps the banner and '
+      'its Withdraw button, and says to try again', (tester) async {
+    withdrawFailsAfterLocalDelete();
+    when(
+      () => requests.pendingWritesSent(),
+    ).thenAnswer((_) => Completer<bool>().future);
+    await pumpBanner(tester);
+    await emit(tester, DeletionRequestStatus.confirmed);
+
+    await tapWithdraw(tester);
 
     verify(() => requests.withdraw()).called(1);
     expect(find.text(_scheduled), findsOneWidget);
     expect(
-      find.text(
-        'Could not withdraw the request. Check your connection and try again.',
-      ),
-      findsOneWidget,
+      tester
+          .widget<TextButton>(find.widgetWithText(TextButton, _withdraw))
+          .onPressed,
+      isNotNull,
     );
+    expect(find.text(_withdrawFailed), findsOneWidget);
+
+    // Back online, trying again works and removes the banner.
+    when(() => requests.withdraw()).thenAnswer((_) async => true);
+    tester
+        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
+        .removeCurrentSnackBar();
+    await tapWithdraw(tester);
+
+    expect(find.text(_scheduled), findsNothing);
+    expect(find.text(_withdraw), findsNothing);
+    expect(find.text(_withdrawn), findsOneWidget);
+  });
+
+  testWidgets('the banner goes once the queued withdrawal reaches the '
+      'server', (tester) async {
+    final sent = Completer<bool>();
+    withdrawFailsAfterLocalDelete();
+    when(() => requests.pendingWritesSent()).thenAnswer((_) => sent.future);
+    await pumpBanner(tester);
+    await emit(tester, DeletionRequestStatus.confirmed);
+    await tapWithdraw(tester);
+    expect(find.text(_scheduled), findsOneWidget);
+
+    sent.complete(true);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(_scheduled), findsNothing);
+    expect(find.text(_withdraw), findsNothing);
+  });
+
+  testWidgets('a withdrawal the server has not confirmed is still shown after '
+      'leaving and reopening the screen', (tester) async {
+    final show = ValueNotifier(true);
+    addTearDown(show.dispose);
+    withdrawFailsAfterLocalDelete();
+    when(
+      () => requests.pendingWritesSent(),
+    ).thenAnswer((_) => Completer<bool>().future);
+    await pumpApp(
+      tester,
+      Scaffold(
+        body: ValueListenableBuilder<bool>(
+          valueListenable: show,
+          builder: (_, visible, _) =>
+              visible ? const DeletionRequestBanner() : const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await emit(tester, DeletionRequestStatus.confirmed);
+    await tapWithdraw(tester);
+
+    show.value = false;
+    await tester.pump();
+    expect(find.text(_scheduled), findsNothing);
+    show.value = true;
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(_scheduled), findsOneWidget);
+    expect(find.text(_withdraw), findsOneWidget);
+  });
+
+  // Withdrawing while Delete Account runs would let the wipe go on with no
+  // request left for the server job, and then report it as scheduled.
+  testWidgets('nothing is offered while a deletion is running on this '
+      'device', (tester) async {
+    await pumpBanner(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(DeletionRequestBanner)),
+    );
+    container.read(deletionInProgressProvider.notifier).start();
+    await emit(tester, DeletionRequestStatus.confirmed);
+
+    expect(find.text(_scheduled), findsNothing);
+    expect(find.text(_withdraw), findsNothing);
+
+    container.read(deletionInProgressProvider.notifier).finish();
+    await tester.pump();
+
+    expect(find.text(_scheduled), findsOneWidget);
+    expect(find.text(_withdraw), findsOneWidget);
   });
 }
