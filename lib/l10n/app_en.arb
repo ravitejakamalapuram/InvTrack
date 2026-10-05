@@ -6207,5 +6207,9 @@
   "goalStatusMessageArchived": "Goal archived",
   "@goalStatusMessageArchived": {
     "description": "Goal status message: the goal is archived"
+  },
+  "notificationInvestmentClosed": "This investment is closed",
+  "@notificationInvestmentClosed": {
+    "description": "Shown when an income reminder is tapped for an investment that has since been closed; the investment opens instead of the add-income form"
   }
 }
