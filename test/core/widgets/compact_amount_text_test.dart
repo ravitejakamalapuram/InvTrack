@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:inv_tracker/core/providers/privacy_mode_provider.dart';
 import 'package:inv_tracker/core/widgets/compact_amount_text.dart';
 import 'package:inv_tracker/features/settings/presentation/providers/settings_provider.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _PrivacyOff extends PrivacyModeNotifier {
+  @override
+  bool build() => false;
+}
 
 void main() {
   Future<void> pumpWidget(
@@ -35,17 +42,19 @@ void main() {
     ) async {
       await pumpWidget(
         tester,
-        const CompactAmountText(amount: 150000, compactText: '₹1.5L'),
+        const CompactAmountText(
+          amount: 150000,
+          compactText: '₹1.5L',
+          currencySymbol: '₹',
+          locale: 'en_IN',
+        ),
         privacyModeEnabled: false,
       );
 
-      // Verify semantics match our expectations for accessible text
-      // We expect the label to contain "1,50,000" (full amount)
+      // The screen reader hears the amount as shown, in lakh for INR, not
+      // Western-grouped '150,000' (A18).
       final semantics = tester.getSemantics(find.byType(CompactAmountText));
-      // Expect 150,000 (US format default) or 1,50,000 (Indian).
-      // The actual output shows 150,000, so we check for that or generally that it's the full number.
-      expect(semantics.label, anyOf(contains('1,50,000'), contains('150,000')));
-      expect(semantics.label, contains('rupees'));
+      expect(semantics.label, '1.5 lakh rupees');
 
       // Verify hint is present
       expect(semantics.hint, contains('copy exact amount'));
@@ -179,5 +188,58 @@ void main() {
         expect(find.byTooltip('Copy'), findsNothing);
       },
     );
+  });
+
+  group('CompactAmountText currency and locale come from the caller', () {
+    // Only privacy mode is provided: the widget must not need the currency
+    // settings providers, which screens and tests pass in as a NumberFormat.
+    Future<SemanticsNode> labelOf(
+      WidgetTester tester,
+      CompactAmountText child,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [privacyModeProvider.overrideWith(_PrivacyOff.new)],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Center(child: child)),
+          ),
+        ),
+      );
+      return tester.getSemantics(find.byType(CompactAmountText));
+    }
+
+    testWidgets('a USD amount is read in dollars with Western grouping', (
+      tester,
+    ) async {
+      final semantics = await labelOf(
+        tester,
+        const CompactAmountText(
+          amount: 1500000,
+          compactText: r'$1.5M',
+          currencySymbol: r'$',
+          locale: 'en_US',
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(semantics.label, '1,500,000 dollars');
+    });
+
+    testWidgets('an INR amount is read in lakh', (tester) async {
+      final semantics = await labelOf(
+        tester,
+        const CompactAmountText(
+          amount: 150000,
+          compactText: '₹1.5L',
+          currencySymbol: '₹',
+          locale: 'en_IN',
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(semantics.label, '1.5 lakh rupees');
+    });
   });
 }

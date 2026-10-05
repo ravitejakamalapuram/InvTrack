@@ -440,6 +440,7 @@ class GoalDetailsScreen extends ConsumerWidget {
                       amount: amount,
                       compactText: compactText,
                       currencySymbol: currencySymbol,
+                      locale: locale,
                       style: valueStyle,
                     ),
               if (suffix != null) Text(suffix, style: valueStyle),
