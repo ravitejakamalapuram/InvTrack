@@ -64,7 +64,8 @@ class PortfolioHealth extends _$PortfolioHealth {
     // Watch every dependency before the first await.
     final convertedFuture = ref.watch(convertedTerminalValuesProvider.future);
     final investmentsAsync = ref.watch(activeInvestmentsProvider);
-    final goalProgressAsync = ref.watch(allGoalsProgressProvider);
+    // Goal progress in the base currency, as the Goals screen shows it.
+    final goalProgressAsync = ref.watch(multiCurrencyAllGoalsProgressProvider);
     final asOf = ref.watch(valuationDateProvider);
     final engine = ref.watch(calculationEngineProvider);
 

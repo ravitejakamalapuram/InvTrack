@@ -57,6 +57,30 @@ class CurrencyConverterModule implements CalculationModule {
     );
   }
 
+  /// How many units of [to] one unit of [from] is worth today, for amounts
+  /// a user entered in another currency than the base currency (FIRE
+  /// settings, goal targets): today's rate, else the last known one. Throws
+  /// a [CurrencyConversionException] rather than read one currency as
+  /// another when there is no rate at all.
+  Future<double> rateToday({required String from, required String to}) async {
+    if (from == to) return 1.0;
+    if (!isAvailable) {
+      throw CurrencyConversionException('Currency conversion is unavailable');
+    }
+    try {
+      return await convert(
+        amount: 1,
+        from: from,
+        to: to,
+        fallbackStrategy: ConversionFallbackStrategy.throwError,
+      );
+    } on CurrencyConversionException {
+      final rate = await getLastKnownRate(from: from, to: to);
+      if (rate == null) rethrow;
+      return rate;
+    }
+  }
+
   /// Get last known rate from cache.
   Future<double?> getLastKnownRate({
     required String from,
