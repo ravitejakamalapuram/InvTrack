@@ -87,7 +87,8 @@ class FakeNotificationService implements NotificationService {
     String currency = 'INR',
     bool announce = true,
   }) async {
-    shownGoalMilestones.add(goalId);
+    // A silent check records the milestone but shows nothing.
+    if (announce) shownGoalMilestones.add(goalId);
   }
 
   @override

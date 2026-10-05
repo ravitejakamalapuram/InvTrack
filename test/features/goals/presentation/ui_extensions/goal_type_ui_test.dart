@@ -52,41 +52,46 @@ void main() {
     calculatedAt: DateTime(2026, 10, 4),
   ).statusMessage(l10n);
 
-  test('every goal status has a label from the app strings', () {
-    expect(GoalStatus.notStarted.label(l10n), 'Not Started');
-    expect(GoalStatus.inProgress.label(l10n), 'In Progress');
-    expect(GoalStatus.onTrack.label(l10n), 'On Track');
-    expect(GoalStatus.ahead.label(l10n), 'Ahead');
-    expect(GoalStatus.behind.label(l10n), 'Behind');
-    expect(GoalStatus.achieved.label(l10n), 'Achieved');
-    expect(GoalStatus.archived.label(l10n), 'Archived');
-  });
+  group('goal status text from the app strings', () {
+    test('every goal status has a label from the app strings', () {
+      expect(GoalStatus.notStarted.label(l10n), 'Not Started');
+      expect(GoalStatus.inProgress.label(l10n), 'In Progress');
+      expect(GoalStatus.onTrack.label(l10n), 'On Track');
+      expect(GoalStatus.ahead.label(l10n), 'Ahead');
+      expect(GoalStatus.behind.label(l10n), 'Behind');
+      expect(GoalStatus.achieved.label(l10n), 'Achieved');
+      expect(GoalStatus.archived.label(l10n), 'Archived');
+    });
 
-  test('an unprojected goal says why it has no projection', () {
-    expect(
-      message(GoalStatus.inProgress, type: GoalType.incomeTarget),
-      'Income goals are not projected',
-    );
-    expect(
-      message(GoalStatus.inProgress, targetDate: DateTime(2029, 10, 4)),
-      'Not enough history to project yet',
-    );
-  });
+    test('an unprojected goal says why it has no projection', () {
+      expect(
+        message(GoalStatus.inProgress, type: GoalType.incomeTarget),
+        'Income goals are not projected',
+      );
+      expect(
+        message(GoalStatus.inProgress, targetDate: DateTime(2029, 10, 4)),
+        'Not enough history to project yet',
+      );
+    });
 
-  test('every other status has its message', () {
-    expect(message(GoalStatus.notStarted), 'Start investing to make progress');
-    expect(
-      message(GoalStatus.onTrack, projected: DateTime(2027, 3, 15)),
-      'On track for Mar 2027',
-    );
-    expect(message(GoalStatus.onTrack), 'Making steady progress');
-    expect(message(GoalStatus.ahead), 'Ahead of schedule! Keep it up!');
-    expect(
-      message(GoalStatus.behind, targetDate: DateTime(2029, 10, 4)),
-      'Behind schedule - needs attention',
-    );
-    expect(message(GoalStatus.behind), 'Consider increasing contributions');
-    expect(message(GoalStatus.achieved), 'Goal achieved!');
-    expect(message(GoalStatus.archived), 'Goal archived');
+    test('every other status has its message', () {
+      expect(
+        message(GoalStatus.notStarted),
+        'Start investing to make progress',
+      );
+      expect(
+        message(GoalStatus.onTrack, projected: DateTime(2027, 3, 15)),
+        'On track for Mar 2027',
+      );
+      expect(message(GoalStatus.onTrack), 'Making steady progress');
+      expect(message(GoalStatus.ahead), 'Ahead of schedule! Keep it up!');
+      expect(
+        message(GoalStatus.behind, targetDate: DateTime(2029, 10, 4)),
+        'Behind schedule - needs attention',
+      );
+      expect(message(GoalStatus.behind), 'Consider increasing contributions');
+      expect(message(GoalStatus.achieved), 'Goal achieved!');
+      expect(message(GoalStatus.archived), 'Goal archived');
+    });
   });
 }

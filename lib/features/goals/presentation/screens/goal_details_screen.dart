@@ -383,7 +383,6 @@ class GoalDetailsScreen extends ConsumerWidget {
               requiredMonthly,
               currencySymbol,
               isDark,
-              suffix: '/mo',
               isPrivacyMode: isPrivacyMode,
               locale: locale,
             ),

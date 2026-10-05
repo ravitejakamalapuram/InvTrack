@@ -164,6 +164,17 @@ void main() {
     expect(find.text('Required per month'), findsOneWidget);
     expect(find.text('Assumes 8% growth a year'), findsOneWidget);
     expect(find.textContaining('18'), findsWidgets);
+    // The label already says "per month"; the row adds no English unit.
+    final row = find
+        .ancestor(
+          of: find.text('Required per month'),
+          matching: find.byType(Row),
+        )
+        .first;
+    expect(
+      find.descendant(of: row, matching: find.textContaining('/mo')),
+      findsNothing,
+    );
   });
 
   testWidgets('hides the monthly amount in privacy mode', (tester) async {
