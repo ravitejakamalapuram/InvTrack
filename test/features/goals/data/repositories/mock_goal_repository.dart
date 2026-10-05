@@ -148,4 +148,10 @@ class FakeGoalRepository implements GoalRepository {
   Future<void> deleteArchivedGoal(String id) async {
     _archivedGoals.removeWhere((g) => g.id == id);
   }
+
+  /// The in-memory lists stand in for the server.
+  @override
+  Future<bool> hasAnyGoalOnServer() async {
+    return _goals.isNotEmpty || _archivedGoals.isNotEmpty;
+  }
 }

@@ -389,7 +389,8 @@ class DataImportService {
     // Delete all investments (cascades to cashflows)
     final investments = await _investmentRepository.getAllInvestments();
     final archivedInvestments = await _investmentRepository
-        .getAllArchivedInvestments();
+        .watchArchivedInvestments()
+        .first;
 
     for (final inv in investments) {
       await _investmentRepository.deleteInvestment(inv.id);

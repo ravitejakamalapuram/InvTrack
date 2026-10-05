@@ -80,9 +80,13 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
       ref.watch(archivedInvestmentsProvider),
     );
     final activeInvestmentsAsync = ref.watch(activeInvestmentsProvider);
+    // Empty lists may be an empty offline cache, which says nothing about the
+    // account (A121): only the server confirming it makes the account new.
+    final hasNoInvestmentsAsync = ref.watch(hasNoInvestmentsProvider);
     final isNewAccount =
         (activeInvestmentsAsync.value?.isEmpty ?? false) &&
-        (archivedInvestmentsAsync.value?.isEmpty ?? false);
+        (archivedInvestmentsAsync.value?.isEmpty ?? false) &&
+        (hasNoInvestmentsAsync.value ?? false);
 
     final currencyFormat = ref.watch(currencyFormatProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -129,14 +133,17 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           archivedInvestmentsAsync.hasError
                       ? _buildLoadErrorContent(ref)
                       // Stats can be empty before the investments arrive;
-                      // the empty state must wait for both collections.
+                      // the empty state must wait for both collections and
+                      // for whether the account is new.
                       // A refresh keeps the previous value, so it does not
                       // count.
                       : !stats.hasData &&
                             ((!activeInvestmentsAsync.hasValue &&
                                     activeInvestmentsAsync.isLoading) ||
                                 (!archivedInvestmentsAsync.hasValue &&
-                                    archivedInvestmentsAsync.isLoading))
+                                    archivedInvestmentsAsync.isLoading) ||
+                                (!hasNoInvestmentsAsync.hasValue &&
+                                    hasNoInvestmentsAsync.isLoading))
                       ? _buildLoadingContent(
                           context,
                           ref,

@@ -2,7 +2,7 @@
 // account. When Overview had wrongly decided the account was empty (an empty
 // offline cache), they landed in a real portfolio. activateSampleData must
 // first ask the server and write nothing unless both investment collections
-// are empty there.
+// and both goal collections are empty there: sample data includes a goal.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
 import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
+import 'package:inv_tracker/features/goals/domain/entities/goal_entity.dart';
 import 'package:inv_tracker/features/goals/presentation/providers/goals_provider.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/settings/data/services/sample_data_service.dart';
@@ -47,6 +48,38 @@ class _OfflineInvestmentRepository extends FakeInvestmentRepository {
     );
   }
 }
+
+/// A repository whose server rejects the read (a rules or App Check change).
+class _DeniedInvestmentRepository extends FakeInvestmentRepository {
+  @override
+  Future<bool> hasAnyInvestmentOnServer() async {
+    throw FirebaseException(
+      plugin: 'cloud_firestore',
+      code: 'permission-denied',
+    );
+  }
+}
+
+/// A goal repository whose server cannot be reached.
+class _OfflineGoalRepository extends FakeGoalRepository {
+  @override
+  Future<bool> hasAnyGoalOnServer() async {
+    throw FirebaseException(plugin: 'cloud_firestore', code: 'unavailable');
+  }
+}
+
+final _existingGoal = GoalEntity(
+  id: 'goal-real',
+  name: 'House',
+  type: GoalType.targetAmount,
+  targetAmount: 5000000,
+  trackingMode: GoalTrackingMode.all,
+  icon: GoalIcons.defaultIcon,
+  colorValue: 0xFF4CAF50,
+  createdAt: DateTime(2025, 4, 1),
+  updatedAt: DateTime(2025, 4, 1),
+  currency: 'INR',
+);
 
 final _existing = InvestmentEntity(
   id: 'inv-real',
@@ -143,8 +176,71 @@ void main() {
     expect(prefs.getBool('sample_data_mode_active'), isNull);
   });
 
-  test('creates sample data once when the server confirms both collections '
-      'are empty', () async {
+  for (final (label, seed) in [
+    (
+      'an active goal',
+      (FakeGoalRepository g) => g.seed(goals: [_existingGoal]),
+    ),
+    (
+      'only an archived goal',
+      (FakeGoalRepository g) => g.seed(archivedGoals: [_existingGoal]),
+    ),
+  ]) {
+    test('refuses when the server has $label and no investments, and writes '
+        'nothing', () async {
+      seed(goals);
+      final investments = FakeInvestmentRepository();
+      final (:container, :service) = build(investments);
+
+      final activated = await container
+          .read(sampleDataModeProvider.notifier)
+          .activateSampleData();
+
+      expect(activated, isFalse);
+      expect(service.createCalls, 0);
+      expect(investments.investments, isEmpty);
+      expect(investments.cashFlows, isEmpty);
+      expect(goals.goals.length + goals.archivedGoals.length, 1);
+      final state = container.read(sampleDataModeProvider);
+      expect(state.isActive, isFalse);
+      expect(state.isLoading, isFalse);
+      expect(prefs.getBool('sample_data_mode_active'), isNull);
+    });
+  }
+
+  test('refuses when the goals cannot be checked on the server', () async {
+    goals = _OfflineGoalRepository();
+    final investments = FakeInvestmentRepository();
+    final (:container, :service) = build(investments);
+
+    final activated = await container
+        .read(sampleDataModeProvider.notifier)
+        .activateSampleData();
+
+    expect(activated, isFalse);
+    expect(service.createCalls, 0);
+    expect(investments.investments, isEmpty);
+    expect(goals.goals, isEmpty);
+  });
+
+  test('refuses when the server rejects the check (not just offline), and '
+      'writes nothing', () async {
+    final investments = _DeniedInvestmentRepository();
+    final (:container, :service) = build(investments);
+
+    final activated = await container
+        .read(sampleDataModeProvider.notifier)
+        .activateSampleData();
+
+    expect(activated, isFalse);
+    expect(service.createCalls, 0);
+    expect(investments.investments, isEmpty);
+    expect(goals.goals, isEmpty);
+    expect(container.read(sampleDataModeProvider).isLoading, isFalse);
+  });
+
+  test('creates sample data once when the server confirms every collection '
+      'is empty', () async {
     final investments = FakeInvestmentRepository();
     final (:container, :service) = build(investments);
 

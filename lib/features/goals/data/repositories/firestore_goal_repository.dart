@@ -17,6 +17,9 @@ class FirestoreGoalRepository implements GoalRepository {
   /// Timeout for write operations
   static const Duration _writeTimeout = Duration(seconds: 3);
 
+  /// Timeout for a read that must come from the server.
+  static const Duration _serverReadTimeout = Duration(seconds: 10);
+
   FirestoreGoalRepository({
     required FirebaseFirestore firestore,
     required String userId,
@@ -208,5 +211,15 @@ class FirestoreGoalRepository implements GoalRepository {
   @override
   Future<void> deleteArchivedGoal(String id) async {
     await _executeWrite(() => _archivedGoalsRef.doc(id).delete());
+  }
+
+  @override
+  Future<bool> hasAnyGoalOnServer() async {
+    const serverOnly = GetOptions(source: Source.server);
+    final snapshots = await Future.wait([
+      _goalsRef.limit(1).get(serverOnly),
+      _archivedGoalsRef.limit(1).get(serverOnly),
+    ]).timeout(_serverReadTimeout);
+    return snapshots.any((snapshot) => snapshot.docs.isNotEmpty);
   }
 }

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inv_tracker/core/analytics/analytics_service.dart';
+import 'package:inv_tracker/core/di/database_module.dart';
 import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/loading_skeletons.dart';
 import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
@@ -30,9 +31,9 @@ void main() {
 
   final l10n = lookupAppLocalizations(const Locale('en'));
 
-  testWidgets('an empty cache answer with no server answer keeps Overview '
-      'loading: no empty state, no sample data, no empty_state_viewed; the '
-      'server confirming the empty account then shows them', (tester) async {
+  Future<(FakeAnalyticsService, InvestmentFirestoreMock)> pumpOverview(
+    WidgetTester tester,
+  ) async {
     final analytics = FakeAnalyticsService();
     final firestore = InvestmentFirestoreMock();
     addTearDown(firestore.close);
@@ -49,12 +50,9 @@ void main() {
           currencyCodeProvider.overrideWith((ref) => 'INR'),
           currencySymbolProvider.overrideWith((ref) => '₹'),
           currencyLocaleProvider.overrideWith((ref) => 'en_IN'),
-          allInvestmentsProvider.overrideWith(
-            (ref) => repository.watchAllInvestments(),
-          ),
-          archivedInvestmentsProvider.overrideWith(
-            (ref) => repository.watchArchivedInvestments(),
-          ),
+          // The real investment providers, fed by the repository.
+          isAuthenticatedProvider.overrideWithValue(true),
+          investmentRepositoryProvider.overrideWithValue(repository),
           allCashFlowsStreamProvider.overrideWith(
             (ref) => Stream.value(const []),
           ),
@@ -66,6 +64,14 @@ void main() {
         ),
       ),
     );
+
+    return (analytics, firestore);
+  }
+
+  testWidgets('an empty cache answer with no server answer keeps Overview '
+      'loading: no empty state, no sample data, no empty_state_viewed; the '
+      'server confirming the empty account then shows them', (tester) async {
+    final (analytics, firestore) = await pumpOverview(tester);
 
     // Offline first launch: both collections answer from an empty cache.
     firestore.activeSnapshots.add(querySnapshot(fromCache: true));
@@ -88,5 +94,23 @@ void main() {
     expect(find.byType(OverviewEmptyState), findsOneWidget);
     expect(find.text(l10n.trySampleData), findsOneWidget);
     expect(_emptyStateEvents(analytics), 1);
+  });
+
+  testWidgets('offline, a portfolio whose investments are all archived shows '
+      'the empty state at once from the cache, without the sample-data offer '
+      'or empty_state_viewed', (tester) async {
+    final (analytics, firestore) = await pumpOverview(tester);
+
+    firestore.activeSnapshots.add(querySnapshot(fromCache: true));
+    firestore.archivedSnapshots.add(
+      querySnapshot(docs: {'inv-1': investmentDoc('Old FD')}, fromCache: true),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(HeroCardSkeleton), findsNothing);
+    expect(find.byType(OverviewEmptyState), findsOneWidget);
+    expect(find.text(l10n.trySampleData), findsNothing);
+    expect(_emptyStateEvents(analytics), 0);
   });
 }

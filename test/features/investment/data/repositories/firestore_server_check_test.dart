@@ -1,7 +1,7 @@
 // A121 (#895): before sample data is written, the server, never the cache,
-// must say whether the account already holds an investment. One-shot reads
-// of the archived list must not wait for a server answer either, which the
-// live stream now does.
+// must say whether the account already holds an investment.
+
+import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -67,18 +67,24 @@ void main() {
         ),
       );
     });
-  });
 
-  group('getAllArchivedInvestments', () {
-    test('returns what a one-shot read finds, even an empty list from the '
-        'cache', () async {
-      firestore.archivedOnServer = () =>
-          querySnapshot(docs: oneDoc, fromCache: true);
-      final archived = await firestore.repository().getAllArchivedInvestments();
-      expect(archived.map((i) => i.name), ['HDFC FD']);
+    testWidgets('gives up with a TimeoutException after 10 seconds when the '
+        'server never answers', (tester) async {
+      firestore.activeOnServer = () =>
+          Completer<QuerySnapshot<Map<String, dynamic>>>().future;
+      Object? error;
+      unawaited(
+        firestore.repository().hasAnyInvestmentOnServer().then(
+          (_) {},
+          onError: (Object e) => error = e,
+        ),
+      );
 
-      firestore.archivedOnServer = () => querySnapshot(fromCache: true);
-      expect(await firestore.repository().getAllArchivedInvestments(), isEmpty);
+      await tester.pump(const Duration(seconds: 9));
+      expect(error, isNull);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(error, isA<TimeoutException>());
     });
   });
 }

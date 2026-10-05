@@ -201,9 +201,10 @@ class FakeInvestmentRepository implements InvestmentRepository {
     return Stream.value(List.from(_archivedInvestments));
   }
 
+  /// The in-memory lists stand in for the server.
   @override
-  Future<List<InvestmentEntity>> getAllArchivedInvestments() async {
-    return List.from(_archivedInvestments);
+  Stream<bool> watchHasNoInvestments() {
+    return Stream.value(_investments.isEmpty && _archivedInvestments.isEmpty);
   }
 
   /// The in-memory lists stand in for the server.

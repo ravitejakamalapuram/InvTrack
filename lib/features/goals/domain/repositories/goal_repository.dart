@@ -52,4 +52,11 @@ abstract class GoalRepository {
 
   /// Delete an archived goal permanently
   Future<void> deleteArchivedGoal(String id);
+
+  /// Whether the server holds at least one active or archived goal.
+  ///
+  /// Reads the server only, never the cache, so an unsynced empty cache
+  /// cannot pass for an account with no goals. Throws when the server cannot
+  /// be reached.
+  Future<bool> hasAnyGoalOnServer();
 }

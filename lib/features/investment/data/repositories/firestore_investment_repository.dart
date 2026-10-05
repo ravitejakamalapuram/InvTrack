@@ -7,6 +7,7 @@ import 'package:inv_tracker/core/utils/stored_date.dart';
 import 'package:inv_tracker/features/investment/domain/entities/investment_entity.dart';
 import 'package:inv_tracker/features/investment/domain/entities/transaction_entity.dart';
 import 'package:inv_tracker/features/investment/domain/repositories/investment_repository.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Firestore-based implementation of InvestmentRepository
 /// Provides offline persistence and real-time sync across devices
@@ -67,34 +68,9 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Stream<List<InvestmentEntity>> watchAllInvestments() {
-    return _watchConfirmed(
-      _investmentsRef.orderBy('createdAt', descending: true),
-    );
-  }
-
-  /// Live investments of [query], holding back an empty list until the
-  /// server confirms it.
-  ///
-  /// On a fresh install with no network, Firestore answers from an empty
-  /// cache. That says nothing about the account; shown as "no investments",
-  /// it offered sample data to users whose portfolio is on the server (A121).
-  /// A cached snapshot with documents is still shown at once (offline-first).
-  /// Metadata changes are listened to so that an empty server answer arrives
-  /// after an empty cache answer; once a list is shown, snapshots whose
-  /// documents did not change are skipped.
-  Stream<List<InvestmentEntity>> _watchConfirmed(
-    Query<Map<String, dynamic>> query,
-  ) {
-    var shown = false;
-    return query
-        .snapshots(includeMetadataChanges: true)
-        .where((snapshot) {
-          final skip = shown
-              ? snapshot.docChanges.isEmpty
-              : snapshot.docs.isEmpty && snapshot.metadata.isFromCache;
-          if (!skip) shown = true;
-          return !skip;
-        })
+    return _investmentsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
         .map(
           (snapshot) => snapshot.docs
               .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
@@ -331,19 +307,47 @@ class FirestoreInvestmentRepository implements InvestmentRepository {
 
   @override
   Stream<List<InvestmentEntity>> watchArchivedInvestments() {
-    return _watchConfirmed(
-      _archivedInvestmentsRef.orderBy('createdAt', descending: true),
-    );
+    return _archivedInvestmentsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
   @override
-  Future<List<InvestmentEntity>> getAllArchivedInvestments() async {
-    final snapshot = await _archivedInvestmentsRef
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => _investmentFromFirestore(doc.data(), doc.id))
-        .toList();
+  Stream<bool> watchHasNoInvestments() {
+    return Rx.combineLatest2(
+      _watchIsEmpty(_investmentsRef.orderBy('createdAt', descending: true)),
+      _watchIsEmpty(
+        _archivedInvestmentsRef.orderBy('createdAt', descending: true),
+      ),
+      (bool? active, bool? archived) {
+        if (active == false || archived == false) return false;
+        if (active == true && archived == true) return true;
+        return null;
+      },
+    ).where((isEmpty) => isEmpty != null).cast<bool>().distinct();
+  }
+
+  /// Whether [query] has no documents, or null while that is unknown because
+  /// only an empty cache has answered.
+  ///
+  /// Listens to metadata changes, so that an empty server answer arrives
+  /// after an empty cache answer. The query is the one the lists use, so
+  /// Firestore serves both from one listener.
+  Stream<bool?> _watchIsEmpty(Query<Map<String, dynamic>> query) {
+    return query
+        .snapshots(includeMetadataChanges: true)
+        .map(
+          (snapshot) => snapshot.docs.isNotEmpty
+              ? false
+              : snapshot.metadata.isFromCache
+              ? null
+              : true,
+        );
   }
 
   @override

@@ -104,13 +104,15 @@ class InvestmentFirestoreMock {
   final CollectionReference<Map<String, dynamic>> active = _MockCollection();
   final CollectionReference<Map<String, dynamic>> archived = _MockCollection();
 
-  /// Live snapshots of `investments`.
+  /// Live snapshots of `investments`. Broadcast, because several listeners
+  /// can share one query, as Firestore lets them.
   final activeSnapshots =
-      StreamController<QuerySnapshot<Map<String, dynamic>>>();
+      StreamController<QuerySnapshot<Map<String, dynamic>>>.broadcast();
 
-  /// Live snapshots of `archivedInvestments`.
+  /// Live snapshots of `archivedInvestments`, broadcast like
+  /// [activeSnapshots].
   final archivedSnapshots =
-      StreamController<QuerySnapshot<Map<String, dynamic>>>();
+      StreamController<QuerySnapshot<Map<String, dynamic>>>.broadcast();
 
   /// What a one-shot read of `investments` returns, or throws.
   FutureOr<QuerySnapshot<Map<String, dynamic>>> Function() activeOnServer =
@@ -141,8 +143,7 @@ class InvestmentFirestoreMock {
     baseCurrency: () => 'INR',
   );
 
-  /// Closes both snapshot streams. Not awaited: a stream nobody listened to
-  /// never delivers its done event.
+  /// Closes both snapshot streams.
   void close() {
     unawaited(activeSnapshots.close());
     unawaited(archivedSnapshots.close());
