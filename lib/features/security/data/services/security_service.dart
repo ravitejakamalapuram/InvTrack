@@ -10,6 +10,12 @@ import 'package:inv_tracker/features/security/data/services/security_clock.dart'
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// When a failed-PIN lockout began: a [SecurityClock] reading, which clock
+/// gave it ('boot' or 'stopwatch'), and the device clock in milliseconds.
+/// Older versions stored the device clock alone (no source, no reading).
+typedef _LockoutStart = ({String? source, int? clockMs, int wallMs});
+typedef _ClockNow = ({String source, int clockMs, int wallMs});
+
 class SecurityService {
   final FlutterSecureStorage _secureStorage;
   final LocalAuthentication _localAuth;
@@ -21,7 +27,7 @@ class SecurityService {
   static const String _biometricEnabledKey = 'biometric_enabled';
   static const String _autoLockDurationKey = 'auto_lock_duration';
   static const String _failedAttemptsKey = 'pin_failed_attempts';
-  // When the lockout began, as a SecurityClock reading in milliseconds.
+  // When the lockout began, as "<source>:<reading ms>:<device clock ms>".
   static const String _lockoutTimestampKey = 'pin_lockout_timestamp';
   static const int _maxAttempts = 5;
   static const int _lockoutDurationSeconds = 900; // 15 minutes
@@ -164,33 +170,31 @@ class SecurityService {
   }
 
   /// Get lockout timestamp from secure storage (migrating from prefs if needed)
-  Future<int?> _getLockoutTimestamp() async {
+  Future<String?> _getLockoutTimestamp() async {
     // Check Secure Storage first
     final stored = await _secureStorage.read(
       key: _lockoutTimestampKey,
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
-    if (stored != null) {
-      return int.tryParse(stored);
-    }
+    if (stored != null) return stored;
 
     // Fallback/Migrate from SharedPreferences
     final legacy = _prefs.getInt(_lockoutTimestampKey);
     if (legacy != null) {
       // Migrate
-      await _setLockoutTimestamp(legacy);
+      await _setLockoutTimestamp('$legacy');
       // Cleanup legacy is handled in _setLockoutTimestamp
-      return legacy;
+      return '$legacy';
     }
     return null;
   }
 
   /// Set lockout timestamp to secure storage
-  Future<void> _setLockoutTimestamp(int timestamp) async {
+  Future<void> _setLockoutTimestamp(String timestamp) async {
     await _secureStorage.write(
       key: _lockoutTimestampKey,
-      value: timestamp.toString(),
+      value: timestamp,
       aOptions: _getAndroidOptions(),
       iOptions: _getIOSOptions(),
     );
@@ -221,28 +225,74 @@ class SecurityService {
     }
   }
 
-  Future<int> _clockMillis() async => (await _clock.elapsed()).inMilliseconds;
+  Future<_ClockNow> _clockNow() async {
+    final reading = await _clock.elapsed();
+    return (
+      source: _clock.isBootClock ? 'boot' : 'stopwatch',
+      clockMs: reading.inMilliseconds,
+      wallMs: _clock.wallTime().millisecondsSinceEpoch,
+    );
+  }
+
+  static String _encodeLockoutStart(_ClockNow start) =>
+      '${start.source}:${start.clockMs}:${start.wallMs}';
+
+  static _LockoutStart? _decodeLockoutStart(String stored) {
+    final parts = stored.split(':');
+    if (parts.length == 3) {
+      final clockMs = int.tryParse(parts[1]);
+      final wallMs = int.tryParse(parts[2]);
+      if (clockMs == null || wallMs == null) return null;
+      return (source: parts[0], clockMs: clockMs, wallMs: wallMs);
+    }
+    final wallMs = int.tryParse(stored);
+    return wallMs == null
+        ? null
+        : (source: null, clockMs: null, wallMs: wallMs);
+  }
 
   /// Seconds left of the failed-PIN lockout, or null when there is none.
   ///
   /// Measured on [SecurityClock], so changing the device clock cannot end it
-  /// early. That clock restarts at zero with the phone, and older versions
-  /// stored a wall-clock time here; either way a start later than the
-  /// current reading says nothing about the time served, so the lockout
-  /// starts again rather than end early.
+  /// early. That clock cannot judge a start from before a phone restart (it
+  /// restarts at zero), from its stopwatch fallback, or from an older version
+  /// (which stored the device clock alone). Only then does the device clock
+  /// judge it, once: an ended lockout is cleared, and the rest of a running
+  /// one is timed on [SecurityClock] again. A start ahead of the device
+  /// clock restarts the lockout rather than end it early, and so does a
+  /// stopwatch start after the app restarted.
   Future<int?> getLockoutRemainingSeconds() async {
-    final lockoutStart = await _getLockoutTimestamp();
-    if (lockoutStart == null) return null;
+    final stored = await _getLockoutTimestamp();
+    final start = stored == null ? null : _decodeLockoutStart(stored);
+    if (start == null) return null;
 
-    final now = await _clockMillis();
-    if (lockoutStart > now) {
-      await _setLockoutTimestamp(now);
-      return _lockoutDurationSeconds;
+    final now = await _clockNow();
+    final startClockMs = start.clockMs;
+    final int servedMs;
+    if (start.source == now.source &&
+        startClockMs != null &&
+        startClockMs <= now.clockMs) {
+      servedMs = now.clockMs - startClockMs;
+    } else {
+      // Not when both readings came from the stopwatch: it restarts with the
+      // app, which whoever holds the phone can do at will.
+      final bothStopwatch =
+          start.source == 'stopwatch' && now.source == 'stopwatch';
+      servedMs = bothStopwatch ? 0 : max(0, now.wallMs - start.wallMs);
+      if (servedMs < _lockoutDurationSeconds * 1000) {
+        await _setLockoutTimestamp(
+          _encodeLockoutStart((
+            source: now.source,
+            clockMs: now.clockMs - servedMs,
+            wallMs: now.wallMs - servedMs,
+          )),
+        );
+      }
     }
-    final difference = (now - lockoutStart) ~/ 1000;
+    final served = servedMs ~/ 1000;
 
-    if (difference < _lockoutDurationSeconds) {
-      return _lockoutDurationSeconds - difference;
+    if (served < _lockoutDurationSeconds) {
+      return _lockoutDurationSeconds - served;
     } else {
       // Lockout expired, reset attempts
       await _clearRateLimit();
@@ -335,7 +385,7 @@ class SecurityService {
         await _setFailedAttempts(failedAttempts);
 
         if (failedAttempts >= _maxAttempts) {
-          await _setLockoutTimestamp(await _clockMillis());
+          await _setLockoutTimestamp(_encodeLockoutStart(await _clockNow()));
         }
         return false;
       }
@@ -398,6 +448,18 @@ class SecurityService {
         'Biometric auth result',
         metadata: {'result': result},
       );
+      if (result) {
+        // The owner proved who they are, so an old failed-PIN lockout must
+        // not come back, after a phone restart for example.
+        try {
+          await _clearRateLimit();
+        } catch (e) {
+          LoggerService.warn(
+            'Could not clear the PIN lockout',
+            metadata: {'errorType': e.runtimeType.toString()},
+          );
+        }
+      }
       return result;
     } on PlatformException catch (e) {
       LoggerService.warn(

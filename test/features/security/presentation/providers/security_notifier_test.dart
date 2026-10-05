@@ -795,4 +795,11 @@ class _FakeClock implements SecurityClock {
 
   @override
   Future<Duration> elapsed() async => _boot;
+
+  @override
+  bool get isBootClock => true;
+
+  /// Auto-lock never reads it.
+  @override
+  DateTime wallTime() => DateTime.utc(2026, 10, 5);
 }

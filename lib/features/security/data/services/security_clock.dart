@@ -39,4 +39,13 @@ class SecurityClock {
     }
     return _stopwatch.elapsed;
   }
+
+  /// Whether readings come from the boot clock; false once this run has
+  /// fallen back to the stopwatch. Readings from the two are not comparable.
+  bool get isBootClock => !_useStopwatch;
+
+  /// The device clock. Whoever holds the phone can set it, so it only judges
+  /// what the readings cannot: a PIN lockout from before a phone restart,
+  /// from the stopwatch, or from an older version.
+  DateTime wallTime() => DateTime.now();
 }
