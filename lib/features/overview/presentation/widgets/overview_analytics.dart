@@ -435,7 +435,7 @@ class YoYComparisonCard extends ConsumerWidget {
   }
 
   /// One row of amounts, read by screen readers as "Invested: FY 2025-26
-  /// 6,00,000 rupees, FY 2026-27 9,00,000 rupees" (each amount "Hidden
+  /// 6 lakh rupees, FY 2026-27 9 lakh rupees" (each amount "Hidden
   /// amount" in privacy mode), since the cells alone carry no year.
   Widget _buildAmountRow(
     AppLocalizations l10n,
@@ -451,6 +451,7 @@ class YoYComparisonCard extends ConsumerWidget {
         : AccessibilityUtils.formatCurrencyForScreenReader(
             amount,
             currencyFormat.currencySymbol,
+            locale: currencyFormat.locale,
           ).trim();
     return Semantics(
       container: true,
@@ -490,6 +491,7 @@ class YoYComparisonCard extends ConsumerWidget {
               amount: amount,
               compactText: compact,
               currencySymbol: currencyFormat.currencySymbol,
+              locale: currencyFormat.locale,
               prefix: prefix,
               style: style,
               textAlign: TextAlign.end,

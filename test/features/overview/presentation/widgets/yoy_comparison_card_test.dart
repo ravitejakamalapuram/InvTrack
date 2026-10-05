@@ -27,7 +27,11 @@ class _PrivacyOn extends PrivacyModeNotifier {
 
 /// An amount as the card reads it to a screen reader.
 String _spoken(double amount) =>
-    AccessibilityUtils.formatCurrencyForScreenReader(amount, '₹').trim();
+    AccessibilityUtils.formatCurrencyForScreenReader(
+      amount,
+      '₹',
+      locale: 'en_IN',
+    ).trim();
 
 CashFlowEntity _flow(CashFlowType type, double amount, DateTime date) =>
     CashFlowEntity(
