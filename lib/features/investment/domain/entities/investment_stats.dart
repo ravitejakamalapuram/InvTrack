@@ -7,8 +7,16 @@ import 'package:inv_tracker/features/investment/domain/entities/investment_entit
 /// Investment statistics for display.
 /// Contains calculated metrics like returns, MOIC, and XIRR.
 class InvestmentStats {
-  /// Sum of INVEST + FEE (money out)
+  /// Sum of INVEST + FEE (money out), gross: money reinvested from earlier
+  /// payouts is counted each time it goes in.
   final double totalInvested;
+
+  /// The most of the user's own money in these investments at any one time
+  /// (fees included): the peak of cumulative outflows minus inflows, with
+  /// same-day flows netted, per investment and summed. A rollover or a
+  /// re-lent payout is not counted twice. The denominator of [moic] and
+  /// [absoluteReturn]. Equals [totalInvested] when nothing is reinvested.
+  final double paidInCapital;
 
   /// Sum of INVEST flows only (no fees): the principal that earns interest.
   /// The maturity projection compounds this, not [totalInvested]. 0 when the
@@ -21,10 +29,12 @@ class InvestmentStats {
   /// Net cash flow (Returned - Invested)
   final double netCashFlow;
 
-  /// Percentage return on investment
+  /// Gain (returned + current value - invested) as a percentage of
+  /// [paidInCapital].
   final double absoluteReturn;
 
-  /// Multiple on Invested Capital
+  /// Multiple on Invested Capital: (returned + current value - reinvested)
+  /// / [paidInCapital], where reinvested = [totalInvested] - paid-in.
   final double moic;
 
   /// Annualized return (XIRR), or null when [xirrMethod] is undefined: an
@@ -70,6 +80,7 @@ class InvestmentStats {
 
   const InvestmentStats({
     required this.totalInvested,
+    double? paidInCapital,
     this.principal = 0,
     required this.totalReturned,
     required this.netCashFlow,
@@ -85,7 +96,8 @@ class InvestmentStats {
     this.currentValueIsEstimate = false,
     this.currentValueRate,
     this.missingValueCount = 0,
-  }) : assert(
+  }) : paidInCapital = paidInCapital ?? totalInvested,
+       assert(
          xirr != null || xirrMethod == XirrMethod.undefined,
          'A missing XIRR must be marked undefined',
        );
@@ -161,12 +173,14 @@ class InvestmentStats {
   /// Returns true if net cash flow is negative
   bool get isLoss => netCashFlow < 0;
 
-  /// Duration in years from first to last cash flow (or to now if ongoing)
+  /// Whether part of [totalInvested] was money paid out earlier and put
+  /// back in, which [moic] and [absoluteReturn] count once.
+  bool get hasReinvestedPayouts => paidInCapital < totalInvested;
+
+  /// [holdingDays] in years.
   double? get durationYears {
-    if (firstCashFlowDate == null) return null;
-    final endDate = lastCashFlowDate ?? DateTime.now();
-    final days = endDate.difference(firstCashFlowDate!).inDays;
-    return days / 365.0;
+    final days = holdingDays;
+    return days == null ? null : days / 365.0;
   }
 
   /// Formatted duration string (e.g., "2.3y" or "8mo")
@@ -181,6 +195,7 @@ class InvestmentStats {
   /// Creates a copy with the given fields replaced
   InvestmentStats copyWith({
     double? totalInvested,
+    double? paidInCapital,
     double? principal,
     double? totalReturned,
     double? netCashFlow,
@@ -199,6 +214,7 @@ class InvestmentStats {
   }) {
     return InvestmentStats(
       totalInvested: totalInvested ?? this.totalInvested,
+      paidInCapital: paidInCapital ?? this.paidInCapital,
       principal: principal ?? this.principal,
       totalReturned: totalReturned ?? this.totalReturned,
       netCashFlow: netCashFlow ?? this.netCashFlow,
@@ -224,6 +240,7 @@ class InvestmentStats {
 
     return other is InvestmentStats &&
         other.totalInvested == totalInvested &&
+        other.paidInCapital == paidInCapital &&
         other.principal == principal &&
         other.totalReturned == totalReturned &&
         other.netCashFlow == netCashFlow &&
@@ -255,6 +272,7 @@ class InvestmentStats {
         firstCashFlowDate.hashCode ^
         lastCashFlowDate.hashCode ^
         Object.hash(
+          paidInCapital,
           currentValue,
           currentValueDate,
           currentValueIsEstimate,

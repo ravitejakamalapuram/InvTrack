@@ -88,6 +88,17 @@ class InvestmentDetailStatsSection extends StatelessWidget {
         const SizedBox(height: 10),
         // Cash Out and Cash In row
         _buildCashFlowSummaryCard(),
+        if (stats.hasData) ...[
+          const SizedBox(height: 6),
+          // Money out is gross and includes fees; MOIC and return % count
+          // reinvested payouts once (paid-in capital).
+          Text(
+            stats.hasReinvestedPayouts
+                ? l10n.moneyOutIncludesFeesReinvested
+                : l10n.moneyOutIncludesFees,
+            style: AppTypography.small.copyWith(color: _neutralColor),
+          ),
+        ],
         const SizedBox(height: 10),
         // XIRR and MOIC row
         Row(
@@ -119,7 +130,10 @@ class InvestmentDetailStatsSection extends StatelessWidget {
                     : formatMultiplier(stats.moic),
                 color: AppColors.graphPurple,
                 isDark: isDark,
-                subtitle: stats.durationFormatted,
+                // No holding period while MOIC waits for a current value.
+                subtitle: display.isAwaitingValue
+                    ? null
+                    : stats.durationFormatted,
                 isPrivacyMode: isPrivacyMode,
               ),
             ),

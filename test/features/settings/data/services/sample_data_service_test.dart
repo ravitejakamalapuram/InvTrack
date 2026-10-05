@@ -25,7 +25,9 @@ void main() {
     group('Multi-Currency Portfolio', () {
       test('creates investments in multiple currencies', () async {
         // Act
-        final result = await sampleDataService.createSampleData(baseCurrency: 'USD');
+        final result = await sampleDataService.createSampleData(
+          baseCurrency: 'USD',
+        );
 
         // Assert
         expect(result.investmentIds.length, greaterThan(0));
@@ -277,7 +279,11 @@ void main() {
         portfolio.totalReturned + portfolio.currentValue!,
         closeTo(503917, 0.005),
       );
-      expect(portfolio.moic, closeTo(1.054153505, 1e-6));
+      // MOIC is measured on paid-in capital (A15). The P2P fee is taken on
+      // the day the loan book repays, so it is not new money in: paid-in is
+      // 4,77,030 and MOIC is (5,03,917 - 1,000) / 4,77,030.
+      expect(portfolio.paidInCapital, closeTo(477030, 0.005));
+      expect(portfolio.moic, closeTo(1.0542670272309917, 1e-6));
       expect(portfolio.moic, greaterThanOrEqualTo(1));
     });
 

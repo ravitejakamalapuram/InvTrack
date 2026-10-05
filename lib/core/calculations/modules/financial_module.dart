@@ -47,6 +47,12 @@ class FinancialCalculatorModule implements CalculationModule {
     return FinancialCalculator.calculateTotalReturned(cashFlows);
   }
 
+  /// Paid-in capital: the most of the user's own money in each investment at
+  /// one time, summed. See [FinancialCalculator.calculatePaidInCapital].
+  double calculatePaidInCapital(List<ICashFlow> cashFlows) {
+    return FinancialCalculator.calculatePaidInCapital(cashFlows);
+  }
+
   /// Calculates stats from a list of cash flows.
   ///
   /// [includeXirr] - Set to false to skip expensive XIRR calculation if not needed.
@@ -112,7 +118,9 @@ class FinancialCalculatorModule implements CalculationModule {
         xirrAmounts!.add(terminal.amount);
       }
     }
-    final returnedWithValue = totalReturned + (currentValue ?? 0);
+    // Money is compared and shown to the paisa (CALC-13).
+    totalInvested = FinancialCalculator.roundMoney(totalInvested);
+    totalReturned = FinancialCalculator.roundMoney(totalReturned);
 
     final firstDate = firstDateMs != null
         ? DateTime.fromMillisecondsSinceEpoch(firstDateMs)
@@ -121,12 +129,21 @@ class FinancialCalculatorModule implements CalculationModule {
         ? DateTime.fromMillisecondsSinceEpoch(lastDateMs)
         : null;
 
-    final netCashFlow = calculateNetCashFlow(totalInvested, totalReturned);
-    final absoluteReturn = calculateAbsoluteReturn(
-      totalInvested,
-      returnedWithValue,
+    final netCashFlow = FinancialCalculator.roundMoney(
+      calculateNetCashFlow(totalInvested, totalReturned),
     );
-    final moic = calculateMOIC(totalInvested, returnedWithValue);
+
+    // MOIC and return % are on paid-in capital, so money reinvested from
+    // earlier payouts is counted once on both sides: MOIC = (distributions
+    // + current value - reinvested) / paid-in (CALC-07).
+    final paidInCapital = calculatePaidInCapital(cashFlows);
+    final reinvested = totalInvested - paidInCapital;
+    final valueOnPaidIn = totalReturned + (currentValue ?? 0) - reinvested;
+    final absoluteReturn = calculateAbsoluteReturn(
+      paidInCapital,
+      valueOnPaidIn,
+    );
+    final moic = calculateMOIC(paidInCapital, valueOnPaidIn);
 
     final xirrResult = includeXirr
         ? XirrSolver.solve(xirrDates!, xirrAmounts!)
@@ -134,6 +151,7 @@ class FinancialCalculatorModule implements CalculationModule {
 
     return InvestmentStats(
       totalInvested: totalInvested,
+      paidInCapital: paidInCapital,
       principal: principal,
       totalReturned: totalReturned,
       netCashFlow: netCashFlow,
