@@ -151,7 +151,7 @@ fire_settings.json       FIRE settings, if any
 
 - **Not encrypted.** `ZipEncoder().encode(archive)` is called without a password. Password-based encryption is planned in A33 (#776); update this section when it ships.
 - Stored in app-private storage, `getApplicationSupportDirectory()/guest_backups/<uid>` (`GuestBackupStore`), not external storage and not in Android Auto Backup. Each backup belongs to one account: the guest until the sign-in, then the Google account.
-- Deleted after a merge that added every record, or when the sign-in did not happen. Otherwise it is kept until the user deletes it in Settings > Data & Account, or Delete Account removes it.
+- Deleted after a merge that added every record, after "Import now" adds every record, or when the sign-in did not happen. Otherwise it is kept until the user deletes it in Settings > Data & Account, or Delete Account removes it. Delete Account also removes a backup still owned by the guest whose merge into the account did not finish, and the counts and markers the device kept about the deleted backups.
 - Not the same as Settings > Export, which writes an unencrypted ZIP to the temp directory for the share sheet.
 
 **Analytics Events**:
@@ -167,11 +167,11 @@ fire_settings.json       FIRE settings, if any
    - Show dialog: "This Google account already exists. Create backup?"
    - User chooses: "Backup & Sign In" or "Cancel"
    - If "Backup & Sign In":
-     - Save the unencrypted ZIP backup and a pending-merge marker (guest UID and backup path only)
+     - Save the unencrypted ZIP backup and a pending-merge marker (guest UID and backup path, plus the Google UID once the sign-in returns). If the marker cannot be saved, the merge stops before the sign-in and the backup is deleted
      - Sign in with Google using the credential from the failed link, so the account picker opens once (falls back to the picker if Firebase rejects it)
      - Hand the backup to the Google account and merge it in automatically
      - If not every record could be added, offer to share the kept backup (it is offered once more at the next launch)
-   - If the app is killed part-way, the next launch hands any backup still owned by the guest to the signed-in Google account and offers it once: "Import now", "Share" or "Keep"
+   - If the app is killed part-way, the next launch hands any backup still owned by the guest to the Google account the merge signed in to (any signed-in Google account if the app was killed before that was recorded) and offers it once: "Import now", "Share" or "Keep". A failed import or share is offered again at the next launch
 
 **Deliverables**:
 - [ ] `LinkAccountUseCase` implemented in domain layer
