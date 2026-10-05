@@ -581,6 +581,8 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
               : CompactAmountText(
                   amount: value,
                   compactText: currencyFormat.formatCompact(value.abs()),
+                  currencySymbol: currencyFormat.currencySymbol,
+                  locale: currencyFormat.locale,
                   prefix: isPositive ? '+' : '-',
                   style: valueStyle,
                 ),

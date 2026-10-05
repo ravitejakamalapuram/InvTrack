@@ -4,10 +4,7 @@ import 'package:inv_tracker/core/calculations/xirr_solver.dart';
 // Expected rates are exact (actual/365 day count, as Excel's XIRR), computed
 // independently with a Python bisection solver. See
 // xirr_excel_parity_test.dart for the method and the wider golden suite.
-//
-// Dates are UTC on purpose. The solver counts whole days from millisecond
-// differences, so local dates that span a daylight-saving change lose a day
-// and these 1e-6 checks would fail in zones such as Europe/London.
+
 const double _tol = 1e-6;
 
 void main() {
@@ -459,6 +456,35 @@ void main() {
           stopwatch.elapsedMilliseconds,
           lessThan(1000),
         ); // Should complete in <1 second
+      });
+    });
+
+    // A70 (#835): dates are read as local midnights, and two local midnights
+    // either side of a DST change are a whole number of days minus (or plus)
+    // an hour apart. The day count must come from the calendar day.
+    group('day count by calendar day', () {
+      test('15 Jan to 1 Apr 2026 is 76 days even when the two values are '
+          'an hour short of 76 x 24 hours apart', () {
+        // 75 days and 23 hours apart, as local midnights in New York are.
+        final dates = [DateTime.utc(2026, 1, 15, 1), DateTime.utc(2026, 4, 1)];
+
+        // 1.01^(365/76) - 1
+        expect(
+          XirrSolver.calculateXirr(dates, [-100000.0, 101000.0]),
+          closeTo(0.048948016794645666, _tol),
+        );
+      });
+
+      test('local midnights of 15 Jan and 1 Apr 2026 give the 76-day rate '
+          'in every device zone', () {
+        // Only guards the DST case on a machine whose zone changes clocks
+        // between the two dates, for example TZ=America/New_York.
+        final dates = [DateTime(2026, 1, 15), DateTime(2026, 4, 1)];
+
+        expect(
+          XirrSolver.calculateXirr(dates, [-100000.0, 101000.0]),
+          closeTo(0.048948016794645666, _tol),
+        );
       });
     });
   });

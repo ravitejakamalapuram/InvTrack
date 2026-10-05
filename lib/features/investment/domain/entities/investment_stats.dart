@@ -15,6 +15,11 @@ class InvestmentStats {
   /// [absoluteReturn]. Equals [totalInvested] when nothing is reinvested.
   final double paidInCapital;
 
+  /// Sum of INVEST flows only (no fees): the principal that earns interest.
+  /// The maturity projection compounds this, not [totalInvested]. 0 when the
+  /// stats were not built by calculateStats, which hides the projection.
+  final double principal;
+
   /// Sum of RETURN + INCOME (money in)
   final double totalReturned;
 
@@ -73,6 +78,7 @@ class InvestmentStats {
   const InvestmentStats({
     required this.totalInvested,
     double? paidInCapital,
+    this.principal = 0,
     required this.totalReturned,
     required this.netCashFlow,
     required this.absoluteReturn,
@@ -169,6 +175,7 @@ class InvestmentStats {
   InvestmentStats copyWith({
     double? totalInvested,
     double? paidInCapital,
+    double? principal,
     double? totalReturned,
     double? netCashFlow,
     double? absoluteReturn,
@@ -187,6 +194,7 @@ class InvestmentStats {
     return InvestmentStats(
       totalInvested: totalInvested ?? this.totalInvested,
       paidInCapital: paidInCapital ?? this.paidInCapital,
+      principal: principal ?? this.principal,
       totalReturned: totalReturned ?? this.totalReturned,
       netCashFlow: netCashFlow ?? this.netCashFlow,
       absoluteReturn: absoluteReturn ?? this.absoluteReturn,
@@ -212,6 +220,7 @@ class InvestmentStats {
     return other is InvestmentStats &&
         other.totalInvested == totalInvested &&
         other.paidInCapital == paidInCapital &&
+        other.principal == principal &&
         other.totalReturned == totalReturned &&
         other.netCashFlow == netCashFlow &&
         other.absoluteReturn == absoluteReturn &&
@@ -231,6 +240,7 @@ class InvestmentStats {
   @override
   int get hashCode {
     return totalInvested.hashCode ^
+        principal.hashCode ^
         totalReturned.hashCode ^
         netCashFlow.hashCode ^
         absoluteReturn.hashCode ^

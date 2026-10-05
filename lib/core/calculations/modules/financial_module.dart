@@ -72,6 +72,7 @@ class FinancialCalculatorModule implements CalculationModule {
 
     // Single pass calculation for O(N) complexity
     double totalInvested = 0.0;
+    double principal = 0.0;
     double totalReturned = 0.0;
 
     int? firstDateMs;
@@ -91,6 +92,9 @@ class FinancialCalculatorModule implements CalculationModule {
 
       if (cf.signedAmount < 0) {
         totalInvested += cf.amount;
+        if (cf.calculationType == CalculationCashFlowType.invest) {
+          principal += cf.amount;
+        }
       } else if (cf.signedAmount > 0) {
         totalReturned += cf.amount;
       }
@@ -148,6 +152,7 @@ class FinancialCalculatorModule implements CalculationModule {
     return InvestmentStats(
       totalInvested: totalInvested,
       paidInCapital: paidInCapital,
+      principal: principal,
       totalReturned: totalReturned,
       netCashFlow: netCashFlow,
       absoluteReturn: absoluteReturn,

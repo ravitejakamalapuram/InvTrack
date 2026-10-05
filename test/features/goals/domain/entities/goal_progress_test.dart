@@ -77,9 +77,9 @@ void main() {
         calculatedAt: DateTime.now(),
       );
 
-      // Uses K formatting (5K of 10K - trailing zeros trimmed)
-      expect(progress.progressMessage, contains('5K'));
-      expect(progress.progressMessage, contains('10K'));
+      // Indian compact format shows amounts below one lakh in full; intl's
+      // en_IN compact gave '₹5K' (A18).
+      expect(progress.progressMessage, '₹5,000 of ₹10,000');
     });
 
     test('progressMessage shows correct format for income goals', () {
@@ -104,7 +104,7 @@ void main() {
 
       expect(progress.progressMessage, contains('/mo'));
       expect(progress.progressMessage, contains('500'));
-      expect(progress.progressMessage, contains('1K'));
+      expect(progress.progressMessage, '₹500/mo of ₹1,000/mo');
     });
 
     test('statusMessage for ahead status shows encouragement', () {
