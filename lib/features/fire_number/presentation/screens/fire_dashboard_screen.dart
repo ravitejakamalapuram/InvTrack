@@ -15,10 +15,10 @@ import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculatio
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
 import 'package:inv_tracker/features/fire_number/presentation/extensions/fire_entity_ui_extensions.dart';
 import 'package:inv_tracker/features/fire_number/presentation/providers/fire_providers.dart';
+import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_corpus_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_milestone_card.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_progress_ring.dart';
 import 'package:inv_tracker/features/fire_number/presentation/widgets/fire_stats_card.dart';
-import 'package:inv_tracker/features/investment/presentation/providers/investment_providers.dart';
 import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Main FIRE Number dashboard screen
@@ -65,8 +65,9 @@ class FireDashboardScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => _buildErrorState(isDark, () {
               ref.invalidate(fireSettingsProvider);
-              // The calculation fails when the portfolio fails to load.
-              reloadPortfolio(ref);
+              // The calculation fails when the portfolio or the exchange
+              // rate fails to load.
+              reloadFireInputs(ref);
             }, context),
           );
         },
@@ -171,6 +172,7 @@ class FireDashboardScreen extends ConsumerWidget {
             context,
             isDark,
             calculation,
+            settings,
             currencySymbol,
             locale,
           ),
@@ -189,6 +191,15 @@ class FireDashboardScreen extends ConsumerWidget {
           FireStatsCard(
             calculation: calculation,
             currencySymbol: currencySymbol,
+            settings: settings,
+          ),
+          SizedBox(height: AppSpacing.lg),
+
+          // How the corpus is built (PLAN-01)
+          FireCorpusCard(
+            calculation: calculation,
+            currencySymbol: currencySymbol,
+            locale: locale,
           ),
           SizedBox(height: AppSpacing.lg),
 
@@ -233,7 +244,11 @@ class FireDashboardScreen extends ConsumerWidget {
     final statusColor = calculation.status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
-    final motivationalMessage = _getMotivationalMessage(calculation, settings);
+    final motivationalMessage = _getMotivationalMessage(
+      AppLocalizations.of(context),
+      calculation,
+      settings,
+    );
 
     return Container(
       width: double.infinity,
@@ -297,7 +312,11 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: AppSpacing.lg),
                 // Status badge
-                _buildStatusBadge(calculation.status, isDark),
+                _buildStatusBadge(
+                  AppLocalizations.of(context),
+                  calculation.status,
+                  isDark,
+                ),
                 SizedBox(height: AppSpacing.md),
                 // Motivational message
                 Text(
@@ -316,7 +335,11 @@ class FireDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusBadge(FireProgressStatus status, bool isDark) {
+  Widget _buildStatusBadge(
+    AppLocalizations l10n,
+    FireProgressStatus status,
+    bool isDark,
+  ) {
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
@@ -336,7 +359,7 @@ class FireDashboardScreen extends ConsumerWidget {
           Icon(status.icon, color: statusColor, size: 18),
           SizedBox(width: AppSpacing.xs),
           Text(
-            status.displayName,
+            status.label(l10n),
             style: AppTypography.bodyMedium.copyWith(
               color: statusColor,
               fontWeight: FontWeight.w600,
@@ -348,12 +371,15 @@ class FireDashboardScreen extends ConsumerWidget {
   }
 
   String _getMotivationalMessage(
+    AppLocalizations l10n,
     FireCalculationResult calculation,
     FireSettingsEntity settings,
   ) {
     switch (calculation.status) {
       case FireProgressStatus.notStarted:
         return 'Every journey begins with a single step. Start investing today!';
+      case FireProgressStatus.notEnoughHistory:
+        return l10n.fireNotEnoughHistoryMotivation;
       case FireProgressStatus.behind:
         final monthlyNeeded =
             calculation.requiredMonthlySavings -
@@ -381,7 +407,8 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
     String locale,
   ) {
-    final yearsToFire = settings.targetFireAge - settings.currentAge;
+    final l10n = AppLocalizations.of(context);
+    final yearsToFire = settings.yearsToFire;
     final projectedDate = calculation.projectedFireDate;
     // Use locale-aware date formatting
     final locale = Localizations.localeOf(context).languageCode;
@@ -396,7 +423,9 @@ class FireDashboardScreen extends ConsumerWidget {
             iconColor: isDark ? AppColors.accentDark : AppColors.accentLight,
             label: 'Target Age',
             value: '${settings.targetFireAge}',
-            subtitle: '$yearsToFire years left',
+            subtitle: yearsToFire > 0
+                ? '$yearsToFire years left'
+                : l10n.fireTargetAgePassed,
           ),
         ),
         SizedBox(width: AppSpacing.sm),
@@ -411,8 +440,10 @@ class FireDashboardScreen extends ConsumerWidget {
             label: 'Projected',
             value: projectedDate != null
                 ? AppDateUtils.formatYearMonth(projectedDate, locale: locale)
-                : 'N/A',
-            subtitle: calculation.status.shortSubtitle,
+                : _savingsUnknown(calculation)
+                ? '—'
+                : l10n.fireNotReachable,
+            subtitle: calculation.status.shortSubtitle(l10n),
           ),
         ),
         SizedBox(width: AppSpacing.sm),
@@ -495,12 +526,36 @@ class FireDashboardScreen extends ConsumerWidget {
     BuildContext context,
     bool isDark,
     FireCalculationResult calculation,
+    FireSettingsEntity settings,
     String currencySymbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
     final monthlyGap = calculation.monthlyGap;
     final status = calculation.status;
     final isPositive = status.isPositive;
+    final notEnoughHistory = _savingsUnknown(calculation);
+    // "Invest X more" only for a real shortfall (PLAN-04), and never from
+    // a savings figure that could not be estimated (PLAN-02).
+    final showInvestMore = !isPositive && !notEnoughHistory && monthlyGap > 0;
+    final targetAgePassed =
+        !isPositive && !showInvestMore && settings.yearsToFire <= 0;
+    final hintStyle = AppTypography.small.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    final String header;
+    if (showInvestMore) {
+      header = 'Action Needed';
+    } else if (targetAgePassed) {
+      header = l10n.fireTargetAgePassed;
+    } else if (status == FireProgressStatus.notEnoughHistory ||
+        (notEnoughHistory && !isPositive)) {
+      header = l10n.fireNotEnoughHistoryTitle;
+    } else if (isPositive) {
+      header = 'You\'re ${status.shortSubtitle(l10n).toLowerCase()}!';
+    } else {
+      header = status.label(l10n);
+    }
     final statusColor = status.colorForBrightness(
       isDark ? Brightness.dark : Brightness.light,
     );
@@ -522,9 +577,9 @@ class FireDashboardScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  isPositive
-                      ? Icons.check_circle_outline
-                      : Icons.lightbulb_outline,
+                  !isPositive
+                      ? Icons.lightbulb_outline
+                      : Icons.check_circle_outline,
                   color: statusColor,
                   size: 24,
                 ),
@@ -535,9 +590,7 @@ class FireDashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isPositive
-                          ? 'You\'re ${status.shortSubtitle.toLowerCase()}!'
-                          : 'Action Needed',
+                      header,
                       style: AppTypography.bodyMedium.copyWith(
                         color: isDark
                             ? AppColors.textPrimaryDark
@@ -545,25 +598,28 @@ class FireDashboardScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    isPositive
-                        ? Text(
-                            'Keep up your current investment rate.',
-                            style: AppTypography.small.copyWith(
-                              color: isDark
-                                  ? AppColors.neutral400Dark
-                                  : AppColors.neutral500Light,
-                            ),
-                          )
-                        : PrivacyMask(
-                            child: Text(
-                              'Invest ${formatCompactCurrency(monthlyGap.abs(), symbol: currencySymbol, locale: locale)}/month more to stay on track.',
-                              style: AppTypography.small.copyWith(
-                                color: isDark
-                                    ? AppColors.neutral400Dark
-                                    : AppColors.neutral500Light,
-                              ),
+                    if (showInvestMore)
+                      PrivacyMask(
+                        child: Text(
+                          l10n.fireInvestMore(
+                            formatCompactCurrency(
+                              monthlyGap,
+                              symbol: currencySymbol,
+                              locale: locale,
                             ),
                           ),
+                          style: hintStyle,
+                        ),
+                      )
+                    else if (targetAgePassed)
+                      Text(l10n.fireMoveTargetAgeHint, style: hintStyle)
+                    else if (notEnoughHistory && !isPositive)
+                      Text(l10n.fireNotEnoughHistoryHint, style: hintStyle)
+                    else if (isPositive)
+                      Text(
+                        'Keep up your current investment rate.',
+                        style: hintStyle,
+                      ),
                   ],
                 ),
               ),
@@ -675,6 +731,17 @@ class FireDashboardScreen extends ConsumerWidget {
     String currencySymbol,
     String locale,
   ) {
+    final l10n = AppLocalizations.of(context);
+    final projectedAge = calculation.projectedFireAge;
+    final source =
+        calculation.inputs?.savingsSource ?? MonthlySavingsSource.history;
+    final labelStyle = AppTypography.body.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    final valueStyle = AppTypography.bodyMedium.copyWith(
+      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+      fontWeight: FontWeight.w600,
+    );
     final gap = calculation.portfolioGap;
     // portfolioGap = fireNumber - currentPortfolioValue
     // Positive gap = shortfall (need more money) → show as negative (red)
@@ -737,19 +804,69 @@ class FireDashboardScreen extends ConsumerWidget {
                 ),
               ),
               Text(
-                'Age ${calculation.projectedFireAge}',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
-                  fontWeight: FontWeight.w600,
+                projectedAge != null
+                    ? 'Age $projectedAge'
+                    : _savingsUnknown(calculation)
+                    ? '—'
+                    : l10n.fireNotReachable,
+                style: valueStyle,
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.fireMonthlyInvesting, style: labelStyle),
+                    Text(
+                      _savingsSourceLabel(l10n, source),
+                      style: AppTypography.small.copyWith(
+                        color: isDark
+                            ? AppColors.neutral500Dark
+                            : AppColors.neutral400Light,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              source == MonthlySavingsSource.notEnoughHistory
+                  ? Text('—', style: valueStyle)
+                  : MaskedAmountText(
+                      text: formatCompactCurrency(
+                        calculation.currentMonthlySavingsRate,
+                        symbol: currencySymbol,
+                        locale: locale,
+                      ),
+                      style: valueStyle,
+                    ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  /// Whether the monthly savings could not be estimated yet (PLAN-02).
+  static bool _savingsUnknown(FireCalculationResult calculation) =>
+      calculation.inputs?.savingsSource ==
+      MonthlySavingsSource.notEnoughHistory;
+
+  static String _savingsSourceLabel(
+    AppLocalizations l10n,
+    MonthlySavingsSource source,
+  ) {
+    switch (source) {
+      case MonthlySavingsSource.declared:
+        return l10n.fireSavingsSourceDeclared;
+      case MonthlySavingsSource.history:
+        return l10n.fireSavingsSourceHistory;
+      case MonthlySavingsSource.notEnoughHistory:
+        return l10n.fireSavingsNotEnoughHistory;
+    }
   }
 
   Widget _buildErrorState(

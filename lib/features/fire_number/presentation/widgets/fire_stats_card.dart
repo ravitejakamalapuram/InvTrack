@@ -7,22 +7,32 @@ import 'package:inv_tracker/core/utils/currency_utils.dart';
 import 'package:inv_tracker/core/widgets/glass_card.dart';
 import 'package:inv_tracker/core/widgets/privacy_mask.dart';
 import 'package:inv_tracker/features/fire_number/domain/entities/fire_calculation_result.dart';
+import 'package:inv_tracker/features/fire_number/domain/entities/fire_settings_entity.dart';
+import 'package:inv_tracker/l10n/generated/app_localizations.dart';
 
 /// Card displaying FIRE number breakdown
 class FireStatsCard extends ConsumerWidget {
   final FireCalculationResult calculation;
   final String currencySymbol;
 
+  /// The settings [calculation] used, to explain the FIRE number.
+  final FireSettingsEntity? settings;
+
   const FireStatsCard({
     super.key,
     required this.calculation,
     required this.currencySymbol,
+    this.settings,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final locale = ref.watch(currencyLocaleProvider);
+    final l10n = AppLocalizations.of(context);
+    final settings = this.settings;
+    String compact(double amount) =>
+        formatCompactCurrency(amount, symbol: currencySymbol, locale: locale);
 
     // Theme-aware colors for FIRE type icons
     final fireColor = isDark ? AppColors.accentDark : AppColors.accentLight;
@@ -45,13 +55,41 @@ class FireStatsCard extends ConsumerWidget {
               symbol: currencySymbol,
               locale: locale,
             ),
-            subtitle: 'In today\'s money (purchasing power)',
-            tooltip:
-                'This is the amount you need in TODAY\'S money to achieve financial independence. '
-                'At retirement, this will be worth ${formatCompactCurrency(calculation.inflationAdjustedFireNumber, symbol: currencySymbol, locale: locale)} '
-                'in future money, but will have the same purchasing power as ${formatCompactCurrency(calculation.fireNumber, symbol: currencySymbol, locale: locale)} today. '
-                'Based on 25x your annual expenses using real (inflation-adjusted) returns.',
+            // The real multiple, buffers included (PLAN-06).
+            subtitle: l10n.fireNumberMultiple(
+              calculation.expenseMultiple.toStringAsFixed(1),
+            ),
+            tooltip: settings == null
+                ? null
+                : l10n.fireNumberExplanation(
+                    _trim(settings.safeWithdrawalRate),
+                    _trim(settings.healthcareBuffer),
+                    _trim(settings.emergencyMonths),
+                  ),
           ),
+          SizedBox(height: AppSpacing.sm),
+          _buildBreakdownRow(
+            isDark,
+            l10n.fireCoreCorpus,
+            compact(calculation.coreRetirementCorpus),
+          ),
+          _buildBreakdownRow(
+            isDark,
+            l10n.fireHealthcareBuffer,
+            compact(calculation.healthcareCorpusNeeded),
+          ),
+          _buildBreakdownRow(
+            isDark,
+            l10n.fireEmergencyFund,
+            compact(calculation.emergencyFundNeeded),
+          ),
+          // So that the rows add up to the FIRE number.
+          if (calculation.otherIncomeDeduction > 0)
+            _buildBreakdownRow(
+              isDark,
+              l10n.fireLessOtherIncome,
+              '−${compact(calculation.otherIncomeDeduction)}',
+            ),
           Divider(
             height: AppSpacing.lg,
             color: isDark
@@ -97,6 +135,26 @@ class FireStatsCard extends ConsumerWidget {
                 '50% of your FIRE Number. With this amount, you could retire from full-time work '
                 'and cover the gap with part-time or freelance work.',
           ),
+        ],
+      ),
+    );
+  }
+
+  /// [value] without a trailing ".0".
+  static String _trim(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
+
+  Widget _buildBreakdownRow(bool isDark, String label, String value) {
+    final style = AppTypography.small.copyWith(
+      color: isDark ? AppColors.neutral400Dark : AppColors.neutral500Light,
+    );
+    return Padding(
+      padding: EdgeInsets.only(left: 48, top: AppSpacing.xs),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          MaskedAmountText(text: value, style: style),
         ],
       ),
     );
